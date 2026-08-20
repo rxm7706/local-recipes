@@ -69,15 +69,12 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - missing-license-file
-    - missing-license-file
-    - missing-license-file
-    - missing-license-file
 
-  cfe-last-checked: 2026-08-17T01:41:05Z
+  cfe-last-checked: 2026-08-17T04:25:20Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:41:05Z
+  cfe-generated-at-datetime: 2026-08-17T04:25:20Z
   cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T01:41:05Z
+  cfe-local-build-datetime: 2026-08-17T04:25:20Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

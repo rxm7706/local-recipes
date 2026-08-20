@@ -2,44 +2,80 @@
 schema_version: 1
 
 context:
-  name: objgraph
-  version: "3.5.0"
+  version: "3.6.2"
 
 package:
-  name: ${{ name|lower }}
+  name: objgraph
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 4752ca5bcc0e0512e41b8cc4d2780ac2fd3b3eabd03b7e950a5594c06203dfc4
+  url: https://pypi.org/packages/source/o/objgraph/objgraph-${{ version }}.tar.gz
+  sha256: 00b9f2f40f7422e3c7f45a61c4dafdaf81f03ff0649d6eaec866f01030e51ad8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
+    - setuptools
   run:
-    - python-graphviz
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - objgraph
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Draws Python object reference graphs with graphviz
+  homepage: https://mg.pov.lt/objgraph/
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/objgraph
+  summary: Draws Python object reference graphs with graphviz
+  description: |
+    Draws Python object reference graphs with graphviz
   repository: https://github.com/mgedmin/objgraph
-  documentation: https://mg.pov.lt/objgraph
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: objgraph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: objgraph
+  cfe-purls:
+    - pkg:conda/objgraph@${{ version }}?channel=conda-forge
+    - pkg:pypi/objgraph@${{ version }}
+  cfe-upstream-repo: https://github.com/mgedmin/objgraph
+  cfe-upstream-homepage: https://mg.pov.lt/objgraph/
+  cfe-import-names: [objgraph]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/objgraph-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.6.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:21:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:21:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:21:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

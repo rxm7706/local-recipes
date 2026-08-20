@@ -2,32 +2,31 @@
 schema_version: 1
 
 context:
-  name: incremental
-  version: 24.11.0
+  version: "24.11.0"
 
 package:
-  name: ${{ name }}
+  name: incremental
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/Incremental/incremental-${{ version }}.tar.gz
   sha256: 87d3480dbb083c1d736222511a8cf380012a8176c2456d01ef483242abbbcf8c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - hatchling >=1.6.0
+    - hatchling
+    - incremental
   run:
     - python >=${{ python_min }}
+    - incremental
     - packaging >=17.0
-    # remove after python_min hits 3.11
-    # keeping this noarch: python
     - tomli
 
 tests:
@@ -35,16 +34,51 @@ tests:
       imports:
         - incremental
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/twisted/incremental
   license: MIT
   license_file: LICENSE
-  summary: Incremental is a small library that versions your Python projects.
-  homepage: https://github.com/twisted/incremental
-  repository: https://github.com/twisted/incremental
+  summary: A CalVer version manager that supports the future.
+  description: |
+    A CalVer version manager that supports the future.
+  documentation: https://twisted.org/incremental/docs/
 
 extra:
   recipe-maintainers:
     - isuruf
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: incremental
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: incremental
+  cfe-purls:
+    - pkg:conda/incremental@${{ version }}?channel=conda-forge
+    - pkg:pypi/incremental@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/twisted/incremental
+  cfe-import-names: [incremental]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/incremental-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:53:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:53:01Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T23:53:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['incremental']
+####

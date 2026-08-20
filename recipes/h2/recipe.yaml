@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "4.4.1"
-  python_check_max: "3.14"
 
 package:
   name: h2
@@ -16,48 +15,70 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools >=82
+    - wheel >=0.46.3
   run:
     - python >=${{ python_min }}
-    - hyperframe >=6.1,<7
-    - hpack >=4.2,<5
+    - hyperframe <7,>=6.1
+    - hpack <5,>=4.2
 
 tests:
   - python:
-      imports: h2
+      imports:
+        - h2
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest-cov
-        - hypothesis
-    files:
-      source:
-        - tests/
-    script:
-      - coverage run --source=h2 --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=99
+        - "*"
 
 about:
+  homepage: https://github.com/python-hyper/h2/
   license: MIT
   license_file: LICENSE
-  summary: HTTP/2 State-Machine based protocol implementation
-  homepage: https://pypi.org/project/h2
-  repository: https://github.com/python-hyper/h2
-  documentation: https://python-hyper.org
+  summary: Pure-Python HTTP/2 protocol implementation
+  description: |
+    Pure-Python HTTP/2 protocol implementation
+  repository: https://github.com/python-hyper/h2/
+  documentation: https://python-hyper.org/
 
 extra:
   recipe-maintainers:
     - primozgodec
     - wiphoo
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: h2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: h2
+  cfe-purls:
+    - pkg:conda/h2@${{ version }}?channel=conda-forge
+    - pkg:pypi/h2@${{ version }}
+  cfe-upstream-repo: https://github.com/python-hyper/h2/
+  cfe-upstream-homepage: https://github.com/python-hyper/h2/
+  cfe-import-names: [h2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:55:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:55:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:55:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

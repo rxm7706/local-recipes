@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.13.0"
+  version: "4.14.0"
 
 package:
   name: pytest-django
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pytest-django/pytest_django-${{ version }}.tar.gz
-  sha256: 2316e3f63e3bc799deb4212830e39b2ef1dcc3b2d8688060f1d0217db6a56ebe
+  sha256: 26787dd3f422cfbab8f55b80a776e2edea7a11092cb74e960bef1312515708ef
 
 build:
   number: 0
@@ -19,30 +19,66 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm >=1.11.1
+    - setuptools >=61.0.0
   run:
     - python >=${{ python_min }}
-    - pytest >=5.4.0
+    - pytest >=7.0.0
 
 tests:
   - python:
       imports:
         - pytest_django
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pytest-django/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: A Django plugin for py.test
-  homepage: http://pytest-django.readthedocs.org/
+  summary: A Django plugin for pytest.
+  description: |
+    A Django plugin for pytest.
   repository: https://github.com/pytest-dev/pytest-django
-  documentation: https://pytest-django.readthedocs.io/en/latest/
+  documentation: https://pytest-django.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - kwilcox
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-django
+  cfe-purls:
+    - pkg:conda/pytest-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-django@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-django
+  cfe-upstream-homepage: https://pypi.org/project/pytest-django/
+  cfe-import-names: [pytest_django]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-django-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.14.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:10:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:10:49Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:10:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

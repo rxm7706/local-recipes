@@ -2,54 +2,47 @@
 schema_version: 1
 
 context:
-  name: conda-pack
   version: "0.9.2"
 
 package:
-  name: ${{ name|lower }}
+  name: conda-pack
   version: ${{ version }}
 
 source:
-  url: https://github.com/conda/${{ name }}/archive/${{ version }}.tar.gz
-  sha256: c5933645407f3a8ad9bb4683b0f4ea2906b03af3afd2256e3b8c78b908a7b73d
+  url: https://pypi.org/packages/source/c/conda-pack/conda_pack-${{ version }}.tar.gz
+  sha256: eff02f01879702e8d167810fac5feadeeec2fc7896071238426be79b6f54a33c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - conda-pack = conda_pack.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61.0
+    - wheel
   run:
-    - setuptools
     - python >=${{ python_min }}
+    - setuptools
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - conda_pack
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - conda-pack --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://conda.github.io/conda-pack/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Package conda environments for redistribution
   description: |
-    ``conda-pack`` is a command line tool for creating relocatable conda
-    environments. This is useful for deploying code in a consistent environment,
-    potentially in a location where python/conda isn't already installed.
-  homepage: https://conda.github.io/conda-pack/
+    Package conda environments for redistribution
   repository: https://github.com/conda/conda-pack
   documentation: https://conda.github.io/conda-pack/
 
@@ -59,3 +52,37 @@ extra:
     - mcg1969
     - dbast
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: conda-pack
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: conda-pack
+  cfe-purls:
+    - pkg:conda/conda-pack@${{ version }}?channel=conda-forge
+    - pkg:pypi/conda-pack@${{ version }}
+  cfe-upstream-repo: https://github.com/conda/conda-pack
+  cfe-upstream-homepage: https://conda.github.io/conda-pack/
+  cfe-import-names: [conda_pack]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/conda-pack-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:11:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:11:18Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:11:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

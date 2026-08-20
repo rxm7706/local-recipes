@@ -15,15 +15,13 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=61.2
-    - setuptools_scm >=3.4.1
-    - toml
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
 
@@ -31,23 +29,53 @@ tests:
   - python:
       imports:
         - path
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/path/
   license: MIT
   license_file: LICENSE
   summary: A module wrapper for os.path
   description: |
-    path implements a path objects as first-class entities, allowing common
-    operations on files to be invoked on those path objects directly.
-  homepage: https://github.com/jaraco/path
+    A module wrapper for os.path
   repository: https://github.com/jaraco/path
-  documentation: https://path.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: path
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: path
+  cfe-purls:
+    - pkg:conda/path@${{ version }}?channel=conda-forge
+    - pkg:pypi/path@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/path
+  cfe-upstream-homepage: https://pypi.org/project/path/
+  cfe-import-names: [path]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/path-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-17.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:48:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:48:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:48:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

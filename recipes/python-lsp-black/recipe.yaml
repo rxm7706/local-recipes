@@ -2,49 +2,48 @@
 schema_version: 1
 
 context:
-  name: python-lsp-black
   version: "2.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: python-lsp-black
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-lsp-black/python-lsp-black-${{ version }}.tar.gz
   sha256: 8286d2d310c566844b3c116b824ada6fccfa6ba228b1a09a0526b74c04e0805f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - black >=23.11.0
     - python-lsp-server >=1.4.0
+    - black >=23.11.0
     - tomli
 
 tests:
   - python:
       imports:
         - pylsp_black
-        - pylsp_black.plugin
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-lsp/python-lsp-black
   license: MIT
   license_file: LICENSE
   summary: Black plugin for the Python LSP Server
-  homepage: https://github.com/python-lsp/python-lsp-black
+  description: |
+    Black plugin for the Python LSP Server
   repository: https://github.com/python-lsp/python-lsp-black
 
 extra:
@@ -53,3 +52,36 @@ extra:
     - ccordoba12
     - steff456
     - dalthviz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-lsp-black
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-lsp-black
+  cfe-purls:
+    - pkg:conda/python-lsp-black@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-lsp-black@${{ version }}
+  cfe-upstream-repo: https://github.com/python-lsp/python-lsp-black
+  cfe-upstream-homepage: https://github.com/python-lsp/python-lsp-black
+  cfe-import-names: [pylsp_black]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-lsp-black-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:26:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:26:26Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:26:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

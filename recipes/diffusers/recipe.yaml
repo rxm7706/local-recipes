@@ -2,33 +2,32 @@
 schema_version: 1
 
 context:
-  name: diffusers
   version: "0.39.0"
 
 package:
-  name: ${{ name|lower }}
+  name: diffusers
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/diffusers-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/diffusers/diffusers-${{ version }}.tar.gz
   sha256: 14bb1d98c85a0e463d734c99aaa73b480a7bc9bad22af30fbf730ef8f09c1d67
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}.*
   run:
     - python >=${{ python_min }}
     - importlib-metadata
     - filelock
     - httpx <1.0.0
-    - huggingface_hub >=0.34.0,<2.0
+    - huggingface-hub <2.0,>=0.34.0
     - numpy
     - regex !=2019.12.17
     - requests
@@ -39,32 +38,53 @@ tests:
   - python:
       imports:
         - diffusers
-        - diffusers.models
       pip_check: true
       python_version:
-        - ${{ python_min }}
-        - '*'
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Diffusers
+  homepage: https://github.com/huggingface/diffusers
   license: Apache-2.0
   license_file: LICENSE
+  summary: State-of-the-art diffusion in PyTorch and JAX.
   description: |
-    :hugs: Diffusers provides pretrained diffusion models across multiple modalities,
-    such as vision and audio, and serves as a modular toolbox for inference and
-    training of diffusion models.
-
-    PyPI: [https://pypi.org/project/diffusers/](https://pypi.org/project/diffusers/)
-
-  homepage: https://github.com/huggingface/diffusers
-  repository: https://github.com/huggingface/diffusers
-  documentation: https://github.com/huggingface/diffusers
+    State-of-the-art diffusion in PyTorch and JAX.
 
 extra:
   recipe-maintainers:
     - mukhery
     - sugatoray
     - xhochy
-    # maintainers from upstream repo
     - anton-l
     - patrickvonplaten
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: diffusers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: diffusers
+  cfe-purls:
+    - pkg:conda/diffusers@${{ version }}?channel=conda-forge
+    - pkg:pypi/diffusers@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/huggingface/diffusers
+  cfe-import-names: [diffusers]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/diffusers-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:45:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:45:44Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T07:45:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,46 +2,80 @@
 schema_version: 1
 
 context:
-  name: python-crontab
   version: "3.3.0"
-  sha256: 007c8aee68dddf3e04ec4dce0fac124b93bd68be7470fc95d2a9617a15de291b
 
 package:
-  name: ${{ name|lower }}
+  name: python-crontab
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/p/python-crontab/python_crontab-${{ version }}.tar.gz
+  sha256: 007c8aee68dddf3e04ec4dce0fac124b93bd68be7470fc95d2a9617a15de291b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - python-dateutil
 
 tests:
   - python:
       imports:
-        - crontab
+        - python_crontab
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-3.0-only
-  license_file: COPYING
-  summary: Crontab module for reading and writing crontab files and accessing the system cron automatically and simply using a direct API.
-  homepage: https://github.com/doctormo/python-crontab
+  homepage: https://gitlab.com/doctormo/python-crontab/
+  license: LGPLv3
+  license_file: LICENSE
+  summary: Python Crontab API
+  description: |
+    Python Crontab API
 
 extra:
   recipe-maintainers:
     - scopatz
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-crontab
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-crontab
+  cfe-purls:
+    - pkg:conda/python-crontab@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-crontab@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://gitlab.com/doctormo/python-crontab/
+  cfe-import-names: [python_crontab]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-crontab-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:48:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:48:29Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:48:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

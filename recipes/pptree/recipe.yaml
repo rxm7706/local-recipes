@@ -2,44 +2,83 @@
 schema_version: 1
 
 context:
-  name: pptree
   version: "3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pptree
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pptree-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pptree/pptree-${{ version }}.tar.gz
   sha256: 4dd0ba2f58000cbd29d68a5b64bac29bcb5a663642f79404877c0059668a69f6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - ppbtree
         - pptree
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pretty print trees
-  license: MIT
-  license_file: LICENSE.txt
-  # https://github.com/clemtoy/pptree/pull/13
   homepage: https://github.com/clemtoy/pptree
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Pretty print trees
+  description: |
+    Pretty print trees
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pptree
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pptree
+  cfe-purls:
+    - pkg:conda/pptree@${{ version }}?channel=conda-forge
+    - pkg:pypi/pptree@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/clemtoy/pptree
+  cfe-import-names: [pptree]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pptree-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T03:11:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:11:40Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:11:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

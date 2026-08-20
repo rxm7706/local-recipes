@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: ply
   version: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: ply
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/ply/ply-${{ version }}.tar.gz
   sha256: 00c7c1aaa88358b9c765b6d3000c6eec0ba42abca5351b095321aef446081da3
 
 build:
-  number: 3
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -29,26 +28,58 @@ requirements:
 tests:
   - python:
       imports:
-        - ply.lex
-        - ply.yacc
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+        - ply
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: README.md
-  summary: Python Lex-Yacc
+  homepage: http://www.dabeaz.com/ply/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python Lex & Yacc
   description: |
-    PLY is a 100% Python implementation of the common parsing tools lex and
-    yacc.
-  homepage: http://www.dabeaz.com/ply/index.html
-  repository: https://github.com/dabeaz/ply
-  documentation: http://www.dabeaz.com/ply/index.html
+    Python Lex & Yacc
 
 extra:
   recipe-maintainers:
     - scopatz
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ply
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ply
+  cfe-purls:
+    - pkg:conda/ply@${{ version }}?channel=conda-forge
+    - pkg:pypi/ply@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://www.dabeaz.com/ply/
+  cfe-import-names: [ply]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ply-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.11
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T03:07:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:07:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:07:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

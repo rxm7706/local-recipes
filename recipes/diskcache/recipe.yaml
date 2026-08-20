@@ -70,11 +70,16 @@ extra:
     - version-update-to-5.6.3
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:17:52Z
+  cfe-last-checked: 2026-08-17T04:23:00Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:17:52Z
+  cfe-generated-at-datetime: 2026-08-17T04:23:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T01:17:52Z
+  cfe-local-build-datetime: 2026-08-17T04:23:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
 ####

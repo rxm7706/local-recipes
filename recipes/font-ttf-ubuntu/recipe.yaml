@@ -55,10 +55,50 @@ about:
   description: |
     A unique, custom designed font that has a very distinctive look and feel.
   license: Ubuntu-font-1.0
-  license_file: LICENCE.txt
+  license_file: LICENSE.txt
   homepage: https://design.ubuntu.com/font/
 
 extra:
   recipe-maintainers:
     - dbast
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: font-ttf-ubuntu
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: font-ttf-ubuntu
+  cfe-purls:
+    - pkg:conda/font-ttf-ubuntu@${{ version }}?channel=conda-forge
+    - pkg:pypi/font-ttf-ubuntu@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://design.ubuntu.com/font/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/font-ttf-ubuntu-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:34:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:34:29Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:34:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for font-ttf-ubuntu...
+Error: Failed to fetch PyPI metadata for 'font-ttf-ubuntu' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-ubuntu/json
+
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-psycopg2
-  version: 0.64b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-psycopg2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_psycopg2-${{ version }}.tar.gz
-  sha256: 57df449718297b93e7bb57c76d3439c475eb5a5451600fcd6a9024d74822d972
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-psycopg2/opentelemetry_instrumentation_psycopg2-${{ version }}.tar.gz
+  sha256: 4eba60bef5f25d163a098109c2960773f3753e0b7e39824b9f398ba49ffab783
 
 build:
   number: 0
@@ -20,32 +19,70 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.12,<2.dev0
-    - opentelemetry-instrumentation ==${{ version }}
-    - opentelemetry-instrumentation-dbapi ==${{ version }}
+    - psycopg2
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-dbapi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.instrumentation
         - opentelemetry.instrumentation.psycopg2
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry psycopg2 instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
+  summary: OpenTelemetry psycopg2 instrumentation
+  description: |
+    OpenTelemetry psycopg2 instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - conda-forge/opentelemetry-api
     - mariusvniekerk
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-psycopg2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-psycopg2
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-psycopg2@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-psycopg2@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
+  cfe-import-names: [opentelemetry.instrumentation.psycopg2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-psycopg2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:43:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:43:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:43:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['psycopg2']
+####

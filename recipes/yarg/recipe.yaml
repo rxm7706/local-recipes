@@ -2,47 +2,80 @@
 schema_version: 1
 
 context:
-  name: yarg
-  version: "0.1.9"
-  sha256: 55695bf4d1e3e7f756496c36a69ba32c40d18f821e38f61d028f6049e5e15911
+  version: "0.1.10"
 
 package:
-  name: ${{ name|lower }}
+  name: yarg
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/y/yarg/yarg-${{ version }}.tar.gz
+  sha256: 1fbc94af89d5ebc2d2dfe46a5006a570de549c43e78f0913ce8390a1c5848b7e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python setup.py install --single-version-externally-managed --record record.txt
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python
+  host:
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
     - requests
 
 tests:
   - python:
       imports:
-        - tests
         - yarg
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://yarg.readthedocs.org/
   license: MIT
   license_file: LICENSE
   summary: A semi hard Cornish cheese, also queries PyPI (PyPI client)
-  homepage: https://yarg.readthedocs.org/
-  repository: https://github.com/kura/yarg
-  documentation: https://yarg.readthedocs.io/
+  description: |
+    A semi hard Cornish cheese, also queries PyPI (PyPI client)
 
 extra:
   recipe-maintainers:
     - proinsias
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: yarg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: yarg
+  cfe-purls:
+    - pkg:conda/yarg@${{ version }}?channel=conda-forge
+    - pkg:pypi/yarg@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://yarg.readthedocs.org/
+  cfe-import-names: [yarg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/yarg-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.10
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:41:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:41:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:41:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

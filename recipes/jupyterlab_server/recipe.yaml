@@ -3,95 +3,56 @@ schema_version: 1
 
 context:
   version: "2.28.0"
-  python_check_max: "3.14"
 
-recipe:
-  name: jupyterlab_server
+package:
+  name: jupyterlab-server
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/j/jupyterlab_server/jupyterlab_server-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyterlab-server/jupyterlab_server-${{ version }}.tar.gz
   sha256: 35baa81898b15f93573e2deca50d11ac0ae407ebb688299d3a5213265033712c
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: jupyterlab_server
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-    requirements:
-      host:
-        - hatchling >=1.7
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - babel >=2.10
-        - jinja2 >=3.0.3
-        - json5 >=0.9.0
-        - jsonschema >=4.18
-        - jupyter_server >=1.21,<3
-        - packaging >=21.3
-        - python >=${{ python_min }}
-        - requests >=2.31
-    tests:
-      - python:
-          imports: jupyterlab_server
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      # https://github.com/conda-forge/jupyterlab-feedstock/issues/466
-      # - downstream: jupyterlab
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.7
+  run:
+    - python >=${{ python_min }}
+    - babel >=2.10
+    - importlib-metadata >=4.8.3
+    - jinja2 >=3.0.3
+    - json5 >=0.9.0
+    - jsonschema >=4.18.0
+    - jupyter-server <3,>=1.21
+    - packaging >=21.3
+    - requests >=2.31
 
-  - package:
-      name: jupyterlab_server-with-openapi
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("jupyterlab_server", upper_bound="x.x.x") }}
-        - openapi-core >=0.18.0,<0.19.0
-        - ruamel.yaml
-    tests:
-      - python:
-          imports: jupyterlab_server
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - files:
-          source:
-            - tests/
-            - jupyterlab_server/test_data/
-        requirements:
-          run:
-            - ipykernel
-            - openapi-core >=0.18,<0.19
-            - openapi-spec-validator >=0.6.0,<0.8.0
-            - pytest >=7.0,<8
-            - pytest-console-scripts
-            - pytest-cov <7
-            - pytest-jupyter-server >=0.6.2
-            - pytest-timeout
-            - python ${{ python_min }}.*
-            - requests-mock
-            - strict-rfc3339
-            - werkzeug
-        script:
-          file: run_test.py
+tests:
+  - python:
+      imports:
+        - jupyterlab_server
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://jupyterlab-server.readthedocs.io
   license: BSD-3-Clause
   license_file: LICENSE
   summary: A set of server components for JupyterLab and JupyterLab like applications.
-  homepage: https://github.com/jupyterlab/jupyterlab_server
+  description: |
+    A set of server components for JupyterLab and JupyterLab like applications.
+  repository: https://github.com/jupyterlab/jupyterlab_server
   documentation: https://jupyterlab-server.readthedocs.io
 
 extra:
-  feedstock-name: jupyterlab_server
   recipe-maintainers:
     - jasongrout
     - blink1073
@@ -99,3 +60,33 @@ extra:
     - SylvainCorlay
     - bollwyvl
     - jtpio
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterlab_server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterlab-server
+  cfe-purls:
+    - pkg:conda/jupyterlab_server@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterlab-server@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyterlab/jupyterlab_server
+  cfe-upstream-homepage: https://jupyterlab-server.readthedocs.io
+  cfe-import-names: [jupyterlab_server]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterlab_server-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:43:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:43:58Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:43:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

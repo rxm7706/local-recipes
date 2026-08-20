@@ -2,57 +2,80 @@
 schema_version: 1
 
 context:
-  name: huey
   version: "3.3.4"
 
 package:
-  name: ${{ name|lower }}
+  name: huey
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/huey-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/huey/huey-${{ version }}.tar.gz
   sha256: 6de196c6ece2e38b5173f7510600091ab035c0e86b0958d0e5b38a82b9984666
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
-  python:
-    entry_points:
-      - huey_consumer = huey.bin.huey_consumer:consumer_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
-  run_constraints:
-    - redis-py >=3.0.0
-    - psycopg >=3.2
-    - cysqlite >=0.3.5
 
 tests:
   - python:
       imports:
         - huey
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - huey_consumer --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: huey, a little task queue
+  homepage: https://pypi.org/project/huey/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/coleifer/huey/
-  documentation: https://huey.readthedocs.io
+  summary: a little task queue
+  description: |
+    a little task queue
+  repository: https://github.com/coleifer/huey
+  documentation: https://huey.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - kwilcox
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: huey
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: huey
+  cfe-purls:
+    - pkg:conda/huey@${{ version }}?channel=conda-forge
+    - pkg:pypi/huey@${{ version }}
+  cfe-upstream-repo: https://github.com/coleifer/huey
+  cfe-upstream-homepage: https://pypi.org/project/huey/
+  cfe-import-names: [huey]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/huey-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:42:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:42:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:42:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

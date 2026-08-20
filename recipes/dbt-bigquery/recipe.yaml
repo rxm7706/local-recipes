@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: dbt-core
-  version: 1.12.2
+  version: "1.12.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dbt_core-${{ version }}.tar.gz
-  sha256: 9c4d60c58ed759ceff3cc20c065420abc4d26cb092b0e142b39b8747ee43c79b
+  sha256: 088373ddd10af352457b484aa979ab2eecbecb13a7c1e3f5df41fd7d4e387800
   patches:
     - 0001-drop-experimental-parser-hard-dep.patch
 
@@ -97,8 +97,38 @@ extra:
   feedstock-name: dbt
   recipe-maintainers:
     - rxm7706
-    - drewbanin
-    - jthandy
     - maresb
     - thewchan
-    - zaneselvans
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-bigquery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-bigquery
+  cfe-purls:
+    - pkg:conda/dbt-bigquery@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-bigquery@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dbt-labs/dbt-core
+  cfe-import-names: [dbt, dbt.adapters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-bigquery-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.12.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:39:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:39:27Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:39:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

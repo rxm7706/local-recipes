@@ -2,57 +2,86 @@
 schema_version: 1
 
 context:
-  name: scikit-optimize
   version: "0.10.2"
-  sha256: 00a3d91bf9015e292b6e7aaefe7e6cb95e8d25ce19adafd2cd88849e1a0b0da0
 
 package:
-  name: ${{ name|lower }}
+  name: scikit-optimize
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/scikit-optimize/scikit_optimize-${{ version }}.tar.gz
+  sha256: 00a3d91bf9015e292b6e7aaefe7e6cb95e8d25ce19adafd2cd88849e1a0b0da0
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
-    - numpy
+    - joblib >=0.11
+    - pyaml >=16.9
+    - numpy >=1.20.3
     - scipy >=1.1.0
     - scikit-learn >=1.0.0
-    - matplotlib-base
-    - pyaml
-    - joblib
-    - packaging
+    - packaging >=21.3
 
 tests:
   - python:
       imports:
         - skopt
-        - skopt.learning
-        - skopt.learning.gaussian_process
-        - skopt.optimizer
-        - skopt.space
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://scikit-optimize.readthedocs.io/en/latest/contents.html
   license: BSD-3-Clause
+  license_file: LICENSE
   summary: Sequential model-based optimization toolbox.
-  homepage: https://scikit-optimize.readthedocs.io/
+  description: |
+    Sequential model-based optimization toolbox.
   repository: https://github.com/holgern/scikit-optimize
-  documentation: https://scikit-optimize.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - holgern
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scikit-optimize
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scikit-optimize
+  cfe-purls:
+    - pkg:conda/scikit-optimize@${{ version }}?channel=conda-forge
+    - pkg:pypi/scikit-optimize@${{ version }}
+  cfe-upstream-repo: https://github.com/holgern/scikit-optimize
+  cfe-upstream-homepage: https://scikit-optimize.readthedocs.io/en/latest/contents.html
+  cfe-import-names: [skopt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/scikit-optimize-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.10.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:13:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:13:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:13:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

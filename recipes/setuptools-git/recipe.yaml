@@ -2,46 +2,83 @@
 schema_version: 1
 
 context:
-  name: setuptools-git
   version: "1.2"
-  compress_type: tar.gz
-  hash_val: ff64136da01aabba76ae88b050e7197918d8b2139ccbf6144e14d472b9c40445
 
 package:
-  name: ${{ name }}
+  name: setuptools-git
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+  url: https://pypi.org/packages/source/s/setuptools-git/setuptools-git-${{ version }}.tar.gz
+  sha256: ff64136da01aabba76ae88b050e7197918d8b2139ccbf6144e14d472b9c40445
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
-  preserve_egg_dir: true
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
-  run:
-    - python
     - setuptools
+  run:
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - setuptools_git
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  summary: Setuptools revision control system plugin for Git
   homepage: https://github.com/msabramo/setuptools-git
-  repository: https://github.com/msabramo/setuptools-git
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Setuptools revision control system plugin for Git
+  description: |
+    Setuptools revision control system plugin for Git
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: setuptools-git
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: setuptools-git
+  cfe-purls:
+    - pkg:conda/setuptools-git@${{ version }}?channel=conda-forge
+    - pkg:pypi/setuptools-git@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/msabramo/setuptools-git
+  cfe-import-names: [setuptools_git]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/setuptools-git-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:26:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:26:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:26:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

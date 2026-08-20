@@ -9,40 +9,71 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/types-pyyaml/types_pyyaml-${{ version }}.tar.gz
-  sha256: 28764110c9cf35846e733da32d8d734df7473c5dde9ef67c3b7332ec0e819858
+  url: https://pypi.org/packages/py3/t/types-PyYAML/types_pyyaml-6.0.12.20260815-py3-none-any.whl
+  sha256: 6f332212b7e191f3afd5016a713c510b6340593b7ebec573c7d5d20aa5386d3b
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
-  - package_contents:
-      site_packages:
-        - yaml-stubs/__init__.pyi
   - python:
-      imports: []
+      imports:
+        - types_pyyaml
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/python/typeshed
-  repository: https://github.com/python/typeshed
-  summary: Typing stubs for PyYAML
-  license: Apache-2.0 AND MIT
+  license: Apache-2.0
   license_file: LICENSE
+  summary: Typing stubs for PyYAML
+  description: |
+    Typing stubs for PyYAML
+  repository: https://github.com/python/typeshed
 
 extra:
   recipe-maintainers:
     - fhoehle
     - conda-forge/mypy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-pyyaml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-pyyaml
+  cfe-purls:
+    - pkg:conda/types-pyyaml@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-pyyaml@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_pyyaml]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-pyyaml-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:29:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:29:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:29:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

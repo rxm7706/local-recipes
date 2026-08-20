@@ -1,150 +1,108 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
 schema_version: 1
 
 context:
   version: "50.0.0"
 
-recipe:
-  name: cryptography-split
+package:
+  name: cryptography
   version: ${{ version }}
 
 source:
-  url: https://github.com/pyca/cryptography/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 173ac75ea60351540a237b8d4fde5d89b5d6645545771dfe3c9abe8b637f2b35
+  url: https://pypi.org/packages/source/c/cryptography/cryptography-${{ version }}.tar.gz
+  sha256: eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9
 
 build:
-  # relocation errors
-  # todo: segfaults for unknown reason
   number: 0
-  skip: linux and aarch64 and is_freethreading
-  skip: true  # [linux and aarch64 and is_freethreading]
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: cryptography-vectors
-    build:
-      # this is noarch, but building it in a different feedstock from the same
-      # sources just causes every single upgrade PR to fail pointlessly, so we
-      # build it here (only one build will be uploaded due to coinciding hashes)
-      noarch: python
-      script: python -m pip install ./vectors -vv --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - uv-build
-        - pip
-      run:
-        - python >=${{ python_min }}
-    tests:
-      - python:
-          imports:
-            - cryptography_vectors
-          pip_check: true
-          python_version: ${{ python_min }}
-    about:
-      license: BSD-3-Clause OR Apache-2.0
-      license_file:
-        - LICENSE
-        - LICENSE.BSD
-        - LICENSE.APACHE
-      summary: Test vectors for the cryptography package.
-      homepage: https://github.com/pyca/cryptography
-      repository: https://github.com/pyca/cryptography/tree/main/vectors
-      documentation: https://cryptography.io
-  - package:
-      name: cryptography
-    build:
-      script:
-        # see below for what OPENSSL_DIR should be pointing to:
-        # https://github.com/sfackler/rust-openssl/blob/openssl-sys-v0.9.72/openssl/src/lib.rs#L55-L56
-        - if: unix
-          then: export OPENSSL_DIR=$PREFIX
-        - if: win
-          then: set OPENSSL_DIR=%LIBRARY_PREFIX%
-        - python -m pip install . -vv --no-build-isolation
-    requirements:
-      build:
-        - if: build_platform != target_platform
-          then: python
-        - if: build_platform != target_platform
-          then: cross-python_${{ target_platform }}
-        - if: build_platform != target_platform
-          then: cffi >=2.0
-        - if: build_platform != target_platform
-          then: maturin >=1,<2
-        - ${{ stdlib('c') }}
-        - ${{ compiler('c') }}
-        - ${{ compiler('rust') }}
-      host:
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
         - python
-        # force stubborn solver to play ball
-        - if: win and is_freethreading
-          then: python >=3.14.1
-        - pip
+        - cross-python_${{ target_platform }}
+        - crossenv
         - maturin >=1,<2
-        - openssl
-        - cffi >=2.0
-        # used by cffi
-        - setuptools
-      run:
-        - python
-        - cffi >=2.0
-        - if: match(python, "<3.11")
-          then: typing_extensions >=4.13.2
-    tests:
-      - python:
-          imports:
-            - cryptography
-            - cryptography.fernet
-            - cryptography.hazmat
-            - cryptography.hazmat.backends
-            - cryptography.hazmat.backends.openssl
-            - cryptography.hazmat.bindings
-            - cryptography.hazmat.bindings.openssl
-            - cryptography.hazmat.primitives
-            - cryptography.hazmat.primitives.asymmetric
-            - cryptography.hazmat.primitives.ciphers
-            - cryptography.hazmat.primitives.kdf
-            - cryptography.hazmat.primitives.twofactor
-            - cryptography.x509
-          pip_check: true
-      - files:
-          source:
-            - tests
-            - pyproject.toml
-        requirements:
-          run:
-            - pip
-            - certifi
-            - cryptography-vectors ${{ version }}
-            - hypothesis
-            - iso8601
-            - pretend
-            - pytest
-            - pytest-subtests
-            - pytest-benchmark
-            - pytz
-        script:
-          - pytest tests
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+    - cffi >=2.0.0
+    - typing_extensions >=4.13.2
+
+tests:
+  - python:
+      imports:
+        - _cffi_src
+      pip_check: true
 
 about:
-  license: Apache-2.0 AND BSD-3-Clause AND PSF-2.0 AND MIT
-  license_file: LICENSE
-  summary: cryptography is a package designed to expose cryptographic primitives and recipes to Python developers.
+  homepage: https://github.com/pyca/cryptography
+  license: Apache-2.0 OR BSD-3-Clause
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: cryptography is a package which provides cryptographic recipes and primitives to Python developers.
   description: |
-    cryptography is a package which provides cryptographic recipes and
-    primitives to Python developers. Our goal is for it to be your
-    "cryptographic standard library". It supports Python 3.6+ and PyPy3 7.2+.
-    cryptography includes both high level recipes and low level interfaces
-    to common cryptographic algorithms such as symmetric ciphers, message
-    digests, and key derivation functions..
-  homepage: https://cryptography.io
-  repository: https://github.com/pyca/cryptography
-  documentation: https://cryptography.io/en/latest
+    cryptography is a package which provides cryptographic recipes and primitives to Python developers.
+  repository: https://github.com/pyca/cryptography/
+  documentation: https://cryptography.io/
 
 extra:
   recipe-maintainers:
     - jakirkham
     - ocefpaf
     - h-vetinari
-  feedstock-name: cryptography
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cryptography
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cryptography
+  cfe-purls:
+    - pkg:conda/cryptography@${{ version }}?channel=conda-forge
+    - pkg:pypi/cryptography@${{ version }}
+  cfe-upstream-repo: https://github.com/pyca/cryptography/
+  cfe-upstream-homepage: https://github.com/pyca/cryptography
+  cfe-import-names: [_cffi_src]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cryptography-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:20:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:20:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:20:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

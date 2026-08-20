@@ -2,66 +2,92 @@
 schema_version: 1
 
 context:
-  name: yellowbrick
   version: "1.5"
 
 package:
-  name: ${{ name }}
+  name: yellowbrick
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/y/yellowbrick/yellowbrick-${{ version }}.tar.gz
   sha256: 99a6336dd2e7ce586a8cde67966b79c51b479d3759f3c083d7e19ffe949f6076
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - cycler >=0.10.0
-    - matplotlib-base >=2.0.2,!=3.0.0
-    - numpy >=1.16.0
-    - scikit-learn >=1.0.0
-    - scipy >=1.0.0
-    - umap-learn >=0.5.1
+    - distutils
+    - matplotlib-base
+    - scipy
+    - scikit-learn
+    - numpy
+    - cycler
 
 tests:
   - python:
       imports:
         - yellowbrick
-        - yellowbrick.classifier
-        - yellowbrick.cluster
-        - yellowbrick.contrib
-        - yellowbrick.contrib.classifier
-        - yellowbrick.contrib.missing
-        - yellowbrick.contrib.statsmodels
-        - yellowbrick.datasets
-        - yellowbrick.features
-        - yellowbrick.gridsearch
-        - yellowbrick.model_selection
-        - yellowbrick.regressor
-        - yellowbrick.style
-        - yellowbrick.target
-        - yellowbrick.text
-        - yellowbrick.utils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://scikit-yb.org/
   license: Apache-2.0
   license_file: LICENSE.txt
   summary: A suite of visual analysis and diagnostic tools for machine learning.
-  homepage: http://scikit-yb.org/
+  description: |
+    A suite of visual analysis and diagnostic tools for machine learning.
   repository: https://github.com/DistrictDataLabs/yellowbrick
-  documentation: https://www.scikit-yb.org/en/latest/
+  documentation: http://scikit-yb.org/
 
 extra:
   recipe-maintainers:
     - kellend-git
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: yellowbrick
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: yellowbrick
+  cfe-purls:
+    - pkg:conda/yellowbrick@${{ version }}?channel=conda-forge
+    - pkg:pypi/yellowbrick@${{ version }}
+  cfe-upstream-repo: https://github.com/DistrictDataLabs/yellowbrick
+  cfe-upstream-homepage: http://scikit-yb.org/
+  cfe-import-names: [yellowbrick]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/yellowbrick-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:29:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:29:03Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:29:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['distutils']
+#    # blocker: missing-license-file
+####

@@ -2,29 +2,27 @@
 schema_version: 1
 
 context:
-  name: hpack
   version: "4.2.0"
-  sha256: 0895cfa3b5531fc65fe439c05eb65144f123bf7a394fcaa56aa423548d8e45c0
 
 package:
-  name: ${{ name|lower }}
+  name: hpack
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/hpack/hpack-${{ version }}.tar.gz
+  sha256: 0895cfa3b5531fc65fe439c05eb65144f123bf7a394fcaa56aa423548d8e45c0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=82
+    - wheel >=0.46.3
   run:
     - python >=${{ python_min }}
 
@@ -32,20 +30,55 @@ tests:
   - python:
       imports:
         - hpack
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-hyper/hpack/
   license: MIT
   license_file: LICENSE
-  summary: HTTP/2 Header Encoding for Python
-  homepage: http://python-hyper.org/hpack/
-  repository: https://github.com/python-hyper/hpack
+  summary: Pure-Python HPACK header encoding
+  description: |
+    Pure-Python HPACK header encoding
+  repository: https://github.com/python-hyper/hpack/
+  documentation: https://python-hyper.org/
 
 extra:
   recipe-maintainers:
     - primozgodec
     - astaric
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hpack
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hpack
+  cfe-purls:
+    - pkg:conda/hpack@${{ version }}?channel=conda-forge
+    - pkg:pypi/hpack@${{ version }}
+  cfe-upstream-repo: https://github.com/python-hyper/hpack/
+  cfe-upstream-homepage: https://github.com/python-hyper/hpack/
+  cfe-import-names: [hpack]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hpack-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:59:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:59:13Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:59:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

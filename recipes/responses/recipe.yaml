@@ -2,32 +2,33 @@
 schema_version: 1
 
 context:
-  name: responses
-  version: 0.26.2
+  version: "0.26.2"
 
 package:
-  name: ${{ name|lower }}
+  name: responses
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/responses/responses-${{ version }}.tar.gz
   sha256: 9c9259b46a8349197edebf43cfa68a87e1a2802ef503ff8b2fecbabc0b45afd8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=60
+    - wheel
   run:
-    - pyyaml
     - python >=${{ python_min }}
-    - requests >=2.30.0,<3.0
-    - urllib3 >=1.25.10,<3.0
+    - requests <3.0,>=2.30.0
+    - urllib3 <3.0,>=1.25.10
+    - pyyaml
+
 tests:
   - python:
       imports:
@@ -35,15 +36,49 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - '*'
+        - "*"
 
 about:
+  homepage: https://github.com/getsentry/responses
   license: Apache-2.0
   license_file: LICENSE
   summary: A utility library for mocking out the `requests` Python library.
-  homepage: https://github.com/getsentry/responses
+  description: |
+    A utility library for mocking out the `requests` Python library.
+  repository: https://github.com/getsentry/responses
+  documentation: https://github.com/getsentry/responses/blob/master/README.rst
 
 extra:
   recipe-maintainers:
     - thewchan
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: responses
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: responses
+  cfe-purls:
+    - pkg:conda/responses@${{ version }}?channel=conda-forge
+    - pkg:pypi/responses@${{ version }}
+  cfe-upstream-repo: https://github.com/getsentry/responses
+  cfe-upstream-homepage: https://github.com/getsentry/responses
+  cfe-import-names: [responses]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/responses-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:05:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:05:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:05:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

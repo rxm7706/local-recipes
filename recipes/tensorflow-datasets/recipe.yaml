@@ -2,66 +2,108 @@
 schema_version: 1
 
 context:
-  name: tensorflow-datasets
-  version: "4.8.3"
+  version: "4.9.10"
 
 package:
-  name: ${{ name|lower }}
+  name: tensorflow-datasets
   version: ${{ version }}
 
 source:
-  url: https://github.com/tensorflow/datasets/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 0eb74eec3a42af7f78c370796d1aae91fd54f12f0ba631bdf42a0252052fba5e
+  url: https://pypi.org/packages/source/t/tensorflow-datasets/tensorflow_datasets-${{ version }}.tar.gz
+  sha256: c681c9b0e5de2acbec79ece2ad41712dfda3f1bfdb3ffc34d5c0afd786eba0f6
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - tfds = tensorflow_datasets.scripts.cli.main:launch_cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.7
+    - setuptools
+    - wheel
+    - packaging
   run:
-    - absl-py >=1
-    - dill
-    - etils
-    - zipp
+    - python >=${{ python_min }}
+    - absl-py
+    - dm-tree
+    - etils >=1.6.0
+    - immutabledict
     - numpy
     - promise
-    - protobuf >=3.12.2
+    - protobuf >=3.20
+    - psutil
+    - pyarrow
     - requests >=2.19.0
-    - wrapt
+    - simple-parsing
     - tensorflow-metadata
     - termcolor
     - toml
     - tqdm
-    - typing-extensions
+    - wrapt
     - importlib_resources
-    - tensorflow >=2
-    - python >=3.7
-    - click
-    - psutil
-    - dm-tree
+    - if: linux
+      then:
+        - envlogger
+        - envlogger
+        - envlogger
+        - envlogger
+        - envlogger
+        - envlogger
 
 tests:
   - python:
       imports:
         - tensorflow_datasets
-        - tensorflow_datasets.audio
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: tensorflow/datasets is a library of datasets ready to use with TensorFlow.
+  homepage: https://github.com/tensorflow/datasets
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/tensorflow-datasets/
+  summary: tensorflow/datasets is a library of datasets ready to use with TensorFlow.
+  description: |
+    tensorflow/datasets is a library of datasets ready to use with TensorFlow.
 
 extra:
   recipe-maintainers:
     - JennaLipscomb
     - mxr-conda
     - ngam
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-datasets
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-datasets
+  cfe-purls:
+    - pkg:conda/tensorflow-datasets@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-datasets@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/tensorflow/datasets
+  cfe-import-names: [tensorflow_datasets]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tensorflow-datasets-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.9.10
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:23:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:23:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T06:23:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

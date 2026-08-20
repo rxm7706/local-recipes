@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: diff-match-patch
-  version: 20241021
+  version: "20241021"
 
 package:
-  name: ${{ name|lower }}
+  name: diff-match-patch
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/diff_match_patch-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/diff-match-patch/diff_match_patch-${{ version }}.tar.gz
   sha256: beae57a99fa48084532935ee2968b8661db861862ec82c6f21f4acdd6d835073
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core >=3.8,<4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.8,<4
   run:
     - python >=${{ python_min }}
 
@@ -31,15 +30,52 @@ tests:
       imports:
         - diff_match_patch
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/diff-match-patch/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Diff Match Patch is a high-performance library in multiple languages that manipulates plain text
-  homepage: http://code.google.com/p/google-diff-match-patch/
+  summary: Repackaging of Google's Diff Match and Patch libraries.
+  description: |
+    Repackaging of Google's Diff Match and Patch libraries.
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: diff-match-patch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: diff-match-patch
+  cfe-purls:
+    - pkg:conda/diff-match-patch@${{ version }}?channel=conda-forge
+    - pkg:pypi/diff-match-patch@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/diff-match-patch/
+  cfe-import-names: [diff_match_patch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/diff-match-patch-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-20241021
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:44:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:44:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:44:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

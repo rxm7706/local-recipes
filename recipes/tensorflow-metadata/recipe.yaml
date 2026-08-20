@@ -2,46 +2,49 @@
 schema_version: 1
 
 context:
-  name: tensorflow-metadata
   version: "1.21.0"
 
 package:
-  name: ${{ name|lower }}
+  name: tensorflow-metadata
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/t/tensorflow-metadata/tensorflow_metadata-${{ version }}-py3-none-any.whl
-  sha256: 0520806bf3bdd9157333203a3aa0e8afde2a97cc619f15ba622603dc6c898d1f
+  url: https://pypi.org/packages/source/t/tensorflow-metadata/tensorflow_metadata-${{ version }}.tar.gz
+  sha256: 2108ed8ea40df9ac4f7c506a62e9ecf5dcd40678b3308dcee2ec9e0e59d60609
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools <70
+    - wheel
   run:
     - python >=${{ python_min }}
-    - absl-py >=0.9,<3.0.0
-    - googleapis-common-protos >=1.56.4,<2
-    - protobuf >=4.25.2,<=6.32
+    - absl-py <3.0.0,>=0.9
+    - protobuf <=6.32,>=4.21.6
+    - googleapis-common-protos <2,>=1.56.4
 
 tests:
   - python:
       imports:
         - tensorflow_metadata
-        - tensorflow_metadata.proto
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Utilities for passing TensorFlow-related metadata between tools
+  homepage: https://pypi.org/project/tensorflow-metadata/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/tensorflow-metadata/
-  repository: https://github.com/tensorflow/metadata
+  summary: Library and standards for schema and statistics.
+  description: |
+    Library and standards for schema and statistics.
 
 extra:
   recipe-maintainers:
@@ -51,3 +54,36 @@ extra:
     - ndmaxar
     - ngam
     - ehfd
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-metadata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-metadata
+  cfe-purls:
+    - pkg:conda/tensorflow-metadata@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-metadata@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/tensorflow-metadata/
+  cfe-import-names: [tensorflow_metadata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tensorflow-metadata-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.21.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:24:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:24:27Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:24:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

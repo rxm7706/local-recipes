@@ -2,560 +2,83 @@
 schema_version: 1
 
 context:
-  # source-of-truth
   version: "1.13.18"
-  # derived
-  patch_version: ${{ (version | split('.'))[2] }}
-  dagster_libs_version: 0.29.${{ patch_version }}
-  # convenience
-  pip_install: -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
-recipe:
-  name: dagster-meta
+package:
+  name: dagster-webserver
   version: ${{ version }}
 
+source:
+  url: https://pypi.org/packages/source/d/dagster-webserver/dagster_webserver-${{ version }}.tar.gz
+  sha256: 8054048b8ce5c1bc1a15935cc85d8f5d3a7fc91165c6813af0702032ed934790
+
 build:
-  noarch: python
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  # deps of dagster
-  - package:
-      name: dagster-pipes
-    source:
-      url: https://pypi.org/packages/source/d/dagster-pipes/dagster_pipes-${{ version }}.tar.gz
-      sha256: 29b27cdc386664e8c0842b1cc65f970dcc7c568d9e53a67732452b42cb265cd8
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagster_pipes
-          pip_check: true
-          python_version: ${{ python_min }}.*
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-pipes
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Toolkit for Dagster integrations with transform logic outside of Dagster
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.19.0
+  run:
+    - python >=${{ python_min }}
+    - click <9.0,>=7.0
+    - dagster-graphql ==1.13.18
+    - dagster ==1.13.18
+    - starlette !=0.36.0
+    - uvicorn
 
-  - package:
-      name: dagster-shared
-    source:
-      url: https://pypi.org/packages/source/d/dagster-shared/dagster_shared-${{ version }}.tar.gz
-      sha256: c081b6cdb1fa79399328e2adaa22fcdf1f336b83fedc5783678b8e40b26eda33
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - packaging >=20.9
-        - platformdirs
-        - pydantic >=2,<3.0.0
-        - python >=${{ python_min }}
-        - pyyaml >=5.1
-        - tomlkit
-        - typing_extensions >=4.11.0,<5
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagster_shared
-          pip_check: true
-          python_version: ${{ python_min }}.*
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/librariees/dagster-shared
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Shared code between dagster and dagster-dg.
-
-  # dagster itself
-  - package:
-      name: dagster
-    source:
-      url: https://pypi.org/packages/source/d/dagster/dagster-${{ version }}.tar.gz
-      sha256: b443164a1fad04e4da45fbb729b9ed4ffd0cbf0faf8aa7edc9f8a11cc4a29024
-    build:
-      number: 0
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - dagster = dagster._cli:main
-          - dagster-daemon = dagster._daemon.cli:main
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster-pipes", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("dagster-shared", upper_bound="x.x.x") }}
-        - alembic >=1.2.1,!=1.6.3,!=1.7.0,!=1.11.0
-        - antlr-python-runtime <4.14
-        - click >=5.0,<9.0
-        - coloredlogs >=6.1,<=14.0
-        - docstring_parser
-        - filelock
-        - jinja2
-        - psutil >=1.0
-        - python >=${{ python_min }}
-        - python-dotenv
-        - python-tzdata
-        - pytz
-        - pywin32-on-windows
-        - requests
-        - rich
-        - six
-        - sqlalchemy >=1.0,<3
-        - structlog
-        - tabulate
-        - tomli <3
-        - toposort >=1.0
-        - tqdm <5
-        - watchdog >=0.8.3,<7
-        - if: match(python_min, "<3.13")
-          then: grpcio >=1.44.0
-        - if: match(python_min, ">=3.13")
-          then: grpcio >=1.66.2
-        - if: match(python_min, "<3.13")
-          then: grpcio-health-checking >=1.44.0,<1.82
-        - if: match(python_min, ">=3.13")
-          then: grpcio-health-checking >=1.66.2,<1.82
-        - if: match(python_min, "<3.11")
-          then: protobuf >=3.20.0,<7
-        - if: match(python_min, ">=3.11")
-          then: protobuf >=4,<7
-        - if: match(python_min, ">=3.12")
-          then: universal_pathlib >=0.2.0
-        - if: match(python_min, "<3.12")
-          then: universal_pathlib
-      run_constraints:
-        - python ${{ python_min }}.*
-        - pywin32 !=226
-    tests:
-      - python:
-          imports:
-            - dagster
-            - dagster.components.core
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - script:
-          - dagster --help
-          - dagster-daemon --help
-    about:
-      homepage: https://github.com/dagster-io/dagster
-      license: Apache-2.0
-      summary: The data orchestration platform built for productivity.
-      documentation: https://dagster.readthedocs.io
-      license_file: LICENSE
-      description: |
-        Dagster lets you define pipelines in terms of the data flow between reusable, logical components,
-        then test locally and run anywhere. With a unified view of pipelines and the assets they produce,
-        Dagster can schedule and orchestrate Pandas, Spark, SQL, or anything else that Python can invoke.
-
-        Dagster is designed for data platform engineers, data engineers, and full-stack data scientists.
-        Building a data platform with Dagster makes your stakeholders more independent and your systems
-        more robust. Developing data pipelines with Dagster makes testing easier and deploying faster.
-
-  # other things that use the main `version`
-  - package:
-      name: create-dagster
-    source:
-      url: https://pypi.org/packages/source/c/create-dagster/create_dagster-${{ version }}.tar.gz
-      sha256: 13ea96b323ab0c96ca95d0d88af6c1b4e3ee34b2c0f7f1cfac28de175a13592c
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - create-dagster = create_dagster.cli:main
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster-dg-core", upper_bound="x.x.x") }}
-        - python >=${{ python_min }}
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: create_dagster
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - script:
-          - create-dagster --help
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/create-dagster
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: CLI for creating a new dg project or workspace.
-
-  - package:
-      name: dagster-cloud-cli
-    source:
-      url: https://pypi.org/packages/source/d/dagster-cloud-cli/dagster_cloud_cli-${{ version }}.tar.gz
-      sha256: 33a939a0320145beab61d5db8bacde0d40ed72c77328174b130667b9ebe140af
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - dagster-cloud = dagster_cloud_cli.entrypoint:app
-          - dagster-plus = dagster_cloud_cli.entrypoint:app
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster-shared", upper_bound="x.x.x") }}
-        - click
-        - github3.py
-        - jinja2
-        - packaging >=20.9
-        - python >=${{ python_min }}
-        - pyyaml >=5.1
-        - questionary
-        - requests
-        - setuptools
-        - typer >=0.15.0
-        - validators
-        - if: match(python_min, "<3.11")
-          then: tomli >=1.1.0
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagster_cloud_cli
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-        script:
-          - dagster-cloud --help
-          - dagster-plus --help
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-cloud-cli
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Command line interface for Dagster Cloud
-
-  - package:
-      name: dagster-dg-cli
-    source:
-      url: https://pypi.org/packages/source/d/dagster-dg-cli/dagster_dg_cli-${{ version }}.tar.gz
-      sha256: f7891a357da5012ab4fe937ede49c80ece0bd2d2000708f19996e7904863baa0
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - dg = dagster_dg_cli.cli:main
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("dagster-cloud-cli", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("dagster-dg-core", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("dagster-rest-resources", upper_bound="x.x.x") }}
-        - python >=${{ python_min }}
-        - requests
-        - typer
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagster_dg_cli
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - script:
-          - dg --help
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-dg-cli
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Experimental API for scaffolding Dagster projects and components. Includes the dg CLI tool.
-
-  - package:
-      name: dagster-dg-core
-    source:
-      url: https://pypi.org/packages/source/d/dagster-dg-core/dagster_dg_core-${{ version }}.tar.gz
-      sha256: 9c0567501f49be9dcc7a863c90df225b22f0422b5a9d8ae7b56f4ac9ea0a90ec
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster-cloud-cli", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("dagster-shared", upper_bound="x.x.x") }}
-        - click >=8,<9
-        - click-aliases
-        - gql-with-requests
-        - jinja2
-        - jsonschema
-        - markdown
-        - packaging
-        - python >=${{ python_min }}
-        - python-dotenv
-        - pyyaml >=5.1
-        - rich
-        - setuptools
-        - tomlkit <0.16,!=0.13.3
-        - typer >=0.15.1,<1.0
-        - typing_extensions >=4.4.0,<5
-        - watchdog
-        - yaspin
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagster_dg_core
-          pip_check: true
-          python_version: ${{ python_min }}.*
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-dg-core
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Core libraries for the dagster-dg-cli and create-dagster packages.
-
-  - package:
-      name: dagster-graphql
-    source:
-      url: https://pypi.org/packages/source/d/dagster-graphql/dagster_graphql-${{ version }}.tar.gz
-      sha256: ab83541081876e6016f44139773e952f55a1143dd73f3b2767ca41fc51a0317c
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - dagster-graphql = dagster_graphql.cli:main
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster", upper_bound="x.x.x") }}
-        - gql-with-requests >=3,<5
-        - graphene >=3,<4
-        - python >=${{ python_min }}
-        - requests
-        - starlette
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports:
-            - dagster_graphql
-            - dagster_graphql.client
-            - dagster_graphql.schema
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-        script:
-          - dagster-graphql --help
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-graphql
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: The GraphQL frontend to python dagster.
-
-  - package:
-      name: dagster-rest-resources
-      version: ${{ dagster_libs_version }}
-    source:
-      url: https://pypi.org/packages/source/d/dagster-rest-resources/dagster_rest_resources-${{ dagster_libs_version }}.tar.gz
-      sha256: b841213545b88d73b83eda9143febd3df1a21b26dbc64c9fc8a4c2406e0d1d58
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster-shared", upper_bound="x.x.x") }}
-        - httpx >=0.27.0
-        - pydantic >=2.12.5
-        - python >=${{ python_min }}
-    tests:
-      - python:
-          imports: dagster_rest_resources
-          pip_check: true
-          python_version: ${{ python_min }}.*
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-rest-resources
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Dagster functionality as REST-style resources
-
-  - package:
-      name: dagster-webserver
-    source:
-      url: https://pypi.org/packages/source/d/dagster-webserver/dagster_webserver-${{ version }}.tar.gz
-      sha256: 8054048b8ce5c1bc1a15935cc85d8f5d3a7fc91165c6813af0702032ed934790
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - dagster-webserver = dagster_webserver.cli:main
-          - dagster-webserver-debug = dagster_webserver.debug:main
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("dagster-graphql", upper_bound="x.x.x") }}
-        - click >=7.0,<9.0
-        - python >=${{ python_min }}
-        - starlette !=0.36.0
-        - uvicorn-standard
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagster_webserver
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-        script:
-          - dagster-webserver --help
-          - dagster-webserver-debug --help
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-webserver
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Web UI for dagster.
-
-  - package:
-      name: dagit
-    source:
-      url: https://pypi.org/packages/source/d/dagit/dagit-${{ version }}.tar.gz
-      sha256: 4eb16ac561fb6b43868229e1e3dde593838a89740ed78925ad77bcba10cc5452
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-      python:
-        entry_points:
-          - dagit = dagster_webserver.cli:main
-          - dagit-debug = dagster_webserver.debug:main
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster-webserver", upper_bound="x.x.x") }}
-        - python >=${{ python_min }}
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      - python:
-          imports: dagit
-          pip_check: true
-          python_version: ${{ python_min }}.*
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-        script:
-          - dagit --help
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagit
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Dagster UI
-
-  - package:
-      name: dagster-airflow
-    source:
-      url: https://pypi.org/packages/source/d/dagster-airflow/dagster_airflow-${{ version }}.tar.gz
-      sha256: 25abf5476ab9509825514302490ee55f29eb6d57988c71f50ddd64a9d8a74515
-    build:
-      noarch: python
-      script: ${{ PYTHON }} ${{ pip_install }}
-    requirements:
-      host:
-        - hatchling >=1.19.0
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - ${{ pin_subpackage("dagster", upper_bound="x.x.x") }}
-        - lazy-object-proxy
-        - python >=${{ python_min }}
-        - setuptools <71.0.0
-        - if: match(python_min, ">=3.12")
-          then: pendulum >=3
-        - if: match(python_min, "<3.12")
-          then: pendulum
-      run_constraints:
-        - python ${{ python_min }}.*
-    tests:
-      # not-yet-available-on-conda-forge
-      - if: not match(python_min, ">=3.13")
-        then:
-          requirements:
-            run:
-              - pip
-              # errors with:
-              ##  >>> from airflow.hooks.base_hook import BaseHook
-              ##  ModuleNotFoundError: No module named 'airflow.hooks.base_hook'
-              - airflow <3
-              # apache-airflow-providers-fab 2.4.4 has requirement apache-airflow>=3.0.2, but you have apache-airflow 2.11.0.
-              - apache-airflow-providers-fab <2
-              - python ${{ python_min }}.*
-          script:
-            - pip check
-            - python -c "import dagster_airflow"
-    about:
-      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-airflow
-      license: Apache-2.0
-      license_file: LICENSE
-      summary: Airflow plugin for Dagster
+tests:
+  - python:
+      imports:
+        - dagster_webserver
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/dagster-io
-  summary: The data orchestration platform built for productivity.
+  homepage: https://github.com/dagster-io/dagster
   license: Apache-2.0
   license_file: LICENSE
-  documentation: https://dagster.readthedocs.io
-  description: >-
-    Dagster is a system for building modern data applications. Combining an elegant programming model and beautiful tools, Dagster allows infrastructure engineers, data engineers, and data scientists to seamlessly collaborate to process and produce the trusted, reliable data needed in today's world.
+  summary: Web UI for dagster.
+  description: |
+    Web UI for dagster.
 
 extra:
-  feedstock-name: dagster
   recipe-maintainers:
     - xhochy
     - bollwyvl
     - mgasner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dagster
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dagster-webserver
+  cfe-purls:
+    - pkg:conda/dagster@${{ version }}?channel=conda-forge
+    - pkg:pypi/dagster-webserver@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dagster-io/dagster
+  cfe-import-names: [dagster_webserver]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dagster-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:37:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:37:26Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T08:37:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pytest-sugar
   version: "1.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-sugar
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-sugar/pytest-sugar-${{ version }}.tar.gz
   sha256: 73b8b65163ebf10f9f671efab9eed3d56f20d2ca68bda83fa64740a92c08f65d
 
 build:
@@ -20,14 +19,12 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=40.6.0
     - wheel
-    - poetry-core
-    - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - packaging >=21.3
+    - python >=${{ python_min }}
     - pytest >=6.2.0
     - termcolor >=2.1.0
 
@@ -36,20 +33,53 @@ tests:
       imports:
         - pytest_sugar
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/Teemu/pytest-sugar
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: a plugin for py.test that changes the default look and feel of py.test
+  summary: pytest-sugar is a plugin for pytest that changes the default look and feel of pytest (e.g. progressbar, show tests that fail instantly).
   description: |
-    pytest-sugar is a plugin for py.test that shows failures and errors instantly and
-    shows a progress bar.
-  homepage: http://pivotfinland.com/pytest-sugar/
-  repository: https://github.com/Teemu/pytest-sugar/
+    pytest-sugar is a plugin for pytest that changes the default look and feel of pytest (e.g. progressbar, show tests that fail instantly).
 
 extra:
   recipe-maintainers:
     - cshaley
     - sannykr
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-sugar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-sugar
+  cfe-purls:
+    - pkg:conda/pytest-sugar@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-sugar@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Teemu/pytest-sugar
+  cfe-import-names: [pytest_sugar]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-sugar-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:42:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:42:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:42:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

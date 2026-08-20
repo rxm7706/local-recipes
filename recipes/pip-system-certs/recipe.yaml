@@ -17,7 +17,7 @@ source:
     - static-version.patch
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -53,3 +53,36 @@ about:
 extra:
   recipe-maintainers:
     - adament
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pip-system-certs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pip-system-certs
+  cfe-purls:
+    - pkg:conda/pip-system-certs@${{ version }}?channel=conda-forge
+    - pkg:pypi/pip-system-certs@${{ version }}
+  cfe-upstream-repo: https://gitlab.com/alelec/pip-system-certs
+  cfe-upstream-homepage: https://gitlab.com/alelec/pip-system-certs
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pip-system-certs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:09:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:09:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:09:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,89 +2,48 @@
 schema_version: 1
 
 context:
-  name: django-environ
   version: "0.14.0"
-  sha256: b6c48d93b9d2ff8a3ea14099e90c35aa4f101c1b4d5f262dfee0d27b06742ed7
 
 package:
-  name: ${{ name|lower }}
+  name: django-environ
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-environ/django_environ-${{ version }}.tar.gz
+  sha256: b6c48d93b9d2ff8a3ea14099e90c35aa4f101c1b4d5f262dfee0d27b06742ed7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - django >=1.8
-    # - sphinx-notfound-page
-    # - sphinx >=5.0
-    # - setuptools >=71.0.0
-    # - pytest >=4.6.11
-    # - furo >=2024.8.6
-    # - coverage >=5.0a4
-    # - sphinx-notfound-page
-    # - sphinx >=5.0
-    # - setuptools >=71.0.0
-    # - pytest >=4.6.11
-    # - furo >=2024.8.6
-    # - coverage >=5.0a4
-    # - sphinx-notfound-page
-    # - sphinx-copybutton
-    # - sphinx >=5.0
-    # - setuptools >=71.0.0
-    # - pytest >=4.6.11
-    # - furo >=2024.8.6
-    # - coverage >=5.0a4
-    # - typing_extensions >=3.10.0
-    # - sphinx-notfound-page
-    # - sphinx-copybutton
-    # - sphinx >=5.0
-    # - setuptools >=71.0.0
-    # - pytest >=4.6.11
-    # - furo >=2024.8.6
-    # - coverage >=5.0a4
+    - typing_extensions >=3.10.0
 
 tests:
   - python:
       imports:
         - environ
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://django-environ.readthedocs.org
   license: MIT
   license_file: LICENSE.txt
-  summary: Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application.
+  summary: A package that allows you to utilize 12factor inspired environment variables to configure your Django application.
   description: |
-    Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application.
-    This module is a merge of:
-    -envparse
-    -honcho
-    -dj-database-url
-    -dj-search-url
-    -dj-config-url
-    -django-cache-url
-
-    and inspired by:
-    -12factor
-    -12factor-django
-    -Two Scoops of Django
-
-  homepage: https://github.com/joke2k/django-environ
+    A package that allows you to utilize 12factor inspired environment variables to configure your Django application.
   repository: https://github.com/joke2k/django-environ
-  documentation: https://django-environ.readthedocs.io/en/latest/
+  documentation: https://django-environ.readthedocs.org
 
 extra:
   recipe-maintainers:
@@ -94,3 +53,40 @@ extra:
     - millsks
     - elanqo
     - zaigner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-environ
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-environ
+  cfe-purls:
+    - pkg:conda/django-environ@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-environ@${{ version }}
+  cfe-upstream-repo: https://github.com/joke2k/django-environ
+  cfe-upstream-homepage: https://django-environ.readthedocs.org
+  cfe-import-names: [environ]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-environ-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:52:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:52:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:52:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

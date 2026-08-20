@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: pyphen
   version: "0.18.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pyphen
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyphen/pyphen-${{ version }}.tar.gz
   sha256: dbae6fbbe4f01cb206108b43573d857c67107be9d0e38eb1b08d6fa2210634a7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core >=3.2,<5
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<5
   run:
     - python >=${{ python_min }}
 
@@ -36,22 +35,51 @@ tests:
         - "*"
 
 about:
-  license: GPL-2.0-or-later AND LGPL-2.1-or-later AND MPL-1.1
-  license_file:
-    - LICENSE
-    - COPYING.GPL
-    - COPYING.LGPL
-    - COPYING.MPL
+  homepage: https://www.courtbouillon.org/pyphen
+  license: REPLACE_LICENSE
+  license_file: LICENSE
   summary: Pure Python module to hyphenate text
   description: |
-    Pyphen is a pure Python module to hyphenate text using existing Hunspell
-    hyphenation dictionaries.
-  homepage: https://www.courtbouillon.org/pyphen/
+    Pure Python module to hyphenate text
   repository: https://github.com/Kozea/Pyphen
-  documentation: https://doc.courtbouillon.org/pyphen/
+  documentation: https://pyphen.org/
 
 extra:
   recipe-maintainers:
     - liZe
     - rmax
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyphen
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyphen
+  cfe-purls:
+    - pkg:conda/pyphen@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyphen@${{ version }}
+  cfe-upstream-repo: https://github.com/Kozea/Pyphen
+  cfe-upstream-homepage: https://www.courtbouillon.org/pyphen
+  cfe-import-names: [pyphen]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyphen-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T03:58:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:58:59Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:58:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

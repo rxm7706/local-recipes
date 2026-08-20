@@ -2,70 +2,82 @@
 schema_version: 1
 
 context:
-  name: requests-kerberos
   version: "0.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: requests-kerberos
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/requests-kerberos/requests_kerberos-${{ version }}.tar.gz
   sha256: 437512e424413d8113181d696e56694ffa4259eb9a5fc4e803926963864eaf4e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools >=61.0.0
+    - setuptools
   run:
-    - if: unix
-      then: __unix
-    - if: win
-      then: __win
-    - cryptography >=1.3
-    - pyspnego
-    - if: not win
-      then: pykrb5 >=0.3.0
-    - if: not win
-      then: python-gssapi >=1.6.0
     - python >=${{ python_min }}
     - requests >=1.1.0
+    - cryptography >=1.3
+    - pyspnego
 
 tests:
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - pip
-        - pytest
-        - pytest-mock
-        - python ${{ python_min }}
-    script:
-      - python -m pip check
-      - python -m pip show requests-kerberos
-      - python -m pytest -ra -v tests/
+  - python:
+      imports:
+        - requests_kerberos
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/requests/requests-kerberos
   license: ISC
   license_file: LICENSE
   summary: A Kerberos authentication handler for python-requests
   description: |
-    Requests is an HTTP library, written in Python, for human beings.
-    This library adds optional Kerberos/GSSAPI authentication support
-    and supports mutual authentication.
-
-
-  homepage: https://github.com/requests/requests-kerberos
-  repository: https://github.com/requests/requests-kerberos
-  documentation: https://pypi.org/project/requests-kerberos/
+    A Kerberos authentication handler for python-requests
 
 extra:
   recipe-maintainers:
     - duncanmmacleod
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests-kerberos
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests-kerberos
+  cfe-purls:
+    - pkg:conda/requests-kerberos@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests-kerberos@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/requests/requests-kerberos
+  cfe-import-names: [requests_kerberos]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests-kerberos-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:53:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:53:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:53:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

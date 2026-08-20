@@ -2,43 +2,85 @@
 schema_version: 1
 
 context:
-  name: schemdraw
-  version: "0.19"
+  version: "0.23"
 
 package:
-  name: ${{ name|lower }}
+  name: schemdraw
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/schemdraw-${{ version }}.tar.gz
-  sha256: f39183f3090e607c7dbc41ebd3dddf2ae0ef1c81dcbab6c6e2429599559bd7e3
+  url: https://pypi.org/packages/source/s/schemdraw/schemdraw-${{ version }}.tar.gz
+  sha256: e71afd5ec84edfd9b707331c5bcb49ed7133af85bd17dae461de3fc260b0132f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.7
+    - setuptools
   run:
-    - python >=3.7
-    - typing-extensions
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - schemdraw
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Electrical circuit schematic drawing
+  homepage: https://schemdraw.readthedocs.io
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://schemdraw.readthedocs.io/
-  repository: https://bitbucket.org/cdelker/schemdraw
+  summary: Electrical circuit schematic drawing
+  description: |
+    Electrical circuit schematic drawing
+  repository: https://github.com/cdelker/schemdraw
+  documentation: https://schemdraw.readthedocs.io
 
 extra:
   recipe-maintainers:
     - dkozel
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: schemdraw
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: schemdraw
+  cfe-purls:
+    - pkg:conda/schemdraw@${{ version }}?channel=conda-forge
+    - pkg:pypi/schemdraw@${{ version }}
+  cfe-upstream-repo: https://github.com/cdelker/schemdraw
+  cfe-upstream-homepage: https://schemdraw.readthedocs.io
+  cfe-import-names: [schemdraw]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/schemdraw-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.23
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:12:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:12:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:12:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  python_min: "3.12"
   version: "4.15.0"
+  python_min: "3.12"
 
 package:
   name: libpysal
@@ -21,9 +21,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=61.0
-    - setuptools-scm >=6.2
     - pip
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
     - beautifulsoup4 >=4.13.0
@@ -48,13 +47,50 @@ tests:
         - "*"
 
 about:
-  summary: Core components of PySAL - A library of spatial analysis functions
+  homepage: https://github.com/pysal/libpysal/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://pypi.org/project/libpysal/
+  summary: Core components of PySAL - A library of spatial analysis functions
+  description: |
+    Core components of PySAL - A library of spatial analysis functions
+  repository: https://github.com/pysal/libpysal
 
 extra:
   recipe-maintainers:
     - jGaboardi
     - martinfleis
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: libpysal
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libpysal
+  cfe-purls:
+    - pkg:conda/libpysal@${{ version }}?channel=conda-forge
+    - pkg:pypi/libpysal@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/libpysal
+  cfe-upstream-homepage: https://github.com/pysal/libpysal/
+  cfe-import-names: [libpysal]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/libpysal-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:15:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:15:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:15:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

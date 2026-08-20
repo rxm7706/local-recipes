@@ -2,52 +2,86 @@
 schema_version: 1
 
 context:
-  name: tempdir
   version: "0.7.1"
-  sha256: 689680ed3ba4cc8347a70e67efc25086ce85b53b9d24a1420899c585bbf7ba8e
 
 package:
-  name: ${{ name|lower }}
+  name: tempdir
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tempdir/tempdir-${{ version }}.tar.gz
+  sha256: 689680ed3ba4cc8347a70e67efc25086ce85b53b9d24a1420899c585bbf7ba8e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - tempdir
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://bitbucket.org/another_thomas/tempdir
   license: MIT
-  license_file: docs/license.rst
-  summary: generate temporary directories
+  license_file: LICENSE
+  summary: Tempdirs are temporary directories, based on tempfile.mkdtemp
   description: |
-    Having to manually manage temporary directories is annoying.
-    So this class encapsulates temporary directories which just disappear after use,
-    including contained directories and files.
-    Temporary directories are created with tempfile.mkdtemp and thus save from race conditions.
-    Cleanup might not work on windows if files are still opened.
-
-
-  homepage: https://pypi.python.org/pypi/tempdir/
+    Tempdirs are temporary directories, based on tempfile.mkdtemp
 
 extra:
   recipe-maintainers:
     - kain88-de
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tempdir
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tempdir
+  cfe-purls:
+    - pkg:conda/tempdir@${{ version }}?channel=conda-forge
+    - pkg:pypi/tempdir@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://bitbucket.org/another_thomas/tempdir
+  cfe-import-names: [tempdir]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tempdir-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:21:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:21:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:21:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

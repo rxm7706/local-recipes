@@ -4,12 +4,12 @@ schema_version: 1
 context:
   version: "7.1.0"
 
-recipe:
-  name: importlib_resources
+package:
+  name: importlib-resources
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/importlib_resources/importlib_resources-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/importlib-resources/importlib_resources-${{ version }}.tar.gz
   sha256: 0722d4c6212489c530f2a145a34c0a7a3b4721bc96a15fada5930e2a0b760708
 
 build:
@@ -19,52 +19,64 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm >=3.4.1
-    # setuptools_scm[toml]
-    - toml
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
     - zipp >=3.1.0
-  run_constraints:
-    - ${{ pin_subpackage("importlib-resources", upper_bound="x.x.x") }}
-
-outputs:
-  - package:
-      name: importlib_resources
-  - package:
-      name: importlib-resources
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - ${{ pin_subpackage("importlib_resources", upper_bound="x.x.x") }}
-        - python >=${{ python_min }}
-    tests:
-      - python:
-          imports:
-            - importlib_resources
-          pip_check: true
-          python_version: ${{ python_min }}
 
 tests:
   - python:
       imports:
         - importlib_resources
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/importlib-resources/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Backport of Python 3.7's standard library `importlib.resources`
-  homepage: http://importlib-resources.readthedocs.io
+  summary: Read resources from Python packages
+  description: |
+    Read resources from Python packages
+  repository: https://github.com/python/importlib_resources
 
 extra:
-  feedstock-name: importlib_resources
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: importlib_resources
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: importlib-resources
+  cfe-purls:
+    - pkg:conda/importlib_resources@${{ version }}?channel=conda-forge
+    - pkg:pypi/importlib-resources@${{ version }}
+  cfe-upstream-repo: https://github.com/python/importlib_resources
+  cfe-upstream-homepage: https://pypi.org/project/importlib-resources/
+  cfe-import-names: [importlib_resources]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/importlib_resources-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:52:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:52:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:52:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

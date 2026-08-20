@@ -2,58 +2,57 @@
 schema_version: 1
 
 context:
-  name: datarobot
   version: "3.18.0"
 
 package:
-  name: ${{ name|lower }}
+  name: datarobot
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/datarobot/datarobot-${{ version }}.tar.gz
   sha256: 47f289b65211416fba37b384b57a0ec82efdb76546aabda95c1ff7076b41e72c
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.7
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner
+    - setuptools
   run:
-    - python >=3.7
-    - strenum
+    - python >=${{ python_min }}
     - pandas >=0.15
     - numpy
     - pyyaml >=3.11
-    - requests >=2.21
+    - requests >=2.28.1
     - requests-toolbelt >=0.6
     - trafaret !=1.1.0,<2.2,>=0.7
     - urllib3 >=1.23
-    - typing_extensions
-    - python-dateutil
-    - mypy_extensions
-    - pytz
+    - typing_extensions <5,>=4.3.0
+    - strenum >=0.4.15
+    - pytz >=2020.1
+    - python-dateutil >=2.8.2
 
 tests:
   - python:
       imports:
         - datarobot
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: DataRobot Tool and Utility Agreement
-  license_file:
-    - LICENSE.txt
+  homepage: https://datarobot.com
+  license: REPLACE_LICENSE
+  license_file: LICENSE
   summary: This client library is designed to support the DataRobot API.
   description: |
-    datarobot is a client library for working with the <https://www.datarobot.com/> platform API.
-  homepage: https://www.datarobot.com/
-  documentation: https://datarobot-public-api-client.readthedocs-hosted.com
+    This client library is designed to support the DataRobot API.
+  documentation: https://docs.datarobot.com/en/docs/api/reference/sdk/index.html
 
 extra:
   recipe-maintainers:
@@ -62,3 +61,40 @@ extra:
     - ajalon1
     - alevan10
     - c-h-russell-walker
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datarobot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datarobot
+  cfe-purls:
+    - pkg:conda/datarobot@${{ version }}?channel=conda-forge
+    - pkg:pypi/datarobot@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://datarobot.com
+  cfe-import-names: [datarobot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datarobot-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.18.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T07:31:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:31:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:31:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

@@ -2,26 +2,24 @@
 schema_version: 1
 
 context:
-  name: python-frontmatter
   version: "1.3.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: python-frontmatter
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-frontmatter/python_frontmatter-${{ version }}.tar.gz
   sha256: acc73e477a568dc2a25c9e130c6c68ae8daa8c204c8f7e813db47d6a7280dcf2
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
     - uv-build >=0.11.15,<0.12
   run:
@@ -33,14 +31,52 @@ tests:
       imports:
         - frontmatter
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Parse and manage posts with YAML (or other) frontmatter
+  homepage: https://pypi.org/project/python-frontmatter/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/eyeseast/python-frontmatter
+  summary: Parse and manage posts with YAML (or other) frontmatter
+  description: |
+    Parse and manage posts with YAML (or other) frontmatter
+  documentation: http://python-frontmatter.rtfd.io
 
 extra:
   recipe-maintainers:
     - abkfenris
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-frontmatter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-frontmatter
+  cfe-purls:
+    - pkg:conda/python-frontmatter@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-frontmatter@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/python-frontmatter/
+  cfe-import-names: [frontmatter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-frontmatter-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:50:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:50:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:50:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

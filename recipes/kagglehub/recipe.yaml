@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: kagglehub
   version: "1.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: kagglehub
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kagglehub-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/kagglehub/kagglehub-${{ version }}.tar.gz
   sha256: 08abae0c1e249904003ce6f23c189166e3032220478426a552c77c2edb08b93a
 
 build:
@@ -21,30 +20,64 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - requests
-    - tqdm
+    - kagglesdk <1.0,>=0.1.22
     - packaging
     - pyyaml
-    - kagglesdk >=0.1.14,<1.0
+    - requests
+    - tqdm
 
 tests:
   - python:
       imports:
         - kagglehub
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Access Kaggle resources anywhere
+  homepage: https://github.com/Kaggle/kagglehub
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/Kaggle/kagglehub
+  summary: Access Kaggle resources anywhere
+  description: |
+    Access Kaggle resources anywhere
 
 extra:
   recipe-maintainers:
     - ngam
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kagglehub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kagglehub
+  cfe-purls:
+    - pkg:conda/kagglehub@${{ version }}?channel=conda-forge
+    - pkg:pypi/kagglehub@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Kaggle/kagglehub
+  cfe-import-names: [kagglehub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kagglehub-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:49:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:49:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:49:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

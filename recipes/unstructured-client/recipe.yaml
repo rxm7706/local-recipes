@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: unstructured-client
   version: "0.46.1"
   python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: unstructured-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/u/unstructured-client/unstructured_client-${{ version }}.tar.gz
   sha256: f187bd289e4ed6d453af35e22ddd3c0a5d776e35442d4fa24a31ecd57a1b84b6
 
 build:
@@ -21,51 +20,77 @@ build:
 
 requirements:
   host:
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
-    - poetry
+    - setuptools >=80
+    - wheel
   run:
-    - pypdfium2 >=5.6.0
-    - httpcore >=1.0.9
-    - typing-inspection >=0.4.0
-    - aiofiles >=25.1.0
-    - eval-type-backport >=0.2.0
-    - pydantic >=2.12.5
-    - cryptography >=3.1
-    - httpx >=0.28.1
-    - nest-asyncio >=1.6.0
-    - requests-toolbelt >=1.0.0
     - python >=${{ python_min }}
-    - certifi >=2023.7.22
-    - charset-normalizer >=3.2.0
-    - dataclasses-json >=0.6.4
-    - deepdiff >=6.0
-    - idna >=3.4
-    - jsonpath-python >=1.0.6,<2.0.0
-    - marshmallow >=3.19.0
-    - mypy_extensions >=1.0.0
-    - packaging >=23.1
+    - aiofiles >=25.1.0
+    - httpcore >=1.0.9
+    - httpx >=0.28.1
+    - pydantic >=2.12.5
     - pypdf >=6.9.2
-    - python-dateutil >=2.8.2
-    - requests >=2.31.0
-    - six >=1.16.0
-    - typing_inspect >=0.9.0
-    - typing-extensions >=4.7.1
-    - urllib3 >=1.26.18
+    - pypdfium2 >=5.6.0
+    - requests-toolbelt >=1.0.0
 
 tests:
   - python:
       imports:
         - unstructured_client
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Client SDK for Unstructured API
+  homepage: https://pypi.org/project/unstructured-client/
   license: MIT
-  license_file: LICENSE.md
-  homepage: https://github.com/Unstructured-IO/unstructured-python-client
+  license_file: LICENSE
+  summary: Python Client SDK for Unstructured API
+  description: |
+    Python Client SDK for Unstructured API
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unstructured-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unstructured-client
+  cfe-purls:
+    - pkg:conda/unstructured-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/unstructured-client@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/unstructured-client/
+  cfe-import-names: [unstructured_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/unstructured-client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.46.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:34:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:34:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:34:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

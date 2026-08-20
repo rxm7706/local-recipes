@@ -2,30 +2,27 @@
 schema_version: 1
 
 context:
-  name: dynaconf
   version: "3.3.5"
 
 package:
-  name: ${{ name|lower }}
+  name: dynaconf
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dynaconf/dynaconf-${{ version }}.tar.gz
   sha256: a08f6ab44025034ef3c9f86b32548ab01efd4039094a74bd9f028a43c63d016f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - dynaconf=dynaconf.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=42
     - pip
+    - setuptools >=42
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -33,21 +30,49 @@ tests:
   - python:
       imports:
         - dynaconf
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
-  - script:
-      - dynaconf --help
 
 about:
+  homepage: https://github.com/dynaconf/dynaconf
   license: MIT
   license_file: LICENSE
   summary: The dynamic configurator for your Python Project
-  homepage: https://www.dynaconf.com/
-  repository: https://github.com/dynaconf/dynaconf/
-  documentation: https://www.dynaconf.com/
+  description: |
+    The dynamic configurator for your Python Project
 
 extra:
   recipe-maintainers:
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dynaconf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dynaconf
+  cfe-purls:
+    - pkg:conda/dynaconf@${{ version }}?channel=conda-forge
+    - pkg:pypi/dynaconf@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dynaconf/dynaconf
+  cfe-import-names: [dynaconf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dynaconf-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:07:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:07:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:07:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

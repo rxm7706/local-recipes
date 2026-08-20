@@ -1,15 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
+
 context:
-  name: culsans
   version: "0.11.0"
 
 package:
-  name: ${{ name|lower }}
+  name: culsans
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/culsans-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/culsans/culsans-${{ version }}.tar.gz
   sha256: 0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33
 
 build:
@@ -20,12 +20,12 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
-    - pip
   run:
     - python >=${{ python_min }}
-    - aiologic >=0.16.0,<0.18.0
+    - aiologic <0.18.0,>=0.16.0
     - typing_extensions >=4.10.0
 
 tests:
@@ -34,18 +34,56 @@ tests:
         - culsans
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/x42005e1f/culsans
-  summary: Thread-safe async-aware queue for Python
   license: ISC
-  license_file: ISC.txt
-  documentation: https://culsans.readthedocs.io/
-  repository: https://github.com/x42005e1f/culsans
+  license_file: LICENSE
+  summary: Thread-safe async-aware queue for Python
+  description: |
+    Thread-safe async-aware queue for Python
+  documentation: https://culsans.readthedocs.io
 
 extra:
   recipe-maintainers:
     - rxm7706
     - x42005e1f
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: culsans
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: culsans
+  cfe-purls:
+    - pkg:conda/culsans@${{ version }}?channel=conda-forge
+    - pkg:pypi/culsans@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/x42005e1f/culsans
+  cfe-import-names: [culsans]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/culsans-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:35:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:35:06Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:35:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,60 +2,58 @@
 schema_version: 1
 
 context:
-  name: tsfresh
   version: "0.21.2"
 
 package:
-  name: ${{ name|lower }}
+  name: tsfresh
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tsfresh/tsfresh-${{ version }}.tar.gz
   sha256: a960f474498da07f5ed9992f2054db1d7483e224fdf91d89c28535c3af5cb17d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools_scm
-    - setuptools <81
-    - pyscaffold <4,>=3.3a0
+    - setuptools <70
+    - wheel
+    - pyscaffold >=3.3a0,<4
   run:
-    - pywavelets
     - python >=${{ python_min }}
-    - setuptools
     - requests >=2.9.1
     - numpy >=1.15.1
     - pandas >=0.25.0
-    - scipy >=1.2.0
     - statsmodels >=0.13
     - patsy >=0.4.1
+    - pywavelets
     - scikit-learn >=0.22.0
     - tqdm >=4.10.0
-    - dask >=2.9.0
-    - distributed >=2.11.0
     - stumpy >=1.11.1
     - cloudpickle
+    - scipy >=1.2.0
 
 tests:
   - python:
       imports:
         - tsfresh
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/blue-yonder/tsfresh
   license: MIT
   license_file: LICENSE.txt
-  summary: Automatic extraction of relevant features from time series
-  homepage: http://github.com/blue-yonder/tsfresh
-  repository: https://github.com/blue-yonder/tsfresh
-  documentation: http://tsfresh.readthedocs.io/
+  summary: tsfresh extracts relevant characteristics from time series
+  description: |
+    tsfresh extracts relevant characteristics from time series
 
 extra:
   recipe-maintainers:
@@ -63,3 +61,37 @@ extra:
     - MaxBenChrist
     - nils-braun
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tsfresh
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tsfresh
+  cfe-purls:
+    - pkg:conda/tsfresh@${{ version }}?channel=conda-forge
+    - pkg:pypi/tsfresh@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/blue-yonder/tsfresh
+  cfe-import-names: [tsfresh]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tsfresh-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:53:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:53:56Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:53:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

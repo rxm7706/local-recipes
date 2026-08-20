@@ -2,45 +2,82 @@
 schema_version: 1
 
 context:
-  name: python-editor
   version: "1.0.4"
-  compress_type: tar.gz
-  hash_val: 51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b
 
 package:
-  name: ${{ name|lower }}
+  name: python-editor
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+  url: https://pypi.org/packages/source/p/python-editor/python-editor-${{ version }}.tar.gz
+  sha256: 51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=2.6,<3.12
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=2.6,<3.12
+    - python >=${{ python_min }}
+    - python-editor
 
 tests:
   - python:
       imports:
-        - editor
-      pip_check: false
+        - python_editor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/fmoo/python-editor
   license: Apache-2.0
   license_file: LICENSE
   summary: Programmatically open an editor, capture the result.
-  homepage: https://github.com/fmoo/python-editor
-  repository: https://github.com/fmoo/python-editor
+  description: |
+    Programmatically open an editor, capture the result.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-editor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-editor
+  cfe-purls:
+    - pkg:conda/python-editor@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-editor@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/fmoo/python-editor
+  cfe-import-names: [python_editor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-editor-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:21:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:21:06Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:21:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license-mapped:Apache->Apache-2.0
+#    # added run deps from import test: ['python-editor']
+####

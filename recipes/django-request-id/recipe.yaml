@@ -2,42 +2,79 @@
 schema_version: 1
 
 context:
-  name: django-request-id
   version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-request-id
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/django-request-id-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-request-id/django-request-id-${{ version }}.tar.gz
   sha256: 0eb7ef17e21ff5efe5014e5b3cc6d22fc3396d4ea9d5b353bba2c43107998368
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - django
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - request_id
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Augment each request with unique id for logging purposes
+  homepage: https://github.com/nigma/django-request-id
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/nigma/django-request-id
+  summary: Augment each request with unique id for logging purposes
+  description: |
+    Augment each request with unique id for logging purposes
 
 extra:
   recipe-maintainers:
     - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-request-id
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-request-id
+  cfe-purls:
+    - pkg:conda/django-request-id@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-request-id@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/nigma/django-request-id
+  cfe-import-names: [request_id]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-request-id-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:50:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:50:30Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T07:50:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

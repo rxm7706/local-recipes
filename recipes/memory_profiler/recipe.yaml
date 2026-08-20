@@ -1,22 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
   version: "0.61.0"
 
 package:
-  name: memory_profiler
+  name: memory-profiler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/m/memory_profiler/memory_profiler-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/memory-profiler/memory_profiler-${{ version }}.tar.gz
   sha256: 4e5b73d7864a1d1292fb76a03e82a3e78ef934d06828a698d9dada76da2067b0
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - mprof = mprof:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -31,21 +30,57 @@ tests:
   - python:
       imports:
         - memory_profiler
-        - mprof
-      pip_check: false
-      python_version: ${{ python_min }}.*
-  - script:
-      - mprof list
-      - python -m memory_profiler --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: http://pypi.python.org/pypi/memory_profiler
+  homepage: https://github.com/pythonprofilers/memory_profiler
   license: BSD-3-Clause
-  license_file: COPYING
+  license_file: LICENSE
   summary: A module for monitoring memory usage of a python program
-  repository: https://github.com/pythonprofilers/memory_profiler
+  description: |
+    A module for monitoring memory usage of a python program
 
 extra:
   recipe-maintainers:
     - jakirkham
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: memory_profiler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: memory-profiler
+  cfe-purls:
+    - pkg:conda/memory_profiler@${{ version }}?channel=conda-forge
+    - pkg:pypi/memory-profiler@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pythonprofilers/memory_profiler
+  cfe-import-names: [memory_profiler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/memory_profiler-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:35:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:35:11Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:35:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

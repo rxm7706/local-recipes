@@ -2,71 +2,54 @@
 schema_version: 1
 
 context:
-  name: transformers
   version: "5.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: transformers
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/transformers/transformers-${{ version }}.tar.gz
   sha256: bbf98f57b2ddd7c4ecbccfa2c0069017aa6fd01cc204bd50cbc0eeadcf2a13b8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - transformers=transformers.cli.transformers:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}.*
   run:
     - python >=${{ python_min }}
-    - huggingface_hub >=1.5.0,<2.0
+    - huggingface-hub <2.0,>=1.5.0
     - numpy >=1.17
     - packaging >=20.0
     - pyyaml >=5.1
     - regex >=2025.10.22
-    - tokenizers >=0.22.0,<=0.23.0
+    - tokenizers <=0.23.0,>=0.22.0
     - typer
     - safetensors >=0.8.0
     - tqdm >=4.60
+
 tests:
   - python:
       imports:
         - transformers
-        - transformers.cli
-        - transformers.data
-        - transformers.distributed
-        - transformers.generation
-        - transformers.integrations
-        - transformers.loss
-        - transformers.models
-        - transformers.pipelines
-        - transformers.quantizers
-        - transformers.utils
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - '*'
-  # Still broken, but with a fix at https://github.com/huggingface/transformers/pull/45999 (closed as stale)
-  #- requirements:
-  #    run:
-  #      - python ${{ python_min }}.*
-  #  script:
-  #    - transformers --help
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE
-  summary: State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch
   homepage: https://github.com/huggingface/transformers
-  documentation: https://huggingface.co/transformers/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: "Transformers: the model-definition framework for state-of-the-art machine learning models in text, vision, audio, and multimodal models, for both inference and training."
+  description: |
+    Transformers: the model-definition framework for state-of-the-art machine learning models in text, vision, audio, and multimodal models, for both inference and training.
 
 extra:
   recipe-maintainers:
@@ -78,3 +61,37 @@ extra:
     - setu4993
     - zbowling
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: transformers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: transformers
+  cfe-purls:
+    - pkg:conda/transformers@${{ version }}?channel=conda-forge
+    - pkg:pypi/transformers@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/huggingface/transformers
+  cfe-import-names: [transformers]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/transformers-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T06:49:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:49:39Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:49:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

@@ -2,48 +2,82 @@
 schema_version: 1
 
 context:
-  name: model_bakery
   version: "1.24.0"
 
 package:
-  name: ${{ name|lower }}
+  name: model-bakery
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/model-bakery/model_bakery-${{ version }}.tar.gz
   sha256: 6469223c9fb0eccb021d5c33667b914e9208dd2282d7dc1e55394c2310a7687d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - uv-build >=0.9.26,<0.12.0
   run:
-    - django >=1.11.0
     - python >=${{ python_min }}
+    - django >=5.2
 
 tests:
   - python:
       imports:
         - model_bakery
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/model-bakers/model_bakery
   license: Apache-2.0
   license_file: LICENSE
   summary: Smart object creation facility for Django.
-  homepage: http://github.com/model-bakers/model_bakery
-  repository: https://github.com/model-bakers/model_bakery
-  documentation: https://pypi.org/project/model-bakery/
+  description: |
+    Smart object creation facility for Django.
 
 extra:
   recipe-maintainers:
     - mxr-conda
     - bubblyorca
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: model_bakery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: model-bakery
+  cfe-purls:
+    - pkg:conda/model_bakery@${{ version }}?channel=conda-forge
+    - pkg:pypi/model-bakery@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/model-bakers/model_bakery
+  cfe-import-names: [model_bakery]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/model_bakery-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.24.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:11:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:11:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:11:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

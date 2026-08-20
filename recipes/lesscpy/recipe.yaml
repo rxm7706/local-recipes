@@ -2,60 +2,82 @@
 schema_version: 1
 
 context:
-  name: lesscpy
   version: "0.15.2"
 
 package:
-  name: ${{ name|lower }}
+  name: lesscpy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/lesscpy/lesscpy-${{ version }}.tar.gz
   sha256: 4f6b7f34c22c5ce137e7ee280dcb1984ade0d500b6dab591d4a4d84252d18de9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - lesscpy = lesscpy.scripts.compiler:run
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=64
+    - wheel
   run:
     - python >=${{ python_min }}
     - ply
-    - six
 
 tests:
   - python:
       imports:
         - lesscpy
-        - lesscpy.lessc
-        - lesscpy.lib
-        - lesscpy.plib
-        - lesscpy.scripts
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - lesscpy --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
-  license: MIT
-  summary: Python LESS compiler
   homepage: https://github.com/lesscpy/lesscpy
-  repository: https://github.com/lesscpy/lesscpy
+  license: MIT
+  license_file: LICENSE
+  summary: Python LESS compiler
+  description: |
+    Python LESS compiler
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lesscpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lesscpy
+  cfe-purls:
+    - pkg:conda/lesscpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/lesscpy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/lesscpy/lesscpy
+  cfe-import-names: [lesscpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lesscpy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:14:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:14:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:14:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

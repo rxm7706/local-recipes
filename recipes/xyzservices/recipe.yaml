@@ -2,52 +2,80 @@
 schema_version: 1
 
 context:
-  name: xyzservices
   version: "2026.3.0"
-  python_min: "3.9"
 
 package:
-  name: ${{ name|lower }}
+  name: xyzservices
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/x/xyzservices/xyzservices-${{ version }}.tar.gz
   sha256: d226866a5d8e9fef337034d8da37a8298f0a1d9d1489b4018e69579eb321fea4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.9.*
-    - setuptools >=77
-    - setuptools-scm >=6.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - xyzservices.providers
         - xyzservices
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/geopandas/xyzservices
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Source of XYZ tiles providers
   description: |
-    xyzservices is a lightweight library providing a repository of available XYZ
-    services offering raster basemap tiles. The repository is provided via
-    Python API and as a compressed JSON file.
-  homepage: https://github.com/geopandas/xyzservices
+    Source of XYZ tiles providers
   repository: https://github.com/geopandas/xyzservices
-  documentation: https://xyzservices.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - martinfleis
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xyzservices
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xyzservices
+  cfe-purls:
+    - pkg:conda/xyzservices@${{ version }}?channel=conda-forge
+    - pkg:pypi/xyzservices@${{ version }}
+  cfe-upstream-repo: https://github.com/geopandas/xyzservices
+  cfe-upstream-homepage: https://github.com/geopandas/xyzservices
+  cfe-import-names: [xyzservices]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xyzservices-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2026.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:26:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:26:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:26:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

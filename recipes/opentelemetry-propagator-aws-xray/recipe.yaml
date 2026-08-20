@@ -2,49 +2,77 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-propagator-aws-xray
-  version: 1.0.2
+  version: "1.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-propagator-aws-xray
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-propagator-aws-xray/opentelemetry_propagator_aws_xray-${{ version }}.tar.gz
   sha256: 6b2cee5479d2ef0172307b66ed2ed151f598a0fd29b3c01133ac87ca06326260
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-api ~=1.12
 
 tests:
   - python:
       imports:
         - opentelemetry.propagators.aws
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: AWS X-Ray Propagator for OpenTelemetry
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/propagator/opentelemetry-propagator-aws-xray
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/propagator/opentelemetry-propagator-aws-xray
+  summary: AWS X-Ray Propagator for OpenTelemetry
+  description: |
+    AWS X-Ray Propagator for OpenTelemetry
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-propagator-aws-xray
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-propagator-aws-xray
+  cfe-purls:
+    - pkg:conda/opentelemetry-propagator-aws-xray@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-propagator-aws-xray@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/propagator/opentelemetry-propagator-aws-xray
+  cfe-import-names: [opentelemetry.propagators.aws]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-propagator-aws-xray-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:54:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:54:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:54:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

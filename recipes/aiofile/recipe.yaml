@@ -2,46 +2,88 @@
 schema_version: 1
 
 context:
-  name: aiofile
   version: "3.12.3"
   python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: aiofile
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiofile-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiofile/aiofile-${{ version }}.tar.gz
   sha256: caa6aa746b5e47e2165f7abd741b6415e49cf4d44fddc0f61844612cc3924d41
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.11.*
     - hatchling
   run:
-    - caio >=0.12.0,<0.13.dev0
-    # Conda version of ~=0.9.0
     - python >=${{ python_min }}
+    - caio ~=0.12.0
 
 tests:
   - python:
       imports:
         - aiofile
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Asynchronous file operations.
+  homepage: https://github.com/mosquito/aiofile
   license: Apache-2.0
-  license_file: LICENCE.md
-  homepage: http://github.com/mosquito/aiofile
+  license_file: LICENSE
+  summary: Asynchronous file operations.
+  description: |
+    Asynchronous file operations.
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiofile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiofile
+  cfe-purls:
+    - pkg:conda/aiofile@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiofile@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mosquito/aiofile
+  cfe-import-names: [aiofile]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiofile-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.12.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T05:40:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:40:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:40:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

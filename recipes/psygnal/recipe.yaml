@@ -2,50 +2,81 @@
 schema_version: 1
 
 context:
-  name: psygnal
-  version: "0.15.0"
+  version: "0.15.1"
 
 package:
-  name: ${{ name|lower }}
+  name: psygnal
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 5534f18e2d1536675e181c6f81cf04f4177b25a9e60fdcf724a25ce5cc195765
+  url: https://pypi.org/packages/source/p/psygnal/psygnal-${{ version }}.tar.gz
+  sha256: f64f62dee2306fc1c22050a59b6c6cdad126e04b0cf50e393ff858a1da719096
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install --no-deps . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - hatchling >=1.8.0
     - hatch-vcs
   run:
     - python >=${{ python_min }}
-    - typing_extensions  # not actually required at runtime
-    - wrapt  # provides 'proxy' extra
 
 tests:
   - python:
       imports:
         - psygnal
-        - psygnal.containers
-        - psygnal.utils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pyapp-kit/psygnal
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Pure python implementation of Qt Signals
-  homepage: https://github.com/tlambert03/psygnal
-  repository: https://github.com/tlambert03/psygnal
-  documentation: https://psygnal.readthedocs.io/en/latest/
+  summary: Fast python callback/event system modeled after Qt Signals
+  description: |
+    Fast python callback/event system modeled after Qt Signals
+  documentation: https://psygnal.readthedocs.io
 
 extra:
   recipe-maintainers:
     - tlambert03
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: psygnal
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: psygnal
+  cfe-purls:
+    - pkg:conda/psygnal@${{ version }}?channel=conda-forge
+    - pkg:pypi/psygnal@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pyapp-kit/psygnal
+  cfe-import-names: [psygnal]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/psygnal-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:21:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:21:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:21:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

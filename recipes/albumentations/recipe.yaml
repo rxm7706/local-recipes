@@ -2,53 +2,55 @@
 schema_version: 1
 
 context:
-  name: albumentations
   version: "2.0.8"
 
 package:
-  name: ${{ name|lower }}
+  name: albumentations
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/albumentations/albumentations-${{ version }}.tar.gz
   sha256: 4da95e658e490de3c34af8fcdffed09e36aa8a4edd06ca9f9e7e3ea0b0b16856
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=45
+    - wheel
   run:
-    - typing_extensions >=4.9.0
     - python >=${{ python_min }}
+    - pkg-resources
     - numpy >=1.24.4
     - scipy >=1.10.0
     - pyyaml
-    - opencv >=4.9.0.80
-    - albucore ==0.0.24
+    - typing_extensions >=4.9.0
     - pydantic >=2.9.2
-    - typing-extensions >=4.9.0
-    - eval-type-backport
+    - albucore ==0.0.24
+    - eval_type_backport
+    - opencv >=4.9.0.80
 
 tests:
   - python:
       imports:
         - albumentations
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://albumentations.ai
   license: MIT
   license_file: LICENSE
-  summary: Fast image augmentation library and easy to use wrapper around other libraries
-  homepage: https://github.com/albu/albumentations
-  repository: https://github.com/albu/albumentations
-  documentation: https://albumentations.readthedocs.io/
+  summary: Fast, flexible, and advanced augmentation library for deep learning, computer vision, and medical imaging. Albumentations offers a wide range of transformations for both 2D (images, masks, bboxes, keypoints) and 3D (volumes, volumetric masks, keypoints) data, with optimized performance and seamless integration into ML workflows.
+  description: |
+    Fast, flexible, and advanced augmentation library for deep learning, computer vision, and medical imaging. Albumentations offers a wide range of transformations for both 2D (images, masks, bboxes, keypoints) and 3D (volumes, volumetric masks, keypoints) data, with optimized performance and seamless integration into ML workflows.
 
 extra:
   recipe-maintainers:
@@ -58,3 +60,37 @@ extra:
     - creafz
     - ternaus
     - BloodAxe
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: albumentations
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: albumentations
+  cfe-purls:
+    - pkg:conda/albumentations@${{ version }}?channel=conda-forge
+    - pkg:pypi/albumentations@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://albumentations.ai
+  cfe-import-names: [albumentations]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/albumentations-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:48:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:48:21Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:48:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

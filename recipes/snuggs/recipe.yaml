@@ -2,45 +2,81 @@
 schema_version: 1
 
 context:
-  name: snuggs
   version: "1.4.7"
 
 package:
-  name: ${{ name|lower }}
+  name: snuggs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/snuggs-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/snuggs/snuggs-${{ version }}.tar.gz
   sha256: 501cf113fe3892e14e2fee76da5cd0606b7e149c411c271898e6259ebde2617b
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - numpy
-    - pyparsing >=2.1.6
+    - pyparsing
 
 tests:
   - python:
       imports:
         - snuggs
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Snuggs are s-expressions for Numpy
+  homepage: https://github.com/mapbox/snuggs
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/mapbox/snuggs
+  summary: Snuggs are s-expressions for Numpy
+  description: |
+    Snuggs are s-expressions for Numpy
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: snuggs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: snuggs
+  cfe-purls:
+    - pkg:conda/snuggs@${{ version }}?channel=conda-forge
+    - pkg:pypi/snuggs@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mapbox/snuggs
+  cfe-import-names: [snuggs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/snuggs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:38:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:38:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:38:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

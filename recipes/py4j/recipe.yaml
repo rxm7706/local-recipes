@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: py4j
   version: "0.10.9.9"
 
 package:
-  name: ${{ name|lower }}
+  name: py4j
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/py4j/py4j-${{ version }}.tar.gz
   sha256: f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -30,19 +29,57 @@ tests:
   - python:
       imports:
         - py4j
-        - py4j.tests
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.py4j.org/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Enables Python programs to dynamically access arbitrary Java objects
-  homepage: http://py4j.sourceforge.net/
-  repository: https://github.com/bartdag/py4j
-  documentation: http://py4j.sourceforge.net/
+  description: |
+    Enables Python programs to dynamically access arbitrary Java objects
 
 extra:
   recipe-maintainers:
     - parente
     - h-vetinari
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py4j
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py4j
+  cfe-purls:
+    - pkg:conda/py4j@${{ version }}?channel=conda-forge
+    - pkg:pypi/py4j@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.py4j.org/
+  cfe-import-names: [py4j]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py4j-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.10.9.9
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:22:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:22:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:22:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

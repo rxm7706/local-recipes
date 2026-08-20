@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pydispatcher/PyDispatcher-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyDispatcher/PyDispatcher-${{ version }}.tar.gz
   sha256: b777c6ad080dc1bad74a4c29d6a46914fa6701ac70f94b0d66fbcfde62f5be31
 
 build:
@@ -19,9 +19,10 @@ build:
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=40.8.0
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -35,16 +36,51 @@ tests:
         - "*"
 
 about:
+  homepage: https://github.com/mcfletch/pydispatcher
   license: BSD-3-Clause
-  license_file: license.txt
-  summary: Multi-producer-multi-consumer signal dispatching mechanism
+  license_file: LICENSE
+  summary: Multi-producer multi-consumer in-memory signal dispatch system
   description: |
-    Multi-producer-multi-consumer signal dispatching mechanism
-  homepage: https://pydispatcher.sourceforge.net/
-  repository: https://github.com/mcfletch/pydispatcher/
-  documentation: https://pydispatcher.sourceforge.net/
+    Multi-producer multi-consumer in-memory signal dispatch system
 
 extra:
   recipe-maintainers:
     - shyuep
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydispatcher
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydispatcher
+  cfe-purls:
+    - pkg:conda/pydispatcher@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydispatcher@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mcfletch/pydispatcher
+  cfe-import-names: [pydispatch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydispatcher-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:34:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:34:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:34:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

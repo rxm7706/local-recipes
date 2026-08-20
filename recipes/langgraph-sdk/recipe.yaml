@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: langgraph-sdk
   version: "0.4.2"
 
 package:
-  name: ${{ name|lower }}
+  name: langgraph-sdk
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langgraph_sdk-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langgraph-sdk/langgraph_sdk-${{ version }}.tar.gz
   sha256: b88f0f5f6328ac0680d6790614a905b2bcfa257f2276dba4e38f0e86db0aa738
 
 build:
@@ -21,28 +20,64 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0.0,<4.0
+    - python >=${{ python_min }}
     - httpx >=0.25.2
-    - orjson >=3.11.5
+    - langchain-core <2,>=1.4.0
     - langchain-protocol >=0.0.15
-    - langchain-core >=1.4.0,<2
-    - websockets >=14,<16
+    - orjson >=3.11.5
+    - websockets <16,>=14
+
 tests:
   - python:
       imports:
         - langgraph_sdk
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
-      python_version: ${{ python_min }}.*
 about:
-  summary: SDK for interacting with LangGraph API
+  homepage: https://pypi.org/project/langgraph-sdk/
   license: MIT
   license_file: LICENSE
-  homepage: https://www.github.com/langchain-ai/langgraph
+  summary: SDK for interacting with LangGraph API
+  description: |
+    SDK for interacting with LangGraph API
+  repository: https://github.com/langchain-ai/langgraph/tree/main/libs/sdk-py
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-sdk
+  cfe-purls:
+    - pkg:conda/langgraph-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langgraph/tree/main/libs/sdk-py
+  cfe-upstream-homepage: https://pypi.org/project/langgraph-sdk/
+  cfe-import-names: [langgraph_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langgraph-sdk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:09:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:09:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:09:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

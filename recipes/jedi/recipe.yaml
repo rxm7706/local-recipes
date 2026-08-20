@@ -20,44 +20,29 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - parso >=0.8.6,<0.9.0
+    - parso <0.9.0,>=0.8.6
 
 tests:
   - python:
       imports:
         - jedi
-        - jedi.api
-        - jedi.common
-        - jedi.inference
-        - jedi.inference.compiled
-        - jedi.inference.compiled.subprocess
-        - jedi.inference.gradual
-        - jedi.inference.value
-        - jedi.plugins
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  homepage: https://github.com/davidhalter/jedi/
-  repository: https://github.com/davidhalter/jedi/
-  documentation: http://jedi.readthedocs.io/en/latest/
+  homepage: https://github.com/davidhalter/jedi
+  license: MIT
+  license_file: LICENSE.txt
   summary: An autocompletion tool for Python that can be used for text editors.
   description: |
-    Jedi is a static analysis tool for Python that can be used in IDEs/editors.
-    Its historic focus is autocompletion, but does static analysis for now as
-    well. Jedi is fast and is very well tested. It understands Python on a
-    deeper level than all other static analysis frameworks for Python.
-  license: Apache-2.0 AND MIT
-  license_file:
-    - LICENSE.txt
-    - jedi/third_party/django-stubs/LICENSE.txt
-    - jedi/third_party/typeshed/LICENSE
+    An autocompletion tool for Python that can be used for text editors.
+  documentation: https://jedi.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
@@ -65,3 +50,37 @@ extra:
     - asmeurer
     - nehaljwani
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jedi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jedi
+  cfe-purls:
+    - pkg:conda/jedi@${{ version }}?channel=conda-forge
+    - pkg:pypi/jedi@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/davidhalter/jedi
+  cfe-import-names: [jedi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jedi-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:14:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:14:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:14:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

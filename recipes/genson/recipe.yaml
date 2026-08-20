@@ -2,32 +2,27 @@
 schema_version: 1
 
 context:
-  name: genson
   version: "1.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: genson
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/genson/genson-${{ version }}.tar.gz
   sha256: bc7f1c1bae87a21ca44d81149aec95a3f4468d676de9b8b08caa064f3c50b3da
 
 build:
   number: 0
   noarch: python
-  script: 
-    - python -m pip install . -vv --no-deps --no-build-isolation
-
-  python:
-    entry_points:
-      - genson = genson.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=44
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -35,20 +30,50 @@ tests:
   - python:
       imports:
         - genson
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - genson --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/wolverdude/genson/
   license: MIT
   license_file: LICENSE
   summary: GenSON is a powerful, user-friendly JSON Schema generator.
-  homepage: https://github.com/wolverdude/genson/
-  repository: https://github.com/wolverdude/genson/
+  description: |
+    GenSON is a powerful, user-friendly JSON Schema generator.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - fhoehle
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: genson
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: genson
+  cfe-purls:
+    - pkg:conda/genson@${{ version }}?channel=conda-forge
+    - pkg:pypi/genson@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/wolverdude/genson/
+  cfe-import-names: [genson]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/genson-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:42:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:42:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:42:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

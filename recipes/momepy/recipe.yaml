@@ -2,63 +2,91 @@
 schema_version: 1
 
 context:
-  name: momepy
   version: "1.0.0"
   python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: momepy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/momepy/momepy-${{ version }}.tar.gz
   sha256: 7bc2289a4b2d97f2c1267a9ee318cf1c94998e7098d1c6ad6c662a01bc3d9fe6
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.12.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0
-    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
-    - geopandas >=0.12.0
-    - libpysal >=4.12.0
-    - networkx >=2.8
+    - geopandas >=1.1
+    - libpysal >=4.12.1
+    - networkx >=3.4
+    - numpy >=2.0
     - packaging
-    - pandas >=1.5.1
-    - shapely >=2
-    - tqdm >=4.63.0
+    - pandas >=2.3
+    - shapely >=2.1
+    - tqdm >=4.67
 
 tests:
   - python:
       imports:
         - momepy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://momepy.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Urban Morphology Measuring Toolkit for Python
+  summary: Urban Morphology Measuring Toolkit
   description: |
-    Momepy is a project allowing advanced quantitative analysis of urban morphology.
-    Embracing principles of Urban Morphometrics, this toolkit aims to provide tools
-    for the development of complex frameworks for a description of urban structures.
-  homepage: http://momepy.org
+    Urban Morphology Measuring Toolkit
   repository: https://github.com/pysal/momepy
-  documentation: http://docs.momepy.org
 
 extra:
   recipe-maintainers:
     - knaaptime
     - martinfleis
     - jGaboardi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: momepy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: momepy
+  cfe-purls:
+    - pkg:conda/momepy@${{ version }}?channel=conda-forge
+    - pkg:pypi/momepy@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/momepy
+  cfe-upstream-homepage: http://momepy.org
+  cfe-import-names: [momepy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/momepy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:43:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:43:46Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T01:43:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

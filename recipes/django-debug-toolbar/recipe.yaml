@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-debug-toolbar
   version: "7.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: django-debug-toolbar
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-debug-toolbar/django_debug_toolbar-${{ version }}.tar.gz
   sha256: 2fb4093d95e6f87258606c55f4d2aa45d1847b17a415525a9dceac02e937a836
 
 build:
@@ -20,29 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
     - django >=5.2
     - sqlparse >=0.2
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pip check
+  - python:
+      imports:
+        - debug_toolbar
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/django-commons/django-debug-toolbar
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: A configurable set of panels that display various debug information about the current request/response
-  homepage: https://github.com/django-debug-toolbar/django-debug-toolbar
+  summary: A configurable set of panels that display various debug information about the current request/response.
+  description: |
+    A configurable set of panels that display various debug information about the current request/response.
+  repository: https://github.com/django-commons/django-debug-toolbar
+  documentation: https://django-debug-toolbar.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - kwilcox
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-debug-toolbar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-debug-toolbar
+  cfe-purls:
+    - pkg:conda/django-debug-toolbar@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-debug-toolbar@${{ version }}
+  cfe-upstream-repo: https://github.com/django-commons/django-debug-toolbar
+  cfe-upstream-homepage: https://github.com/django-commons/django-debug-toolbar
+  cfe-import-names: [debug_toolbar]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-debug-toolbar-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:51:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:51:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:51:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

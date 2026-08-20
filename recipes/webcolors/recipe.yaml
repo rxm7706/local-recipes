@@ -11,16 +11,15 @@ package:
 source:
   url: https://pypi.org/packages/source/w/webcolors/webcolors-${{ version }}.tar.gz
   sha256: 62abae86504f66d0f6364c2a8520de4a0c47b80c03fc3a5f1815fedbef7c19bf
-  file_name: webcolors-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - pdm-backend
   run:
@@ -30,18 +29,54 @@ tests:
   - python:
       imports:
         - webcolors
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/webcolors/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Library for working with HTML/CSS color formats in Python.
-  homepage: https://github.com/ubernostrum/webcolors
+  summary: A library for working with the color formats defined by HTML and CSS.
+  description: |
+    A library for working with the color formats defined by HTML and CSS.
+  repository: https://github.com/ubernostrum/webcolors
+  documentation: https://webcolors.readthedocs.io
 
 extra:
   recipe-maintainers:
     - jakirkham
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: webcolors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: webcolors
+  cfe-purls:
+    - pkg:conda/webcolors@${{ version }}?channel=conda-forge
+    - pkg:pypi/webcolors@${{ version }}
+  cfe-upstream-repo: https://github.com/ubernostrum/webcolors
+  cfe-upstream-homepage: https://pypi.org/project/webcolors/
+  cfe-import-names: [webcolors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/webcolors-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-25.10.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:13:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:13:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:13:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

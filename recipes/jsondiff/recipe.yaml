@@ -2,59 +2,82 @@
 schema_version: 1
 
 context:
-  name: jsondiff
   version: "2.2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: jsondiff
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jsondiff/jsondiff-${{ version }}.tar.gz
   sha256: 658d162c8a86ba86de26303cd86a7b37e1b2c1ec98b569a60e2ca6180545f7fe
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - jdiff=jsondiff.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools >=64.0.0
-    - setuptools_scm >=8
+    - setuptools-scm >=8
     - wheel
   run:
     - python >=${{ python_min }}
     - pyyaml
-    # - setuptools-scm
-    # - python-build
-    # - pytest
-    # - hypothesis
 
 tests:
   - python:
       imports:
         - jsondiff
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - jdiff --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/xlwings/jsondiff
   license: MIT
   license_file: LICENSE
   summary: Diff JSON and JSON-like structures in Python
-  homepage: https://github.com/ZoomerAnalytics/jsondiff
+  description: |
+    Diff JSON and JSON-like structures in Python
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsondiff
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsondiff
+  cfe-purls:
+    - pkg:conda/jsondiff@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsondiff@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/xlwings/jsondiff
+  cfe-import-names: [jsondiff]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsondiff-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:52:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:52:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:52:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

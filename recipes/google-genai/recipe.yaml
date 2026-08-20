@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-genai
   version: "2.18.1"
 
 package:
-  name: ${{ name|lower }}
+  name: google-genai
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_genai-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-genai/google_genai-${{ version }}.tar.gz
   sha256: a1e2be75c16234adc6641afd1ad4dd44218c9eec005d938bdc428585a048918a
 
 build:
@@ -21,36 +20,72 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - setuptools
     - wheel
-    - pip
     - twine >=6.1.0
+    - packaging >=24.2
+    - pkginfo >=1.12.0
   run:
     - python >=${{ python_min }}
-    - anyio >=4.8.0,<5.0.0
-    - google-auth >=2.56.0,<3.0.0
-    - httpx >=0.28.1,<1.0.0
-    - pydantic >=2.12.5,<3.0.0
-    - requests >=2.28.1,<3.0.0
-    - tenacity >=8.2.3,<9.2.0
-    - websockets >=13.0.0,<17.0
-    - typing_extensions >=4.14.0,<5.0.0
+    - anyio <5.0.0,>=4.8.0
+    - google-auth <3.0.0,>=2.56.0
+    - httpx <1.0.0,>=0.28.1
+    - pydantic <3.0.0,>=2.12.5
+    - requests <3.0.0,>=2.28.1
+    - tenacity <9.2.0,>=8.2.3
+    - websockets <17.0,>=13.0.0
+    - typing_extensions <5.0.0,>=4.14.0
+    - distro <2,>=1.7.0
     - sniffio
-    - distro >=1.7.0,<2
+
 tests:
   - python:
       imports:
         - google.genai
-        - google.genai.types
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: GenAI Python SDK
+  homepage: https://github.com/googleapis/python-genai
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/python-genai
+  summary: GenAI Python SDK
+  description: |
+    GenAI Python SDK
 
 extra:
   recipe-maintainers:
     - hadim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-genai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-genai
+  cfe-purls:
+    - pkg:conda/google-genai@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-genai@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/python-genai
+  cfe-import-names: [google.genai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-genai-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:44:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:44:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:44:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

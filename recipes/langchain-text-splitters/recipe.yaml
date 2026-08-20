@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: langchain-text-splitters
   version: "1.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-text-splitters
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_text_splitters-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langchain-text-splitters/langchain_text_splitters-${{ version }}.tar.gz
   sha256: 782a723db0a4746ac91e251c7c1d57fd23636e4f38ed733074e28d7a86f41627
 
 build:
@@ -20,29 +19,66 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - pip >=25.2
     - python >=${{ python_min }}
-    - langchain-core >=1.2.31,<2.0.0
+    - langchain-core <2.0.0,>=1.2.31
 
 tests:
   - python:
       imports:
         - langchain_text_splitters
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: LangChain text splitting utilities
+  homepage: https://docs.langchain.com/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/langchain-ai/langchain
-  repository: https://github.com/langchain-ai/langchain/tree/master/libs/text-splitters
+  summary: LangChain text splitting utilities
+  description: |
+    LangChain text splitting utilities
+  repository: https://github.com/langchain-ai/langchain
+  documentation: https://docs.langchain.com/
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-text-splitters
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-text-splitters
+  cfe-purls:
+    - pkg:conda/langchain-text-splitters@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-text-splitters@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain
+  cfe-upstream-homepage: https://docs.langchain.com/
+  cfe-import-names: [langchain_text_splitters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-text-splitters-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:04:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:04:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:04:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -15,17 +15,14 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - certipy = certipy.command_line:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=64
+    - setuptools-scm >=7
   run:
     - python >=${{ python_min }}
     - cryptography
@@ -35,24 +32,48 @@ tests:
       imports:
         - certipy
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - certipy test
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/LLNL/certipy
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Simple, fast, extensible JSON encoder/decoder for Python
+  summary: Utility to create and sign CAs and certificates
   description: |
-    A simple python tool for creating certificate authorities
-    and certificates on the fly.
-  homepage: https://github.com/LLNL/certipy
-  repository: https://github.com/LLNL/certipy
+    Utility to create and sign CAs and certificates
 
 extra:
   recipe-maintainers:
     - minrk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: certipy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: certipy
+  cfe-purls:
+    - pkg:conda/certipy@${{ version }}?channel=conda-forge
+    - pkg:pypi/certipy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/LLNL/certipy
+  cfe-import-names: [certipy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/certipy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:56:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:56:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:56:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

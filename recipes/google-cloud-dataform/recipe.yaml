@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-dataform
   version: "0.11.2"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-dataform
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_dataform-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-dataform/google_cloud_dataform-${{ version }}.tar.gz
   sha256: dd64685066cd0bc068220148114ec2d847092b21ddf62abe3f47828dcafef548
 
 build:
@@ -25,32 +24,60 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.24.2,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    - proto-plus >=1.26.1,<2.0.0
-    - protobuf >=6.33.5,<8.0.0
-    - grpc-google-iam-v1 >=0.14.2,<1.0.0
+    - google-api-core <3.0.0,>=2.24.2
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
+    - grpc-google-iam-v1 <1.0.0,>=0.14.2
 
 tests:
   - python:
       imports:
-        - google
+        - google.cloud.dataform
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: Google Cloud Dataform API client library
-  license: Apache-2.0
-  license_file:
-    - LICENSE
   homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataform
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataform
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Cloud Dataform API client library
+  description: |
+    Google Cloud Dataform API client library
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-dataform
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-dataform
+  cfe-purls:
+    - pkg:conda/google-cloud-dataform@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-dataform@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataform
+  cfe-import-names: [google.cloud.dataform]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-dataform-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:18:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:18:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:18:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

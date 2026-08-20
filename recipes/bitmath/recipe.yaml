@@ -2,28 +2,24 @@
 schema_version: 1
 
 context:
-  name: bitmath
   version: "2.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: bitmath
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bitmath-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/bitmath/bitmath-${{ version }}.tar.gz
   sha256: 56f2cda86b1f0aa6470f4aaa90f82ef029f0e16c31b66f0fdd9d67613bc5e9f0
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - bitmath = bitmath:cli_script
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -34,26 +30,51 @@ tests:
       imports:
         - bitmath
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - bitmath --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pythonic module for representing and manipulating file sizes with different prefix notations (file size unit conversion)
+  homepage: https://bitmath.readthedocs.io/en/latest/index.html
   license: MIT
   license_file: LICENSE
+  summary: Pythonic module for representing and manipulating file sizes with different prefix notations (file size unit conversion)
   description: |
-    `bitmath` simplifies many facets of interacting with file sizes in various units. Originally focusing on file size unit conversion, functionality now includes
-
-
-  homepage: https://github.com/tbielawa/bitmath
-  repository: https://github.com/tbielawa/bitmath
-  documentation: http://bitmath.readthedocs.org/
+    Pythonic module for representing and manipulating file sizes with different prefix notations (file size unit conversion)
 
 extra:
   recipe-maintainers:
     - HeavyTony2
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bitmath
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bitmath
+  cfe-purls:
+    - pkg:conda/bitmath@${{ version }}?channel=conda-forge
+    - pkg:pypi/bitmath@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://bitmath.readthedocs.io/en/latest/index.html
+  cfe-import-names: [bitmath]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bitmath-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:21:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:21:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:21:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

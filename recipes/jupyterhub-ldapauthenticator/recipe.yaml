@@ -2,26 +2,24 @@
 schema_version: 1
 
 context:
-  name: jupyterhub-ldapauthenticator
   version: "2.0.2"
-  sha256: c08cecd9bd996ab523c810d45204bb4a5eaac7adae38d3ef05eebc58fffc7a87
 
 package:
-  name: ${{ name|lower }}
+  name: jupyterhub-ldapauthenticator
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/j/jupyterhub-ldapauthenticator/jupyterhub_ldapauthenticator-${{ version }}.tar.gz
+  sha256: c08cecd9bd996ab523c810d45204bb4a5eaac7adae38d3ef05eebc58fffc7a87
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -34,20 +32,58 @@ tests:
   - python:
       imports:
         - ldapauthenticator
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
+  homepage: https://github.com/jupyterhub/ldapauthenticator
+  license: REPLACE_LICENSE
   license_file: LICENSE
   summary: LDAP Authenticator for JupyterHub
-  homepage: https://github.com/jupyterhub/ldapauthenticator
+  description: |
+    LDAP Authenticator for JupyterHub
 
 extra:
   recipe-maintainers:
     - dhirschfeld
     - minrk
     - consideRatio
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterhub-ldapauthenticator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterhub-ldapauthenticator
+  cfe-purls:
+    - pkg:conda/jupyterhub-ldapauthenticator@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterhub-ldapauthenticator@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jupyterhub/ldapauthenticator
+  cfe-import-names: [ldapauthenticator]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterhub-ldapauthenticator-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.2
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T00:37:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:37:55Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:37:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

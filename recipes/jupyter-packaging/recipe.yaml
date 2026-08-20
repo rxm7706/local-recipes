@@ -2,72 +2,51 @@
 schema_version: 1
 
 context:
-  name: jupyter-packaging
   version: "0.12.3"
 
-recipe:
-  name: ${{ name|lower }}
+package:
+  name: jupyter-packaging
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_packaging-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyter-packaging/jupyter_packaging-${{ version }}.tar.gz
   sha256: 9d9b2b63b97ffd67a8bc5391c32a421bc415b264a32c99e4d8d8dd31daae9cf4
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: build_platform != target_platform
-      then: python
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - packaging
-    - hatchling
+    - hatchling >=0.25
   run:
     - python >=${{ python_min }}
-    - packaging
-    - tomlkit
-    - setuptools >=60.2.0
-    - wheel
     - deprecation
-
-outputs:
-  - package:
-      name: jupyter-packaging
-  - package:
-      name: jupyter_packaging
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - ${{ pin_subpackage("jupyter-packaging", exact=True) }}
+    - packaging
+    - setuptools >=60.2.0
+    - tomlkit
+    - wheel
 
 tests:
   - python:
       imports:
         - jupyter_packaging
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Jupyter Packaging Utilities
+  summary: Jupyter Packaging Utilities.
   description: |
-    Jupyter Packaging Utilities
-  homepage: https://github.com/jupyter/jupyter-packaging
-  repository: https://github.com/jupyter/jupyter-packaging
+    Jupyter Packaging Utilities.
+  repository: https://github.com/jupyter/jupyter-packaging/
 
 extra:
   recipe-maintainers:
@@ -75,3 +54,36 @@ extra:
     - vidartf
     - timkpaine
     - xmnlab
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter-packaging
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-packaging
+  cfe-purls:
+    - pkg:conda/jupyter-packaging@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-packaging@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter/jupyter-packaging/
+  cfe-upstream-homepage: http://jupyter.org
+  cfe-import-names: [jupyter_packaging]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter-packaging-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.12.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:56:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:56:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:56:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

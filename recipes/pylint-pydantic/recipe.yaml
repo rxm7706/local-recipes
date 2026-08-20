@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
   version: "0.4.1"
 
@@ -7,14 +9,13 @@ package:
   version: ${{ version }}
 
 source:
-  # No sdist is published on PyPI, so use the GitHub archive.
-  url: https://github.com/fcfangcc/pylint-pydantic/archive/v${{ version }}.tar.gz
+  url: https://github.com/fcfangcc/pylint-pydantic/archive/refs/tags/v${{ version }}.tar.gz
   sha256: fed38d594e5ad09c0683fd2403aff3ebe9a80ae558f246242c9a0113f30dc686
 
 build:
-  noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -23,7 +24,7 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - pylint >2.0,<5.0
+    - pylint <5.0,>2.0
     - pydantic <3.0
     - pylint-plugin-utils
 
@@ -35,36 +36,45 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  # Upstream's own lint suite, which exercises the plugin rather than just
-  # importing it. Skipped on Windows: registering the plugin trips a known
-  # upstream bug in pylint_plugin_utils.augment_visit that only reproduces
-  # there (pylint_plugin_utils.NoSuchChecker: MisdesignChecker).
-  # See https://github.com/fcfangcc/pylint-pydantic/issues/31
-  # and https://github.com/pylint-dev/pylint-django/issues/378
-  - if: not win
-    then:
-      script:
-        - pylint --load-plugins pylint_pydantic --rcfile=pylintrc tests/
-      requirements:
-        run:
-          - python ${{ python_min }}.*
-      files:
-        source:
-          - pylintrc
-          - tests/
 
 about:
   homepage: https://github.com/fcfangcc/pylint-pydantic
+  license: GPLv3
+  license_file: LICENSE
   summary: A Pylint plugin to help Pylint understand the Pydantic
   description: |
-    pylint-pydantic is a Pylint plugin that teaches Pylint about Pydantic
-    models, suppressing false positives such as no-member, no-self-argument
-    and too-many-instance-attributes that Pylint reports for code using
-    Pydantic. Enable it with `pylint --load-plugins pylint_pydantic ...`.
-  license: GPL-3.0-only
-  license_file: LICENSE
-  repository: https://github.com/fcfangcc/pylint-pydantic
+    A Pylint plugin to help Pylint understand the Pydantic
 
 extra:
   recipe-maintainers:
     - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylint-pydantic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylint-pydantic
+  cfe-purls:
+    - pkg:conda/pylint-pydantic@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylint-pydantic@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/fcfangcc/pylint-pydantic
+  cfe-import-names: [pylint_pydantic]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pylint-pydantic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:24:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:24:14Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:24:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

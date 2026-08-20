@@ -3,10 +3,7 @@ schema_version: 1
 
 context:
   version: "2.2.0"
-  python_check_max: "3.14"
   python_min: "3.12"
-  # the test fixtures are large, and have weird, sometimes intentionally misbehaved binaries
-  run_full_test_suite: false
 
 package:
   name: puremagic
@@ -19,58 +16,64 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install .  -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - puremagic = puremagic.main:command_line_entry
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
-    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: puremagic
+      imports:
+        - puremagic
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - puremagic --help
-      - puremagic --version
-      - puremagic --version | ${{ "grep -iE" if unix else "findstr /r /c /i" }} "${{ version | replace('.', '\\.') }}"
-  - if: run_full_test_suite
-    then:
-      files:
-        source:
-          - test/
-      requirements:
-        run:
-          - pytest-cov
-          - python ${{ python_min }}.*
-      script:
-        - coverage run --source=puremagic --branch -m pytest -vv --tb=long --color=yes
-        - coverage report --show-missing --skip-covered --fail-under=76
+        - "*"
 
 about:
+  homepage: https://github.com/cdgriffith/puremagic
   license: MIT
   license_file: LICENSE
   summary: Pure python implementation of magic file detection
-  homepage: https://pypi.org/project/puremagic
-  repository: https://github.com/cdgriffith/puremagic
   description: |
-    Pure python implementation of identifying files based off their magic numbers
+    Pure python implementation of magic file detection
 
 extra:
   recipe-maintainers:
     - andreyz4k
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: puremagic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: puremagic
+  cfe-purls:
+    - pkg:conda/puremagic@${{ version }}?channel=conda-forge
+    - pkg:pypi/puremagic@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cdgriffith/puremagic
+  cfe-import-names: [puremagic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/puremagic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:16:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:16:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:16:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

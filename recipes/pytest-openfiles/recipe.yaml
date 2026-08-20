@@ -2,33 +2,31 @@
 schema_version: 1
 
 context:
-  name: pytest-openfiles
-  version: "0.5.0"
-  git_url: https://github.com/astropy/pytest-openfiles
+  version: "0.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-openfiles
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 179c2911d8aee3441fee051aba08e0d9b4dab61b829ae4811906d5c49a3b0a58
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-openfiles/pytest_openfiles-${{ version }}.tar.gz
+  sha256: ff5160c34eaada82b983a2c316fcccb30e0094630e97784471f015956870a993
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm
-    - pytest >=4.6
-    - psutil
+    - setuptools >=30.3.0
+    - setuptools-scm
+    - wheel
   run:
     - python >=${{ python_min }}
+    - packaging
     - pytest >=4.6
     - psutil
 
@@ -36,26 +34,61 @@ tests:
   - python:
       imports:
         - pytest_openfiles
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/astropy/pytest-openfiles
   license: BSD-3-Clause
-  license_file: LICENSE.rst
+  license_file: LICENSE
   summary: Pytest plugin for detecting inadvertent open file handles
   description: |
-    This package provides a plugin for the pytest framework that allows
-    developers to detect whether any file handles or other file-like objects
-    were inadvertently left open at the end of a unit test.
-  homepage: ${{ git_url }}
-  repository: ${{ git_url }}
-  documentation: ${{ git_url }}
+    Pytest plugin for detecting inadvertent open file handles
 
 extra:
   recipe-maintainers:
     - astrofrog-conda-forge
     - drdavella
     - mwcraig
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-openfiles
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-openfiles
+  cfe-purls:
+    - pkg:conda/pytest-openfiles@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-openfiles@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/astropy/pytest-openfiles
+  cfe-import-names: [pytest_openfiles]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-openfiles-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:16:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:16:34Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:16:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

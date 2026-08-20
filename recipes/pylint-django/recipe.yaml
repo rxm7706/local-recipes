@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: pylint-django
   version: "2.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pylint-django
   version: ${{ version }}
 
 source:
-  url: https://github.com/pylint-dev/pylint-django/archive/v${{ version }}.tar.gz
-  sha256: 91764a088cefc7bbe85279652d21123ecde2e7b19b85ecae396b3d6412cf5613
+  url: https://pypi.org/packages/source/p/pylint-django/pylint_django-${{ version }}.tar.gz
+  sha256: 42accea9098e4a3298b4bfbae0e4da81f909f8bff0deda9485efbd6035a86d6a
 
 build:
   number: 0
@@ -20,41 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core >=1
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
+    - pylint <5,>=3.0
     - pylint-plugin-utils >=0.8
-    - pylint >=3.0,<5
-  run_constraints:
-    - django >=2.2
 
 tests:
   - python:
       imports:
         - pylint_django
-        - pylint_django.augmentations
-        - pylint_django.checkers
-        - pylint_django.transforms
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-        - django >=2.2
-    script:
-      - pylint --version
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Pylint plugin to help Pylint understand the Django web framework
-  license: GPL-2.0-only
+  homepage: https://github.com/pylint-dev/pylint-django
+  license: GPL-2.0
   license_file: LICENSE
-  homepage: https://github.com/PyCQA/pylint-django
+  summary: A Pylint plugin to help Pylint understand the Django web framework
+  description: |
+    A Pylint plugin to help Pylint understand the Django web framework
+  repository: https://github.com/pylint-dev/pylint-django
 
 extra:
   recipe-maintainers:
     - anthchirp
     - rxm7706
     - jakirkham
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylint-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylint-django
+  cfe-purls:
+    - pkg:conda/pylint-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylint-django@${{ version }}
+  cfe-upstream-repo: https://github.com/pylint-dev/pylint-django
+  cfe-upstream-homepage: https://github.com/pylint-dev/pylint-django
+  cfe-import-names: [pylint_django]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pylint-django-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.8.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:23:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:23:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:23:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

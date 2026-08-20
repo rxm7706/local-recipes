@@ -9,44 +9,76 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/P/Paste/paste-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/Paste/paste-${{ version }}.tar.gz
   sha256: 1c3d12065a5e8a7a18c0c7be1653a97cf38cc3e9a5a0c8334a9dd992d3a05e4a
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - setuptools
-    - six >=1.4.0
 
 tests:
   - python:
       imports:
         - paste
-        - paste.auth
-        - paste.cowbell
-        - paste.debug
-        - paste.evalexception
-        - paste.exceptions
-        - paste.util
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Tools for using a Web Server Gateway Interface stack
-  license: MIT
-  license_file: docs/license.txt
   homepage: https://pythonpaste.readthedocs.io/
+  license: MIT
+  license_file: LICENSE
+  summary: Tools for using a Web Server Gateway Interface stack
+  description: |
+    Tools for using a Web Server Gateway Interface stack
+  repository: https://github.com/pasteorg/paste
+  documentation: https://pythonpaste.readthedocs.io
 
 extra:
   recipe-maintainers:
     - kwilcox
     - daf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: paste
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: paste
+  cfe-purls:
+    - pkg:conda/paste@${{ version }}?channel=conda-forge
+    - pkg:pypi/paste@${{ version }}
+  cfe-upstream-repo: https://github.com/pasteorg/paste
+  cfe-upstream-homepage: https://pythonpaste.readthedocs.io/
+  cfe-import-names: [paste]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/paste-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.10.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:02:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:02:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:02:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

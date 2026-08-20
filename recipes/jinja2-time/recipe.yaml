@@ -16,7 +16,7 @@ source:
     - 0000-replace-replace-shift.patch
 
 build:
-  number: 4
+  number: 0
   noarch: python
   script:
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
@@ -36,7 +36,9 @@ tests:
       imports:
         - jinja2_time
       pip_check: false
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - files:
       source:
         - tests
@@ -57,3 +59,36 @@ about:
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jinja2-time
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jinja2-time
+  cfe-purls:
+    - pkg:conda/jinja2-time@${{ version }}?channel=conda-forge
+    - pkg:pypi/jinja2-time@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/hackebrot/jinja2-time
+  cfe-import-names: [jinja2_time]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jinja2-time-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:48:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:48:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:48:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

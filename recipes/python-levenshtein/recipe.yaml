@@ -2,68 +2,86 @@
 schema_version: 1
 
 context:
-  name: python-levenshtein
-  camelName: python-Levenshtein
   version: "0.27.4"
-  hash_val: 0ae9deae0b0cdf4439bcc39d1408de1fb663aa3632a00264e9b2ff8ea878b38c
-  python_min: "3.10"
 
 package:
-  name: ${{ name }}
+  name: python-levenshtein
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name.replace('-', '_') | lower }}-${{ version }}.tar.gz
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://github.com/rapidfuzz/python-Levenshtein/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ea886250057218ca5939c71de48f944345a79b46f62c01f9a70f4b8d8c7a767a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python >=3.10
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - levenshtein ==${{ version }}
   run:
     - python >=${{ python_min }}
-    - levenshtein ==${{ version }}
+    - python-levenshtein
+    - levenshtein ==0.27.4
 
 tests:
   - python:
       imports:
-        - Levenshtein
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - python -c "import sys; from Levenshtein import distance as d; assert 3==d('Good', 'Bad')"
+        - python_levenshtein
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/rapidfuzz/python-Levenshtein
   license: GPL-2.0-or-later
   license_file: LICENSE
   summary: Python extension for computing string edit distances and similarities.
   description: |
-    A Python extension written in C for fast computation of: Levenshtein (edit)
-    distance and edit sequence manipulation; string similarity; approximate median
-    strings, and generally string averaging; string sequence and set similarity.
-    Levenshtein has a some overlap with difflib (SequenceMatcher). It supports
-    only strings, not arbitrary sequence types, but on the other hand it's much
-    faster. Note the project was renamed, and python-Levenshtein is now just a
-    metapackage installing the Levenshtein package.
-  homepage: https://github.com/maxbachmann/python-Levenshtein
-  repository: https://github.com/maxbachmann/python-Levenshtein
-  documentation: https://github.com/maxbachmann/Levenshtein
+    Python extension for computing string edit distances and similarities.
+  repository: https://github.com/rapidfuzz/python-Levenshtein.git
+  documentation: https://rapidfuzz.github.io/Levenshtein/
 
 extra:
   recipe-maintainers:
     - maxbachmann
     - pmlandwehr
     - peterjc
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-levenshtein
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-levenshtein
+  cfe-purls:
+    - pkg:conda/python-levenshtein@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-levenshtein@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidfuzz/python-Levenshtein.git
+  cfe-upstream-homepage: https://github.com/rapidfuzz/python-Levenshtein
+  cfe-import-names: [python_levenshtein]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-levenshtein-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.27.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:24:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:24:20Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:24:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['python-levenshtein']
+####

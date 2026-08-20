@@ -2,41 +2,79 @@
 schema_version: 1
 
 context:
-  name: fpdf
   version: "1.7.2"
 
 package:
-  name: ${{ name|lower }}
+  name: fpdf
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/fpdf-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fpdf/fpdf-${{ version }}.tar.gz
   sha256: 125840783289e7d12552b1e86ab692c37322e7a65b96a99e0ea86cca041b6779
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3
+    - setuptools
   run:
-    - python >=3
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - fpdf
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Simple PDF generation for Python
-  license: LGPLLR
+  homepage: http://code.google.com/p/pyfpdf
+  license: LGPLv3+
   license_file: LICENSE
-  homepage: https://github.com/reingart/pyfpdf
+  summary: Simple PDF generation for Python
+  description: |
+    Simple PDF generation for Python
 
 extra:
   recipe-maintainers:
     - conda-forge/rpaframework-core
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fpdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fpdf
+  cfe-purls:
+    - pkg:conda/fpdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/fpdf@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://code.google.com/p/pyfpdf
+  cfe-import-names: [fpdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fpdf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:35:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:35:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:35:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

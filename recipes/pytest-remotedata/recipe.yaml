@@ -2,55 +2,91 @@
 schema_version: 1
 
 context:
-  name: pytest-remotedata
-  version: "0.4.1"
-  git_url: https://github.com/astropy/pytest-remotedata
+  version: "0.4.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-remotedata
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 05c08bf638cdd1ed66eb01738a1647c3c714737c3ec3abe009d2c1f793b4bb59
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-remotedata/pytest_remotedata-${{ version }}.tar.gz
+  sha256: ad3eaa2691feecc2071890764d30e06211547577f965e2e4424435c5d887278d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.7
+    - python ${{ python_min }}.*
     - pip
-    - pytest >=4.6
-    - setuptools_scm
+    - setuptools >=77.0.1
+    - setuptools-scm
   run:
-    - python >=3.7
-    - pytest >=4.6
+    - python >=${{ python_min }}
+    - pytest >=5.0
     - packaging
 
 tests:
   - python:
       imports:
         - pytest_remotedata
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/astropy/pytest-remotedata
   license: BSD-3-Clause
-  license_file: LICENSE.rst
-  summary: Pytest plugin for controlling remote data access
+  license_file: LICENSE
+  summary: Pytest plugin for controlling remote data access.
   description: |
-    This package provides a plugin for the pytest framework that allows
-    developers to control unit tests that require access to data from the
-    internet.
-  homepage: ${{ git_url }}
-  repository: ${{ git_url }}
-  documentation: ${{ git_url }}
+    Pytest plugin for controlling remote data access.
 
 extra:
   recipe-maintainers:
     - astrofrog-conda-forge
     - drdavella
     - mwcraig
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-remotedata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-remotedata
+  cfe-purls:
+    - pkg:conda/pytest-remotedata@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-remotedata@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/astropy/pytest-remotedata
+  cfe-import-names: [pytest_remotedata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-remotedata-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:17:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:17:25Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:17:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

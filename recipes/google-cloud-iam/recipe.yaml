@@ -2,64 +2,86 @@
 schema_version: 1
 
 context:
-  name: google-cloud-iam
   version: "2.24.1"
-  sha256: 2d7edfe48fd24a181f55473a77584c0c947cf52915fc7af835d9ae0408fccae0
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-iam
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/g/google-cloud-iam/google_cloud_iam-${{ version }}.tar.gz
+  sha256: 2d7edfe48fd24a181f55473a77584c0c947cf52915fc7af835d9ae0408fccae0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - grpcio >=1.59.0,<2.0.0
     - python >=${{ python_min }}
-    - google-api-core >=2.25.0,<3.0.0
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    - grpc-google-iam-v1 >=0.14.2,<1.0.0
-    - proto-plus >=1.26.1,<2.0.0
-    - protobuf >=6.33.5,<8.0.0
+    - google-api-core <3.0.0,>=2.25.0
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpc-google-iam-v1 <1.0.0,>=0.14.2
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
 
 tests:
   - python:
       imports:
-        - google
-        - google.cloud.iam_credentials
-        - google.cloud.iam_credentials_v1
-        - google.cloud.iam_v2
-        - google.api_core
-        - grpc
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
+        - google.cloud.iam
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: IAM Service Account Credentials API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-iam
   license: Apache-2.0
   license_file: LICENSE
-  description: "IAM Service Account Credentials API is a Google Cloud service that lets client applications communicate with the Cloud Identity and Access Management (IAM) platform. Cloud IAM lets administrators authorize who can take action on specific resources, giving you full control and visibility to manage Google Cloud
-    resources centrally. For enterprises with complex organizational structures, hundreds of workgroups, and many projects, Cloud IAM provides a unified view into security policy across your entire organization, with built-in auditing to ease compliance processes.\nSee the [quick start guide](https://googleapis.dev/python/iamcredentials/latest/index.html#quick-start)."
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-iam
-  repository: https://github.com/googleapis/python-iam
-  documentation: https://googleapis.dev/python/iamcredentials/latest/index.html
+  summary: Google Cloud Iam API client library
+  description: |
+    Google Cloud Iam API client library
 
 extra:
   recipe-maintainers:
     - rxm7706
     - parthea
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-iam
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-iam
+  cfe-purls:
+    - pkg:conda/google-cloud-iam@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-iam@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-iam
+  cfe-import-names: [google.cloud.iam]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-iam-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.24.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:24:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:24:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:24:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

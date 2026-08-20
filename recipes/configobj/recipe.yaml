@@ -2,44 +2,79 @@
 schema_version: 1
 
 context:
-  name: configobj
   version: "5.0.9"
 
 package:
-  name: ${{ name|lower }}
+  name: configobj
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/configobj-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/configobj/configobj-${{ version }}.tar.gz
   sha256: 03c881bbf23aa07bccf1b837005975993c4ab4427ba57f959afdd9d1a2386848
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - six
 
 tests:
   - python:
       imports:
-        - configobj
+        - validate
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Config file reading, writing and validation.
+  homepage: https://github.com/DiffSK/configobj
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/DiffSK/configobj
+  summary: Config file reading, writing and validation.
+  description: |
+    Config file reading, writing and validation.
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: configobj
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: configobj
+  cfe-purls:
+    - pkg:conda/configobj@${{ version }}?channel=conda-forge
+    - pkg:pypi/configobj@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/DiffSK/configobj
+  cfe-import-names: [validate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/configobj-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.9
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:13:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:13:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:13:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

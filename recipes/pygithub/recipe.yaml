@@ -2,54 +2,97 @@
 schema_version: 1
 
 context:
-  name: pygithub
   version: "2.9.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pygithub
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyGithub/pygithub-${{ version }}.tar.gz
   sha256: 59771d7ff63d54d427be2e7d0dad2208dfffc2b0a045fec959263787739b611c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.7
-    - setuptools-scm
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=64
+    - setuptools-scm >=7
   run:
-    - python >=3.7
+    - python >=${{ python_min }}
     - pynacl >=1.4.0
-    - python-dateutil
     - requests >=2.14.0
     - pyjwt >=2.4.0
-    - typing-extensions >=4.0.0
+    - typing_extensions >=4.5.0
     - urllib3 >=1.26.0
-    - deprecated
-    - cryptography >=3.4.0
 
 tests:
   - python:
       imports:
         - github
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: COPYING.LESSER
+  homepage: https://pypi.org/project/PyGithub/
   license: LGPL-3.0-only
-  summary: Python library implementing the GitHub API v3
-  homepage: http://pygithub.github.io/PyGithub
-  repository: https://github.com/PyGithub/PyGithub
-  documentation: http://pygithub.github.io/PyGithub
+  license_file: LICENSE
+  summary: Use the full Github API v3
+  description: |
+    Use the full Github API v3
+  repository: https://github.com/pygithub/pygithub
+  documentation: https://pygithub.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - jakirkham
     - pelson
     - xmnlab
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pygithub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pygithub
+  cfe-purls:
+    - pkg:conda/pygithub@${{ version }}?channel=conda-forge
+    - pkg:pypi/pygithub@${{ version }}
+  cfe-upstream-repo: https://github.com/pygithub/pygithub
+  cfe-upstream-homepage: https://pypi.org/project/PyGithub/
+  cfe-import-names: [github]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pygithub-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.9.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:41:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:41:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:41:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license-mapped:LGPL-3.0->LGPL-3.0-only
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

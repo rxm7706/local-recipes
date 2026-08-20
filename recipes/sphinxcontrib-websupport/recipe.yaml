@@ -2,50 +2,90 @@
 schema_version: 1
 
 context:
-  version: "1.2.7"
+  version: "2.0.0"
 
 package:
   name: sphinxcontrib-websupport
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/s/sphinxcontrib-websupport/sphinxcontrib_websupport-${{ version }}.tar.gz
-  sha256: e322802ebfd5fe79368efd864aeb87b063566ae61911dccb2714e28a45ed7561
+  url: https://pypi.org/packages/source/s/sphinxcontrib-websupport/sphinxcontrib_websupport-${{ version }}.tar.gz
+  sha256: 0b7367d3bac6454b1f97e42aa8c4d4d4a1b756d525fc726ebbe5571e033e79cd
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.9
+    - python ${{ python_min }}.*
     - pip
     - flit-core >=3.7
   run:
-    - python >=3.9
-    - sphinx >=5
+    - python >=${{ python_min }}
     - jinja2
+    - sphinx >=5
     - sphinxcontrib-serializinghtml
 
 tests:
   - python:
       imports:
-        - sphinxcontrib
         - sphinxcontrib.websupport
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
-  license_file: LICENSE
-  summary: Sphinx API for Web Apps
-  description: |
-    sphinxcontrib-websupport provides a Python API to easily integrate
-    Sphinx documentation into your Web application
   homepage: https://www.sphinx-doc.org/
-  repository: https://github.com/sphinx-doc/sphinxcontrib-websupport
-  documentation: https://www.sphinx-doc.org/en/master/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: sphinxcontrib-websupport provides a Python API to easily integrate Sphinx documentation into your Web application
+  description: |
+    sphinxcontrib-websupport provides a Python API to easily integrate Sphinx documentation into your Web application
+  repository: https://github.com/sphinx-doc/sphinxcontrib-websupport/
 
 extra:
   recipe-maintainers:
     - AA-Turner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sphinxcontrib-websupport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sphinxcontrib-websupport
+  cfe-purls:
+    - pkg:conda/sphinxcontrib-websupport@${{ version }}?channel=conda-forge
+    - pkg:pypi/sphinxcontrib-websupport@${{ version }}
+  cfe-upstream-repo: https://github.com/sphinx-doc/sphinxcontrib-websupport/
+  cfe-upstream-homepage: https://www.sphinx-doc.org/
+  cfe-import-names: [sphinxcontrib.websupport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sphinxcontrib-websupport-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:50:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:50:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:50:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

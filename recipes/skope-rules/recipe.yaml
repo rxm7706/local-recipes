@@ -2,49 +2,86 @@
 schema_version: 1
 
 context:
-  name: skope-rules
   version: "1.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: skope-rules
   version: ${{ version }}
 
 source:
-  url: https://github.com/scikit-learn-contrib/skope-rules/archive/v${{ version }}.tar.gz
+  url: https://github.com/scikit-learn-contrib/skope-rules/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 733a1ee9c4125fde221f0ccc9ec76f35408daf29a99878e271f357976974b295
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<3.10
-    - numpy >=1.10.4
-    - scikit-learn >=0.17.1,<1.0.0
-    - scipy >=0.17.0
-    - pandas >=0.18.1
+    - python >=${{ python_min }}
+    - numpy
+    - scikit-learn
+    - scipy
+    - pandas
 
 tests:
   - python:
       imports:
         - skrules
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Skope-rules is a Python machine learning module built on top of scikit-learn.
-  license: BSD-3-Clause AND MIT
-  license_file:
-    - license.txt
-    - COPYING
   homepage: https://github.com/scikit-learn-contrib/skope-rules
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Machine Learning with Interpretable Rules
+  description: |
+    Machine Learning with Interpretable Rules
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: skope-rules
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: skope-rules
+  cfe-purls:
+    - pkg:conda/skope-rules@${{ version }}?channel=conda-forge
+    - pkg:pypi/skope-rules@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/scikit-learn-contrib/skope-rules
+  cfe-import-names: [skrules]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/skope-rules-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T05:32:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:32:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:32:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

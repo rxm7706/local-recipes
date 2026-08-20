@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-sqlite3
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-sqlite3
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_sqlite3-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-sqlite3/opentelemetry_instrumentation_sqlite3-${{ version }}.tar.gz
   sha256: f11fb91d159724037cadf970d5b612da720b38bd67d1c25d48c5ae09116eacc6
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -32,18 +31,55 @@ requirements:
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.sqlite3
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry SQLite3 instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-sqlite3
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-sqlite3
+  summary: OpenTelemetry SQLite3 instrumentation
+  description: |
+    OpenTelemetry SQLite3 instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-sqlite3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-sqlite3
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-sqlite3@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-sqlite3@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-sqlite3
+  cfe-import-names: [opentelemetry.instrumentation.sqlite3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-sqlite3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:47:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:47:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:47:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

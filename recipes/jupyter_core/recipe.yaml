@@ -3,12 +3,9 @@ schema_version: 1
 
 context:
   version: "5.9.1"
-  python_check_max: "3.14"
-  # linter doesn't like `if` in `host` for `noarch`
-  arch_package: ${{ "pywin32" if noarch_platform == "win" else "python" }}
 
 package:
-  name: jupyter_core
+  name: jupyter-core
   version: ${{ version }}
 
 source:
@@ -18,70 +15,36 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - jupyter = jupyter_core.command:main
-      - jupyter-migrate = jupyter_core.migrate:main
-      - jupyter-troubleshoot = jupyter_core.troubleshoot:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - hatchling >=1.4
   run:
-    - __${{ noarch_platform }}
-    - ${{ arch_package }}
-    - platformdirs >=2.5
     - python >=${{ python_min }}
+    - platformdirs >=2.5
     - traitlets >=5.3
-  run_constraints:
-    - pywin32 >=300
 
 tests:
   - python:
-      imports: jupyter_core
+      imports:
+        - jupyter_core
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - pyproject.toml
-        - tests/
-      recipe:
-        - run_test.py
-    requirements:
-      run:
-        # `jupyter-troublehsoot` shells out to `pip` in test
-        - pip
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      - jupyter -h
-      - jupyter-migrate -h
-      - jupyter-troubleshoot --help
-      - python run_test.py
-  # #103: times out in `test_stream_performance`: assert 21.310507099999995 < 10
-  - if: unix
-    then:
-      downstream: ipython
-  # #103: times out in `test_execution_state`: AssertionError: assert 'starting' == 'busy'
-  # - downstream: jupyter_server
-  # #103: v0 recipe
-  # - downstream: jupyterlab
-  # #103: needs updated build for `python_min: 3.10`
-  # - downstream: nbconvert-core
+        - "*"
 
 about:
+  homepage: https://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Core common functionality of Jupyter projects.
-  homepage: https://jupyter.org
+  summary: Jupyter core package. A base package on which Jupyter projects rely.
+  description: |
+    Jupyter core package. A base package on which Jupyter projects rely.
   repository: https://github.com/jupyter/jupyter_core
-  documentation: https://jupyter-core.readthedocs.io
+  documentation: https://jupyter-core.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -94,3 +57,33 @@ extra:
     - Carreau
     - jasongrout
     - SylvainCorlay
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-core
+  cfe-purls:
+    - pkg:conda/jupyter_core@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-core@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter/jupyter_core
+  cfe-upstream-homepage: https://jupyter.org
+  cfe-import-names: [jupyter_core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_core-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:29:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:29:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:29:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

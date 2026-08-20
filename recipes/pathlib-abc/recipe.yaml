@@ -2,27 +2,25 @@
 schema_version: 1
 
 context:
-  name: pathlib-abc
   version: "0.5.2"
-  pypi_name: ${{ name | replace("-", "_") }}
 
 package:
-  name: ${{ name|lower }}
+  name: pathlib-abc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ pypi_name[0] }}/${{ pypi_name }}/${{ pypi_name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pathlib-abc/pathlib_abc-${{ version }}.tar.gz
   sha256: fcd56f147234645e2c59c7ae22808b34c364bb231f685ddd9f96885aed78a94c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - hatchling
   run:
     - python >=${{ python_min }}
@@ -31,19 +29,56 @@ tests:
   - python:
       imports:
         - pathlib_abc
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: PSF-2.0
-  license_file: LICENSE
-  summary: Base classes for pathlib.Path-ish objects
   homepage: https://github.com/barneygale/pathlib-abc
-  repository: https://github.com/barneygale/pathlib-abc
+  license: PSF-2.0
+  license_file: LICENSE.txt
+  summary: Backport of pathlib ABCs
+  description: |
+    Backport of pathlib ABCs
 
 extra:
   recipe-maintainers:
     - kfot
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pathlib-abc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pathlib-abc
+  cfe-purls:
+    - pkg:conda/pathlib-abc@${{ version }}?channel=conda-forge
+    - pkg:pypi/pathlib-abc@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/barneygale/pathlib-abc
+  cfe-import-names: [pathlib_abc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pathlib-abc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:03:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:03:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:03:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

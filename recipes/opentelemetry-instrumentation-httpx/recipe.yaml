@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-httpx
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-httpx
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_httpx-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-httpx/opentelemetry_instrumentation_httpx-${{ version }}.tar.gz
   sha256: 4627aa9c6bb99bf4462c8b565b0ef6aeb9ffad95c6c92868be1ef7895de112ee
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -29,65 +28,25 @@ requirements:
     - opentelemetry-instrumentation ==0.65b0
     - opentelemetry-semantic-conventions ==0.65b0
     - opentelemetry-util-http ==0.65b0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <2.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - httpx >=0.18.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - httpx2 >=2.0.0
-    # - httpx >=0.18.0
+    - wrapt <3.0.0,>=1.0.0
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.httpx
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry HTTPX Instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-httpx
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-httpx
+  summary: OpenTelemetry HTTPX Instrumentation
+  description: |
+    OpenTelemetry HTTPX Instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
@@ -97,3 +56,36 @@ extra:
     - conda-forge/opentelemetry-instrumentation
     - conda-forge/opentelemetry-semantic-conventions
     - conda-forge/opentelemetry-util-http
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-httpx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-httpx
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-httpx@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-httpx@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-httpx
+  cfe-import-names: [opentelemetry.instrumentation.httpx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-httpx-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:40:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:40:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:40:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

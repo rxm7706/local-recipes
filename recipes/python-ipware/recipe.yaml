@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: python-ipware
   version: "3.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: python-ipware
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-ipware/python_ipware-${{ version }}.tar.gz
   sha256: 9117b1c4dddcb5d5ca49e6a9617de2fc66aec2ef35394563ac4eecabdf58c062
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=42
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
 
@@ -32,15 +31,53 @@ tests:
       imports:
         - python_ipware
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Python package to retrieve users IP address
+  homepage: https://pypi.org/project/python-ipware/
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/python-ipware/
+  summary: A Python package to retrieve user's IP address
+  description: |
+    A Python package to retrieve user's IP address
   repository: https://github.com/un33k/python-ipware
+  documentation: https://github.com/un33k/python-ipware#readme
 
 extra:
   recipe-maintainers:
     - swainn
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-ipware
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-ipware
+  cfe-purls:
+    - pkg:conda/python-ipware@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-ipware@${{ version }}
+  cfe-upstream-repo: https://github.com/un33k/python-ipware
+  cfe-upstream-homepage: https://pypi.org/project/python-ipware/
+  cfe-import-names: [python_ipware]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-ipware-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:51:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:51:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:51:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

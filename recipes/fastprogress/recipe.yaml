@@ -2,51 +2,83 @@
 schema_version: 1
 
 context:
-  name: fastprogress
   version: "1.1.6"
 
 package:
-  name: ${{ name }}
+  name: fastprogress
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fastprogress/fastprogress-${{ version }}.tar.gz
   sha256: 7de3a5b136fdf0a9763c19180d0bdfc1bb8c6172b09123c0e4ba272d0c092d0c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=64.0
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=64
   run:
     - python >=${{ python_min }}
     - fastcore >=1.10.0
     - python-fasthtml >=0.12.34
-    - ipython
 
 tests:
   - python:
       imports:
         - fastprogress
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/fastprogress/
   license: Apache-2.0
   license_file: LICENSE
-  summary: A fast and simple progress bar for Jupyter Notebook and console.
-  homepage: https://github.com/fastai/fastprogress
-  repository: https://github.com/fastai/fastprogress
-  documentation: https://github.com/fastai/fastprogress
+  summary: A nested progress with plotting options for fastai
+  description: |
+    A nested progress with plotting options for fastai
+  repository: https://github.com/answerdotai/fastprogress
+  documentation: https://fastprogress.fast.ai/
 
 extra:
   recipe-maintainers:
     - andersy005
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastprogress
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastprogress
+  cfe-purls:
+    - pkg:conda/fastprogress@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastprogress@${{ version }}
+  cfe-upstream-repo: https://github.com/answerdotai/fastprogress
+  cfe-upstream-homepage: https://pypi.org/project/fastprogress/
+  cfe-import-names: [fastprogress]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastprogress-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.6
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:11:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:11:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:11:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

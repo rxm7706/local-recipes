@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: colorcet
   version: "3.2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: colorcet
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/colorcet/colorcet-${{ version }}.tar.gz
   sha256: 48d9a67e6e59dc5c0a965aa1b46fe5d59cdc95cc36a95949f29313f950ac59f7
 
 build:
@@ -20,31 +19,32 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=30.3.0
-    - setuptools_scm >=6
+    - setuptools-scm >=6
   run:
     - python >=${{ python_min }}
+    - colorcet
 
 tests:
   - python:
       imports:
-        - colorcet
+        - colorcet.tests
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://colorcet.holoviz.org
   license: CC-BY-4.0
-  license_file: LICENSE.txt
+  license_file: LICENSE
   summary: Collection of perceptually uniform colormaps
   description: |
-    HoloViz Colorcet provides perceptually accurate, 256-color colormaps,
-    including both continuous and categorical types, designed for use with
-    tools like Bokeh, Matplotlib, HoloViews, and Datashader.
-
-
-  homepage: https://github.com/holoviz/colorcet
+    Collection of perceptually uniform colormaps
+  repository: https://github.com/holoviz/colorcet
+  documentation: https://colorcet.holoviz.org
 
 extra:
   recipe-maintainers:
@@ -53,3 +53,43 @@ extra:
     - droumis
     - jbednar
     - jsignell
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: colorcet
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: colorcet
+  cfe-purls:
+    - pkg:conda/colorcet@${{ version }}?channel=conda-forge
+    - pkg:pypi/colorcet@${{ version }}
+  cfe-upstream-repo: https://github.com/holoviz/colorcet
+  cfe-upstream-homepage: https://colorcet.holoviz.org
+  cfe-import-names: [colorcet.tests]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/colorcet-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:06:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:06:29Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:06:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['colorcet']
+#    # blocker: missing-license-file
+####

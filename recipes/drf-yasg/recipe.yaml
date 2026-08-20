@@ -20,9 +20,9 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0.3
-    - setuptools-scm >=7.0,<8.dev0
     - pip
+    - setuptools >=77.0.3
+    - setuptools-scm ~=7.0
   run:
     - python >=${{ python_min }}
     - django >=4.0
@@ -43,18 +43,53 @@ tests:
         - "*"
 
 about:
-  summary: Automated generation of real Swagger/OpenAPI 2.0 schemas from Django Rest Framework code.
-  license: Apache-2.0 AND MIT AND BSD-3-Clause
-  license_file:
-    - LICENSE.rst
-    - src/drf_yasg/static/drf-yasg/swagger-ui-dist/NOTICE
-    - src/drf_yasg/static/drf-yasg/swagger-ui-dist/LICENSE
-    - src/drf_yasg/static/drf-yasg/redoc-old/LICENSE
-    - src/drf_yasg/static/drf-yasg/redoc/LICENSE
   homepage: https://github.com/axnsan12/drf-yasg
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Automated generation of real Swagger/OpenAPI 2.0 schemas from Django Rest Framework code.
+  description: |
+    Automated generation of real Swagger/OpenAPI 2.0 schemas from Django Rest Framework code.
+  repository: https://github.com/axnsan12/drf-yasg
   documentation: https://drf-yasg.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - julian-belina
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: drf-yasg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: drf-yasg
+  cfe-purls:
+    - pkg:conda/drf-yasg@${{ version }}?channel=conda-forge
+    - pkg:pypi/drf-yasg@${{ version }}
+  cfe-upstream-repo: https://github.com/axnsan12/drf-yasg
+  cfe-upstream-homepage: https://github.com/axnsan12/drf-yasg
+  cfe-import-names: [drf_yasg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-yasg-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:55:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:55:46Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:55:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

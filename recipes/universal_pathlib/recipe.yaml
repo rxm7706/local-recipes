@@ -3,71 +3,82 @@ schema_version: 1
 
 context:
   version: "0.3.10"
-  PYTHON: PYTHON | default("$PYTHON")
 
-recipe:
-  name: universal_pathlib
+package:
+  name: universal-pathlib
   version: ${{ version }}
 
 source:
-  # If getting the source from GitHub, remove the line above,
-  # uncomment the line below, and modify as needed. Use releases if available:
-  url: https://pypi.org/packages/source/u/universal_pathlib/universal_pathlib-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/u/universal-pathlib/universal_pathlib-${{ version }}.tar.gz
   sha256: 4487cbc90730a48cfb64f811d99e14b6faed6d738420cd5f93f59f48e6930bfb
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: universal_pathlib
-    build:
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools >=64
-        - setuptools-scm >=8
-      run:
-        - python >=${{ python_min }}
-        - fsspec >=2024.5.0
-        - pathlib-abc >=0.5.1,<0.6.0
-    tests:
-      - python:
-          imports:
-            - upath
-            - upath.types
-            - upath.registry
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: universal-pathlib
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage('universal_pathlib', upper_bound="x.x.x") }}
-    tests:
-      - python:
-          imports:
-            - upath
-            - upath.types
-            - upath.registry
-          pip_check: false
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+    - setuptools-scm >=8
+  run:
+    - python >=${{ python_min }}
+    - fsspec >=2024.5.0
+    - pathlib-abc <0.6.0,>=0.5.1
+
+tests:
+  - python:
+      imports:
+        - upath
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/fsspec/universal_pathlib
   license: MIT
   license_file: LICENSE
   summary: pathlib api extended to use fsspec backends
-  homepage: https://github.com/fsspec/universal_pathlib
-  repository: https://github.com/fsspec/universal_pathlib
+  description: |
+    pathlib api extended to use fsspec backends
 
 extra:
   recipe-maintainers:
     - ap--
     - andrewfulton9
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: universal_pathlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: universal-pathlib
+  cfe-purls:
+    - pkg:conda/universal_pathlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/universal-pathlib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/fsspec/universal_pathlib
+  cfe-import-names: [upath]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/universal_pathlib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.10
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:01:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:01:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:01:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

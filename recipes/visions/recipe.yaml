@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: visions
-  version: 0.8.2
+  version: "0.8.2"
 
 package:
-  name: ${{ name|lower }}
+  name: visions
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/visions-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/v/visions/visions-${{ version }}.tar.gz
   sha256: 03c5f3f70b137a0072d885779a52b49dab0f4bc623f9a8f2fe19d6aca7ef4a43
 
 build:
@@ -21,64 +20,68 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=61.0.0
     - wheel
-    - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - numpy >=1.23.2
     - pandas >=2.0.0
     - attrs >=19.3.0
     - networkx >=2.4
     - multimethod >=1.4
     - puremagic
-    - imagehash
-    - arm_pyart
-    - packaging
-    - pyspark
-  run_constraints:
-    # https://github.com/dylan-profiler/visions/blob/v0.8.1/pyproject.toml#L34C1-L46C17
-    # type_geometry
-    - shapely
-    # type_image_path
-    - imagehash
-    - Pillow
-    - puremagic
-    # plotting
-    - pydot
-    - pygraphviz
-    - matplotlib-base
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-        # type_geometry
-        - shapely
-        # type_image_path
-        - imagehash
-        - Pillow
-        - puremagic
-        # plotting
-        - pydot
-        - pygraphviz
-        - matplotlib-base
-    script:
-      - pip check
-      - python -c "import visions; assert visions.__version__ == '${{ version }}'"
+  - python:
+      imports:
+        - visions
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/dylan-profiler/visions
+  homepage: https://pypi.org/project/visions/
   license: BSD-4-Clause
   license_file: LICENSE
-  summary: |
-    Visions provides an extensible suite of tools to support common data analysis operations including 
-    type inference on unknown data, casting data types and automated data summarization.
-  documentation: https://dylan-profiler.github.io/visions/
+  summary: Visions
+  description: |
+    Visions
   repository: https://github.com/dylan-profiler/visions
+  documentation: https://dylan-profiler.github.io/visions
 
 extra:
   recipe-maintainers:
     - philip-khor
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: visions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: visions
+  cfe-purls:
+    - pkg:conda/visions@${{ version }}?channel=conda-forge
+    - pkg:pypi/visions@${{ version }}
+  cfe-upstream-repo: https://github.com/dylan-profiler/visions
+  cfe-upstream-homepage: https://pypi.org/project/visions/
+  cfe-import-names: [visions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/visions-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:08:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:08:18Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:08:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

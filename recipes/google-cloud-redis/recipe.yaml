@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-redis
   version: "2.22.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-redis
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_redis-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-redis/google_cloud_redis-${{ version }}.tar.gz
   sha256: 105cac15d21d87ceeee41847618f00ea6ccaaa360b8b0b3fd2e42f79a23d0868
 
 build:
@@ -25,37 +24,60 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.17.1,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    # more restrictive constraint for python >=3.13
-    - proto-plus >=1.25.0,<2.0.0
-    - protobuf >=4.25.8,<8.0.0
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
 
 tests:
   - python:
       imports:
-        - grpc
         - google.cloud.redis
-        - google.cloud.redis_v1
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: Google Cloud Redis API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-redis
   license: Apache-2.0
   license_file: LICENSE
-  description: "Google Cloud Memorystore for Redis API is a Google Cloud service that lets client applications communicate with a fully managed Redis service for Google Cloud. Applications running on Google Cloud can achieve extreme performance by leveraging the highly scalable, available, secure Redis service without the::
-    - burden of managing complex Redis deployments.\nSee the [quick start guide](https://googleapis.dev/python/redis/latest/index.html#quick-start)."
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-redis
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-redis
-  documentation: https://googleapis.dev/python/redis/latest/index.html
+  summary: Google Cloud Redis API client library
+  description: |
+    Google Cloud Redis API client library
 
 extra:
   recipe-maintainers:
     - parthea
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-redis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-redis
+  cfe-purls:
+    - pkg:conda/google-cloud-redis@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-redis@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-redis
+  cfe-import-names: [google.cloud.redis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-redis-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:32:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:32:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:32:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

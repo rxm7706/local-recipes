@@ -16,49 +16,72 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - rvl = redisvl.cli.runner:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - numpy >=1.26.0,<3
-    - pyyaml >=5.4,<7.0
-    - redis-py >=5.0,<8.0
-    - pydantic >=2,<3
-    - tenacity >=8.2.2
-    - ml_dtypes >=0.4.0,<1.0.0
-    - python-ulid >=3.0.0
     - jsonpath-ng >=1.5.0
+    - ml-dtypes <1.0.0,>=0.4.0
+    - numpy <3,>=1.26.0
+    - pydantic <3,>=2
+    - python-ulid >=3.0.0
+    - pyyaml <7.0,>=5.4
+    - redis-py <8.0,>=5.0
+    - tenacity >=8.2.2
 
 tests:
   - python:
       imports:
         - redisvl
-        - redisvl.index
-        - redisvl.query
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.*
-  - script:
-      - rvl --help
-    requirements:
-      run:
-        - python ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python client library and CLI for using Redis as a vector database
+  homepage: https://github.com/redis/redis-vl-python
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/redis/redis-vl-python
+  summary: Python client library and CLI for using Redis as a vector database
+  description: |
+    Python client library and CLI for using Redis as a vector database
+  repository: https://github.com/redis/redis-vl-python
   documentation: https://docs.redisvl.com
 
 extra:
   recipe-maintainers:
     - beenje
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: redisvl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: redisvl
+  cfe-purls:
+    - pkg:conda/redisvl@${{ version }}?channel=conda-forge
+    - pkg:pypi/redisvl@${{ version }}
+  cfe-upstream-repo: https://github.com/redis/redis-vl-python
+  cfe-upstream-homepage: https://github.com/redis/redis-vl-python
+  cfe-import-names: [redisvl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/redisvl-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:01:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:01:10Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:01:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

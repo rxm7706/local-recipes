@@ -2,30 +2,29 @@
 schema_version: 1
 
 context:
-  name: sentry-sdk
   version: "2.68.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sentry-sdk
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sentry-sdk/sentry_sdk-${{ version }}.tar.gz
   sha256: 648c58e9887311a03470a41539e24bdbbf64a30ca4f5336f7e3dcc87276400b3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - urllib3 >=1.25.7
+    - urllib3 >=1.26.11
     - certifi
 
 tests:
@@ -33,16 +32,17 @@ tests:
       imports:
         - sentry_sdk
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/getsentry/sentry-python
   license: MIT
   license_file: LICENSE
-  summary: The official Python SDK for Sentry.io
+  summary: "Python client for Sentry (https://sentry.io)"
   description: |
-    The official Python SDK for Sentry.io
-  homepage: https://github.com/getsentry/sentry-python
-  repository: https://github.com/getsentry/sentry-python
+    Python client for Sentry (https://sentry.io)
   documentation: https://docs.sentry.io/platforms/python/
 
 extra:
@@ -51,3 +51,36 @@ extra:
     - alippai
     - dgasmith
     - djsutherland
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sentry-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sentry-sdk
+  cfe-purls:
+    - pkg:conda/sentry-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/sentry-sdk@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/getsentry/sentry-python
+  cfe-import-names: [sentry_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sentry-sdk-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.68.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:25:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:25:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:25:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

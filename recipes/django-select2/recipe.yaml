@@ -2,34 +2,28 @@
 schema_version: 1
 
 context:
-  name: django-select2
   version: "8.4.8"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: django-select2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-select2/django_select2-${{ version }}.tar.gz
   sha256: 592e52effff2b5850cb7c98b265715b6704fb784699c4aedddfdd8ae1ffa1e81
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.10.*
-    - setuptools
-    - setuptools_scm
-    - flit >=3.2
+    - flit-core >=3.2
     - flit-scm
     - wheel
-    - django >=4.2
-    - django-appconf >=0.6.0
   run:
     - python >=${{ python_min }}
     - django >=4.2
@@ -39,21 +33,55 @@ tests:
   - python:
       imports:
         - django_select2
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: django-select2, select2 driven Django Widgets.
+  homepage: https://github.com/codingjoe/django-select2
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/django-select2/
+  summary: This is a Django_ integration of Select2_.
+  description: |
+    This is a Django_ integration of Select2_.
   repository: https://github.com/codingjoe/django-select2
-  documentation: https://django-select2.readthedocs.io/
+  documentation: https://django-select2.rtfd.io/
 
 extra:
   recipe-maintainers:
     - swainn
     - gagelarsen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-select2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-select2
+  cfe-purls:
+    - pkg:conda/django-select2@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-select2@${{ version }}
+  cfe-upstream-repo: https://github.com/codingjoe/django-select2
+  cfe-upstream-homepage: https://github.com/codingjoe/django-select2
+  cfe-import-names: [django_select2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-select2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-8.4.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:57:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:57:03Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:57:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

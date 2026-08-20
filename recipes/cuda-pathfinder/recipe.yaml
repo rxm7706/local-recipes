@@ -1,54 +1,48 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: cuda-pathfinder
   version: "1.6.0"
-  # no-arch packages can't use selectors, so we avoid using the "match(python, "<3.10")" selector this way
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: cuda-pathfinder
   version: ${{ version }}
 
 source:
-  url: https://github.com/NVIDIA/cuda-python/releases/download/${{ name }}-v${{ version }}/cuda-python-${{ name }}-v${{ version }}.tar.gz
-  sha256: fb863971ad7e53b55333f11066325acddc753bdd9815cbf4b4eb3d49e4ca05ff
+  url: https://pypi.org/packages/py3/c/cuda-pathfinder/cuda_pathfinder-1.6.0-py3-none-any.whl
+  sha256: 1503af579d8379c24bdd65528379bc57039b0455be9f5f9686cf8e473a1fce51
 
 build:
-  noarch: python
-  script:
-    - cd cuda_pathfinder
-    # Release archives do not contain .git metadata; provide the exact version
-    # so setuptools-scm can still generate cuda/pathfinder/_version.py.
-    - SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_PATHFINDER=${{ version }} python -m pip install . -vv
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
     - setuptools
-    - setuptools-scm >=8
-    - wheel
   run:
     - python >=${{ python_min }}
-    - cuda-version >=12.0,<14
 
 tests:
   - python:
       imports:
-        - cuda.pathfinder
+        - cuda_pathfinder
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/
-  summary: 'cuda.pathfinder: Utilities for locating CUDA components in a Python virtual environment'
-  description: |
-    Public API for loading NVIDIA Dynamic Libraries
+  homepage: https://pypi.org/project/cuda-pathfinder/
   license: Apache-2.0
-  license_file: cuda_pathfinder/LICENSE
-  documentation: https://nvidia.github.io/cuda-python/cuda-pathfinder/latest/
-  repository: https://github.com/NVIDIA/cuda-python/tree/main/cuda_pathfinder
+  license_file: LICENSE
+  summary: Pathfinder for CUDA components
+  description: |
+    Pathfinder for CUDA components
+  repository: https://github.com/NVIDIA/cuda-python
+  documentation: https://nvidia.github.io/cuda-python/
 
 extra:
   recipe-maintainers:
@@ -58,3 +52,33 @@ extra:
     - kkraus14
     - oleksandr-pavlyk
     - bdice
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cuda-pathfinder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cuda-pathfinder
+  cfe-purls:
+    - pkg:conda/cuda-pathfinder@${{ version }}?channel=conda-forge
+    - pkg:pypi/cuda-pathfinder@${{ version }}
+  cfe-upstream-repo: https://github.com/NVIDIA/cuda-python
+  cfe-upstream-homepage: https://pypi.org/project/cuda-pathfinder/
+  cfe-import-names: [cuda_pathfinder]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cuda-pathfinder-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:22:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:22:52Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:22:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

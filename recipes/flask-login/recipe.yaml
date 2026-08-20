@@ -2,27 +2,24 @@
 schema_version: 1
 
 context:
-  name: Flask-Login
   version: "0.6.3"
-  bundle: tar.gz
 
 package:
-  name: ${{ name|lower }}
+  name: flask-login
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/f/Flask-Login/Flask-Login-${{ version }}.tar.gz
   sha256: 5e23d14a607ef12806c699590b89d0f0e0d67baeec599d75947bf9c147330333
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -35,18 +32,55 @@ tests:
       imports:
         - flask_login
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/maxcountryman/flask-login
   license: MIT
   license_file: LICENSE
-  summary: User session management for Flask
-  homepage: https://github.com/maxcountryman/flask-login
+  summary: User authentication and session management for Flask.
+  description: |
+    User authentication and session management for Flask.
   repository: https://github.com/maxcountryman/flask-login
-  documentation: https://flask-login.readthedocs.io/en/latest/
+  documentation: https://flask-login.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - synapticarbors
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-login
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-login
+  cfe-purls:
+    - pkg:conda/flask-login@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-login@${{ version }}
+  cfe-upstream-repo: https://github.com/maxcountryman/flask-login
+  cfe-upstream-homepage: https://github.com/maxcountryman/flask-login
+  cfe-import-names: [flask_login]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-login-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:24:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:24:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:24:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

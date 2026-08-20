@@ -2,48 +2,83 @@
 schema_version: 1
 
 context:
-  name: kmodes
   version: "0.12.2"
 
 package:
-  name: ${{ name|lower }}
+  name: kmodes
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/kmodes-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/kmodes/kmodes-${{ version }}.tar.gz
   sha256: d840ac9f4616a668ebacba24a12ec1def87da24a9fd0a0dc2f7499a9b9a6f45b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - joblib >=0.11
-    - numpy >=1.10.4
-    - python >=3.6
-    - scikit-learn >=0.22.0
-    - scipy >=0.13.3
+    - python >=${{ python_min }}
+    - numpy
+    - scikit-learn
+    - scipy
+    - joblib
 
 tests:
   - python:
       imports:
         - kmodes
-        - kmodes.util
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/nicodv/kmodes
   license: MIT
   license_file: LICENSE
   summary: Python implementations of the k-modes and k-prototypes clustering algorithms for clustering categorical data.
-  homepage: https://github.com/nicodv/kmodes
-  repository: https://github.com/nicodv/kmodes
-  documentation: https://pypi.org/project/kmodes/
+  description: |
+    Python implementations of the k-modes and k-prototypes clustering algorithms for clustering categorical data.
 
 extra:
   recipe-maintainers:
     - mxr-conda
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kmodes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kmodes
+  cfe-purls:
+    - pkg:conda/kmodes@${{ version }}?channel=conda-forge
+    - pkg:pypi/kmodes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/nicodv/kmodes
+  cfe-import-names: [kmodes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kmodes-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.12.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:56:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:56:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:56:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

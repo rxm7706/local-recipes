@@ -20,15 +20,17 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
+    - poetry-core >=1.0.0
+    - wheel
+    - setuptools >=42.0.0
   run:
     - python >=${{ python_min }}
-    - microsoft-kiota-abstractions >=1.8.0,<2.0.0
-    - microsoft-kiota-authentication-azure >=1.8.0,<2.0.0
-    - microsoft-kiota-http >=1.8.0,<2.0.0
+    - azure-identity <2.0.0,>=1.23.0
     - httpx >=0.23.0
-    - azure-identity >=1.23.0,<2.0.0
+    - microsoft-kiota-abstractions <2.0.0,>=1.8.0
+    - microsoft-kiota-authentication-azure <2.0.0,>=1.8.0
+    - microsoft-kiota-http <2.0.0,>=1.8.0
 
 tests:
   - python:
@@ -36,17 +38,48 @@ tests:
         - microsoft_agents_m365copilot_core
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Core component of the Microsoft Agents M365 Copilot Python SDK
+  homepage: https://github.com/microsoft/Agents-M365Copilot/tree/main/python
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/microsoft/Agents-M365Copilot/tree/main/python
+  summary: Core component of the Microsoft Agents M365 Copilot Core Python SDK
+  description: |
+    Core component of the Microsoft Agents M365 Copilot Core Python SDK
   repository: https://github.com/microsoft/Agents-M365Copilot
-  documentation: https://github.com/microsoft/Agents-M365Copilot/tree/main/python/packages/microsoft_agents_m365copilot_core
+  documentation: https://github.com/microsoft/Agents-M365Copilot/tree/main/python/packages/microsoft_agents_m365copilot_core#readme
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: microsoft-agents-m365copilot-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: microsoft-agents-m365copilot-core
+  cfe-purls:
+    - pkg:conda/microsoft-agents-m365copilot-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/microsoft-agents-m365copilot-core@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/Agents-M365Copilot
+  cfe-upstream-homepage: https://github.com/microsoft/Agents-M365Copilot/tree/main/python
+  cfe-import-names: [microsoft_agents_m365copilot_core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/microsoft-agents-m365copilot-core-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:20:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:20:03Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:20:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

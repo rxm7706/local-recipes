@@ -9,17 +9,17 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py2.py3/t/tensorflow-hub/tensorflow_hub-${{ version }}-py2.py3-none-any.whl
-  sha256: e10c184b3d08daeafada11ffea2dd46781725b6bef01fad1f74d6634ad05311f
+  url: https://github.com/tensorflow/hub/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ce6abd3f1d39d42333b07c608ae022ac09a3f5984b297b21436c3389d7b77af5
 
 build:
-  number: 3
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install -vv --no-deps --no-build-isolation tensorflow_hub-${{ version }}-py2.py3-none-any.whl
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -33,16 +33,52 @@ tests:
       imports:
         - tensorflow_hub
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/tensorflow/hub
   license: Apache-2.0
   license_file: LICENSE
-  summary: A library for transfer learning by reusing parts of TensorFlow models.
-  homepage: https://pypi.org/project/tensorflow-hub/
-  repository: https://github.com/tensorflow/hub
+  summary: TensorFlow Hub is a library to foster the publication, discovery, and consumption of reusable parts of machine learning models.
+  description: |
+    TensorFlow Hub is a library to foster the publication, discovery, and consumption of reusable parts of machine learning models.
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - ehfd
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-hub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-hub
+  cfe-purls:
+    - pkg:conda/tensorflow-hub@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-hub@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/tensorflow/hub
+  cfe-import-names: [tensorflow_hub]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tensorflow-hub-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.16.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:23:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:23:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:23:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,56 +2,88 @@
 schema_version: 1
 
 context:
-  python_min: "3.11"
-  name: myst-parser
   version: "5.1.0"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: myst-parser
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/myst-parser/myst_parser-${{ version }}.tar.gz
   sha256: ab69322dc6719dcc7f296479dbb70181b66df6ed315064f92dbc85c0e1bf2f02
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
-  python:
-    entry_points:
-      - myst-benchmark = myst_parser.cli.benchmark:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
     - flit-core >=3.4,<4
   run:
-    - docutils >=0.20,<0.23
-    - markdown-it-py >=4.2.0,<4.3.0
-    - mdit-py-plugins >=0.6.1,<0.7
-    - jinja2
     - python >=${{ python_min }}
+    - docutils <0.23,>=0.20
+    - jinja2
+    - markdown-it-py ~=4.2
+    - mdit-py-plugins >=0.6.1,~=0.6
     - pyyaml
-    - sphinx >=8,<10
+    - sphinx <10,>=8
 
 tests:
   - python:
       imports:
         - myst_parser
-        - myst_parser.cli
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/executablebooks/MyST-Parser
   license: MIT
   license_file: LICENSE
-  summary: An extended commonmark compliant parser, with bridges to docutils & sphinx.
-  homepage: https://github.com/ExecutableBookProject/MyST-Parser
+  summary: "An extended [CommonMark](https://spec.commonmark.org/) compliant parser,"
+  description: |
+    An extended [CommonMark](https://spec.commonmark.org/) compliant parser,
   documentation: https://myst-parser.readthedocs.io
 
 extra:
   recipe-maintainers:
     - dopplershift
     - choldgraf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: myst-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: myst-parser
+  cfe-purls:
+    - pkg:conda/myst-parser@${{ version }}?channel=conda-forge
+    - pkg:pypi/myst-parser@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/executablebooks/MyST-Parser
+  cfe-import-names: [myst_parser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/myst-parser-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:19:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:19:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:19:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

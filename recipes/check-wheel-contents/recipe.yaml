@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 0.6.3
+  version: "0.6.3"
 
 package:
   name: check-wheel-contents
@@ -15,55 +15,71 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
-  python:
-    entry_points:
-      - check-wheel-contents = check_wheel_contents.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling
   run:
-    - attrs >=18.1
-    - click >=8.2,<9.0,!=8.2.2
-    - packaging
-    - pydantic >=2.0,<3.0
     - python >=${{ python_min }}
-    - tomli >=1.2,<3.0
-    - wheel-filename >=1.1,<2.0
+    - attrs >=18.1
+    - backports.cached-property
+    - click !=8.2.2,~=8.2
+    - packaging
+    - pydantic ~=2.0
+    - tomli <3.0,>=1.2
+    - wheel-filename ~=1.1
 
 tests:
   - python:
-      imports: check_wheel_contents
+      imports:
+        - check_wheel_contents
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
-  - files:
-      source:
-        - test/
-    requirements:
-      run:
-        - pip
-        - pytest-cov
-        - pytest-mock
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-      - check-wheel-contents --version
-      - check-wheel-contents --help
-      - check-wheel-contents --version | python -c "import sys; v = sys.stdin.read().strip(); print(v); assert v.endswith('${{ version }}');"
-      - pytest -vv --color=yes --tb=long --cov=check_wheel_contents --cov-report=term-missing:skip-covered --no-cov-on-fail -k "not from_local_tree" --cov-fail-under=99
+        - "*"
 
 about:
-  summary: Check your wheels have the right contents
+  homepage: https://pypi.org/project/check-wheel-contents/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/jwodder/check-wheel-contents
+  summary: Check your wheels have the right contents
+  description: |
+    Check your wheels have the right contents
+  repository: https://github.com/jwodder/check-wheel-contents
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: check-wheel-contents
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: check-wheel-contents
+  cfe-purls:
+    - pkg:conda/check-wheel-contents@${{ version }}?channel=conda-forge
+    - pkg:pypi/check-wheel-contents@${{ version }}
+  cfe-upstream-repo: https://github.com/jwodder/check-wheel-contents
+  cfe-upstream-homepage: https://pypi.org/project/check-wheel-contents/
+  cfe-import-names: [check_wheel_contents]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/check-wheel-contents-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:29:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:29:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:29:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

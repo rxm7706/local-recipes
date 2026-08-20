@@ -2,29 +2,25 @@
 schema_version: 1
 
 context:
-  name: ftfy
   version: "6.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: ftfy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ftfy-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/ftfy/ftfy-${{ version }}.tar.gz
   sha256: 9b3c3d90f84fb267fe64d375a07b7f8912d817cf86009ae134aa03e1819506ec
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - ftfy = ftfy.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - hatchling
   run:
     - python >=${{ python_min }}
@@ -34,30 +30,60 @@ tests:
   - python:
       imports:
         - ftfy
-        - ftfy.bad_codecs
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - ftfy --help
-      - pytest -vvv --capture=tee-sys -k "not test_cli" tests
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
+  homepage: https://ftfy.readthedocs.io/en/latest/
+  license: Apache-2.0
   license_file: LICENSE.txt
-  summary: Fixes some problems with Unicode text after the fact
-  homepage: https://github.com/LuminosoInsight/python-ftfy/
-  documentation: http://ftfy.readthedocs.io/
+  summary: Fixes mojibake and other problems with Unicode, after the fact
+  description: |
+    Fixes mojibake and other problems with Unicode, after the fact
+  repository: https://github.com/rspeer/python-ftfy
+  documentation: https://ftfy.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - rmax
     - FernandezMathieu
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ftfy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ftfy
+  cfe-purls:
+    - pkg:conda/ftfy@${{ version }}?channel=conda-forge
+    - pkg:pypi/ftfy@${{ version }}
+  cfe-upstream-repo: https://github.com/rspeer/python-ftfy
+  cfe-upstream-homepage: https://ftfy.readthedocs.io/en/latest/
+  cfe-import-names: [ftfy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ftfy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.3.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:37:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:37:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:37:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

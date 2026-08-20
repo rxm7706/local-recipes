@@ -2,16 +2,16 @@
 schema_version: 1
 
 context:
-  name: pyee
-  version: "13.0.1"
+  version: "14.0.0"
+  python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: pyee
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 0b931f7c14535667ed4c7e0d531716368715e860b988770fc7eb8578d1f67fc8
+  url: https://pypi.org/packages/source/p/pyee/pyee-${{ version }}.tar.gz
+  sha256: 76dd0f4314ecd27f02dc73589dea7fd3853f9b6176d8ef9b122860657e3602de
 
 build:
   number: 0
@@ -20,8 +20,9 @@ build:
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
     - setuptools-scm
     - wheel
   run:
@@ -33,17 +34,54 @@ tests:
       imports:
         - pyee
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pyee/
   license: MIT
   license_file: LICENSE
-  summary: A port of node.js's EventEmitter to python.
-  homepage: https://github.com/jfhbrook/pyee
+  summary: A rough port of Node.js's EventEmitter to Python with a few tricks of its own
+  description: |
+    A rough port of Node.js's EventEmitter to Python with a few tricks of its own
   repository: https://github.com/jfhbrook/pyee
-  documentation: https://pyee.readthedocs.io/
+  documentation: https://pyee.readthedocs.io
 
 extra:
   recipe-maintainers:
     - mxschmitt
     - kiwi0fruit
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyee
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyee
+  cfe-purls:
+    - pkg:conda/pyee@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyee@${{ version }}
+  cfe-upstream-repo: https://github.com/jfhbrook/pyee
+  cfe-upstream-homepage: https://pypi.org/project/pyee/
+  cfe-import-names: [pyee]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyee-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-14.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:38:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:38:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:38:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

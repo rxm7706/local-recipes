@@ -20,20 +20,18 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
     - affine
-    - click >7.1,!=8.2.1
+    - click !=8.2.1,>7.1
     - cligj >=0.4
     - numpy >=1.9
     - pyogrio
     - rasterio >=1.0
-    - simplejson
     - shapely
-    # optional :: [fiona]
-    - fiona
+    - simplejson
 
 tests:
   - python:
@@ -45,13 +43,50 @@ tests:
         - "*"
 
 about:
-  summary: Summarize geospatial raster datasets based on vector geometries
+  homepage: https://pypi.org/project/rasterstats/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://pypi.org/project/rasterstats/
+  summary: Summarize geospatial raster datasets based on vector geometries
+  description: |
+    Summarize geospatial raster datasets based on vector geometries
+  repository: https://github.com/perrygeo/python-rasterstats
   documentation: https://pythonhosted.org/rasterstats/
 
 extra:
   recipe-maintainers:
     - perrygeo
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rasterstats
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rasterstats
+  cfe-purls:
+    - pkg:conda/rasterstats@${{ version }}?channel=conda-forge
+    - pkg:pypi/rasterstats@${{ version }}
+  cfe-upstream-repo: https://github.com/perrygeo/python-rasterstats
+  cfe-upstream-homepage: https://pypi.org/project/rasterstats/
+  cfe-import-names: [rasterstats]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rasterstats-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:47:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:47:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:47:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

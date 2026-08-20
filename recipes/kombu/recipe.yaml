@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: kombu
   version: "5.6.2"
 
 package:
-  name: ${{ name|lower }}
+  name: kombu
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kombu-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/kombu/kombu-${{ version }}.tar.gz
   sha256: 8060497058066c6f5aed7c26d7cd0d3b574990b09de842a8c5aaed0b92cc5a55
 
 build:
@@ -19,44 +18,34 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: build_platform != target_platform
-      then: python
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    # See https://pypi.org/pypi/kombu/{{ version }}/json
-    - amqp >=5.1.1,<6.0.0
+    - amqp <6.0.0,>=5.1.1
     - vine ==5.1.0
     - python-tzdata >=2025.2
     - packaging
-    - boto3 >=1.26.143  # for sqs option
 
 tests:
   - python:
       imports:
-        - kombu
-        - kombu.asynchronous
-        - kombu.asynchronous.aws
-        - kombu.asynchronous.http
-        - kombu.transport
-        - kombu.transport.virtual
-        - kombu.utils
+        - t
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Messaging library for Python.
+  homepage: https://kombu.readthedocs.io
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://kombu.readthedocs.io
+  summary: Messaging library for Python.
+  description: |
+    Messaging library for Python.
   repository: https://github.com/celery/kombu
-  documentation: https://pythonhosted.org/kombu/
 
 extra:
   recipe-maintainers:
@@ -64,3 +53,37 @@ extra:
     - anguslees
     - kwilcox
     - jamesmyatt
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kombu
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kombu
+  cfe-purls:
+    - pkg:conda/kombu@${{ version }}?channel=conda-forge
+    - pkg:pypi/kombu@${{ version }}
+  cfe-upstream-repo: https://github.com/celery/kombu
+  cfe-upstream-homepage: https://kombu.readthedocs.io
+  cfe-import-names: [t]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kombu-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.6.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:58:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:58:31Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:58:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['t']
+####

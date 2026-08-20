@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  name: django-ai-assistant
   version: "0.4.0"
 
 package:
@@ -21,19 +20,15 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
+    - poetry-core >=1.8.0
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - django >=4.2
-    - pydantic >=2.9.2,<3.0.0
-    - django-ninja >=1.5.3,<2.0.0
-    - langchain >=1.2.6,<2.0.0
-    - langgraph >=1.0.6,<2.0.0
-  run_constraints:
-    - langchain-openai >=1.1.7,<2.0.0
-    - langchain-anthropic >=1.3.1,<2.0.0
-    - langchain-google-genai >=4.2.0,<5.0.0
+    - django-ninja <2.0.0,>=1.5.3
+    - langchain <2.0.0,>=1.2.6
+    - langgraph <2.0.0,>=1.0.6
+    - pydantic <3.0.0,>=2.9.2
 
 tests:
   - python:
@@ -41,16 +36,50 @@ tests:
         - django_ai_assistant
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Django app to integrate with OpenAI Assistants API
+  homepage: https://github.com/vintasoftware/django-ai-assistant
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://github.com/vintasoftware/django-ai-assistant
+  summary: Django app to integrate with OpenAI Assistants API
+  description: |
+    Django app to integrate with OpenAI Assistants API
+  repository: https://github.com/vintasoftware/django-ai-assistant
   documentation: https://vintasoftware.github.io/django-ai-assistant
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-ai-assistant
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-ai-assistant
+  cfe-purls:
+    - pkg:conda/django-ai-assistant@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-ai-assistant@${{ version }}
+  cfe-upstream-repo: https://github.com/vintasoftware/django-ai-assistant
+  cfe-upstream-homepage: https://github.com/vintasoftware/django-ai-assistant
+  cfe-import-names: [django_ai_assistant]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-ai-assistant-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:18:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:18:02Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:18:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

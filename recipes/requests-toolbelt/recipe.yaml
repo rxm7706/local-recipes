@@ -2,52 +2,83 @@
 schema_version: 1
 
 context:
-  name: requests-toolbelt
   version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: requests-toolbelt
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/requests-toolbelt-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/requests-toolbelt/requests-toolbelt-${{ version }}.tar.gz
   sha256: 7681a0a3d047012b5bdc0ee37d7f8f07ebe76ab08caeccfc3921ce23c88d5bc6
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - requests >=2.0.1,<3.0.0
+    - requests
 
 tests:
   - python:
       imports:
         - requests_toolbelt
-        - requests_toolbelt.adapters
-        - requests_toolbelt.auth
-        - requests_toolbelt.downloadutils
-        - requests_toolbelt.multipart
-        - requests_toolbelt.threaded
-        - requests_toolbelt.utils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://toolbelt.readthedocs.io/
   license: Apache-2.0
   license_file: LICENSE
-  summary: A utility belt for advanced users of python-requests.
-  homepage: https://toolbelt.readthedocs.org
+  summary: A utility belt for advanced users of python-requests
+  description: |
+    A utility belt for advanced users of python-requests
+  repository: https://github.com/requests/toolbelt
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - kwilcox
     - sigmavirus24
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests-toolbelt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests-toolbelt
+  cfe-purls:
+    - pkg:conda/requests-toolbelt@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests-toolbelt@${{ version }}
+  cfe-upstream-repo: https://github.com/requests/toolbelt
+  cfe-upstream-homepage: https://toolbelt.readthedocs.io/
+  cfe-import-names: [requests_toolbelt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests-toolbelt-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:55:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:55:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:55:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -67,11 +67,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/smmap-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:09:47Z
+  cfe-last-checked: 2026-08-17T04:27:21Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:09:47Z
+  cfe-generated-at-datetime: 2026-08-17T04:27:21Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T01:09:47Z
+  cfe-local-build-datetime: 2026-08-17T04:27:21Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

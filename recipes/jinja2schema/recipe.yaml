@@ -2,45 +2,81 @@
 schema_version: 1
 
 context:
-  name: jinja2schema
   version: "0.1.4"
-  python_min: "2.7"
 
 package:
-  name: ${{ name|lower }}
+  name: jinja2schema
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jinja2schema-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jinja2schema/jinja2schema-${{ version }}.tar.gz
   sha256: 236e4ee6612a0ab5a5664c453c954a2c7e42b6be986c12f7b31f34f9082043bc
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 2.7.*
+    - setuptools
   run:
-    - jinja2 >=2.2
     - python >=${{ python_min }}
+    - jinja2
 
 tests:
   - python:
       imports:
         - jinja2schema
-        - jinja2schema.visitors
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Type inference for Jinja2 templates.
+  homepage: https://jinja2schema.readthedocs.io
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://jinja2schema.readthedocs.io
+  summary: Type inference for Jinja2 templates.
+  description: |
+    Type inference for Jinja2 templates.
 
 extra:
   recipe-maintainers:
     - sumanth-manchala
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jinja2schema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jinja2schema
+  cfe-purls:
+    - pkg:conda/jinja2schema@${{ version }}?channel=conda-forge
+    - pkg:pypi/jinja2schema@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://jinja2schema.readthedocs.io
+  cfe-import-names: [jinja2schema]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jinja2schema-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:48:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:48:56Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:48:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['jinja2']
+####

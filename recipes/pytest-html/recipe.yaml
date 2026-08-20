@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pytest-html
   version: "4.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-html
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_html-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-html/pytest_html-${{ version }}.tar.gz
   sha256: b6a88cba507500d8709959201e2e757d3941e859fd17cfd4ed87b16fc0c67912
 
 build:
@@ -20,33 +19,71 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - hatch-vcs >=0.3
     - hatchling >=1.13
-    - pip
   run:
     - python >=${{ python_min }}
-    - pytest >=7.0.0
-    - pytest-metadata >=2.0.0
-    - jinja2 >=3.0.0
+    - jinja2 >=3
+    - pytest-metadata >=2
+    - pytest >=7
 
 tests:
   - python:
       imports:
         - pytest_html
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pytest-dev/pytest-html
   license: MPL-2.0
   license_file: LICENSE
   summary: pytest plugin for generating HTML reports
-  homepage: https://github.com/pytest-dev/pytest-html
+  description: |
+    pytest plugin for generating HTML reports
+  repository: https://github.com/pytest-dev/pytest-html
 
 extra:
   recipe-maintainers:
-    - 48762
+    - 0xbe7a
     - birdsarah
     - davehunt
     - nicoddemus
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-html
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-html
+  cfe-purls:
+    - pkg:conda/pytest-html@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-html@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-html
+  cfe-upstream-homepage: https://github.com/pytest-dev/pytest-html
+  cfe-import-names: [pytest_html]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-html-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:34:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:34:59Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:34:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

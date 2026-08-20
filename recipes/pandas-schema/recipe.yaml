@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pandas_schema
   version: "0.3.6"
 
 package:
-  name: ${{ name|lower }}
+  name: pandas-schema
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pandas-schema/pandas_schema-${{ version }}.tar.gz
   sha256: c6bfc52c4bae9cdd7420fbe8c4b0622b769457827c3fc819928405638caf605f
 
 build:
@@ -20,14 +19,13 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - wheel
   run:
     - python >=${{ python_min }}
     - numpy
-    - pandas >=0.19
+    - pandas
     - packaging
 
 tests:
@@ -35,17 +33,48 @@ tests:
       imports:
         - pandas_schema
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  # Upstream ships a GPLv3 LICENSE file even though setup.py/PyPI metadata say
-  # "MIT"; the bundled LICENSE text is what governs redistribution, so mirror it.
-  license: GPL-3.0-only
+  homepage: https://github.com/TMiguelT/PandasSchema
+  license: MIT
   license_file: LICENSE
   summary: A validation library for Pandas data frames using user-friendly schemas
-  homepage: https://github.com/TMiguelT/PandasSchema
+  description: |
+    A validation library for Pandas data frames using user-friendly schemas
 
 extra:
   recipe-maintainers:
-    - foellmelanie
-    - killua156
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pandas-schema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pandas-schema
+  cfe-purls:
+    - pkg:conda/pandas-schema@${{ version }}?channel=conda-forge
+    - pkg:pypi/pandas-schema@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/TMiguelT/PandasSchema
+  cfe-import-names: [pandas_schema]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:58:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:58:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:58:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

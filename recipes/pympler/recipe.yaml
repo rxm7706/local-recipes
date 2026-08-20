@@ -2,47 +2,82 @@
 schema_version: 1
 
 context:
-  name: pympler
   version: "1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pympler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/Pympler/pympler-${{ version }}.tar.gz
   sha256: 1eaa867cb8992c218430f1708fdaccda53df064144d1c5656b1e6f1ee6000424
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
-    - pywin32-on-windows
 
 tests:
   - python:
       imports:
         - pympler
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pympler/pympler
   license: Apache-2.0
   license_file: LICENSE
-  summary: Development tool to measure, monitor and analyze the memory behavior of Python objects in a running Python application.
-  homepage: https://github.com/pympler/pympler
-  documentation: http://pythonhosted.org/Pympler/
+  summary: A development tool to measure, monitor and analyze the memory behavior of Python objects.
+  description: |
+    A development tool to measure, monitor and analyze the memory behavior of Python objects.
 
 extra:
   recipe-maintainers:
     - CJ-Wright
     - thewchan
     - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pympler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pympler
+  cfe-purls:
+    - pkg:conda/pympler@${{ version }}?channel=conda-forge
+    - pkg:pypi/pympler@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pympler/pympler
+  cfe-import-names: [pympler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pympler-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:50:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:50:26Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:50:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

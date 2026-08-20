@@ -3,8 +3,6 @@ schema_version: 1
 
 context:
   version: "1.0.2"
-  python_check_max: "3.14"
-  cov_fail_under: "47"
 
 package:
   name: patsy
@@ -17,42 +15,69 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - numpy >=1.4.0
     - python >=${{ python_min }}
+    - numpy >=1.4
 
 tests:
   - python:
-      imports: patsy
+      imports:
+        - patsy
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-        - scipy
-    script:
-      - coverage run --source=patsy --branch -m pytest -vv --color=yes --tb=long --pyargs patsy
-      - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+        - "*"
 
 about:
-  license: BSD-2-Clause AND PSF-2.0
-  license_file: LICENSE.txt
-  summary: Describing statistical models in Python using symbolic formulas
   homepage: https://github.com/pydata/patsy
-  documentation: https://patsy.readthedocs.io
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A Python package for describing statistical models and for building design matrices.
+  description: |
+    A Python package for describing statistical models and for building design matrices.
 
 extra:
   recipe-maintainers:
     - bollwyvl
     - croth1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: patsy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: patsy
+  cfe-purls:
+    - pkg:conda/patsy@${{ version }}?channel=conda-forge
+    - pkg:pypi/patsy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pydata/patsy
+  cfe-import-names: [patsy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/patsy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:52:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:52:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:52:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

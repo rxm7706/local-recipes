@@ -2,27 +2,28 @@
 schema_version: 1
 
 context:
-  name: pytest-filter-subpackage
   version: "0.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-filter-subpackage
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-filter-subpackage/pytest-filter-subpackage-${{ version }}.tar.gz
   sha256: 3f468f1b36518128869b95deab661ba45ed6293854329fef14da4c8cac78af56
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm
-    - python ${{ python_min }}
+    - setuptools
+    - setuptools-scm
+    - wheel
   run:
     - python >=${{ python_min }}
     - pytest >=4.6
@@ -32,28 +33,60 @@ tests:
   - python:
       imports:
         - pytest_filter_subpackage
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pytest
-        - pytest-doctestplus
-        - pytest-cov
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/astropy/pytest-filter-subpackage
   license: BSD-3-Clause
-  license_file: LICENSE.rst
+  license_file: LICENSE
   summary: Pytest plugin for filtering based on sub-packages
   description: |
-    This package contains a simple plugin for the pytest framework that
-    provides a shortcut to testing all code and documentation for a given
-    sub-package.
-  homepage: https://github.com/astropy/pytest-filter-subpackage
-  repository: https://github.com/astropy/pytest-filter-subpackage
-  documentation: https://github.com/astropy/pytest-filter-subpackage/blob/master/README.rst
+    Pytest plugin for filtering based on sub-packages
 
 extra:
   recipe-maintainers:
     - mwcraig
     - astrofrog
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-filter-subpackage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-filter-subpackage
+  cfe-purls:
+    - pkg:conda/pytest-filter-subpackage@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-filter-subpackage@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/astropy/pytest-filter-subpackage
+  cfe-import-names: [pytest_filter_subpackage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-filter-subpackage-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:14:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:14:13Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:14:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

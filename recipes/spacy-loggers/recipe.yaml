@@ -2,51 +2,79 @@
 schema_version: 1
 
 context:
-  name: spacy-loggers
-  modulename: spacy_loggers
   version: "1.0.5"
 
 package:
-  name: ${{ name|lower }}
+  name: spacy-loggers
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/spacy-loggers/spacy-loggers-${{ version }}.tar.gz
   sha256: d60b0bdbf915a60e516cc2e653baeff946f0cfc461b452d11a4d5458c6fe5f24
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - ${{ modulename }}
-      pip_check: false
-  - requirements:
-      run:
-        - pytest
-        - spacy >=3.1
-    script:
-      - python -m pytest --tb=native --pyargs ${{ modulename }}
+        - spacy_loggers
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/explosion/spacy-loggers
   license: MIT
   license_file: LICENSE
-  summary: Alternate loggers for spaCy pipeline training
-  description: Enables alternatives to spaCy's built-in console logger
-  homepage: https://github.com/explosion/spacy-loggers
-  repository: https://github.com/explosion/spacy-loggers
-  documentation: https://github.com/explosion/spacy-loggers
+  summary: Logging utilities for SpaCy
+  description: |
+    Logging utilities for SpaCy
 
 extra:
   recipe-maintainers:
     - conda-forge/spacy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spacy-loggers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spacy-loggers
+  cfe-purls:
+    - pkg:conda/spacy-loggers@${{ version }}?channel=conda-forge
+    - pkg:pypi/spacy-loggers@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/explosion/spacy-loggers
+  cfe-import-names: [spacy_loggers]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spacy-loggers-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:41:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:41:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:41:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

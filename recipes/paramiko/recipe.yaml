@@ -2,51 +2,51 @@
 schema_version: 1
 
 context:
-  name: paramiko
   version: "5.0.0"
-  bundle: tar.gz
-  hash_val: 36763b5b95c2a0dcfdf1abc48e48156ee425b21efe2f0e787c2dd5a95c0e5e79
 
 package:
-  name: ${{ name }}
+  name: paramiko
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/p/paramiko/paramiko-${{ version }}.tar.gz
+  sha256: 36763b5b95c2a0dcfdf1abc48e48156ee425b21efe2f0e787c2dd5a95c0e5e79
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
     - bcrypt >=3.2
     - cryptography >=3.3
-    - pynacl >=1.5
     - invoke >=2.0
+    - pynacl >=1.5
 
 tests:
   - python:
       imports:
         - paramiko
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/paramiko/
+  license: LGPL-2.1
   license_file: LICENSE
-  license: LGPL-2.1-or-later
   summary: SSH2 protocol library
-  homepage: http://www.paramiko.org/
-  repository: https://github.com/paramiko/paramiko/
-  documentation: http://docs.paramiko.org/
+  description: |
+    SSH2 protocol library
+  repository: https://github.com/paramiko/paramiko
+  documentation: https://docs.paramiko.org
 
 extra:
   recipe-maintainers:
@@ -54,3 +54,36 @@ extra:
     - jakirkham
     - tschoonj
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: paramiko
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: paramiko
+  cfe-purls:
+    - pkg:conda/paramiko@${{ version }}?channel=conda-forge
+    - pkg:pypi/paramiko@${{ version }}
+  cfe-upstream-repo: https://github.com/paramiko/paramiko
+  cfe-upstream-homepage: https://pypi.org/project/paramiko/
+  cfe-import-names: [paramiko]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/paramiko-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:44:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:44:47Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:44:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

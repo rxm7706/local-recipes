@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-util-http
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-util-http
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_util_http-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-util-http/opentelemetry_util_http-${{ version }}.tar.gz
   sha256: 84f82d826978bba416ab453460ff6a7391cdc3534c93a786595e4068680016b7
 
 build:
@@ -20,28 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
+    - opentelemetry
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.util
+        - opentelemetry.util.http
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Web util for OpenTelemetry
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/util/opentelemetry-util-http
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/util/opentelemetry-util-http
+  summary: Web util for OpenTelemetry
+  description: |
+    Web util for OpenTelemetry
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
     - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-util-http
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-util-http
+  cfe-purls:
+    - pkg:conda/opentelemetry-util-http@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-util-http@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/util/opentelemetry-util-http
+  cfe-import-names: [opentelemetry.util.http]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-util-http-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:57:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:57:17Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T10:57:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['opentelemetry']
+####

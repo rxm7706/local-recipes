@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: langchain-core
-  version: "1.5.5"
+  version: "1.5.6"
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-core
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/langchain_core-${{ version }}.tar.gz
-  sha256: c08d78176113867e9a76acc1007d641cd68fa5682e9e0018980d062b4ae0777e
+  url: https://pypi.org/packages/source/l/langchain-core/langchain_core-${{ version }}.tar.gz
+  sha256: b5f73bd9688c457b31ec73657a0ad56948f889fae27acee79286e9c285632ee6
 
 build:
   number: 0
@@ -20,39 +19,40 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
-    - httpx >=0.23.0,<1.0.0
+    - python >=${{ python_min }}
+    - httpx <1.0.0,>=0.23.0
+    - jsonpatch <2.0.0,>=1.33.0
     - langchain-protocol >=0.0.17
-    - uuid-utils >=0.12.0,<1.0
-    - typing_extensions >=4.7.0,<5.0.0
-    - python >=${{ python_min }},<4.0
-    - pydantic >=2.7.4,<3.0.0
-    - langsmith >=0.3.45,<1.0.0
-    - tenacity !=8.4.0,>=8.1.0,<10.0.0
-    - jsonpatch >=1.33.0,<2.0.0
-    - pyyaml >=5.3.0,<7.0.0
+    - langsmith <1.0.0,>=0.3.45
     - packaging >=23.2.0
-  run_constraints:
-    - jinja2 >=3.0.0,<4.0.0
+    - pydantic <3.0.0,>=2.7.4
+    - pyyaml <7.0.0,>=5.3.0
+    - tenacity !=8.4.0,<10.0.0,>=8.1.0
+    - typing_extensions <5.0.0,>=4.7.0
+    - uuid-utils <1.0,>=0.12.0
 
 tests:
   - python:
       imports:
         - langchain_core
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Core APIs for LangChain, the LLM framework for buildilng applications through composability
-  description: LangChain Core contains the core abstractions powering LangChain, including LangChain Expression Language.
+  homepage: https://docs.langchain.com/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/langchain-ai/langchain
-  repository: https://github.com/langchain-ai/langchain/tree/master/libs/core
-  documentation: https://api.python.langchain.com/en/stable/core_api_reference.html
+  summary: Building applications with LLMs through composability
+  description: |
+    Building applications with LLMs through composability
+  repository: https://github.com/langchain-ai/langchain
+  documentation: https://reference.langchain.com/python/langchain_core/
 
 extra:
   recipe-maintainers:
@@ -65,3 +65,36 @@ extra:
     - ccurme
     - agola11
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-core
+  cfe-purls:
+    - pkg:conda/langchain-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-core@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain
+  cfe-upstream-homepage: https://docs.langchain.com/
+  cfe-import-names: [langchain_core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-core-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.6
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:02:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:02:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:02:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -3,84 +3,79 @@ schema_version: 1
 
 context:
   version: "9.0.0"
-  python_max_check: "3.13"
 
-recipe:
+package:
   name: importlib-metadata
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/importlib_metadata/importlib_metadata-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/importlib-metadata/importlib_metadata-${{ version }}.tar.gz
   sha256: a4f57ab599e6a2e3016d7595cfd72eb4661a5106e787a95bcc90c7105b831efc
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: importlib-metadata
-    build:
-      noarch: python
-      script:
-        # use uv _with_ default build isolation to avoid circular dependency from
-        # https://github.com/conda-forge/setuptools_scm-feedstock
-        - uv pip install --python ${{ PYTHON }} . -v --no-deps --link-mode=copy
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - uv
-      run:
-        - python >=${{ python_min }}
-        - zipp >=3.20
-    tests:
-      - python:
-          imports:
-            - importlib_metadata
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_max_check }}.*
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77
+  run:
+    - python >=${{ python_min }}
+    - zipp >=3.20
 
-  - package:
-      name: importlib_metadata
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("importlib-metadata", exact=True) }}
-    tests:
-      - python:
-          imports:
-            - importlib_metadata
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_max_check }}.*
-      - files:
-          source:
-            - tests/
-        requirements:
-          run:
-            - jaraco.test >=5.4
-            - packaging
-            - pyfakefs
-            - pytest >=6,!=8.1.*
-            - pytest-cov
-            - python ${{ python_min }}.*
-        script:
-          - coverage run --source=importlib_metadata --branch -m pytest -vv --tb=long --color=yes
-          - coverage report --show-missing --skip-covered --fail-under=90
+tests:
+  - python:
+      imports:
+        - importlib_metadata
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/python/importlib_metadata
-  summary: A library to access the metadata for a Python package
+  homepage: https://pypi.org/project/importlib-metadata/
   license: Apache-2.0
   license_file: LICENSE
+  summary: Read metadata from Python packages
+  description: |
+    Read metadata from Python packages
+  repository: https://github.com/python/importlib_metadata
 
 extra:
-  feedstock-name: importlib_metadata
   recipe-maintainers:
     - nehaljwani
     - nicoddemus
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: importlib_metadata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: importlib-metadata
+  cfe-purls:
+    - pkg:conda/importlib_metadata@${{ version }}?channel=conda-forge
+    - pkg:pypi/importlib-metadata@${{ version }}
+  cfe-upstream-repo: https://github.com/python/importlib_metadata
+  cfe-upstream-homepage: https://pypi.org/project/importlib-metadata/
+  cfe-import-names: [importlib_metadata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/importlib_metadata-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:51:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:51:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:51:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

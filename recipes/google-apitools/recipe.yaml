@@ -2,35 +2,31 @@
 schema_version: 1
 
 context:
-  name: google-apitools
   version: "0.5.35"
 
 package:
-  name: ${{ name|lower }}
+  name: google-apitools
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-apitools/google-apitools-${{ version }}.tar.gz
   sha256: 911bc3698686c74187414c610ae30bd6e3c0a7404178fc6479ead6c420d2dd94
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - gen_client = apitools.gen.gen_client:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - fasteners >=0.14
-    - httplib2 >=0.8
-    - oauth2client >=1.4.12
     - python >=${{ python_min }}
+    - httplib2 >=0.8
+    - fasteners >=0.14
+    - oauth2client >=1.4.12
     - six >=1.12.0
 
 tests:
@@ -38,20 +34,51 @@ tests:
       imports:
         - apitools
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - gen_client --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: client libraries for humans
+  homepage: http://github.com/google/apitools
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/google-apitools/
+  summary: client libraries for humans
+  description: |
+    client libraries for humans
 
 extra:
   recipe-maintainers:
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-apitools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-apitools
+  cfe-purls:
+    - pkg:conda/google-apitools@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-apitools@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/google/apitools
+  cfe-import-names: [apitools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-apitools-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.35
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:51:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:51:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:51:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

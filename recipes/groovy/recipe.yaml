@@ -1,43 +1,79 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: "5_0_5"
+  version: "0.1.2"
 
 package:
   name: groovy
   version: ${{ version }}
 
 source:
-  url: https://github.com/apache/groovy/archive//GROOVY_${{ version | replace(".", "_") }}.tar.gz
-  sha256: 089fa644f57ada3058de20efd9c6f7d93ac7b03c4cbd1feee6f1067df1b5ca4e
+  url: https://pypi.org/packages/source/g/groovy/groovy-${{ version }}.tar.gz
+  sha256: 25c1dc09b3f9d7e292458aa762c6beb96ea037071bf5e917fc81fb78d2231083
 
 build:
   number: 0
-  noarch: generic
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - graphviz
-    - findutils
-    - maven
-    - openjdk >=17,<18
-    - unzip
-    - sed
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
   run:
-    - openjdk
+    - python >=${{ python_min }}
 
 tests:
-  - script:
-      - groovysh --help
+  - python:
+      imports:
+        - groovy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file:
-    - LICENSE
-    - target/generated-resources/licenses/
-  summary: Java-based scripting language
-  homepage: https://www.groovy-lang.org
-  repository: https://github.com/apache/groovy
+  homepage: https://github.com/gradio-app/groovy
+  license: MIT
+  license_file: LICENSE
+  summary: A small Python library created to help developers protect their applications from Server Side Request Forgery (SSRF) attacks.
+  description: |
+    A small Python library created to help developers protect their applications from Server Side Request Forgery (SSRF) attacks.
 
 extra:
   recipe-maintainers:
     - danielnachun
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: groovy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: groovy
+  cfe-purls:
+    - pkg:conda/groovy@${{ version }}?channel=conda-forge
+    - pkg:pypi/groovy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gradio-app/groovy
+  cfe-import-names: [groovy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/groovy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-0.1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:50:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:50:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:50:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

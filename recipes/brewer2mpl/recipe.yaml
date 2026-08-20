@@ -2,46 +2,83 @@
 schema_version: 1
 
 context:
-  name: brewer2mpl
   version: "1.4.1"
 
 package:
-  name: ${{ name }}
+  name: brewer2mpl
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/brewer2mpl/brewer2mpl-${{ version }}.tar.gz
   sha256: 2e094d1bea766885aa77e4ed40cc718af6458a1d5e08cc87a5f453c6095b1b1c
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
-  number: 3
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
   run:
-    - python
-    - setuptools
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - brewer2mpl
-        - brewer2mpl.wesanderson
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
+  homepage: https://github.com/jiffyclub/brewer2mpl/wiki
+  license: UNKNOWN
+  license_file: LICENSE
   summary: Connect colorbrewer2.org color maps to Python and matplotlib
-  homepage: https://github.com/jiffyclub/palettable/wiki/brewer2mpl
-  documentation: https://github.com/jiffyclub/palettable/wiki/brewer2mpl
+  description: |
+    Connect colorbrewer2.org color maps to Python and matplotlib
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: brewer2mpl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: brewer2mpl
+  cfe-purls:
+    - pkg:conda/brewer2mpl@${{ version }}?channel=conda-forge
+    - pkg:pypi/brewer2mpl@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jiffyclub/brewer2mpl/wiki
+  cfe-import-names: [brewer2mpl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/brewer2mpl-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:UNKNOWN
+
+  cfe-last-checked: 2026-08-17T06:48:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:48:54Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:48:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # blocker: license-unresolved:UNKNOWN
+####

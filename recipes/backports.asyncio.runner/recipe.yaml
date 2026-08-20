@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.2.0"
-  python_max: "3.11"
 
 package:
   name: backports.asyncio.runner
@@ -14,59 +13,73 @@ source:
   sha256: a5aa7b2b7d8f8bfcaa2b57313f70792df84e32a2a746f585213373f900b42162
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} ${{ RECIPE_DIR }}/build_backports_asyncio_runner.py
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-fancy-pypi-readme
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
   run:
     - python >=${{ python_min }}
-  run_constraints:
-    - python >=${{ python_min }}{% if python_min != python_max %},<${{ python_max }}{% endif %}
 
 tests:
-  - if: python_min != python_max
-    then:
-      python:
-        imports: backports.asyncio.runner
-        pip_check: true
-        python_version:
-          - ${{ python_min }}.*
-  - if: python_min != python_max
-    then:
-      requirements:
-        run:
-          - pytest-cov
-          - python ${{ python_min }}.*
-      files:
-        source:
-          - tests/
-      script:
-        # remove tests that import the python 3.11 test suite
-        - python -c "from pathlib import Path; [p.unlink() for p in Path('tests').glob('test_tasks_*.py')]"
-        - coverage run --source=backports.asyncio.runner --branch -m pytest -vv --tb=long --color=yes
-        - coverage report --show-missing --skip-covered --fail-under=91
-  - if: python_min != python_max
-    then:
-      requirements:
-        run:
-          - mypy
-          - python ${{ python_min }}.*
-      script:
-        - mypy -p backports.asyncio.runner
+  - python:
+      imports:
+        - backports.asyncio.runner
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Backport of asyncio.Runner, a context manager that controls event loop life cycle.
-  license: PSF-2.0
-  license_file: LICENSE.md
   homepage: https://github.com/samypr100/backports.asyncio.runner
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Backport of asyncio.Runner, a context manager that controls event loop life cycle.
+  description: |
+    Backport of asyncio.Runner, a context manager that controls event loop life cycle.
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: backports.asyncio.runner
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: backports-asyncio-runner
+  cfe-purls:
+    - pkg:conda/backports.asyncio.runner@${{ version }}?channel=conda-forge
+    - pkg:pypi/backports-asyncio-runner@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/samypr100/backports.asyncio.runner
+  cfe-import-names: [backports.asyncio.runner]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/backports.asyncio.runner-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:16:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:16:44Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:16:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

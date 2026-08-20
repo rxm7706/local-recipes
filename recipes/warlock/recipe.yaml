@@ -2,47 +2,83 @@
 schema_version: 1
 
 context:
-  name: warlock
   version: "2.1.0"
 
 package:
-  name: ${{ name }}
+  name: warlock
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/warlock/warlock-${{ version }}.tar.gz
   sha256: 82319ba017341e7fcdc81efc2be9dd2f8237a0da07c71476b5425651b317b1c9
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - flit-core
+    - flit-core ~=3.2
   run:
     - python >=${{ python_min }}
-    - jsonschema >=4
-    - jsonpatch >=1,<2
+    - jsonschema ~=4.0
+    - jsonpatch ~=1.0
 
 tests:
   - python:
       imports:
         - warlock
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/bcwaldon/warlock
   license: Apache-2.0
   license_file: LICENSE
   summary: Python object model built on JSON schema and JSON patch.
-  homepage: http://github.com/bcwaldon/warlock
+  description: |
+    Python object model built on JSON schema and JSON patch.
+  repository: http://github.com/bcwaldon/warlock
 
 extra:
   recipe-maintainers:
     - anguslees
     - tschoonj
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: warlock
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: warlock
+  cfe-purls:
+    - pkg:conda/warlock@${{ version }}?channel=conda-forge
+    - pkg:pypi/warlock@${{ version }}
+  cfe-upstream-repo: http://github.com/bcwaldon/warlock
+  cfe-upstream-homepage: http://github.com/bcwaldon/warlock
+  cfe-import-names: [warlock]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/warlock-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:10:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:10:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:10:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

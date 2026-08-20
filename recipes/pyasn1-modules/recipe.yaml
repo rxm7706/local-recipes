@@ -2,43 +2,46 @@
 schema_version: 1
 
 context:
-  name: pyasn1-modules
   version: "0.4.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pyasn1-modules
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyasn1_modules-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyasn1-modules/pyasn1_modules-${{ version }}.tar.gz
   sha256: 677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - pyasn1 >=0.6.1,<0.7.0
     - python >=${{ python_min }}
+    - pyasn1 <0.7.0,>=0.6.1
 
 tests:
   - python:
       imports:
         - pyasn1_modules
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A collection of ASN.1-based protocols modules
-  license: BSD-2-Clause
-  license_file: LICENSE.txt
   homepage: https://github.com/pyasn1/pyasn1-modules
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A collection of ASN.1-based protocols modules
+  description: |
+    A collection of ASN.1-based protocols modules
   repository: https://github.com/pyasn1/pyasn1-modules
 
 extra:
@@ -46,3 +49,40 @@ extra:
     - jakirkham
     - pmlandwehr
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyasn1-modules
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyasn1-modules
+  cfe-purls:
+    - pkg:conda/pyasn1-modules@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyasn1-modules@${{ version }}
+  cfe-upstream-repo: https://github.com/pyasn1/pyasn1-modules
+  cfe-upstream-homepage: https://github.com/pyasn1/pyasn1-modules
+  cfe-import-names: [pyasn1_modules]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyasn1-modules-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:25:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:25:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:25:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -15,16 +15,13 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    content:
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools >=67.6.0
-    - wheel >=0.40.0
+    - setuptools
   run:
     - python >=${{ python_min }}
     - streamlit >=0.63
@@ -40,17 +37,43 @@ tests:
 
 about:
   homepage: https://github.com/NathanChen198/streamlit-cookies-controller
-  summary: Control client browser cookies for Streamlit applications
-  description: |
-    streamlit-cookies-controller enables getting, setting, and removing browser
-    cookies from within Streamlit applications. It uses the universal-cookie
-    JavaScript package to access cookies on the client side, returning None
-    when accessing non-existent cookies rather than raising an error.
   license: MIT
   license_file: LICENSE
-  repository: https://github.com/NathanChen198/streamlit-cookies-controller
+  summary: Streamlit cookies controller
+  description: |
+    Streamlit cookies controller
 
 extra:
   recipe-maintainers:
     - pb01ka
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-cookies-controller
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-cookies-controller
+  cfe-purls:
+    - pkg:conda/streamlit-cookies-controller@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-cookies-controller@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/NathanChen198/streamlit-cookies-controller
+  cfe-import-names: [streamlit_cookies_controller]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/streamlit-cookies-controller-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:23:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:23:25Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:23:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

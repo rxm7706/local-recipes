@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 3.8.1
+  version: "3.8.1"
 
 package:
   name: luigi
@@ -16,27 +16,22 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - luigi = luigi.cmdline:luigi_run
-      - luigid = luigi.cmdline:luigid
-      - luigi-grep = luigi.tools.luigi_grep:main
-      - luigi-deps = luigi.tools.deps:main
-      - luigi-deps-tree = luigi.tools.deps_tree:main
 
 requirements:
   host:
-    - python  ${{ python_min }}.*
-    - hatchling
-    - hatch-fancy-pypi-readme
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - python-dateutil >=2.7.5,<3
+    - python-dateutil <3,>=2.7.5
     - tenacity >=9
-    - tornado >=5.0,<7
-    - python-daemon
+    - tornado <7,>=5.0
     - typing_extensions >=4.12.2
+    - if: win
+      then:
+        - python-daemon
+
 tests:
   - python:
       imports:
@@ -44,25 +39,47 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - '*'
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - luigi --help
-      - luigid --help
-      - luigi-grep --help
-      - luigi-deps --help
-      - luigi-deps-tree --help
+        - "*"
 
 about:
-  summary: Workflow mgmgt + task scheduling + dependency resolution.
+  homepage: https://github.com/spotify/luigi
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/spotify/luigi
+  summary: Workflow mgmgt + task scheduling + dependency resolution.
+  description: |
+    Workflow mgmgt + task scheduling + dependency resolution.
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - kwilcox
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: luigi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: luigi
+  cfe-purls:
+    - pkg:conda/luigi@${{ version }}?channel=conda-forge
+    - pkg:pypi/luigi@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/spotify/luigi
+  cfe-import-names: [luigi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/luigi-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:07:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:07:03Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:07:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,52 +2,87 @@
 schema_version: 1
 
 context:
-  name: qstylizer
   version: "0.2.4"
 
 package:
-  name: ${{ name|lower }}
+  name: qstylizer
   version: ${{ version }}
 
 source:
-  url: https://github.com/blambright/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 5ad15eeafdb140af3711531a1468382e3a15d8a416e5b1bcc6bf28693a7c37ee
+  url: https://pypi.org/packages/source/q/qstylizer/qstylizer-${{ version }}.tar.gz
+  sha256: 4880991d912c9837454832e8e2b58d60b66848d8c4a7cf57ed544fd68b91a23a
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - pbr
     - setuptools
   run:
     - python >=${{ python_min }}
-    - tinycss2 >=1.1.0,<2.0
-    - inflection >0.3.0,<1.0
+    - tinycss2 <2,>=0.5
+    - inflection <1,>0.3.0
 
 tests:
   - python:
       imports:
         - qstylizer
-        - qstylizer.style
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/blambright/qstylizer
   license: MIT
   license_file: LICENSE.txt
-  summary: Qt stylesheet generation utility for PyQt/PySide
+  summary: Stylesheet Generator for PyQt{4-5}/PySide{1-2}
   description: |
-    qstylizer is a python package designed to help with the construction of
-    PyQt/PySide stylesheets.
-  homepage: https://github.com/blambright/qstylizer
-  repository: https://github.com/blambright/qstylizer
-  documentation: http://qstylizer.readthedocs.io
+    Stylesheet Generator for PyQt{4-5}/PySide{1-2}
 
 extra:
   recipe-maintainers:
     - andfoy
     - ccordoba12
     - steff456
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: qstylizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: qstylizer
+  cfe-purls:
+    - pkg:conda/qstylizer@${{ version }}?channel=conda-forge
+    - pkg:pypi/qstylizer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/blambright/qstylizer
+  cfe-import-names: [qstylizer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/qstylizer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:41:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:41:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:41:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

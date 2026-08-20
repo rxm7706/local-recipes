@@ -2,61 +2,84 @@
 schema_version: 1
 
 context:
-  name: pynndescent
   version: "0.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pynndescent
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pynndescent/pynndescent-${{ version }}.tar.gz
   sha256: 7ffde0fb5b400741e055a9f7d377e3702e02250616834231f6c209e39aac24f5
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
-    - setuptools
-    - numpy >=1.13
-    - numba >=0.46
-    - llvmlite >=0.30
-    - scikit-learn >=0.19
+    - scikit-learn >=0.18
     - scipy >=1.0
+    - numba >=0.55.0
+    - llvmlite >=0.38
+    - joblib >=0.11
 
 tests:
   - python:
       imports:
         - pynndescent
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - setuptools
-    script:
-      - python -c "from importlib.metadata import version; assert version('pynndescent') == '${{ version }}'"
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
-  summary: Simple fast approximate nearest neighbor search
-  description: |
-    A Python nearest neighbor descent for approximate nearest neighbors.
-    This is a relatively straightforward python implementation of
-    Nearest Neighbor Descent for k-neighbor-graph construction and
-    approximate nearest neighbor search.
   homepage: http://github.com/lmcinnes/pynndescent
-  repository: https://github.com/lmcinnes/pynndescent
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Nearest Neighbor Descent
+  description: |
+    Nearest Neighbor Descent
 
 extra:
   recipe-maintainers:
     - lmcinnes
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pynndescent
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pynndescent
+  cfe-purls:
+    - pkg:conda/pynndescent@${{ version }}?channel=conda-forge
+    - pkg:pypi/pynndescent@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/lmcinnes/pynndescent
+  cfe-import-names: [pynndescent]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pynndescent-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:51:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:51:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:51:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

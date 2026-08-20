@@ -2,44 +2,79 @@
 schema_version: 1
 
 context:
-  name: shutilwhich
   version: "1.1.0"
-  compress_type: tar.gz
-  hash_val: db1f39c6461e42f630fa617bb8c79090f7711c9ca493e615e43d0610ecb64dc6
 
 package:
-  name: ${{ name|lower }}
+  name: shutilwhich
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
-  sha256: ${{ hash_val }}
+  url: https://pypi.org/packages/source/s/shutilwhich/shutilwhich-${{ version }}.tar.gz
+  sha256: db1f39c6461e42f630fa617bb8c79090f7711c9ca493e615e43d0610ecb64dc6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - shutilwhich
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: PSF-2.0
-  license_file: ${{ RECIPE_DIR }}/LICENSE
-  summary: shutil.which for those not using Python 3.3 yet.
   homepage: http://github.com/mbr/shutilwhich
-  repository: http://github.com/mbr/shutilwhich
+  license: PSF
+  license_file: LICENSE
+  summary: shutil.which for those not using Python 3.3 yet.
+  description: |
+    shutil.which for those not using Python 3.3 yet.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: shutilwhich
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: shutilwhich
+  cfe-purls:
+    - pkg:conda/shutilwhich@${{ version }}?channel=conda-forge
+    - pkg:pypi/shutilwhich@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/mbr/shutilwhich
+  cfe-import-names: [shutilwhich]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shutilwhich-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:27:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:27:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:27:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

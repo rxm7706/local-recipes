@@ -2,59 +2,80 @@
 schema_version: 1
 
 context:
-  name: MarkupPy
   version: "1.18"
 
 package:
-  name: ${{ name|lower }}
+  name: markuppy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/MarkupPy/markuppy-${{ version }}.tar.gz
   sha256: 540f31b835076260339368890ac4f44eb3971d75fdbd97b49fa1f8b6685513d3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
-    - wheel
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - MarkupPy.markup
+        - MarkupPy
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - python -m pip show MarkupPy
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/tylerbakke/MarkupPy
   license: MIT
   license_file: LICENSE
   summary: An HTML/XML generator
   description: |
-    This is MarkupPy - a Python module that attempts to make it easier
-    to generate HTML/XML from a Python program in an intuitive,
-    lightweight, customizable and pythonic way.
-    It works with both python 2 and 3.
-
-
-  homepage: https://github.com/tylerbakke/MarkupPy
-  repository: https://github.com/tylerbakke/MarkupPy
+    An HTML/XML generator
   documentation: https://tylerbakke.github.io/MarkupPy/
 
 extra:
   recipe-maintainers:
     - duncanmmacleod
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markuppy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markuppy
+  cfe-purls:
+    - pkg:conda/markuppy@${{ version }}?channel=conda-forge
+    - pkg:pypi/markuppy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/tylerbakke/MarkupPy
+  cfe-import-names: [MarkupPy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markuppy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.18
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:26:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:26:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:26:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

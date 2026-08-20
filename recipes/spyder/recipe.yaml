@@ -3,11 +3,9 @@ schema_version: 1
 
 context:
   version: "6.1.6"
-  python_min: "3.10"  # DO NOT REMOVE! This is necessary to build our installers
-  build: 0
 
-recipe:
-  name: spyder-base
+package:
+  name: spyder
   version: ${{ version }}
 
 source:
@@ -15,52 +13,33 @@ source:
   sha256: 7986ed030ab80478974bcb81b5c8c882f50ca7366ca9d566ce019866ad6b0583
 
 build:
-  # noarch on Windows fails due to spyder.ico
-  # conda_build.exceptions.CondaBuildUserError: Noarch package contains binary script: spyder.ico
-  # https://github.com/conda/conda-build/issues/5385
-  number: ${{ build }}
-  string: ${{ 'linux_pyh${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if linux else 'osx_pyh${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if osx else '' }}
-  noarch: ${{ 'python' if unix else '' }}
-  python:
-    entry_points:
-      - spyder = spyder.app.start:main
-  osx_is_app: true
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: unix and (build_platform != target_platform)
-      then: python >=${{ python_min }}
-    # Needed to provide a package for each Python version supported by conda-forge on Windows
-    - if: win  and (build_platform != target_platform)
-      then: python
   host:
-    - if: unix
-      then: python ${{ python_min }}
-    - if: win
-      then: python
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=42
     - packaging
   run:
     - python >=${{ python_min }}
+    - pyqt <5.16,>=5.15
+    - pyqtwebengine <5.16,>=5.15
+    - qtconsole-base <5.8.0,>=5.7.2
     - aiohttp >=3.11.2
-    - if: osx
-      then: applaunchservices >=0.3.0
-    - asyncssh >=2.14.0,<3.0.0
+    - asyncssh <3.0.0,>=2.14.0
     - bcrypt >=4.3.0
-    - chardet >=5.2.0,<8.0.0
+    - chardet <8.0.0,>=5.2.0
     - cloudpickle >=0.5.0
     - cookiecutter >=1.6.0
     - diff-match-patch >=20181111
-    # Version 2.18 makes Spyder segfault at startup
-    - if: linux
-      then: fontconfig >=2.17,<2.18
-    - fzf >=0.42.0
     - importlib-metadata >=4.6.0
     - intervaltree >=3.0.2
-    - ipython >=8.15.0,<10.0.0,!=8.17.1,!=9.1.0,!=9.2.0,!=9.3.0,!=9.4.0
+    - ipython !=8.17.1,!=9.1.0,!=9.2.0,!=9.3.0,!=9.4.0,<10.0.0,>=8.15.0
     - ipython_pygments_lexers >=1.0
-    - jedi >=0.17.2,<0.21.0
+    - jedi <0.21.0,>=0.17.2
     - jellyfish >=0.7
     - jsonschema >=3.2.0
     - keyring >=17.0.0
@@ -68,129 +47,89 @@ requirements:
     - nbconvert >=4.0
     - numpydoc >=0.6.0
     - packaging >=20.0
-    - parso >=0.7.0,<0.9.0
+    - parso <0.9.0,>=0.7.0
     - pexpect >=4.4.0
     - pickleshare >=0.4
     - psutil >=5.3
-    # This is here to work around a bug in mamba
-    - if: win
-      then: ptyprocess >=0.5
     - pygithub >=2.3.0
     - pygments >=2.0
-    - pylint >=3.1,<5
+    - pylint <5,>=3.1
     - pylint-venv >=3.0.2
     - pyls-spyder >=0.4.0
-    - if: osx
-      then: python.app
-    - python-lsp-black >=2.0.0,<3.0.0
-    - python-lsp-ruff >=2.3.0,<3.0.0
-    - python-lsp-server >=1.15.0,<1.16.0
+    - python-lsp-black <3.0.0,>=2.0.0
+    - python-lsp-ruff <3.0.0,>=2.3.0
+    - python-lsp-server <1.16.0,>=1.15.0
     - pyuca >=1.2
-    - if: linux
-      then: pyxdg >=0.26
     - pyzmq >=24.0.0
-    - qdarkstyle >=3.2.0,<3.3.0
+    - qdarkstyle <3.3.0,>=3.2.0
     - qstylizer >=0.2.2
-    - qtawesome >=1.4.1,<1.5.0
-    - qtconsole-base >=5.7.2,<5.8.0
+    - qtawesome <1.5.0,>=1.4.1
     - qtpy >=2.4.0
     - rtree >=0.9.7
-    - sphinx >=0.6.6
-    - spyder-kernels >=3.1.5,<3.2.0
-    - superqt >=0.6.2,<1.0.0
+    - sphinx >=7.2.0
+    - spyder-kernels <3.2.0,>=3.1.5
+    - superqt <1.0.0,>=0.6.2
     - textdistance >=4.2.0
     - three-merge >=0.1.1
     - watchdog >=0.10.3
     - yarl >=1.9.4
-    # https://conda-forge.org/docs/maintainer/knowledge_base/#noarch-python
-    - if: linux
-      then: __linux
-    - if: osx
-      then: __osx
-  run_constraints:
-    - spyder ${{ version }} *${{ build }}
-
-outputs:
-  - package:
-      name: spyder-base
-  - package:
-      name: spyder
-    build:
-      string: ${{ 'linux_pyh${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if linux else '' }}
-      noarch: python
-    requirements:
-      run:
-        - spyder-base ${{ version }} *${{ build }}
-        - if: linux
-          then: fcitx-qt5 >=1.2.7
-        - pyqt >=5.15,<5.16
-        - pyqtwebengine >=5.15,<5.16
-        - qtconsole >=5.7.2,<5.8.0
-        - if: linux
-          then: __linux
-    tests:
-      - python:
-          imports:
-            - spyder
-          pip_check: true
-      - requirements:
-          run:
-            - if: unix
-              then: python ${{ python_min }}
-            - if: win
-              then: python
-            - pip
-        script:
-          - spyder -h
 
 tests:
   - python:
       imports:
         - spyder
       pip_check: true
-  - requirements:
-      run:
-        - if: unix
-          then: python ${{ python_min }}
-        - if: win
-          then: python
-        - pip
-    script:
-      - spyder -h
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.spyder-ide.org/
   license: MIT
   license_file: LICENSE.txt
   summary: The Scientific Python Development Environment
   description: |
-    Spyder is a powerful scientific environment written in Python, for Python,
-    and designed by and for scientists, engineers and data analysts.
-    It features a unique combination of the advanced editing, analysis,
-    debugging and profiling functionality of a comprehensive development tool
-    with the data exploration, interactive execution, deep inspection and
-    beautiful visualization capabilities of a scientific package.\n
-    Furthermore, Spyder offers built-in integration with many popular
-    scientific packages, including NumPy, SciPy, Pandas, IPython, QtConsole,
-    Matplotlib, SymPy, and more.\n
-    Beyond its many built-in features, Spyder can be extended even further via
-    third-party plugins.\n
-    Spyder can also be used as a PyQt5 extension library, allowing you to build
-    upon its functionality and embed its components, such as the interactive
-    console or advanced editor, in your own software.
-  homepage: https://www.spyder-ide.org/
-  repository: https://github.com/spyder-ide/spyder
-  documentation: https://docs.spyder-ide.org/
+    The Scientific Python Development Environment
 
 extra:
-  feedstock-name: spyder
   recipe-maintainers:
     - CAM-Gerlach
     - ccordoba12
     - dalthviz
     - mrclary
 
-app:
-  entry: spyder
-  icon: spyder.png
-  summary: The Scientific Python Development Environment
-  type: desk
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spyder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spyder
+  cfe-purls:
+    - pkg:conda/spyder@${{ version }}?channel=conda-forge
+    - pkg:pypi/spyder@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.spyder-ide.org/
+  cfe-import-names: [spyder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spyder-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:55:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:55:29Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:55:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

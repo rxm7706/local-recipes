@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: sqlalchemy-spanner
   version: "1.19.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sqlalchemy-spanner
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlalchemy_spanner-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sqlalchemy-spanner/sqlalchemy_spanner-${{ version }}.tar.gz
   sha256: 834cec66fb418e5085a44c68cee570c594c66dd8535b67dd5e8be3571d172136
 
 build:
@@ -33,20 +32,49 @@ tests:
   - python:
       imports:
         - google.cloud.sqlalchemy_spanner
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pip
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: SQLAlchemy dialect integrated into Cloud Spanner database
+  homepage: https://github.com/cloudspannerecosystem/python-spanner-sqlalchemy
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/sqlalchemy-spanner
+  summary: SQLAlchemy dialect integrated into Cloud Spanner database
+  description: |
+    SQLAlchemy dialect integrated into Cloud Spanner database
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-spanner
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-spanner
+  cfe-purls:
+    - pkg:conda/sqlalchemy-spanner@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-spanner@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cloudspannerecosystem/python-spanner-sqlalchemy
+  cfe-import-names: [google.cloud.sqlalchemy_spanner]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlalchemy-spanner-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:01:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:01:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:01:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

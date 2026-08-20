@@ -2,50 +2,88 @@
 schema_version: 1
 
 context:
-  name: s3fs
-  version: "2026.6.0"
+  version: "2026.7.0"
 
 package:
-  name: ${{ name|lower }}
+  name: s3fs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/s3fs-${{ version }}.tar.gz
-  sha256: b28de7082d0a4f72392884bdc497e34a4a1582f675d214c7da0acf6e950a0083
+  url: https://pypi.org/packages/source/s/s3fs/s3fs-${{ version }}.tar.gz
+  sha256: 76b062d1b2bc7bf4bcd9e7d8f1eb2b5dd9d5cee96ce888664c4ddb5f563146bf
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - aiobotocore >=2.19.0,<4.0.0
-    - aiohttp
-    - fsspec >=2026.6.0,<2026.6.1
     - python >=${{ python_min }}
+    - aiobotocore <4.0.0,>=2.19.0
+    - fsspec <2026.7.1,>=2026.7.0
+    - aiohttp !=4.0.0a0,!=4.0.0a1,>=3.9.0
 
 tests:
   - python:
       imports:
         - s3fs
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Convenient Filesystem interface over S3
+  homepage: http://github.com/fsspec/s3fs/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: http://s3fs.readthedocs.io/en/latest/
-  repository: https://github.com/dask/s3fs
-  documentation: https://s3fs.readthedocs.io/en/latest/
+  summary: Convenient Filesystem interface over S3
+  description: |
+    Convenient Filesystem interface over S3
 
 extra:
   recipe-maintainers:
     - martindurant
     - mrocklin
     - tomaugspurger
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: s3fs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: s3fs
+  cfe-purls:
+    - pkg:conda/s3fs@${{ version }}?channel=conda-forge
+    - pkg:pypi/s3fs@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/fsspec/s3fs/
+  cfe-import-names: [s3fs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/s3fs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2026.7.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:09:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:09:05Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:09:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

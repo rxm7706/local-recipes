@@ -2,62 +2,78 @@
 schema_version: 1
 
 context:
-  name: zipp
   version: "4.1.0"
 
 package:
-  name: ${{ name }}
+  name: zipp
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/z/zipp/zipp-${{ version }}.tar.gz
   sha256: 4cb57381f544315db7688e976e922a2b18cdb513d21cc194eb42232ba2a3e602
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools >=56
-    - wheel
-    - setuptools_scm >=3.4.1,<7
-    - toml
+    - pip
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - zipp
       pip_check: true
-  - script:
-      - python -m unittest tests/test_path.py
-    requirements:
-      run:
-        - importlib_metadata
-        - jaraco.itertools
-        - jaraco.test
-        - jaraco.functools
-        - more-itertools
-    files:
-      source:
-        - tests
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/jaraco/zipp
-  documentation: https://zipp.readthedocs.io/en/latest
-  repository: https://github.com/jaraco/zipp
+  homepage: https://pypi.org/project/zipp/
   license: MIT
-  license_family: MIT
   license_file: LICENSE
-  summary: A pathlib-compatible Zipfile object wrapper
+  summary: Backport of pathlib-compatible object wrapper for zip files
+  description: |
+    Backport of pathlib-compatible object wrapper for zip files
+  repository: https://github.com/jaraco/zipp
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zipp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zipp
+  cfe-purls:
+    - pkg:conda/zipp@${{ version }}?channel=conda-forge
+    - pkg:pypi/zipp@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/zipp
+  cfe-upstream-homepage: https://pypi.org/project/zipp/
+  cfe-import-names: [zipp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zipp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:30:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:30:44Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:30:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

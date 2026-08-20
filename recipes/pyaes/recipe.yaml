@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: pyaes
   version: "1.6.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pyaes
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyaes/pyaes-${{ version }}.tar.gz
   sha256: 02c1b1405c38d3c370b085fb952dd8bea3fadcee6411ad99f312cc129c536d8f
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -30,22 +29,58 @@ tests:
   - python:
       imports:
         - pyaes
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/ricmoo/pyaes
   license: MIT
   license_file: LICENSE.txt
   summary: Pure-Python Implementation of the AES block-cipher and common modes of operation
-  homepage: https://github.com/ricmoo/pyaes
-  repository: https://github.com/ricmoo/pyaes
-  documentation: https://pypi.org/project/pyaes/
+  description: |
+    Pure-Python Implementation of the AES block-cipher and common modes of operation
 
 extra:
   recipe-maintainers:
     - mwilson8
     - oblute
     - benhuff
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyaes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyaes
+  cfe-purls:
+    - pkg:conda/pyaes@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyaes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ricmoo/pyaes
+  cfe-import-names: [pyaes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyaes-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.6.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:16:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:16:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:16:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

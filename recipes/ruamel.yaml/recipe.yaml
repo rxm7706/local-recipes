@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "0.19.1"
-  python_check_max: "3.14"
 
 package:
   name: ruamel.yaml
@@ -16,42 +15,34 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    env:
-      RUAMEL_NO_LONG_DESCRIPTION: "1"
-    content:
-      - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - ruamel
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    # [oldlibyaml]
-    - ruamel.yaml.clib >=0.2.15
-    # [libyaml]
-    # - ruamel.yaml.clibz>=0.3.7
-
+    - clibz
 
 tests:
   - python:
       imports:
-        - ruamel.yaml
-        - ruamel.yaml.cyaml
+        - clibz
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
+        - "*"
 
 about:
+  homepage: https://sourceforge.net/p/ruamel-yaml/
   license: MIT
   license_file: LICENSE
-  summary: A YAML package for Python. It is a derivative of Kirill Simonov's PyYAML 3.11 which supports YAML1.1
-  homepage: https://pypi.org/project/ruamel.yaml
-  repository: https://sourceforge.net/p/ruamel-yaml
+  summary: ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order
+  description: |
+    ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order
+  repository: https://sourceforge.net/p/ruamel-yaml/code/ci/default/tree/
   documentation: https://yaml.dev/doc/ruamel.yaml
 
 extra:
@@ -64,3 +55,34 @@ extra:
     - ocefpaf
     - pelson
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ruamel.yaml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ruamel-yaml
+  cfe-purls:
+    - pkg:conda/ruamel.yaml@${{ version }}?channel=conda-forge
+    - pkg:pypi/ruamel-yaml@${{ version }}
+  cfe-upstream-repo: https://sourceforge.net/p/ruamel-yaml/code/ci/default/tree/
+  cfe-upstream-homepage: https://sourceforge.net/p/ruamel-yaml/
+  cfe-import-names: [clibz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ruamel.yaml-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:08:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:08:19Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:08:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['clibz']
+####

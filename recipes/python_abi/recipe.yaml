@@ -49,3 +49,38 @@ extra:
     - chrisburr
     - isuruf
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python_abi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-abi
+  cfe-purls:
+    - pkg:conda/python_abi@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-abi@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/conda-forge/python_abi-feedstock
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python_abi-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:33:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:33:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:33:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for python-abi...
+Error: Failed to fetch PyPI metadata for 'python-abi' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-abi/json
+
+####

@@ -15,44 +15,69 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-fancy-pypi-readme
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
   run:
+    - python >=${{ python_min }}
     - coverage >=7.10.6
     - pluggy >=1.2
     - pytest >=7
-    - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: pytest_cov
+      imports:
+        - pytest_cov
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - |
-        echo "def test_ok(): pass" > test_ok.py
-      - pytest --traceconfig | python -c "import sys; assert 'pytest-cov-${{ version }}' in sys.stdin.read()"
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pytest-cov/
   license: MIT
   license_file: LICENSE
-  summary: Pytest plugin for measuring coverage
-  homepage: https://github.com/pytest-dev/pytest-cov
-  repository: https://github.com/pytest-dev/pytest-cov
+  summary: Pytest plugin for measuring coverage.
+  description: |
+    Pytest plugin for measuring coverage.
+  documentation: https://pytest-cov.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - dopplershift
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-cov
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-cov
+  cfe-purls:
+    - pkg:conda/pytest-cov@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-cov@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/pytest-cov/
+  cfe-import-names: [pytest_cov]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-cov-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:10:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:10:02Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:10:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

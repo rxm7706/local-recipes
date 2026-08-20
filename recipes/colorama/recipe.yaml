@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: colorama
   version: "0.4.6"
 
 package:
-  name: ${{ name|lower }}
+  name: colorama
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/colorama-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/colorama/colorama-${{ version }}.tar.gz
   sha256: 08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling >=0.25.1
   run:
@@ -31,21 +30,54 @@ tests:
       imports:
         - colorama
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/tartley/colorama
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Cross-platform colored terminal text
+  summary: Cross-platform colored terminal text.
   description: |
-    colorama is a cross-platform colored terminal text.It makes
-    ANSI escape character sequences (for producing colored terminal text
-    and cursor positioning) work under MS Windows.
-  homepage: https://github.com/tartley/colorama
-  repository: https://github.com/tartley/colorama
-  documentation: http://pypi.python.org/pypi/colorama
+    Cross-platform colored terminal text.
 
 extra:
   recipe-maintainers:
     - kwilcox
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: colorama
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: colorama
+  cfe-purls:
+    - pkg:conda/colorama@${{ version }}?channel=conda-forge
+    - pkg:pypi/colorama@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/tartley/colorama
+  cfe-import-names: [colorama]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/colorama-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.6
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:05:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:05:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:05:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

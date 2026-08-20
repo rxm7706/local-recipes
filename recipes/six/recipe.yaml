@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 1.17.0
+  version: "1.17.0"
 
 package:
   name: six
@@ -13,42 +13,67 @@ source:
   sha256: ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: six
+      imports:
+        - six
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
+        - "*"
 
 about:
+  homepage: https://github.com/benjaminp/six
   license: MIT
   license_file: LICENSE
   summary: Python 2 and 3 compatibility utilities
   description: |
-    Six provides simple utilities for wrapping over differences between
-    Python 2 and Python 3. It is intended to support codebases that work on
-    both Python 2 and 3 without modification. six consists of only one Python
-    file, so it is painless to copy into a project.
-  homepage: https://six.readthedocs.io/
-  repository: https://github.com/benjaminp/six
-  documentation: https://six.readthedocs.io/
+    Python 2 and 3 compatibility utilities
 
 extra:
   recipe-maintainers:
     - jakirkham
     - msarahan
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: six
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: six
+  cfe-purls:
+    - pkg:conda/six@${{ version }}?channel=conda-forge
+    - pkg:pypi/six@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/benjaminp/six
+  cfe-import-names: [six]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/six-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:29:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:29:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:29:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

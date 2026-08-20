@@ -9,56 +9,38 @@ package:
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/t/types-setuptools/types_setuptools-${{ version }}.tar.gz
-    sha256: 09bedc248ebbb7a232c9419dfcdca329706e61bf2aa5743e9424d027f1d956b4
-  - url: https://raw.githubusercontent.com/python/typeshed/main/LICENSE
-    sha256: 295f8538c94ae5c3043301cf7cff1c852dab6a786a8ddee471e061b40d5ecabe
+  url: https://pypi.org/packages/py3/t/types-setuptools/types_setuptools-84.0.0.20260812-py3-none-any.whl
+  sha256: 799c08e4bc6a288e8a0b538afb5f5ff320a08927ba8dbedb30c74ee3ba5d867b
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-  run_constraints:
-    # https://github.com/python/typeshed/blob/main/stubs/setuptools/METADATA.toml#L4C54-L4C62
-    - setuptools >=71.1
 
 tests:
-  - package_contents:
-      strict: true
-      site_packages:
-        - distutils-stubs/**
-        - distutils-stubs/__init__.pyi
-        - setuptools-stubs/**
-        - setuptools-stubs/__init__.pyi
-        - types_setuptools-*.dist-info/**
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-  - requirements:
-      run:
-        - mypy
-        - python ${{ python_min }}.*
-        - setuptools
-    script:
-      - mypy -p setuptools -p distutils --exclude "/tests/" --exclude "/compilers/C/" --exclude "/compilers/platform/detect.py"
+  - python:
+      imports:
+        - types_setuptools
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Typing stubs for setuptools
-  license: Apache-2.0 AND MIT
+  homepage: https://github.com/python/typeshed
+  license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/types-setuptools
+  summary: Typing stubs for setuptools
+  description: |
+    Typing stubs for setuptools
   repository: https://github.com/python/typeshed
 
 extra:
@@ -66,3 +48,33 @@ extra:
     - fhoehle
     - conda-forge/mypy
     - wolfv
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-setuptools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-setuptools
+  cfe-purls:
+    - pkg:conda/types-setuptools@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-setuptools@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_setuptools]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-setuptools-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:57:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:57:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:57:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

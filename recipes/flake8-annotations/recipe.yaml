@@ -2,30 +2,28 @@
 schema_version: 1
 
 context:
-  name: flake8-annotations
   version: "3.2.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: flake8-annotations
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake8_annotations-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flake8-annotations/flake8_annotations-${{ version }}.tar.gz
   sha256: 71b52ec85a4ec82a10edfad497fe2b390609c95b2ad7d61cc94704bc88a498a0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
     - uv-build
   run:
-    - python >=${{ python_min }},<4.0.0
+    - python >=${{ python_min }}
     - flake8 >=5.0
 
 tests:
@@ -33,15 +31,54 @@ tests:
       imports:
         - flake8_annotations
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Flake8 Type Annotation Checks
+  homepage: https://github.com/sco1/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/sco1/flake8-annotations
+  summary: Flake8 Type Annotation Checks
+  description: |
+    Flake8 Type Annotation Checks
+  repository: https://github.com/sco1/flake8-annotations
+  documentation: https://github.com/sco1/flake8-annotations/blob/main/README.md
 
 extra:
   recipe-maintainers:
     - apmorton
     - muyajil
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-annotations
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-annotations
+  cfe-purls:
+    - pkg:conda/flake8-annotations@${{ version }}?channel=conda-forge
+    - pkg:pypi/flake8-annotations@${{ version }}
+  cfe-upstream-repo: https://github.com/sco1/flake8-annotations
+  cfe-upstream-homepage: https://github.com/sco1/
+  cfe-import-names: [flake8_annotations]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-annotations-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:13:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:13:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:13:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

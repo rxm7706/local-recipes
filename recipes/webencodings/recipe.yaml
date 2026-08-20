@@ -2,25 +2,26 @@
 schema_version: 1
 
 context:
-  version: "0.5.1"
+  version: "0.6.1"
 
 package:
   name: webencodings
   version: ${{ version }}
 
 source:
-  url: https://github.com/gsnedders/python-webencodings/archive/v${{ version }}.tar.gz
-  sha256: 082367f568a7812aa5f6922ffe3d9d027cd83829dc32bcaac4c874eeed618000
+  url: https://pypi.org/packages/source/w/webencodings/webencodings-${{ version }}.tar.gz
+  sha256: 565f9ad031c702dae404e27a099e3e09186a3ab1b9520f06d215502b651fd910
 
 build:
-  number: 3
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.2,<5
   run:
     - python >=${{ python_min }}
 
@@ -28,21 +29,55 @@ tests:
   - python:
       imports:
         - webencodings
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/CourtBouillon/webencodings
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Character encoding aliases for legacy web content
-  homepage: https://github.com/gsnedders/python-webencodings
-  repository: https://github.com/gsnedders/python-webencodings
-  documentation: https://pythonhosted.org/webencodings
+  description: |
+    Character encoding aliases for legacy web content
+  repository: https://github.com/CourtBouillon/webencodings
+  documentation: https://doc.courtbouillon.org/webencodings
 
 extra:
   recipe-maintainers:
     - jschueller
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: webencodings
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: webencodings
+  cfe-purls:
+    - pkg:conda/webencodings@${{ version }}?channel=conda-forge
+    - pkg:pypi/webencodings@${{ version }}
+  cfe-upstream-repo: https://github.com/CourtBouillon/webencodings
+  cfe-upstream-homepage: https://github.com/CourtBouillon/webencodings
+  cfe-import-names: [webencodings]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/webencodings-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:14:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:14:44Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:14:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

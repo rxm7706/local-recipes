@@ -4,118 +4,85 @@ schema_version: 1
 context:
   version: "0.14.4"
 
-recipe:
-  name: cachecontrol-split
+package:
+  name: cachecontrol
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/C/CacheControl/cachecontrol-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/CacheControl/cachecontrol-${{ version }}.tar.gz
   sha256: e6220afafa4c22a47dd0badb319f84475d79108100d04e26e8542ef7d3ab05a1
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: cachecontrol
-    build:
-      noarch: python
-      python:
-        entry_points:
-          - doesitcache = cachecontrol._cmd:main
-      script:
-        file: build_base.sh
-    requirements:
-      build:
-        - if: build_platform != target_platform
-          then: python
-        - if: build_platform != target_platform
-          then: cross-python_${{ target_platform }}
-      host:
-        - python ${{ python_min }}
-        - flit-core >=3.2,<4
-        - pip
-        - uv-build
-      run:
-        - python >=${{ python_min }}
-        - requests >=2.16.0
-        - msgpack-python >=0.5.2,<2.0.0
-    tests:
-      - python:
-          imports:
-            - cachecontrol
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - doesitcache --help
-  - package:
-      name: cachecontrol-with-redis
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - ${{ pin_subpackage("cachecontrol", exact=True) }}
-        - python >=${{ python_min }}
-        - redis-py >=2.10.5
-    tests:
-      - python:
-          imports:
-            - cachecontrol
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - doesitcache --help
-  - package:
-      name: cachecontrol-with-filecache
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - ${{ pin_subpackage("cachecontrol", exact=True) }}
-        - filelock >=3.8.0
-        - python >=${{ python_min }}
-    tests:
-      - python:
-          imports:
-            - cachecontrol
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - doesitcache --help
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.9.6,<0.10.0
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.16.0
+    - msgpack <2.0.0,>=0.5.2
+
+tests:
+  - python:
+      imports:
+        - cachecontrol
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/CacheControl/
   license: Apache-2.0
   license_file: LICENSE.txt
-  summary: The httplib2 caching algorithms packaged up for use with requests
+  summary: httplib2 caching for requests
   description: |
-    CacheControl is a port of the caching algorithms in httplib2 for use with
-    requests session object.
-    It was written because httplib2's better support for caching is often
-    mitigated by its lack of threadsafety. The same is true of requests
-    in terms of caching.
-  homepage: https://github.com/ionrock/cachecontrol
-  repository: https://github.com/ionrock/cachecontrol
-  documentation: http://cachecontrol.readthedocs.io/
+    httplib2 caching for requests
+  repository: https://github.com/psf/cachecontrol
 
 extra:
-  feedstock-name: cachecontrol
   recipe-maintainers:
     - djsutherland
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cachecontrol
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cachecontrol
+  cfe-purls:
+    - pkg:conda/cachecontrol@${{ version }}?channel=conda-forge
+    - pkg:pypi/cachecontrol@${{ version }}
+  cfe-upstream-repo: https://github.com/psf/cachecontrol
+  cfe-upstream-homepage: https://pypi.org/project/CacheControl/
+  cfe-import-names: [cachecontrol]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cachecontrol-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T06:50:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:50:45Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T06:50:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

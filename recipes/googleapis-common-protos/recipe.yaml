@@ -2,178 +2,47 @@
 schema_version: 1
 
 context:
-  name: googleapis-common-protos
   version: "1.75.1"
 
-recipe:
-  name: ${{ name|lower }}-feedstock
+package:
+  name: googleapis-common-protos
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/googleapis-common-protos/googleapis_common_protos-${{ version }}.tar.gz
   sha256: d3042c6c5a2d4e67113104d6b6818b59b6bd92a197f2a91508e801fe815cf071
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: ${{ name }}
-    build:
-      noarch: python
-      script: |
-        rm -rf test MANIFEST.in
-        ${{ PYTHON }} -m pip install . -vv --no-deps --ignore-installed
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - pip
-        - protobuf >=6.33.5,<8.0.0
-        - setuptools
-      run:
-        - python >=${{ python_min }}
-        - protobuf >=6.33.5,<8.0.0
-    tests:
-      - python:
-          imports:
-            - google.api
-            - google.api.annotations_pb2
-            - google.api.auth_pb2
-            - google.api.backend_pb2
-            - google.api.billing_pb2
-            - google.api.client_pb2
-            - google.api.config_change_pb2
-            - google.api.consumer_pb2
-            - google.api.context_pb2
-            - google.api.control_pb2
-            - google.api.distribution_pb2
-            - google.api.documentation_pb2
-            - google.api.endpoint_pb2
-            - google.api.field_behavior_pb2
-            - google.api.http_pb2
-            - google.api.httpbody_pb2
-            - google.api.label_pb2
-            - google.api.launch_stage_pb2
-            - google.api.log_pb2
-            - google.api.logging_pb2
-            - google.api.metric_pb2
-            - google.api.monitored_resource_pb2
-            - google.api.monitoring_pb2
-            - google.api.quota_pb2
-            - google.api.resource_pb2
-            - google.api.service_pb2
-            - google.api.source_info_pb2
-            - google.api.system_parameter_pb2
-            - google.api.usage_pb2
-            - google.longrunning
-            - google.longrunning.operations_pb2
-            - google.longrunning.operations_proto
-            - google.longrunning.operations_proto_pb2
-            - google.rpc
-            - google.rpc.code_pb2
-            - google.rpc.error_details_pb2
-            - google.rpc.status_pb2
-            - google.type
-            - google.type.calendar_period_pb2
-            - google.type.color_pb2
-            - google.type.date_pb2
-            - google.type.dayofweek_pb2
-            - google.type.expr_pb2
-            - google.type.fraction_pb2
-            - google.type.latlng_pb2
-            - google.type.money_pb2
-            - google.type.postal_address_pb2
-            - google.type.quaternion_pb2
-            - google.type.timeofday_pb2
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - googleapis-common-protos
+    - protobuf <8.0.0,>=6.33.5
 
-  - package:
-      name: ${{ name }}-grpc
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, lower_bound='x.x', upper_bound='x.x') }}
-        - grpcio >=1.59.0,<2.0.0
-    tests:
-      - python:
-          imports:
-            - google.api
-            - google.api.annotations_pb2
-            - google.api.auth_pb2
-            - google.api.backend_pb2
-            - google.api.billing_pb2
-            - google.api.client_pb2
-            - google.api.config_change_pb2
-            - google.api.consumer_pb2
-            - google.api.context_pb2
-            - google.api.control_pb2
-            - google.api.distribution_pb2
-            - google.api.documentation_pb2
-            - google.api.endpoint_pb2
-            - google.api.field_behavior_pb2
-            - google.api.http_pb2
-            - google.api.httpbody_pb2
-            - google.api.label_pb2
-            - google.api.launch_stage_pb2
-            - google.api.log_pb2
-            - google.api.logging_pb2
-            - google.api.metric_pb2
-            - google.api.monitored_resource_pb2
-            - google.api.monitoring_pb2
-            - google.api.quota_pb2
-            - google.api.resource_pb2
-            - google.api.service_pb2
-            - google.api.source_info_pb2
-            - google.api.system_parameter_pb2
-            - google.api.usage_pb2
-            - google.longrunning
-            - google.longrunning.operations_grpc
-            - google.longrunning.operations_grpc_pb2
-            - google.longrunning.operations_pb2
-            - google.longrunning.operations_proto
-            - google.longrunning.operations_proto_pb2
-            - google.rpc
-            - google.rpc.code_pb2
-            - google.rpc.error_details_pb2
-            - google.rpc.status_pb2
-            - google.type
-            - google.type.calendar_period_pb2
-            - google.type.color_pb2
-            - google.type.date_pb2
-            - google.type.dayofweek_pb2
-            - google.type.expr_pb2
-            - google.type.fraction_pb2
-            - google.type.latlng_pb2
-            - google.type.money_pb2
-            - google.type.postal_address_pb2
-            - google.type.quaternion_pb2
-            - google.type.timeofday_pb2
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
+tests:
+  - python:
+      imports:
+        - googleapis_common_protos
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/googleapis-common-protos
+  homepage: https://pypi.org/project/googleapis-common-protos/
   license: Apache-2.0
   license_file: LICENSE
-  license_family: APACHE
   summary: Common protobufs used in Google APIs
   description: |
-    Google APIs common protos
-
-    googleapis-common-protos contains the python classes generated from the
-    common protos in the https://github.com/googleapis/api-common-protos
-    repository.
-
-  documentation: https://github.com/googleapis/google-cloud-python/blob/main/packages/googleapis-common-protos/README.rst
+    Common protobufs used in Google APIs
   repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/googleapis-common-protos
 
 extra:
@@ -182,3 +51,34 @@ extra:
     - parthea
     - tswast
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: googleapis-common-protos
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: googleapis-common-protos
+  cfe-purls:
+    - pkg:conda/googleapis-common-protos@${{ version }}?channel=conda-forge
+    - pkg:pypi/googleapis-common-protos@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/googleapis-common-protos
+  cfe-upstream-homepage: https://pypi.org/project/googleapis-common-protos/
+  cfe-import-names: [googleapis_common_protos]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/googleapis-common-protos-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:47:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:47:25Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T10:47:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['googleapis-common-protos']
+####

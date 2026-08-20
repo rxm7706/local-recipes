@@ -2,55 +2,80 @@
 schema_version: 1
 
 context:
-  name: marshmallow-enum
   version: "1.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: marshmallow-enum
   version: ${{ version }}
 
 source:
-  url: https://github.com/justanr/marshmallow_enum/archive/v${{ version }}.tar.gz
-  sha256: d1f6a58bf201be8a615942d29c4ac2b4dc2ddd2e36de3cac9c87bee3002bcc6f
+  url: https://pypi.org/packages/source/m/marshmallow-enum/marshmallow-enum-${{ version }}.tar.gz
+  sha256: 38e697e11f45a8e64b4a1e664000897c659b60aa57bfa18d44e226a9920b6e58
 
 build:
-  number: 4
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - marshmallow >=2.0.0
+    - marshmallow
 
 tests:
   - python:
       imports:
         - marshmallow_enum
-      pip_check: false
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests/test_enum_field.py
-    requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - python tests/test_enum_field.py
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/marshmallow-enum/
   license: MIT
   license_file: LICENSE
-  summary: Enum handling for Marshmallow
-  homepage: https://github.com/justanr/marshmallow_enum
-  repository: https://github.com/justanr/marshmallow_enum
-  documentation: https://github.com/justanr/marshmallow_enum
+  summary: Enum field for Marshmallow
+  description: |
+    Enum field for Marshmallow
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: marshmallow-enum
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: marshmallow-enum
+  cfe-purls:
+    - pkg:conda/marshmallow-enum@${{ version }}?channel=conda-forge
+    - pkg:pypi/marshmallow-enum@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/marshmallow-enum/
+  cfe-import-names: [marshmallow_enum]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/marshmallow-enum-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:27:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:27:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:27:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

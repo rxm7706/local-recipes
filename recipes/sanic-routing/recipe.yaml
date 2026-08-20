@@ -2,26 +2,26 @@
 schema_version: 1
 
 context:
-  name: sanic-routing
   version: "23.12.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sanic-routing
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sanic-routing-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sanic-routing/sanic-routing-${{ version }}.tar.gz
   sha256: 1dcadc62c443e48c852392dba03603f9862b6197fc4cba5bbefeb1ace0848b04
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -30,14 +30,51 @@ tests:
       imports:
         - sanic_routing
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Core routing component for Sanic
+  homepage: https://github.com/sanic-org/sanic-routing/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/sanic-org/sanic-routing/
+  summary: Core routing component for Sanic
+  description: |
+    Core routing component for Sanic
 
 extra:
   recipe-maintainers:
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sanic-routing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sanic-routing
+  cfe-purls:
+    - pkg:conda/sanic-routing@${{ version }}?channel=conda-forge
+    - pkg:pypi/sanic-routing@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/sanic-org/sanic-routing/
+  cfe-import-names: [sanic_routing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sanic-routing-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-23.12.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:11:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:11:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:11:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

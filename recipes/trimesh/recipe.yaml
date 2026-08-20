@@ -2,75 +2,90 @@
 schema_version: 1
 
 context:
-  name: trimesh
   version: "5.0.0"
-  sha256: 0195003198baaf2550aebe612254ba2f01c385cec46c37ecc5beca8291f79a13
 
 package:
-  name: ${{ name|lower }}
+  name: trimesh
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/trimesh/trimesh-${{ version }}.tar.gz
+  sha256: 0195003198baaf2550aebe612254ba2f01c385cec46c37ecc5beca8291f79a13
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - numpy
-  run_constraints:
-    - jsonschema
-    - mapbox_earcut
-    - setuptools
-    - scipy
-    - pycollada
-    - networkx
-    - chardet
-    - svg.path
-    - xxhash
-    - pillow
-    - psutil
-    - rtree
-    - pyglet
-    - sympy
-    - meshio
-    - msgpack-python
-    - shapely
-    - requests
-    - lxml
-    - colorlog
-    - scikit-image
+    - numpy >=1.21
 
 tests:
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - python -c "import trimesh"
+  - python:
+      imports:
+        - trimesh
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  # We can remove LICENSE.md from
-  # the recipe when it is included
-  # in the trimesh source dist:
-  #
-  # https://github.com/mikedh/trimesh/pull/176
-  license_file: LICENSE.md
-  summary: Import, export, process, analyze and view triangular meshes.
   homepage: https://github.com/mikedh/trimesh
-  repository: https://github.com/mikedh/trimesh
+  license: MIT
+  license_file: LICENSE
+  summary: Import, export, process, analyze and view triangular meshes.
+  description: |
+    Import, export, process, analyze and view triangular meshes.
+  documentation: https://trimesh.org
 
 extra:
   recipe-maintainers:
     - mikedh
     - pauldmccarthy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: trimesh
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: trimesh
+  cfe-purls:
+    - pkg:conda/trimesh@${{ version }}?channel=conda-forge
+    - pkg:pypi/trimesh@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mikedh/trimesh
+  cfe-import-names: [trimesh]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/trimesh-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:51:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:51:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:51:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

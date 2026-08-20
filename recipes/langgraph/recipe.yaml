@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: langgraph
   version: "1.2.11"
 
 package:
-  name: ${{ name|lower }}
+  name: langgraph
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langgraph-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langgraph/langgraph-${{ version }}.tar.gz
   sha256: 9ecfe11e50d338b34b15cf4d8a442642de103e8ae6971320efba84e4542eb363
 
 build:
@@ -20,31 +19,72 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
+    - python >=${{ python_min }}
+    - bench
+    - langchain-core <2,>=1.4.7
+    - langgraph-checkpoint <5.0.0,>=4.1.0
+    - langgraph-prebuilt <1.2.0,>=1.1.0
+    - langgraph-sdk <0.5.0,>=0.4.2
     - pydantic >=2.7.4
     - python-xxhash >=3.5.0
-    - langgraph-prebuilt >=1.1.0,<1.2.0
-    - langgraph-sdk >=0.4.2,<0.5.0
-    - langgraph-checkpoint >=4.1.0,<5.0.0
-    - python >=${{ python_min }},<4.0
-    - langchain-core >=1.4.7,<2
 
 tests:
   - python:
       imports:
-        - langgraph
+        - bench
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: langgraph
+  homepage: https://docs.langchain.com/oss/python/langgraph/overview
   license: MIT
   license_file: LICENSE
-  homepage: https://www.github.com/langchain-ai/langgraph
+  summary: Building stateful, multi-actor applications with LLMs
+  description: |
+    Building stateful, multi-actor applications with LLMs
+  repository: https://github.com/langchain-ai/langgraph/tree/main/libs/langgraph
+  documentation: https://reference.langchain.com/python/langgraph/
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph
+  cfe-purls:
+    - pkg:conda/langgraph@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langgraph/tree/main/libs/langgraph
+  cfe-upstream-homepage: https://docs.langchain.com/oss/python/langgraph/overview
+  cfe-import-names: [bench]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langgraph-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.11
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:06:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:06:40Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T01:06:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['bench']
+####

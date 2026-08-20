@@ -2,26 +2,26 @@
 schema_version: 1
 
 context:
-  name: pkce
   version: "1.0.3"
 
 package:
-  name: ${{ name|lower }}
+  name: pkce
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pkce-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pkce/pkce-${{ version }}.tar.gz
   sha256: 9775fd76d8a743d39b87df38af1cd04a58c9b5a5242d5a6350ef343d06814ab6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -30,15 +30,52 @@ tests:
       imports:
         - pkce
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: PKCE Python generator.
+  homepage: https://github.com/RomeoDespres/pkce
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/RomeoDespres/pkce
+  summary: PKCE Pyhton generator.
+  description: |
+    PKCE Pyhton generator.
 
 extra:
   recipe-maintainers:
     - AlbertDeFusco
     - mattkram
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pkce
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pkce
+  cfe-purls:
+    - pkg:conda/pkce@${{ version }}?channel=conda-forge
+    - pkg:pypi/pkce@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/RomeoDespres/pkce
+  cfe-import-names: [pkce]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pkce-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:00:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:00:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:00:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

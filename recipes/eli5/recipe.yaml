@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: eli5
-  version: 0.16.0
+  version: "0.16.0"
 
 package:
-  name: ${{ name|lower }}
+  name: eli5
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/eli5/eli5-${{ version }}.tar.gz
   sha256: 6d8ab55b3535f8feecf4f98dbaadd6876121e5a2549735635cf71707d34bd47c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - attrs >17.1.0
@@ -37,26 +36,54 @@ tests:
   - python:
       imports:
         - eli5
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/eli5-org/eli5
   license: MIT
   license_file: LICENSE.txt
   summary: Debug machine learning classifiers and explain their predictions
   description: |
-    ELI5 is a Python package which helps to debug machine learning classifiers
-    and explain their predictions.
-  homepage: https://eli5.readthedocs.io/
-  repository: https://github.com/eli5-org/eli5/
-  documentation: https://eli5.readthedocs.io/en/latest/
+    Debug machine learning classifiers and explain their predictions
 
 extra:
   recipe-maintainers:
     - rmax
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: eli5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: eli5
+  cfe-purls:
+    - pkg:conda/eli5@${{ version }}?channel=conda-forge
+    - pkg:pypi/eli5@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/eli5-org/eli5
+  cfe-import-names: [eli5]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/eli5-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:01:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:01:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:01:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

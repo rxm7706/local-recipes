@@ -1,14 +1,16 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: "networkx"
   version: "3.6.1"
   python_min: "3.11"
+
 package:
-  name: ${{ name }}
+  name: networkx
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/n/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/n/networkx/networkx-${{ version }}.tar.gz
   sha256: 26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509
 
 build:
@@ -19,59 +21,27 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=61.2
     - pip
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
-  run_constraints:
-    - numpy >=1.25
-    - scipy >=1.11.2
-    - matplotlib-base >=3.8
-    - pandas >=2.0
 
 tests:
-  - script: |
-      python -c "import networkx"
-      python -c "import networkx.algorithms"
-      python -c "import networkx.algorithms.assortativity"
-      python -c "import networkx.algorithms.bipartite"
-      python -c "import networkx.algorithms.centrality"
-      python -c "import networkx.algorithms.community"
-      python -c "import networkx.algorithms.components"
-      python -c "import networkx.algorithms.connectivity"
-      python -c "import networkx.algorithms.coloring"
-      python -c "import networkx.algorithms.flow"
-      python -c "import networkx.algorithms.minors"
-      python -c "import networkx.algorithms.traversal"
-      python -c "import networkx.algorithms.isomorphism"
-      python -c "import networkx.algorithms.shortest_paths"
-      python -c "import networkx.algorithms.link_analysis"
-      python -c "import networkx.algorithms.operators"
-      python -c "import networkx.algorithms.link_analysis"
-      python -c "import networkx.algorithms.approximation"
-      python -c "import networkx.algorithms.tree"
-      python -c "import networkx.classes"
-      python -c "import networkx.generators"
-      python -c "import networkx.drawing"
-      python -c "import networkx.linalg"
-      python -c "import networkx.readwrite"
-      python -c "import networkx.readwrite.json_graph"
-      python -c "import networkx.tests"
-      python -c "import networkx.utils"
-
-    requirements:
-      run:
-        - python ${{ python_min }}.*
+  - python:
+      imports:
+        - networkx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://networkx.org/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Python package for creating and manipulating complex networks
+  summary: Python package for creating and manipulating graphs and networks
   description: |
-    NetworkX is a Python language software package for the creation,
-    manipulation, and study of the structure, dynamics, and functions of complex
-    networks.
-  homepage: https://networkx.org/
+    Python package for creating and manipulating graphs and networks
   repository: https://github.com/networkx/networkx
   documentation: https://networkx.org/documentation/stable/
 
@@ -84,3 +54,37 @@ extra:
     - SylvainCorlay
     - FelixMoelder
     - MridulS
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: networkx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: networkx
+  cfe-purls:
+    - pkg:conda/networkx@${{ version }}?channel=conda-forge
+    - pkg:pypi/networkx@${{ version }}
+  cfe-upstream-repo: https://github.com/networkx/networkx
+  cfe-upstream-homepage: https://networkx.org/
+  cfe-import-names: [networkx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/networkx-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:01:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:01:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:01:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

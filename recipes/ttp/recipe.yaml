@@ -2,50 +2,81 @@
 schema_version: 1
 
 context:
-  name: ttp
-  version: "0.9.5"
+  version: "0.10.1"
 
 package:
-  name: ${{ name|lower }}
+  name: ttp
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/ttp-${{ version }}.tar.gz
-  sha256: 234414f4d3039d2d1cde09993f89f8db1b34d447f76c6a402555cefac2e59c4e
+  url: https://pypi.org/packages/source/t/ttp/ttp-${{ version }}.tar.gz
+  sha256: 9c928aeb1f2dade05419c7ecc756d62cb45857deb5cc6b1b9f2058e70f25ae59
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - ttp = ttp.ttp:cli_tool
 
 requirements:
   host:
-    - python >=3.7,<4.0
-    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core >=1.0.0
   run:
-    - python >=3.7,<4.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - ttp
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - ttp --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Template Text Parser
+  homepage: https://github.com/dmulyalin/ttp
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/dmulyalin/ttp
+  summary: Template Text Parser
+  description: |
+    Template Text Parser
+  repository: https://github.com/dmulyalin/ttp
+  documentation: https://ttp.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - cousinbr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ttp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ttp
+  cfe-purls:
+    - pkg:conda/ttp@${{ version }}?channel=conda-forge
+    - pkg:pypi/ttp@${{ version }}
+  cfe-upstream-repo: https://github.com/dmulyalin/ttp
+  cfe-upstream-homepage: https://github.com/dmulyalin/ttp
+  cfe-import-names: [ttp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ttp-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.10.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:28:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:28:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:28:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

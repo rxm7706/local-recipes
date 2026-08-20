@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: asgi-correlation-id
   version: "5.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: asgi-correlation-id
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/asgi_correlation_id-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/asgi-correlation-id/asgi_correlation_id-${{ version }}.tar.gz
   sha256: ad54374a300f000b8bef3b39738768842394de0a3c528a6f77ef3ca053eb89a1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - uv-build >=0.7.2,<0.8
   run:
@@ -32,16 +31,61 @@ tests:
       imports:
         - asgi_correlation_id
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Middleware correlating project logs to individual requests
+  homepage: https://github.com/snok/asgi-correlation-id
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/snok/asgi-correlation-id
+  summary: Middleware correlating project logs to individual requests
+  description: |
+    Middleware correlating project logs to individual requests
+  repository: https://github.com/snok/asgi-correlation-id
 
 extra:
   recipe-maintainers:
     - sondrelg
     - ludaavics
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asgi-correlation-id
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asgi-correlation-id
+  cfe-purls:
+    - pkg:conda/asgi-correlation-id@${{ version }}?channel=conda-forge
+    - pkg:pypi/asgi-correlation-id@${{ version }}
+  cfe-upstream-repo: https://github.com/snok/asgi-correlation-id
+  cfe-upstream-homepage: https://github.com/snok/asgi-correlation-id
+  cfe-import-names: [asgi_correlation_id]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asgi-correlation-id-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:03:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:03:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:03:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: clyent
-  version: "1.2.2"
+  version: "1.2.1"
 
 package:
   name: ${{ name }}
@@ -11,14 +11,14 @@ package:
 
 source:
   url: https://github.com/Anaconda-Platform/${{ name }}/archive/${{ version }}.tar.gz
-  sha256: a4c33bd70fd3c53f133eb301db7b83acb7cbe6d1e405158b8f5582aa888d3aa3
+  sha256: 72b977e7c115224f474f9c70c549c0977b8daf5ac00452301cff065ff14129e5
   file_name: ${{ name }}-${{ version }}.tar.gz
   patches:
     - 0001-Remove-unused-module-imp-for-python-3.12-compatibili.patch
     - no_versioneer.py
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: python -m pip install --no-deps --ignore-installed .
 
@@ -54,3 +54,36 @@ about:
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: clyent
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: clyent
+  cfe-purls:
+    - pkg:conda/clyent@${{ version }}?channel=conda-forge
+    - pkg:pypi/clyent@${{ version }}
+  cfe-upstream-repo: https://github.com/Anaconda-Platform/clyent
+  cfe-upstream-homepage: https://github.com/Anaconda-Platform/clyent
+  cfe-import-names: [clyent]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/clyent-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:03:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:03:33Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:03:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

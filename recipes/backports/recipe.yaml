@@ -1,48 +1,85 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
+context:
+  version: "1.1"
+
 package:
   name: backports
-  version: 1.0
+  version: ${{ version }}
+
+source:
+  url: https://github.com/brandon-rhodes/backports/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 64fbda275c95e04f09ca5c11e33527866b1b1c8f16bb0eea2f504f2d3b60195c
 
 build:
-  number: 5
+  number: 0
   noarch: python
-  script:
-    - cd ${{ SP_DIR if SP_DIR is defined else '' }}
-    - mkdir -p backports
-    - cp ${{ RECIPE_DIR }}/init.py backports/__init__.py
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - if: unix
-        then: unset PIP_NO_INDEX
-      - if: win
-        then: set "PIP_NO_INDEX="
-      - python -m pip install --target alt-site backports.tarfile
-      - if: unix
-        then: export PYTHONPATH="${SP_DIR}:alt-site"
-      - if: win
-        then: set "PYTHONPATH=%SP_DIR%;alt-site"
-      - python -c "import backports.tarfile"
+  - python:
+      imports:
+        - backports
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  summary: A package to ensure the `backports` namespace is available.
-  homepage: http://github.com/conda-forge/backports-feedstock
+  homepage: https://github.com/brandon-rhodes/backports
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Namespace for backported Python features
+  description: |
+    Namespace for backported Python features
 
 extra:
   recipe-maintainers:
     - jakirkham
     - isuruf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: backports
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: backports
+  cfe-purls:
+    - pkg:conda/backports@${{ version }}?channel=conda-forge
+    - pkg:pypi/backports@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/brandon-rhodes/backports
+  cfe-import-names: [backports]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/backports-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T06:34:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:34:36Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:34:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

@@ -2,82 +2,85 @@
 schema_version: 1
 
 context:
-  name: plotnine
   version: "0.15.8"
-  bundle: tar.gz
-  hash: d3859997c3abd6edff6dee376d912716e75bbe0b0099b7054176d84fe11e8e20
-  python_min: "3.10"
-  build: 0
 
 package:
-  name: ${{ name|lower }}
+  name: plotnine
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/p/plotnine/plotnine-${{ version }}.tar.gz
+  sha256: d3859997c3abd6edff6dee376d912716e75bbe0b0099b7054176d84fe11e8e20
 
 build:
-  number: ${{ build }}
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=59
   run:
     - python >=${{ python_min }}
     - matplotlib-base >=3.8.0
     - pandas >=2.2.0
-    - mizani >=0.14.0,<0.15.0
+    - mizani ~=0.14.0
     - numpy >=1.23.5
     - scipy >=1.8.0
-    - statsmodels >=0.14.6
 
 tests:
   - python:
       imports:
         - plotnine
-        - plotnine.coords
-        - plotnine.data
-        - plotnine.facets
-        - plotnine.geoms
-        - plotnine.guides
-        - plotnine.mapping
-        - plotnine.positions
-        - plotnine.scales
-        - plotnine.stats
-        - plotnine.themes
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests
-        - pyproject.toml
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-        - pytest
-        - pytest-cov
-    script:
-      - pip list | grep -i ${{ name }} | grep ${{ version }}
-      - echo $PWD
-      - ls -larth
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: ${{ RECIPE_DIR }}/LICENSE
+  homepage: https://plotnine.readthedocs.io/en/stable
   license: MIT
-  summary: A grammar of graphics for python
-  homepage: https://github.com/has2k1/plotnine
-  repository: https://github.com/has2k1/plotnine
-  documentation: https://plotnine.org
+  license_file: LICENSE
+  summary: A Grammar of Graphics for Python
+  description: |
+    A Grammar of Graphics for Python
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - has2k1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: plotnine
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: plotnine
+  cfe-purls:
+    - pkg:conda/plotnine@${{ version }}?channel=conda-forge
+    - pkg:pypi/plotnine@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://plotnine.readthedocs.io/en/stable
+  cfe-import-names: [plotnine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/plotnine-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:05:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:05:59Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T03:05:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

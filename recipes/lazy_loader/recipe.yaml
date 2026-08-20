@@ -4,78 +4,88 @@ schema_version: 1
 context:
   version: "0.5"
 
-recipe:
+package:
   name: lazy-loader
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/l/lazy_loader/lazy_loader-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/lazy-loader/lazy_loader-${{ version }}.tar.gz
   sha256: 717f9179a0dbed357012ddad50a5ad3d5e4d9a0b8712680d4e687f5e6e6ed9b3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.2
-    - python ${{ python_min }}
-    - packaging
   run:
     - python >=${{ python_min }}
     - packaging
-
-outputs:
-    # A conflict was created for older lazy_loader packages
-    # version 0.4.0 build 0 and older
-    # https://github.com/conda-forge/conda-forge-repodata-patches-feedstock/pull/815
-    # so that they cannot be co-installed with lazy-loader
-    package:
-      name: lazy-loader
-  - package:
-      name: lazy_loader
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('lazy-loader', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - lazy_loader
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
 
 tests:
   - python:
       imports:
         - lazy_loader
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Easily load subpackages and functions on demand
+  homepage: https://scientific-python.org/specs/spec-0001/
   license: BSD-3-Clause
-  license_file: LICENSE.md
+  license_file: LICENSE
+  summary: Makes it easy to load subpackages and functions on demand.
   description: |
-    `lazy-loader` makes it easy to load subpackages and functions on demand.
-
-    PyPI: https://pypi.org/project/lazy-loader/
-
-  homepage: https://pypi.org/project/lazy-loader/
+    Makes it easy to load subpackages and functions on demand.
   repository: https://github.com/scientific-python/lazy-loader
-  documentation: https://github.com/scientific-python/lazy-loader
 
 extra:
   recipe-maintainers:
     - bsipocz
     - sugatoray
     - bmcfee
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lazy_loader
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lazy-loader
+  cfe-purls:
+    - pkg:conda/lazy_loader@${{ version }}?channel=conda-forge
+    - pkg:pypi/lazy-loader@${{ version }}
+  cfe-upstream-repo: https://github.com/scientific-python/lazy-loader
+  cfe-upstream-homepage: https://scientific-python.org/specs/spec-0001/
+  cfe-import-names: [lazy_loader]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lazy_loader-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:13:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:13:01Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:13:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

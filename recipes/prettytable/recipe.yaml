@@ -2,49 +2,84 @@
 schema_version: 1
 
 context:
-  name: prettytable
   version: "3.18.0"
 
 package:
-  name: ${{ name|lower }}
+  name: prettytable
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/prettytable/prettytable-${{ version }}.tar.gz
   sha256: 439217116152244369caf3d9f1caf2f9fe29b03bd79e88d2928c8e718c95d680
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - hatchling >=1.27
     - hatch-vcs
+    - hatchling >=1.27
   run:
     - python >=${{ python_min }}
     - wcwidth >=0.3.5
-  run_constraints:
-    - ptable >=9999
 
 tests:
   - python:
       imports:
         - prettytable
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
-  license: BSD-3-Clause
-  summary: A simple Python library for easily displaying tabular data in a visually appealing ASCII table format
   homepage: https://github.com/prettytable/prettytable
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A simple Python library for easily displaying tabular data in a visually appealing ASCII table format
+  description: |
+    A simple Python library for easily displaying tabular data in a visually appealing ASCII table format
+  repository: https://github.com/prettytable/prettytable
 
 extra:
   recipe-maintainers:
     - anguslees
     - licode
     - ericpre
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: prettytable
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: prettytable
+  cfe-purls:
+    - pkg:conda/prettytable@${{ version }}?channel=conda-forge
+    - pkg:pypi/prettytable@${{ version }}
+  cfe-upstream-repo: https://github.com/prettytable/prettytable
+  cfe-upstream-homepage: https://github.com/prettytable/prettytable
+  cfe-import-names: [prettytable]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/prettytable-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.18.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:13:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:13:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:13:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

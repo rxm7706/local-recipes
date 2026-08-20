@@ -67,11 +67,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llama-index-llms-openai-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:44:54Z
+  cfe-last-checked: 2026-08-17T04:25:41Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:44:54Z
+  cfe-generated-at-datetime: 2026-08-17T04:25:41Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T01:44:54Z
+  cfe-local-build-datetime: 2026-08-17T04:25:41Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

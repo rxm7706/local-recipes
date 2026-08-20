@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: typing-inspection
   version: "0.4.4"
 
 package:
-  name: ${{ name|lower }}
+  name: typing-inspection
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/typing_inspection-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/typing-inspection/typing_inspection-${{ version }}.tar.gz
   sha256: 547274fa6b0a561ccf549cc9524b999a578e737d015d8709d021f9d0d13bea47
 
 build:
@@ -21,30 +20,61 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling >=1.27.0
   run:
     - python >=${{ python_min }}
     - typing_extensions >=4.15.0
+
 tests:
   - python:
       imports:
         - typing_inspection
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Runtime typing introspection tools
+  homepage: https://github.com/pydantic/typing-inspection
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/pydantic/typing-inspection
+  summary: Runtime typing introspection tools
+  description: |
+    Runtime typing introspection tools
   repository: https://github.com/pydantic/typing-inspection
+  documentation: https://pydantic.github.io/typing-inspection/dev/
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: typing-inspection
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: typing-inspection
+  cfe-purls:
+    - pkg:conda/typing-inspection@${{ version }}?channel=conda-forge
+    - pkg:pypi/typing-inspection@${{ version }}
+  cfe-upstream-repo: https://github.com/pydantic/typing-inspection
+  cfe-upstream-homepage: https://github.com/pydantic/typing-inspection
+  cfe-import-names: [typing_inspection]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/typing-inspection-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:59:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:59:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:59:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

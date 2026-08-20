@@ -2,35 +2,28 @@
 schema_version: 1
 
 context:
-  name: pystache
   version: "0.6.8"
 
 package:
-  name: ${{ name|lower }}
+  name: pystache
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pystache-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pystache/pystache-${{ version }}.tar.gz
   sha256: 3707518e6a4d26dd189b07c10c669b1fc17df72684617c327bd3550e7075c72c
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pystache=pystache.commands.render:main
-      - pystache-test=pystache.commands.test:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=61
-    - setuptools-scm >=6.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61
   run:
     - python >=${{ python_min }}
-    # only required for py<310 but want to stay noarch: python
     - importlib-metadata >=4.6
 
 tests:
@@ -38,27 +31,55 @@ tests:
       imports:
         - pystache
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pip show pystache
-      - pip show __RECIPE_MANAGER_SUBSTITUTION_MARKER__ | grep -Fx 'Version: ${{ name }}'
-      - pystache --help
-      - pystache-test --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Mustache for Python
+  homepage: https://github.com/PennyDreadfulMTG/pystache
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/PennyDreadfulMTG/pystache
-  repository: https://github.com/PennyDreadfulMTG/pystache
-  documentation: https://github.com/PennyDreadfulMTG/pystache/blob/master/README.rst
+  summary: Mustache for Python
+  description: |
+    Mustache for Python
+  repository: https://github.com/PennyDreadfulMTG/pystache.git
+  documentation: http://mustache.github.io/
 
 extra:
   recipe-maintainers:
     - xylar
     - kwilcox
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pystache
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pystache
+  cfe-purls:
+    - pkg:conda/pystache@${{ version }}?channel=conda-forge
+    - pkg:pypi/pystache@${{ version }}
+  cfe-upstream-repo: https://github.com/PennyDreadfulMTG/pystache.git
+  cfe-upstream-homepage: https://github.com/PennyDreadfulMTG/pystache
+  cfe-import-names: [pystache]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pystache-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:27:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:27:04Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:27:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

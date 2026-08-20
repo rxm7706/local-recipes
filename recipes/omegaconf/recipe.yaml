@@ -2,66 +2,48 @@
 schema_version: 1
 
 context:
-  name: omegaconf
   version: "2.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: omegaconf
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/ce/3d/e4b57b8d9008c6ebe0d5eff901f91d5700cf7bdb8c8863df817463a7fd5e/omegaconf-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/omegaconf/omegaconf-${{ version }}.tar.gz
   sha256: e5e7de64aeebeddaf8e6d3f7a783b32ac2a01c0fbd9c878012caecb891a1f42a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.7
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - antlr 4.9.*
   run:
-    - python >=3.7
+    - python >=${{ python_min }}
+    - antlr4-python3-runtime ==4.9.*
     - pyyaml >=5.1.0
-    - antlr-python-runtime 4.9.*
-    - typing_extensions
+    - dataclasses
 
 tests:
   - python:
       imports:
         - omegaconf
       pip_check: true
-      python_version: 3.11.*
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - python 3.11.*
-        - attrs
-        - pytest <8
-        - pytest-benchmark
-        - pytest-mock
-        - pip
-    script:
-      - pytest --ignore tests/test_pydev_resolver_plugin.py
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/omry/omegaconf
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Flexible python configuration system
+  summary: A flexible configuration library
   description: |
-    OmegaConf is a hierarchical configuration system, with support for merging
-    configurations from multiple sources (YAML config files,
-    dataclasses/objects and CLI arguments) providing a consistent API
-    regardless of how the configuration was created.
-  homepage: https://github.com/omry/omegaconf
-  repository: https://github.com/omry/omegaconf
-  documentation: https://omegaconf.readthedocs.io/
+    A flexible configuration library
 
 extra:
   recipe-maintainers:
@@ -69,3 +51,36 @@ extra:
     - mdraw
     - omry
     - benjaminrwilson
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: omegaconf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: omegaconf
+  cfe-purls:
+    - pkg:conda/omegaconf@${{ version }}?channel=conda-forge
+    - pkg:pypi/omegaconf@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/omry/omegaconf
+  cfe-import-names: [omegaconf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/omegaconf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:11:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:11:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:11:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

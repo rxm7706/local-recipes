@@ -2,25 +2,20 @@
 schema_version: 1
 
 context:
-  version: 1.27.0
+  version: "1.27.0"
 
 package:
-  name: huggingface_hub
+  name: huggingface-hub
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/h/huggingface_hub/huggingface_hub-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/huggingface-hub/huggingface_hub-${{ version }}.tar.gz
   sha256: c1fed40ea82a6b41b477f5243546549b792ae0a93abcea608cff66089bf8f8df
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - hf=huggingface_hub.cli.hf:main
-      - huggingface-cli=huggingface_hub.cli.deprecated_cli:main
-      - tiny-agents=huggingface_hub.inference._mcp.cli:app
 
 requirements:
   host:
@@ -29,32 +24,32 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - click >=8.4.2,<9.0.0
+    - click <9.0.0,>=8.4.2
     - filelock >=3.10.0
     - fsspec >=2023.5.0
-    - hf-xet >=1.5.2,<2.0.0
-    - httpx >=0.23.0,<1
+    - hf-xet <2.0.0,>=1.5.2
+    - httpx <1,>=0.23.0
     - packaging >=20.9
     - pyyaml >=5.1
     - tqdm >=4.42.1
     - typing_extensions >=4.1.0
+
 tests:
   - python:
-      python_version:
-        - '*'
-        - ${{ python_min }}.*
-      pip_check: true
       imports:
         - huggingface_hub
-  - script:
-      - hf --help
-      - tiny-agents --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Client library to download and publish models, datasets and other repos on the huggingface.co hub
+  homepage: https://github.com/huggingface/huggingface_hub
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/huggingface/huggingface_hub
+  summary: Client library to download and publish models, datasets and other repos on the huggingface.co hub
+  description: |
+    Client library to download and publish models, datasets and other repos on the huggingface.co hub
 
 extra:
   recipe-maintainers:
@@ -66,3 +61,33 @@ extra:
     - BastianZim
     - sugatoray
     - setu4993
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: huggingface_hub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: huggingface-hub
+  cfe-purls:
+    - pkg:conda/huggingface_hub@${{ version }}?channel=conda-forge
+    - pkg:pypi/huggingface-hub@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/huggingface/huggingface_hub
+  cfe-import-names: [huggingface_hub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/huggingface_hub-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:42:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:42:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:42:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

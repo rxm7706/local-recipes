@@ -2,29 +2,28 @@
 schema_version: 1
 
 context:
-  name: a2wsgi
   version: "1.10.10"
 
 package:
-  name: ${{ name|lower }}
+  name: a2wsgi
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/a2wsgi-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/a2wsgi/a2wsgi-${{ version }}.tar.gz
   sha256: a5bcffb52081ba39df0d5e9a884fc6f819d92e3a42389343ba77cbf809fe1f45
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pdm-backend
     - pip
+    - pdm-backend
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - typing_extensions
 
 tests:
@@ -32,13 +31,17 @@ tests:
       imports:
         - a2wsgi
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Convert WSGI app to ASGI app or ASGI app to WSGI app.
+  homepage: https://github.com/abersheeran/a2wsgi
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/abersheeran/a2wsgi
+  summary: Convert WSGI app to ASGI app or ASGI app to WSGI app.
+  description: |
+    Convert WSGI app to ASGI app or ASGI app to WSGI app.
   repository: https://github.com/abersheeran/a2wsgi
 
 extra:
@@ -53,13 +56,24 @@ extra:
   cfe-purls:
     - pkg:conda/a2wsgi@${{ version }}?channel=conda-forge
     - pkg:pypi/a2wsgi@${{ version }}
-  cfe-upstream-repo: https://github.com/abersheeran/a2wsgi
+  cfe-upstream-repo: none
   cfe-upstream-homepage: https://github.com/abersheeran/a2wsgi
+  cfe-import-names: [a2wsgi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/a2wsgi-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
-  cfe-generated-by-version: 8.30.1
-  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-08-17T05:35:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:35:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:35:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
 ####

@@ -2,30 +2,26 @@
 schema_version: 1
 
 context:
-  name: waitress
-  version: 3.0.2
+  version: "3.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: waitress
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/waitress/waitress-${{ version }}.tar.gz
   sha256: 682aaaf2af0c44ada4abfb70ded36393f0e307f4ab9456a215ce0020baefc31f
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - waitress-serve = waitress.runner:run
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=41
   run:
     - python >=${{ python_min }}
 
@@ -33,28 +29,55 @@ tests:
   - python:
       imports:
         - waitress
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - waitress-serve --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: ZPL-2.0
-  license_file: LICENSE.txt
-  summary: Production-quality pure-Python WSGI server
-  description: |
-    Waitress is meant to be a production-quality pure-Python WSGI server with
-    very acceptable performance. It has no dependencies except ones which live
-    in the Python standard library. It runs on CPython on Unix and Windows under
-    Python 2.7+ and Python 3.3+. It is also known to run on PyPy 1.6.0+ on UNIX.
-    It supports HTTP/1.0 and HTTP/1.1.
   homepage: https://github.com/Pylons/waitress
-  repository: https://github.com/Pylons/waitress
-  documentation: http://docs.pylonsproject.org/projects/waitress/en/latest/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Waitress WSGI server
+  description: |
+    Waitress WSGI server
+  documentation: https://docs.pylonsproject.org/projects/waitress/en/latest/index.html
 
 extra:
   recipe-maintainers:
     - carlodri
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: waitress
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: waitress
+  cfe-purls:
+    - pkg:conda/waitress@${{ version }}?channel=conda-forge
+    - pkg:pypi/waitress@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Pylons/waitress
+  cfe-import-names: [waitress]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/waitress-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T07:09:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:09:09Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:09:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

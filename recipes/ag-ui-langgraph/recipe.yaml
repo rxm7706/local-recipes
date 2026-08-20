@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 0.0.43
+  version: "0.0.43"
 
 package:
   name: ag-ui-langgraph
@@ -16,43 +16,69 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - dev = ag_ui_langgraph.dojo:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<3.15
-    - ag-ui-protocol >=0.1.15
+    - python >=${{ python_min }}
+    - fastapi
     - ag-ui-a2ui-toolkit >=0.0.4
-    - langchain >=1.2.0
+    - ag-ui-protocol >=0.1.15
     - langchain-core >=0.3.0
-    - langgraph >=0.6.0,<2
+    - langchain >=1.2.0
+    - langgraph <2,>=0.6.0
     - pydantic >=2.0.0
-  run_constraints:
-    - fastapi >=0.115.12
 
 tests:
-  - script:
-      - python -c "import ag_ui_langgraph"
-      - pip check
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pip
-        - fastapi >=0.115.12
+  - python:
+      imports:
+        - ag_ui_langgraph
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Implementation of the AG-UI protocol for LangGraph.
+  homepage: https://pypi.org/project/ag-ui-langgraph/
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/ag-ui-langgraph/
-  repository: https://github.com/ag-ui-protocol/ag-ui/tree/main/integrations/langgraph/python
+  summary: Implementation of the AG-UI protocol for LangGraph.
+  description: |
+    Implementation of the AG-UI protocol for LangGraph.
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ag-ui-langgraph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ag-ui-langgraph
+  cfe-purls:
+    - pkg:conda/ag-ui-langgraph@${{ version }}?channel=conda-forge
+    - pkg:pypi/ag-ui-langgraph@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/ag-ui-langgraph/
+  cfe-import-names: [ag_ui_langgraph]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ag-ui-langgraph-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:45:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:45:24Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:45:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['fastapi']
+####

@@ -2,53 +2,87 @@
 schema_version: 1
 
 context:
-  name: atlassian-python-api
-  version: "5.0.1"
+  version: "5.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: atlassian-python-api
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: d4c724647c3797340bd1aae19bf03bf7e2f0218efcc825fcffe3e564838ac64b
+  url: https://pypi.org/packages/source/a/atlassian-python-api/atlassian_python_api-${{ version }}.tar.gz
+  sha256: d4d4adb747048d637aaa63fbd14791d742f17172f6d02b03c23d9a5aaa038276
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
-    - beautifulsoup4
     - deprecated
-    - jmespath
-    - lxml
+    - requests
     - oauthlib
-    - requests >=2.8.1
     - requests-oauthlib
-    - requests-kerberos 0.14.0.*
-    - six
+    - jmespath
+    - beautifulsoup4
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - atlassian
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Atlassian REST API Wrapper
+  homepage: https://github.com/atlassian-api/atlassian-python-api
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/atlassian-api/atlassian-python-api
+  summary: Python Atlassian REST API Wrapper
+  description: |
+    Python Atlassian REST API Wrapper
 
 extra:
   recipe-maintainers:
     - dbast
     - epilif1017a
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: atlassian-python-api
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: atlassian-python-api
+  cfe-purls:
+    - pkg:conda/atlassian-python-api@${{ version }}?channel=conda-forge
+    - pkg:pypi/atlassian-python-api@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/atlassian-api/atlassian-python-api
+  cfe-import-names: [atlassian]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/atlassian-python-api-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:27:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:27:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:27:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

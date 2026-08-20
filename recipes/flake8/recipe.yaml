@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# TODO: After release, upstream fixed some undefined variable issues
-#    - flake8 --ignore=D203,W503,E203 src/flake8 tests/integration tests/unit setup.py  # [unix]
 schema_version: 1
 
 context:
@@ -11,53 +9,41 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/PyCQA/flake8/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 71a7d2ec4166f83c6fc66e6465a45c49b4565ee29b69f27b335366ce101d8c2b
+  url: https://pypi.org/packages/source/f/flake8/flake8-${{ version }}.tar.gz
+  sha256: fe044858146b9fc69b551a4b490d69cf960fcb78ad1edcb84e7fbb1b4a8e3872
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - flake8 = flake8.main.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - mccabe >=0.7.0,<0.8.0
-    - pycodestyle >=2.14.0,<2.15.0
-    - pyflakes >=3.4.0,<3.5.0
     - python >=${{ python_min }}
+    - mccabe <0.8.0,>=0.7.0
+    - pycodestyle <2.15.0,>=2.14.0
+    - pyflakes <3.5.0,>=3.4.0
 
 tests:
   - python:
       imports:
         - flake8
-      pip_check: false
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - src/flake8
-        - tests/integration
-        - tests/unit
-        - setup.py
-    requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pycqa/flake8
   license: MIT
   license_file: LICENSE
-  summary: Your Tool For Style Guide Enforcement
-  homepage: http://flake8.pycqa.org/
-  repository: https://github.com/PyCQA/flake8
-  documentation: http://flake8.pycqa.org/
+  summary: "the modular source code checker: pep8 pyflakes and co"
+  description: |
+    the modular source code checker: pep8 pyflakes and co
 
 extra:
   recipe-maintainers:
@@ -67,8 +53,35 @@ extra:
     - goanpeca
     - sigmavirus24
 
-<conda_recipe_manager.types.SentinelType object at 0x71b725251be0>:  #    - flake8 --ignore=D203,W503,E203 src\\flake8 tests\\integration tests\\unit setup.py  # [win]
-  - if: unix
-    then: flake8 --ignore=D203,W503,E203,F821 src/flake8 tests/integration tests/unit setup.py
-  - pip list
-  - pip check
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8
+  cfe-purls:
+    - pkg:conda/flake8@${{ version }}?channel=conda-forge
+    - pkg:pypi/flake8@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pycqa/flake8
+  cfe-import-names: [flake8]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:15:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:15:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:15:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

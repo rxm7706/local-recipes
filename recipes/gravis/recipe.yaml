@@ -2,42 +2,82 @@
 schema_version: 1
 
 context:
-  name: gravis
   version: "0.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: gravis
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/gravis-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gravis/gravis-${{ version }}.tar.gz
   sha256: a36342602aa7da3bbd674c970439717926a8f7ca0678aa82cc5d756e8c2a529b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.5
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.5
-    - setuptools >=40.0
+    - python >=${{ python_min }}
+    - pkg-resources
+    - setuptools
 
 tests:
   - python:
       imports:
         - gravis
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Interactive graph visualizations with Python and HTML/CSS/JS.
+  homepage: https://robert-haas.github.io/gravis-docs/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://robert-haas.github.io/gravis-docs/
+  summary: Interactive graph visualizations with Python and HTML/CSS/JS.
+  description: |
+    Interactive graph visualizations with Python and HTML/CSS/JS.
 
 extra:
   recipe-maintainers:
     - julian-belina
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gravis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gravis
+  cfe-purls:
+    - pkg:conda/gravis@${{ version }}?channel=conda-forge
+    - pkg:pypi/gravis@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://robert-haas.github.io/gravis-docs/
+  cfe-import-names: [gravis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gravis-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:49:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:49:10Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T10:49:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

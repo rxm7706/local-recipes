@@ -70,9 +70,9 @@ extra:
   cfe-purls:
     - pkg:conda/google-cloud-core@${{ version }}?channel=conda-forge
     - pkg:pypi/google-cloud-core@${{ version }}
-  cfe-upstream-repo: none
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-core
   cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-core
-  cfe-import-names: [google.cloud._http]
+  cfe-import-names: [google.cloud._http, google.api_core.client_info, google.cloud.client, google.cloud.environment_vars, google.cloud.exceptions, google.cloud.operation]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
@@ -80,11 +80,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-core-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:24:13Z
+  cfe-last-checked: 2026-08-17T04:24:02Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:24:13Z
+  cfe-generated-at-datetime: 2026-08-17T04:24:02Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T01:24:13Z
+  cfe-local-build-datetime: 2026-08-17T04:24:02Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

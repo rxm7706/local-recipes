@@ -1,25 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: 0.2.2
+  version: "0.2.2"
 
 package:
   name: rank-bm25
   version: ${{ version }}
 
 source:
-  - url: https://github.com/dorianbrown/rank_bm25/archive/refs/tags/${{ version }}.tar.gz
-    sha256: 53f557974936b76228892d20cb89c0227eed27c2773fc3c9e68bbb7e8eebefee
+  url: https://pypi.org/packages/source/r/rank-bm25/rank_bm25-${{ version }}.tar.gz
+  sha256: 096ccef76f8188563419aaf384a02f0ea459503fdf77901378d4fd9d87e5e51d
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - if: unix
-      then:
-        - "echo 'Version: ${{ version }}' > $SRC_DIR/PKG-INFO && ${{ PYTHON }} -m pip install ."
-    - if: win
-      then:
-        - "echo Version: ${{ version }} > %SRC_DIR%\\PKG-INFO && %PYTHON% -m pip install ."
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -32,17 +28,51 @@ requirements:
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - rank_bm25
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/dorianbrown/rank_bm25
-  summary: Various BM25 algorithms for document ranking
-  license: Apache-2.0
+  license: Apache2.0
   license_file: LICENSE
+  summary: Various BM25 algorithms for document ranking
+  description: |
+    Various BM25 algorithms for document ranking
 
 extra:
   recipe-maintainers:
     - moritzwilksch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rank-bm25
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rank-bm25
+  cfe-purls:
+    - pkg:conda/rank-bm25@${{ version }}?channel=conda-forge
+    - pkg:pypi/rank-bm25@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dorianbrown/rank_bm25
+  cfe-import-names: [rank_bm25]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rank-bm25-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:46:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:46:29Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:46:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

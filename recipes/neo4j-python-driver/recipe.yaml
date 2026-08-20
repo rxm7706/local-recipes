@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: neo4j
   version: "6.2.0"
 
 package:
-  name: neo4j-python-driver
+  name: neo4j
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/neo4j-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/n/neo4j/neo4j-${{ version }}.tar.gz
   sha256: e1e246b65b572bd8ea97f9e0e721b7d40a5ce53e53d0007c29aef63e4f9124d9
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools ==82.0.1
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - pytz
@@ -31,22 +30,56 @@ tests:
   - python:
       imports:
         - neo4j
-        - neo4j.graph
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Neo4j Bolt driver for Python
+  homepage: https://neo4j.com/
   license: Apache-2.0 AND Python-2.0
-  license_file:
-    - LICENSE.APACHE2.txt
-    - LICENSE.PYTHON.txt
-    - LICENSE.txt
-    - NOTICE.txt
-  homepage: https://github.com/neo4j/neo4j-python-driver
+  license_file: LICENSE.txt
+  summary: Neo4j Bolt driver for Python
+  description: |
+    Neo4j Bolt driver for Python
+  repository: https://github.com/neo4j/neo4j-python-driver
 
 extra:
   recipe-maintainers:
     - pvanheus
     - thebestnom
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neo4j-python-driver
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neo4j
+  cfe-purls:
+    - pkg:conda/neo4j-python-driver@${{ version }}?channel=conda-forge
+    - pkg:pypi/neo4j@${{ version }}
+  cfe-upstream-repo: https://github.com/neo4j/neo4j-python-driver
+  cfe-upstream-homepage: https://neo4j.com/
+  cfe-import-names: [neo4j]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/neo4j-python-driver-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:00:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:00:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:00:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

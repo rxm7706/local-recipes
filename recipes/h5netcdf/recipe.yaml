@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  python_min: "3.9"
   version: "1.8.1"
 
 package:
@@ -20,28 +19,32 @@ build:
 
 requirements:
   host:
-    - python 3.9.*
-    - setuptools >=42
-    - setuptools-scm >=7.0
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=42
+    - wheel
   run:
-    - numpy
     - python >=${{ python_min }}
-    - h5py
     - packaging
+    - numpy
 
 tests:
   - python:
       imports:
         - h5netcdf
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://h5netcdf.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Pythonic interface to netCDF4 via h5py
-  homepage: https://github.com/h5netcdf/h5netcdf
+  summary: netCDF4 via h5py
+  description: |
+    netCDF4 via h5py
+  documentation: https://h5netcdf.org
 
 extra:
   recipe-maintainers:
@@ -50,3 +53,36 @@ extra:
     - ocefpaf
     - shoyer
     - kmuehlbauer
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: h5netcdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: h5netcdf
+  cfe-purls:
+    - pkg:conda/h5netcdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/h5netcdf@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://h5netcdf.org
+  cfe-import-names: [h5netcdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h5netcdf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.8.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:56:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:56:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:56:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

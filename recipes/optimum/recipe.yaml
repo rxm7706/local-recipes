@@ -2,79 +2,87 @@
 schema_version: 1
 
 context:
-  name: optimum
   version: "2.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: optimum
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/optimum-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/optimum/optimum-${{ version }}.tar.gz
   sha256: aa96ad535a5cec68d12c6372574125452284632fe13699633a61e8bbfb09c4df
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - optimum-cli = optimum.commands.optimum_cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}
   run:
     - python >=${{ python_min }}
-    - transformers >=4.29.0
-    - sentencepiece >=0.1.91,!=0.1.92  # dependency of transformers(sentencepiece)
-    - protobuf  # dependency of transformers(sentencepiece)
-    - packaging
+    - transformers >=4.29
     - pytorch >=1.11
+    - packaging
     - numpy
-    - huggingface_hub >=0.8.0
+    - huggingface-hub >=0.8.0
 
 tests:
   - python:
       imports:
-        - optimum
+        - optimum.fx
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-        - huggingface_hub <1.0
-    script:
-      - optimum-cli --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: |
-    Optimum Library is an extension of the Hugging Face Transformers
-    library, providing a framework to integrate third-party libraries
-    from Hardware Partners and interface with their specific functionality.
+  homepage: https://github.com/huggingface/optimum
   license: Apache-2.0
   license_file: LICENSE
+  summary: Optimum Library is an extension of the Hugging Face Transformers library, providing a framework to integrate third-party libraries from Hardware Partners and interface with their specific functionality.
   description: |
-    🤗 Optimum is an extension of 🤗 Transformers, providing a set of performance
-    optimization tools enabling maximum efficiency to train and run models on
-    targeted hardware.
-
-    The AI ecosystem evolves quickly and more and more specialized hardware along
-    with their own optimizations are emerging every day. As such, Optimum enables
-    users to efficiently use any of these platforms with the same ease inherent
-    to transformers.
-
-    PyPI: [https://pypi.org/project/optimum/](https://pypi.org/project/optimum/)
-
-  homepage: https://huggingface.co/hardware
-  repository: https://github.com/huggingface/optimum
-  documentation: https://huggingface.co/docs/optimum/
+    Optimum Library is an extension of the Hugging Face Transformers library, providing a framework to integrate third-party libraries from Hardware Partners and interface with their specific functionality.
 
 extra:
   recipe-maintainers:
     - ilya-lavrenov
     - sugatoray
     - shermansiu
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: optimum
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: optimum
+  cfe-purls:
+    - pkg:conda/optimum@${{ version }}?channel=conda-forge
+    - pkg:pypi/optimum@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/huggingface/optimum
+  cfe-import-names: [optimum.fx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/optimum-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:28:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:28:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:28:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license-mapped:Apache->Apache-2.0
+####

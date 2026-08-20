@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: webargs
-  version: 8.7.1
+  version: "8.7.1"
 
 package:
-  name: ${{ name|lower }}
+  name: webargs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/webargs/webargs-${{ version }}.tar.gz
   sha256: 799bf9039c76c23fd8dc1951107a75a9e561203c15d6ae8f89c1e46e234636c1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -25,29 +24,59 @@ requirements:
     - flit-core <4
   run:
     - python >=${{ python_min }}
-    - marshmallow >=3.13.0,<5.0.0
+    - marshmallow <5.0.0,>=3.13.0
     - packaging >=17.0
+    - typing_extensions >=4.0
 
 tests:
   - python:
       imports:
         - webargs
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/webargs/
   license: MIT
   license_file: LICENSE
-  summary: A friendly library for parsing HTTP request arguments, with built-in support for popular web frameworks
+  summary: Declarative parsing and validation of HTTP request objects, with built-in support for popular web frameworks, including Flask, Django, Bottle, Tornado, Pyramid, Falcon, and aiohttp.
   description: |
-    webargs is a Python library for parsing HTTP request arguments, with
-    built-in support for popular web frameworks, including Flask, Django,
-    Bottle, Tornado, Pyramid, webapp2, Falcon, and aiohttp.
-  homepage: https://github.com/marshmallow-code/webargs
+    Declarative parsing and validation of HTTP request objects, with built-in support for popular web frameworks, including Flask, Django, Bottle, Tornado, Pyramid, Falcon, and aiohttp.
   repository: https://github.com/marshmallow-code/webargs
-  documentation: http://webargs.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - frol
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: webargs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: webargs
+  cfe-purls:
+    - pkg:conda/webargs@${{ version }}?channel=conda-forge
+    - pkg:pypi/webargs@${{ version }}
+  cfe-upstream-repo: https://github.com/marshmallow-code/webargs
+  cfe-upstream-homepage: https://pypi.org/project/webargs/
+  cfe-import-names: [webargs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/webargs-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:37:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:37:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:37:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

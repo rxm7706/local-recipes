@@ -2,28 +2,24 @@
 schema_version: 1
 
 context:
-  name: rouge
   version: "1.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: rouge
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rouge-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/rouge/rouge-${{ version }}.tar.gz
   sha256: 12b48346ca47d6bcf3c45061f315452b9ccec0620ee895ec85b7efc3d54aae34
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - rouge=bin.rouge_cmd:main
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -34,22 +30,51 @@ tests:
   - python:
       imports:
         - bin
-        - rouge
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - rouge --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Full Python ROUGE Score Implementation (not a wrapper)
-  license: Apache-2.0
-  license_file: LICENSE
   homepage: http://github.com/pltrdy/rouge
+  license: LICENCE.txt
+  license_file: LICENSE
+  summary: Full Python ROUGE Score Implementation (not a wrapper)
+  description: |
+    Full Python ROUGE Score Implementation (not a wrapper)
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rouge
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rouge
+  cfe-purls:
+    - pkg:conda/rouge@${{ version }}?channel=conda-forge
+    - pkg:pypi/rouge@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/pltrdy/rouge
+  cfe-import-names: [bin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rouge-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:05:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:05:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:05:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

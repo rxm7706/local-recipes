@@ -2,53 +2,81 @@
 schema_version: 1
 
 context:
-  name: azure-mgmt-core
   version: "1.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: azure-mgmt-core
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/azure-mgmt-core/azure_mgmt_core-${{ version }}.tar.gz
   sha256: b26232af857b021e61d813d9f4ae530465255cb10b3dde945ad3743f7a58e79c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - azure-core >=1.31.0
+    - azure-core >=1.32.0
 
 tests:
   - python:
       imports:
         - azure
-        - azure.mgmt
-        - azure.mgmt.core
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-mgmt-core
   license: MIT
-  license_file:
-    - LICENSE
-    - LICENSE.md
-  summary: Microsoft Azure Management Core Library for Python.
-  homepage: https://github.com/Azure/azure-sdk-for-python
-  repository: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-mgmt-core
+  license_file: LICENSE
+  summary: Microsoft Azure Management Core Library for Python
+  description: |
+    Microsoft Azure Management Core Library for Python
 
 extra:
   recipe-maintainers:
     - tim-werner
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-mgmt-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-mgmt-core
+  cfe-purls:
+    - pkg:conda/azure-mgmt-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-mgmt-core@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-mgmt-core
+  cfe-import-names: [azure]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-mgmt-core-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:15:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:15:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:15:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

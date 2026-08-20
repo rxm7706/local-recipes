@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: albucore
-  version: "0.2.9"
+  version: "0.2.13"
 
 package:
-  name: ${{ name|lower }}
+  name: albucore
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/albucore-${{ version }}.tar.gz
-  sha256: c7d94e902371a533237cf4894b42881229b64e3afb8780d0de4ba254ace445a3
+  url: https://pypi.org/packages/source/a/albucore/albucore-${{ version }}.tar.gz
+  sha256: 0afb83ea8ad73d799370cb45c8c26e739becccbe1cdf3e3fe11594907c2eb622
 
 build:
   number: 0
@@ -20,32 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
+    - numkong >=7.8.0
     - numpy >=1.24.4
-    - typing-extensions >=4.9.0
-    - opencv >=4.9.0
-    - stringzilla >=3.10.4
-    - numkong >=7.0.0
+    - stringzilla >=5.1.2
 
 tests:
   - python:
       imports:
         - albucore
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A high-performance image processing library designed to optimize and extend the Albumentations library with specialized functions for advanced image transformations. Perfect for developers working in computer vision who require efficient and scalable image augmentation.
+  homepage: https://pypi.org/project/albucore/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/albumentations-team/albucore
+  summary: High-performance image processing functions for deep learning and computer vision.
+  description: |
+    High-performance image processing functions for deep learning and computer vision.
 
 extra:
   recipe-maintainers:
     - mukhery
     - mdraw
     - ternaus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: albucore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: albucore
+  cfe-purls:
+    - pkg:conda/albucore@${{ version }}?channel=conda-forge
+    - pkg:pypi/albucore@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/albucore/
+  cfe-import-names: [albucore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/albucore-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.13
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:47:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:47:39Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:47:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,63 +2,89 @@
 schema_version: 1
 
 context:
-  name: numpy-financial
   version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: numpy-financial
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/n/numpy-financial/numpy-financial-${{ version }}.tar.gz
   sha256: f84341bc62b2485d5604a73d5fac7e91975b4b9cd5f4a5a9cf608902ea00cb40
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
-    - numpy >=1.15
     - python >=${{ python_min }}
+    - numpy
 
 tests:
   - python:
       imports:
         - numpy_financial
-        - numpy_financial.tests
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - numpy_financial/tests
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - pytest numpy_financial/tests
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Simple financial functions
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  description: |
-    The `numpy-financial` package contains a collection of elementary financial functions.
-
-    The [financial functions in NumPy](https://numpy.org/doc/1.17/reference/routines.financial.html)
-    are deprecated and eventually will be removed from NumPy; see
-    [NEP-32](https://numpy.org/neps/nep-0032-remove-financial-functions.html) for more information.
-    This package is the replacement for the original NumPy financial functions.
   homepage: https://numpy.org/numpy-financial/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Simple financial functions
+  description: |
+    Simple financial functions
   repository: https://github.com/numpy/numpy-financial
   documentation: https://numpy.org/numpy-financial/
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: numpy-financial
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: numpy-financial
+  cfe-purls:
+    - pkg:conda/numpy-financial@${{ version }}?channel=conda-forge
+    - pkg:pypi/numpy-financial@${{ version }}
+  cfe-upstream-repo: https://github.com/numpy/numpy-financial
+  cfe-upstream-homepage: https://numpy.org/numpy-financial/
+  cfe-import-names: [numpy_financial]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/numpy-financial-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:06:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:06:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:06:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

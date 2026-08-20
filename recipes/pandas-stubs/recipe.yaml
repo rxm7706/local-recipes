@@ -2,56 +2,86 @@
 schema_version: 1
 
 context:
-  name: pandas-stubs
   version: "3.0.5.260730"
   python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: pandas-stubs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pandas_stubs-${{ version }}.tar.gz
-  sha256: f70a232c57d93a5a2c81f8a53953e10891a5374bc92652277deb325e2e4d0ff3
+  url: https://github.com/pandas-dev/pandas-stubs/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 2489c6ab80bf593a5729475aba04db5ac574fb0d6127ef1ccde00941728a0767
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
-    - poetry
+    - poetry-core >=2.0.0
   run:
     - python >=${{ python_min }}
-    - types-pytz >=2022.1.1
-    - numpy >=1.26.0
+    - pandas-stubs
+    - numpy >=1.23.5
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pip check
-      - if: unix
-        then: test -f $SP_DIR/pandas-stubs/_typing.pyi
-      - if: win
-        then: if not exist %SP_DIR%\\pandas-stubs\\_typing.pyi exit 1
+  - python:
+      imports:
+        - pandas_stubs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pandas.pydata.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Collection of Pandas stub files
+  summary: Type annotations for pandas
   description: |
-    Collection of Pandas stub files supported by the pandas team
-  homepage: https://github.com/pandas-dev/pandas-stubs
+    Type annotations for pandas
   repository: https://github.com/pandas-dev/pandas-stubs
-  documentation: https://github.com/pandas-dev/pandas-stubs
+  documentation: https://pandas.pydata.org/pandas-docs/stable
 
 extra:
   recipe-maintainers:
     - twoertwein
     - Dr-Irv
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pandas-stubs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pandas-stubs
+  cfe-purls:
+    - pkg:conda/pandas-stubs@${{ version }}?channel=conda-forge
+    - pkg:pypi/pandas-stubs@${{ version }}
+  cfe-upstream-repo: https://github.com/pandas-dev/pandas-stubs
+  cfe-upstream-homepage: https://pandas.pydata.org
+  cfe-import-names: [pandas_stubs]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pandas-stubs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.5.260730
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:39:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:39:33Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T02:39:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pandas-stubs']
+####

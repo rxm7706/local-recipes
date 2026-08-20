@@ -2,20 +2,17 @@
 schema_version: 1
 
 context:
-  name: blessed
-  version: "1.45.0"
-  python_check_max: "3.13"
+  version: "1.48.0"
 
 package:
-  name: ${{ name|lower }}
+  name: blessed
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/blessed-${{ version }}.tar.gz
-  sha256: d12abbbcfb5fdd80bac33ea7e22f1a163ff462f5c05f312159e04c5fee460c72
+  url: https://pypi.org/packages/source/b/blessed/blessed-${{ version }}.tar.gz
+  sha256: 5ed4c0d40d0121669ef949e4f23465982614eb821bd110d1d5a98ed97dea13d8
 
 build:
-
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -26,48 +23,62 @@ requirements:
     - pip
     - flit-core >=3.11,<4
   run:
-    - __${{ noarch_platform }}
     - python >=${{ python_min }}
-    - wcwidth >=0.7
-    - jinxed >=2.0,<3
+    - wcwidth >=0.8.1
+    - jinxed <3,>=2.1
+
 tests:
   - python:
+      imports:
+        - blessed
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-      imports:
-        - blessed
-        - ${{ "jinxed" if noarch_platform == "win" }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      env:
-        DISPLAY: :1
-      content:
-        - pip check
-        - echo "Test Script Imports for unix and windows Started"
-        - if: noarch_platform  != "win"
-          then:
-            - echo "Test Script Importing blessed and terminal for unix and windows"
-            - python -c "from blessed import Terminal; assert Terminal"
-            - python -c "assert __import__('blessed').__version__ == '${{ version }}'"
-          else:
-            - echo "Test Script Importing jinxed, blessed and terminal for windows"
-            - python -c "from jinxed import setupterm; assert setupterm"
-            - python -c "from blessed import Terminal; assert Terminal"
-            - python -c "assert __import__('blessed').__version__ == '${{ version }}'"
-        - echo "Test Script Imports for unix and windows Completed"
+        - "*"
 
 about:
-  summary: Easy, practical library for making terminal apps, by providing an elegant, well-documented interface to Colors, Keyboard input, and screen Positioning capabilities.
+  homepage: https://github.com/jquast/blessed
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/jquast/blessed
+  summary: Easy, practical library for making terminal apps, by providing an elegant, well-documented interface for Terminals.
+  description: |
+    Easy, practical library for making terminal apps, by providing an elegant, well-documented interface for Terminals.
+  repository: https://github.com/jquast/blessed
+  documentation: https://blessed.readthedocs.io
 
 extra:
   recipe-maintainers:
     - mattip
     - hadim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: blessed
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: blessed
+  cfe-purls:
+    - pkg:conda/blessed@${{ version }}?channel=conda-forge
+    - pkg:pypi/blessed@${{ version }}
+  cfe-upstream-repo: https://github.com/jquast/blessed
+  cfe-upstream-homepage: https://github.com/jquast/blessed
+  cfe-import-names: [blessed]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/blessed-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-1.48.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:41:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:41:55Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T06:41:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

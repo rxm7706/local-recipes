@@ -2,49 +2,83 @@
 schema_version: 1
 
 context:
-  name: pydub
   version: "0.25.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pydub
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pydub/pydub-${{ version }}.tar.gz
   sha256: 980a33ce9949cab2a569606b65674d748ecbca4f0796887fd6f46173a7b0d30f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
+    - pyaudioop
+    - audioop
 
 tests:
   - python:
       imports:
         - pydub
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://pydub.com
   license: MIT
   license_file: LICENSE
-  summary: Manipulate audio with a simple and easy high level interface
-  homepage: http://pydub.com
-  repository: https://github.com/jiaaro/pydub
-  documentation: http://pydub.com
+  summary: Manipulate audio with an simple and easy high level interface
+  description: |
+    Manipulate audio with an simple and easy high level interface
 
 extra:
   recipe-maintainers:
     - kynan
     - owenlamont
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydub
+  cfe-purls:
+    - pkg:conda/pydub@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydub@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://pydub.com
+  cfe-import-names: [pydub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydub-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.25.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:38:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:38:02Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T03:38:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['audioop', 'pyaudioop']
+####

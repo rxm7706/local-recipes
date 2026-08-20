@@ -2,63 +2,84 @@
 schema_version: 1
 
 context:
-  name: pbr
   version: "7.0.3"
-  bundle: tar.gz
-  hash: b46004ec30a5324672683ec848aed9e8fc500b0d261d40a3229c2d2bbfcedc29
 
 package:
-  name: ${{ name|lower }}
+  name: pbr
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/p/pbr/pbr-${{ version }}.tar.gz
+  sha256: b46004ec30a5324672683ec848aed9e8fc500b0d261d40a3229c2d2bbfcedc29
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - pbr = pbr.cmd.main:main
-  preserve_egg_dir: true
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=64.0.0
+    - 3.7
   run:
     - python >=${{ python_min }}
-    - pip
     - setuptools
 
 tests:
   - python:
       imports:
         - pbr
-        - pbr.cmd
-        - pbr.hooks
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pbr --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://docs.openstack.org/pbr/latest/
   license: Apache-2.0
+  license_file: LICENSE
   summary: Python Build Reasonableness
-  homepage: https://launchpad.net/pbr
-  repository: https://git.openstack.org/cgit/openstack-dev/pbr
-  documentation: https://docs.openstack.org/developer/pbr/
+  description: |
+    Python Build Reasonableness
+  repository: https://opendev.org/openstack/pbr
+  documentation: https://docs.openstack.org/pbr/
 
 extra:
   recipe-maintainers:
     - jakirkham
     - tschoonj
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pbr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pbr
+  cfe-purls:
+    - pkg:conda/pbr@${{ version }}?channel=conda-forge
+    - pkg:pypi/pbr@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/pbr
+  cfe-upstream-homepage: https://docs.openstack.org/pbr/latest/
+  cfe-import-names: [pbr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pbr-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:52:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:52:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:52:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,55 +2,49 @@
 schema_version: 1
 
 context:
-  name: attrs
   version: "26.1.0"
-  sha256: d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32
 
 package:
-  name: ${{ name|lower }}
+  name: attrs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/a/attrs/attrs-${{ version }}.tar.gz
+  sha256: d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32
 
 build:
-  noarch: python
   number: 0
-  script: "python -m pip install . -vv"
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
-    - hatch-fancy-pypi-readme
+    - hatch-fancy-pypi-readme >=23.2.0
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - attr
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://attrs.readthedocs.io/en/stable/
+  homepage: https://pypi.org/project/attrs/
   license: MIT
-  license_family: MIT
   license_file: LICENSE
-  summary: attrs is the Python package that will bring back the joy of writing classes by relieving you from the drudgery of implementing object protocols (aka dunder methods).
+  summary: Classes Without Boilerplate
   description: |
-    attrs is the Python package that will bring back the joy of writing
-    classes by relieving you from the drudgery of implementing object
-    protocols (aka dunder methods). Its main goal is to help you to write
-    concise and correct software without slowing down your code. For that, it
-    gives you a class decorator and a way to declaratively define the
-    attributes on that class:
-  documentation: https://attrs.readthedocs.io/en/stable/
+    Classes Without Boilerplate
   repository: https://github.com/python-attrs/attrs
+  documentation: https://www.attrs.org/
 
 extra:
   recipe-maintainers:
@@ -58,3 +52,33 @@ extra:
     - licode
     - nicoddemus
     - jochym
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: attrs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: attrs
+  cfe-purls:
+    - pkg:conda/attrs@${{ version }}?channel=conda-forge
+    - pkg:pypi/attrs@${{ version }}
+  cfe-upstream-repo: https://github.com/python-attrs/attrs
+  cfe-upstream-homepage: https://pypi.org/project/attrs/
+  cfe-import-names: [attr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/attrs-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:28:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:28:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:28:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

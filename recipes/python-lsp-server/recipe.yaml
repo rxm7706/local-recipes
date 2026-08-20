@@ -2,110 +2,52 @@
 schema_version: 1
 
 context:
-  name: python-lsp-server
   version: "1.15.0"
-  python_min: "3.10"
-  build_number: 0
 
-recipe:
-  name: ${{ name|lower }}-meta
+package:
+  name: python-lsp-server
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-lsp-server/python_lsp_server-${{ version }}.tar.gz
   sha256: 85fa090262c3d1aef09b759d98811d6cb9ad5bbc58af15d588608ae8c1925801
 
 build:
-  number: ${{ build_number }}
+  number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=61.2.0
-    - python 3.10.*
+    - setuptools >=69.0.0
   run:
     - python >=${{ python_min }}
+    - docstring-to-markdown
+    - importlib-metadata >=4.8.3
+    - jedi <0.21.0,>=0.17.2
+    - pluggy >=1.0.0
+    - python-lsp-jsonrpc <2.0.0,>=1.1.0
+    - ujson >=3.0.0
+    - black
 
-outputs:
-  - package:
-      name: ${{ name|lower }}-base
-      version: ${{ version }}
-    build:
-      number: ${{ build_number }}
-      noarch: python
-      script: python -m pip install . --no-deps --no-build-isolation -vv
-      python:
-        entry_points:
-          - pylsp = pylsp.__main__:main
-    requirements:
-      host:
-        - python 3.10.*
-        - pip
-        - setuptools >=61.2.0
-        # Needed at build time to produce a package with the correct version for pip
-        # See https://github.com/pypa/setuptools_scm/issues/636#issuecomment-1026435048
-        - setuptools_scm >=3.4.3
-      run:
-        - python >=${{ python_min }}
-        - black
-        - importlib-metadata >=4.8.3
-        - jedi >=0.17.2,<0.21
-        - python-lsp-jsonrpc >=1.1.0,<2.0.0
-        - pluggy >=1.0.0
-        - docstring-to-markdown
-        - ujson >=3.0.0
-    tests:
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - python -m pip check
-          - pylsp --help
-          - pip list | grep -i python-lsp-server | grep ${{ version }}
-  - package:
-      name: ${{ name|lower }}
-      version: ${{ version }}
-    build:
-      number: ${{ build_number }}
-      noarch: python
-    requirements:
-      host:
-        - ${{ pin_subpackage("python-lsp-server-base", exact=True) }}
-        - python 3.10.*
-      run:
-        - ${{ pin_subpackage("python-lsp-server-base", exact=True) }}
-        - python >=${{ python_min }}
-        - autopep8 >=2.0.4,<2.1.0
-        - flake8 >=7.1.0,<8.0.0
-        - mccabe >=0.7.0,<0.8.0
-        - pycodestyle >=2.12.0,<2.13.0
-        - pydocstyle >=6.3.0,<6.4.0
-        - pyflakes >=3.2.0,<3.3.0
-        - pylint >=3.1.0,<4.1.0
-        - rope >=1.11.0
-        - whatthepatch >=1.0.2,<2.0.0
-        - yapf >=0.33.0
-    tests:
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - python -m pip check
-          - pylsp --help
-          - pip list | grep -i python-lsp-server | grep ${{ version }}
+tests:
+  - python:
+      imports:
+        - pylsp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-lsp/python-lsp-server
   license: MIT
   license_file: LICENSE
-  summary: An implementation of the Language Server Protocol for Python
+  summary: Python Language Server for the Language Server Protocol
   description: |
-    A Python 3.9+ implementation of the Language Server Protocol
-    making use of Jedi, pycodestyle, Pyflakes and YAPF.
-  homepage: https://github.com/python-lsp/python-lsp-server
-  repository: https://github.com/python-lsp/python-lsp-server
+    Python Language Server for the Language Server Protocol
 
 extra:
   recipe-maintainers:
@@ -114,3 +56,36 @@ extra:
     - andfoy
     - steff456
     - dalthviz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-lsp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-lsp-server
+  cfe-purls:
+    - pkg:conda/python-lsp-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-lsp-server@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/python-lsp/python-lsp-server
+  cfe-import-names: [pylsp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-lsp-server-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.15.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:28:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:28:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:28:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

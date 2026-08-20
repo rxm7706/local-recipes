@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: langchain-google-genai
   version: "4.3.4"
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-google-genai
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/langchain_google_genai-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langchain-google-genai/langchain_google_genai-${{ version }}.tar.gz
   sha256: 265655baad05f799fa7b83a030eaca7cee0e32c9ab7de846b80ea7f59c26134e
 
 build:
@@ -20,29 +19,68 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
-    - langchain-core >=1.5.4,<2.0.0
-    - google-genai >=1.65.0,<3.0.0
-    - pydantic >=2.0.0,<3.0.0
-    - filetype >=1.2.0,<2.0.0
+    - python >=${{ python_min }}
+    - filetype <2.0.0,>=1.2.0
+    - google-genai <3.0.0,>=1.65.0
+    - langchain-core <2.0.0,>=1.5.4
+    - pydantic <3.0.0,>=2.0.0
 
 tests:
   - python:
       imports:
         - langchain_google_genai
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: An integration package connecting Google's genai package and LangChain
+  homepage: https://docs.langchain.com/oss/python/integrations/providers/google
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/langchain-ai/langchain-google
+  summary: An integration package connecting Google's genai package and LangChain
+  description: |
+    An integration package connecting Google's genai package and LangChain
+  repository: https://github.com/langchain-ai/langchain-google/tree/master/libs/genai
+  documentation: https://reference.langchain.com/python/integrations/langchain_google_genai/
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-google-genai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-google-genai
+  cfe-purls:
+    - pkg:conda/langchain-google-genai@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-google-genai@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain-google/tree/master/libs/genai
+  cfe-upstream-homepage: https://docs.langchain.com/oss/python/integrations/providers/google
+  cfe-import-names: [langchain_google_genai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-google-genai-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.3.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:02:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:02:04Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T10:02:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -13,30 +13,35 @@ source:
   sha256: 87683d47965c1da65cdacaf31c8441d12b8044cdec9aca500cd78fc2c683afca
 
 build:
-  number: 1004
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
+    - pathlib2
 
 tests:
   - python:
       imports:
         - pickleshare
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pickleshare/pickleshare
   license: MIT
   license_file: LICENSE
   summary: Tiny 'shelve'-like database with concurrency support
-  homepage: https://github.com/pickleshare/pickleshare/
+  description: |
+    Tiny 'shelve'-like database with concurrency support
 
 extra:
   recipe-maintainers:
@@ -44,3 +49,36 @@ extra:
     - takluyver
     - ocefpaf
     - Carreau
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pickleshare
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pickleshare
+  cfe-purls:
+    - pkg:conda/pickleshare@${{ version }}?channel=conda-forge
+    - pkg:pypi/pickleshare@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pickleshare/pickleshare
+  cfe-import-names: [pickleshare]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pickleshare-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:00:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:00:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:00:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

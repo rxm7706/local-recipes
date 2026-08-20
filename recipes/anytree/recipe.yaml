@@ -2,59 +2,82 @@
 schema_version: 1
 
 context:
-  name: anytree
-  version: 2.13.0
+  version: "2.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: anytree
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/anytree-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/anytree/anytree-${{ version }}.tar.gz
   sha256: c9d3aa6825fdd06af7ebb05b4ef291d2db63e62bb1f9b7d9b71354be9d362714
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pdm-backend
     - pip
+    - pdm-backend
   run:
-    - python >=${{ python_min }},<4.0
-    - six
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - anytree
-        - anytree.node
-        - anytree.iterators
-        - anytree.importer
-        - anytree.exporter
-        - anytree.util
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE
-  summary: Python tree data library
-  description: |
-    'Python tree data library'
   homepage: https://github.com/c0fec0de/anytree
-  repository: https://github.com/c0fec0de/anytree
-  documentation: https://anytree.readthedocs.io/en/2.8.0
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Powerful and Lightweight Python Tree Data Structure with various plugins
+  description: |
+    Powerful and Lightweight Python Tree Data Structure with various plugins
+  documentation: https://anytree.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - tlestang
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: anytree
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: anytree
+  cfe-purls:
+    - pkg:conda/anytree@${{ version }}?channel=conda-forge
+    - pkg:pypi/anytree@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/c0fec0de/anytree
+  cfe-import-names: [anytree]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/anytree-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T05:57:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:57:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:57:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

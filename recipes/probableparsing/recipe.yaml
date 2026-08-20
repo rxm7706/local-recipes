@@ -2,45 +2,86 @@
 schema_version: 1
 
 context:
-  name: probableparsing
   version: "0.0.1"
-  hashtype: md5
-  hash: 960a1fab176276070111f1f9b2080cca
 
 package:
-  name: ${{ name }}
+  name: probableparsing
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/probableparsing/probableparsing-${{ version }}.tar.gz
+  sha256: 8114bbf889e1f9456fe35946454c96e42a6ee2673a90d4f1f9c46a406f543767
 
 build:
-  number: 1000
+  number: 0
   noarch: python
-  script: python setup.py install --single-version-externally-managed --record record.txt
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python
+  host:
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
-    - future
   run:
-    - python
-    - future
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - probableparsing
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  summary: Common methods for probable parsing
   homepage: https://github.com/datamade/probableparsing
+  license: MIT
+  license_file: LICENSE
+  summary: Common methods for propbable parsers
+  description: |
+    Common methods for propbable parsers
 
 extra:
   recipe-maintainers:
     - wyseguy7
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: probableparsing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: probableparsing
+  cfe-purls:
+    - pkg:conda/probableparsing@${{ version }}?channel=conda-forge
+    - pkg:pypi/probableparsing@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/datamade/probableparsing
+  cfe-import-names: [probableparsing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/probableparsing-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.0.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:14:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:14:11Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:14:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

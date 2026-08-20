@@ -95,3 +95,36 @@ extra:
     - jorisvandenbossche
     - jdmcbr
     - martinfleis
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: geopandas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: geopandas
+  cfe-purls:
+    - pkg:conda/geopandas@${{ version }}?channel=conda-forge
+    - pkg:pypi/geopandas@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://geopandas.org
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/geopandas-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:42:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:42:57Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:42:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

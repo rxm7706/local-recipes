@@ -294,3 +294,38 @@ extra:
     - ksangeek
     - xhochy
     - mfansler
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xgboost
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libxgboost
+  cfe-purls:
+    - pkg:conda/xgboost@${{ version }}?channel=conda-forge
+    - pkg:pypi/libxgboost@${{ version }}
+  cfe-upstream-repo: https://github.com/dmlc/xgboost/
+  cfe-upstream-homepage: https://github.com/dmlc/xgboost
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xgboost-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:25:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:25:03Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:25:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for libxgboost...
+Error: Failed to fetch PyPI metadata for 'libxgboost' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/libxgboost/json
+
+####

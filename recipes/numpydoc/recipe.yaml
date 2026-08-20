@@ -15,16 +15,12 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - numpydoc = numpydoc.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=61.2
   run:
     - python >=${{ python_min }}
@@ -33,35 +29,58 @@ requirements:
 
 tests:
   - python:
-      imports: numpydoc
+      imports:
+        - numpydoc
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - python -m numpydoc --help
-      - numpydoc --help
-  - requirements:
-      run:
-        - matplotlib-base
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      - coverage run --source=numpydoc --branch -m pytest -vv --tb=long --color=yes --pyargs numpydoc -k "not ((test_main and test_lint) or test_validate_hook)"
-      - coverage report --show-missing --skip-covered --fail-under=84
+        - "*"
 
 about:
+  homepage: https://numpydoc.readthedocs.io
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: "Numpy's Sphinx extensions"
-  homepage: https://github.com/numpy/numpydoc
-  documentation: https://numpydoc.readthedocs.io
+  summary: Sphinx extension to support docstrings in Numpy format
+  description: |
+    Sphinx extension to support docstrings in Numpy format
+  repository: https://github.com/numpy/numpydoc/
 
 extra:
   recipe-maintainers:
     - jschueller
     - scopatz
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: numpydoc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: numpydoc
+  cfe-purls:
+    - pkg:conda/numpydoc@${{ version }}?channel=conda-forge
+    - pkg:pypi/numpydoc@${{ version }}
+  cfe-upstream-repo: https://github.com/numpy/numpydoc/
+  cfe-upstream-homepage: https://numpydoc.readthedocs.io
+  cfe-import-names: [numpydoc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/numpydoc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:07:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:07:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:07:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

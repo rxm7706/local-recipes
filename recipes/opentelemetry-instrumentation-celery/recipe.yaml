@@ -2,111 +2,88 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-celery
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-celery
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_celery-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-celery/opentelemetry_instrumentation_celery-${{ version }}.tar.gz
   sha256: ff4d192b6371cfe06969005862dc558cc8b79b03b0bbdfbf65b9a59e4dcd7fee
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
+    - celery
+    - billiard
     - opentelemetry-api ~=1.12
     - opentelemetry-instrumentation ==0.65b0
     - opentelemetry-semantic-conventions ==0.65b0
-    # - pytest
-    # - opentelemetry-test-utils ==0.37b0
-    # - opentelemetry-instrumentation-celery
-    # - importlib-metadata ==4.13.0
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.38b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.39b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.40b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.41b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.42b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.43b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - pytest
-    # - opentelemetry-test-utils ==0.44b0
-    # - opentelemetry-instrumentation-celery
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
-    # - celery <6.0,>=4.0
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.celery
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Celery Instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-celery
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-celery
+  summary: OpenTelemetry Celery Instrumentation
+  description: |
+    OpenTelemetry Celery Instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-celery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-celery
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-celery@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-celery@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-celery
+  cfe-import-names: [opentelemetry.instrumentation.celery]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-celery-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:34:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:34:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:34:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['billiard']
+#    # added run deps from import test: ['celery']
+####

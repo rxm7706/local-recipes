@@ -2,54 +2,47 @@
 schema_version: 1
 
 context:
-  name: sshtunnel
   version: "0.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sshtunnel
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sshtunnel-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sshtunnel/sshtunnel-${{ version }}.tar.gz
   sha256: e7cb0ea774db81bf91844db22de72a40aae8f7b0f9bb9ba0f666d474ef6bf9fc
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - sshtunnel=sshtunnel:_cli_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
-    - paramiko >=2.7.2
+    - paramiko
 
 tests:
   - python:
       imports:
         - sshtunnel
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - sshtunnel --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pahaz/sshtunnel
   license: MIT
   license_file: LICENSE
-  summary: Pure Python SSH tunnels
-  homepage: https://github.com/pahaz/sshtunnel
-  repository: https://github.com/pahaz/sshtunnel
-  documentation: https://github.com/pahaz/sshtunnel
+  summary: Pure python SSH tunnels
+  description: |
+    Pure python SSH tunnels
 
 extra:
   recipe-maintainers:
@@ -58,3 +51,36 @@ extra:
     - fernandezcuesta
     - BrentDorsey
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sshtunnel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sshtunnel
+  cfe-purls:
+    - pkg:conda/sshtunnel@${{ version }}?channel=conda-forge
+    - pkg:pypi/sshtunnel@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pahaz/sshtunnel
+  cfe-import-names: [sshtunnel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sshtunnel-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:06:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:06:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:06:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

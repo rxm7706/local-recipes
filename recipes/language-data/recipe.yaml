@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: language-data
-  version: 1.4.0
+  version: "1.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: language-data
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/language_data-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/language-data/language_data-${{ version }}.tar.gz
   sha256: 800e6457e7beda781c156e02d7707e38db2ded026472e07e2c055dc8446ee574
 
 build:
@@ -21,9 +20,9 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=60
     - setuptools-scm >=8.0
-    - pip
   run:
     - python >=${{ python_min }}
     - marisa-trie >=1.1.0
@@ -33,14 +32,49 @@ tests:
       imports:
         - language_data
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Supplementary data about languages used by the langcodes module
+  homepage: https://github.com/georgkrause/language_data
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/georgkrause/language_data
+  summary: Supplementary data about languages used by the langcodes module
+  description: |
+    Supplementary data about languages used by the langcodes module
+  repository: https://github.com/georgkrause/language_data
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: language-data
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: language-data
+  cfe-purls:
+    - pkg:conda/language-data@${{ version }}?channel=conda-forge
+    - pkg:pypi/language-data@${{ version }}
+  cfe-upstream-repo: https://github.com/georgkrause/language_data
+  cfe-upstream-homepage: https://github.com/georgkrause/language_data
+  cfe-import-names: [language_data]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/language-data-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:11:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:11:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:11:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

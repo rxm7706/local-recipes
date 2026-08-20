@@ -2,26 +2,27 @@
 schema_version: 1
 
 context:
-  name: pyspellchecker
-  version: "0.8.0"
+  version: "0.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyspellchecker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 0c13f129a18fb13dd028d1da9f3197f838cb6ec68b67a89092fe8406b2ec3170
+  url: https://pypi.org/packages/source/p/pyspellchecker/pyspellchecker-${{ version }}.tar.gz
+  sha256: eb1a594161c84a4e67df7db1c269a3392a645bd50e4c82e1298892db0cdb0965
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools >=77.0.0
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -29,19 +30,54 @@ tests:
   - python:
       imports:
         - spellchecker
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/barrust/pyspellchecker
   license: MIT
   license_file: LICENSE
   summary: Pure python spell checker based on work by Peter Norvig
-  homepage: https://github.com/barrust/pyspellchecker
+  description: |
+    Pure python spell checker based on work by Peter Norvig
+  documentation: https://pyspellchecker.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - dschreij
     - smathot
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyspellchecker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyspellchecker
+  cfe-purls:
+    - pkg:conda/pyspellchecker@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyspellchecker@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/barrust/pyspellchecker
+  cfe-import-names: [spellchecker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyspellchecker-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:05:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:05:13Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:05:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

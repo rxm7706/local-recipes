@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 context:
-  version: "2.1.0"
+  version: "2.2.0"
 
 recipe:
   name: griffe
@@ -8,7 +8,7 @@ recipe:
 
 source:
   url: https://github.com/mkdocstrings/griffe/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 5da33a64dd780a23e920232c436b71432dca88a788d4871083cfaead3e22d904
+  sha256: e1bc36fe9cd21d4b6b659b456346755e4cfdc5676c0a5214083126ee12612b3c
   # We need to patch griffe's version discovery script until they remove the PDM backend
   # https://github.com/mkdocstrings/griffe/blob/2666aaabe9b93f70c3dcde46ac284251a065a5c1/pyproject.toml#L2-L4
   patches:
@@ -149,3 +149,33 @@ extra:
     - bandersen23
     - dbast
     - moritzwilksch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: griffe
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: griffelib
+  cfe-purls:
+    - pkg:conda/griffe@${{ version }}?channel=conda-forge
+    - pkg:pypi/griffelib@${{ version }}
+  cfe-upstream-repo: https://github.com/mkdocstrings/griffe
+  cfe-upstream-homepage: https://mkdocstrings.github.io/griffe
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/griffe-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:36:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:36:30Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:36:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,51 +2,83 @@
 schema_version: 1
 
 context:
-  name: click-repl
   version: "0.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: click-repl
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/click-repl/click-repl-${{ version }}.tar.gz
   sha256: 17849c23dba3d667247dc4defe1757fff98694e90fe37474f3feebb69ced26a9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
+    - wheel
   run:
+    - python >=${{ python_min }}
     - click
-    - prompt_toolkit
-    - python >=3.6
-    - six
+    - prompt-toolkit
 
 tests:
   - python:
       imports:
         - click_repl
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/untitaker/click-repl
   license: MIT
   license_file: LICENSE
   summary: REPL plugin for Click
   description: |
-    click-repl turns a click-based application into a REPL, enabling
-    multiple commands to be executed in single session, with a single
-    shared context. Supports tab completion and command history.
-
-
-  homepage: https://github.com/untitaker/click-repl
+    REPL plugin for Click
 
 extra:
   recipe-maintainers:
     - rxm7706
     - izahn
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: click-repl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: click-repl
+  cfe-purls:
+    - pkg:conda/click-repl@${{ version }}?channel=conda-forge
+    - pkg:pypi/click-repl@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/untitaker/click-repl
+  cfe-import-names: [click_repl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/click-repl-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:01:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:01:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:01:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

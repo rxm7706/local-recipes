@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: colour
   version: "0.1.5"
 
 package:
-  name: ${{ name|lower }}
+  name: colour
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/colour-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/colour/colour-${{ version }}.tar.gz
   sha256: af20120fefd2afede8b001fbef2ea9da70ad7d49fafdb6489025dae8745c3aee
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - d2to1
+    - python ${{ python_min }}.*
     - pip
-    - setuptools <=67  # deprecated setup.py install is used
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -32,17 +30,52 @@ tests:
       imports:
         - colour
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python color representations manipulation library (RGB, HSL, web, ...)
+  homepage: http://github.com/vaab/colour
+  license: BSD-3-Clause
   license_file: LICENSE
-  license: BSD-2-Clause
-  homepage: https://github.com/vaab/colour
-  repository: https://github.com/vaab/colour
-  documentation: https://github.com/vaab/colour
+  summary: converts and manipulates various color representation (HSL, RVB, web, X11, ...)
+  description: |
+    converts and manipulates various color representation (HSL, RVB, web, X11, ...)
 
 extra:
   recipe-maintainers:
     - fhoehle
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: colour
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: colour
+  cfe-purls:
+    - pkg:conda/colour@${{ version }}?channel=conda-forge
+    - pkg:pypi/colour@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/vaab/colour
+  cfe-import-names: [colour]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/colour-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:08:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:08:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:08:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

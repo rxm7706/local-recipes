@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: proto-plus
-  version: 1.28.3
+  version: "1.28.3"
 
 package:
-  name: ${{ name|lower }}
+  name: proto-plus
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/proto-plus/proto_plus-${{ version }}.tar.gz
   sha256: 5f91b30dafa6bb38d432c5557a6ee1d35ffd40b4b1e0e3ca27260448560b91d9
 
 build:
@@ -25,26 +24,58 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - protobuf >=6.33.5,<8.0.0
+    - protobuf <8.0.0,>=6.33.5
+
 tests:
   - python:
       imports:
         - proto
-        - proto.marshal
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  summary: Beautiful, Pythonic protocol buffers.
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/proto-plus
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/proto-plus
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/proto-plus
-  documentation: https://proto-plus-python.readthedocs.io/en/latest/
+  summary: Beautiful, Pythonic protocol buffers
+  description: |
+    Beautiful, Pythonic protocol buffers
+  repository: https://github.com/googleapis/google-cloud-python
+  documentation: https://googleapis.dev/python/proto-plus/latest/
 
 extra:
   recipe-maintainers:
     - xylar
     - tswast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: proto-plus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: proto-plus
+  cfe-purls:
+    - pkg:conda/proto-plus@${{ version }}?channel=conda-forge
+    - pkg:pypi/proto-plus@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/proto-plus
+  cfe-import-names: [proto]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/proto-plus-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:19:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:19:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:19:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

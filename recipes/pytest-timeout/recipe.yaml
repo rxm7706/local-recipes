@@ -2,29 +2,25 @@
 schema_version: 1
 
 context:
-  name: pytest-timeout
   version: "2.4.0"
-  hash: 7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a
-  ext: tar.gz
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-timeout
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ ext }}
+  url: https://pypi.org/packages/source/p/pytest-timeout/pytest_timeout-${{ version }}.tar.gz
+  sha256: 7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . --no-deps --ignore-installed
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -34,26 +30,53 @@ tests:
   - python:
       imports:
         - pytest_timeout
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - py.test --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pytest-dev/pytest-timeout
   license: MIT
   license_file: LICENSE
-  summary: This is a plugin which will terminate tests after a certain timeout.
+  summary: pytest plugin to abort hanging tests
   description: |
-    pytest-timeout is a plugin which will terminate tests after a certain timeout.
-    When doing so it will show a stack dump of all threads running at the time.
-  homepage: https://github.com/pytest-dev/pytest-timeout
-  repository: https://github.com/pytest-dev/pytest-timeout
+    pytest plugin to abort hanging tests
 
 extra:
   recipe-maintainers:
     - flub
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-timeout
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-timeout
+  cfe-purls:
+    - pkg:conda/pytest-timeout@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-timeout@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pytest-dev/pytest-timeout
+  cfe-import-names: [pytest_timeout]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-timeout-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:43:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:43:36Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:43:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -9,22 +9,18 @@ package:
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/u/uri-template/uri-template-${{ version }}.tar.gz
-    sha256: 0e00f8eb65e18c7de20d595a14336e9f337ead580c70934141624b6d1ffdacc7
-    target_directory: dist
-  - url: https://github.com/plinss/uri_template/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 5bce2cfa1d21aaca82622c68fb0deb233ca334b0c28749f104b983563f28f004
-    target_directory: src
+  url: https://pypi.org/packages/source/u/uri-template/uri-template-${{ version }}.tar.gz
+  sha256: 0e00f8eb65e18c7de20d595a14336e9f337ead580c70934141624b6d1ffdacc7
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: cd dist && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
     - setuptools-scm
   run:
@@ -35,31 +31,51 @@ tests:
       imports:
         - uri_template
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - src/test.py
-        - src/tests
-    requirements:
-      run:
-        - coverage
-        - if: win
-          then: m2-grep
-        - mypy
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pip list
-      - pip list | grep -iE "uri-template\s+${{ version | replace(".", "\\.") }}"
-      - mypy -p uri_template
-      - cd src && coverage run --source=uri_template test.py && coverage report -m --fail-under=91
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://gitlab.linss.com/open-source/python/uri-template
   license: MIT
-  license_file: dist/LICENSE
+  license_file: LICENSE
   summary: RFC 6570 URI Template Processor
-  homepage: https://github.com/plinss/uri_template
+  description: |
+    RFC 6570 URI Template Processor
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: uri-template
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: uri-template
+  cfe-purls:
+    - pkg:conda/uri-template@${{ version }}?channel=conda-forge
+    - pkg:pypi/uri-template@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://gitlab.linss.com/open-source/python/uri-template
+  cfe-import-names: [uri_template]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/uri-template-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:02:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:02:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:02:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

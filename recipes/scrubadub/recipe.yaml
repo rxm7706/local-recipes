@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: 2.0.1
+  version: "2.0.1"
 
 package:
   name: scrubadub
@@ -11,9 +13,9 @@ source:
   sha256: 52a1fb8aa9bc0226043e02c3ec22d450bd4ebeede9e7e8db2def7c89b37c5aad
 
 build:
-  number: 0 
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -28,25 +30,56 @@ requirements:
     - dateparser
     - catalogue
     - scikit-learn
-    - typing-extensions
+    - typing_extensions
     - faker
 
 tests:
   - python:
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
       imports:
         - scrubadub
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/LeapBeyond/scrubadub
-  summary: Clean personally identifiable information from dirty dirty text.
   license: MIT
-  license_file:
-    - LICENSE
+  license_file: LICENSE
+  summary: Clean personally identifiable information from dirty dirty text.
+  description: |
+    Clean personally identifiable information from dirty dirty text.
 
 extra:
   recipe-maintainers:
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scrubadub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scrubadub
+  cfe-purls:
+    - pkg:conda/scrubadub@${{ version }}?channel=conda-forge
+    - pkg:pypi/scrubadub@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/LeapBeyond/scrubadub
+  cfe-import-names: [scrubadub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/scrubadub-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:11:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:11:23Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:11:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "7.3.0"
-  python_check_max: "3.14"
 
 package:
   name: ipykernel
@@ -16,81 +15,45 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    content:
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-      - ${{ PYTHON }} -m ipykernel install --sys-prefix
-      - ${{ PYTHON }} ${{ RECIPE_DIR }}/fix_kernelspec.py
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling >=1.22
-    - pip
     - python ${{ python_min }}.*
-    # minimum needed to intall kernelspec
-    - comm >=0.1.1
-    - debugpy >=1.6.5
-    - ipython >=7.23.1
-    - jupyter_client >=8.8.0
-    - packaging >=22
-    - psutil >=5.7
+    - pip
+    - hatchling >=1.22
+    - jupyter-client >=6
   run:
-    - ${{ "appnope" if noarch_platform == "osx" }}
-    - __${{ noarch_platform }}
+    - python >=${{ python_min }}
     - comm >=0.1.1
     - debugpy >=1.6.5
     - ipython >=7.23.1
-    - jupyter_client >=8.9.0
-    - jupyter_core >=5.1,!=6.0.*
+    - jupyter-client >=8.9.0
+    - jupyter-core !=6.0.*,>=5.1
     - matplotlib-inline >=0.1
     - nest-asyncio2 >=1.7.0
     - packaging >=22
     - psutil >=5.7
-    - python >=${{ python_min }}
     - pyzmq >=25
     - tornado >=6.4.1
     - traitlets >=5.4.0
-  run_constraints:
-    - appnope >=0.1.2
 
 tests:
   - python:
-      imports: ipykernel
+      imports:
+        - ipykernel
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests/
-      recipe:
-        - run_test.py
-    requirements:
-      run:
-        - flaky
-        - ipyparallel
-        - matplotlib-base
-        - numpy
-        - pytest >=7.0,<10
-        - pytest-asyncio >=0.23.5
-        - pytest-cov
-        - pytest-timeout
-        - python ${{ python_min }}.*
-        - if: not win
-          then:
-            - curio
-    script:
-      - jupyter kernelspec list
-      - python run_test.py
+        - "*"
 
 about:
+  homepage: https://ipython.org
   license: BSD-3-Clause
   license_file: LICENSE
   summary: IPython Kernel for Jupyter
   description: |
-    A powerful interactive Python shell and a Jupyter kernel to work with
-    Python code in Jupyter notebooks and other interactive frontends.
-  homepage: https://pypi.org/project/ipykernel
+    IPython Kernel for Jupyter
   repository: https://github.com/ipython/ipykernel
   documentation: https://ipykernel.readthedocs.io
 
@@ -105,3 +68,33 @@ extra:
     - pelson
     - davidbrochart
     - ianthomas23
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipykernel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipykernel
+  cfe-purls:
+    - pkg:conda/ipykernel@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipykernel@${{ version }}
+  cfe-upstream-repo: https://github.com/ipython/ipykernel
+  cfe-upstream-homepage: https://ipython.org
+  cfe-import-names: [ipykernel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipykernel-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:59:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:59:52Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:59:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

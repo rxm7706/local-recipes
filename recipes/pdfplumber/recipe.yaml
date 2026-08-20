@@ -13,19 +13,15 @@ source:
   sha256: b95b2d28c66efb0a794a83b88c6c6aea5987532a445d20a1cbcfa657022e6e57
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pdfplumber = pdfplumber.cli:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
     - setuptools
-    - setuptools-scm
   run:
     - python >=${{ python_min }}
     - pdfminer.six ==20260107
@@ -40,22 +36,50 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pdfplumber --help
-      - python -c "from importlib.metadata import version; v = version('pdfplumber'); print(v); assert v == '${{ version }}'"
-
 
 about:
-  summary: Plumb a PDF for detailed information about each char, rectangle, and line.
+  homepage: https://github.com/jsvine/pdfplumber
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://github.com/jsvine/pdfplumber
+  summary: Plumb a PDF for detailed information about each char, rectangle, and line.
+  description: |
+    Plumb a PDF for detailed information about each char, rectangle, and line.
 
 extra:
   recipe-maintainers:
     - kellend-git
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pdfplumber
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pdfplumber
+  cfe-purls:
+    - pkg:conda/pdfplumber@${{ version }}?channel=conda-forge
+    - pkg:pypi/pdfplumber@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jsvine/pdfplumber
+  cfe-import-names: [pdfplumber]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pdfplumber-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:54:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:54:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:54:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

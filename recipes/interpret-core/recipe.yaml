@@ -2,34 +2,29 @@
 schema_version: 1
 
 context:
-  name: interpret-core
   version: "0.7.8"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: interpret-core
   version: ${{ version }}
 
 source:
-  url: https://github.com/interpretml/interpret/archive/v${{ version }}.tar.gz
-  sha256: b92dffefc5adec3aa681e7efb981ad000f31f489855e0b5996e5080e4ff17bce
+  url: https://pypi.org/packages/source/i/interpret-core/interpret_core-${{ version }}.tar.gz
+  sha256: 39512a4a3971d47c92f50c97f434aa603ab1449aad6d94f09a1d1c072a78dda5
 
 build:
   number: 0
   noarch: python
-  script: cd ./python/interpret-core/ && ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    # specifying nodejs ==x.* prevents us from building it 3 times for different versions of nodejs
-    - nodejs 22.*
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=42
+    - wheel
   run:
     - python >=${{ python_min }}
-    - libebm =${{ version }}
     - numpy >=1.25
     - pandas >=0.24
     - scikit-learn >=1.6.0
@@ -41,52 +36,53 @@ tests:
         - interpret
       pip_check: true
       python_version:
-        - ${{ python_min }}
+        - ${{ python_min }}.*
         - "*"
-  - files:
-      source:
-        - python/interpret-core/tests/**
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pip
-        - psutil >=5.6.2
-        - ipython >=5.5.0
-        - plotly >=3.8.1
-        - SALib >=1.3.3
-        - shap >=0.28.5
-        - ipywidgets >=7.4.2
-        - scikit-learn >=1.6.0
-        - dash >=2.0.0
-        - dash_cytoscape >=0.1.1
-        - flask >=1.0.4
-        - gevent >=1.3.6
-        - requests >=2.19.0
-        - scipy >=0.18.1
-        - pytest >=4.3.0
-        - pytest-xdist >=1.29
-        - nbconvert >=5.4.1
-        - nbformat >=4.4.0
-        - selenium >=3.141.0
-        - pytest-cov >=2.6.1
-    script:
-      - pip list
-      - python -m pytest -vv -n auto --junitxml=junit/test-results.xml --cov=interpret --cov-report=xml --cov-report=html python/interpret-core/tests --ignore=python/interpret-core/tests/glassbox/test_aplr.py
 
 about:
+  homepage: https://github.com/interpretml/interpret
+  license: REPLACE_LICENSE
+  license_file: LICENSE
   summary: Fit interpretable models. Explain blackbox machine learning.
   description: |
-    Core system for the interpret package.
-
-    https://github.com/interpretml/interpret
-  license: MIT
-  license_file: LICENSE
-  homepage: https://github.com/interpretml/interpret
-  repository: https://interpret.ml/docs/installation-guide.html
-  documentation: https://interpret.ml/docs
+    Fit interpretable models. Explain blackbox machine learning.
 
 extra:
   recipe-maintainers:
     - paulbkoch
     - interpret-ml
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: interpret-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: interpret-core
+  cfe-purls:
+    - pkg:conda/interpret-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/interpret-core@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/interpretml/interpret
+  cfe-import-names: [interpret]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/interpret-core-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T23:56:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:56:57Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:56:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

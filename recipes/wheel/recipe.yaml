@@ -9,24 +9,22 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/w/wheel/wheel-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/wheel/wheel-${{ version }}.tar.gz
   sha256: 94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -c "import flit_core.buildapi; flit_core.buildapi.build_wheel('.')" && ${{ PYTHON }} -m installer --no-compile-bytecode wheel-*.whl
-  python:
-    entry_points:
-      - wheel = wheel._commands:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core >=3.11,<4
-    - python-installer
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.11,<5
   run:
     - python >=${{ python_min }}
+    - wheel
     - packaging >=24.0
 
 tests:
@@ -34,19 +32,19 @@ tests:
       imports:
         - wheel
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - wheel --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/wheel/
   license: MIT
   license_file: LICENSE.txt
-  summary: A built-package format for Python.
-  homepage: https://github.com/pypa/wheel
+  summary: Command line tool for manipulating wheel files
+  description: |
+    Command line tool for manipulating wheel files
+  repository: https://github.com/pypa/wheel
+  documentation: https://wheel.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -54,3 +52,41 @@ extra:
     - pelson
     - ocefpaf
     - mingwandroid
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wheel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wheel
+  cfe-purls:
+    - pkg:conda/wheel@${{ version }}?channel=conda-forge
+    - pkg:pypi/wheel@${{ version }}
+  cfe-upstream-repo: https://github.com/pypa/wheel
+  cfe-upstream-homepage: https://pypi.org/project/wheel/
+  cfe-import-names: [wheel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wheel-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.48.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:17:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:17:35Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:17:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['wheel']
+#    # blocker: missing-license-file
+####

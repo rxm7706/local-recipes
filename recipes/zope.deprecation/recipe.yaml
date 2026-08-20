@@ -2,46 +2,86 @@
 schema_version: 1
 
 context:
-  name: zope.deprecation
-  version: "4.4.0"
+  version: "6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: zope.deprecation
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 0d453338f04bacf91bbfba545d8bcdf529aa829e67b705eac8c1a7fdce66e2df
+  url: https://pypi.org/packages/source/z/zope.deprecation/zope_deprecation-${{ version }}.tar.gz
+  sha256: 18727ebda8e63a6d4bd28a290e8b46852e9f14473debb5cc40a0a2dccfadf15f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
+    - wheel
   run:
-    - python
+    - python >=${{ python_min }}
+    - setuptools
 
 tests:
   - python:
       imports:
-        - zope
         - zope.deprecation
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/zopefoundation/zope.deprecation
   license: ZPL-2.1
   license_file: LICENSE.txt
   summary: Zope Deprecation Infrastructure
-  homepage: https://github.com/zopefoundation/zope.deprecation
-  repository: https://github.com/zopefoundation/zope.deprecation
-  documentation: https://zopedeprecation.readthedocs.io/
+  description: |
+    Zope Deprecation Infrastructure
 
 extra:
   recipe-maintainers:
     - lincrosenbach
     - kfasolin
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.deprecation
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope-deprecation
+  cfe-purls:
+    - pkg:conda/zope.deprecation@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope-deprecation@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/zopefoundation/zope.deprecation
+  cfe-import-names: [zope.deprecation]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zope.deprecation-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:32:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:32:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:32:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,61 +2,54 @@
 schema_version: 1
 
 context:
-  name: giddy
   version: "2.3.9"
   python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: giddy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/giddy/giddy-${{ version }}.tar.gz
   sha256: f31d83a3fb9275cc07b71b28512d44626186373485063bf4f28a1990b9f7a2cb
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.12.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0
-    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
-    - scipy >=1.14
+    - esda <3,>=2.7
     - libpysal >=4.12
     - mapclassify >=2.7
-    - esda >=2.7,<3
     - quantecon >=0.8
-    - seaborn
+    - scipy >=1.14
+    - seaborn-base
     - matplotlib-base
 
 tests:
   - python:
       imports:
         - giddy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pysal.org/giddy/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: GeospatIal Distribution DYnamics (giddy) in PySAL
+  summary: PySAL-giddy for exploratory spatiotemporal data analysis
   description: |
-    Giddy is an open-source python library for the analysis of dynamics of longitudinal spatial
-    data. Originating from the spatial dynamics module in PySAL (Python Spatial Analysis Library),
-    it is under active development for the inclusion of newly proposed analytics that consider the
-    role of space in the evolution of distributions over time.
-  homepage: http://pysal.org
+    PySAL-giddy for exploratory spatiotemporal data analysis
   repository: https://github.com/pysal/giddy
-  documentation: http://pysal.org/giddy
 
 extra:
   recipe-maintainers:
@@ -65,3 +58,40 @@ extra:
     - sjsrey
     - jGaboardi
     - martinfleis
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: giddy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: giddy
+  cfe-purls:
+    - pkg:conda/giddy@${{ version }}?channel=conda-forge
+    - pkg:pypi/giddy@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/giddy
+  cfe-upstream-homepage: https://pysal.org/giddy/
+  cfe-import-names: [giddy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/giddy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.9
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:44:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:44:30Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T08:44:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

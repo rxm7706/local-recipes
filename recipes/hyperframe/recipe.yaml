@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: hyperframe
   version: "6.1.0"
-  sha256: f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08
 
 package:
-  name: ${{ name|lower }}
+  name: hyperframe
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/hyperframe/hyperframe-${{ version }}.tar.gz
+  sha256: f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=75.6.0
   run:
     - python >=${{ python_min }}
 
@@ -32,20 +29,55 @@ tests:
   - python:
       imports:
         - hyperframe
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-hyper/hyperframe/
   license: MIT
   license_file: LICENSE
   summary: Pure-Python HTTP/2 framing
-  homepage: http://python-hyper.org/hyperframe/
-  repository: https://github.com/python-hyper/hyperframe
+  description: |
+    Pure-Python HTTP/2 framing
+  repository: https://github.com/python-hyper/hyperframe/
+  documentation: https://python-hyper.org/
 
 extra:
   recipe-maintainers:
     - primozgodec
     - astaric
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hyperframe
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hyperframe
+  cfe-purls:
+    - pkg:conda/hyperframe@${{ version }}?channel=conda-forge
+    - pkg:pypi/hyperframe@${{ version }}
+  cfe-upstream-repo: https://github.com/python-hyper/hyperframe/
+  cfe-upstream-homepage: https://github.com/python-hyper/hyperframe/
+  cfe-import-names: [hyperframe]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hyperframe-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:45:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:45:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:45:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

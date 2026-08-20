@@ -13,15 +13,15 @@ source:
   sha256: 13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -30,14 +30,51 @@ tests:
       imports:
         - asn1crypto
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/wbond/asn1crypto
   license: MIT
   license_file: LICENSE
-  summary: Python ASN.1 library with a focus on performance and a pythonic API
-  homepage: https://github.com/wbond/asn1crypto
+  summary: Fast ASN.1 parser and serializer with definitions for private keys, public keys, certificates, CRL, OCSP, CMS, PKCS#3, PKCS#7, PKCS#8, PKCS#12, PKCS#5, X.509 and TSP
+  description: |
+    Fast ASN.1 parser and serializer with definitions for private keys, public keys, certificates, CRL, OCSP, CMS, PKCS#3, PKCS#7, PKCS#8, PKCS#12, PKCS#5, X.509 and TSP
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asn1crypto
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asn1crypto
+  cfe-purls:
+    - pkg:conda/asn1crypto@${{ version }}?channel=conda-forge
+    - pkg:pypi/asn1crypto@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/wbond/asn1crypto
+  cfe-import-names: [asn1crypto]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asn1crypto-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:20:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:20:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:20:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

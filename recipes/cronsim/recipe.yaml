@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: cronsim
-  version: "2.6"
+  version: "2.7"
 
 package:
-  name: ${{ name|lower }}
+  name: cronsim
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cronsim-${{ version }}.tar.gz
-  sha256: 5aab98716ef90ab5ac6be294b2c3965dbf76dc869f048846a0af74ebb506c10d
+  url: https://github.com/cuu508/cronsim/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9ae51c8567bfd9375b313d08c9307f7417ab7e7ff935914546a189f4c416c683
 
 build:
   number: 0
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,14 +30,52 @@ tests:
       imports:
         - cronsim
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Cron expression parser and evaluator
+  homepage: https://pypi.org/project/cronsim/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/cuu508/cronsim
+  summary: Cron expression parser and evaluator
+  description: |
+    Cron expression parser and evaluator
+  repository: https://github.com/cuu508/cronsim.git
 
 extra:
   recipe-maintainers:
     - apmorton
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cronsim
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cronsim
+  cfe-purls:
+    - pkg:conda/cronsim@${{ version }}?channel=conda-forge
+    - pkg:pypi/cronsim@${{ version }}
+  cfe-upstream-repo: https://github.com/cuu508/cronsim.git
+  cfe-upstream-homepage: https://pypi.org/project/cronsim/
+  cfe-import-names: [cronsim]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cronsim-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:32:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:32:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:32:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

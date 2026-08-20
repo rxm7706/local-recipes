@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: StrEnum
   version: "0.4.15"
 
 package:
-  name: ${{ name|lower }}
+  name: strenum
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/StrEnum/StrEnum-${{ version }}.tar.gz
   sha256: 878fb5ab705442070e4dd1929bb5e2249511c0bcf2b0eeacf3bcd80875c82eff
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner
     - setuptools
-    - versioneer
   run:
     - python >=${{ python_min }}
 
@@ -33,18 +30,51 @@ tests:
       imports:
         - strenum
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/irgeek/StrEnum
   license: MIT
   license_file: LICENSE
-  summary: A Python Enum that inherits from str.
+  summary: An Enum that inherits from str.
   description: |
-    A Python Enum that inherits from str.
-
-
-  homepage: https://github.com/irgeek/StrEnum
+    An Enum that inherits from str.
 
 extra:
   recipe-maintainers:
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: strenum
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: strenum
+  cfe-purls:
+    - pkg:conda/strenum@${{ version }}?channel=conda-forge
+    - pkg:pypi/strenum@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/irgeek/StrEnum
+  cfe-import-names: [strenum]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/strenum-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.15
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:10:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:10:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:10:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,49 +2,84 @@
 schema_version: 1
 
 context:
-  name: clickclick
   version: "20.10.2"
 
 package:
-  name: ${{ name|lower }}
+  name: clickclick
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/clickclick-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/clickclick/clickclick-${{ version }}.tar.gz
   sha256: 4efb13e62353e34c5eef7ed6582c4920b418d7dedc86d819e22ee089ba01802c
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - six
-    - flake8
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - click >=4.0
-    - pyyaml >=3.11
+    - yaml
+    - click
 
 tests:
   - python:
       imports:
         - clickclick
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  summary: Click utility functions
-  license_file: LICENSE
   homepage: https://codeberg.org/hjacobs/python-clickclick
-  repository: https://github.com/zalando/python-clickclick
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Click utility functions
+  description: |
+    Click utility functions
 
 extra:
   recipe-maintainers:
     - rxm7706
     - rvalieris
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: clickclick
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: clickclick
+  cfe-purls:
+    - pkg:conda/clickclick@${{ version }}?channel=conda-forge
+    - pkg:pypi/clickclick@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://codeberg.org/hjacobs/python-clickclick
+  cfe-import-names: [clickclick]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/clickclick-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-20.10.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:01:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:01:42Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T07:01:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['click']
+#    # added run deps from import test: ['yaml']
+####

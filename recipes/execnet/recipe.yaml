@@ -2,28 +2,25 @@
 schema_version: 1
 
 context:
-  name: execnet
   version: "2.1.2"
-  hash: 63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd
 
 package:
-  name: ${{ name }}
+  name: execnet
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/execnet/execnet-${{ version }}.tar.gz
+  sha256: 63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - hatchling >=1.26
     - hatch-vcs
   run:
@@ -33,20 +30,52 @@ tests:
   - python:
       imports:
         - execnet
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://execnet.readthedocs.io/en/latest/
   license: MIT
   license_file: LICENSE
-  summary: distributed Python deployment and communication
-  homepage: http://codespeak.net/execnet
-  repository: https://github.com/pytest-dev/execnet
-  documentation: http://codespeak.net/execnet
+  summary: "execnet: rapid multi-Python deployment"
+  description: |
+    execnet: rapid multi-Python deployment
 
 extra:
   recipe-maintainers:
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: execnet
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: execnet
+  cfe-purls:
+    - pkg:conda/execnet@${{ version }}?channel=conda-forge
+    - pkg:pypi/execnet@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://execnet.readthedocs.io/en/latest/
+  cfe-import-names: [execnet]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/execnet-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:09:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:09:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:09:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

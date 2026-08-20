@@ -2,37 +2,30 @@
 schema_version: 1
 
 context:
-  name: fastai
-  version: "2.8.7"
-  python_min: "3.10"
+  version: "2.8.8"
 
 package:
-  name: ${{ name|lower }}
+  name: fastai
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastai-${{ version }}.tar.gz
-  sha256: 93be109daab077a73279bb2aba27fa72a206bbf055b0f1921475afde69b7705f
+  url: https://pypi.org/packages/source/f/fastai/fastai-${{ version }}.tar.gz
+  sha256: 47f499d2bf6f4fde1c7aca49108a60023851a516c37ef695aec033cde3ac65f7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - configure_accelerate=fastai.distributed:configure_accelerate
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=64
   run:
     - python >=${{ python_min }}
-    - pip
-    - packaging
-    - fastdownload >=0.0.5,<2
-    - fastcore >=1.8.0
+    - fastdownload <2,>=0.0.5
+    - fastcore >=1.14.6
     - fasttransform >=0.0.2
     - torchvision >=0.11
     - matplotlib-base
@@ -44,28 +37,64 @@ requirements:
     - scikit-learn
     - scipy
     - spacy <4
+    - packaging
     - plum-dispatch
     - cloudpickle
-    - pytorch >=1.10,<3
+    - pytorch <3,>=1.10
 
 tests:
   - python:
       imports:
         - fastai
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: fastai simplifies training fast and accurate neural nets using modern best practices
+  homepage: https://pypi.org/project/fastai/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/fastai/fastai
+  summary: fastai simplifies training fast and accurate neural nets using modern best practices
+  description: |
+    fastai simplifies training fast and accurate neural nets using modern best practices
+  repository: https://github.com/fastai/fastai
+  documentation: https://docs.fast.ai/
 
 extra:
   recipe-maintainers:
     - tonyhoo
     - giswqs
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastai
+  cfe-purls:
+    - pkg:conda/fastai@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastai@${{ version }}
+  cfe-upstream-repo: https://github.com/fastai/fastai
+  cfe-upstream-homepage: https://pypi.org/project/fastai/
+  cfe-import-names: [fastai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastai-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.8.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:08:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:08:26Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T08:08:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: db-dtypes
-  version: 1.7.1
+  version: "1.7.1"
 
 package:
-  name: ${{ name|lower }}
+  name: db-dtypes
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/db-dtypes/db_dtypes-${{ version }}.tar.gz
   sha256: 75adf3bdf3174a6474ea4162d9a345ea0b3102ec4fd603e69ec26b6e8a99145a
 
 build:
@@ -25,26 +24,59 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
+    - numpy <=2.2.6,>=1.24.0
     - packaging >=24.2.0
-    - pandas >=1.5.3,<4.0.0
+    - pandas <4.0.0,>=1.5.3
     - pyarrow >=13.0.0
-    # use more restrictive bounds for py 3.10 to stay noarch: python
-    - numpy >=1.24.0,<=2.2.6
+
 tests:
   - python:
       imports:
         - db_dtypes
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pandas Data Types for SQL systems (BigQuery, Spanner)
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/db-dtypes
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/db-dtypes
-  documentation: https://googleapis.dev/python/db-dtypes/latest/index.html
+  summary: Pandas Data Types for SQL systems (BigQuery, Spanner)
+  description: |
+    Pandas Data Types for SQL systems (BigQuery, Spanner)
 
 extra:
   recipe-maintainers:
     - xylar
     - tswast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: db-dtypes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: db-dtypes
+  cfe-purls:
+    - pkg:conda/db-dtypes@${{ version }}?channel=conda-forge
+    - pkg:pypi/db-dtypes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/db-dtypes
+  cfe-import-names: [db_dtypes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/db-dtypes-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:37:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:37:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:37:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

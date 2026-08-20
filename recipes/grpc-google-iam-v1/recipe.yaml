@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: grpc-google-iam-v1
   version: "0.14.5"
 
 package:
-  name: ${{ name|lower }}
+  name: grpc-google-iam-v1
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpc_google_iam_v1-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/grpc-google-iam-v1/grpc_google_iam_v1-${{ version }}.tar.gz
   sha256: 07fd3a9fafb586588e771831fbfc8f6597050181d0c3b45e039d18b8fdc1aab5
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --verbose
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -25,41 +24,59 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - grpcio >=1.59.0,<2.0.0
-    - googleapis-common-protos >=1.63.2,<2.0.0
-    - googleapis-common-protos-grpc
-    - protobuf >=6.33.5,<8.0.0
+    - grpcio <2.0.0,>=1.59.0
+    - googleapis-common-protos <2.0.0,>=1.69.2
+    - protobuf <8.0.0,>=6.33.5
+
 tests:
   - python:
       imports:
         - google.iam.v1
-        - google.iam.v1.iam_policy_pb2
-        - google.iam.v1.logging
-        - google.iam.v1.logging.audit_data_pb2
-        - google.iam.v1.policy_pb2
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
 
 about:
+  homepage: https://pypi.org/project/grpc-google-iam-v1/
   license: Apache-2.0
   license_file: LICENSE
-  summary: GRPC library for the google-iam-v1 service
+  summary: IAM API client library
   description: |
-    grpc-google-iam-v1 is the IDL-derived library for the
-    google-iam v1 service in the googleapis repository.
-
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/grpc-google-iam-v1
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/grpc-google-iam-v1
-  documentation: https://github.com/googleapis/google-cloud-python/blob/main/packages/grpc-google-iam-v1/README.rst
+    IAM API client library
+  repository: https://github.com/googleapis/google-cloud-python
 
 extra:
   recipe-maintainers:
     - BrentDorsey
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grpc-google-iam-v1
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grpc-google-iam-v1
+  cfe-purls:
+    - pkg:conda/grpc-google-iam-v1@${{ version }}?channel=conda-forge
+    - pkg:pypi/grpc-google-iam-v1@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
+  cfe-upstream-homepage: https://pypi.org/project/grpc-google-iam-v1/
+  cfe-import-names: [google.iam.v1]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grpc-google-iam-v1-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:51:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:51:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:51:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

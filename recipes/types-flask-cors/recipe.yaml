@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: types-Flask-Cors
   version: "6.0.3.20260712"
 
 package:
-  name: ${{ name|lower }}
+  name: types-flask-cors
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_flask_cors-${{ version }}.tar.gz
-  sha256: 05d6dd4c49e2e8e64076b84caf6389d51327e9c4f3a37d4ccf0278b5b0d8daa1
+  url: https://pypi.org/packages/py3/t/types-Flask-Cors/types_flask_cors-6.0.3.20260712-py3-none-any.whl
+  sha256: 308ecfa65c17abc59edbed74258d24099c82f5e94cb1bc4f3016313df4e5e4f0
 
 build:
   number: 0
@@ -21,24 +20,60 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0.3
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - flask >=2.0.0
 
 tests:
-  - package_contents:
-      site_packages:
-        - flask_cors-stubs/py.typed
+  - python:
+      imports:
+        - types_flask_cors
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/python/typeshed
-  repository: https://github.com/python/typeshed
-  summary: Typing stubs for Flask-Cors
   license: Apache-2.0
   license_file: LICENSE
+  summary: Typing stubs for Flask-Cors
+  description: |
+    Typing stubs for Flask-Cors
+  repository: https://github.com/python/typeshed
 
 extra:
   recipe-maintainers:
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-flask-cors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-flask-cors
+  cfe-purls:
+    - pkg:conda/types-flask-cors@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-flask-cors@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_flask_cors]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-flask-cors-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:29:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:29:09Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:29:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

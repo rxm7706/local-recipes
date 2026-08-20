@@ -2,47 +2,85 @@
 schema_version: 1
 
 context:
-  name: keyrings.google-artifactregistry-auth
-  version: "1.1.1"
+  version: "1.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: keyrings.google-artifactregistry-auth
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/keyrings.google-artifactregistry-auth-${{ version }}.tar.gz
-  sha256: beb037fbf6b0c2ce11d810319fdc180cab8865daa2a16b109c3af73182ffe44d
+  url: https://pypi.org/packages/source/k/keyrings.google-artifactregistry-auth/keyrings.google-artifactregistry-auth-${{ version }}.tar.gz
+  sha256: bd6abb72740d2dfeb4a5c03c3b105c6f7dba169caa29dee3959694f1f02c77de
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
-    - setuptools-scm >=3.4.1
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
-    - keyring
+    - python >=${{ python_min }}
+    - keyrings
     - google-auth
-    - requests
+    - keyring
     - pluggy
+    - requests
 
 tests:
   - python:
       imports:
-        - google_artifactregistry_auth
-        - keyrings
+        - keyrings.google_artifactregistry_auth
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Keyring backend for Google Auth tokens
+  homepage: https://github.com/GoogleCloudPlatform/artifact-registry-python-tools
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/GoogleCloudPlatform/artifact-registry-python-tools
+  summary: Keyring backend for Google Auth tokens
+  description: |
+    Keyring backend for Google Auth tokens
 
 extra:
   recipe-maintainers:
     - SandorSzalma1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: keyrings.google-artifactregistry-auth
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: keyrings-google-artifactregistry-auth
+  cfe-purls:
+    - pkg:conda/keyrings.google-artifactregistry-auth@${{ version }}?channel=conda-forge
+    - pkg:pypi/keyrings-google-artifactregistry-auth@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/artifact-registry-python-tools
+  cfe-import-names: [keyrings.google_artifactregistry_auth]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/keyrings.google-artifactregistry-auth-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:56:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:56:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:56:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['keyrings']
+####

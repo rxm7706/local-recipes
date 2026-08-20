@@ -2,47 +2,81 @@
 schema_version: 1
 
 context:
-  name: dash-core-components
-  filename: dash_core_components
   version: "2.0.0"
-  sha256: c6733874af975e552f95a1398a16c2ee7df14ce43fa60bb3718a3c6e0b63ffee
 
 package:
-  name: ${{ name|lower }}
+  name: dash-core-components
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ filename }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ filename }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dash-core-components/dash_core_components-${{ version }}.tar.gz
+  sha256: c6733874af975e552f95a1398a16c2ee7df14ce43fa60bb3718a3c6e0b63ffee
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
-    - dash  >=2.0.0  # not listed in the setup.py, but imported in __init__.py
+    - python >=${{ python_min }}
+    - dash
 
 tests:
   - python:
       imports:
         - dash_core_components
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/dash-core-components/
   license: MIT
   license_file: LICENSE
-  summary: Dash UI core component suite
-  homepage: https://plot.ly/dash
-  repository: https://github.com/plotly/dash-core-components
+  summary: Core component suite for Dash
+  description: |
+    Core component suite for Dash
 
 extra:
   recipe-maintainers:
     - moorepants
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dash-core-components
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dash-core-components
+  cfe-purls:
+    - pkg:conda/dash-core-components@${{ version }}?channel=conda-forge
+    - pkg:pypi/dash-core-components@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/dash-core-components/
+  cfe-import-names: [dash_core_components]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dash-core-components-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:27:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:27:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:27:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['dash']
+####

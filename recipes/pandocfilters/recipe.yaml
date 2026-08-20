@@ -2,43 +2,80 @@
 schema_version: 1
 
 context:
-  name: pandocfilters
-  version: "1.5.0"
+  version: "1.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pandocfilters
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pandocfilters-${{ version }}.tar.gz
-  sha256: 0b679503337d233b4339a817bfc8c50064e2eff681314376a47cb582305a7a38
+  url: https://pypi.org/packages/source/p/pandocfilters/pandocfilters-${{ version }}.tar.gz
+  sha256: 002b4a555ee4ebc03f8b66307e287fa492e4a77b4ea14d3f934328297bb4939e
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python !=3.0,!=3.1,!=3.2,!=3.3
+    - setuptools
   run:
-    - python !=3.0,!=3.1,!=3.2,!=3.3
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pandocfilters
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/jgm/pandocfilters
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: A python module for writing pandoc filters
-  homepage: https://github.com/jgm/pandocfilters
-  repository: https://github.com/jgm/pandocfilters
+  summary: Utilities for writing pandoc filters in python
+  description: |
+    Utilities for writing pandoc filters in python
 
 extra:
   recipe-maintainers:
     - ickc
     - minrk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pandocfilters
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pandocfilters
+  cfe-purls:
+    - pkg:conda/pandocfilters@${{ version }}?channel=conda-forge
+    - pkg:pypi/pandocfilters@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/jgm/pandocfilters
+  cfe-import-names: [pandocfilters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pandocfilters-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:40:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:40:33Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:40:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

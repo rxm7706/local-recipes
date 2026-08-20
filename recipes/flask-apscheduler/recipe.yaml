@@ -2,68 +2,89 @@
 schema_version: 1
 
 context:
-  name: flask-apscheduler
-  pkg_name: Flask-APScheduler
   version: "1.13.1"
-  sha256: b929846f026fb339b76360b0e4fc75da78b75c6d08625715bd0d37949bd607da
 
 package:
-  name: ${{ name|lower }}
+  name: flask-apscheduler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ pkg_name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/f/Flask-APScheduler/Flask-APScheduler-${{ version }}.tar.gz
+  sha256: b929846f026fb339b76360b0e4fc75da78b75c6d08625715bd0d37949bd607da
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - apscheduler >=3.2.0,<4.0.0
-    - flask >=2.2.5,<4.0.0
-    - python-dateutil >=2.4.2
+    - dateutil
+    - flask
+    - werkzeug
+    - apscheduler
 
 tests:
   - python:
       imports:
         - flask_apscheduler
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/viniciuschiele/flask-apscheduler
   license: Apache-2.0
   license_file: LICENSE
-  summary: Flask-APScheduler is a Flask extension which adds support for the APScheduler
+  summary: Adds APScheduler support to Flask
   description: |
-    Flask-APScheduler is a Flask extension which adds support for the APScheduler.
-    Advanced Python Scheduler (APScheduler) is a Python library that lets you schedule your Python
-    code to be executed later, either just once or periodically. You can add new jobs or remove old
-    ones on the fly as you please. If you store your jobs in a database, they will also survive
-    scheduler restarts and maintain their state. When the scheduler is restarted, it will then run
-    all the jobs it should have run while it was offline [1].
-
-    Among other things, APScheduler can be used as a cross-platform, application specific replacement
-    to platform specific schedulers, such as the cron daemon or the Windows task scheduler. Please
-    note, however, that APScheduler is not a daemon or service itself, nor does it come with any
-    command line tools. It is primarily meant to be run inside existing applications. That said,
-    APScheduler does provide some building blocks for you to build a scheduler service or to run a
-    dedicated scheduler process.
-  homepage: https://github.com/viniciuschiele/flask-apscheduler
-  repository: https://github.com/viniciuschiele/flask-apscheduler
-  documentation: https://apscheduler.readthedocs.io
+    Adds APScheduler support to Flask
 
 extra:
   recipe-maintainers:
     - igortg
     - lvoliveira
     - edetec
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-apscheduler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-apscheduler
+  cfe-purls:
+    - pkg:conda/flask-apscheduler@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-apscheduler@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/viniciuschiele/flask-apscheduler
+  cfe-import-names: [flask_apscheduler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-apscheduler-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.13.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:17:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:17:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:17:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['apscheduler']
+#    # added run deps from import test: ['werkzeug']
+#    # added run deps from import test: ['flask']
+#    # added run deps from import test: ['dateutil']
+####

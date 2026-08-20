@@ -2,45 +2,86 @@
 schema_version: 1
 
 context:
-  name: pypng
   version: "0.20220715.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pypng
   version: ${{ version }}
 
 source:
-  url: https://gitlab.com/drj11/pypng/-/archive/pypng-${{ version }}/pypng-pypng-${{ version }}.tar.bz2
-  sha256: cbcf24b25951bc8694cdbcf67ffeda6294b52109db3d02a90dd1a0ade69ebcaa
+  url: https://pypi.org/packages/source/p/pypng/pypng-${{ version }}.tar.gz
+  sha256: 739c433ba96f078315de54c0db975aee537cbc3e1d0ae4ed9aab0ca1e427e2c1
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=35.0.2
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - png
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+        - pypng
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://gitlab.com/drj11/pypng
   license: MIT
-  license_file: LICENCE
-  summary: Pure Python PNG image encoder and decoder
-  homepage: https://gitlab.com/drj11/pypng/
+  license_file: LICENSE
+  summary: Pure Python library for saving and loading PNG images
+  description: |
+    Pure Python library for saving and loading PNG images
 
 extra:
   recipe-maintainers:
     - hmaarrfk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pypng
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pypng
+  cfe-purls:
+    - pkg:conda/pypng@${{ version }}?channel=conda-forge
+    - pkg:pypi/pypng@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://gitlab.com/drj11/pypng
+  cfe-import-names: [pypng]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pypng-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.20220715.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:59:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:59:13Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:59:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

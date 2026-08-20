@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.4.0"
-  python_check_max: "3.14"
 
 package:
   name: pytest-asyncio
@@ -16,52 +15,69 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools >=77.0
-    - setuptools-scm >=6.2
+    - pip
+    - setuptools >=77
   run:
-    - pytest >=8.4,<10
     - python >=${{ python_min }}
-    # needed for <3.11
+    - backports-asyncio-runner <2,>=1.1
+    - pytest <10,>=8.4
     - typing_extensions >=4.12
-    # needed for <3.13
-    - backports.asyncio.runner >=1.1,<2
 
 tests:
   - python:
-      imports: pytest_asyncio
+      imports:
+        - pytest_asyncio
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      recipe:
-        - run_test.py
-      source:
-        - tests/
-    requirements:
-      run:
-        - coverage >=6.2
-        - hypothesis >=5.7.1
-        - python ${{ python_min }}.*
-    script:
-      interpreter: python
-      file: run_test.py
+        - "*"
 
 about:
+  homepage: https://github.com/pytest-dev/pytest-asyncio
   license: Apache-2.0
   license_file: LICENSE
   summary: Pytest support for asyncio
-  homepage: http://pypi.org/project/pytest-asyncio
+  description: |
+    Pytest support for asyncio
   repository: https://github.com/pytest-dev/pytest-asyncio
+  documentation: https://pytest-asyncio.readthedocs.io
 
 extra:
   recipe-maintainers:
     - sodre
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-asyncio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-asyncio
+  cfe-purls:
+    - pkg:conda/pytest-asyncio@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-asyncio@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-asyncio
+  cfe-upstream-homepage: https://github.com/pytest-dev/pytest-asyncio
+  cfe-import-names: [pytest_asyncio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-asyncio-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:28:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:28:34Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:28:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,36 +2,34 @@
 schema_version: 1
 
 context:
-  name: pip-tools
   version: "7.6.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pip-tools
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pip-tools/pip_tools-${{ version }}.tar.gz
   sha256: 695556edeb647eb94ee8345cc7108657fdb7fb16b3876623a399b4f61bbede01
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - pip-compile = piptools.scripts.compile:cli
-      - pip-sync = piptools.scripts.sync:cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.7
-    - setuptools-scm
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=3.7
-    - python-build
-    - click >=7
-    - pip >=21.2
+    - python >=${{ python_min }}
+    - python-build >=1.0.0
+    - click >=8
+    - pip >=22.2
+    - pyproject_hooks
+    - typing_extensions >=4.6.0
+    - tomli
     - setuptools
     - wheel
 
@@ -40,19 +38,52 @@ tests:
       imports:
         - piptools
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - pip-compile --help
-      - pip-sync --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: pip-tools keeps your pinned dependencies fresh.
+  homepage: https://github.com/jazzband/pip-tools/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://pypi.org/project/pip-tools/
+  summary: pip-tools keeps your pinned dependencies fresh.
+  description: |
+    pip-tools keeps your pinned dependencies fresh.
+  documentation: https://pip-tools.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pip-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pip-tools
+  cfe-purls:
+    - pkg:conda/pip-tools@${{ version }}?channel=conda-forge
+    - pkg:pypi/pip-tools@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jazzband/pip-tools/
+  cfe-import-names: [piptools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pip-tools-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.6.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:09:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:09:56Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:09:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

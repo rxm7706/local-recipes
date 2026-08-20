@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: djangorestframework_simplejwt
-  version: 5.5.1
+  version: "5.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: djangorestframework-simplejwt
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangorestframework_simplejwt-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/djangorestframework-simplejwt/djangorestframework_simplejwt-${{ version }}.tar.gz
   sha256: e72c5572f51d7803021288e2057afcbd03f17fe11d484096f40a460abc76e87f
 
 build:
@@ -21,9 +20,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools-scm
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - django >=4.2
@@ -35,16 +33,17 @@ tests:
       imports:
         - rest_framework_simplejwt
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A minimal JSON Web Token authentication plugin for Django REST Framework
-  license: MIT AND BSD-2-Clause
-  license_file:
-    - LICENSE.txt
-    - licenses/LICENSE-django-rest-framework.md
-    - licenses/LICENSE-django-rest-framework-jwt
   homepage: https://github.com/jazzband/djangorestframework-simplejwt
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A minimal JSON Web Token authentication plugin for Django REST Framework
+  description: |
+    A minimal JSON Web Token authentication plugin for Django REST Framework
 
 extra:
   recipe-maintainers:
@@ -52,3 +51,37 @@ extra:
     - sannykr
     - riggggo
     - janjagusch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangorestframework_simplejwt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangorestframework-simplejwt
+  cfe-purls:
+    - pkg:conda/djangorestframework_simplejwt@${{ version }}?channel=conda-forge
+    - pkg:pypi/djangorestframework-simplejwt@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jazzband/djangorestframework-simplejwt
+  cfe-import-names: [rest_framework_simplejwt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangorestframework_simplejwt-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:04:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:04:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:04:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

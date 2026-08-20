@@ -2,52 +2,83 @@
 schema_version: 1
 
 context:
-  name: altgraph
   version: "0.17.5"
 
 package:
-  name: ${{ name|lower }}
+  name: altgraph
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/altgraph-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/altgraph/altgraph-${{ version }}.tar.gz
   sha256: c87b395dd12fabde9c99573a9749d67da8d29ef9de0125c7f536699b4a9bc9e7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
-    - setuptools
 
 tests:
   - python:
       imports:
         - altgraph
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python graph (network) package
-  description: |
-    altgraph is a fork of graphlib: a graph (network)
-    package for constructing graphs, BFS and DFS traversals,
-    topological sort, shortest paths, etc. with graphviz output.
+  homepage: https://altgraph.readthedocs.io
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/altgraph/
-  repository: https://github.com/ronaldoussoren/altgraph/
-  documentation: https://altgraph.readthedocs.io
+  summary: Python graph (network) package
+  description: |
+    Python graph (network) package
+  repository: https://github.com/ronaldoussoren/altgraph
+  documentation: https://altgraph.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - bkpoon
     - anthchirp
     - rth
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: altgraph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: altgraph
+  cfe-purls:
+    - pkg:conda/altgraph@${{ version }}?channel=conda-forge
+    - pkg:pypi/altgraph@${{ version }}
+  cfe-upstream-repo: https://github.com/ronaldoussoren/altgraph
+  cfe-upstream-homepage: https://altgraph.readthedocs.io
+  cfe-import-names: [altgraph]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/altgraph-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.17.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:50:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:50:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:50:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

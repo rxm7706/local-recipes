@@ -2,26 +2,24 @@
 schema_version: 1
 
 context:
-  name: conllu
   version: "6.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: conllu
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/conllu/conllu-${{ version }}.tar.gz
   sha256: bc6072d49d00e77f4454039519118c0500fafa0d0eb509f53793081084f50aba
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,21 +29,56 @@ tests:
   - python:
       imports:
         - conllu
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
-  summary: CoNLL-U Parser parses a CoNLL-U formatted string into a nested python dictionary
-  description: CoNLL-U Parser parses a CoNLL-U formatted string into a nested python dictionary
   homepage: https://github.com/EmilStenstrom/conllu/
-  repository: https://github.com/EmilStenstrom/conllu/
-  documentation: https://github.com/EmilStenstrom/conllu/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: CoNLL-U Parser parses a CoNLL-U formatted string into a nested python dictionary
+  description: |
+    CoNLL-U Parser parses a CoNLL-U formatted string into a nested python dictionary
 
 extra:
   recipe-maintainers:
     - nelson-liu
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: conllu
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: conllu
+  cfe-purls:
+    - pkg:conda/conllu@${{ version }}?channel=conda-forge
+    - pkg:pypi/conllu@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/EmilStenstrom/conllu/
+  cfe-import-names: [conllu]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/conllu-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.0.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T07:14:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:14:20Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:14:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

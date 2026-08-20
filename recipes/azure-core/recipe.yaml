@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: azure-core
   version: "1.41.0"
 
 package:
-  name: ${{ name|lower }}
+  name: azure-core
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_core-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/azure-core/azure_core-${{ version }}.tar.gz
   sha256: f46ff5dfcd230f25cf1c19e8a34b8dc08a337b2503e268bb600a16c00db8ad5a
 
 build:
@@ -20,31 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=77.0.3
+    - wheel
   run:
-    - flask ==2.2.5
     - python >=${{ python_min }}
     - requests >=2.21.0
-    - six >=1.11.0
     - typing_extensions >=4.6.0
 
 tests:
   - python:
       imports:
-        - azure.core
-        - azure.core.pipeline
+        - azure
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Microsoft Azure Core Library for Python
+  homepage: https://pypi.org/project/azure-core/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core
+  summary: Microsoft Azure Core Library for Python
+  description: |
+    Microsoft Azure Core Library for Python
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core
 
 extra:
   recipe-maintainers:
     - TomAugspurger
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-core
+  cfe-purls:
+    - pkg:conda/azure-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-core@${{ version }}
+  cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core
+  cfe-upstream-homepage: https://pypi.org/project/azure-core/
+  cfe-import-names: [azure]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-core-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.41.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:13:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:13:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:13:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

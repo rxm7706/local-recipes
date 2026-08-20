@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  python_min: "3.12"
   version: "2.10.0"
+  python_min: "3.12"
 
 package:
   name: esda
@@ -16,14 +16,13 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.12.*
-    - setuptools >=61.0
-    - setuptools-scm >=6.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
     - geopandas >=1.0
@@ -39,13 +38,18 @@ tests:
       imports:
         - esda
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pysal.org/esda/
   license: BSD-3-Clause
-  license_file: LICENSE
-  summary: Exploratory Spatial Data Analysis
-  homepage: https://github.com/pysal/esda
+  license_file: LICENSE.txt
+  summary: Exploratory Spatial Data Analysis in PySAL
+  description: |
+    Exploratory Spatial Data Analysis in PySAL
+  repository: https://github.com/pysal/esda
 
 extra:
   recipe-maintainers:
@@ -53,3 +57,40 @@ extra:
     - martinfleis
     - jGaboardi
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: esda
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: esda
+  cfe-purls:
+    - pkg:conda/esda@${{ version }}?channel=conda-forge
+    - pkg:pypi/esda@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/esda
+  cfe-upstream-homepage: https://pysal.org/esda/
+  cfe-import-names: [esda]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/esda-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.10.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:03:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:03:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:03:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

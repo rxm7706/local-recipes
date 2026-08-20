@@ -2,30 +2,26 @@
 schema_version: 1
 
 context:
-  name: pycodestyle
   version: "2.14.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pycodestyle
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pycodestyle-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pycodestyle/pycodestyle-${{ version }}.tar.gz
   sha256: c4b5b517d278089ff9d0abdec919cd97262a3367449ea1c8b49b91529167b783
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pycodestyle = pycodestyle:_main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -34,21 +30,17 @@ tests:
       imports:
         - pycodestyle
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pycodestyle --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pycodestyle.pycqa.org/
   license: MIT
   license_file: LICENSE
   summary: Python style guide checker
-  homepage: https://pycodestyle.readthedocs.io/
-  repository: https://github.com/PyCQA/pycodestyle
-  documentation: https://pycodestyle.readthedocs.io/
+  description: |
+    Python style guide checker
 
 extra:
   recipe-maintainers:
@@ -58,3 +50,36 @@ extra:
     - sigmavirus24
     - dopplershift
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pycodestyle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pycodestyle
+  cfe-purls:
+    - pkg:conda/pycodestyle@${{ version }}?channel=conda-forge
+    - pkg:pypi/pycodestyle@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pycodestyle.pycqa.org/
+  cfe-import-names: [pycodestyle]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pycodestyle-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.14.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:27:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:27:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:27:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,52 +2,90 @@
 schema_version: 1
 
 context:
-  name: PasteDeploy
   version: "3.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pastedeploy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PasteDeploy/PasteDeploy-${{ version }}.tar.gz
   sha256: 9ddbaf152f8095438a9fe81f82c78a6714b92ae8e066bed418b6a7ff6a095a95
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=41
   run:
     - python >=${{ python_min }}
-    - setuptools
+    - importlib-metadata
 
 tests:
   - python:
       imports:
         - paste
-        - paste.deploy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://docs.pylonsproject.org/projects/pastedeploy/en/latest/
   license: MIT
-  license_file: license.txt
+  license_file: LICENSE
   summary: Load, configure, and compose WSGI applications and servers
-  homepage: https://pylonsproject.org/
-  repository: https://github.com/Pylons/pastedeploy
-  documentation: https://docs.pylonsproject.org/projects/pastedeploy/
+  description: |
+    Load, configure, and compose WSGI applications and servers
+  documentation: https://docs.pylonsproject.org/projects/pastedeploy/en/latest/
 
 extra:
   recipe-maintainers:
     - lincrosenbach
     - kfasolin
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pastedeploy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pastedeploy
+  cfe-purls:
+    - pkg:conda/pastedeploy@${{ version }}?channel=conda-forge
+    - pkg:pypi/pastedeploy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://docs.pylonsproject.org/projects/pastedeploy/en/latest/
+  cfe-import-names: [paste]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pastedeploy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.1.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:48:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:48:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:48:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

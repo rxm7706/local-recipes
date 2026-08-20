@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: etuples
   version: "0.3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: etuples
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/etuples-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/etuples/etuples-${{ version }}.tar.gz
   sha256: 26fde81d7e822837146231bfce4d6ba67eab5d7ed55bc58ba7437c2568051167
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=80.0.0
     - setuptools-scm
-    - pip
   run:
     - python >=${{ python_min }}
     - cons
@@ -34,23 +33,53 @@ tests:
       imports:
         - etuples
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - python -c "from importlib.metadata import version; print(version('${{ name }}'))"
-      - python -c "from importlib.metadata import version; print(version('${{ name }}'))" | grep ${{ version }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python S-expression emulation using tuple-like objects.
+  homepage: http://github.com/pythological/etuples
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/pythological/etuples
-  repository: https://github.com/pythological/etuples
+  summary: Python S-expression emulation using tuple-like objects.
+  description: |
+    Python S-expression emulation using tuple-like objects.
+  repository: http://github.com/pythological/etuples
 
 extra:
   recipe-maintainers:
     - maresb
     - brandonwillard
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: etuples
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: etuples
+  cfe-purls:
+    - pkg:conda/etuples@${{ version }}?channel=conda-forge
+    - pkg:pypi/etuples@${{ version }}
+  cfe-upstream-repo: http://github.com/pythological/etuples
+  cfe-upstream-homepage: http://github.com/pythological/etuples
+  cfe-import-names: [etuples]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/etuples-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.10
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:05:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:05:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:05:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

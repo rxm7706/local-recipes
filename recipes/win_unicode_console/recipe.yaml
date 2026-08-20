@@ -2,19 +2,18 @@
 schema_version: 1
 
 context:
-  name: win_unicode_console
   version: "0.5"
 
 package:
-  name: ${{ name|lower }}
+  name: win_unicode_console
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/win_unicode_console-${{ version }}.zip
+  url: https://pypi.org/packages/source/w/win_unicode_console/win_unicode_console-0.5.zip
   sha256: d4142d4d56d46f449d6f00536a73625a871cba040f0bc1a2e305a04578f07d1e
 
 build:
-  number: 1006
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,22 +23,56 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - win_unicode_console
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Enable Unicode input and display when running Python from Windows console.
+  homepage: https://github.com/Drekin/win-unicode-console
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/Drekin/win-unicode-console
+  summary: Enable Unicode input and display when running Python from Windows console.
+  description: |
+    Enable Unicode input and display when running Python from Windows console.
 
 extra:
   recipe-maintainers:
     - minrk
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: win_unicode_console
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: win-unicode-console
+  cfe-purls:
+    - pkg:conda/win_unicode_console@${{ version }}?channel=conda-forge
+    - pkg:pypi/win-unicode-console@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Drekin/win-unicode-console
+  cfe-import-names: [win_unicode_console]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/win_unicode_console-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:19:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:19:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:19:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

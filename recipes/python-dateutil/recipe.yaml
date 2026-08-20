@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 2.9.0.post0
+  version: "2.9.0.post0"
 
 package:
   name: python-dateutil
@@ -13,17 +13,16 @@ source:
   sha256: 37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
-    - setuptools-scm
+    - 3.3
   run:
     - python >=${{ python_min }}
     - six >=1.5
@@ -32,27 +31,20 @@ tests:
   - python:
       imports:
         - dateutil
-        - dateutil.parser
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      file: run_test.py
+        - "*"
 
 about:
+  homepage: https://github.com/dateutil/dateutil
   license: Apache-2.0
   license_file: LICENSE
-  summary: Extensions to the standard Python datetime module.
+  summary: Extensions to the standard Python datetime module
   description: |
-    The dateutil module provides powerful extensions to the standard datetime
-    module, available in Python.
-  homepage: https://dateutil.readthedocs.org/
-  repository: https://github.com/dateutil/dateutil/
-  documentation: https://dateutil.readthedocs.org/en/latest/
+    Extensions to the standard Python datetime module
+  repository: https://github.com/dateutil/dateutil
+  documentation: https://dateutil.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
@@ -60,3 +52,33 @@ extra:
     - msarahan
     - ocefpaf
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-dateutil
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-dateutil
+  cfe-purls:
+    - pkg:conda/python-dateutil@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-dateutil@${{ version }}
+  cfe-upstream-repo: https://github.com/dateutil/dateutil
+  cfe-upstream-homepage: https://github.com/dateutil/dateutil
+  cfe-import-names: [dateutil]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-dateutil-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:19:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:19:15Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:19:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

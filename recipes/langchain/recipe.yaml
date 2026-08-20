@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 1.3.15
+  version: "1.3.15"
 
 package:
   name: langchain
@@ -16,44 +16,17 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - langchain-server = langchain.server:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - langgraph >=1.2.11,<1.3.0
-    - langchain-core >=1.5.4,<2.0.0
-    - pydantic >=2.7.4,<3.0.0
-  run_constraints:
-    # based on https://github.com/langchain-ai/langchain/blob/langchain%3D%3D1.3.11/libs/langchain/extended_testing_deps.txt#L6
-    - jsonschema >=4.22.0,<5
-    - numexpr >=2.8.6,<3
-    - rapidfuzz >=3.1.1,<4
-    - aiosqlite >=0.19.0,<0.23
-    - greenlet >=3.1.0
-    # copied from langchain-openai-feedstock 1.1.6: https://github.com/conda-forge/langchain-openai-feedstock/blob/b1e9a5650bc8ec0215e6b4a0f18fdecd5073fe33/recipe/meta.yaml
-    - openai >=2.0.0,<3.0.0 # and langchain-fireworks-feedstock
-    - tiktoken >=0.7,<1
-    # https://github.com/langchain-ai/langchain/blob/langchain%3D%3D1.3.11/libs/partners/anthropic/pyproject.toml#L26
-    - anthropic >=0.96.0,<1
-    # copied from langchain-fireworks-feedstock 1.1.0: https://github.com/conda-forge/langchain-fireworks-feedstock/blob/cc50a2f8f99615534b6d3c81f270daeb4eeccc83/recipe/meta.yaml
-    # and langchain-together-feedstock 0.3.1: https://github.com/conda-forge/langchain-together-feedstock/blob/503f8b42da6bf1b7c4b370b1d3b59e8263639bd9/recipe/meta.yaml
-    - fireworks-ai >=0.13.0
-    # openai is constrained above
-    - requests >=2.0.0,<3.0.0
-    - aiohttp >=3.9.1,<4.0.0
-    # copied from langchain-mistralai-feedstock 1.1.1: https://github.com/conda-forge/langchain-mistralai-feedstock/blob/a76b3cee24e392dcdaa89490923a2c969cad35f8/recipe/meta.yaml
-    - tokenizers >=0.15.1,<1
-    - httpx >=0.25.2,<1
-    - httpx-sse >=0.3.1,<1
-    # copied from langchain-groq-feedstock 1.1.1: https://github.com/conda-forge/langchain-groq-feedstock/blob/d53a6f4cd2fe52efee669e53516751a94960193f/recipe/meta.yaml
-    - groq >=0.4.1,<1
+    - langchain-core <2.0.0,>=1.5.4
+    - langgraph <1.3.0,>=1.2.11
+    - pydantic <3.0.0,>=2.7.4
 
 tests:
   - python:
@@ -62,15 +35,15 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - '*'
+        - "*"
 
 about:
-  summary: Building applications with LLMs through composability
-  description: |
-    # LangChain - The agent engineering platform.
+  homepage: https://docs.langchain.com/
   license: MIT
   license_file: LICENSE
-  homepage: https://docs.langchain.com/
+  summary: Building applications with LLMs through composability
+  description: |
+    Building applications with LLMs through composability
   repository: https://github.com/langchain-ai/langchain
   documentation: https://reference.langchain.com/python/langchain/langchain/
 
@@ -84,3 +57,33 @@ extra:
     - YYYasin19
     - pavelzw
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain
+  cfe-purls:
+    - pkg:conda/langchain@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain
+  cfe-upstream-homepage: https://docs.langchain.com/
+  cfe-import-names: [langchain]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:01:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:01:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:01:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-container
   version: "2.65.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-container
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_container-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-container/google_cloud_container-${{ version }}.tar.gz
   sha256: 67605d396a188ebd02cd73a425503667ea2f5bc56b17571a9a678b7d55b734dc
 
 build:
@@ -25,40 +24,61 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.17.1,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    # more restrictive constraint for python >=3.13
-    - proto-plus >=1.25.0,<2.0.0
-    - protobuf >=4.25.8,<8.0.0
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
 
 tests:
   - python:
       imports:
         - google.cloud.container
-        - google.cloud.container_v1
-        - google.cloud.container_v1beta1
-        - grpc
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Google Cloud Container API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-container
   license: Apache-2.0
   license_file: LICENSE
+  summary: Google Cloud Container API client library
   description: |
-    **Python Client for Kubernetes Engine**
-
-    Kubernetes Engine: The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.
-
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-container
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-container
-  documentation: https://googleapis.dev/python/container/latest/index.html
+    Google Cloud Container API client library
 
 extra:
   recipe-maintainers:
     - xylar
     - BrentDorsey
     - parthea
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-container
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-container
+  cfe-purls:
+    - pkg:conda/google-cloud-container@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-container@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-container
+  cfe-import-names: [google.cloud.container]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-container-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:16:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:16:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:16:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

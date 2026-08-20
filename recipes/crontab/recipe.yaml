@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: crontab
   version: "1.0.5"
 
 package:
-  name: ${{ name|lower }}
+  name: crontab
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/crontab-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/crontab/crontab-${{ version }}.tar.gz
   sha256: f80e01b4f07219763a9869f926dd17147278e7965a928089bca6d3dc80ae46d5
 
 build:
@@ -20,8 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -30,15 +30,52 @@ tests:
       imports:
         - crontab
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-2.1-only
+  homepage: https://github.com/josiahcarlson/parse-crontab
+  license: LGPL-3.0-only
   license_file: LICENSE
   summary: Parse and use crontab schedules in Python
-  homepage: https://github.com/josiahcarlson/parse-crontab
+  description: |
+    Parse and use crontab schedules in Python
 
 extra:
   recipe-maintainers:
     - mcs07
     - sanurielf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: crontab
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: crontab
+  cfe-purls:
+    - pkg:conda/crontab@${{ version }}?channel=conda-forge
+    - pkg:pypi/crontab@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/josiahcarlson/parse-crontab
+  cfe-import-names: [crontab]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/crontab-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:19:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:19:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:19:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

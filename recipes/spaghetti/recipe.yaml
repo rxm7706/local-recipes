@@ -2,64 +2,94 @@
 schema_version: 1
 
 context:
-  name: spaghetti
   version: "1.7.6"
 
 package:
-  name: ${{ name|lower }}
+  name: spaghetti
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/spaghetti-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/spaghetti/spaghetti-${{ version }}.tar.gz
   sha256: c9beddbb3bf285e88745d36aee886c78ac6e6a416f0f9b1a441265c8c08f923d
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0
-    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
-    - esda
-    - libpysal
-    - numpy
-    - pandas >=1.0
-    - rtree
-    - scipy >=1.0
+    - esda >=2.1
+    - geopandas >=0.12
+    - libpysal >=4.6
+    - numpy >=1.22
+    - pandas !=1.5.0,>=1.4
+    - rtree >=1.0
+    - scipy >=1.8
+    - shapely >=2.0.1
 
 tests:
   - python:
       imports:
         - spaghetti
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pysal.org/spaghetti/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: "SPAtial GrapHs: nETworks, Topology, & Inference"
+  summary: Analysis of Network-constrained Spatial Data
   description: |
-    Spaghetti is an open-source Python library for the analysis
-    of network-based spatial data. Originating from the network
-    module in [PySAL](http://pysal.org) (Python Spatial Analysis Library),
-    it is under active development for the inclusion of
-    newly-proposed methods for building graph-theoretic
-    networks and the analysis of network events.
-  homepage: http://pysal.org/
-  repository: http://github.com/pysal/spaghetti
-  documentation: https://pysal.org/spaghetti/
+    Analysis of Network-constrained Spatial Data
+  repository: https://github.com/pysal/spaghetti
 
 extra:
   recipe-maintainers:
     - jGaboardi
     - knaaptime
     - martinfleis
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spaghetti
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spaghetti
+  cfe-purls:
+    - pkg:conda/spaghetti@${{ version }}?channel=conda-forge
+    - pkg:pypi/spaghetti@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/spaghetti
+  cfe-upstream-homepage: https://pysal.org/spaghetti/
+  cfe-import-names: [spaghetti]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spaghetti-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.6
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:41:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:41:53Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:41:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

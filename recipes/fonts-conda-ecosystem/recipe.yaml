@@ -29,3 +29,43 @@ about:
 extra:
   recipe-maintainers:
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fonts-conda-ecosystem
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fonts-conda-ecosystem
+  cfe-purls:
+    - pkg:conda/fonts-conda-ecosystem@${{ version }}?channel=conda-forge
+    - pkg:pypi/fonts-conda-ecosystem@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://conda.io
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fonts-conda-ecosystem-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:35:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:35:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:35:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: etching info for fonts-conda-ecosystem...
+Error: Failed to fetch PyPI metadata for 'fonts-conda-ecosystem' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/fonts-conda-ecosystem/json
+
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

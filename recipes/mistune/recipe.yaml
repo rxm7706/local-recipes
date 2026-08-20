@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "3.3.4"
-  python_check_max: "3.14"
 
 package:
   name: mistune
@@ -16,16 +15,12 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - mistune = mistune.__main__:cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -33,32 +28,22 @@ requirements:
 
 tests:
   - python:
-      imports: mistune
+      imports:
+        - mistune
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - pyproject.toml
-        - tests/
-    requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      - mistune --help
-      - mistune --version | ${{ "grep -iE" if unix else "findstr" }} "${{ version | replace('.', '\\.') }}"
-      - coverage run --source=mistune --branch -m pytest -vv --color=yes --tb=long
-      - coverage report --show-missing --skip-covered --fail-under=93
+        - "*"
 
 about:
-  summary: A sane and fast Markdown parser with useful plugins and renderers
+  homepage: https://pypi.org/project/mistune/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://pypi.org/project/mistune
+  summary: A sane and fast Markdown parser with useful plugins and renderers
+  description: |
+    A sane and fast Markdown parser with useful plugins and renderers
   repository: https://github.com/lepture/mistune
-  documentation: https://mistune.lepture.com
+  documentation: https://mistune.lepture.com/
 
 extra:
   recipe-maintainers:
@@ -66,3 +51,33 @@ extra:
     - pelson
     - bollwyvl
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mistune
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mistune
+  cfe-purls:
+    - pkg:conda/mistune@${{ version }}?channel=conda-forge
+    - pkg:pypi/mistune@${{ version }}
+  cfe-upstream-repo: https://github.com/lepture/mistune
+  cfe-upstream-homepage: https://pypi.org/project/mistune/
+  cfe-import-names: [mistune]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mistune-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:39:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:39:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:39:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

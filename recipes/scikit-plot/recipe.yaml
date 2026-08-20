@@ -2,31 +2,28 @@
 schema_version: 1
 
 context:
-  name: scikit-plot
   version: "0.3.7"
-  sha256: 2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242
 
 package:
-  name: ${{ name|lower }}
+  name: scikit-plot
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/scikit-plot/scikit-plot-${{ version }}.tar.gz
+  sha256: 2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
     - matplotlib-base
     - scikit-learn
     - scipy
@@ -36,24 +33,53 @@ tests:
   - python:
       imports:
         - scikitplot
-        - scikitplot.plotters
-        - scikitplot.helpers
-        - scikitplot.classifiers
-        - scikitplot.clustering
-        - scikitplot.estimators
-        - scikitplot.cluster
-        - scikitplot.decomposition
-        - scikitplot.metrics
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/reiinakano/scikit-plot
   license: MIT
   license_file: LICENSE
   summary: An intuitive library to add plotting functionality to scikit-learn objects.
-  homepage: https://github.com/reiinakano/scikit-plot/
-  documentation: scikit-plot.readthedocs.io/
+  description: |
+    An intuitive library to add plotting functionality to scikit-learn objects.
 
 extra:
   recipe-maintainers:
     - ericmjl
     - reiinakano
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scikit-plot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scikit-plot
+  cfe-purls:
+    - pkg:conda/scikit-plot@${{ version }}?channel=conda-forge
+    - pkg:pypi/scikit-plot@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/reiinakano/scikit-plot
+  cfe-import-names: [scikitplot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/scikit-plot-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:14:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:14:16Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:14:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

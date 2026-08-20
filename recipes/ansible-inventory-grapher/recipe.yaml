@@ -13,12 +13,9 @@ source:
   sha256: 7a782e3f50e11f6dec8f3663e063ac906eff292a628be7bd3cc473faec5a3d19
 
 build:
-  noarch: python
   number: 0
+  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - ansible-inventory-grapher = ansibleinventorygrapher.cli:main
 
 requirements:
   host:
@@ -33,20 +30,50 @@ tests:
   - python:
       imports:
         - ansibleinventorygrapher
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: |
-    Creates graphs representing ansible inventory
   homepage: https://github.com/willthames/ansible-inventory-grapher
-  repository: https://github.com/willthames/ansible-inventory-grapher
-  license: GPL-3.0-only
-  license_file: LICENSE.txt
+  license: GPLv3
+  license_file: LICENSE
+  summary: Creates graphs representing ansible inventory
+  description: |
+    Creates graphs representing ansible inventory
 
 extra:
   recipe-maintainers:
     - killua156
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ansible-inventory-grapher
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ansible-inventory-grapher
+  cfe-purls:
+    - pkg:conda/ansible-inventory-grapher@${{ version }}?channel=conda-forge
+    - pkg:pypi/ansible-inventory-grapher@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/willthames/ansible-inventory-grapher
+  cfe-import-names: [ansibleinventorygrapher]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ansible-inventory-grapher-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:28:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:28:45Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:28:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

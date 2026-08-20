@@ -2,47 +2,82 @@
 schema_version: 1
 
 context:
-  name: grpc-interceptor
   version: "0.15.4"
 
 package:
-  name: ${{ name|lower }}
+  name: grpc-interceptor
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpc-interceptor-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/grpc-interceptor/grpc-interceptor-${{ version }}.tar.gz
   sha256: 1f45c0bcb58b6f332f37c637632247c9b02bc6af0fdceb7ba7ce8d2ebbfb0926
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<4.0.0
-    - grpcio >=1.49.1,<2.0.0
-  run_constraints:
-    - protobuf >=4.21.9
+    - python >=${{ python_min }}
+    - grpcio
 
 tests:
   - python:
       imports:
         - grpc_interceptor
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Simplifies gRPC interceptors
+  homepage: https://github.com/d5h-foss/grpc-interceptor
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/d5h-foss/grpc-interceptor
+  summary: Simplifies gRPC interceptors
+  description: |
+    Simplifies gRPC interceptors
   repository: https://github.com/d5h-foss/grpc-interceptor
+  documentation: https://grpc-interceptor.readthedocs.io
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grpc-interceptor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grpc-interceptor
+  cfe-purls:
+    - pkg:conda/grpc-interceptor@${{ version }}?channel=conda-forge
+    - pkg:pypi/grpc-interceptor@${{ version }}
+  cfe-upstream-repo: https://github.com/d5h-foss/grpc-interceptor
+  cfe-upstream-homepage: https://github.com/d5h-foss/grpc-interceptor
+  cfe-import-names: [grpc_interceptor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grpc-interceptor-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:51:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:51:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:51:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,55 +2,50 @@
 schema_version: 1
 
 context:
-  name: opencensus-ext-azure
   version: "1.1.15"
 
 package:
-  name: ${{ name|lower }}
+  name: opencensus-ext-azure
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opencensus-ext-azure/opencensus_ext_azure-${{ version }}.tar.gz
   sha256: 8d108af15875ea3c52238646fba924c3ba9fbfaaf1fd0d350707dc5b7880ade7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - azure-core >=1.12.0,<2.0.0
-    - azure-identity >=1.5.0,<2.0.0
-    - opencensus >=0.11.4,<1.0.0
+    - azure-core <2.0.0,>=1.12.0
+    - azure-identity <2.0.0,>=1.5.0
+    - opencensus <1.0.0,>=0.11.4
     - psutil >=5.6.3
     - requests >=2.19.0
 
 tests:
   - python:
       imports:
-        - opencensus.ext.azure
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+        - opencensus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-azure
   license: Apache-2.0
   license_file: LICENSE
-  summary: OpenCensus Azure Monitor Exporters
+  summary: OpenCensus Azure Monitor Exporter
   description: |
-    OpenCensus Azure Monitor Exporters. The Azure Monitor Log Handler allows
-    you to export Python logs to Azure Monitor.
-  homepage: https://github.com/census-instrumentation/opencensus-python
-  repository: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-azure
-  documentation: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-azure/examples
+    OpenCensus Azure Monitor Exporter
 
 extra:
   recipe-maintainers:
@@ -58,3 +53,43 @@ extra:
     - krisevans
     - dhirschfeld
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opencensus-ext-azure
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opencensus-ext-azure
+  cfe-purls:
+    - pkg:conda/opencensus-ext-azure@${{ version }}?channel=conda-forge
+    - pkg:pypi/opencensus-ext-azure@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-azure
+  cfe-import-names: [opencensus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opencensus-ext-azure-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.15
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T10:23:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:23:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:23:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

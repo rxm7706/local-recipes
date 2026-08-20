@@ -2,133 +2,48 @@
 schema_version: 1
 
 context:
-  version: "26.7.0"
-  build: 0
+  version: "2.1.5"
 
 package:
   name: conda-build
   version: ${{ version }}
 
 source:
-  url: https://github.com/conda/conda-build/releases/download/${{ version }}/conda-build-${{ version }}.tar.gz
-  sha256: 92f349f2c3eb79a452bb35f592f40f57c9847c346c8289a3a71237206609970c
+  url: https://github.com/conda/conda-build/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 8bee3ee7d7053f32c4e465aeb55f66f58440e5a2c7178a4393f4238cec141e5d
 
 build:
-  number: ${{ build+100 if python_min == "3.10" else build }}
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
-  python:
-    entry_points:
-      - conda-build = conda_build.cli.main_build:execute
-      - conda-convert = conda_build.cli.main_convert:execute
-      - conda-debug = conda_build.cli.main_debug:execute
-      - conda-develop = conda_build.cli.main_develop:execute
-      - conda-inspect = conda_build.cli.main_inspect:execute
-      - conda-metapackage = conda_build.cli.main_metapackage:execute
-      - conda-render = conda_build.cli.main_render:execute
-      - conda-skeleton = conda_build.cli.main_skeleton:execute
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: build_platform != target_platform
-      then: python ${{ python_min }}.*
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
   host:
     - python ${{ python_min }}.*
     - pip
-    - hatchling >=1.12.2
-    - hatch-vcs >=0.2.0
+    - setuptools
   run:
-    - beautifulsoup4
-    - if: osx
-      then: cctools
-    - chardet
-    - conda >=25.11.0
-    - conda-index >=0.4.0
-    - conda-package-handling >=2.2.0
-    - evalidate >=2,<3.0a
-    - filelock
-    - frozendict >=2.4.2
-    - jinja2
-    - jsonschema >=4.19
-    - if: win
-      then: m2-patch >=2.6
-    - menuinst >=2
-    - packaging
-    - if: not win
-      then: patch >=2.6
-    # cap due to https://github.com/conda/conda-build/issues/4881; https://github.com/NixOS/patchelf/issues/492
-    - if: linux
-      then: patchelf <0.18
-    - pkginfo
-    - psutil
-    - py-lief
-    - py-rattler-build >=0.65.1
-    - python >=3.10,<3.11
-    - tomli
     - python >=${{ python_min }}
-    - python-libarchive-c
-    - pyyaml
+    - conda
+    - filelock
     - requests
-    - ripgrep
-    - tqdm
-    - if: linux
-      then: __linux
-    - if: osx
-      then: __osx
-    - if: win
-      then: __win
-  run_constraints:
-    - conda-libmamba-solver >=25.11.0
-    - conda-verify >=3.1.0
 
 tests:
   - python:
       imports:
         - conda_build
-        - conda_build.jinja_context
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - downstream:
-      - if: python_min != "3.10" and not osx
-        then: conda-smithy
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - conda --help
-      - conda build --help
-      - conda convert --help
-      - conda develop --help
-      - conda metapackage --help
-      - conda render --help
-      - conda skeleton --help
-      - conda debug --help
-      - conda-build --help
-      - conda-convert --help
-      - conda-develop --help
-      - conda-inspect --help
-      - if: unix
-        then: conda-inspect linkages --help
-      - if: osx
-        then: conda-inspect objects --help
-      - conda-metapackage --help
-      - conda-render --help
-      - conda-skeleton --help
-      - conda-debug --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: tools for building conda packages
-  license: BSD-3-Clause
-  license_file: LICENSE
-  description: |
-    Conda-build contains commands and tools to allow you to build your own
-    packages for conda.
   homepage: https://github.com/conda/conda-build
-  repository: https://github.com/conda/conda-build
-  documentation: https://docs.conda.io/projects/conda-build/en/latest/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: tools for building conda packages
+  description: |
+    tools for building conda packages
 
 extra:
   recipe-maintainers:
@@ -151,3 +66,40 @@ extra:
     - kenodegard
     - beeankha
     - beckermr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: conda-build
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: conda-build
+  cfe-purls:
+    - pkg:conda/conda-build@${{ version }}?channel=conda-forge
+    - pkg:pypi/conda-build@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/conda/conda-build
+  cfe-import-names: [conda_build]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/conda-build-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.5
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T07:10:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:10:21Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:10:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

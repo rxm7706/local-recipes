@@ -2,30 +2,27 @@
 schema_version: 1
 
 context:
-  name: pytest-env
   version: "1.7.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-env
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-env/pytest_env-${{ version }}.tar.gz
   sha256: 0c1dc1101fb8d3ab3611e8f8d657ba06c3c0c167fc85c90457e5b27f2508f43e
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.10.*
-    - hatchling >=1.28
     - hatch-vcs >=0.5
+    - hatchling >=1.29
   run:
     - python >=${{ python_min }}
     - pytest >=9.0.2
@@ -35,22 +32,54 @@ requirements:
 tests:
   - python:
       imports:
-        - pytest_env.plugin
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - pytest --help
+        - pytest_env
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pytest-dev/pytest-env
   license: MIT
   license_file: LICENSE
-  summary: This is a pytest plugin that enables you to set environment variables in a pytest.ini or pyproject.toml file.
-  homepage: https://github.com/pytest-dev/pytest-env
+  summary: pytest plugin that allows you to add environment variables.
+  description: |
+    pytest plugin that allows you to add environment variables.
   repository: https://github.com/pytest-dev/pytest-env
 
 extra:
   recipe-maintainers:
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-env
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-env
+  cfe-purls:
+    - pkg:conda/pytest-env@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-env@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-env
+  cfe-upstream-homepage: https://github.com/pytest-dev/pytest-env
+  cfe-import-names: [pytest_env]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-env-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:12:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:12:26Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:12:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

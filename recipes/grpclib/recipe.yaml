@@ -2,33 +2,29 @@
 schema_version: 1
 
 context:
-  name: grpclib
   version: "0.4.9"
 
 package:
-  name: ${{ name|lower }}
+  name: grpclib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpclib-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/grpclib/grpclib-${{ version }}.tar.gz
   sha256: cc589c330fa81004c6400a52a566407574498cb5b055fa927013361e21466c46
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - protoc-gen-python_grpc=grpclib.plugin.main:main
-      - protoc-gen-grpclib_python=grpclib.plugin.main:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools >=40.6.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - dataclasses
     - h2 <5,>=3.1.0
     - multidict
 
@@ -36,16 +32,56 @@ tests:
   - python:
       imports:
         - grpclib
-        - grpclib.channelz
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pure-Python gRPC implementation for asyncio
+  homepage: https://github.com/vmagamedov/grpclib
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://github.com/vmagamedov/grpclib
+  summary: Pure-Python gRPC implementation for asyncio
+  description: |
+    Pure-Python gRPC implementation for asyncio
 
 extra:
   recipe-maintainers:
     - asford
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grpclib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grpclib
+  cfe-purls:
+    - pkg:conda/grpclib@${{ version }}?channel=conda-forge
+    - pkg:pypi/grpclib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/vmagamedov/grpclib
+  cfe-import-names: [grpclib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grpclib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.9
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T10:53:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:53:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:53:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

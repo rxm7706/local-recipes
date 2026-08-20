@@ -2,47 +2,30 @@
 schema_version: 1
 
 context:
-  name: interpret
   version: "0.7.8"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: interpret
   version: ${{ version }}
 
 source:
-  url: https://github.com/interpretml/interpret/archive/v${{ version }}.tar.gz
-  sha256: b92dffefc5adec3aa681e7efb981ad000f31f489855e0b5996e5080e4ff17bce
+  url: https://pypi.org/packages/source/i/interpret/interpret-${{ version }}.tar.gz
+  sha256: 3fe4bb2bc9cc783e63dcbc6bc4d2d48f3852b9dcfaf6cef41c40692c29a9d67a
 
 build:
   number: 0
   noarch: python
-  script: cd ./python/interpret/ && ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=42
+    - wheel
   run:
     - python >=${{ python_min }}
-    - interpret-core ==${{ version }}
-    # Equiv. to extras.
-    - psutil >=5.6.2
-    - ipython >=5.5.0
-    - plotly >=3.8.1
-    # - lime >=0.1.1.33  # no longer maintained
-    - SALib >=1.3.3
-    - shap >=0.28.5
-    - ipywidgets >=7.4.2
-    - scikit-learn >=1.6.0
-    # - skope-rules >=1.0.1   fails on python 3.10
-    # - treeinterpreter >=0.2.2  # no longer maintained
-    - dash >=2.0.0
-    - dash_cytoscape >=0.1.1
-    - flask >=1.0.4
-    - gevent >=1.3.6
-    - requests >=2.19.0
+    - interpret-core ==0.7.8
 
 tests:
   - python:
@@ -52,39 +35,51 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - files:
-      source:
-        - python/interpret-core/tests/**
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pip
-        - scipy >=0.18.1
-        - pytest >=4.3.0
-        - pytest-xdist >=1.29
-        - nbconvert >=5.4.1
-        - nbformat >=4.4.0
-        - selenium >=3.141.0
-        - pytest-cov >=2.6.1
-    script:
-      - python -m pytest -vv -n auto --junitxml=junit/test-results.xml --cov=interpret --cov-report=xml --cov-report=html python/interpret-core/tests --ignore=python/interpret-core/tests/glassbox/test_aplr.py
 
 about:
+  homepage: https://github.com/interpretml/interpret
+  license: REPLACE_LICENSE
+  license_file: LICENSE
   summary: Fit interpretable models. Explain blackbox machine learning.
   description: |
-    In the beginning machines learned in darkness, and data scientists struggled in the void to explain them.
-
-    Let there be light.
-
-    https://github.com/interpretml/interpret
-  license: MIT
-  license_file: LICENSE
-  homepage: https://github.com/interpretml/interpret
-  repository: https://interpret.ml/docs/installation-guide.html
-  documentation: https://interpret.ml/docs
+    Fit interpretable models. Explain blackbox machine learning.
 
 extra:
   recipe-maintainers:
     - paulbkoch
     - interpret-ml
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: interpret
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: interpret
+  cfe-purls:
+    - pkg:conda/interpret@${{ version }}?channel=conda-forge
+    - pkg:pypi/interpret@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/interpretml/interpret
+  cfe-import-names: [interpret]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/interpret-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T23:56:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:56:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:56:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

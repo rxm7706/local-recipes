@@ -2,60 +2,82 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-propagator-b3
   version: "1.44.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-propagator-b3
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_propagator_b3-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-propagator-b3/opentelemetry_propagator_b3-${{ version }}.tar.gz
   sha256: 93c94885fd75429121bb3d5c496c9bbd1b36199e194a0a6876867d7bf3999300
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.7
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
-    - python >=3.7
-    - deprecated >=1.2.6
+    - python >=${{ python_min }}
     - opentelemetry-api ~=1.3
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
+    - typing_extensions >=4.5.0
 
 tests:
   - python:
       imports:
         - opentelemetry.propagators.b3
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry B3 Propagator
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/propagator/opentelemetry-propagator-b3
   license: Apache-2.0
   license_file: LICENSE
-  description: This library provides a propagator for the B3 format
-  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/master/propagator/opentelemetry-propagator-b3
+  summary: OpenTelemetry B3 Propagator
+  description: |
+    OpenTelemetry B3 Propagator
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
     - twoodwark
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-propagator-b3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-propagator-b3
+  cfe-purls:
+    - pkg:conda/opentelemetry-propagator-b3@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-propagator-b3@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/propagator/opentelemetry-propagator-b3
+  cfe-import-names: [opentelemetry.propagators.b3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-propagator-b3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.44.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:55:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:55:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:55:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

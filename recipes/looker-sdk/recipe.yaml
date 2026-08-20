@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: looker-sdk
   version: "26.12.0"
 
 package:
-  name: ${{ name|lower }}
+  name: looker-sdk
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/looker_sdk-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/looker-sdk/looker_sdk-${{ version }}.tar.gz
   sha256: 4dd327927b541e322de8bee1820cf1ce212c1883dc51b8bc098efe12c314e3f5
 
 build:
@@ -25,25 +24,62 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - attrs >=20.1.0
-    - cattrs >=1.3
     - requests >=2.22
     - typing_extensions >=4.1.1
+    - attrs >=20.1.0
+    - cattrs >=1.3
 
 tests:
   - python:
       imports:
         - looker_sdk
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Looker REST API
+  homepage: https://pypi.python.org/pypi/looker_sdk
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://pypi.python.org/pypi/looker_sdk
-  repository: https://github.com/looker-open-source/sdk-codegen/tree/main/python
+  summary: Looker REST API
+  description: |
+    Looker REST API
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: looker-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: looker-sdk
+  cfe-purls:
+    - pkg:conda/looker-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/looker-sdk@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.python.org/pypi/looker_sdk
+  cfe-import-names: [looker_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/looker-sdk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:22:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:22:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:22:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

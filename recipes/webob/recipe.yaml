@@ -2,30 +2,26 @@
 schema_version: 1
 
 context:
-  name: webob
   version: "1.8.11"
-  sha256: aa8c27231070b135c025e567a9cd7eda03f4df71352ffaac740cb6a75f0f81a5
 
 package:
-  name: ${{ name|lower }}
+  name: webob
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/WebOb/webob-${{ version }}.tar.gz
+  sha256: aa8c27231070b135c025e567a9cd7eda03f4df71352ffaac740cb6a75f0f81a5
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
-    - legacy-cgi >=2.6
   run:
     - python >=${{ python_min }}
     - legacy-cgi >=2.6
@@ -34,28 +30,60 @@ tests:
   - python:
       imports:
         - webob
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://webob.org/
   license: MIT
-  license_file: docs/license.txt
+  license_file: LICENSE
   summary: WSGI request and response object
   description: |
-    WebOb provides objects for HTTP requests and responses. Specifically it
-    does this by wrapping the WSGI request environment and response
-    status/headers/app_iter(body). The request and response objects provide
-    many conveniences for parsing HTTP request and forming HTTP responses. Both
-    objects are read/write: as a result, WebOb is also a nice way to create HTTP
-    requests and parse HTTP responses.
-  homepage: http://webob.org/
-  repository: https://github.com/Pylons/webob/
-  documentation: http://webob.readthedocs.org/
+    WSGI request and response object
 
 extra:
   recipe-maintainers:
     - stuertz
     - ChrisBarker-NOAA
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: webob
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: webob
+  cfe-purls:
+    - pkg:conda/webob@${{ version }}?channel=conda-forge
+    - pkg:pypi/webob@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://webob.org/
+  cfe-import-names: [webob]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/webob-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.8.11
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:15:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:15:34Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:15:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

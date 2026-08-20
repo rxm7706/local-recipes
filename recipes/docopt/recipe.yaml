@@ -9,19 +9,19 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.python.org/packages/source/d/docopt/docopt-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/docopt/docopt-${{ version }}.tar.gz
   sha256: 49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -29,18 +29,59 @@ tests:
   - python:
       imports:
         - docopt
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: LICENSE-MIT
-  summary: Pythonic argument parser, that will make you smile
   homepage: http://docopt.org
+  license: MIT
+  license_file: LICENSE
+  summary: Pythonic argument parser, that will make you smile
+  description: |
+    Pythonic argument parser, that will make you smile
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: docopt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: docopt
+  cfe-purls:
+    - pkg:conda/docopt@${{ version }}?channel=conda-forge
+    - pkg:pypi/docopt@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://docopt.org
+  cfe-import-names: [docopt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/docopt-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:52:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:52:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:52:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

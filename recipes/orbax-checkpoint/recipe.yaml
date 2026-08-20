@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   version: "0.12.4"
-  python_min: '3.11'
+  python_min: "3.11"
 
 package:
   name: orbax-checkpoint
@@ -16,46 +16,79 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.5,<4
     - pip
+    - flit-core >=3.5,<4
   run:
     - python >=${{ python_min }}
     - absl-py
     - etils
     - typing_extensions
-    - msgpack-python
+    - msgpack
     - jax >=0.6.0
     - numpy
+    - prometheus_client >=0.20.0
     - pyyaml
     - tensorstore >=0.1.84
-    - importlib_resources
+    - aiofiles
     - protobuf
     - humanize
-    - aiofiles
     - simplejson >=3.16.0
     - psutil
-    - uvloop
-    - prometheus_client
+
 tests:
   - python:
       imports:
         - orbax.checkpoint
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Orbax Checkpoint
+  homepage: http://github.com/google/orbax
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/google/orbax
+  summary: Orbax Checkpoint
+  description: |
+    Orbax Checkpoint
 
 extra:
   recipe-maintainers:
     - flferretti
     - jan-janssen
     - bwohlberg
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: orbax-checkpoint
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: orbax-checkpoint
+  cfe-purls:
+    - pkg:conda/orbax-checkpoint@${{ version }}?channel=conda-forge
+    - pkg:pypi/orbax-checkpoint@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/google/orbax
+  cfe-import-names: [orbax.checkpoint]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/orbax-checkpoint-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:30:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:30:07Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T02:30:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

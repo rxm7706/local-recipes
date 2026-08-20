@@ -2,47 +2,82 @@
 schema_version: 1
 
 context:
-  name: conda-package-streaming
   version: "0.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: conda-package-streaming
   version: ${{ version }}
 
 source:
-  url: https://github.com/conda/conda-package-streaming/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: a58868bedb6231485008c6fef0326900cd6fab51b6ed9942457100836c5c8588
+  url: https://pypi.org/packages/source/c/conda-package-streaming/conda_package_streaming-${{ version }}.tar.gz
+  sha256: b2599426dee4a81bfe6aa40d5fb0a22ae5ff842a0a7f9df59f013bfbcd369f72
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install --no-build-isolation . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.2,<4
   run:
-    - backports.zstd
     - python >=${{ python_min }}
-    # 'requests' is optional, only needed for 'url' submodule
+    - requests
+    - backports.zstd
 
 tests:
   - python:
       imports:
-        - conda_package_streaming.url
+        - conda_package_streaming
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Download metadata from conda packages without transferring entire file.
+  homepage: https://github.com/conda/conda-package-streaming
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/conda/conda-package-streaming
-  repository: https://github.com/conda/conda-package-streaming
+  summary: An efficient library to read from new and old format .conda and .tar.bz2 conda packages.
+  description: |
+    An efficient library to read from new and old format .conda and .tar.bz2 conda packages.
   documentation: https://conda.github.io/conda-package-streaming/
 
 extra:
   recipe-maintainers:
     - dholth
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: conda-package-streaming
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: conda-package-streaming
+  cfe-purls:
+    - pkg:conda/conda-package-streaming@${{ version }}?channel=conda-forge
+    - pkg:pypi/conda-package-streaming@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/conda/conda-package-streaming
+  cfe-import-names: [conda_package_streaming]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/conda-package-streaming-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.13.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:12:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:12:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:12:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

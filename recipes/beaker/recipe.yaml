@@ -69,7 +69,7 @@ extra:
     - pkg:pypi/beaker@${{ version }}
   cfe-upstream-repo: https://github.com/bbangert/beaker
   cfe-upstream-homepage: https://beaker.readthedocs.io/
-  cfe-import-names: [beaker]
+  cfe-import-names: [beaker, beaker.crypto, beaker.ext]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
@@ -80,11 +80,11 @@ extra:
     - version-update-to-1.14.1
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:14:42Z
+  cfe-last-checked: 2026-08-17T04:22:50Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:14:42Z
+  cfe-generated-at-datetime: 2026-08-17T04:22:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T01:14:42Z
+  cfe-local-build-datetime: 2026-08-17T04:22:50Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

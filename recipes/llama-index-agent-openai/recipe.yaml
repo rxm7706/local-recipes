@@ -59,7 +59,7 @@ extra:
   cfe-purls:
     - pkg:conda/llama-index-agent-openai@${{ version }}?channel=conda-forge
     - pkg:pypi/llama-index-agent-openai@${{ version }}
-  cfe-upstream-repo: none
+  cfe-upstream-repo: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/agent/llama-index-agent-openai
   cfe-upstream-homepage: https://pypi.org/project/llama-index-agent-openai/
   cfe-import-names: [llama_index.agent.openai]
   cfe-source-kind: pypi-sdist
@@ -69,11 +69,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llama-index-agent-openai-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:36:39Z
+  cfe-last-checked: 2026-08-17T04:24:57Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:36:39Z
+  cfe-generated-at-datetime: 2026-08-17T04:24:57Z
   cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-17T01:36:39Z
+  cfe-local-build-datetime: 2026-08-17T04:24:57Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

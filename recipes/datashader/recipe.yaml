@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "0.19.1"
-  python_min: "3.10"
 
 package:
   name: datashader
@@ -16,11 +15,11 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
     - hatchling
     - hatch-vcs
@@ -43,27 +42,18 @@ tests:
   - python:
       imports:
         - datashader
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - fastparquet
-        - flake8
-        - nbsmoke >=0.5.0
-        - pytest
-        - pytest-benchmark
-        - holoviews >=1.14.1
-        - netcdf4
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/datashader/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Data visualization toolchain based on aggregating into a grid
   description: |
-    Datashader is a data rasterization pipeline for automating the process of
-    creating meaningful representations of large amounts of data.
-  homepage: https://datashader.org
+    Data visualization toolchain based on aggregating into a grid
   repository: https://github.com/holoviz/datashader
   documentation: https://datashader.org
 
@@ -75,3 +65,41 @@ extra:
     - philippjfr
     - hoxbro
     - amaloney
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datashader
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datashader
+  cfe-purls:
+    - pkg:conda/datashader@${{ version }}?channel=conda-forge
+    - pkg:pypi/datashader@${{ version }}
+  cfe-upstream-repo: https://github.com/holoviz/datashader
+  cfe-upstream-homepage: https://pypi.org/project/datashader/
+  cfe-import-names: [datashader]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datashader-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.19.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:33:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:33:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:33:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

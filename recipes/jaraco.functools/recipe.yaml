@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: jaraco.functools
   version: "4.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jaraco.functools
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jaraco_functools-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jaraco.functools/jaraco_functools-${{ version }}.tar.gz
   sha256: 880c577ec9720b3a052d5bc611fb9f2269b3d87902ef42440df443b88e443280
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools_scm >=3.4.1
-    - setuptools
-    - toml
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
     - more-itertools
@@ -33,15 +30,50 @@ tests:
   - python:
       imports:
         - jaraco.functools
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
+  homepage: https://pypi.org/project/jaraco.functools/
   license: MIT
   license_file: LICENSE
-  summary: Additional functools in the spirit of stdlib's functools.
-  homepage: https://github.com/jaraco/jaraco.functools
+  summary: Functools like those found in stdlib
+  description: |
+    Functools like those found in stdlib
   repository: https://github.com/jaraco/jaraco.functools
-  documentation: https://github.com/jaraco/jaraco.functools
 
 extra:
   recipe-maintainers:
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jaraco.functools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jaraco-functools
+  cfe-purls:
+    - pkg:conda/jaraco.functools@${{ version }}?channel=conda-forge
+    - pkg:pypi/jaraco-functools@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/jaraco.functools
+  cfe-upstream-homepage: https://pypi.org/project/jaraco.functools/
+  cfe-import-names: [jaraco.functools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jaraco.functools-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:12:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:12:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:12:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

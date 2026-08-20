@@ -2,50 +2,91 @@
 schema_version: 1
 
 context:
-  name: Deprecated
   version: "1.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: deprecated
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/Deprecated/deprecated-${{ version }}.tar.gz
   sha256: b1b50e0ff0c1fddaa5708a2c6b0a6588bb09b892825ab2b214ac9ea9d92a5223
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --ignore-installed --no-deps .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - wrapt <3,>=1.10
+    - inspect2
 
 tests:
   - python:
       imports:
         - deprecated
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/laurent-laporte-pro/deprecated
   license: MIT
-  license_file: LICENSE.rst
+  license_file: LICENSE
   summary: Python @deprecated decorator to deprecate old python classes, functions or methods.
-  homepage: https://github.com/tantale/deprecated
-  repository: https://github.com/tantale/deprecated
+  description: |
+    Python @deprecated decorator to deprecate old python classes, functions or methods.
+  repository: https://github.com/laurent-laporte-pro/deprecated
+  documentation: https://deprecated.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deprecated
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deprecated
+  cfe-purls:
+    - pkg:conda/deprecated@${{ version }}?channel=conda-forge
+    - pkg:pypi/deprecated@${{ version }}
+  cfe-upstream-repo: https://github.com/laurent-laporte-pro/deprecated
+  cfe-upstream-homepage: https://github.com/laurent-laporte-pro/deprecated
+  cfe-import-names: [deprecated]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/deprecated-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:43:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:43:09Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:43:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

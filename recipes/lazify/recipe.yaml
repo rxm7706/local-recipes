@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: lazify
   version: "0.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: lazify
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/Lazify-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/Lazify/Lazify-${{ version }}.tar.gz
   sha256: 7102bfe63e56de2ab62b3bc661a7190c4056771a8624f04a8b785275c3dd1f9b
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,14 +30,55 @@ tests:
       imports:
         - lazify
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Lazify all the things!
-  license: BSD-3-Clause
-  license_file: LICENSE
   homepage: https://github.com/numberly/lazify
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Lazify all the things!
+  description: |
+    Lazify all the things!
 
 extra:
   recipe-maintainers:
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lazify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lazify
+  cfe-purls:
+    - pkg:conda/lazify@${{ version }}?channel=conda-forge
+    - pkg:pypi/lazify@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/numberly/lazify
+  cfe-import-names: [lazify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lazify-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T10:03:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:03:41Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:03:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

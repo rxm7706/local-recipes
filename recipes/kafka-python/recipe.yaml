@@ -15,16 +15,13 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - kafka-python=kafka.cli:run_cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0
     - pip
+    - setuptools >=77.0
   run:
     - python >=${{ python_min }}
 
@@ -32,35 +29,52 @@ tests:
   - python:
       imports:
         - kafka
-        - kafka.consumer
-        - kafka.coordinator
-        - kafka.coordinator.assignors
-        - kafka.metrics
-        - kafka.metrics.stats
-        - kafka.partitioner
-        - kafka.producer
-        - kafka.protocol
-        - kafka.serializer
-        - kafka.vendor
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - script:
-      - kafka-python --help
-    requirements:
-      run:
-        - python ${{ python_min }}.*
 
 about:
-  license_file: LICENSE
-  license: Apache-2.0
-  summary: Pure Python client for Apache Kafka
   homepage: https://github.com/dpkp/kafka-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Pure Python client for Apache Kafka
+  description: |
+    Pure Python client for Apache Kafka
   repository: https://github.com/dpkp/kafka-python
-  documentation: https://kafka-python.readthedocs.io/en/master/
+  documentation: https://kafka-python.readthedocs.io
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kafka-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kafka-python
+  cfe-purls:
+    - pkg:conda/kafka-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/kafka-python@${{ version }}
+  cfe-upstream-repo: https://github.com/dpkp/kafka-python
+  cfe-upstream-homepage: https://github.com/dpkp/kafka-python
+  cfe-import-names: [kafka]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kafka-python-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:47:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:47:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:47:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -9,17 +9,18 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/bmc/munkres/archive/release-${{ version }}.tar.gz
-  sha256: 6a297282895e4f7c27902bb5ad045d06458905daafb80a9ce14b9d87ca391205
+  url: https://pypi.org/packages/source/m/munkres/munkres-${{ version }}.tar.gz
+  sha256: fc44bf3c3979dada4b6b633ddeeb8ffbe8388ee9409e4d4e8310c2da1792db03
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python setup.py install --single-version-externally-managed --record record.txt
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -28,34 +29,59 @@ tests:
   - python:
       imports:
         - munkres
-      pip_check: false
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - test/*
-    requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - py.test
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://software.clapper.org/munkres/
   license: Apache-2.0
-  license_file: LICENSE.md
-  summary: The Munkres module provides an O(n^3) implementation of the Munkres algorithm (also called the Hungarian algorithm or the Kuhn-Munkres algorithm).
+  license_file: LICENSE
+  summary: Munkres (Hungarian) algorithm for the Assignment Problem
   description: |
-    The Munkres module provides an O(n^3) implementation of the Munkres
-    algorithm (also called the Hungarian algorithm or the Kuhn-Munkres
-    algorithm). The algorithm models an assignment problem as an NxM cost
-    matrix, where each element represents the cost of assigning the ith worker
-    to the jth job, and it figures out the least-cost solution, choosing a
-    single item from each row and column in the matrix, such that no row and
-    no column are used more than once.
-  homepage: https://github.com/bmc/munkres
-  repository: https://github.com/bmc/munkres
-  documentation: http://software.clapper.org/munkres/
+    Munkres (Hungarian) algorithm for the Assignment Problem
 
 extra:
   recipe-maintainers:
     - CJ-Wright
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: munkres
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: munkres
+  cfe-purls:
+    - pkg:conda/munkres@${{ version }}?channel=conda-forge
+    - pkg:pypi/munkres@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://software.clapper.org/munkres/
+  cfe-import-names: [munkres]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/munkres-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:52:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:52:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:52:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -1,15 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: google-auth
   version: "2.56.3"
-  sdist_name: google_auth
 
 package:
-  name: ${{ name|lower }}
+  name: google-auth
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ sdist_name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-auth/google_auth-${{ version }}.tar.gz
   sha256: 40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c
 
 build:
@@ -25,14 +25,8 @@ requirements:
   run:
     - python >=${{ python_min }}
     - pyasn1-modules >=0.2.1
-    - cryptography >=41.0.5
-    # aiohttp and requests extras
-    - aiohttp >=3.9.0,<4.0.0
-    - requests >=2.30.0,<3.0.0
-    # reauth extra
-    - pyu2f >=0.1.5
-    # rsa extra
-    - rsa >=4.0.0,<5
+    - cryptography >=38.0.3
+
 tests:
   - python:
       imports:
@@ -44,12 +38,11 @@ tests:
 
 about:
   homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-auth
-  summary: Google authentication library for Python
-  description: This library provides the ability to authenticate to Google APIs using various methods. It also provides integration with several HTTP libraries.
   license: Apache-2.0
   license_file: LICENSE
-  documentation: https://googleapis.dev/python/google-auth/latest/index.html
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-auth
+  summary: Google Authentication Library
+  description: |
+    Google Authentication Library
 
 extra:
   recipe-maintainers:
@@ -59,3 +52,33 @@ extra:
     - parthea
     - theacodes
     - tswast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-auth
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-auth
+  cfe-purls:
+    - pkg:conda/google-auth@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-auth@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-auth
+  cfe-import-names: [google.auth]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-auth-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:51:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:51:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:51:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

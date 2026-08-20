@@ -2,52 +2,86 @@
 schema_version: 1
 
 context:
-  name: chex
-  version: 0.1.92
-  python_min: '3.11'
+  version: "0.1.92"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: chex
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/chex-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/chex/chex-${{ version }}.tar.gz
   sha256: fa8beff1124204ae466a6eb13cb91ae3c24322a1c7216946aee93d031e2f1996
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolatio
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools
-    - flit-core
+    - pip
+    - flit-core >=3.2,<4
   run:
-    - typing_extensions >=4.15.0
     - python >=${{ python_min }}
     - absl-py >=2.3.1
+    - typing_extensions >=4.15.0
     - jax >=0.7.0
     - jaxlib >=0.7.0
     - numpy >=1.24.1
     - toolz >=1.0.0
+
 tests:
   - python:
       imports:
         - chex
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
-      python_version: ${{ python_min }}.*
 about:
-  summary: 'Chex: Testing made fun, in JAX!'
+  homepage: https://github.com/google-deepmind/chex
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/deepmind/chex
+  summary: "Chex: Testing made fun, in JAX!"
+  description: |
+    Chex: Testing made fun, in JAX!
+  documentation: https://chex.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - PhilipVinc
     - hbq1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chex
+  cfe-purls:
+    - pkg:conda/chex@${{ version }}?channel=conda-forge
+    - pkg:pypi/chex@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/google-deepmind/chex
+  cfe-import-names: [chex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/chex-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:58:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:58:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:58:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

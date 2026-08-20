@@ -2,61 +2,52 @@
 schema_version: 1
 
 context:
-  name: elasticsearch
-  version: "9.4.1"
-  bundle: tar.gz
-  hash_val: 1d78fdfba97a903ec35a5eb5808a74e33392b7c620bd5f742d465a3a26c27d75
+  version: "9.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: elasticsearch
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/e/elasticsearch/elasticsearch-${{ version }}.tar.gz
+  sha256: c37576ba04d04200a05012db99bc99024000ae15b9ebdd683966aa8a0e6cd1c4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
-    - elastic-transport >=9.4.1,<10
-    - python-dateutil
-    - typing-extensions
-    - sniffio
-    - anyio
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - elastic-transport >=9.2.0,<10
-    - python-dateutil
-    - typing-extensions
-    - sniffio
     - anyio
+    - elastic-transport <10,>=9.4.1
+    - python-dateutil
+    - sniffio
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - elasticsearch
-        - elasticsearch.helpers
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/elastic/elasticsearch-py
   license: Apache-2.0
   license_file: LICENSE
   summary: Python client for Elasticsearch
-  homepage: https://github.com/elastic/elasticsearch-py
+  description: |
+    Python client for Elasticsearch
   repository: https://github.com/elastic/elasticsearch-py
-  documentation: https://elasticsearch-py.readthedocs.io
+  documentation: https://elasticsearch-py.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -65,3 +56,36 @@ extra:
     - joshmock
     - miguelgrinberg
     - pquentin
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: elasticsearch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: elasticsearch
+  cfe-purls:
+    - pkg:conda/elasticsearch@${{ version }}?channel=conda-forge
+    - pkg:pypi/elasticsearch@${{ version }}
+  cfe-upstream-repo: https://github.com/elastic/elasticsearch-py
+  cfe-upstream-homepage: https://github.com/elastic/elasticsearch-py
+  cfe-import-names: [elasticsearch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/elasticsearch-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-9.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:01:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:01:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:01:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

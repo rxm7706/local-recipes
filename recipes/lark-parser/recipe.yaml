@@ -2,68 +2,80 @@
 schema_version: 1
 
 context:
-  name: lark-parser
   version: "0.12.0"
 
 package:
-  name: ${{ name|lower }}
+  name: lark-parser
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lark-parser-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/lark-parser/lark-parser-${{ version }}.tar.gz
   sha256: 15967db1f1214013dca65b1180745047b9be457d73da224fcda3d9dd4e96a138
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
-    - regex
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - lark
-        - lark.parsers
-        - lark.tools
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/lark-parser/lark
   license: MIT
   license_file: LICENSE
   summary: a modern parsing library
   description: |
-    Lark is a modern general-purpose parsing library for Python.
-    With Lark, you can parse any context-free grammar, efficiently, with very little code.
-    Main Features:
-    - Builds a parse-tree (AST) automagically, based on the structure of the grammar
-    - Earley parser
-    - Can parse all context-free grammars
-    - Full support for ambiguous grammars
-    - LALR(1) parser
-    - Fast and light, competitive with PLY
-    - Can generate a stand-alone parser
-    - CYK parser, for highly ambiguous grammars
-    - EBNF grammar
-    - Unicode fully supported
-    - Python 2 & 3 compatible
-    - Automatic line & column tracking
-    - Standard library of terminals (strings, numbers, names, etc.)
-    - Import grammars from Nearley.js
-    - Extensive test suite
-    - And much more!
-  homepage: https://github.com/erezsh/lark
-  repository: https://github.com/erezsh/lark
-  documentation: http://lark-parser.readthedocs.io/
+    a modern parsing library
 
 extra:
   recipe-maintainers:
     - tarcisioe
     - mlin
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lark-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lark-parser
+  cfe-purls:
+    - pkg:conda/lark-parser@${{ version }}?channel=conda-forge
+    - pkg:pypi/lark-parser@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/lark-parser/lark
+  cfe-import-names: [lark]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lark-parser-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.12.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:12:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:12:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:12:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -15,38 +15,78 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - poetry-core
-    - python ${{ python_min }}.*
   run:
+    - python >=${{ python_min }}
     - factory_boy >=2.10.0
     - inflection
     - packaging
     - pytest >=7.0
-    - python >=${{ python_min }}
     - typing_extensions
 
 tests:
   - python:
-      imports: pytest_factoryboy
+      imports:
+        - pytest_factoryboy
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
+        - "*"
 
 about:
-  summary: Factory Boy support for pytest.
+  homepage: https://pytest-factoryboy.readthedocs.io/
   license: MIT
-  license_file: LICENSE.md
-  homepage: https://pytest-factoryboy.readthedocs.io
+  license_file: LICENSE
+  summary: Factory Boy support for pytest.
+  description: |
+    Factory Boy support for pytest.
   repository: https://github.com/pytest-dev/pytest-factoryboy
+  documentation: https://pytest-factoryboy.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - cshaley
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-factoryboy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-factoryboy
+  cfe-purls:
+    - pkg:conda/pytest-factoryboy@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-factoryboy@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-factoryboy
+  cfe-upstream-homepage: https://pytest-factoryboy.readthedocs.io/
+  cfe-import-names: [pytest_factoryboy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-factoryboy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:13:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:13:22Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:13:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

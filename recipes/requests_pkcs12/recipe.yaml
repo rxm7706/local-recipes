@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: requests_pkcs12
-  version: 1.26
+  version: "1.27"
 
 package:
-  name: ${{ name|lower }}
+  name: requests-pkcs12
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/requests_pkcs12-${{ version }}.tar.gz
-  sha256: efb06fa33c804ba4dd98ffd193282a0620fccf96d6a904effe1a6b0961a2f53e
+  url: https://pypi.org/packages/source/r/requests-pkcs12/requests_pkcs12-${{ version }}.tar.gz
+  sha256: 258b320bac8773b5c310a92382e3cb3b1fece1d5cc4fd4a6f93a70b009154ea5
 
 build:
   number: 0
@@ -33,15 +32,51 @@ tests:
       imports:
         - requests_pkcs12
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Add PKCS Add PKCS#12 support to the requests library in a clean way, without monkey patching or temporary files
+  homepage: https://github.com/m-click/requests_pkcs12
   license: ISC
   license_file: LICENSE
-  homepage: https://github.com/m-click/requests_pkcs12
+  summary: Add PKCS#12 support to the requests library in a clean way, without monkey patching or temporary files
+  description: |
+    Add PKCS#12 support to the requests library in a clean way, without monkey patching or temporary files
 
 extra:
   recipe-maintainers:
     - sodre
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests_pkcs12
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests-pkcs12
+  cfe-purls:
+    - pkg:conda/requests_pkcs12@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests-pkcs12@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/m-click/requests_pkcs12
+  cfe-import-names: [requests_pkcs12]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests_pkcs12-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-1.27
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:04:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:04:44Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:04:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

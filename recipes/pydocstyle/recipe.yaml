@@ -2,62 +2,49 @@
 schema_version: 1
 
 context:
-  name: pydocstyle
   version: "6.3.0"
-  hash: 7ce43f0c0ac87b07494eb9c0b462c0b73e6ff276807f204d6b53edc72b7e44e1
 
 package:
-  name: ${{ name }}
+  name: pydocstyle
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
+  url: https://pypi.org/packages/source/p/pydocstyle/pydocstyle-${{ version }}.tar.gz
+  sha256: 7ce43f0c0ac87b07494eb9c0b462c0b73e6ff276807f204d6b53edc72b7e44e1
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - pydocstyle = pydocstyle.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - poetry-core
   run:
     - python >=${{ python_min }}
-    - snowballstemmer >=2.2.0
-    - tomli >=1.2.3
+    - snowballstemmer
+    - importlib-metadata
 
 tests:
   - python:
       imports:
         - pydocstyle
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - pydocstyle --version
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.pydocstyle.org/en/stable/
   license: MIT
-  license_file: LICENSE-MIT
-  summary: Python docstring style checker (formerly pep257)
+  license_file: LICENSE
+  summary: Python docstring style checker
   description: |
-    pydocstyle is a static analysis tool for checking compliance with Python
-    docstring conventions. pydocstyle supports most of PEP 257 out of the box,
-    but it should not be considered a reference implementation.
-    The framework for checking docstring style is flexible, and custom checks
-    can be easily added, for example to cover NumPy docstring conventions.
-    pydocstyle supports Python 3.4, 3.5, 3.6, and 3.7.
-  homepage: https://github.com/PyCQA/pydocstyle
+    Python docstring style checker
   repository: https://github.com/PyCQA/pydocstyle
-  documentation: http://pydocstyle.readthedocs.org
+  documentation: https://www.pydocstyle.org/en/stable/
 
 extra:
   recipe-maintainers:
@@ -65,3 +52,43 @@ extra:
     - jakirkham
     - Nurdok
     - dopplershift
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydocstyle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydocstyle
+  cfe-purls:
+    - pkg:conda/pydocstyle@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydocstyle@${{ version }}
+  cfe-upstream-repo: https://github.com/PyCQA/pydocstyle
+  cfe-upstream-homepage: https://www.pydocstyle.org/en/stable/
+  cfe-import-names: [pydocstyle]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydocstyle-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.3.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:35:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:35:27Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:35:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

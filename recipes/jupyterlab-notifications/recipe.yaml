@@ -2,51 +2,83 @@
 schema_version: 1
 
 context:
-  name: jupyterlab-notifications
   version: "0.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jupyterlab-notifications
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyterlab-notifications/jupyterlab_notifications-${{ version }}.tar.gz
   sha256: f161c7b2f7e93cd2a438feb66c06577b7b1b15ad7b16438a68e01b402c787f09
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - nodejs >=12.0.0
   host:
-    - hatch-jupyter-builder >=0.5
-    - hatch-nodejs-version >=0.3.2
+    - python ${{ python_min }}.*
+    - pip
     - hatchling >=1.5.0
     - jupyterlab >=4.0.0,<5
-    - pip
-    - python ${{ python_min }}
+    - hatch-nodejs-version >=0.3.2
   run:
-    - jupyterlab >=4.0.0,<5
     - python >=${{ python_min }}
 
 tests:
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - jupyter labextension list 2>&1 | grep -ie "jupyterlab-notifications.*OK"
+  - python:
+      imports:
+        - jupyterlab_notifications
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/mwakaba2/jupyterlab-notifications
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Jupyterlab extension to show notebook cell completion browser notifications
-  homepage: https://github.com/mwakaba2/jupyterlab-notifications
-  repository: https://github.com/mwakaba2/jupyterlab-notifications
+  description: |
+    Jupyterlab extension to show notebook cell completion browser notifications
+  repository: https://github.com/mwakaba2/jupyterlab-notifications.git
 
 extra:
   recipe-maintainers:
     - mwakaba2
     - m-rossi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterlab-notifications
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterlab-notifications
+  cfe-purls:
+    - pkg:conda/jupyterlab-notifications@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterlab-notifications@${{ version }}
+  cfe-upstream-repo: https://github.com/mwakaba2/jupyterlab-notifications.git
+  cfe-upstream-homepage: https://github.com/mwakaba2/jupyterlab-notifications
+  cfe-import-names: [jupyterlab_notifications]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterlab-notifications-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:41:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:41:36Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:41:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

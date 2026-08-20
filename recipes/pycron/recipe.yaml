@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: pycron
-  version: 3.2.0
+  version: "3.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pycron
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pycron/pycron-${{ version }}.tar.gz
   sha256: e125a28aca0295769541a40633f70b602579df48c9cb357c36c28d2628ba2b13
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -24,22 +23,56 @@ requirements:
     - pip
     - poetry-core
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pycron
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/kipe/pycron
   license: MIT
   license_file: LICENSE
   summary: Simple cron-like parser, which determines if current datetime matches conditions.
-  homepage: https://github.com/kipe/pycron
+  description: |
+    Simple cron-like parser, which determines if current datetime matches conditions.
   repository: https://github.com/kipe/pycron
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pycron
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pycron
+  cfe-purls:
+    - pkg:conda/pycron@${{ version }}?channel=conda-forge
+    - pkg:pypi/pycron@${{ version }}
+  cfe-upstream-repo: https://github.com/kipe/pycron
+  cfe-upstream-homepage: https://github.com/kipe/pycron
+  cfe-import-names: [pycron]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pycron-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:19:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:19:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:19:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: json-rpc
   version: "1.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: json-rpc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json-rpc-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/json-rpc/json-rpc-${{ version }}.tar.gz
   sha256: e6441d56c1dcd54241c937d0a2dcd193bdf0bdc539b5316524713f554b7f85b9
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,20 +29,58 @@ tests:
   - python:
       imports:
         - jsonrpc
-        - jsonrpc.backend
-        - jsonrpc.tests
-        - jsonrpc.dispatcher
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pavlov99/json-rpc
   license: MIT
   license_file: LICENSE.txt
-  summary: JSON-RPC transport realisation
-  homepage: https://github.com/pavlov99/json-rpc
+  summary: JSON-RPC transport implementation
+  description: |
+    JSON-RPC transport implementation
 
 extra:
   recipe-maintainers:
     - mgorny
     - dharhas
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-rpc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-rpc
+  cfe-purls:
+    - pkg:conda/json-rpc@${{ version }}?channel=conda-forge
+    - pkg:pypi/json-rpc@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pavlov99/json-rpc
+  cfe-import-names: [jsonrpc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-rpc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.15.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:50:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:50:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:50:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

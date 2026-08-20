@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/s/shellescape/shellescape-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/shellescape/shellescape-${{ version }}.tar.gz
   sha256: 40b310b30479be771bf3ab28bd8d40753778488bd46ea0969ba0b35038c3ec26
 
 build:
@@ -19,8 +19,8 @@ build:
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -28,20 +28,58 @@ requirements:
 tests:
   - python:
       imports:
-        - shellescape
+        - lib.shellescape
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  license: MIT
-  license_file: docs/LICENSE
-  summary: Shell escape a string to safely use it as a token in a shell command (backport of Python shlex.quote for Python versions 2.x & < 3.3)
   homepage: https://github.com/chrissimpkins/shellescape
-  repository: https://github.com/chrissimpkins/shellescape
-  documentation: https://github.com/chrissimpkins/shellescape/blob/master/docs/README.rst
+  license: MIT
+  license_file: LICENSE
+  summary: Shell escape a string to safely use it as a token in a shell command (backport of cPython shlex.quote for Python versions 2.x & < 3.3)
+  description: |
+    Shell escape a string to safely use it as a token in a shell command (backport of cPython shlex.quote for Python versions 2.x & < 3.3)
 
 extra:
   recipe-maintainers:
     - croth1
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: shellescape
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: shellescape
+  cfe-purls:
+    - pkg:conda/shellescape@${{ version }}?channel=conda-forge
+    - pkg:pypi/shellescape@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/chrissimpkins/shellescape
+  cfe-import-names: [lib.shellescape]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shellescape-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:27:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:27:28Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:27:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

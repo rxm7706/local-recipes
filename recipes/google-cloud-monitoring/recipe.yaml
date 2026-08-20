@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-monitoring
   version: "2.31.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-monitoring
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_monitoring-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-monitoring/google_cloud_monitoring-${{ version }}.tar.gz
   sha256: b4c9d3528c8643d4eb4b9d688cbb3c5914bc5f69b314ff7c5e1b47bdc073a9ae
 
 build:
@@ -25,32 +24,60 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.17.1,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    # more restrictive constraint for python >=3.13
-    - proto-plus >=1.25.0,<2.0.0
-    - protobuf >=4.25.8,<8.0.0
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
 
 tests:
   - python:
       imports:
         - google.cloud.monitoring
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Google Cloud Monitoring API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-monitoring
   license: Apache-2.0
   license_file: LICENSE
-  description: Python idiomatic client for Google Stackdriver Monitoring
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-monitoring
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-monitoring
-  documentation: https://googleapis.dev/python/monitoring/latest/index.html
+  summary: Google Cloud Monitoring API client library
+  description: |
+    Google Cloud Monitoring API client library
 
 extra:
   recipe-maintainers:
     - parthea
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-monitoring
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-monitoring
+  cfe-purls:
+    - pkg:conda/google-cloud-monitoring@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-monitoring@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-monitoring
+  cfe-import-names: [google.cloud.monitoring]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-monitoring-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:29:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:29:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:29:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

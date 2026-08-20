@@ -2,31 +2,26 @@
 schema_version: 1
 
 context:
-  name: json5
   version: "0.15.0"
-  python_min: python_min|default("3.8")
 
 package:
-  name: ${{ name|lower }}
+  name: json5
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json5-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/json5/json5-${{ version }}.tar.gz
   sha256: 7424d1f1eb1d56da6e3d70643f53619862b4ce81440bdb8ecfd6f875e5ba4a71
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pyjson5=json5.tool:main
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61
   run:
     - python >=${{ python_min }}
 
@@ -35,21 +30,53 @@ tests:
       imports:
         - json5
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - pyjson5 --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Python implementation of the JSON5 data format.
+  homepage: https://pypi.org/project/json5/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/dpranke/pyjson5
+  summary: A Python implementation of the JSON5 data format.
+  description: |
+    A Python implementation of the JSON5 data format.
+  repository: https://github.com/dpranke/pyjson5
 
 extra:
   recipe-maintainers:
     - rxm7706
     - ian-r-rose
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json5
+  cfe-purls:
+    - pkg:conda/json5@${{ version }}?channel=conda-forge
+    - pkg:pypi/json5@${{ version }}
+  cfe-upstream-repo: https://github.com/dpranke/pyjson5
+  cfe-upstream-homepage: https://pypi.org/project/json5/
+  cfe-import-names: [json5]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json5-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:20:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:20:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:20:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

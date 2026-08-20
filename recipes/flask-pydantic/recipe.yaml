@@ -2,14 +2,14 @@
 schema_version: 1
 
 context:
-  version: 0.14.0
+  version: "0.14.0"
 
 package:
   name: flask-pydantic
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/f/flask-pydantic/flask_pydantic-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Pydantic/flask_pydantic-${{ version }}.tar.gz
   sha256: eb27fa6fd62d952b421df05c72349b5b1dc6fadacbd52879aac80cc519e4eab6
 
 build:
@@ -20,12 +20,13 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core <4
     - pip
+    - flit-core <4
   run:
     - python >=${{ python_min }}
     - flask
     - pydantic >=2.0
+    - typing_extensions >=4.1.1
 
 tests:
   - python:
@@ -37,12 +38,48 @@ tests:
         - "*"
 
 about:
-  summary: Flask extension for integration with Pydantic library
+  homepage: https://pypi.org/project/Flask-Pydantic/
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://github.com/pallets-eco/flask-pydantic
+  summary: Flask extension for integration with Pydantic library.
+  description: |
+    Flask extension for integration with Pydantic library.
   repository: https://github.com/pallets-eco/flask-pydantic
 
 extra:
   recipe-maintainers:
     - killua156
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-pydantic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-pydantic
+  cfe-purls:
+    - pkg:conda/flask-pydantic@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-pydantic@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/flask-pydantic
+  cfe-upstream-homepage: https://pypi.org/project/Flask-Pydantic/
+  cfe-import-names: [flask_pydantic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-pydantic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:22:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:22:34Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:22:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,76 +2,83 @@
 schema_version: 1
 
 context:
-  name: supervisor
-  version: 4.3.0
+  version: "4.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: supervisor
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/supervisor/supervisor-${{ version }}.tar.gz
   sha256: 4a2bf149adf42997e1bb44b70c43b613275ec9852c3edacca86a9166b27e945e
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  python:
-    entry_points:
-      - supervisord = supervisor.supervisord:main
-      - supervisorctl = supervisor.supervisorctl:main
-      - echo_supervisord_conf = supervisor.confecho:main
-      - pidproxy = supervisor.pidproxy:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - sed
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - __unix
 
 tests:
   - python:
       imports:
         - supervisor
-        - supervisor.supervisorctl
-        - supervisor.supervisord
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.*
-  - files:
-      source:
-        - supervisor/tests/
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest >=2.5.2
-        - mock >=0.5.0
-    script:
-      - cp -r supervisor/tests $(python -c 'import site; print(site.getsitepackages()[0])')/supervisor
-      - pytest supervisor/tests
-      - supervisord -h
-      - supervisorctl -h
-      - echo_supervisord_conf -h
+        - "*"
 
 about:
-  license: BSD-3-Clause-Modification AND BSD-3-Clause AND PSF-2.0
-  license_file: LICENSES.txt
-  summary: A Process Control System
-  description: |
-    Supervisor is a client/server system that allows its users to monitor and
-    control a number of processes on UNIX-like operating systems.
   homepage: http://supervisord.org/
-  repository: https://github.com/Supervisor/supervisor
-  documentation: http://supervisord.org/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: A system for controlling process state under UNIX
+  description: |
+    A system for controlling process state under UNIX
+  documentation: http://supervisord.org
 
 extra:
   recipe-maintainers:
     - kalefranz
     - sodre
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: supervisor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: supervisor
+  cfe-purls:
+    - pkg:conda/supervisor@${{ version }}?channel=conda-forge
+    - pkg:pypi/supervisor@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://supervisord.org/
+  cfe-import-names: [supervisor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/supervisor-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T12:24:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:24:06Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:24:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

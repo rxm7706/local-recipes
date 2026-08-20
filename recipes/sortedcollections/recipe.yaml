@@ -2,28 +2,25 @@
 schema_version: 1
 
 context:
-  name: sortedcollections
   version: "2.1.0"
-  sha256: d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd
 
 package:
-  name: ${{ name|lower }}
+  name: sortedcollections
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sortedcollections/sortedcollections-${{ version }}.tar.gz
+  sha256: d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -33,23 +30,54 @@ tests:
   - python:
       imports:
         - sortedcollections
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://www.grantjenks.com/docs/sortedcollections/
   license: Apache-2.0
   license_file: LICENSE
   summary: Python Sorted Collections
-  description: Extends the sortedcontainers library with recipes for other collections.
-  homepage: http://www.grantjenks.com/docs/sortedcollections/
-  repository: https://github.com/grantjenks/sortedcollections
-  documentation: http://www.grantjenks.com/docs/sortedcollections/
+  description: |
+    Python Sorted Collections
 
 extra:
   recipe-maintainers:
     - grantjenks
     - mrocklin
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sortedcollections
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sortedcollections
+  cfe-purls:
+    - pkg:conda/sortedcollections@${{ version }}?channel=conda-forge
+    - pkg:pypi/sortedcollections@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://www.grantjenks.com/docs/sortedcollections/
+  cfe-import-names: [sortedcollections]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sortedcollections-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:39:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:39:02Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:39:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

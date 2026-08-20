@@ -2,42 +2,41 @@
 schema_version: 1
 
 context:
-  name: arize-phoenix
-  version: "17.8.1"
+  version: "20.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: arize-phoenix
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/arize_phoenix-${{ version }}.tar.gz
-  sha256: e943615a6f8f23a41ffcbca245cbdc59e1352c00eb616f709b47a99a781ad363
+  url: https://pypi.org/packages/source/a/arize-phoenix/arize_phoenix-${{ version }}.tar.gz
+  sha256: c7dbed1be7c14e6a9aa2e212d0e39a7ebfaa6c134cf86201ec69c85cdfdd2388
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
-    - hatch-jupyter-builder
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<3.13
+    - python >=${{ python_min }}
     - aioitertools
-    - aiosqlite
-    - alembic >=1.3.0, <2
-    - arize-phoenix-client
-    - arize-phoenix-evals
-    - arize-phoenix-otel
-    - authlib
+    - aiosqlite >=0.22.1
+    - alembic <2,>=1.3.0
+    - arize-phoenix-client >=3.0.0
+    - arize-phoenix-evals >=3.4.0
+    - arize-phoenix-otel >=0.17.0
+    - arize-phoenix-sqlean
+    - authlib >=1.7.0
+    - bashkit !=0.14.2,>=0.10.0
     - cachetools
     - email-validator
-    - fast_hdbscan >=0.2.0
-    - fastapi
-    - greenlet !=0.4.17
+    - fastapi >=0.137.0
+    - fastmcp-slim <4,>=3.4.2
     - grpc-interceptor
     - grpcio
     - httpx
@@ -47,62 +46,54 @@ requirements:
     - jsonpath-ng
     - jsonschema
     - ldap3
-    - mcp
-    - numba >=0.60.0
     - numpy
-    - openinference-instrumentation >=0.1.44
     - openinference-instrumentation-openai >=0.1.41
+    - openinference-instrumentation >=0.1.44
     - openinference-semantic-conventions >=0.1.26
     - opentelemetry-exporter-otlp
     - opentelemetry-proto >=1.12.0
     - opentelemetry-sdk
-    - opentelemetry-semantic-conventions
     - orjson
     - pandas >=1.0
     - prometheus_client
-    - protobuf >=3.20, <5.0
     - psutil
     - pyarrow
-    - pydantic >=2.1.0,<3
-    - pydantic-ai-slim >=1.95.0
-    - anthropic
-    - boto3
-    - aioboto3
-    - openai
-    - tiktoken
+    - pydantic-ai-slim <3,>=2.26.0
+    - pydantic-monty ==0.0.19
+    - pydantic >=2.1.0
     - pystache
     - python-dateutil
     - python-multipart
     - pyyaml
     - scikit-learn
     - scipy
-    - sqlalchemy >=2.0.46, <3
-    - sqlean.py >=3.45.1
-    - starlette
-    - strawberry-graphql >=0.314.3
+    - sqlalchemy <3,>=2.0.46
+    - sqlglot ==30.15.0
+    - starlette >=0.37.0
+    - strawberry-graphql ==0.320.4
     - tqdm
-    - typing-extensions >=4.6
-    - umap-learn
+    - typing_extensions >=4.6
     - uvicorn
-    - websockets
-    - wrapt >=1.17.2
+    - wrapt <3,>=1.17.2
 
 tests:
   - python:
       imports:
-        - phoenix
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+        - evals
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: ML Observability in your notebook
+  homepage: https://pypi.org/project/arize-phoenix/
   license: Elastic-2.0
   license_file: LICENSE
-  homepage: https://github.com/Arize-ai/phoenix
-  documentation: https://docs.arize.com/phoenix
+  summary: AI Observability and Evaluation
+  description: |
+    AI Observability and Evaluation
+  repository: https://github.com/Arize-ai/phoenix
+  documentation: https://arize.com/docs/phoenix/
 
 extra:
   recipe-maintainers:
@@ -112,3 +103,36 @@ extra:
     - michaelschiff
     - fjcasti1
     - axiomofjoy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arize-phoenix
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arize-phoenix
+  cfe-purls:
+    - pkg:conda/arize-phoenix@${{ version }}?channel=conda-forge
+    - pkg:pypi/arize-phoenix@${{ version }}
+  cfe-upstream-repo: https://github.com/Arize-ai/phoenix
+  cfe-upstream-homepage: https://pypi.org/project/arize-phoenix/
+  cfe-import-names: [evals]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arize-phoenix-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-20.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:56:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:56:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:56:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

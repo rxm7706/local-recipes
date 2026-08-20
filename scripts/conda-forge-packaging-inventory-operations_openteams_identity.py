@@ -34,7 +34,7 @@ import shutil
 import subprocess
 import sys
 import urllib.request
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -101,6 +101,7 @@ GIST_SCHEMA = [
     ("Conda-Forge_Metadata_URL", "url", "no", "Packages-page Browse link: conda-metadata-app.streamlit.app/?q=conda-forge/{pkg}."),
     ("Staged_Recipes_PR_URL", "url", "no", "Best conda-forge/staged-recipes PR (open file path, else title; prefer open then merged)."),
     ("Local_Recipes_URL", "url[]", "no", "`; `-joined github.com/rxm7706/local-recipes/tree/main/recipes/{dir}."),
+    ("Local_Build_Status", "enum", "no", "`success` | `failed` | `build-clean-test-blocked` | `not-attempted`. From the local `recipe.yaml` CFE stamp. Blank if no stamp."),
     ("Verification_Timestamp_UTC", "datetime", "yes", "ISO 8601 UTC generation time for this snapshot."),
     ("Priority_Bucket_Description", "string", "yes", "Human description of `P`."),
     ("Priority_Source", "string", "no", "Assignment source (`current-version-vuln`, `platform`, `work-create-recipe`, …)."),
@@ -117,6 +118,29 @@ FEEDSTOCK_OUTPUTS_URL = (
 )
 METADATA_URL = "https://conda-metadata-app.streamlit.app/?q=conda-forge/{pkg}"
 LOCAL_RECIPES_URL = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{dir}"
+CFE_BUILD_STATUS_RE = re.compile(r"(?m)^  cfe-local-build-status:\s*(\S+)")
+LOCAL_DIR_FROM_URL_RE = re.compile(r"/recipes/([^/\s]+)\s*$")
+NOARCH_LINE_RE = re.compile(r"(?m)^\s*noarch:\s*['\"]?([A-Za-z0-9_-]+)")
+COMPILER_LINE_RE = re.compile(
+    r"(?:\{\{\s*compiler\s*\(|\$\{\{\s*compiler\s*\(|"
+    r"\{\{\s*stdlib\s*\(|\$\{\{\s*stdlib\s*\()"
+)
+P_ORDER = ("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P0")
+RECIPE_TYPE_ORDER = (
+    "noarch-python",
+    "noarch-generic",
+    "compiled",
+    "arch",
+    "none",
+)
+BUILD_STATUS_ORDER = (
+    "success",
+    "build-clean-test-blocked",
+    "failed",
+    "blocked-missing-ortools",
+    "not-attempted",
+    "blank",
+)
 STAGED_PR_API = "/repos/conda-forge/staged-recipes/pulls?state=all&per_page=100"
 RECIPE_FILE_RE = re.compile(r"^recipes/([^/]+)/")
 TITLE_PREFIX_RE = re.compile(
@@ -533,6 +557,124 @@ def load_local_recipes(recipes_dir: Path) -> dict[str, str]:
     return out
 
 
+def load_local_build_status(recipes_dir: Path) -> dict[str, str]:
+    """PEP 503 / dir name -> CFE ``cfe-local-build-status`` from recipe.yaml."""
+    out: dict[str, str] = {}
+    if not recipes_dir.is_dir():
+        return out
+    for d in recipes_dir.iterdir():
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        fpath = d / "recipe.yaml"
+        if not fpath.is_file():
+            continue
+        try:
+            text = fpath.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        m = CFE_BUILD_STATUS_RE.search(text)
+        if not m:
+            continue
+        status = m.group(1).strip().strip("'\"")
+        if not status:
+            continue
+        names = {pep503_name(d.name), d.name.lower()}
+        for rm in RECIPE_NAME_RE.finditer(text):
+            token = pep503_name(rm.group(1))
+            if token and token not in TITLE_STOP:
+                names.add(token)
+        for name in names:
+            if name and name not in out:
+                out[name] = status
+    return out
+
+
+def overlay_live_local(records: list[dict[str, str]], recipes_dir: Path) -> None:
+    """Fill Local_Recipes_URL + Local_Build_Status from the live recipes/ tree."""
+    local_map = load_local_recipes(recipes_dir)
+    status_map = load_local_build_status(recipes_dir)
+    for row in records:
+        keys = name_keys(row)
+        pkg = row.get("Package") or ""
+        if pkg:
+            keys = list(keys)
+            for cand in (pkg, pkg.lower(), pep503_name(pkg)):
+                if cand and cand not in keys:
+                    keys.append(cand)
+        url = first_map(local_map, keys) or row.get("Local_Recipes_URL") or ""
+        row["Local_Recipes_URL"] = url
+        status = first_map(status_map, keys)
+        if not status and url:
+            m = LOCAL_DIR_FROM_URL_RE.search(url.split(";")[0].strip())
+            if m:
+                slug = m.group(1)
+                status = (
+                    status_map.get(pep503_name(slug))
+                    or status_map.get(slug.lower())
+                    or ""
+                )
+        row["Local_Build_Status"] = status
+
+
+def classify_recipe_text(text: str) -> str:
+    """noarch-python | noarch-generic | compiled | arch from recipe/meta body."""
+    m = NOARCH_LINE_RE.search(text)
+    if m:
+        kind = m.group(1).strip().lower()
+        if kind == "python":
+            return "noarch-python"
+        if kind in {"generic", "true", "yes"}:
+            return "noarch-generic"
+        return "noarch-other"
+    if COMPILER_LINE_RE.search(text):
+        return "compiled"
+    return "arch"
+
+
+def load_local_recipe_type(recipes_dir: Path) -> dict[str, str]:
+    """Recipe directory name -> classify_recipe_text result (or ``none``)."""
+    out: dict[str, str] = {}
+    if not recipes_dir.is_dir():
+        return out
+    for d in recipes_dir.iterdir():
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        text = ""
+        for fname in ("recipe.yaml", "meta.yaml"):
+            fpath = d / fname
+            if not fpath.is_file():
+                continue
+            try:
+                text = fpath.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                text = ""
+            if text:
+                break
+        out[d.name] = classify_recipe_text(text) if text else "none"
+    return out
+
+
+def row_recipe_type(row: dict[str, str], dir_types: dict[str, str]) -> str:
+    url = row.get("Local_Recipes_URL") or ""
+    if not url:
+        return "none"
+    m = LOCAL_DIR_FROM_URL_RE.search(url.split(";")[0].strip())
+    if not m:
+        return "none"
+    return dir_types.get(m.group(1), "none")
+
+
+def emit_status_block(lines: list[str], indent: str, counts: Counter) -> None:
+    lines.append(f"{indent}rows: {sum(counts.values())}")
+    for status in BUILD_STATUS_ORDER:
+        n = counts.get(status, 0)
+        if n:
+            lines.append(f"{indent}{status}: {n}")
+    extra = sorted(k for k in counts if k not in BUILD_STATUS_ORDER)
+    for status in extra:
+        lines.append(f"{indent}{status}: {counts[status]}")
+
+
 def inventory_feedstock_fallback(inv: dict[str, str] | None) -> str:
     if not inv:
         return ""
@@ -716,13 +858,30 @@ def write_gist_markdown(
     xlsx: Path,
     gist_id: str,
 ) -> None:
+    recipes_dir = REPO_ROOT / "recipes"
+    overlay_live_local(records, recipes_dir)
     rows = sorted(
         records, key=lambda r: (r.get("Core_Python_Package_Name") or "").lower()
     )
     src_counts = Counter(r.get("identity_source", "") for r in rows)
+    build_counts = Counter((r.get("Local_Build_Status") or "blank") for r in rows)
+    dir_types = load_local_recipe_type(recipes_dir)
+    by_p: dict[str, Counter] = defaultdict(Counter)
+    by_type: dict[str, Counter] = defaultdict(Counter)
+    success_by_p_type: dict[str, Counter] = defaultdict(Counter)
+    for row in rows:
+        p = row.get("P") or "?"
+        status = row.get("Local_Build_Status") or "blank"
+        rtype = row_recipe_type(row, dir_types)
+        by_p[p][status] += 1
+        by_type[rtype][status] += 1
+        if status == "success":
+            success_by_p_type[p][rtype] += 1
     cols = list(GIST_COLUMNS)
     fills = {h: sum(1 for r in rows if r.get(h)) for h in cols}
-    ts = rows[0].get("Verification_Timestamp_UTC", "") if rows else ""
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    for row in rows:
+        row["Verification_Timestamp_UTC"] = ts
     sha = file_sha256(xlsx) if xlsx.is_file() else ""
     lines: list[str] = [
         "---",
@@ -753,6 +912,35 @@ def write_gist_markdown(
     lines.append("filled:")
     for col in cols:
         lines.append(f"  {col}: {fills[col]}")
+    lines.append("local_build:")
+    for key, count in sorted(build_counts.items(), key=lambda kv: (-kv[1], kv[0])):
+        lines.append(f"  {key}: {count}")
+    lines.append("local_build_by_p:")
+    for p in list(P_ORDER) + sorted(k for k in by_p if k not in P_ORDER):
+        if p not in by_p:
+            continue
+        lines.append(f"  {p}:")
+        emit_status_block(lines, "    ", by_p[p])
+    lines.append("local_build_by_type:")
+    type_keys = list(RECIPE_TYPE_ORDER) + sorted(
+        k for k in by_type if k not in RECIPE_TYPE_ORDER
+    )
+    for rtype in type_keys:
+        if rtype not in by_type:
+            continue
+        lines.append(f"  {rtype}:")
+        emit_status_block(lines, "    ", by_type[rtype])
+    lines.append("local_build_success_by_p_type:")
+    for p in list(P_ORDER) + sorted(k for k in success_by_p_type if k not in P_ORDER):
+        if p not in success_by_p_type:
+            continue
+        lines.append(f"  {p}:")
+        for rtype in list(RECIPE_TYPE_ORDER) + sorted(
+            k for k in success_by_p_type[p] if k not in RECIPE_TYPE_ORDER
+        ):
+            n = success_by_p_type[p].get(rtype, 0)
+            if n:
+                lines.append(f"    {rtype}: {n}")
     lines.extend(
         [
             "---",
@@ -765,7 +953,7 @@ def write_gist_markdown(
             "(OSS Enhancements).",
             "",
             f"- Rows: **{len(rows):,}**",
-            f"- Columns: **{len(cols)}** (ranking `P`/`Rank`/`Score`/`Work` plus identity URLs)",
+            f"- Columns: **{len(cols)}** (ranking `P`/`Rank`/`Score`/`Work` plus identity URLs and local build status)",
             "- Primary key: `Core_Python_Package_Name` (unique)",
             f"- Generated: `{ts}`",
             "- Source: `docs/Analysis_Dataset-2026-08-12.xlsx` tab `identity-2026-08-12`",
@@ -779,6 +967,8 @@ def write_gist_markdown(
             "3. Split rows on `|`; trim cell whitespace; unescape `\\|` and `\\\\`.",
             "4. Multi-value cells (`alternative_purls`, `cpes`, `Conda-Forge_FeedStock_URL`, `Local_Recipes_URL`) split on `'; '`.",
             "5. Blank cell means missing. Do not invent URLs or PURLs.",
+            "6. `Local_Build_Status` is the live CFE stamp (`success` / `failed` / `build-clean-test-blocked` / `not-attempted`).",
+            "7. Frontmatter `local_build_by_p` / `local_build_by_type` / `local_build_success_by_p_type` split those stamps by priority and recipe type (`noarch-python` / `noarch-generic` / `compiled` / `arch` / `none`).",
             "",
             "## Column schema",
             "",

@@ -2,28 +2,28 @@
 schema_version: 1
 
 context:
-  name: curlify
-  version: "2.2.1"
+  version: "3.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: curlify
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/curlify-${{ version }}.tar.gz
-  sha256: 0d3f02e7235faf952de8ef45ef469845196d30632d5838bcd5aee217726ddd6d
+  url: https://pypi.org/packages/source/c/curlify/curlify-${{ version }}.tar.gz
+  sha256: 7b488ff3c924dba3433a1cc74044c0942da21f0a97fa26c3138319ba640ca412
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
+    - setuptools >=61.0
   run:
-    - python
+    - python >=${{ python_min }}
     - requests
 
 tests:
@@ -31,13 +31,51 @@ tests:
       imports:
         - curlify
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Library to convert python requests object to curl command.
+  homepage: https://github.com/ofw/curlify
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/oeegor/curlify
+  summary: Convert Requests request objects to curl commands.
+  description: |
+    Convert Requests request objects to curl commands.
 
 extra:
   recipe-maintainers:
     - kcemenike
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: curlify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: curlify
+  cfe-purls:
+    - pkg:conda/curlify@${{ version }}?channel=conda-forge
+    - pkg:pypi/curlify@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ofw/curlify
+  cfe-import-names: [curlify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/curlify-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:35:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:35:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:35:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

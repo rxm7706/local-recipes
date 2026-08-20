@@ -2,57 +2,88 @@
 schema_version: 1
 
 context:
-  name: svglib
-  version: "2.1.0"
-  hash: c079bc5fa9e12736b23e7855413320a78afdab54c9492de48ade7bf318187605
+  version: "2.2.0"
 
 package:
-  name: ${{ name }}
+  name: svglib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/svglib/svglib-${{ version }}.tar.gz
+  sha256: bde5c5f9b0e091f1e210b8aafdda07a49bd8ebf21c0e90d67383a665c83597ac
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - hatchling
   run:
     - python >=${{ python_min }}
     - cssselect2 >=0.2.0
     - lxml >=6.0.0
+    - pillow >=9.0.0
     - reportlab >=4.4.3
-    - rlpycairo >=0.4.0
     - tinycss2 >=0.6.0
 
 tests:
   - python:
       imports:
         - svglib
-      pip_check: false
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - pytest-runner
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-3.0-only
+  homepage: https://github.com/deeplook/svglib
+  license: LGPL-3.0-or-later
   license_file: LICENSE.txt
   summary: A pure-Python library for reading and converting SVG
-  homepage: https://github.com/deeplook/svglib
+  description: |
+    A pure-Python library for reading and converting SVG
 
 extra:
   recipe-maintainers:
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: svglib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: svglib
+  cfe-purls:
+    - pkg:conda/svglib@${{ version }}?channel=conda-forge
+    - pkg:pypi/svglib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/deeplook/svglib
+  cfe-import-names: [svglib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/svglib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:15:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:15:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:15:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

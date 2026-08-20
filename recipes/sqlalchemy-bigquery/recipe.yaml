@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: sqlalchemy-bigquery
-  version: 1.17.2
+  version: "1.17.2"
 
 package:
-  name: ${{ name|lower }}
+  name: sqlalchemy-bigquery
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sqlalchemy-bigquery/sqlalchemy_bigquery-${{ version }}.tar.gz
   sha256: 32f7893c16546d5cc5dc939fb7cf74f51505766a16422f21dd2e7e78ea8ec849
 
 build:
@@ -24,30 +23,60 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<3.15
-    - google-api-core >=2.25.0,<3.0.0
-    - google-auth >=2.14.1,<3.0.0
-    - google-cloud-bigquery-core >=3.20.0,<4.0.0
+    - python >=${{ python_min }}
+    - google-api-core <3.0.0,>=2.25.0
+    - google-auth <3.0.0,>=2.14.1
+    - google-cloud-bigquery <4.0.0,>=3.20.0
     - packaging
-    - sqlalchemy >=1.4.16,<3.0.0
+    - sqlalchemy <3.0.0,>=1.4.16
+
 tests:
   - python:
       imports:
         - sqlalchemy_bigquery
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: SQLAlchemy dialect for BigQuery
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/sqlalchemy-bigquery
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/sqlalchemy-bigquery
+  summary: SQLAlchemy dialect for BigQuery
+  description: |
+    SQLAlchemy dialect for BigQuery
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-bigquery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-bigquery
+  cfe-purls:
+    - pkg:conda/sqlalchemy-bigquery@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-bigquery@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/sqlalchemy-bigquery
+  cfe-import-names: [sqlalchemy_bigquery]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlalchemy-bigquery-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:59:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:59:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:59:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

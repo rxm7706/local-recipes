@@ -2,54 +2,81 @@
 schema_version: 1
 
 context:
-  name: splunk_handler
   version: "3.0.0"
-  sha256: a835b0a7161148aceb977301c6dba21bb96e7635279c7e90e0216c78a4bcbb24
 
 package:
-  name: ${{ name|lower }}
+  name: splunk-handler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/s/splunk-handler/splunk_handler-${{ version }}.tar.gz
+  sha256: a835b0a7161148aceb977301c6dba21bb96e7635279c7e90e0216c78a4bcbb24
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - requests >=2.6.0,<3.0.0
+    - requests
 
 tests:
   - python:
       imports:
         - splunk_handler
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/zach-taylor/splunk_handler
   license: MIT
   license_file: LICENSE
   summary: A Python logging handler that sends your logs to Splunk
   description: |
-    Splunk Handler is a Python Logger for sending logged events to an installation
-    of Splunk Enterprise. This logger requires the destination Splunk Enterprise
-    server to have enabled and configured the Splunk HTTP Event Collector.
-
-
-  homepage: https://github.com/zach-taylor/splunk_handler
-  repository: https://github.com/zach-taylor/splunk_handler
-  documentation: https://github.com/zach-taylor/splunk_handler
+    A Python logging handler that sends your logs to Splunk
 
 extra:
   recipe-maintainers:
     - sodre
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: splunk_handler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: splunk-handler
+  cfe-purls:
+    - pkg:conda/splunk_handler@${{ version }}?channel=conda-forge
+    - pkg:pypi/splunk-handler@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/zach-taylor/splunk_handler
+  cfe-import-names: [splunk_handler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/splunk_handler-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:18:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:18:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:18:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

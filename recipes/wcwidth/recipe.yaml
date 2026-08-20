@@ -19,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
 
@@ -30,14 +30,51 @@ tests:
       imports:
         - wcwidth
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/jquast/wcwidth
   license: MIT
   license_file: LICENSE
-  summary: Measures number of Terminal column cells of wide-character codes.
-  homepage: https://github.com/jquast/wcwidth
+  summary: Measures the displayed width of unicode strings in a terminal
+  description: |
+    Measures the displayed width of unicode strings in a terminal
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wcwidth
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wcwidth
+  cfe-purls:
+    - pkg:conda/wcwidth@${{ version }}?channel=conda-forge
+    - pkg:pypi/wcwidth@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jquast/wcwidth
+  cfe-import-names: [wcwidth]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wcwidth-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:11:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:11:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:11:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

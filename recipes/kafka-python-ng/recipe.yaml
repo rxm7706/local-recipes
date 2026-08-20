@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: kafka-python-ng
-  version: "2.2.2"
+  version: "2.2.3"
 
 package:
-  name: ${{ name|lower }}
+  name: kafka-python-ng
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/kafka-python-ng-${{ version }}.tar.gz
-  sha256: 87ad3a766e2c0bec71d9b99bdd9e9c5cda62d96cfda61a8ca16510484d6ad7d4
+  url: https://pypi.org/packages/source/k/kafka-python-ng/kafka_python_ng-${{ version }}.tar.gz
+  sha256: f79f28e10ade9b5a9860b2ec15b7cc8dc510d5702f5a399430478cff5f93a05a
 
 build:
   number: 0
@@ -20,24 +19,62 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools-scm
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - kafka
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pure Python client for Apache Kafka
+  homepage: https://github.com/wbarnha/kafka-python-ng
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/wbarnha/kafka-python-ng
+  summary: Pure Python client for Apache Kafka
+  description: |
+    Pure Python client for Apache Kafka
 
 extra:
   recipe-maintainers:
     - wbarnha
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kafka-python-ng
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kafka-python-ng
+  cfe-purls:
+    - pkg:conda/kafka-python-ng@${{ version }}?channel=conda-forge
+    - pkg:pypi/kafka-python-ng@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/wbarnha/kafka-python-ng
+  cfe-import-names: [kafka]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kafka-python-ng-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:56:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:56:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:56:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

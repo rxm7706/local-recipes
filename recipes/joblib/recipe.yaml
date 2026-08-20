@@ -9,8 +9,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/joblib/joblib/archive/${{ version }}.tar.gz
-  sha256: 7de874013042e7c4dfd14e34c81a0fec19ab7cd8f08bf447b773488e96770fa2
+  url: https://pypi.org/packages/source/j/joblib/joblib-${{ version }}.tar.gz
+  sha256: 8561a3269e6801106863fd0d6d84bb737be9e7631e33aaed3fb9ce5953688da3
 
 build:
   number: 0
@@ -19,26 +19,29 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
-    - setuptools
 
 tests:
   - python:
       imports:
         - joblib
-        - joblib.externals
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: "Lightweight pipelining: using Python functions as pipeline jobs."
+  homepage: https://joblib.readthedocs.io
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://pypi.org/project/joblib/
+  summary: Lightweight pipelining with Python functions
+  description: |
+    Lightweight pipelining with Python functions
+  repository: https://github.com/joblib/joblib
 
 extra:
   recipe-maintainers:
@@ -48,3 +51,40 @@ extra:
     - lesteve
     - tomMoral
     - pierreglaser
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: joblib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: joblib
+  cfe-purls:
+    - pkg:conda/joblib@${{ version }}?channel=conda-forge
+    - pkg:pypi/joblib@${{ version }}
+  cfe-upstream-repo: https://github.com/joblib/joblib
+  cfe-upstream-homepage: https://joblib.readthedocs.io
+  cfe-import-names: [joblib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/joblib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:19:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:19:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:19:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

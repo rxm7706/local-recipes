@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: openai-whisper
-  version: 20250625
+  version: "20250625"
 
 package:
   name: ${{ name|lower }}
@@ -46,7 +46,9 @@ tests:
       imports:
         - whisper
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - python ${{ python_min }}
@@ -63,3 +65,36 @@ about:
 extra:
   recipe-maintainers:
     - hoxbro
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openai-whisper
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openai-whisper
+  cfe-purls:
+    - pkg:conda/openai-whisper@${{ version }}?channel=conda-forge
+    - pkg:pypi/openai-whisper@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/openai/whisper
+  cfe-import-names: [whisper]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openai-whisper-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-20250625
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:13:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:13:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:13:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

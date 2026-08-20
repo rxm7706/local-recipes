@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: weaviate-client
   version: "4.23.0"
 
 package:
-  name: ${{ name|lower }}
+  name: weaviate-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/weaviate_client-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/weaviate-client/weaviate_client-${{ version }}.tar.gz
   sha256: 19cc336b4c9e58f06cf01cb9aff8f6d8c0fe747f2e80192a9871c63823e8b18d
 
 build:
@@ -23,18 +22,16 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=65
-    # setuptools_scm[toml] needs nothing extra on conda-forge
-    - setuptools-scm >6.2
-    - wheel >=0.38.1
   run:
     - python >=${{ python_min }}
-    - httpx >=0.26.0,<0.29.0
-    - validators >=0.34.0,<1.0.0
-    - authlib >=1.6.7,<2.0.0
-    - pydantic >=2.12.0,<3.0.0
-    - grpcio >=1.59.5,<1.80.0
-    - protobuf >=4.21.6,<7.0.0
+    - httpx <0.29.0,>=0.26.0
+    - validators <1.0.0,>=0.34.0
+    - authlib <2.0.0,>=1.6.7
+    - pydantic <3.0.0,>=2.12.0
+    - grpcio <1.80.0,>=1.59.5
+    - protobuf <7.0.0,>=4.21.6
     - packaging >=21.0
+
 tests:
   - python:
       imports:
@@ -45,13 +42,45 @@ tests:
         - "*"
 
 about:
-  summary: A python native Weaviate client
+  homepage: https://github.com/weaviate/weaviate-python-client
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/weaviate/weaviate-python-client
+  summary: A python native Weaviate client
+  description: |
+    A python native Weaviate client
   repository: https://github.com/weaviate/weaviate-python-client
-  documentation: https://weaviate.io/developers/weaviate/client-libraries/python
+  documentation: https://weaviate-python-client.readthedocs.io
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: weaviate-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: weaviate-client
+  cfe-purls:
+    - pkg:conda/weaviate-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/weaviate-client@${{ version }}
+  cfe-upstream-repo: https://github.com/weaviate/weaviate-python-client
+  cfe-upstream-homepage: https://github.com/weaviate/weaviate-python-client
+  cfe-import-names: [weaviate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/weaviate-client-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:37:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:37:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:37:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

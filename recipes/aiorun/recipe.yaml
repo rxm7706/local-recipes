@@ -2,42 +2,79 @@
 schema_version: 1
 
 context:
-  name: aiorun
   version: "2025.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: aiorun
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiorun/aiorun-${{ version }}.tar.gz
   sha256: 86d1075a034ce2671ab532db06e9204fe784cdd0c66ca7b8cc47a7527d0d50a3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.5
+    - python ${{ python_min }}.*
     - pip
-    - flit
+    - flit-core >=2,<4
   run:
-    - python >=3.5
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - aiorun
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/cjrh/aiorun
   license: Apache-2.0
   license_file: LICENSE
-  summary: A "run" function for asyncio-based apps that does all the boilerplate.
-  homepage: https://github.com/cjrh/aiorun
+  summary: Boilerplate for asyncio applications
+  description: |
+    Boilerplate for asyncio applications
 
 extra:
   recipe-maintainers:
     - scopatz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiorun
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiorun
+  cfe-purls:
+    - pkg:conda/aiorun@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiorun@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cjrh/aiorun
+  cfe-import-names: [aiorun]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiorun-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2025.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:49:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:49:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:49:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

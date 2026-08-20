@@ -11,17 +11,16 @@ package:
 source:
   url: https://pypi.org/packages/source/i/ipython_genutils/ipython_genutils-${{ version }}.tar.gz
   sha256: eb2e116e75ecef9d4d228fdc66af54269afa26ab4463042e33785b887c628ba8
-  file_name: ipython_genutils-${{ version }}.tar.gz
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -30,19 +29,18 @@ tests:
   - python:
       imports:
         - ipython_genutils
-        - ipython_genutils.testing
-        - ipython_genutils.tests
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: COPYING.md
-  summary: Vestigial utilities from IPython
   homepage: http://ipython.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Vestigial utilities from IPython
+  description: |
+    Vestigial utilities from IPython
 
 extra:
   recipe-maintainers:
@@ -52,3 +50,43 @@ extra:
     - scopatz
     - Carreau
     - takluyver
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipython_genutils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipython-genutils
+  cfe-purls:
+    - pkg:conda/ipython_genutils@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipython-genutils@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://ipython.org
+  cfe-import-names: [ipython_genutils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipython_genutils-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:03:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:03:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:03:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

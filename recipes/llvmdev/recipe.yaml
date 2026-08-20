@@ -3,7 +3,7 @@
 schema_version: 1
 
 context:
-  version: "22.1.8"
+  version: "18.1.8"
   major_ver: ${{ version.split(".")[0] }}
   tail_ver: ${{ version.split(".")[-1] }}
   maj_min: ${{ major_ver ~ "." ~ version.split(".")[1] }}
@@ -14,12 +14,12 @@ recipe:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version | replace(".rc", "-rc") }}.tar.gz
-  sha256: ad18b70e287954c3d62bc7e0b86e7b7af2adf87bcfce21c15fe717f101d7aace
+  sha256: 47c174a186941ae830f04ded76a3444600be67d5e5fb8282c3783fba671c4edb
   patches:
     - patches/0001-pass-through-QEMU_LD_PREFIX-SDKROOT.patch
 
 build:
-  number: 1
+  number: 0
   merge_build_and_host_envs: false
 
 requirements:
@@ -355,3 +355,36 @@ extra:
     - xhochy
     - h-vetinari
   feedstock-name: llvmdev
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llvmdev
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lit
+  cfe-purls:
+    - pkg:conda/llvmdev@${{ version }}?channel=conda-forge
+    - pkg:pypi/lit@${{ version }}
+  cfe-upstream-repo: https://github.com/llvm/llvm-project
+  cfe-upstream-homepage: http://llvm.org/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llvmdev-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-18.1.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:19:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:19:22Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:19:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

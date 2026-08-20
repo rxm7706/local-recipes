@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
   version: "2.2.12"
-  python_min: "3.11"
 
 package:
   name: fastcore
@@ -14,19 +15,16 @@ source:
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - py2pyi=fastcore.py2pyi:py2pyi
-      - replace_wildcards=fastcore.py2pyi:replace_wildcards
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=64
     - pip
+    - setuptools >=64
   run:
     - python >=${{ python_min }}
+
 tests:
   - python:
       imports:
@@ -35,21 +33,49 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - script:
-      - py2pyi --help
-      - replace_wildcards --help
-    requirements:
-      run:
-        - python ${{ python_min }}.*
 
 about:
-  summary: Python supercharged for fastai development
+  homepage: https://pypi.org/project/fastcore/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/fastai/fastcore
+  summary: Python supercharged for fastai development
+  description: |
+    Python supercharged for fastai development
+  repository: https://github.com/AnswerDotAI/fastcore/
+  documentation: https://fastcore.fast.ai/
 
 extra:
   recipe-maintainers:
     - kai-tub
     - synapticarbors
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastcore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastcore
+  cfe-purls:
+    - pkg:conda/fastcore@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastcore@${{ version }}
+  cfe-upstream-repo: https://github.com/AnswerDotAI/fastcore/
+  cfe-upstream-homepage: https://pypi.org/project/fastcore/
+  cfe-import-names: [fastcore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastcore-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:09:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:09:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:09:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

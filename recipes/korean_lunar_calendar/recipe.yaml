@@ -5,23 +5,23 @@ context:
   version: "0.4.0"
 
 package:
-  name: korean_lunar_calendar
+  name: korean-lunar-calendar
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/k/korean_lunar_calendar/korean_lunar_calendar-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/korean-lunar-calendar/korean_lunar_calendar-${{ version }}.tar.gz
   sha256: be56f27bc0594fdbbdf7bbe00f504a9f929a31e311bd7d9bb93561b645afade7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
-    - setuptools >=77.0
     - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
 
@@ -30,15 +30,49 @@ tests:
       imports:
         - korean_lunar_calendar
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Korean Lunar Calendar
+  homepage: https://github.com/usingsky/korean_lunar_calendar_py
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/usingsky/korean_lunar_calendar_py
+  summary: Convert the Korean lunar calendar to/from the Gregorian solar calendar (KARI standard).
+  description: |
+    Convert the Korean lunar calendar to/from the Gregorian solar calendar (KARI standard).
   repository: https://github.com/usingsky/korean_lunar_calendar_py
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: korean_lunar_calendar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: korean-lunar-calendar
+  cfe-purls:
+    - pkg:conda/korean_lunar_calendar@${{ version }}?channel=conda-forge
+    - pkg:pypi/korean-lunar-calendar@${{ version }}
+  cfe-upstream-repo: https://github.com/usingsky/korean_lunar_calendar_py
+  cfe-upstream-homepage: https://github.com/usingsky/korean_lunar_calendar_py
+  cfe-import-names: [korean_lunar_calendar]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/korean_lunar_calendar-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:59:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:59:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:59:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,53 +2,81 @@
 schema_version: 1
 
 context:
-  name: fuzzywuzzy
   version: "0.18.0"
 
 package:
-  name: ${{ name }}
+  name: fuzzywuzzy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fuzzywuzzy/fuzzywuzzy-${{ version }}.tar.gz
   sha256: 45016e92264780e58972dca1b3d939ac864b78437422beecebb3095f8efd00e8
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - python-levenshtein >=0.12
 
 tests:
   - python:
       imports:
         - fuzzywuzzy
-        - fuzzywuzzy.StringMatcher
-        - fuzzywuzzy.fuzz
-        - fuzzywuzzy.process
-        - fuzzywuzzy.string_processing
-        - fuzzywuzzy.utils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: GPL-2.0-or-later
-  license_file: LICENSE.txt
-  summary: Fuzzy string matching in python
   homepage: https://github.com/seatgeek/fuzzywuzzy
-  repository: https://github.com/seatgeek/fuzzywuzzy
-  documentation: http://chairnerd.seatgeek.com/fuzzywuzzy-fuzzy-string-matching-in-python/
+  license: GPLv2
+  license_file: LICENSE
+  summary: Fuzzy string matching in python
+  description: |
+    Fuzzy string matching in python
 
 extra:
   recipe-maintainers:
     - josegonzalez
     - synapticarbors
     - hadim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fuzzywuzzy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fuzzywuzzy
+  cfe-purls:
+    - pkg:conda/fuzzywuzzy@${{ version }}?channel=conda-forge
+    - pkg:pypi/fuzzywuzzy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/seatgeek/fuzzywuzzy
+  cfe-import-names: [fuzzywuzzy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fuzzywuzzy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.18.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:38:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:38:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:38:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

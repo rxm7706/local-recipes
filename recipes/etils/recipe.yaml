@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
-  name: etils
-  version: "1.13.0"
+  version: "1.14.0"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: etils
   version: ${{ version }}
 
 source:
-  url: https://github.com/google/etils/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 9daae4499336e6586e7025227ccdf37966f9778d37e9982895e6309d2dc13407
+  url: https://pypi.org/packages/source/e/etils/etils-${{ version }}.tar.gz
+  sha256: 8136e7f4c4173cd0af0ca5481c4475152f0b8686192951eefa60ee8711e1ede4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.10.*
     - flit-core >=3.8,<4
   run:
     - python >=${{ python_min }}
@@ -32,15 +31,53 @@ tests:
       imports:
         - etils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Collection of common python utils
+  homepage: https://github.com/google/etils
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/etils/
+  summary: Collection of common python utils
+  description: |
+    Collection of common python utils
+  documentation: https://etils.readthedocs.io
 
 extra:
   recipe-maintainers:
     - ngam
     - traversaro
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: etils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: etils
+  cfe-purls:
+    - pkg:conda/etils@${{ version }}?channel=conda-forge
+    - pkg:pypi/etils@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/google/etils
+  cfe-import-names: [etils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/etils-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.14.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:04:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:04:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:04:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

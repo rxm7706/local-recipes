@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: googledrivedownloader
   version: "1.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: googledrivedownloader
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/googledrivedownloader/googledrivedownloader-${{ version }}.tar.gz
   sha256: 100920eb4e9069b48bc2f0445edf2ebc52814bc8d410385d0b2c902cad64cc9b
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -32,13 +31,17 @@ tests:
       imports:
         - googledrivedownloader
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Minimal class to download shared files from Google Drive.
-  license: MIT
+  homepage: https://github.com/ndrplz/google-drive-downloader
+  license: REPLACE_LICENSE
   license_file: LICENSE
-  homepage: https://pypi.org/project/googledrivedownloader/
+  summary: Minimal class to download shared files from Google Drive.
+  description: |
+    Minimal class to download shared files from Google Drive.
 
 extra:
   recipe-maintainers:
@@ -47,3 +50,40 @@ extra:
     - ndmaxar
     - oblute
     - davide-f
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: googledrivedownloader
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: googledrivedownloader
+  cfe-purls:
+    - pkg:conda/googledrivedownloader@${{ version }}?channel=conda-forge
+    - pkg:pypi/googledrivedownloader@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ndrplz/google-drive-downloader
+  cfe-import-names: [googledrivedownloader]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/googledrivedownloader-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T10:48:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:48:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T10:48:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/roman-right/beanie/archive/refs/tags/${{ version }}.tar.gz
-  sha256: fe689f021551965ee43e091e078bc107c35d128dbe4443a9f721cf0e2ba5a673
+  sha256: 2dc116e7f4a6650f8066f95851d34d898983af6ffaf5366dcfef892993537a51
   patches:
 
 build:
@@ -40,7 +40,9 @@ tests:
       imports:
         - beanie
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -58,3 +60,36 @@ about:
 extra:
   recipe-maintainers:
     - awvwgk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: beanie
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: beanie
+  cfe-purls:
+    - pkg:conda/beanie@${{ version }}?channel=conda-forge
+    - pkg:pypi/beanie@${{ version }}
+  cfe-upstream-repo: https://github.com/roman-right/beanie
+  cfe-upstream-homepage: https://roman-right.github.io/beanie/
+  cfe-import-names: [beanie]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/beanie-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:18:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:18:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:18:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: python_http_client
   version: "3.3.7"
 
 package:
-  name: ${{ name|lower }}
+  name: python-http-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-http-client/python_http_client-${{ version }}.tar.gz
   sha256: bf841ee45262747e00dec7ee9971dfb8c7d83083f5713596488d67739170cea0
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,23 +29,53 @@ tests:
   - python:
       imports:
         - python_http_client
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/sendgrid/python-http-client
   license: MIT
-  # https://github.com/sendgrid/python-http-client/pull/87
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE.txt
-  summary: SendGrid's Python HTTP Client for calling APIs
-  description: Quickly and easily access any RESTful or RESTful-like API
-  homepage: https://github.com/sendgrid/sendgrid-python/
-  repository: https://github.com/sendgrid/python-http-client
-  documentation: https://github.com/sendgrid/python-http-client
+  license_file: LICENSE
+  summary: HTTP REST client, simplified for Python
+  description: |
+    HTTP REST client, simplified for Python
 
 extra:
   recipe-maintainers:
     - RohitK89
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python_http_client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-http-client
+  cfe-purls:
+    - pkg:conda/python_http_client@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-http-client@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/sendgrid/python-http-client
+  cfe-import-names: [python_http_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python_http_client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.3.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:33:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:33:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:33:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

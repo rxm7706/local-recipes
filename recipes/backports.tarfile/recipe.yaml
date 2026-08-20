@@ -2,45 +2,79 @@
 schema_version: 1
 
 context:
-  name: backports.tarfile
-  version: 1.2.0
+  version: "1.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: backports.tarfile
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/backports_tarfile-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/backports.tarfile/backports_tarfile-${{ version }}.tar.gz
   sha256: d75e02c268746e1b8144c278978b6e98e85de6ad16f8e4b0844a154557eca991
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=61.2
-    - setuptools-scm >=3.4.1
     - pip
-    - backports
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
-    - backports
 
 tests:
   - python:
       imports:
-        - backports.tarfile
-      python_version: ${{ python_min }}.*
+        - backports
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Backport of CPython tarfile module
+  homepage: https://github.com/jaraco/backports.tarfile
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/jaraco/backports.tarfile
+  summary: Backport of CPython tarfile module
+  description: |
+    Backport of CPython tarfile module
 
 extra:
   recipe-maintainers:
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: backports.tarfile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: backports-tarfile
+  cfe-purls:
+    - pkg:conda/backports.tarfile@${{ version }}?channel=conda-forge
+    - pkg:pypi/backports-tarfile@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jaraco/backports.tarfile
+  cfe-import-names: [backports]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/backports.tarfile-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:34:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:34:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:34:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=0: Fetching info for backports-tarfile...
+Generated: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.cursor/cdao-p15-noarch-build/gen/backports.tarfile/recipe.yaml
+
+####

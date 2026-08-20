@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: locate
   version: "1.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: locate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/locate-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/locate/locate-${{ version }}.tar.gz
   sha256: 432750f5b7e89f8c99942ca7d8722ccd1e7954b20e6a973027fccb6cc00af857
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools-scm
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -32,24 +30,55 @@ tests:
       imports:
         - locate
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - pytest -vvv --capture=tee-sys tests
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Locate the file location of your current running script.
-  license: MIT
-  license_file: LICENSE
   homepage: https://github.com/AutoActuary/locate
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Locate the file location of your current running script.
+  description: |
+    Locate the file location of your current running script.
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: locate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: locate
+  cfe-purls:
+    - pkg:conda/locate@${{ version }}?channel=conda-forge
+    - pkg:pypi/locate@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/AutoActuary/locate
+  cfe-import-names: [locate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/locate-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T10:05:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:05:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:05:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

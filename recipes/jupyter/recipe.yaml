@@ -13,46 +13,76 @@ source:
   sha256: d55467bceabdea49d7e3624af7e33d59c37fff53ed3a350e1ac957bed731de7a
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}
   run:
+    - python >=${{ python_min }}
+    - notebook
+    - jupyter_console
+    - nbconvert
     - ipykernel
     - ipywidgets
-    - jupyter_console
     - jupyterlab
-    - nbconvert-core
-    - notebook
-    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - jupyter
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - jupyter --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Jupyter metapackage. Install all the Jupyter components in one go.
-  homepage: https://jupyter.org
-  repository: https://github.com/jupyter/jupyter
+  description: |
+    Jupyter metapackage. Install all the Jupyter components in one go.
 
 extra:
   recipe-maintainers:
     - minrk
     - ocefpaf
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter
+  cfe-purls:
+    - pkg:conda/jupyter@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://jupyter.org
+  cfe-import-names: [jupyter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:24:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:24:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:24:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

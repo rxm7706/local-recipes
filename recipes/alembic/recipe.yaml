@@ -2,24 +2,20 @@
 schema_version: 1
 
 context:
-  name: alembic
   version: "1.19.1"
 
 package:
-  name: ${{ name }}
+  name: alembic
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/alembic-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/alembic/alembic-${{ version }}.tar.gz
   sha256: e0fca0518118c78acc493e31bcb5402f190057aaf6df8b5b95ce94c4789cf648
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
-  python:
-    entry_points:
-      - alembic = alembic.config:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -31,38 +27,58 @@ requirements:
     - sqlalchemy >=1.4.23
     - mako
     - typing_extensions >=4.12
-    # for python <3.11 but adding it for all since we're noarch: python
     - tomli
 
 tests:
   - python:
       imports:
         - alembic
-        - alembic.autogenerate
-        - alembic.ddl
-        - alembic.operations
-        - alembic.runtime
-        - alembic.script
-        - alembic.util
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - alembic --help
 
 about:
-  license_file: LICENSE
+  homepage: https://alembic.sqlalchemy.org
   license: MIT
+  license_file: LICENSE
   summary: A database migration tool for SQLAlchemy.
-  homepage: https://alembic.sqlalchemy.org/
-  repository: https://github.com/sqlalchemy/alembic
-  documentation: http://alembic.zzzcomputing.com/en/latest/
+  description: |
+    A database migration tool for SQLAlchemy.
+  repository: https://github.com/sqlalchemy/alembic/
+  documentation: https://alembic.sqlalchemy.org/en/latest/
 
 extra:
   recipe-maintainers:
     - anguslees
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: alembic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: alembic
+  cfe-purls:
+    - pkg:conda/alembic@${{ version }}?channel=conda-forge
+    - pkg:pypi/alembic@${{ version }}
+  cfe-upstream-repo: https://github.com/sqlalchemy/alembic/
+  cfe-upstream-homepage: https://alembic.sqlalchemy.org
+  cfe-import-names: [alembic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/alembic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:49:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:49:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:49:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

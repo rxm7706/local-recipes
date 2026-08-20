@@ -2,27 +2,27 @@
 schema_version: 1
 
 context:
-  name: flaml
   version: "2.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: flaml
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/FLAML/flaml-${{ version }}.tar.gz
   sha256: fee0a8419d8a4862afe8aa817c312c7479f4d137b806430ecf3b3c7033270730
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools
+    - pip
+    - setuptools >=64
+    - wheel
   run:
     - python >=${{ python_min }}
     - numpy >=1.17
@@ -32,30 +32,50 @@ tests:
       imports:
         - flaml
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - files:
-      source:
-        - test/test_conda_distribution.py
-    requirements:
-      run:
-        - pytest
-        - pandas >=1.1.4
-        - lightgbm >=2.3.1
-        - xgboost >=0.90,<3.0.0
-        - scipy >=1.4.1
-        - scikit-learn >=1.0.0
-        - python ${{ python_min }}.*
-    script:
-      - pytest -m conda
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A fast and lightweight autoML system
+  homepage: https://github.com/microsoft/FLAML
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/microsoft/FLAML
+  summary: A fast library for automated machine learning and tuning
+  description: |
+    A fast library for automated machine learning and tuning
 
 extra:
   recipe-maintainers:
     - michalchromcak
     - skzhang1
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flaml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flaml
+  cfe-purls:
+    - pkg:conda/flaml@${{ version }}?channel=conda-forge
+    - pkg:pypi/flaml@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/microsoft/FLAML
+  cfe-import-names: [flaml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flaml-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:17:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:17:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:17:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

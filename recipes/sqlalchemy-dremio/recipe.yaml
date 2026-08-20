@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: sqlalchemy-dremio
   version: "3.0.5"
 
 package:
-  name: ${{ name|lower }}
+  name: sqlalchemy-dremio
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlalchemy_dremio-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sqlalchemy-dremio/sqlalchemy_dremio-${{ version }}.tar.gz
   sha256: d45bb7a2d226a113981ddbf312e69a9c278534d73162d6a68731b5ce3e50839b
 
 build:
@@ -24,24 +23,58 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - sqlalchemy >=2.0.41,<2.1.0
-    - pyarrow-all >=20.0.0,<20.1.0
+    - python >=${{ python_min }}
+    - sqlalchemy ~=2.0.41
+    - pyarrow ~=20.0.0
 
 tests:
   - python:
       imports:
         - sqlalchemy_dremio
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A SQLAlchemy dialect for Dremio via the Flight interface.
+  homepage: https://github.com/narendrans/sqlalchemy_dremio
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/narendrans/sqlalchemy_dremio
+  summary: A SQLAlchemy dialect for Dremio via the Flight interface.
+  description: |
+    A SQLAlchemy dialect for Dremio via the Flight interface.
 
 extra:
   recipe-maintainers:
     - rxm7706
     - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-dremio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-dremio
+  cfe-purls:
+    - pkg:conda/sqlalchemy-dremio@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-dremio@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/narendrans/sqlalchemy_dremio
+  cfe-import-names: [sqlalchemy_dremio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlalchemy-dremio-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:19:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:19:39Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:19:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

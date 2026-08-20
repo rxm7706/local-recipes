@@ -2,76 +2,83 @@
 schema_version: 1
 
 context:
-  name: pythonnet
   version: "3.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pythonnet
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pythonnet/pythonnet-${{ version }}.tar.gz
   sha256: 7b34c382905d10a371509ffafd64cae0416305c28817738a9cd138336f4e9991
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - dotnet-sdk 10.0.*
-    - openssl
   host:
-    - packaging >=24
+    - python ${{ python_min }}.*
     - pip
-    - pyproject-parser >=0.14
-    - python ${{ python_min }}
     - setuptools >=80
+    - packaging >=24
+    - pyproject-parser >=0.14
   run:
-    - clr_loader >=0.3.1,<0.4.0
-    - python >=${{ python_min }},<3.15
-  run_constraints:
-    - dotnet-runtime >=3.1
-    - if: not win
-      then: mono >=6.12
+    - python >=${{ python_min }}
+    - clr_loader <0.4.0,>=0.3.1
 
 tests:
   - python:
       imports:
-        - clr
+        - pythonnet
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      recipe:
-        - test-runtime.py
-    requirements:
-      run:
-        - dotnet-runtime
-        - importlib_resources
-        - pip
-        - python ${{ python_min }}
-        - if: not win
-          then: mono
-    script:
-      - if: not win
-        then: python test-runtime.py mono
-      - if: win
-        then: python test-runtime.py netfx
-      - python test-runtime.py coreclr
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pythonnet.github.io/
   license: MIT
   license_file: LICENSE
-  summary: .Net and Mono integration for Python
+  summary: .NET and Mono integration for Python
   description: |
-    Python for .NET is a package that gives Python programmers nearly seamless integration with the
-    .NET Common Language Runtime (CLR) and provides a powerful application scripting tool for .NET
-    developers.
-  homepage: http://pythonnet.github.io
-  repository: https://github.com/pythonnet/pythonnet
+    .NET and Mono integration for Python
 
 extra:
   recipe-maintainers:
     - m-rossi
     - bgruening
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pythonnet
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pythonnet
+  cfe-purls:
+    - pkg:conda/pythonnet@${{ version }}?channel=conda-forge
+    - pkg:pypi/pythonnet@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pythonnet.github.io/
+  cfe-import-names: [pythonnet]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pythonnet-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:57:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:57:25Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:57:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

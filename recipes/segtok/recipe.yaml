@@ -2,52 +2,84 @@
 schema_version: 1
 
 context:
-  name: segtok
   version: "1.5.11"
 
 package:
-  name: ${{ name|lower }}
+  name: segtok
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/segtok/segtok-${{ version }}.tar.gz
   sha256: 8ab2dd44245bcbfec25b575dc4618473bbdf2af8c2649698cd5a370f42f3db23
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - tokenizer = segtok.tokenizer:main
-      - segmenter = segtok.segmenter:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
     - regex
 
 tests:
   - python:
       imports:
         - segtok
-      pip_check: false
-  - script:
-      - tokenizer --help
-      - segmenter --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  # License isn't packaged, track issue here: https://github.com/fnl/segtok/issues/22
-  license_file: LICENSE
-  summary: sentence segmentation and word tokenization tools
   homepage: https://github.com/fnl/segtok
-  repository: https://github.com/fnl/segtok
-  documentation: http://fnl.es/segtok-a-segmentation-and-tokenization-library.html
+  license: MIT
+  license_file: LICENSE.txt
+  summary: sentence segmentation and word tokenization tools
+  description: |
+    sentence segmentation and word tokenization tools
 
 extra:
   recipe-maintainers:
     - mxr-conda
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: segtok
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: segtok
+  cfe-purls:
+    - pkg:conda/segtok@${{ version }}?channel=conda-forge
+    - pkg:pypi/segtok@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/fnl/segtok
+  cfe-import-names: [segtok]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/segtok-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.11
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:20:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:20:26Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:20:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

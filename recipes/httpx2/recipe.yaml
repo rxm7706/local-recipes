@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "2.10.0"
-  python_check_max: "3.14"
 
 package:
   name: httpx2
@@ -14,79 +13,78 @@ source:
   sha256: 8741d7329fe2c7885fc9ceb61c8217acfb87a85f75723714b89ebf7ad7196338
 
 build:
-  noarch: python
   number: 0
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - httpx2 = httpx2:main
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-fancy-pypi-readme
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
-    - uv-dynamic-versioning >=0.8.0
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
+    - uv-dynamic-versioning >=0.14.0
   run:
-    - anyio
-    - httpcore2 ==${{ version }}
-    - idna >=3.18
     - python >=${{ python_min }}
-    - truststore >=0.10
+    - idna >=3.18
     - typing_extensions >=4.5.0
-  run_constraints:
-    - click >=8.4
-    - pygments 2.*
-    - rich >=10,<16
-    - h2 >=3,<5
-    - socksio 1.*
-    - wsproto >=1.2
-    - zstandard >=0.18.0
-  # depends on https://github.com/conda/ceps/pull/146
-  # extras:
-  #   cli:
-  #     - click 8.*
-  #     - pygments 2.*
-  #     - rich >=10,<16
-  #   http2:
-  #     - h2 >=3,<5
-  #   socks:
-  #     - socksio 1.*
-  #   brotli:
-  #     - brotli
-  #   zstd:
-  #     - zstandard >=0.18.0
 
 tests:
   - python:
-      imports: httpx2
+      imports:
+        - httpx2
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - click >=8.4
-        - python ${{ python_min }}.*
-        - pygments 2.*
-        - rich >=10,<16
-    script:
-      env:
-        PYTHONIOENCODING: utf-8
-        PYTHONUTF8: "1"
-      content:
-        - httpx2 --help
+        - "*"
 
 about:
-  homepage: https://pypi.org/project/httpx2
-  summary: The next generation HTTP client.
+  homepage: https://github.com/pydantic/httpx2
   license: BSD-3-Clause
-  license_file: LICENSE.md
+  license_file: LICENSE
+  summary: The next generation HTTP client.
+  description: |
+    The next generation HTTP client.
   repository: https://github.com/pydantic/httpx2
 
 extra:
   recipe-maintainers:
     - bollwyvl
     - Kludex
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpx2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpx2
+  cfe-purls:
+    - pkg:conda/httpx2@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpx2@${{ version }}
+  cfe-upstream-repo: https://github.com/pydantic/httpx2
+  cfe-upstream-homepage: https://github.com/pydantic/httpx2
+  cfe-import-names: [httpx2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpx2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T23:41:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:41:20Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:41:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

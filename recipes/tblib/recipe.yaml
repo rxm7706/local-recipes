@@ -2,44 +2,78 @@
 schema_version: 1
 
 context:
-  name: tblib
   version: "3.2.2"
 
 package:
-  name: ${{ name|lower }}
+  name: tblib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tblib-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tblib/tblib-${{ version }}.tar.gz
   sha256: e9a652692d91bf4f743d4a15bc174c0b76afc750fe8c7b6d195cc1c1d6d2ccec
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools
+    - pip
+    - setuptools >=80
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - tblib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Traceback serialization library.
+  homepage: https://pypi.org/project/tblib/
   license: BSD-2-Clause
   license_file: LICENSE
-  homepage: https://github.com/ionelmc/python-tblib
-  documentation: https://python-tblib.readthedocs.io/en/latest/
+  summary: Traceback serialization library.
+  description: |
+    Traceback serialization library.
+  documentation: https://python-tblib.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - jrbourbeau
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tblib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tblib
+  cfe-purls:
+    - pkg:conda/tblib@${{ version }}?channel=conda-forge
+    - pkg:pypi/tblib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/tblib/
+  cfe-import-names: [tblib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tblib-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:20:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:20:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:20:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

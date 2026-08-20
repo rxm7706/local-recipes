@@ -2,46 +2,82 @@
 schema_version: 1
 
 context:
-  name: quart-cors
   version: "0.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: quart-cors
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/quart_cors-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/q/quart-cors/quart_cors-${{ version }}.tar.gz
   sha256: ac32c4931da6fba944e9e2d3f856f2db4fd82e3fb905a09646086780c221a118
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pdm-backend
+    - python ${{ python_min }}.*
     - pip
+    - pdm-backend
   run:
     - python >=${{ python_min }}
     - quart >=0.15
-    - typing_extensions *
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - quart_cors
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Quart extension to provide Cross Origin Resource Sharing, access control, support
+  homepage: https://pypi.org/project/quart-cors/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/pgjones/quart-cors/
+  summary: A Quart extension to provide Cross Origin Resource Sharing, access control, support
+  description: |
+    A Quart extension to provide Cross Origin Resource Sharing, access control, support
 
 extra:
   recipe-maintainers:
     - dhirschfeld
     - maxyme
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quart-cors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: quart-cors
+  cfe-purls:
+    - pkg:conda/quart-cors@${{ version }}?channel=conda-forge
+    - pkg:pypi/quart-cors@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/quart-cors/
+  cfe-import-names: [quart_cors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/quart-cors-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:59:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:59:21Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:59:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

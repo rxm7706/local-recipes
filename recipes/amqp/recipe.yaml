@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: amqp
   version: "5.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: amqp
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/amqp-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/amqp/amqp-${{ version }}.tar.gz
   sha256: cddc00c725449522023bad949f70fff7b48f0b1ade74d170a6f10ab044739432
 
 build:
@@ -20,26 +19,29 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - vine >=5.0.0,<6.0.0
+    - vine <6.0.0,>=5.0.0
 
 tests:
   - python:
       imports:
-        - amqp
+        - t
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/celery/py-amqp
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Low-level AMQP client for Python (fork of amqplib)
-  homepage: https://github.com/celery/py-amqp/
-  repository: https://github.com/celery/py-amqp/
-  documentation: https://amqp.readthedocs.io/
+  summary: Low-level AMQP client for Python (fork of amqplib).
+  description: |
+    Low-level AMQP client for Python (fork of amqplib).
 
 extra:
   recipe-maintainers:
@@ -47,3 +49,37 @@ extra:
     - kwilcox
     - wseaton
     - frol
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amqp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amqp
+  cfe-purls:
+    - pkg:conda/amqp@${{ version }}?channel=conda-forge
+    - pkg:pypi/amqp@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/celery/py-amqp
+  cfe-import-names: [t]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/amqp-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:51:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:51:21Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:51:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['t']
+####

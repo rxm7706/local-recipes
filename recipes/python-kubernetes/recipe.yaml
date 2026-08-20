@@ -2,15 +2,15 @@
 schema_version: 1
 
 context:
-  version: "36.0.3"
+  version: "0.2"
 
 package:
   name: python-kubernetes
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/k/kubernetes/kubernetes-${{ version }}.tar.gz
-  sha256: 36993ed25ce59b789c9341473a228fcf268504a2fec7c2b2b1531d73072e5ce7
+  url: https://pypi.org/packages/source/p/python-kubernetes/python-kubernetes-${{ version }}.tar.gz
+  sha256: d35ccb8ae7a30554b589c3a39ec07b78a64b5107fd828527d2d96d2ac0e7ef04
 
 build:
   number: 0
@@ -20,20 +20,10 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - certifi >=14.05.14
-    - six >=1.9.0
-    - python-dateutil >=2.5.3
-    - pyyaml >=6.0.3
-    - websocket-client >=0.32.0,!=0.40.0,!=0.41.*,!=0.42.*
-    - requests
-    - requests-oauthlib
-    - urllib3 >=1.24.2,!=2.6.0
-    - durationpy >=0.7
-    - aiohttp <4.0.0,>=3.13.5
 
 tests:
   - python:
@@ -45,12 +35,53 @@ tests:
         - "*"
 
 about:
-  summary: Kubernetes python client
+  homepage: https://github.com/cosmos-io/python-kubernetes
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/kubernetes-client/python
+  summary: A Python wrapper around the Kubernetes API
+  description: |
+    A Python wrapper around the Kubernetes API
 
 extra:
   recipe-maintainers:
     - johanneskoester
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-kubernetes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-kubernetes
+  cfe-purls:
+    - pkg:conda/python-kubernetes@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-kubernetes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cosmos-io/python-kubernetes
+  cfe-import-names: [kubernetes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-kubernetes-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-0.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:52:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:52:28Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:52:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

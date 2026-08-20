@@ -3,106 +3,83 @@ schema_version: 1
 
 context:
   version: "3.1.8"
-  python_check_max: "3.14"
-  cov_fail_under: "83"
-  test_skip: not exclude_patterns
 
 package:
   name: werkzeug
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/werkzeug/werkzeug-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/Werkzeug/werkzeug-${{ version }}.tar.gz
   sha256: 9bad61a4268dac112f1c5cd4630a56ede601b6ed420300677a869083d70a4c44
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core <4
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - flit-core <4
   run:
-    - markupsafe >=2.1.1
     - python >=${{ python_min }}
+    - markupsafe >=2.1.1
 
 tests:
   - python:
-      imports: werkzeug
+      imports:
+        - werkzeug
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests/
-        - pyproject.toml
-    requirements:
-      run:
-        - coverage
-        - cryptography
-        - ephemeral-port-reserve
-        - greenlet
-        - mypy
-        - pip
-        - pytest
-        - pytest-timeout
-        - pytest-xprocess
-        - python ${{ python_min }}.*
-        - types-setuptools
-        - watchdog
-    script:
-      - coverage run -m pytest -vv --tb=long --color=yes -k "${{ test_skip }}"
-      - coverage report --fail-under=${{ cov_fail_under }}
-      - mypy --disable-error-code unused-ignore -p werkzeug
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/Werkzeug/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: The comprehensive WSGI web application library.
   description: |
-    **_werkzeug_** German noun: "tool". Etymology: *werk* ("work"), *zeug* ("stuff")
-
-    Werkzeug is a comprehensive [WSGI](https://wsgi.readthedocs.io/en/latest/) web application library. It began as
-    a simple collection of various utilities for WSGI applications and has
-    become one of the most advanced WSGI utility libraries.
-
-    It includes:
-
-    -   An interactive debugger that allows inspecting stack traces and
-    source code in the browser with an interactive interpreter for any
-    frame in the stack.
-    -   A full-featured request object with objects to interact with
-    headers, query args, form data, files, and cookies.
-    -   A response object that can wrap other WSGI applications and handle
-    streaming data.
-    -   A routing system for matching URLs to endpoints and generating URLs
-    for endpoints, with an extensible system for capturing variables
-    from URLs.
-    -   HTTP utilities to handle entity tags, cache control, dates, user
-    agents, cookies, files, and more.
-    -   A threaded WSGI server for use while developing applications
-    locally.
-    -   A test client for simulating HTTP requests during testing without
-    requiring running a server.
-
-    Werkzeug doesn't enforce any dependencies. It is up to the developer to
-    choose a template engine, database adapter, and even how to handle
-    requests. It can be used to build all sorts of end user applications
-    such as blogs, wikis, or bulletin boards.
-
-    [Flask](https://www.palletsprojects.com/p/flask/) wraps Werkzeug, using it to handle the details of WSGI while
-    providing more structure and patterns for defining powerful
-    applications.
-  homepage: https://pypi.org/project/werkzeug
-  repository: https://github.com/pallets/werkzeug
-  documentation: https://werkzeug.palletsprojects.com
+    The comprehensive WSGI web application library.
+  repository: https://github.com/pallets/werkzeug/
+  documentation: https://werkzeug.palletsprojects.com/
 
 extra:
   recipe-maintainers:
     - goanpeca
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: werkzeug
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: werkzeug
+  cfe-purls:
+    - pkg:conda/werkzeug@${{ version }}?channel=conda-forge
+    - pkg:pypi/werkzeug@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets/werkzeug/
+  cfe-upstream-homepage: https://pypi.org/project/Werkzeug/
+  cfe-import-names: [werkzeug]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/werkzeug-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T05:33:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:33:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:33:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

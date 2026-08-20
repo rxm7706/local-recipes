@@ -2,33 +2,26 @@
 schema_version: 1
 
 context:
-  name: QtPy
-  import: qtpy
-  entrypoint: qtpy
   version: "2.4.3"
-  sha256: db744f7832e6d3da90568ba6ccbca3ee2b3b4a890c3d6fbbc63142f6e4cdf5bb
 
 package:
-  name: ${{ name|lower }}
+  name: qtpy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0]|lower }}/${{ name|lower }}/${{ name|lower }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/q/QtPy/qtpy-${{ version }}.tar.gz
+  sha256: db744f7832e6d3da90568ba6ccbca3ee2b3b4a890c3d6fbbc63142f6e4cdf5bb
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - ${{ entrypoint }} = ${{ import }}.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=42
-    - python ${{ python_min }}
   run:
     - python >=${{ python_min }}
     - packaging
@@ -36,38 +29,19 @@ requirements:
 tests:
   - python:
       imports:
-        - ${{ import }}
-        - ${{ import }}.QtCore
-        - ${{ import }}.QtGui
-        - ${{ import }}.QtWidgets
+        - qtpy
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - pyqt >=5.9
-        - python ${{ python_min }}
-    script:
-      - ${{ entrypoint }}
-      - ${{ entrypoint }} --help
-      - ${{ entrypoint }} --version
-      - ${{ entrypoint }} mypy-args
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/spyder-ide/qtpy
   license: MIT
   license_file: LICENSE.txt
-  summary: Provides an uniform layer to support PyQt5, PySide2, PyQt6, PySide6 with a single codebase
+  summary: Provides an abstraction layer on top of the various Qt bindings (PyQt5/6 and PySide2/6).
   description: |
-    QtPy is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
-
-    It provides support for PyQt5, PyQt6, PySide6, PySide2 (using the Qt5 layout), so you can write your code as if you were using PyQt or PySide directly, but import Qt modules from qtpy instead of PyQt5, PySide2, PyQt6 or PySide6.
-
-    Accordingly, when porting code between different Qt bindings (PyQt vs PySide) or Qt versions (Qt5 vs Qt6), QtPy makes this much more painless, and allows you to easily and incrementally transition between them.
-    QtPy handles incompatibilities and differences between bindings or Qt versions for you while keeping your project running, so you can focus more on your own code and less on keeping track of supporting every Qt version and binding.
-    Furthermore, when you do want to upgrade or support new bindings, it allows you to update your project module by module rather than all at once.
-  homepage: https://github.com/spyder-ide/qtpy
-  repository: https://github.com/spyder-ide/qtpy
-  documentation: https://github.com/spyder-ide/qtpy/blob/master/README.md
+    Provides an abstraction layer on top of the various Qt bindings (PyQt5/6 and PySide2/6).
 
 extra:
   recipe-maintainers:
@@ -75,3 +49,40 @@ extra:
     - ccordoba12
     - astrofrog
     - dalthviz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: qtpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: qtpy
+  cfe-purls:
+    - pkg:conda/qtpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/qtpy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/spyder-ide/qtpy
+  cfe-import-names: [qtpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/qtpy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.4.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:43:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:43:50Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:43:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

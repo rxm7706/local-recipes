@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-filebrowser
-  version: 5.0.0
+  version: "5.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-filebrowser
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-filebrowser/django_filebrowser-${{ version }}.tar.gz
   sha256: 0da016aeea8be0e51050aae9467e81ca4508f803bc1e97bc0c5df78ed04196bc
 
 build:
@@ -24,23 +23,56 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - django-grappelli >=4.0,<4.1
+    - python >=${{ python_min }}
+    - django-grappelli <4.1,>=4.0
     - pillow
-    - django
+
 tests:
   - python:
       imports:
         - filebrowser
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Media-Management with Grappelli
+  homepage: http://django-filebrowser.readthedocs.org
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: http://django-filebrowser.readthedocs.org
+  summary: Media-Management with Grappelli
+  description: |
+    Media-Management with Grappelli
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-filebrowser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-filebrowser
+  cfe-purls:
+    - pkg:conda/django-filebrowser@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-filebrowser@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://django-filebrowser.readthedocs.org
+  cfe-import-names: [filebrowser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-filebrowser-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:53:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:53:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:53:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

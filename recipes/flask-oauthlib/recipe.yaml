@@ -2,53 +2,84 @@
 schema_version: 1
 
 context:
-  name: Flask-OAuthlib
   version: "0.9.6"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-oauthlib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-OAuthlib/Flask-OAuthlib-${{ version }}.tar.gz
   sha256: 5bb79c8a8e670c2eb4cb553dfc3283b6c8d1202f674934676dc173cee94fe39c
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - flask
-    - oauthlib !=2.0.3,!=2.0.4,!=2.0.5,<3.0.0,>=1.1.2
-    - requests-oauthlib >=0.6.2,<1.2.0
+    - oauthlib
+    - requests-oauthlib
     - cachelib
 
 tests:
   - python:
       imports:
         - flask_oauthlib
-        - flask_oauthlib.contrib
-        - flask_oauthlib.contrib.client
-        - flask_oauthlib.provider
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
-  license: BSD-3-Clause
-  summary: OAuthlib for Flask
   homepage: https://github.com/lepture/flask-oauthlib
-  repository: https://github.com/lepture/flask-oauthlib
-  documentation: https://flask-oauthlib.readthedocs.io/en/latest/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: OAuthlib for Flask
+  description: |
+    OAuthlib for Flask
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-oauthlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-oauthlib
+  cfe-purls:
+    - pkg:conda/flask-oauthlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-oauthlib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/lepture/flask-oauthlib
+  cfe-import-names: [flask_oauthlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-oauthlib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.9.6
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:20:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:20:56Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:20:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

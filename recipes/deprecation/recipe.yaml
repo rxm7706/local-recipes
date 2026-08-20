@@ -2,48 +2,83 @@
 schema_version: 1
 
 context:
-  name: deprecation
   version: "2.1.0"
-  bundle: tar.gz
-  hash: 72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff
 
 package:
-  name: ${{ name|lower }}
+  name: deprecation
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/d/deprecation/deprecation-${{ version }}.tar.gz
+  sha256: 72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python
+  host:
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
     - packaging
 
 tests:
   - python:
       imports:
         - deprecation
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
-  license: Apache-2.0
-  summary: A library to handle automated deprecations
   homepage: http://deprecation.readthedocs.io/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library to handle automated deprecations
+  description: |
+    A library to handle automated deprecations
   repository: https://github.com/briancurtin/deprecation
-  documentation: http://deprecation.readthedocs.io/
+  documentation: http://deprecation.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - kmuehlbauer
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deprecation
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deprecation
+  cfe-purls:
+    - pkg:conda/deprecation@${{ version }}?channel=conda-forge
+    - pkg:pypi/deprecation@${{ version }}
+  cfe-upstream-repo: https://github.com/briancurtin/deprecation
+  cfe-upstream-homepage: http://deprecation.readthedocs.io/
+  cfe-import-names: [deprecation]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/deprecation-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:43:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:43:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:43:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

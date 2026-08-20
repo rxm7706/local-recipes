@@ -2,56 +2,89 @@
 schema_version: 1
 
 context:
-  name: pyod
-  version: "3.6.4"
+  version: "3.6.5"
 
 package:
-  name: ${{ name|lower }}
+  name: pyod
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: eef5e0c21c382c4d672fbd1753daabaf26764306d9c0fcf0bc1db1bdbebeb603
+  url: https://pypi.org/packages/source/p/pyod/pyod-${{ version }}.tar.gz
+  sha256: 1080a25452abda883b784ebea9f2976e549f1818cf1be2fc454daaf47545e431
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=77.0.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - joblib
+    - joblib >=1.5
     - matplotlib-base
-    - numba >=0.51
     - numpy >=1.19
-    - scikit-learn >=0.22.0
+    - numba >=0.51
     - scipy >=1.5.1
+    - scikit-learn >=0.22.0
 
 tests:
   - python:
       imports:
         - pyod
-        - pyod.models
-        - pyod.utils
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/yzhao062/pyod
   license: BSD-2-Clause
   license_file: LICENSE
-  summary: A Python Toolkit for Scalable Outlier Detection (Anomaly Detection)
-  homepage: https://github.com/yzhao062/pyod
+  summary: A Python library for anomaly detection across tabular, time series, graph, text, image, and audio data. 61 detectors, benchmark-backed ADEngine orchestration, and an agentic workflow for AI agents.
+  description: |
+    A Python library for anomaly detection across tabular, time series, graph, text, image, and audio data. 61 detectors, benchmark-backed ADEngine orchestration, and an agentic workflow for AI agents.
+  repository: https://github.com/yzhao062/pyod
   documentation: https://pyod.readthedocs.io
 
 extra:
   recipe-maintainers:
     - yzhao062
     - apcamargo
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyod
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyod
+  cfe-purls:
+    - pkg:conda/pyod@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyod@${{ version }}
+  cfe-upstream-repo: https://github.com/yzhao062/pyod
+  cfe-upstream-homepage: https://github.com/yzhao062/pyod
+  cfe-import-names: [pyod]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyod-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.6.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:53:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:53:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:53:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: circuitbreaker
   version: "2.1.3"
 
 package:
-  name: ${{ name|lower }}
+  name: circuitbreaker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/circuitbreaker-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/circuitbreaker/circuitbreaker-${{ version }}.tar.gz
   sha256: 1a4baee510f7bea3c91b194dcce7c07805fe96c4423ed5594b75af438531d084
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,14 +30,58 @@ tests:
       imports:
         - circuitbreaker
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Circuit Breaker pattern implementation
-  license: BSD-3-Clause
-  license_file: LICENSE.rst
   homepage: https://github.com/fabfuel/circuitbreaker
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python Circuit Breaker pattern implementation
+  description: |
+    Python Circuit Breaker pattern implementation
 
 extra:
   recipe-maintainers:
     - manics
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: circuitbreaker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: circuitbreaker
+  cfe-purls:
+    - pkg:conda/circuitbreaker@${{ version }}?channel=conda-forge
+    - pkg:pypi/circuitbreaker@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/fabfuel/circuitbreaker
+  cfe-import-names: [circuitbreaker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/circuitbreaker-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:29:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:29:38Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:29:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,26 +2,24 @@
 schema_version: 1
 
 context:
-  name: async-property
   version: "0.2.2"
 
 package:
-  name: ${{ name|lower }}
+  name: async-property
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/async_property-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/async-property/async_property-${{ version }}.tar.gz
   sha256: 17d9bd6ca67e27915a75d92549df64b5c7174e9dc806b30a3934dc4ff0506380
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pytest-runner
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,14 +30,51 @@ tests:
       imports:
         - async_property
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python decorator for async properties.
+  homepage: https://github.com/ryananguiano/async_property
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/ryananguiano/async_property
+  summary: Python decorator for async properties.
+  description: |
+    Python decorator for async properties.
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: async-property
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: async-property
+  cfe-purls:
+    - pkg:conda/async-property@${{ version }}?channel=conda-forge
+    - pkg:pypi/async-property@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ryananguiano/async_property
+  cfe-import-names: [async_property]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/async-property-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:05:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:05:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:05:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

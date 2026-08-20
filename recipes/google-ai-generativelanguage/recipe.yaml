@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-ai-generativelanguage
   version: "0.12.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-ai-generativelanguage
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-ai-generativelanguage/google_ai_generativelanguage-${{ version }}.tar.gz
   sha256: d82f35ade52887476d4586e3cd22fb95492edac47505370e0cb71148168dd94b
 
 build:
@@ -20,30 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - grpcio >=1.59.0,<2.0.0
     - python >=${{ python_min }}
-    - google-api-core >=2.17.1,<3.0.0
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    - proto-plus >=1.22.3,<2.0.0
-    - protobuf >=4.25.8,<8.0.0
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
 
 tests:
   - python:
       imports:
-        - google
+        - google.ai.generativelanguage
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Google Ai Generativelanguage API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-ai-generativelanguage
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-ai-generativelanguage
+  summary: Google Ai Generativelanguage API client library
+  description: |
+    Google Ai Generativelanguage API client library
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-ai-generativelanguage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-ai-generativelanguage
+  cfe-purls:
+    - pkg:conda/google-ai-generativelanguage@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-ai-generativelanguage@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-ai-generativelanguage
+  cfe-import-names: [google.ai.generativelanguage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-ai-generativelanguage-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.12.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:48:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:48:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:48:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

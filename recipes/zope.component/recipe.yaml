@@ -2,30 +2,29 @@
 schema_version: 1
 
 context:
-  name: zope.component
   version: "7.1"
 
 package:
-  name: ${{ name|lower }}
+  name: zope.component
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/zope_component-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/z/zope.component/zope_component-${{ version }}.tar.gz
   sha256: 1b3e06647a8bd3c071c6bc9b80d708ded120bce981185c2db5647fd9a0d5279d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=78.1.1,<81
+    - wheel
   run:
     - python >=${{ python_min }}
-    - setuptools
     - zope.event
     - zope.hookable >=4.2.0
     - zope.interface >=5.3
@@ -33,19 +32,59 @@ requirements:
 tests:
   - python:
       imports:
-        - zope
         - zope.component
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/zope.component/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
   summary: Zope Component Architecture
-  license: ZPL-2.1 AND BSD-3-Clause
-  license_file:
-    - COPYRIGHT.txt
-    - LICENSE.txt
-  homepage: https://github.com/zopefoundation/zope.component
+  description: |
+    Zope Component Architecture
+  repository: https://github.com/zopefoundation/zope.component
+  documentation: https://zopecomponent.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.component
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope-component
+  cfe-purls:
+    - pkg:conda/zope.component@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope-component@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.component
+  cfe-upstream-homepage: https://pypi.org/project/zope.component/
+  cfe-import-names: [zope.component]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zope.component-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:32:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:32:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:32:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

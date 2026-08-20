@@ -1,48 +1,84 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: coreschema
-  version: 0.0.4
+  version: "0.0.4"
 
 package:
-  name: ${{ name|lower }}
+  name: coreschema
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/coreschema/coreschema-${{ version }}.tar.gz
   sha256: 9503506007d482ab0867ba14724b93c18a33b22b6d19fb419ef2d239dd4a1607
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - jinja2
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - coreschema
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Core Schema.
-  license: BSD-1-Clause
-  license_file: LICENSE.md
   homepage: https://github.com/core-api/python-coreschema
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Core Schema.
+  description: |
+    Core Schema.
 
 extra:
   recipe-maintainers:
     - hadim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: coreschema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: coreschema
+  cfe-purls:
+    - pkg:conda/coreschema@${{ version }}?channel=conda-forge
+    - pkg:pypi/coreschema@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/core-api/python-coreschema
+  cfe-import-names: [coreschema]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/coreschema-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:18:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:18:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:18:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

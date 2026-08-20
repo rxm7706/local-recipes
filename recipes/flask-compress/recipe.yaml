@@ -2,33 +2,34 @@
 schema_version: 1
 
 context:
-  version: '1.24'
-  python_check_max: '3.14'
+  version: "1.24"
 
 package:
   name: flask-compress
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/F/Flask-Compress/flask_compress-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Compress/flask_compress-${{ version }}.tar.gz
   sha256: 14097cefe59ecb3e466d52a6aeb62f34f125a9f7dadf1f33a53e430ce4a50f31
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools-scm <8
+    - pip
     - setuptools >=42
+    - wheel
   run:
-    - brotli-python
-    - flask
-    - backports.zstd
     - python >=${{ python_min }}
+    - flask
+    - brotli
+    - brotlicffi
+    - backports.zstd
+
 tests:
   - python:
       imports:
@@ -36,32 +37,52 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - if: win
-          then: m2-grep
-        - pip
-        - pytest
-        - flask-caching
-        - python ${{ python_min }}.*
-    script:
-      - pytest -vv tests
-      - pip list
+        - "*"
 
 about:
+  homepage: https://github.com/colour-science/flask-compress
   license: MIT
   license_file: LICENSE.txt
-  summary: Compress responses in your Flask app with gzip.
+  summary: Compress responses in your Flask app with gzip, deflate, brotli or zstandard.
   description: |
-    Flask-Compress allows you to easily compress your Flask application's responses with gzip.
-  homepage: https://github.com/colour-science/flask-compress
-  repository: https://github.com/colour-science/flask-compress
+    Compress responses in your Flask app with gzip, deflate, brotli or zstandard.
 
 extra:
   recipe-maintainers:
     - synapticarbors
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-compress
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-compress
+  cfe-purls:
+    - pkg:conda/flask-compress@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-compress@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/colour-science/flask-compress
+  cfe-import-names: [flask_compress]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-compress-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:21:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:21:25Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T08:21:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

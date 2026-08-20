@@ -2,53 +2,84 @@
 schema_version: 1
 
 context:
-  name: venv-pack
   version: "0.2.0"
-  sha256: 33bbed48728bd5d1fee0a89c3082702b5d100c8021b2da9ea384b23ac410d3cd
 
 package:
-  name: ${{ name|lower }}
+  name: venv-pack
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/v/venv-pack/venv-pack-${{ version }}.tar.gz
+  sha256: 33bbed48728bd5d1fee0a89c3082702b5d100c8021b2da9ea384b23ac410d3cd
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
-  python:
-    entry_points:
-      - venv-pack = venv_pack.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - venv_pack
-      pip_check: false
-  - script:
-      - venv-pack --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://jcrist.github.io/venv-pack/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Package virtual environments for redistribution
   description: |
-    ``venv-pack`` is a command-line tool for packaging virtual environments for
-    distribution. This is useful for deploying code in a consistent
-    environment.
-  homepage: https://jcrist.github.io/venv-pack/
-  repository: https://github.com/jcrist/venv-pack
-  documentation: https://jcrist.github.io/venv-pack/
+    Package virtual environments for redistribution
+  repository: https://github.com/jcrist/venv-pack/
 
 extra:
   recipe-maintainers:
     - jcrist
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: venv-pack
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: venv-pack
+  cfe-purls:
+    - pkg:conda/venv-pack@${{ version }}?channel=conda-forge
+    - pkg:pypi/venv-pack@${{ version }}
+  cfe-upstream-repo: https://github.com/jcrist/venv-pack/
+  cfe-upstream-homepage: https://jcrist.github.io/venv-pack/
+  cfe-import-names: [venv_pack]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/venv-pack-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:35:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:35:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:35:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,46 +2,89 @@
 schema_version: 1
 
 context:
-  name: flask-injector
   version: "0.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-injector
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/Flask-Injector-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Injector/Flask-Injector-${{ version }}.tar.gz
   sha256: 567c69da7657b96565db990bb7c87cc0acf04e383714341954902f1ef85c5875
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - flask >=2.2.0
-    - injector >=0.20.0
     - python >=${{ python_min }}
+    - flask
+    - injector
+    - typing
 
 tests:
   - python:
       imports:
         - flask_injector
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Adds Injector, a Dependency Injection framework, support to Flask.
-  # License file manually packaged: See: https://github.com/alecthomas/flask_injector/pull/58
-  license: BSD-3-Clause
-  license_file: COPYING
   homepage: https://github.com/alecthomas/flask_injector
+  license: MIT
+  license_file: LICENSE
+  summary: Adds Injector, a Dependency Injection framework, support to Flask.
+  description: |
+    Adds Injector, a Dependency Injection framework, support to Flask.
 
 extra:
   recipe-maintainers:
     - fuglede
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-injector
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-injector
+  cfe-purls:
+    - pkg:conda/flask-injector@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-injector@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/alecthomas/flask_injector
+  cfe-import-names: [flask_injector]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-injector-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:18:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:18:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:18:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

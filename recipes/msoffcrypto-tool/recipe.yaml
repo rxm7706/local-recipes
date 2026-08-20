@@ -2,54 +2,82 @@
 schema_version: 1
 
 context:
-  name: msoffcrypto-tool
-  version: 6.0.0
+  version: "6.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: msoffcrypto-tool
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/msoffcrypto-tool/msoffcrypto_tool-${{ version }}.tar.gz
   sha256: 9a5ebc4c0096b42e5d7ebc2350afdc92dc511061e935ca188468094fdd032bbe
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - msoffcrypto-tool = msoffcrypto.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - poetry
+    - pip
+    - poetry-core >=1.0.0
   run:
-    - cryptography >=2.3
-    - olefile >=0.45
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
+    - cryptography >=39.0
+    - olefile >=0.46
 
 tests:
   - python:
       imports:
         - msoffcrypto
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-      - msoffcrypto-tool --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python tool and library for decrypting MS Office files with passwords or other keys
+  homepage: https://github.com/nolze/msoffcrypto-tool
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://github.com/nolze/msoffcrypto-tool
+  summary: Python tool and library for decrypting and encrypting MS Office files using a password or other keys
+  description: |
+    Python tool and library for decrypting and encrypting MS Office files using a password or other keys
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: msoffcrypto-tool
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: msoffcrypto-tool
+  cfe-purls:
+    - pkg:conda/msoffcrypto-tool@${{ version }}?channel=conda-forge
+    - pkg:pypi/msoffcrypto-tool@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/nolze/msoffcrypto-tool
+  cfe-import-names: [msoffcrypto]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/msoffcrypto-tool-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:49:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:49:44Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:49:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

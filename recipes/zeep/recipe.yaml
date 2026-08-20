@@ -2,29 +2,27 @@
 schema_version: 1
 
 context:
-  name: zeep
   version: "4.3.3"
-  sha256: 99d5059f92f721020998695fd9c85289ccb03ec5a2398ad49c6dbe43f19cfb94
 
 package:
-  name: ${{ name|lower }}
+  name: zeep
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/z/zeep/zeep-${{ version }}.tar.gz
+  sha256: 99d5059f92f721020998695fd9c85289ccb03ec5a2398ad49c6dbe43f19cfb94
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=40.6.0
+    - wheel
   run:
     - python >=${{ python_min }}
     - attrs >=17.2.0
@@ -39,32 +37,55 @@ tests:
   - python:
       imports:
         - zeep
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/zeep/
   license: MIT
   license_file: LICENSE
-  summary: A fast and modern Python SOAP client
+  summary: A Python SOAP client
   description: |
-    Zeep inspects the WSDL document and generates the corresponding code to use
-    the services and types in the document. This provides an easy to use
-    programmatic interface to a SOAP server.
-
-    The emphasis is on SOAP 1.1 and SOAP 1.2, however Zeep also offers support
-    for HTTP Get and Post bindings.
-
-    Parsing the XML documents is done by using the lxml library. This is the
-    most performant and compliant Python XML library currently available. This
-    results in major speed benefits when processing large SOAP responses.
-  homepage: http://www.python-zeep.org
+    A Python SOAP client
   repository: https://github.com/mvantellingen/python-zeep
-  documentation: http://docs.python-zeep.org/
+  documentation: https://docs.python-zeep.org
 
 extra:
   recipe-maintainers:
     - adament
     - Cadair
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zeep
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zeep
+  cfe-purls:
+    - pkg:conda/zeep@${{ version }}?channel=conda-forge
+    - pkg:pypi/zeep@${{ version }}
+  cfe-upstream-repo: https://github.com/mvantellingen/python-zeep
+  cfe-upstream-homepage: https://pypi.org/project/zeep/
+  cfe-import-names: [zeep]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zeep-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.3.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:42:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:42:21Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:42:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

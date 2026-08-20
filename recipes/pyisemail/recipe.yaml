@@ -2,45 +2,81 @@
 schema_version: 1
 
 context:
-  name: pyIsEmail
-  version: "1.3.2"
-  sha256: 665af6de136868b3aceea9198d3f0fe673582492ad7d3e863108118b2296e551
+  version: "2.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pyisemail
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/p/pyIsEmail/pyisemail-${{ version }}.tar.gz
+  sha256: daf4b3fb2150a38f406b0aaba729e19fcd638a6d1c0549c25ff54c7b804618f8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python
-    - dnspython >=1.15.0
+    - python >=${{ python_min }}
+    - dnspython >=2.0.0
 
 tests:
   - python:
       imports:
         - pyisemail
-        - pyisemail.diagnosis
-        - pyisemail.validators
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/michaelherold/pyIsEmail
   license: MIT
   license_file: LICENSE
   summary: Simple, robust email validation
-  homepage: https://github.com/michaelherold/pyIsEmail
+  description: |
+    Simple, robust email validation
+  repository: https://github.com/michaelherold/pyIsEmail
 
 extra:
   recipe-maintainers:
     - mrakitin
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyisemail
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyisemail
+  cfe-purls:
+    - pkg:conda/pyisemail@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyisemail@${{ version }}
+  cfe-upstream-repo: https://github.com/michaelherold/pyIsEmail
+  cfe-upstream-homepage: https://github.com/michaelherold/pyIsEmail
+  cfe-import-names: [pyisemail]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyisemail-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:22:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:22:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:22:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

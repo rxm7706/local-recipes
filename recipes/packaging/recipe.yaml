@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "26.3"
-  python_min: "3.9"
 
 package:
   name: packaging
@@ -16,28 +15,33 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.12
     - pip
+    - flit-core >=3.12
   run:
     - python >=${{ python_min }}
+    - packaging
 
 tests:
   - python:
       imports:
         - packaging
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
+  homepage: https://pypi.org/project/packaging/
+  license: Apache-2.0 OR BSD-2-Clause
   license_file: LICENSE
   summary: Core utilities for Python packages
-  homepage: https://github.com/pypa/packaging
+  description: |
+    Core utilities for Python packages
   repository: https://github.com/pypa/packaging
   documentation: https://packaging.pypa.io/
 
@@ -47,3 +51,34 @@ extra:
     - nicoddemus
     - matthewfeickert
     - ofek
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: packaging
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: packaging
+  cfe-purls:
+    - pkg:conda/packaging@${{ version }}?channel=conda-forge
+    - pkg:pypi/packaging@${{ version }}
+  cfe-upstream-repo: https://github.com/pypa/packaging
+  cfe-upstream-homepage: https://pypi.org/project/packaging/
+  cfe-import-names: [packaging]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/packaging-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:35:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:35:39Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T02:35:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['packaging']
+####

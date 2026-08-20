@@ -2,29 +2,29 @@
 schema_version: 1
 
 context:
-  name: python-daemon
   version: "3.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: python-daemon
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_daemon-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-daemon/python_daemon-${{ version }}.tar.gz
   sha256: f7b04335adc473de877f5117e26d5f1142f4c9f7cd765408f0877757be5afbf4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - changelog-chug
-    - docutils
-    - setuptools >=62.4.0
+    - python ${{ python_min }}.*
     - pip
+    - wheel
+    - setuptools >=62.4.0
+    - docutils
+    - changelog-chug
   run:
     - python >=${{ python_min }}
     - lockfile >=0.10
@@ -32,18 +32,19 @@ requirements:
 tests:
   - python:
       imports:
-        - daemon
+        - util
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Library to implement a well-behaved Unix daemon process.
-  # The package states that parts are licensed under Apache-2.0 and other
-  # parts under GPL-3.0-or-later. The final contents of the package are all
-  # licensed as Apache-2.0. Thus only one license applies to this package.
+  homepage: https://pypi.org/project/python-daemon/
   license: Apache-2.0
-  license_file: LICENSE.ASF-2
-  homepage: https://pagure.io/python-daemon/
+  license_file: LICENSE
+  summary: Library to implement a well-behaved Unix daemon process.
+  description: |
+    Library to implement a well-behaved Unix daemon process.
   repository: https://pagure.io/python-daemon/
 
 extra:
@@ -52,3 +53,43 @@ extra:
     - kfasolin
     - ocefpaf
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-daemon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-daemon
+  cfe-purls:
+    - pkg:conda/python-daemon@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-daemon@${{ version }}
+  cfe-upstream-repo: https://pagure.io/python-daemon/
+  cfe-upstream-homepage: https://pypi.org/project/python-daemon/
+  cfe-import-names: [util]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-daemon-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.1.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:18:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:18:34Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:18:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

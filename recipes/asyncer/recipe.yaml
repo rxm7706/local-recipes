@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: asyncer
   version: "0.0.18"
 
 package:
-  name: ${{ name|lower }}
+  name: asyncer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/asyncer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/asyncer/asyncer-${{ version }}.tar.gz
   sha256: dc233a466f85f1bc17dafcdb861b06291b64777a8d9076f7884467cbb66f95ef
 
 build:
@@ -21,32 +20,64 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pdm-backend
     - pip
+    - pdm-backend
   run:
     - python >=${{ python_min }}
-    - anyio >=3.4.0,<5.0
+    - anyio <5.0,>=3.4.0
     - sniffio >=1.1
     - typing_extensions >=4.12.0
+
 tests:
   - python:
       imports:
         - asyncer
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Asyncer, async and await, focused on developer experience.
+  homepage: https://github.com/fastapi/asyncer
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/tiangolo/asyncer
+  summary: Asyncer, async and await, focused on developer experience.
+  description: |
+    Asyncer, async and await, focused on developer experience.
+  repository: https://github.com/fastapi/asyncer
+  documentation: https://asyncer.tiangolo.com
 
 extra:
   recipe-maintainers:
     - maresb
     - janjagusch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asyncer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asyncer
+  cfe-purls:
+    - pkg:conda/asyncer@${{ version }}?channel=conda-forge
+    - pkg:pypi/asyncer@${{ version }}
+  cfe-upstream-repo: https://github.com/fastapi/asyncer
+  cfe-upstream-homepage: https://github.com/fastapi/asyncer
+  cfe-import-names: [asyncer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asyncer-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:07:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:07:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:07:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

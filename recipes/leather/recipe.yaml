@@ -13,40 +13,73 @@ source:
   sha256: 67119c2aee93be821f077193bd8534e296c05b38bd174d9c5a80c4aa31d1a4d3
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - six >=1.6.1
     - setuptools
   run:
     - python >=${{ python_min }}
-    - six >=1.6.1
 
 tests:
   - python:
       imports:
         - leather
-        - leather.scales
-        - leather.series
-        - leather.shapes
-        - leather.ticks
-      pip_check: false
-      python_version: ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
+  homepage: https://leather.readthedocs.io/
   license: MIT
-  license_file: COPYING
-  # license_file: COPYING - no MANIFEST - see https://docs.python.org/2/distutils/sourcedist.html#manifest-related-options
+  license_file: LICENSE
   summary: Python charting for 80% of humans.
-  homepage: https://leather.rtfd.io
-  repository: https://github.com/wireservice/leather
-  documentation: https://leather.rtfd.io
+  description: |
+    Python charting for 80% of humans.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: leather
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: leather
+  cfe-purls:
+    - pkg:conda/leather@${{ version }}?channel=conda-forge
+    - pkg:pypi/leather@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://leather.readthedocs.io/
+  cfe-import-names: [leather]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/leather-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:14:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:14:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:14:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

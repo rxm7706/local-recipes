@@ -16,21 +16,16 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - arq = arq.cli:cli
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - hatchling
   run:
     - python >=${{ python_min }}
-    - redis-py >=4.2.0,<6
-    # (extras_require for reddis[hiredis])
-    - hiredis >=1.0.0
     - click >=8.0
+    - redis-py <6,>=4.2.0
 
 tests:
   - python:
@@ -42,10 +37,12 @@ tests:
         - "*"
 
 about:
-  summary: Job queues in python with asyncio and redis
+  homepage: https://github.com/python-arq/arq
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/python-arq/arq
+  summary: Job queues in python with asyncio and redis
+  description: |
+    Job queues in python with asyncio and redis
   repository: https://github.com/python-arq/arq
   documentation: https://arq-docs.helpmanual.io
 
@@ -53,3 +50,33 @@ extra:
   recipe-maintainers:
     - maresb
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arq
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arq
+  cfe-purls:
+    - pkg:conda/arq@${{ version }}?channel=conda-forge
+    - pkg:pypi/arq@${{ version }}
+  cfe-upstream-repo: https://github.com/python-arq/arq
+  cfe-upstream-homepage: https://github.com/python-arq/arq
+  cfe-import-names: [arq]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arq-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:59:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:59:55Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:59:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,49 +2,88 @@
 schema_version: 1
 
 context:
-  name: copulas
   version: "0.14.1"
 
 package:
-  name: ${{ name|lower }}
+  name: copulas
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/copulas-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/copulas/copulas-${{ version }}.tar.gz
   sha256: adec8f65c98f16816bde5a03e9e7e7b3df91f3fb22ef9fd5023ebba8dd1628c8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner >=2.11.1
-    - python ${{ python_min }}
     - setuptools
+    - wheel
   run:
+    - python >=${{ python_min }}
     - numpy >=1.21.0
-    - pandas >=1.4.0,<3
+    - pandas <3,>=1.4.0
     - plotly >=5.10.0
-    - python >=${{ python_min }},<3.15
     - scipy >=1.7.3
 
 tests:
   - python:
       imports:
         - copulas
-        - copulas.bivariate
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Create tabular synthetic data using copulas-based modeling.
+  homepage: https://pypi.org/project/copulas/
   license: BUSL-1.1
   license_file: LICENSE
-  homepage: https://github.com/sdv-dev/Copulas
+  summary: Create tabular synthetic data using copulas-based modeling.
+  description: |
+    Create tabular synthetic data using copulas-based modeling.
+  repository: https://github.com/sdv-dev/Copulas/
 
 extra:
   recipe-maintainers:
     - conda-forge/sdv
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: copulas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: copulas
+  cfe-purls:
+    - pkg:conda/copulas@${{ version }}?channel=conda-forge
+    - pkg:pypi/copulas@${{ version }}
+  cfe-upstream-repo: https://github.com/sdv-dev/Copulas/
+  cfe-upstream-homepage: https://pypi.org/project/copulas/
+  cfe-import-names: [copulas]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/copulas-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:18:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:18:02Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:18:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=0: Fetching info for copulas...
+Generated: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.cursor/cdao-p15-noarch-build/gen/copulas/recipe.yaml
+
+####

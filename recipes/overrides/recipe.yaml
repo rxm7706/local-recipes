@@ -9,48 +9,74 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/mkorpela/overrides/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 0d2b70ba4b51d6f9007fa830f425083b708438515bc284853ccd0ff47aacb0cc
+  url: https://pypi.org/packages/source/o/overrides/overrides-${{ version }}.tar.gz
+  sha256: 55158fa3d93b98cc75299b1e67078ad9003ca27945c76162c1c0766d6f91820a
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - typing_utils
+    - typing
 
 tests:
   - python:
       imports:
         - overrides
-      pip_check: false
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - pytest -v tests/ -k "not test_nested_typevar_in_signature"
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
-  summary: A decorator to automatically detect mismatch when overriding a method.
-  description: A decorator to automatically detect mismatch when overriding a method.
   homepage: https://github.com/mkorpela/overrides
-  repository: https://github.com/mkorpela/overrides
-  documentation: https://github.com/mkorpela/overrides
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A decorator to automatically detect mismatch when overriding a method.
+  description: |
+    A decorator to automatically detect mismatch when overriding a method.
 
 extra:
   recipe-maintainers:
     - h-vetinari
     - nelson-liu
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: overrides
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: overrides
+  cfe-purls:
+    - pkg:conda/overrides@${{ version }}?channel=conda-forge
+    - pkg:pypi/overrides@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mkorpela/overrides
+  cfe-import-names: [overrides]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/overrides-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:34:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:34:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:34:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: python-engineio
   version: "4.13.5"
 
 package:
-  name: ${{ name|lower }}
+  name: python-engineio
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/${{ name }}/python_engineio-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-engineio/python_engineio-${{ version }}.tar.gz
   sha256: b5764d62243e3ffbc4c76dda3d7897c329dc52294c80c27105f9faa054e76897
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -26,34 +25,55 @@ requirements:
   run:
     - python >=${{ python_min }}
     - simple-websocket >=0.10.0
-  run_constraints:
-    - requests >=2.21.0
-    - websocket-client >=0.54.0
-    - aiohttp >=3.11
 
 tests:
   - python:
       imports:
         - engineio
-        - engineio.middleware
-        - engineio.packet
-        - engineio.payload
-        - engineio.server
-        - engineio.socket
       pip_check: true
-      python_version: 
+      python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://github.com/miguelgrinberg/python-engineio
   license: MIT
-  summary: Engine.IO server
-  homepage: https://github.com/miguelgrinberg/python-engineio/
-  repository: https://github.com/miguelgrinberg/python-engineio/
-  documentation: https://python-engineio.readthedocs.io
+  license_file: LICENSE
+  summary: Engine.IO server and client for Python
+  description: |
+    Engine.IO server and client for Python
 
 extra:
   recipe-maintainers:
     - ReimarBauer
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-engineio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-engineio
+  cfe-purls:
+    - pkg:conda/python-engineio@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-engineio@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/miguelgrinberg/python-engineio
+  cfe-import-names: [engineio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-engineio-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:49:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:49:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:49:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

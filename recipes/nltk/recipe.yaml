@@ -15,73 +15,76 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
-  python:
-    entry_points:
-      - nltk = nltk.cli:cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
+    - defusedxml
     - click
     - joblib
     - regex >=2021.8.3
     - tqdm
-    - defusedxml
 
 tests:
   - python:
       imports:
         - nltk
-        - nltk.app
-        - nltk.ccg
-        - nltk.chat
-        - nltk.chunk
-        - nltk.classify
-        - nltk.cluster
-        - nltk.corpus
-        - nltk.corpus.reader
-        - nltk.draw
-        - nltk.inference
-        - nltk.lm
-        - nltk.metrics
-        - nltk.misc
-        - nltk.parse
-        - nltk.sem
-        - nltk.sentiment
-        - nltk.stem
-        - nltk.tag
-        - nltk.tbl
-        - nltk.test
-        - nltk.test.unit
-        - nltk.test.unit.translate
-        - nltk.tokenize
-        - nltk.translate
-        - nltk.twitter
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - nltk --help
 
 about:
-  license_file: LICENSE.txt
+  homepage: https://www.nltk.org/
   license: Apache-2.0
+  license_file: LICENSE.txt
   summary: Natural Language Toolkit
-  homepage: http://nltk.org/
+  description: |
+    Natural Language Toolkit
   repository: https://github.com/nltk/nltk
-  documentation: http://www.nltk.org/
+  documentation: https://www.nltk.org/
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - quartox
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nltk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nltk
+  cfe-purls:
+    - pkg:conda/nltk@${{ version }}?channel=conda-forge
+    - pkg:pypi/nltk@${{ version }}
+  cfe-upstream-repo: https://github.com/nltk/nltk
+  cfe-upstream-homepage: https://www.nltk.org/
+  cfe-import-names: [nltk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/nltk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:03:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:03:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:03:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

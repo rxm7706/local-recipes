@@ -2,41 +2,79 @@
 schema_version: 1
 
 context:
-  name: flashtext
   version: "2.7"
 
 package:
-  name: ${{ name|lower }}
+  name: flashtext
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flashtext/flashtext-${{ version }}.tar.gz
   sha256: a1be2b93e09d4f0deee4aad72b91a7127b61fb8b8034ca9a9c78ea745d8b05cf
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - flashtext
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/vi3k6i5/flashtext
   license: MIT
-  license_file: LICENSE.txt
-  summary: This module can be used to replace keywords in sentences or extract keywords from sentences. It is based on the FlashText algorithm.
-  homepage: https://github.com/vi3k6i5/flashtext
+  license_file: LICENSE
+  summary: Extract/Replaces keywords in sentences.
+  description: |
+    Extract/Replaces keywords in sentences.
 
 extra:
   recipe-maintainers:
     - ftm13
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flashtext
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flashtext
+  cfe-purls:
+    - pkg:conda/flashtext@${{ version }}?channel=conda-forge
+    - pkg:pypi/flashtext@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/vi3k6i5/flashtext
+  cfe-import-names: [flashtext]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flashtext-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:17:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:17:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:17:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

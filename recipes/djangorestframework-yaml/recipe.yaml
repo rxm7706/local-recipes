@@ -13,33 +13,76 @@ source:
   sha256: 1b2cfd7482425f3c6924a8eb803d6f73276e76b03293cd7144c755753e029f15
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
-    - pyyaml >=3.10
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - pyyaml >=3.10
+    - pyyaml
 
 tests:
   - python:
       imports:
         - rest_framework_yaml
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/jpadilla/django-rest-framework-yaml
   license: BSD-3-Clause
   license_file: LICENSE
   summary: YAML support for Django REST Framework
-  homepage: https://github.com/jpadilla/django-rest-framework-yaml
+  description: |
+    YAML support for Django REST Framework
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangorestframework-yaml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangorestframework-yaml
+  cfe-purls:
+    - pkg:conda/djangorestframework-yaml@${{ version }}?channel=conda-forge
+    - pkg:pypi/djangorestframework-yaml@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jpadilla/django-rest-framework-yaml
+  cfe-import-names: [rest_framework_yaml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangorestframework-yaml-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:03:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:03:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:03:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

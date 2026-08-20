@@ -2,67 +2,95 @@
 schema_version: 1
 
 context:
-  name: moviepy
   version: "2.2.1"
-  sha256: c80cb56815ece94e5e3e2d361aa40070eeb30a09d23a24c4e684d03e16deacb1
 
 package:
-  name: ${{ name|lower }}
+  name: moviepy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/moviepy/moviepy-${{ version }}.tar.gz
+  sha256: c80cb56815ece94e5e3e2d361aa40070eeb30a09d23a24c4e684d03e16deacb1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=42
+    - wheel
   run:
     - python >=${{ python_min }}
-    - decorator >=4.0.2,<6.0
-    - imageio >=2.5,<3.0
+    - decorator <6.0,>=4.0.2
+    - imageio <3.0,>=2.5
     - imageio-ffmpeg >=0.2.0
-    - tqdm >=4.11.2,<5.0
-    - numpy
-    - requests >=2.8.1,<3.0
+    - numpy >=1.25.0
     - proglog <=1.0.0
-    - ffmpeg
-    - pillow <11.0,>=9.2.0
-    - python-dotenv
+    - python-dotenv >=0.10
+    - pillow <12.0,>=9.2.0
 
 tests:
   - python:
       imports:
         - moviepy
-        - moviepy.audio
-        - moviepy.audio.fx
-        - moviepy.audio.io
-        - moviepy.audio.tools
-        - moviepy.video
-        - moviepy.video.compositing
-        - moviepy.video.fx
-        - moviepy.video.io
-        - moviepy.video.tools
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/moviepy/
   license: MIT
-  license_file: LICENCE.txt
+  license_file: LICENSE
   summary: Video editing with Python
-  homepage: https://zulko.github.io/moviepy
-  repository: https://github.com/Zulko/moviepy
-  documentation: https://zulko.github.io/moviepy
+  description: |
+    Video editing with Python
 
 extra:
   recipe-maintainers:
     - jakirkham
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: moviepy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: moviepy
+  cfe-purls:
+    - pkg:conda/moviepy@${{ version }}?channel=conda-forge
+    - pkg:pypi/moviepy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/moviepy/
+  cfe-import-names: [moviepy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/moviepy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:45:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:45:32Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:45:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

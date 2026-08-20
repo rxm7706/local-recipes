@@ -2,65 +2,84 @@
 schema_version: 1
 
 context:
-  name: passlib
   version: "1.7.4"
-  bundle: tar.gz
-  hash: defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04
-  build: 2
 
 package:
-  name: ${{ name|lower }}
+  name: passlib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/p/passlib/passlib-${{ version }}.tar.gz
+  sha256: defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04
 
 build:
-  number: ${{ build }}
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} setup.py install --single-version-externally-managed --record=record.txt
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - argon2-cffi >=19.2.0
-    - bcrypt >=3.1.0
-    - cryptography
 
 tests:
   - python:
       imports:
         - passlib
-        - passlib._setup
-        - passlib.crypto
-        - passlib.crypto._blowfish
-        - passlib.crypto.scrypt
-        - passlib.ext
-        - passlib.ext.django
-        - passlib.handlers
-        - passlib.tests
-        - passlib.utils
-        - passlib.utils.compat
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://passlib.readthedocs.io
+  license: REPLACE_LICENSE
   license_file: LICENSE
-  license: BSD-3-Clause
   summary: comprehensive password hashing framework supporting over 30 schemes
-  homepage: https://bitbucket.org/ecollins/passlib
-  repository: https://bitbucket.org/ecollins/passlib/src
-  documentation: https://bitbucket.org/ecollins/passlib/wiki/Home
+  description: |
+    comprehensive password hashing framework supporting over 30 schemes
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: passlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: passlib
+  cfe-purls:
+    - pkg:conda/passlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/passlib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://passlib.readthedocs.io
+  cfe-import-names: [passlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/passlib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.4
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T02:47:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:47:11Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:47:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

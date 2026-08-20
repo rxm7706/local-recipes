@@ -2,26 +2,24 @@
 schema_version: 1
 
 context:
-  name: pynvml
   version: "13.0.1"
-  major_version: ${{ version.split(".")[0]|int }}
 
 package:
-  name: ${{ name|lower }}
+  name: pynvml
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pynvml/pynvml-${{ version }}.tar.gz
   sha256: 1245991d9db786b4d2f277ce66869bd58f38ac654e38c9397d18f243c8f6e48f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,21 +29,58 @@ requirements:
 tests:
   - python:
       imports:
-        - pynvml
+        - pynvml_utils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/gpuopenanalytics/pynvml
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Python Bindings for the NVIDIA Management Library
+  summary: Python utilities for the NVIDIA Management Library
   description: |
-    This is a wrapper around the NVML library. For information about
-    the NVML library, see <http://developer.nvidia.com>.
-  homepage: https://github.com/gpuopenanalytics/${{ name }}
+    Python utilities for the NVIDIA Management Library
   repository: https://github.com/gpuopenanalytics/pynvml
-  documentation: https://pypi.org/project/pynvml/
 
 extra:
   recipe-maintainers:
     - rjzamora
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pynvml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pynvml
+  cfe-purls:
+    - pkg:conda/pynvml@${{ version }}?channel=conda-forge
+    - pkg:pypi/pynvml@${{ version }}
+  cfe-upstream-repo: https://github.com/gpuopenanalytics/pynvml
+  cfe-upstream-homepage: https://github.com/gpuopenanalytics/pynvml
+  cfe-import-names: [pynvml_utils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pynvml-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-13.0.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:52:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:52:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:52:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

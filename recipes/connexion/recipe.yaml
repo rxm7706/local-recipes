@@ -2,155 +2,92 @@
 schema_version: 1
 
 context:
-  name: connexion
   version: "3.3.0"
 
-recipe:
-  name: ${{ name|lower }}
+package:
+  name: connexion
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/connexion-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/connexion/connexion-${{ version }}.tar.gz
   sha256: 63e4b32c170c297f245b63e26a78e299d4df86f8f6f37ef1f70db62efaba77cf
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core >=1.2.0
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core >=1.2.0
   run:
-    - python >=${{ python_min }},<4.0.0
+    - python >=${{ python_min }}
+    - jinja2 >=3.0.0
+    - pyyaml >=5.1
+    - asgiref >=3.4
+    - httpx >=0.23
+    - inflection >=0.3.1
+    - jsonschema >=4.17.3
+    - python-multipart >=0.0.15
+    - requests >=2.27
+    - starlette >=0.35
+    - typing_extensions >=4.6.1
+    - werkzeug >=2.2.1
 
-outputs:
-  - package:
-      name: ${{ name }}
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - poetry-core >=1.2.0
-        - pip
-      run:
-        - python >=${{ python_min }},<4.0.0
-        - asgiref >=3.4
-        - httpx >=0.23
-        - inflection >=0.3.1
-        - jsonschema >=4.17.3
-        - jinja2 >=3.0.0
-        - python-multipart >=0.0.15
-        - pyyaml >=5.1
-        - requests >=2.27
-        - starlette >=0.35
-        - typing_extensions >=4.6.1
-        - werkzeug >=2.2.1
-    tests:
-      - python:
-          imports:
-            - connexion
-            - connexion.apps
-            - connexion.decorators
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - connexion --version
-  - package:
-      name: ${{ name }}-with-flask
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - a2wsgi >=1.7
-        - flask >=2.2
-        # replace with flask-with-async as soon as available
-        # flask[async] extra
-        - asgiref >=3.2
-    tests:
-      - python:
-          imports:
-            - connexion
-            - connexion.apps.flask
-          pip_check: true
-          python_version: ${{ python_min }}
-  - package:
-      name: ${{ name }}-with-swagger-ui
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - swagger-ui-bundle >=1.1.0
-    tests:
-      - python:
-          imports:
-            - connexion
-            - swagger_ui_bundle
-          pip_check: true
-          python_version: ${{ python_min }}
-  - package:
-      name: ${{ name }}-with-uvicorn
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - uvicorn-standard >=0.17.6
-    tests:
-      - python:
-          imports:
-            - connexion
-            - uvicorn
-          pip_check: true
-          python_version: ${{ python_min }}
-  - package:
-      name: ${{ name }}-with-mock
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - jsf >=0.10.0
-    tests:
-      - python:
-          imports:
-            - connexion
-            - jsf
-          pip_check: true
-          python_version: ${{ python_min }}
+tests:
+  - python:
+      imports:
+        - connexion
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Connexion - API first applications with OpenAPI/Swagger
+  homepage: https://pypi.org/project/connexion/
   license: Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  homepage: https://github.com/spec-first/connexion
+  license_file: LICENSE
+  summary: Connexion - API first applications with OpenAPI/Swagger
+  description: |
+    Connexion - API first applications with OpenAPI/Swagger
   repository: https://github.com/spec-first/connexion
-  documentation: https://connexion.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - rvalieris
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: connexion
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: connexion
+  cfe-purls:
+    - pkg:conda/connexion@${{ version }}?channel=conda-forge
+    - pkg:pypi/connexion@${{ version }}
+  cfe-upstream-repo: https://github.com/spec-first/connexion
+  cfe-upstream-homepage: https://pypi.org/project/connexion/
+  cfe-import-names: [connexion]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/connexion-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:15:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:15:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:15:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

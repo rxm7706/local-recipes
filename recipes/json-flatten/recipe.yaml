@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: json-flatten
-  version: 0.3.1
+  version: "0.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: json-flatten
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_flatten-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/json-flatten/json_flatten-${{ version }}.tar.gz
   sha256: 70e813acf431b1ab7e9eb7b98f5733d307d6b9d27b553a344904b9c8eafdad3a
 
 build:
@@ -28,17 +27,51 @@ requirements:
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - json_flatten
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python functions for flattening a JSON object to a single dictionary of pairs, and unflattening that dictionary back to a JSON object
+  homepage: https://github.com/simonw/json-flatten
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/simonw/json-flatten
+  summary: Python functions for flattening a JSON object to a single dictionary of pairs, and unflattening that dictionary back to a JSON object
+  description: |
+    Python functions for flattening a JSON object to a single dictionary of pairs, and unflattening that dictionary back to a JSON object
 
 extra:
   recipe-maintainers:
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-flatten
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-flatten
+  cfe-purls:
+    - pkg:conda/json-flatten@${{ version }}?channel=conda-forge
+    - pkg:pypi/json-flatten@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/simonw/json-flatten
+  cfe-import-names: [json_flatten]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-flatten-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:49:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:49:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:49:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

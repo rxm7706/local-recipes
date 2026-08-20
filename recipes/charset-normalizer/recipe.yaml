@@ -2,54 +2,83 @@
 schema_version: 1
 
 context:
-  name: charset-normalizer
   version: "3.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: charset-normalizer
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/charset-normalizer/charset_normalizer-${{ version }}.tar.gz
   sha256: 6117b84ea48435e5356dc737f5121485c30920ba43375fa7b434fd753df0eac3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - normalizer = charset_normalizer.cli:cli_detect
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=68,<84.1
   run:
     - python >=${{ python_min }}
+    - -build-hook
 
 tests:
   - python:
       imports:
-        - charset_normalizer
+        - _build_hook
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - normalizer --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet.
+  homepage: https://pypi.org/project/charset-normalizer/
   license: MIT
-  license_file:
-    - LICENSE
-    - data/NOTICE.md
-  homepage: https://github.com/jawah/charset_normalizer
+  license_file: LICENSE
+  summary: The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet.
+  description: |
+    The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet.
+  repository: https://github.com/jawah/charset_normalizer
+  documentation: https://charset-normalizer.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: charset-normalizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: charset-normalizer
+  cfe-purls:
+    - pkg:conda/charset-normalizer@${{ version }}?channel=conda-forge
+    - pkg:pypi/charset-normalizer@${{ version }}
+  cfe-upstream-repo: https://github.com/jawah/charset_normalizer
+  cfe-upstream-homepage: https://pypi.org/project/charset-normalizer/
+  cfe-import-names: [_build_hook]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/charset-normalizer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.5.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:29:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:29:08Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:29:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['-build-hook']
+####

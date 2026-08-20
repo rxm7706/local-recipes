@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2026.8.10"
+  version: "2026.8.17"
 
 package:
   name: nox
@@ -10,16 +10,12 @@ package:
 
 source:
   url: https://pypi.org/packages/source/n/nox/nox-${{ version }}.tar.gz
-  sha256: 13f45e46552eade9f4b60474133e31e1e0bb341234a3cc0c9d6fff17570ce8bb
+  sha256: 8d9c69c9b996a59db1eb2c6968deaebc2edbc55317d205981bbc4a37351d3f2e
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - nox = nox.__main__:main
-      - tox-to-nox = nox.tox_to_nox:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -28,43 +24,33 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - argcomplete >=1.9.4,<4.0
+    - argcomplete <4,>=1.9.4
     - attrs >=24.1
-    - colorlog >=2.6.1,<7.0.0
+    - colorlog <7,>=6.6
     - dependency-groups >=1.1
     - humanize >=4
     - packaging >=22
-    - pbs-installer >=2025.1.6
+    - platformdirs >=2
+    - python-discovery >=1
     - tomli >=1.1
     - virtualenv >=20.15
-    - importlib_resources
-    - jinja2
-    - tox >=4
 
 tests:
   - python:
       imports:
         - nox
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - nox --help
 
 about:
+  homepage: https://github.com/wntrblm/nox
   license: Apache-2.0
   license_file: LICENSE
-  summary: Flexible test automation for Python
+  summary: Flexible test automation.
   description: |
-    nox is a command-line tool that automates testing in multiple Python
-    environments, similar to Tox. Unlike Tox, Nox uses a standard Python
-    file for configuration.
-  homepage: https://nox.thea.codes
-  repository: https://github.com/wntrblm/nox
+    Flexible test automation.
   documentation: https://nox.thea.codes
 
 extra:
@@ -73,3 +59,35 @@ extra:
     - MarckK
     - tswast
     - henryiii
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nox
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nox
+  cfe-purls:
+    - pkg:conda/nox@${{ version }}?channel=conda-forge
+    - pkg:pypi/nox@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/wntrblm/nox
+  cfe-import-names: [nox]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/nox-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-2026.8.17
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:21:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:21:38Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T10:21:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

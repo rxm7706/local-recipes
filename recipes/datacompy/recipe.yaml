@@ -2,51 +2,52 @@
 schema_version: 1
 
 context:
-  name: datacompy
   version: "1.0.4"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: datacompy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/datacompy/datacompy-${{ version }}.tar.gz
   sha256: baf7f429f6bf45f1b5b704db7f06074115cb8baa60488eb08377271d25e60ba0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=64
   run:
-    - pandas >=2.2,<3.1
-    - numpy >=1.26,<2.6
-    - ordered-set <=4.1,>=4.0.2
-    - polars[pandas] >=0.20.4,<1.44
-    - Jinja2 >=3.0.0
     - python >=${{ python_min }}
+    - jinja2 >=3
+    - numpy <2.6,>=1.26.4
+    - ordered-set <=4.1,>=4.0.2
+    - pandas <3.1,>=2.2
+    - polars <1.44,>=0.20.4
 
 tests:
   - python:
       imports:
         - datacompy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/capitalone/datacompy
   license: Apache-2.0
   license_file: LICENSE
-  summary: Pandas and Spark DataFrame comparison for humans
-  homepage: https://github.com/capitalone/datacompy
+  summary: Dataframe comparisons in Python
+  description: |
+    Dataframe comparisons in Python
+  repository: https://github.com/capitalone/datacompy.git
+  documentation: https://capitalone.github.io/datacompy/
 
 extra:
   recipe-maintainers:
@@ -55,3 +56,36 @@ extra:
     - gladysteh99
     - fdosani
     - ak-gupta
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datacompy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datacompy
+  cfe-purls:
+    - pkg:conda/datacompy@${{ version }}?channel=conda-forge
+    - pkg:pypi/datacompy@${{ version }}
+  cfe-upstream-repo: https://github.com/capitalone/datacompy.git
+  cfe-upstream-homepage: https://github.com/capitalone/datacompy
+  cfe-import-names: [datacompy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datacompy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:43:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:43:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:43:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

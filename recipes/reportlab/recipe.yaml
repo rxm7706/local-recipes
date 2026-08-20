@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: reportlab
   version: "5.0.0"
-  python_min: "3.9"
 
 package:
-  name: ${{ name|lower }}
+  name: reportlab
   version: ${{ version }}
 
 source:
@@ -15,48 +15,66 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=${{ python_min }}
     - setuptools
+    - wheel
   run:
+    - python >=${{ python_min }}
+    - pillow >=9.0.0
     - charset-normalizer
-    - pillow >=9
-    - python >=${{ python_min }},<4
-    # pycairo and freetype are optional dependencies
-    - rlpycairo >=0.2.0,<1
-    - freetype-py >=2.3.0,<2.4
-
 
 tests:
   - python:
       imports:
         - reportlab
-        - reportlab.graphics.charts
-        - reportlab.graphics.samples
-        - reportlab.graphics.widgets
-        - reportlab.graphics.barcode
-        - reportlab.graphics
-        - reportlab.lib
-        - reportlab.pdfbase
-        - reportlab.pdfgen
-        - reportlab.platypus
-      python_version: ["${{ python_min }}.*"]
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://www.reportlab.com/opensource/
+  homepage: https://www.reportlab.com/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Open-source engine for creating complex, data-driven PDF documents and custom vector graphics
+  summary: The Reportlab Toolkit
   description: |
-    This is the ReportLab PDF Toolkit. It allows rapid creation
-    of rich PDF documents, and also creation of charts in a variety
-    of bitmap and vector formats.
-  documentation: https://docs.reportlab.com
+    The Reportlab Toolkit
 
 extra:
   recipe-maintainers:
     - bkpoon
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: reportlab
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: reportlab
+  cfe-purls:
+    - pkg:conda/reportlab@${{ version }}?channel=conda-forge
+    - pkg:pypi/reportlab@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.reportlab.com/
+  cfe-import-names: [reportlab]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/reportlab-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:52:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:52:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:52:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

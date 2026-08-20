@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: py
   version: "1.11.0"
-  hash: 51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719
 
 package:
-  name: ${{ name }}
+  name: py
   version: ${{ version }}
 
 source:
   url: https://pypi.org/packages/source/p/py/py-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  sha256: 51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install . --no-deps --ignore-installed
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools_scm
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -32,24 +29,53 @@ tests:
   - python:
       imports:
         - py
-        - py.code
-        - py.io
-        - py.log
-        - py.path
-        - py.process
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://py.readthedocs.io/
   license: MIT
   license_file: LICENSE
   summary: library with cross-python path, ini-parsing, io, code, log facilities
-  homepage: https://github.com/pytest-dev/py
+  description: |
+    library with cross-python path, ini-parsing, io, code, log facilities
 
 extra:
   recipe-maintainers:
     - nicoddemus
     - jakirkham
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py
+  cfe-purls:
+    - pkg:conda/py@${{ version }}?channel=conda-forge
+    - pkg:pypi/py@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://py.readthedocs.io/
+  cfe-import-names: [py]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.11.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:22:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:22:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:22:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

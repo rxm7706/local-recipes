@@ -1,157 +1,81 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-context:
-  name: "pybind11"
-  version: "3.1.0"
-  abi_version: "12"
-  build_number: 0
-  python_min: "3.9"
+schema_version: 1
 
-recipe:
-  name: "pybind11-split"
+context:
+  version: "3.1.0"
+
+package:
+  name: pybind11
   version: ${{ version }}
 
 source:
-  url: https://github.com/pybind/pybind11/archive/v${{ version }}.tar.gz
-  sha256: ef712655692a2e9bf7bb7874c022564a45f91d847ddee987e720cd9e28849665
+  url: https://pypi.org/packages/source/p/pybind11/pybind11-${{ version }}.tar.gz
+  sha256: a1cc06b524ab3edca51f8ad3895f9c4fa20b8b19283173dff4ae781449dc9639
 
 build:
-  number: ${{ build_number }}
+  number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: pybind11-abi
-      version: ${{ abi_version }}
-    build:
-      noarch: generic
-    requirements:
-      run_exports:
-        - pybind11-abi ==${{ abi_version }}
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - scikit-build-core >=0.11.2
+  run:
+    - python >=${{ python_min }}
 
-    tests:
-      - files:
-          source:
-            - include/pybind11/detail/internals.h
-          recipe:
-            - check_abi.py
-        # make sure the internals version matches the package version
-        # this check is not perfect as it does not account for the actual preprocessor logic in the header,
-        # so please check it manually on each release
-        script: python check_abi.py ${{ abi_version }}
-
-  - package:
-      name: pybind11-global
-    build:
-      script:
-        - if: win
-          then: build-pybind11-global.bat
-          else: build-pybind11-global.sh
-      noarch: python
-    requirements:
-      build:
-        - if: build_platform != target_platform
-          then:
-            - python
-            - cross-python_${{ target_platform }}
-        - cmake
-        - if: unix
-          then: make
-        - ${{ compiler('cxx') }}
-        - ${{ stdlib("c") }}
-      host:
-        - python ${{ python_min }}.*
-        - pip
-        - scikit-build-core >=0.11.2
-        - tomlkit
-      run:
-        - python >=${{ python_min }}
-        # layouts are different on unix vs win
-        - if: win
-          then: __win
-          else: __unix
-      run_constraints:
-        - pybind11-abi ==${{ abi_version }}
-    tests:
-      - package_contents:
-          files:
-            - if: win
-              then: Library/share/cmake/pybind11/pybind11Config.cmake
-              else: share/cmake/pybind11/pybind11Config.cmake
-          include:
-            # This is weirdly nested on Windows, but its actually noarch and Windows is for testing only
-            - if: win
-              then: pybind11-global/pybind11/pybind11.h
-              else: pybind11/pybind11.h
-      - script: echo "Linter wants a Python pin"
-        requirements:
-          run:
-            - python ${{ python_min }}.*
-
-  - package:
-      name: pybind11
-    build:
-      script:
-        - if: win
-          then: build-pybind11.bat
-          else: build-pybind11.sh
-      noarch: python
-      python:
-        entry_points:
-          - pybind11-config = pybind11.__main__:main
-    requirements:
-      build:
-        - if: build_platform != target_platform
-          then:
-            - python
-            - cross-python_${{ target_platform }}
-        - cmake
-        - if: unix
-          then: make
-        - ${{ compiler('cxx') }}
-        - ${{ stdlib("c") }}
-      host:
-        - python ${{ python_min }}.*
-        - pip
-        - scikit-build-core
-      run:
-        - python >=${{ python_min }}
-        - pybind11-global ==${{ version }} *_${{ build_number }}
-      run_constraints:
-        - pybind11-abi ==${{ abi_version }}
-    tests:
-      - python:
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-          imports:
-            - pybind11
-      - package_contents:
-          files:
-            - site-packages/pybind11/include/pybind11/pybind11.h
-            - site-packages/pybind11/share/cmake/pybind11/pybind11Config.cmake
-          site_packages:
-            - pybind11
-      - script:
-          interpreter: python
-          content: |
-            import pybind11
-            from pathlib import Path
-
-            assert Path(pybind11.get_include(), "pybind11/pybind11.h").is_file
+tests:
+  - python:
+      imports:
+        - pybind11
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/pybind/pybind11
-  repository: https://github.com/pybind/pybind11
-  summary: Seamless operability between C++11 and Python
   license: BSD-3-Clause
-  license_family: BSD
   license_file: LICENSE
-  documentation: https://pybind11.readthedocs.io
+  summary: Seamless operability between C++11 and Python
+  description: |
+    Seamless operability between C++11 and Python
+  documentation: https://pybind11.readthedocs.io/
 
 extra:
-  feedstock-name: pybind11
   recipe-maintainers:
     - ax3l
     - SylvainCorlay
     - wjakob
     - henryiii
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pybind11
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pybind11
+  cfe-purls:
+    - pkg:conda/pybind11@${{ version }}?channel=conda-forge
+    - pkg:pypi/pybind11@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pybind/pybind11
+  cfe-import-names: [pybind11]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pybind11-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:25:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:25:56Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:25:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

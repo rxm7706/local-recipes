@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: aioitertools
   version: "0.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: aioitertools
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aioitertools/aioitertools-${{ version }}.tar.gz
   sha256: 620bd241acc0bbb9ec819f1ab215866871b4bbd1f73836a55f799200ee86950c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - flit-core >=3.8,<4
-    - typing_extensions >=4.0
+    - flit-core >=3.11,<4
   run:
     - python >=${{ python_min }}
     - typing_extensions >=4.0
@@ -32,24 +30,53 @@ tests:
   - python:
       imports:
         - aioitertools
-        - aioitertools.tests
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/aioitertools/
   license: MIT
   license_file: LICENSE
-  summary: asyncio version of the standard multiprocessing module
+  summary: itertools and builtins for AsyncIO and mixed iterables
   description: |
-    Implementation of itertools, builtins, and more for AsyncIO and mixed-type
-    iterables.
-  homepage: https://github.com/jreese/aioitertools
-  repository: https://github.com/jreese/aioitertools
-  documentation: https://github.com/jreese/aioitertools
+    itertools and builtins for AsyncIO and mixed iterables
+  documentation: https://aioitertools.omnilib.dev
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aioitertools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aioitertools
+  cfe-purls:
+    - pkg:conda/aioitertools@${{ version }}?channel=conda-forge
+    - pkg:pypi/aioitertools@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/aioitertools/
+  cfe-import-names: [aioitertools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aioitertools-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.13.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:43:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:43:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:43:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

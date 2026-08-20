@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-appconf
   version: "1.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-appconf
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-appconf/django_appconf-${{ version }}.tar.gz
   sha256: 15a88d60dd942d6059f467412fe4581db632ef03018a3c183fb415d6fc9e5cec
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,23 +31,54 @@ tests:
       imports:
         - appconf
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://django-appconf.readthedocs.io/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: An app to handle configuration defaults of packaged Django apps gracefully
+  summary: A helper class for handling configuration defaults of packaged apps gracefully.
   description: |
-    A helper class for handling configuration defaults of packaged Django apps gracefully. This app precedes Django's
-    own AppConfig classes that act as "objects [to] store metadata for an application" inside Django's app loading
-    mechanism. In other words, they solve a related but different use case than django-appconf and can't easily be
-    used as a replacement. The similarity in name is purely coincidental.
-  homepage: https://github.com/django-compressor/django-appconf
+    A helper class for handling configuration defaults of packaged apps gracefully.
   repository: https://github.com/django-compressor/django-appconf
-  documentation: https://readthedocs.org/projects/django-appconf/
 
 extra:
   recipe-maintainers:
     - cshaley
     - sannykr
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-appconf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-appconf
+  cfe-purls:
+    - pkg:conda/django-appconf@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-appconf@${{ version }}
+  cfe-upstream-repo: https://github.com/django-compressor/django-appconf
+  cfe-upstream-homepage: https://django-appconf.readthedocs.io/
+  cfe-import-names: [appconf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-appconf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:47:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:47:26Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:47:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

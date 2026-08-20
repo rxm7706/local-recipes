@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pyaml-env
   version: "1.2.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pyaml-env
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyaml_env-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyaml-env/pyaml_env-${{ version }}.tar.gz
   sha256: f83502516b6f1561ba7c2db9ced939a7a9933a66702d8071e98ad07da49a4bb4
 
 build:
@@ -20,27 +19,64 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - pyyaml >=5.0,<=7.0
+    - pyyaml <=7.0,>=5.0
 
 tests:
   - python:
       imports:
         - pyaml_env
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Provides yaml file parsing with environment variable resolution
+  homepage: https://github.com/mkaranasou/pyaml_env
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/mkaranasou/pyaml_env
+  summary: Provides yaml file parsing with environment variable resolution
+  description: |
+    Provides yaml file parsing with environment variable resolution
 
 extra:
   recipe-maintainers:
     - cburing
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyaml-env
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyaml-env
+  cfe-purls:
+    - pkg:conda/pyaml-env@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyaml-env@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mkaranasou/pyaml_env
+  cfe-import-names: [pyaml_env]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyaml-env-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:17:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:17:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:17:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

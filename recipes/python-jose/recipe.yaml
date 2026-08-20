@@ -2,66 +2,87 @@
 schema_version: 1
 
 context:
-  name: python-jose
   version: "3.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: python-jose
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-jose/python_jose-${{ version }}.tar.gz
   sha256: fb4eaa44dbeb1c26dcc69e4bd7ec54a1cb8dd64d3b4d81ef08d90ff453f2b01b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - pytest-runner
+    - setuptools >=39.2.0
+    - wheel >=0.29.0
   run:
     - python >=${{ python_min }}
-    - cryptography >=3.4.0
     - ecdsa !=0.15
-    - rsa >=4.0,<5.0,!=4.4,!=4.1.1
+    - rsa !=4.1.1,!=4.4,<5.0,>=4.0
     - pyasn1 >=0.5.0
 
 tests:
   - python:
       imports:
         - jose
-        - jose.backends
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      recipe:
-        - usage.py
-      source:
-        - tests
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - python usage.py
-      - pytest -m "not (pycryptodome or pycrypto or backend_compatibility)" tests
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/mpdavis/python-jose
   license: MIT
   license_file: LICENSE
   summary: JOSE implementation in Python
-  homepage: http://github.com/mpdavis/python-jose
-  repository: https://github.com/mpdavis/python-jose
-  documentation: https://python-jose.readthedocs.io
+  description: |
+    JOSE implementation in Python
+  repository: https://github.com/mpdavis/python-jose/
+  documentation: https://python-jose.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
     - dgasmith
     - swainn
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-jose
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-jose
+  cfe-purls:
+    - pkg:conda/python-jose@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-jose@${{ version }}
+  cfe-upstream-repo: https://github.com/mpdavis/python-jose/
+  cfe-upstream-homepage: http://github.com/mpdavis/python-jose
+  cfe-import-names: [jose]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-jose-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:52:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:52:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:52:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

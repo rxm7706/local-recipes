@@ -21,12 +21,12 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - requests
     - protobuf
+    - requests
 
 tests:
   - python:
@@ -39,11 +39,42 @@ tests:
 
 about:
   homepage: https://github.com/Kaggle/kagglesdk
-  repository: https://github.com/Kaggle/kagglesdk
-  summary: Bindings to access kaggle's external-facing APIs
   license: Apache-2.0
   license_file: LICENSE
+  summary: Bindings to access kaggle's external-facing APIs
+  description: |
+    Bindings to access kaggle's external-facing APIs
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kagglesdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kagglesdk
+  cfe-purls:
+    - pkg:conda/kagglesdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/kagglesdk@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Kaggle/kagglesdk
+  cfe-import-names: [kagglesdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kagglesdk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:49:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:49:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:49:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

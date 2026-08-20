@@ -2,48 +2,84 @@
 schema_version: 1
 
 context:
-  name: pytest-httpx
   version: "0.36.2"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-httpx
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-httpx/pytest_httpx-${{ version }}.tar.gz
   sha256: 05a56527484f7f4e8c856419ea379b8dc359c36801c4992fdb330f294c690356
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.10.*
     - setuptools
-    - setuptools_scm
+    - setuptools-scm
   run:
-    - httpx ==0.28
-    - pytest ==9
     - python >=${{ python_min }}
+    - httpx ==0.28.*
+    - pytest ==9.*
 
 tests:
   - python:
       imports:
         - pytest_httpx
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Send responses to httpx.
+  homepage: https://pypi.org/project/pytest-httpx/
   license: MIT
   license_file: LICENSE
-  homepage: https://colin-b.github.io/pytest_httpx/
+  summary: Send responses to httpx.
+  description: |
+    Send responses to httpx.
+  documentation: https://colin-b.github.io/pytest_httpx/
 
 extra:
   recipe-maintainers:
     - owenlamont
     - dgasmith
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-httpx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-httpx
+  cfe-purls:
+    - pkg:conda/pytest-httpx@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-httpx@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/pytest-httpx/
+  cfe-import-names: [pytest_httpx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-httpx-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.36.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:35:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:35:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:35:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

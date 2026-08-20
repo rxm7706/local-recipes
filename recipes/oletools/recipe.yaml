@@ -2,56 +2,93 @@
 schema_version: 1
 
 context:
-  name: oletools
   version: "0.60.2"
-  sha256: a9cc0d5a1b5a7216cbbb9248c927278e8738e1df0c0c7e06ebbeeb23542efcbd
 
 package:
-  name: ${{ name|lower }}
+  name: oletools
   version: ${{ version }}
 
 source:
-  url: https://github.com/decalage2/${{ name }}/archive/v${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/oletools/oletools-0.60.2.zip
+  sha256: ad452099f4695ffd8855113f453348200d195ee9fa341a09e197d66ee7e0b2c3
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - colorclass
+    - pyparsing <4,>=2.1.0
+    - olefile >=0.46
     - easygui
-    - msoffcrypto-tool
-    - olefile
-    - pcodedmp
-    - pyparsing <3,>=2.1.0
+    - colorclass
+    - pcodedmp >=1.2.5
 
 tests:
   - python:
       imports:
         - oletools
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: oletools/LICENSE.txt
-  summary: python tools to analyze MS OLE2 files
-  description: oletools is a package of python tools to analyze Microsoft OLE2 files (also called Structured Storage, Compound File Binary Format or Compound Document File Format), such as Microsoft Office documents or Outlook messages, mainly for malware analysis, forensics and debugging.
   homepage: https://github.com/decalage2/oletools
-  repository: https://github.com/decalage2/oletools
-  documentation: https://github.com/decalage2/oletools/wiki
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python tools to analyze security characteristics of MS Office and OLE files (also called Structured Storage, Compound File Binary Format or Compound Document File Format), for Malware Analysis and Incident Response #DFIR
+  description: |
+    Python tools to analyze security characteristics of MS Office and OLE files (also called Structured Storage, Compound File Binary Format or Compound Document File Format), for Malware Analysis and Incident Response #DFIR
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - cshaley
     - sannykr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oletools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oletools
+  cfe-purls:
+    - pkg:conda/oletools@${{ version }}?channel=conda-forge
+    - pkg:pypi/oletools@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/decalage2/oletools
+  cfe-import-names: [oletools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/oletools-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.60.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:11:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:11:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:11:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

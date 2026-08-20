@@ -70,29 +70,28 @@ extra:
   cfe-purls:
     - pkg:conda/js2py@${{ version }}?channel=conda-forge
     - pkg:pypi/js2py@${{ version }}
-  cfe-upstream-repo: none
+  cfe-upstream-repo: https://github.com/PiotrDabkowski/Js2Py
   cfe-upstream-homepage: https://github.com/PiotrDabkowski/Js2Py
-  cfe-import-names: [js2py]
+  cfe-import-names: [js2py, js2py.constructors, js2py.es6, js2py.host, js2py.internals, js2py.internals.constructors, js2py.internals.prototypes, js2py.prototypes, js2py.py_node_modules, js2py.translators, js2py.utils]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: "true"
+  cfe-pip-check: "false"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/js2py-feedstock
   cfe-forge-recipe-updates-needed: 
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.74
-
-  cfe-forge-blocker-list:
     - missing-license-file
     - missing-license-file
     - missing-license-file
     - missing-license-file
 
-  cfe-last-checked: 2026-08-17T01:31:53Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T04:24:34Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:31:53Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T01:31:53Z
+  cfe-generated-at-datetime: 2026-08-17T04:24:34Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T04:24:34Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

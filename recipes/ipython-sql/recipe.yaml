@@ -2,53 +2,86 @@
 schema_version: 1
 
 context:
-  name: ipython-sql
-  version: "0.3.9"
+  version: "0.5.0"
 
 package:
-  name: ${{ name }}
+  name: ipython-sql
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 7187f6371f38b89d8fb63c2c7c4233d9000fb53b460dae79e4a359df366cc3ed
-  file_name: ipython-sql-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/ipython-sql/ipython-sql-${{ version }}.tar.gz
+  sha256: 3db3ce7f9a95dfaf43876fa80b16bdbb9a04de0ba12042cab13e9f596fcffdbe
 
 build:
-  number: 1004
+  number: 0
   noarch: python
-  script:
-    - python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
     - prettytable
-    - ipython >=1.0
-    - ipython_genutils >=0.1.0
-    - sqlalchemy >=0.6.7
+    - ipython
+    - sqlalchemy
     - sqlparse
     - six
+    - ipython_genutils
 
 tests:
   - python:
       imports:
         - sql
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/catherinedevlin/ipython-sql
   license: MIT
   license_file: LICENSE
   summary: RDBMS access via IPython
-  description: 'ipython-sql introduces a %sql (or %%sql) magic to your notebook allowing you to
-    connect to a database, using SQLAlchemy connect strings, then issue SQL commands within
-    IPython or IPython Notebook.'
-  homepage: https://pypi.python.org/pypi/ipython-sql
+  description: |
+    RDBMS access via IPython
   repository: https://github.com/catherinedevlin/ipython-sql
 
 extra:
   recipe-maintainers:
     - sodre
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipython-sql
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipython-sql
+  cfe-purls:
+    - pkg:conda/ipython-sql@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipython-sql@${{ version }}
+  cfe-upstream-repo: https://github.com/catherinedevlin/ipython-sql
+  cfe-upstream-homepage: https://github.com/catherinedevlin/ipython-sql
+  cfe-import-names: [sql]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipython-sql-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:02:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:02:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:02:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

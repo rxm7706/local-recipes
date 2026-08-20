@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: behave-pandas
   version: "0.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: behave-pandas
   version: ${{ version }}
 
 source:
-  url: https://github.com/clembou/behave-pandas/archive/v${{ version }}.tar.gz
+  url: https://github.com/clembou/behave-pandas/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 00341aaf8f9cdf1b2d9a9fb2a3e11fe2286c274623d26f0f8e8dc9f06c16f375
 
 build:
@@ -24,30 +23,57 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - behave
-    - pandas >=0.21
+    - pandas
     - tabulate
 
 tests:
   - python:
       imports:
         - behave_pandas
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Provides helper functions to help converting behave tables into pandas dataframes and vice versa.
+  homepage: https://github.com/clembou/behave-pandas
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/clembou/behave-pandas
+  summary: Provides helper functions to help converting behave tables into pandas dataframes and vice versa.
   description: |
-    Utility package for the Behave BDD testing framework, to make converting gherkin tables to and from pandas data frames a breeze.
+    Provides helper functions to help converting behave tables into pandas dataframes and vice versa.
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: behave-pandas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: behave-pandas
+  cfe-purls:
+    - pkg:conda/behave-pandas@${{ version }}?channel=conda-forge
+    - pkg:pypi/behave-pandas@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/clembou/behave-pandas
+  cfe-import-names: [behave_pandas]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/behave-pandas-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:20:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:20:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:20:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

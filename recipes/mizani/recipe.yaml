@@ -2,68 +2,83 @@
 schema_version: 1
 
 context:
-  name: mizani
   version: "0.14.4"
-  bundle: tar.gz
-  hash: 28934d91516d922d7cb0382c82a6c513692abc0174c42a50294ae571520633f9
-  build: 0
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: mizani
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/m/mizani/mizani-${{ version }}.tar.gz
+  sha256: 28934d91516d922d7cb0382c82a6c513692abc0174c42a50294ae571520633f9
 
 build:
-  number: ${{ build }}
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=61
   run:
     - python >=${{ python_min }}
     - numpy >=1.23.5
     - scipy >=1.8.0
     - pandas >=2.2.0
-    - python-dateutil
-    - tzdata  # os == windows
 
 tests:
-  - files:
-      source:
-        - tests
-        - pyproject.toml
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-        - pytest
-        - pytest-cov
-    script:
-      - pip list | grep -i ${{ name }} | grep ${{ version }}
-      - pip check
-      - echo $PWD
-      - ls -larth
-      - pytest
+  - python:
+      imports:
+        - mizani
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://mizani.readthedocs.io/en/stable
   license: BSD-3-Clause
+  license_file: LICENSE
   summary: Scales for Python
-  homepage: https://github.com/has2k1/mizani
-  repository: https://github.com/has2k1/mizani
-  documentation: https://mizani.readthedocs.io/en/latest/
+  description: |
+    Scales for Python
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - has2k1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mizani
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mizani
+  cfe-purls:
+    - pkg:conda/mizani@${{ version }}?channel=conda-forge
+    - pkg:pypi/mizani@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://mizani.readthedocs.io/en/stable
+  cfe-import-names: [mizani]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mizani-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:40:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:40:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:40:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

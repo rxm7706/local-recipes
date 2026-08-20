@@ -2,26 +2,26 @@
 schema_version: 1
 
 context:
-  name: Janome
   version: "0.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: janome
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/Janome/Janome-${{ version }}.tar.gz
   sha256: ce4a3ed7a4635c2f80139639327d5b1e0381858ad74a3c4a61e8cc83f820400e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -29,20 +29,53 @@ tests:
   - python:
       imports:
         - janome
-        - janome.sysdic
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://mocobeta.github.io/janome/en/
+  license: AL2
+  license_file: LICENSE
   summary: Japanese morphological analysis engine.
-  license: Apache-2.0
-  license_file:
-    - LICENSE.txt
-    - NOTICE.txt
-  homepage: https://github.com/mocobeta/janome
-  repository: https://github.com/mocobeta/janome/wiki#for-contributors
-  documentation: https://mocobeta.github.io/janome/en/
+  description: |
+    Japanese morphological analysis engine.
+  repository: https://github.com/mocobeta/janome
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: janome
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: janome
+  cfe-purls:
+    - pkg:conda/janome@${{ version }}?channel=conda-forge
+    - pkg:pypi/janome@${{ version }}
+  cfe-upstream-repo: https://github.com/mocobeta/janome
+  cfe-upstream-homepage: https://mocobeta.github.io/janome/en/
+  cfe-import-names: [janome]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/janome-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:09:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:09:56Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:09:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: jsonpickle
   version: "4.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: jsonpickle
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jsonpickle/jsonpickle-${{ version }}.tar.gz
   sha256: 8afed18aa189fd81e2e833b426bb4af485594921f0b1d36c2001fc5637a2f210
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=61.2
-    - setuptools_scm >=6.0
-    - toml
   run:
     - python >=${{ python_min }}
 
@@ -33,17 +30,52 @@ tests:
       imports:
         - jsonpickle
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python library for serializing any arbitrary object graph into JSON. It can take almost any Python object and turn the object into JSON. Additionally, it can reconstitute the object back into Python.
+  homepage: https://jsonpickle.readthedocs.io/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: http://jsonpickle.github.io/
+  summary: jsonpickle encodes/decodes any Python object to/from JSON
+  description: |
+    jsonpickle encodes/decodes any Python object to/from JSON
   repository: https://github.com/jsonpickle/jsonpickle
+  documentation: https://jsonpickle.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - robmcmullen
     - ChrisBarker-NOAA
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonpickle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonpickle
+  cfe-purls:
+    - pkg:conda/jsonpickle@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonpickle@${{ version }}
+  cfe-upstream-repo: https://github.com/jsonpickle/jsonpickle
+  cfe-upstream-homepage: https://jsonpickle.readthedocs.io/
+  cfe-import-names: [jsonpickle]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonpickle-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:21:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:21:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:21:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

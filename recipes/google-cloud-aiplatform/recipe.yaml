@@ -2,24 +2,20 @@
 schema_version: 1
 
 context:
-  name: google-cloud-aiplatform
   version: "1.164.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-aiplatform
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_aiplatform-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-aiplatform/google_cloud_aiplatform-${{ version }}.tar.gz
   sha256: 51fb881523631e591a3d11a46cb9d7bd390e05127fe1d08c596ddce3e45fed2d
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - tb-gcp-uploader=google.cloud.aiplatform.tensorboard.uploader_main:run_main
 
 requirements:
   host:
@@ -28,18 +24,16 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core-grpc >=1.34.1,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*
-    - google-auth >=2.47.0,<3.0.0
+    - google-api-core !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.34.1
+    - google-auth <3.0.0,>=2.47.0
     - certifi >=2023.7.22
-    - proto-plus >=1.22.3,<2.0.0
-    - protobuf >=3.20.2,<7.0.0,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf !=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<7.0.0,>=3.20.2
     - packaging >=14.3
-    # tightest of upstream's floors (python >=3.13) and ceilings (python <3.13)
-    - google-cloud-storage >=3.10.0,<4.0.0
-    - google-cloud-bigquery-core >=1.15.0,<4.0.0,!=3.20.0
-    - google-cloud-resource-manager >=1.3.3,<3.0.0
-    # tightest of upstream's floors (python >=3.10)
-    - google-genai >=1.66.0,<3.0.0
+    - google-cloud-storage <4.0.0,>=1.32.0
+    - google-cloud-bigquery !=3.20.0,<4.0.0,>=1.15.0
+    - google-cloud-resource-manager <3.0.0,>=1.3.3
+    - google-genai <3.0.0,>=1.37.0
     - pydantic <3
     - typing_extensions
     - docstring_parser <1
@@ -47,19 +41,50 @@ requirements:
 tests:
   - python:
       imports:
-        - google
         - vertexai
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: Vertex AI API client library
+  homepage: https://github.com/googleapis/python-aiplatform
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/python-aiplatform
+  summary: Vertex AI API client library
+  description: |
+    Vertex AI API client library
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-aiplatform
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-aiplatform
+  cfe-purls:
+    - pkg:conda/google-cloud-aiplatform@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-aiplatform@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/python-aiplatform
+  cfe-import-names: [vertexai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-aiplatform-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:54:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:54:09Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T08:54:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

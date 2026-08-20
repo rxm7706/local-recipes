@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-grappelli
   version: "5.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-grappelli
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-grappelli/django_grappelli-${{ version }}.tar.gz
   sha256: 404c8480024758b537bed723070c64eef695de557ad470b43161dbff0aa4c642
 
 build:
@@ -20,30 +19,65 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=69.3.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - django
 
 tests:
   - python:
       imports:
         - grappelli
-        - grappelli.templatetags
-        - grappelli.views
-        - grappelli.dashboard
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://django-grappelli.readthedocs.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: A jazzy skin for the Django Admin-Interface
-  homepage: http://django-grappelli.readthedocs.org
+  summary: A jazzy skin for the Django Admin-Interface.
+  description: |
+    A jazzy skin for the Django Admin-Interface.
+  repository: https://github.com/sehmaschine/django-grappelli
 
 extra:
   recipe-maintainers:
     - kwilcox
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-grappelli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-grappelli
+  cfe-purls:
+    - pkg:conda/django-grappelli@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-grappelli@${{ version }}
+  cfe-upstream-repo: https://github.com/sehmaschine/django-grappelli
+  cfe-upstream-homepage: http://django-grappelli.readthedocs.org
+  cfe-import-names: [grappelli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-grappelli-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:54:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:54:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:54:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

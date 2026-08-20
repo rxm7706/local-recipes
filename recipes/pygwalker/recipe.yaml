@@ -2,81 +2,70 @@
 schema_version: 1
 
 context:
-  name: pygwalker
   version: "0.5.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pygwalker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pygwalker-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pygwalker/pygwalker-${{ version }}.tar.gz
   sha256: f37f83104e26b0824531675396fe9108b0e2d2a1936b2d85d24ae2d9314c9977
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pygwalker = bin.pygwalker_command:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
-    - hatch-jupyter-builder
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
-    - jinja2
-    - ipython
-    - astor
-    - typing_extensions
-    - ipywidgets
-    - pydantic
-    - psutil
-    - python-duckdb >=0.10.4,<2.0.0
-    - pyarrow
-    - sqlglot >=23.15.8
-    - requests
-    - arrow
-    - sqlalchemy
-    - gw-dsl-parser ==0.1.49.1
-    - appdirs
-    #- segment-analytics-python ==2.2.3 is called analytics-python
-    - analytics-python ==2.2.3
-    - pandas
-    - pytz
-    - kanaries-track ==0.0.5
-    - cachetools
-    - packaging
-    - numpy
-    - ipylab <=1.0.0
-    #- quickjs is called python-quickjs 1.19.4
-    - python-quickjs
-    - traitlets
+    - python >=${{ python_min }}
     - anywidget
+    - appdirs
+    - arrow
+    - astor
+    - cachetools
+    - python-duckdb <2.0.0,>=0.10.4
+    - gw-dsl-parser ==0.1.49.1
+    - ipylab <=1.0.0
+    - ipython
+    - ipywidgets
+    - jinja2
+    - kanaries-track ==0.0.5
+    - numpy
+    - packaging
+    - pandas
+    - psutil
+    - pyarrow
+    - pydantic
+    - pytz
+    - requests
+    - segment-analytics-python ==2.2.3
+    - sqlalchemy
+    - sqlglot >=23.15.8
+    - traitlets
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - pygwalker
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pygwalker --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: "pygwalker: Combining Jupyter Notebook with a Tableau-like UI"
-  description: "pygwalker: turn your data into an interactive UI for data exploration and visualization"
+  homepage: https://kanaries.net/pygwalker
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/pygwalker/
+  summary: "pygwalker: turn your data into an interactive UI for data exploration and visualization"
+  description: |
+    pygwalker: turn your data into an interactive UI for data exploration and visualization
 
 extra:
   recipe-maintainers:
@@ -84,3 +73,36 @@ extra:
     - Asm-Def
     - longxiaofei
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pygwalker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pygwalker
+  cfe-purls:
+    - pkg:conda/pygwalker@${{ version }}?channel=conda-forge
+    - pkg:pypi/pygwalker@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://kanaries.net/pygwalker
+  cfe-import-names: [pygwalker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pygwalker-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:42:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:42:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:42:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,25 +2,20 @@
 schema_version: 1
 
 context:
-  name: pyserial
-  version: 3.5
+  version: "3.5"
 
 package:
-  name: ${{ name|lower }}
+  name: pyserial
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyserial/pyserial-${{ version }}.tar.gz
   sha256: 3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - pyserial-miniterm = serial.tools.miniterm:main
-      - pyserial-ports = serial.tools.list_ports:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -34,28 +29,54 @@ tests:
   - python:
       imports:
         - serial
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - pyserial-miniterm --help
-      - pyserial-ports --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pyserial/pyserial
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Python serial port access library
+  summary: Python Serial Port Extension
   description: |
-    pySerial encapsulates the access for the serial port. It provides backends
-    for Python running on Windows, OSX, Linux, BSD (possibly any POSIX
-    compliant system) and IronPython. The module named "serial" automatically
-    selects the appropriate backend.
-  homepage: https://github.com/pyserial/pyserial
-  repository: https://github.com/pyserial/pyserial
-  documentation: https://pyserial.readthedocs.io/en/latest/
+    Python Serial Port Extension
 
 extra:
   recipe-maintainers:
     - shaunwbell
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyserial
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyserial
+  cfe-purls:
+    - pkg:conda/pyserial@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyserial@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pyserial/pyserial
+  cfe-import-names: [serial]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyserial-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:01:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:01:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:01:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

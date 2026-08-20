@@ -2,56 +2,82 @@
 schema_version: 1
 
 context:
-  name: asteval
   version: "1.0.9"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: asteval
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/asteval/asteval-${{ version }}.tar.gz
   sha256: 4f7323d63d9fbf89d7e1d5f8bb59b6c093970c15bb5926e6e67d0195858aa230
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools-scm
+    - setuptools >=45
+    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
-    - pip
-    - setuptools
-    - setuptools-scm
-    - numpy >=1.22
 
 tests:
   - python:
       imports:
         - asteval
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/lmfit/asteval
   license: MIT
   license_file: LICENSE
-  summary: Simple and robust expressions evaluator for Python
-  # The remaining entries in this section are optional, but recommended
+  summary: Safe, minimalistic evaluator of python expression using ast module
   description: |
-    asteval is a simple and robust evaluator of
-    Python expressions and statements, using Python's ast module.
-  homepage: https://github.com/lmfit/asteval
-  repository: https://github.com/lmfit/asteval
+    Safe, minimalistic evaluator of python expression using ast module
   documentation: https://lmfit.github.io/asteval/
 
 extra:
   recipe-maintainers:
     - souravsingh
     - newville
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asteval
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asteval
+  cfe-purls:
+    - pkg:conda/asteval@${{ version }}?channel=conda-forge
+    - pkg:pypi/asteval@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/lmfit/asteval
+  cfe-import-names: [asteval]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asteval-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.9
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:04:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:04:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:04:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

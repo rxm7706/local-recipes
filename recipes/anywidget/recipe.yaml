@@ -2,55 +2,83 @@
 schema_version: 1
 
 context:
-  name: anywidget
   version: "0.11.0"
 
 package:
-  name: ${{ name|lower }}
+  name: anywidget
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/anywidget-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/anywidget/anywidget-${{ version }}.tar.gz
   sha256: 6695fbef9449cf8c27f421b96c5837aa37f909ec1f60cfa33add333e1b70b169
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
-    - hatch-jupyter-builder
-    - jupyterlab
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
     - ipywidgets >=7.6.0
-    - typing_extensions >=4.2.0
     - psygnal >=0.8.1
+    - typing_extensions >=4.2.0
 
 tests:
   - python:
       imports:
         - anywidget
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: simple, custom Jupyter widgets
-  description: |
-    anywidget is a new Python library that greatly simplifies creating and publishing
-    custom Jupyter Widgets. Unlike the traditional (cookiecutter) approach, with
-    anywidget you 1) avoid fiddling with build steps and bundlers, 2) can prototype
-    widgets from within a notebook, and 3) get a modern front-end developer experience.
+  homepage: https://github.com/manzt/anywidget
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/anywidget/
-  repository: https://github.com/manzt/anywidget
+  summary: custom jupyter widgets made easy
+  description: |
+    custom jupyter widgets made easy
 
 extra:
   recipe-maintainers:
     - manzt
     - giswqs
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: anywidget
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: anywidget
+  cfe-purls:
+    - pkg:conda/anywidget@${{ version }}?channel=conda-forge
+    - pkg:pypi/anywidget@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/manzt/anywidget
+  cfe-import-names: [anywidget]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/anywidget-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.11.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:57:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:57:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:57:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

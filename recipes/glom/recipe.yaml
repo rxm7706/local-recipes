@@ -2,61 +2,81 @@
 schema_version: 1
 
 context:
-  name: glom
-  version: 25.12.0
+  version: "25.12.0"
 
 package:
-  name: ${{ name|lower }}
+  name: glom
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/glom/glom-${{ version }}.tar.gz
   sha256: 1ae7da88be3693df40ad27bdf57a765a55c075c86c971bcddd67927403eb0069
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
-  python:
-    entry_points:
-      - glom = glom.cli:console_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - attrs
-    - boltons >=19.3.0
-    - face >=20.1.1
     - python >=${{ python_min }}
+    - boltons >=19.3.0
+    - attrs
+    - face >=20.1.1
 
 tests:
   - python:
       imports:
         - glom
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - files:
-      source:
-        - glom/test
-    requirements:
-      run:
-        - pytest >=6.2.5
-        - pyyaml ==5.4.1
-        - python ${{ python_min }}.*
-    script:
-      - glom --help
-      - pytest -vvv --capture=tee-sys -k "not test_error" glom/test
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/mahmoud/glom
   license: BSD-3-Clause
   license_file: LICENSE
   summary: A declarative object transformer and formatter, for conglomerating nested data.
-  homepage: https://github.com/mahmoud/glom
+  description: |
+    A declarative object transformer and formatter, for conglomerating nested data.
+  documentation: https://glom.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - CJ-Wright
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: glom
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: glom
+  cfe-purls:
+    - pkg:conda/glom@${{ version }}?channel=conda-forge
+    - pkg:pypi/glom@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mahmoud/glom
+  cfe-import-names: [glom]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/glom-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:32:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:32:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:32:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

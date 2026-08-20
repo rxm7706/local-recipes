@@ -2,46 +2,47 @@
 schema_version: 1
 
 context:
-  name: flask-pymongo
   version: "3.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-pymongo
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-PyMongo/flask_pymongo-${{ version }}.tar.gz
   sha256: d225b51c21ceca2e670e6cca79b5c584ad17b96252b48e84e3b423ddb73304cc
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - vcversioner
-    - setuptools
     - hatchling
   run:
-    - flask >=0.11
-    - pymongo >=3.3
     - python >=${{ python_min }}
+    - flask >=3.0
+    - pymongo >=4.0
 
 tests:
   - python:
       imports:
         - flask_pymongo
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: PyMongo support for Flask applications
+  homepage: http://flask-pymongo.readthedocs.org/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: http://flask-pymongo.readthedocs.org/
+  summary: PyMongo support for Flask applications
+  description: |
+    PyMongo support for Flask applications
 
 extra:
   recipe-maintainers:
@@ -52,3 +53,36 @@ extra:
     - jibola
     - blink1073
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-pymongo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-pymongo
+  cfe-purls:
+    - pkg:conda/flask-pymongo@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-pymongo@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://flask-pymongo.readthedocs.org/
+  cfe-import-names: [flask_pymongo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-pymongo-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:23:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:23:24Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:23:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

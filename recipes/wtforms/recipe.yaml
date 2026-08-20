@@ -2,31 +2,29 @@
 schema_version: 1
 
 context:
-  name: wtforms
   version: "3.2.2"
 
 package:
-  name: ${{ name|lower }}
+  name: wtforms
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/WTForms/wtforms-${{ version }}.tar.gz
   sha256: 7b00c73f8670f35d4edb0293dcd81b980528bee72fd662b182aaba27ae570b93
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-build-isolation --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
     - hatchling
-    - babel >=2.8.0
-    - setuptools
   run:
     - python >=${{ python_min }}
+    - babel
     - markupsafe >=1.1.1
 
 tests:
@@ -34,18 +32,53 @@ tests:
       imports:
         - wtforms
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/WTForms/
   license: BSD-3-Clause
-  license_file: LICENSE.rst
-  summary: A flexible forms validation and rendering library for Python
-  homepage: https://github.com/wtforms/wtforms/
-  repository: https://github.com/wtforms/wtforms
-  documentation: http://wtforms.readthedocs.io
+  license_file: LICENSE
+  summary: Form validation and rendering for Python web development.
+  description: |
+    Form validation and rendering for Python web development.
+  repository: https://github.com/pallets-eco/wtforms/
+  documentation: https://wtforms.readthedocs.io
 
 extra:
   recipe-maintainers:
     - mcs07
     - synapticarbors
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wtforms
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wtforms
+  cfe-purls:
+    - pkg:conda/wtforms@${{ version }}?channel=conda-forge
+    - pkg:pypi/wtforms@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/wtforms/
+  cfe-upstream-homepage: https://pypi.org/project/WTForms/
+  cfe-import-names: [wtforms]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wtforms-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:22:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:22:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:22:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['babel']
+####

@@ -2,57 +2,90 @@
 schema_version: 1
 
 context:
-  name: langchain-classic
   version: "1.0.8"
-  build: 0
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-classic
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/8d/65/6b5e8a7ff2f2968652c88a67dcecb925b9d8f0a0ce9458c76cd5a0dbd138/langchain_classic-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langchain-classic/langchain_classic-${{ version }}.tar.gz
   sha256: ada0cc341a8a5b80fb24d73bdfaaeb849056ee2d8a41cc468355163fd3667484
 
 build:
-  number: ${{ build+100 if python_min == "3.10" else build }}
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - langchain-core >=1.4.4,<2.0.0
-    - langchain-text-splitters >=1.1.2,<2.0.0
-    - langsmith >=0.1.17,<1.0.0
-    - pydantic >=2.7.4,<3.0.0
-    - sqlalchemy >=1.4.0,<3.0.0
-    - requests >=2.0.0,<3.0.0
-    - pyyaml >=5.3.0,<7.0.0
-    - python >=3.10,<3.11
-    - async-timeout >=4.0.0,<5.0.0
-    - python >=${{ python_min }}
+    - async-timeout <5.0.0,>=4.0.0
+    - langchain-core <2.0.0,>=1.4.4
+    - langchain-text-splitters <2.0.0,>=1.1.2
+    - langsmith <1.0.0,>=0.1.17
+    - pydantic <3.0.0,>=2.7.4
+    - pyyaml <7.0.0,>=5.3.0
+    - requests <3.0.0,>=2.0.0
+    - sqlalchemy <3.0.0,>=1.4.0
 
 tests:
   - python:
       imports:
         - langchain_classic
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Building applications with LLMs through composability
+  homepage: https://docs.langchain.com/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/langchain-ai/langchain/
-  repository: https://github.com/langchain-ai/langchain/tree/master/libs/langchain
+  summary: Building applications with LLMs through composability
+  description: |
+    Building applications with LLMs through composability
+  repository: https://github.com/langchain-ai/langchain
   documentation: https://reference.langchain.com/python/langchain_classic/
 
 extra:
   recipe-maintainers:
     - ccurme
     - mdrxy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-classic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-classic
+  cfe-purls:
+    - pkg:conda/langchain-classic@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-classic@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain
+  cfe-upstream-homepage: https://docs.langchain.com/
+  cfe-import-names: [langchain_classic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-classic-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:59:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:59:21Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:59:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

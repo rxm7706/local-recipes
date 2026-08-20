@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: httpx-ntlm
   version: "1.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: httpx-ntlm
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/httpx_ntlm-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/httpx-ntlm/httpx_ntlm-${{ version }}.tar.gz
   sha256: 41be8a2ba85143484e617dcb917d4b19e3ae12afdc688622a4901034993b53e4
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -33,14 +32,51 @@ tests:
       imports:
         - httpx_ntlm
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: This package allows for HTTP NTLM authentication using the HTTPX library.
-  license: MIT
-  license_file: LICENSE
   homepage: https://github.com/ulodciv/httpx-ntlm
+  license: ISC
+  license_file: LICENSE
+  summary: This package allows for HTTP NTLM authentication using the HTTPX library.
+  description: |
+    This package allows for HTTP NTLM authentication using the HTTPX library.
 
 extra:
   recipe-maintainers:
     - dhirschfeld
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpx-ntlm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpx-ntlm
+  cfe-purls:
+    - pkg:conda/httpx-ntlm@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpx-ntlm@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ulodciv/httpx-ntlm
+  cfe-import-names: [httpx_ntlm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpx-ntlm-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:41:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:41:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:41:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

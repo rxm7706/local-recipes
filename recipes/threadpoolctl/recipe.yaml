@@ -9,19 +9,19 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/joblib/threadpoolctl/archive/${{ version }}.tar.gz
-  sha256: 8794160a4dca1f9039202189936acc36bf785c1f99cdc529a632204e88cd0de0
+  url: https://pypi.org/packages/source/t/threadpoolctl/threadpoolctl-${{ version }}.tar.gz
+  sha256: 8ab8b4aa3491d812b623328249fab5302a68d2d71745c8a4c719a2fcaba9f44e
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m flit install
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=2,<4
   run:
     - python >=${{ python_min }}
 
@@ -29,27 +29,54 @@ tests:
   - python:
       imports:
         - threadpoolctl
-      pip_check: false
-  - requirements:
-      run:
-        - numpy
-    script:
-      - python -m threadpoolctl -i numpy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/joblib/threadpoolctl
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Python helpers to control the threadpools of native libraries
+  summary: threadpoolctl
   description: |
-    Python helpers to introspect and limit the number of threads used
-    in native libraries that handle their own internal threadpool
-    (BLAS and OpenMP implementations).
-  homepage: https://github.com/joblib/threadpoolctl
-  repository: https://github.com/joblib/threadpoolctl
-  documentation: https://github.com/joblib/threadpoolctl
+    threadpoolctl
 
 extra:
   recipe-maintainers:
     - ogrisel
     - tomMoral
     - jeremiedbb
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: threadpoolctl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: threadpoolctl
+  cfe-purls:
+    - pkg:conda/threadpoolctl@${{ version }}?channel=conda-forge
+    - pkg:pypi/threadpoolctl@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/joblib/threadpoolctl
+  cfe-import-names: [threadpoolctl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/threadpoolctl-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:33:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:33:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:33:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

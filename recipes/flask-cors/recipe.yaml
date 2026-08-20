@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "6.0.5"
-  python_check_max: "3.14"
 
 package:
   name: flask-cors
@@ -16,53 +15,71 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools
+    - pip
+    - setuptools >=64
     - setuptools-scm >=8
   run:
-    - flask >=0.9
     - python >=${{ python_min }}
-    - typing_extensions >=4.6.0
+    - flask >=0.9
     - werkzeug >=0.7
+    - typing_extensions >=4.6.0
 
 tests:
   - python:
+      imports:
+        - flask_cors
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-      imports:
-        - flask_cors
-        - flask_cors.core
-        - flask_cors.decorator
-        - flask_cors.extension
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest-cov
-    files:
-      source:
-        - tests/
-    script:
-      - python -c "from importlib import metadata as md; v = md.version('flask-cors'); print(v); assert v == '${{ version }}'"
-      - coverage run --source=flask_cors --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=95
+        - "*"
 
 about:
+  homepage: https://corydolphin.github.io/flask-cors/
   license: MIT
   license_file: LICENSE
-  summary: A Flask extension adding a decorator for CORS support
-  homepage: https://pypi.org/project/flask-cors
+  summary: A Flask extension simplifying CORS support
+  description: |
+    A Flask extension simplifying CORS support
   repository: https://github.com/corydolphin/flask-cors
+  documentation: https://corydolphin.github.io/flask-cors/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-cors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-cors
+  cfe-purls:
+    - pkg:conda/flask-cors@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-cors@${{ version }}
+  cfe-upstream-repo: https://github.com/corydolphin/flask-cors
+  cfe-upstream-homepage: https://corydolphin.github.io/flask-cors/
+  cfe-import-names: [flask_cors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-cors-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:12:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:12:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:12:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

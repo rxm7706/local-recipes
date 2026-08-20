@@ -48,7 +48,9 @@ tests:
       imports:
         - soundfile
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - script:
       # Verify that soundfile is linking the correct libsndfile object
       - python -c "import soundfile; print(soundfile._libname)"
@@ -72,6 +74,34 @@ about:
 
 extra:
   recipe-maintainers:
-    - scopatz
-    - wolfv
-    - bmcfee
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: soundfile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: soundfile
+  cfe-purls:
+    - pkg:conda/soundfile@${{ version }}?channel=conda-forge
+    - pkg:pypi/soundfile@${{ version }}
+  cfe-upstream-repo: https://github.com/bastibe/python-soundfile
+  cfe-upstream-homepage: https://python-soundfile.readthedocs.io/
+  cfe-import-names: [soundfile]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:39:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:39:54Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:39:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

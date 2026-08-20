@@ -2,63 +2,86 @@
 schema_version: 1
 
 context:
-  name: babel
-  version: 2.18.0
+  version: "2.18.0"
 
 package:
-  name: ${{ name|lower }}
+  name: babel
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/babel/babel-${{ version }}.tar.gz
   sha256: b80b99a14bd085fcacfa15c9165f651fbb3406e66cc603abf11c5750937c992d
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - pybabel = babel.messages.frontend:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-  run_constraints:
     - pytz >=2015.7
+    - if: win
+      then:
+        - python-tzdata
 
 tests:
   - python:
       imports:
         - babel
-        - babel.localtime
-        - babel.messages
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - pybabel --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://babel.pocoo.org/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Utilities to internationalize and localize Python applications
+  summary: Internationalization utilities
   description: |
-    Babel is an integrated collection of utilities that assist in
-    internationalizing and localizing Python applications, with an emphasis
-    on web-base applications.
-  homepage: http://babel.pocoo.org/
+    Internationalization utilities
   repository: https://github.com/python-babel/babel
-  documentation: http://babel.pocoo.org/en/latest/#user-documentation
 
 extra:
   recipe-maintainers:
     - frol
     - nehaljwani
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: babel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: babel
+  cfe-purls:
+    - pkg:conda/babel@${{ version }}?channel=conda-forge
+    - pkg:pypi/babel@${{ version }}
+  cfe-upstream-repo: https://github.com/python-babel/babel
+  cfe-upstream-homepage: https://babel.pocoo.org/
+  cfe-import-names: [babel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/babel-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:33:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:33:13Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:33:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for babel...
+Error: Compressed file ended before the end-of-stream marker was reached
+
+####

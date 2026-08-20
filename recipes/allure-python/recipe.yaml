@@ -2,182 +2,90 @@
 schema_version: 1
 
 context:
-  name: allure-python
   version: "2.16.0"
 
-recipe:
-  name: ${{ name|lower }}
+package:
+  name: allure-python-commons
   version: ${{ version }}
 
 source:
-  url: https://github.com/allure-framework/${{ name }}/archive/${{ version }}.tar.gz
-  sha256: 9abc3da20209a89d082fc5f7bd197f5ef7438c2f88a3a4012918ffe6c48e98c4
+  url: https://pypi.org/packages/source/a/allure-python-commons/allure_python_commons-${{ version }}.tar.gz
+  sha256: ecdc92bafea074bab96b5f2c4eb3100825340188f5aece608ae80eced709b36f
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: allure-python-commons
-    build:
-      noarch: python
-      script:
-        file: install.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools
-        - setuptools-scm
-      run:
-        - python >=${{ python_min }}
-        - attrs >=16.0.0
-        - pluggy >=0.4.0
-    tests:
-      - python:
-          imports:
-            - allure
-            - allure_commons
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: allure-behave
-    build:
-      noarch: python
-      script:
-        file: install.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools
-        - setuptools-scm
-      run:
-        - python >=${{ python_min }}
-        - behave >=1.2.5
-        - ${{ pin_subpackage('allure-python-commons', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - allure_behave
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: allure-nose2
-    build:
-      noarch: python
-      script:
-        file: install.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools
-        - setuptools-scm
-      run:
-        - python >=${{ python_min }}
-        - nose2
-        - ${{ pin_subpackage('allure-python-commons', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - allure_nose2
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: allure-pytest
-    build:
-      noarch: python
-      script:
-        file: install.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools
-        - setuptools-scm
-      run:
-        - python >=${{ python_min }}
-        - pytest >=4.5.0
-        - ${{ pin_subpackage('allure-python-commons', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - allure_pytest
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: allure-pytest-bdd
-    build:
-      noarch: python
-      script:
-        file: install.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools
-        - setuptools-scm
-      run:
-        - python >=${{ python_min }}
-        - pytest >=4.5.0
-        - pytest-bdd >=5.0.0
-        - ${{ pin_subpackage('allure-python-commons', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - allure_pytest_bdd
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: allure-robotframework
-    build:
-      noarch: python
-      script:
-        file: install.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - setuptools
-        - setuptools-scm
-      run:
-        - python >=${{ python_min }}
-        - robotframework
-        - ${{ pin_subpackage('allure-python-commons', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - AllureLibrary
-            - allure_robotframework
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - attrs >=16.0.0
+    - pluggy >=0.4.0
+
+tests:
+  - python:
+      imports:
+        - allure
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://allurereport.org/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Allure integrations for Python test frameworks
-  homepage: https://github.com/allure-framework/allure-python
+  summary: Contains the API for end users as well as helper functions and classes to build Allure adapters for Python test frameworks
+  description: |
+    Contains the API for end users as well as helper functions and classes to build Allure adapters for Python test frameworks
+  repository: https://github.com/allure-framework/allure-python
 
 extra:
   recipe-maintainers:
     - kenodegard
     - nsoranzo
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: allure-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: allure-python-commons
+  cfe-purls:
+    - pkg:conda/allure-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/allure-python-commons@${{ version }}
+  cfe-upstream-repo: https://github.com/allure-framework/allure-python
+  cfe-upstream-homepage: https://allurereport.org/
+  cfe-import-names: [allure]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/allure-python-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.16.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:50:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:50:49Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:50:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

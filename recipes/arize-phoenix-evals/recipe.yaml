@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: arize-phoenix-evals
   version: "3.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: arize-phoenix-evals
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/arize_phoenix_evals-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/arize-phoenix-evals/arize_phoenix_evals-${{ version }}.tar.gz
   sha256: 27ba75f71d35ab95baee200b70b8f39db045db9067f45cdbc2dbdf02ecc971d1
 
 build:
@@ -20,33 +19,39 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<3.12
-    - pandas
-    - tqdm
-    - typing-extensions >=4.5,<5
-    - pystache
-    - pydantic
+    - python >=${{ python_min }}
     - jsonpath-ng
-    - openinference-semantic-conventions
-    - openinference-instrumentation
+    - openinference-instrumentation >=0.1.20
+    - openinference-semantic-conventions >=0.1.19
     - opentelemetry-api
+    - pandas
+    - pydantic >=2.0.0
+    - pystache
+    - tqdm
+    - typing_extensions <5,>=4.5
 
 tests:
   - python:
       imports:
         - phoenix.evals
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: LLM Evaluations
+  homepage: https://pypi.org/project/arize-phoenix-evals/
   license: Elastic-2.0
   license_file: LICENSE
-  homepage: https://github.com/Arize-ai/phoenix/
+  summary: LLM Evaluations
+  description: |
+    LLM Evaluations
+  repository: https://github.com/Arize-ai/phoenix
+  documentation: https://arize.com/docs/phoenix/
 
 extra:
   recipe-maintainers:
@@ -55,3 +60,36 @@ extra:
     - michaelschiff
     - mikeldking
     - RogerHYang
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arize-phoenix-evals
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arize-phoenix-evals
+  cfe-purls:
+    - pkg:conda/arize-phoenix-evals@${{ version }}?channel=conda-forge
+    - pkg:pypi/arize-phoenix-evals@${{ version }}
+  cfe-upstream-repo: https://github.com/Arize-ai/phoenix
+  cfe-upstream-homepage: https://pypi.org/project/arize-phoenix-evals/
+  cfe-import-names: [phoenix.evals]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arize-phoenix-evals-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:58:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:58:22Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:58:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

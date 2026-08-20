@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: haversine
   version: "2.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: haversine
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/haversine-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/haversine/haversine-${{ version }}.tar.gz
   sha256: 1103d7e1f0f108c25b31b63452c54d9d6f29389a70de7dd75fd4b908329b6fcf
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -31,14 +30,51 @@ tests:
       imports:
         - haversine
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Calculate the distance between 2 points on Earth.
+  homepage: https://github.com/mapado/haversine
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/mapado/haversine
+  summary: Calculate the distance between 2 points on Earth.
+  description: |
+    Calculate the distance between 2 points on Earth.
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: haversine
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: haversine
+  cfe-purls:
+    - pkg:conda/haversine@${{ version }}?channel=conda-forge
+    - pkg:pypi/haversine@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mapado/haversine
+  cfe-import-names: [haversine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/haversine-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:56:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:56:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:56:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

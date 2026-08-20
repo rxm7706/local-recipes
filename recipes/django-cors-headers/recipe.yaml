@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-cors-headers
   version: "4.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-cors-headers
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_cors_headers-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-cors-headers/django_cors_headers-${{ version }}.tar.gz
   sha256: fe5d7cb59fdc2c8c646ce84b727ac2bca8912a247e6e68e1fb507372178e59e8
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
     - asgiref >=3.6
@@ -33,21 +32,18 @@ tests:
       imports:
         - corsheaders
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/django-cors-headers/
   license: MIT
   license_file: LICENSE
-  summary: Django app for handling the server headers required for Cross-Origin Resource Sharing (CORS)
+  summary: django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS).
   description: |
-    A Django App that adds CORS (Cross-Origin Resource Sharing) headers to responses.
-
-    Although JSON-P is useful, it is strictly limited to GET requests.
-    CORS builds on top of XmlHttpRequest to allow developers to make cross-domain requests,
-    similar to same-domain requests. Read more about it here <http://www.html5rocks.com/en/tutorials/cors/>.
-
-  homepage: https://github.com/ottoyiu/django-cors-headers
-  repository: https://github.com/ottoyiu/django-cors-headers
+    django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS).
+  repository: https://github.com/adamchainz/django-cors-headers
 
 extra:
   recipe-maintainers:
@@ -55,3 +51,36 @@ extra:
     - lsetiawan
     - timsnyder
     - MichelML
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-cors-headers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-cors-headers
+  cfe-purls:
+    - pkg:conda/django-cors-headers@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-cors-headers@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/django-cors-headers
+  cfe-upstream-homepage: https://pypi.org/project/django-cors-headers/
+  cfe-import-names: [corsheaders]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-cors-headers-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:48:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:48:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:48:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

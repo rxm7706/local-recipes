@@ -2,64 +2,82 @@
 schema_version: 1
 
 context:
-  name: markdown-it-py
   version: "4.2.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: markdown-it-py
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/markdown-it-py/markdown_it_py-${{ version }}.tar.gz
   sha256: 04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
-  python:
-    entry_points:
-      - markdown-it = markdown_it.cli.parse:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
     - flit-core >=3.4,<4
   run:
     - python >=${{ python_min }}
-    - mdurl >=0.1,<1
+    - mdurl ~=0.1
 
 tests:
   - python:
       imports:
         - markdown_it
-        - markdown_it.cli
-        - markdown_it.common
-        - markdown_it.helpers
-        - markdown_it.presets
-        - markdown_it.rules_block
-        - markdown_it.rules_core
-        - markdown_it.rules_inline
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - markdown-it --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/executablebooks/markdown-it-py
   license: MIT
   license_file: LICENSE
   summary: Python port of markdown-it. Markdown parsing, done right!
-  homepage: https://github.com/executablebooks/markdown-it-py
-  repository: https://github.com/executablebooks/markdown-it-py
-  documentation: https://github.com/executablebooks/markdown-it-py/blob/master/README.md
+  description: |
+    Python port of markdown-it. Markdown parsing, done right!
+  documentation: https://markdown-it-py.readthedocs.io
 
 extra:
   recipe-maintainers:
     - dopplershift
     - choldgraf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markdown-it-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markdown-it-py
+  cfe-purls:
+    - pkg:conda/markdown-it-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/markdown-it-py@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/executablebooks/markdown-it-py
+  cfe-import-names: [markdown_it]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/markdown-it-py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:25:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:25:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:25:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

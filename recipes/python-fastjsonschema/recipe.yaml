@@ -65,3 +65,36 @@ about:
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-fastjsonschema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-fastjsonschema
+  cfe-purls:
+    - pkg:conda/python-fastjsonschema@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-fastjsonschema@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/horejsek/python-fastjsonschema
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-fastjsonschema-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:22:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:22:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:22:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: etching info for python-fastjsonschema...
+Error: Failed to fetch PyPI metadata for 'python-fastjsonschema' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-fastjsonschema/json
+
+####

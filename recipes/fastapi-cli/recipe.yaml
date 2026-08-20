@@ -2,53 +2,82 @@
 schema_version: 1
 
 context:
-  name: fastapi-cli
   version: "0.0.32"
 
 package:
-  name: ${{ name|lower }}
+  name: fastapi-cli
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastapi_cli-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fastapi-cli/fastapi_cli-${{ version }}.tar.gz
   sha256: 38024d2345275e1b37ce8848727a580d84901b570e96b3256d9d36a9a5039424
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - fastapi = fastapi_cli.cli:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pdm-backend
     - pip
+    - pdm-backend
   run:
     - python >=${{ python_min }}
+    - typer >=0.16.0
+    - uvicorn >=0.15.0
     - rich-toolkit >=0.14.8
     - tomli >=2.0.0
-    - typer >=0.16
-    - uvicorn-standard >=0.15.0
+
 tests:
   - python:
       imports:
         - fastapi_cli
-  - requirements:
-      run:
-        - fastapi
-        - python ${{ python_min }}.*
-    script:
-      - fastapi --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Run and manage FastAPI apps from the command line with FastAPI CLI. 🚀
+  homepage: https://github.com/fastapi/fastapi-cli
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/tiangolo/fastapi-cli
+  summary: Run and manage FastAPI apps from the command line with FastAPI CLI. 🚀
+  description: |
+    Run and manage FastAPI apps from the command line with FastAPI CLI. 🚀
+  repository: https://github.com/fastapi/fastapi-cli
+  documentation: https://fastapi.tiangolo.com/fastapi-cli/
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastapi-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastapi-cli
+  cfe-purls:
+    - pkg:conda/fastapi-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastapi-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/fastapi/fastapi-cli
+  cfe-upstream-homepage: https://github.com/fastapi/fastapi-cli
+  cfe-import-names: [fastapi_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastapi-cli-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:09:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:09:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:09:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

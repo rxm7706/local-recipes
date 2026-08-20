@@ -19,28 +19,31 @@ build:
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - celery >=5.2.7,<6.0
+    - celery <6.0,>=5.2.7
     - django >=3.2.25
 
 tests:
   - python:
       imports:
-        - django_celery_results
+        - t
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  summary: Celery result backends for Django.
+  homepage: https://github.com/celery/django-celery-results
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/celery/django-celery-results
+  summary: Celery result backends for Django.
+  description: |
+    Celery result backends for Django.
+  repository: https://github.com/celery/django-celery-results
   documentation: https://django-celery-results.readthedocs.io/en/latest/
 
 extra:
@@ -48,3 +51,34 @@ extra:
     - MichelML
     - hadim
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-celery-results
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-celery-results
+  cfe-purls:
+    - pkg:conda/django-celery-results@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-celery-results@${{ version }}
+  cfe-upstream-repo: https://github.com/celery/django-celery-results
+  cfe-upstream-homepage: https://github.com/celery/django-celery-results
+  cfe-import-names: [t]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-celery-results-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:49:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:49:08Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T08:49:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['t']
+####

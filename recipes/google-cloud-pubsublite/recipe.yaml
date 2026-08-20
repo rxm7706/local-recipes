@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: google-cloud-pubsublite
-  version: 1.13.0
+  version: "1.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-pubsublite
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-pubsublite/google_cloud_pubsublite-${{ version }}.tar.gz
   sha256: cc56ca57755e7665a66f0c0025ca923f7bfeb39ba408859ffe87cb840c0e82b5
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -24,37 +23,61 @@ requirements:
     - pip
     - setuptools
   run:
-    # we don't have grpcio >=1.75.1 on conda-forge yet, so we're not ready for python >=3.14
-    - python >=${{ python_min }},<3.14
-    - google-cloud-pubsub >=2.10.0,<3.0.0
-    # constraint for grpcio and grpcio-status for python <3.14
-    - grpcio >=1.38.1,<2.0.0
-    - grpcio-status >=1.38.1,<2.0.0
-    # more restrictive constraints for python >=3.12
-    - overrides >=7.0.1,<8.0.0
-    - google-api-core >=1.33.2,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*
-    - google-api-core-grpc
-    # use most restrictive constraints (for py>=313) that grayskull misses
-    - proto-plus >=1.25.0,<2.0.0
+    - python >=${{ python_min }}
+    - google-cloud-pubsub <3.0.0,>=2.10.0
+    - grpcio <2.0.0,>=1.38.1
+    - grpcio-status <2.0.0,>=1.38.1
+    - overrides <8.0.0,>=6.0.1
+    - google-api-core !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,<3.0.0,>=1.33.2
+    - proto-plus <2.0.0,>=1.22.3
 
 tests:
   - python:
       imports:
-        - google
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+        - google.cloud.pubsublite
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Google Cloud Pubsublite API client library
+  homepage: https://github.com/googleapis/python-pubsublite
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/python-pubsublite
+  summary: Google Cloud Pubsublite API client library
+  description: |
+    Google Cloud Pubsublite API client library
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-pubsublite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-pubsublite
+  cfe-purls:
+    - pkg:conda/google-cloud-pubsublite@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-pubsublite@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/python-pubsublite
+  cfe-import-names: [google.cloud.pubsublite]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-pubsublite-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:32:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:32:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:32:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

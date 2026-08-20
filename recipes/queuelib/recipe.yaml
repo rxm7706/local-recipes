@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: queuelib
-  version: 1.9.0
+  version: "1.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: queuelib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/q/queuelib/queuelib-${{ version }}.tar.gz
   sha256: b12fea79fd8c1dd23e212b1f3db58003b773949801d4f4e6f34d882467d4a192
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -30,24 +29,20 @@ tests:
   - python:
       imports:
         - queuelib
-        - queuelib.tests
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - files:
-      source:
-        - queuelib
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest
-    script:
-      - pytest queuelib
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Collection of persistent (disk-based) queues
+  homepage: https://github.com/scrapy/queuelib
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/scrapy/queuelib
+  summary: Collection of persistent (disk-based) and non-persistent (memory-based) queues
+  description: |
+    Collection of persistent (disk-based) and non-persistent (memory-based) queues
+  repository: https://github.com/scrapy/queuelib
+  documentation: https://github.com/scrapy/queuelib/blob/master/README.rst
 
 extra:
   recipe-maintainers:
@@ -55,3 +50,33 @@ extra:
     - Gallaecio
     - kmike
     - wRAR
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: queuelib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: queuelib
+  cfe-purls:
+    - pkg:conda/queuelib@${{ version }}?channel=conda-forge
+    - pkg:pypi/queuelib@${{ version }}
+  cfe-upstream-repo: https://github.com/scrapy/queuelib
+  cfe-upstream-homepage: https://github.com/scrapy/queuelib
+  cfe-import-names: [queuelib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/queuelib-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:45:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:45:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:45:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

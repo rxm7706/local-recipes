@@ -2,51 +2,82 @@
 schema_version: 1
 
 context:
-  name: langcodes
-  version: 3.5.1
+  version: "3.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: langcodes
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langcodes-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langcodes/langcodes-${{ version }}.tar.gz
   sha256: 40bff315e01b01d11c2ae3928dd4f5cbd74dd38f9bd912c12b9a3606c143f731
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=60
     - setuptools-scm >=8.0
-    - python ${{ python_min }}.*
   run:
     - python >=${{ python_min }}
-    - language-data >=1.2
 
 tests:
   - python:
       imports:
         - langcodes
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Tools for labeling human languages with IETF language tags
+  homepage: https://github.com/georgkrause/langcodes
   license: MIT
   license_file: LICENSE.txt
+  summary: Tools for labeling human languages with IETF language tags
   description: |
-    Langcodes is a toolkit for working with and comparing the
-    standardized codes for languages, such as 'en' for English, 'es'
-    for Spanish, and 'zh-Hant' for Traditional Chinese. These are
-    BCP 47 language codes, formerly known as ISO language codes.
-
-  homepage: https://github.com/georgkrause/langcodes
+    Tools for labeling human languages with IETF language tags
+  repository: https://github.com/georgkrause/langcodes
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langcodes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langcodes
+  cfe-purls:
+    - pkg:conda/langcodes@${{ version }}?channel=conda-forge
+    - pkg:pypi/langcodes@${{ version }}
+  cfe-upstream-repo: https://github.com/georgkrause/langcodes
+  cfe-upstream-homepage: https://github.com/georgkrause/langcodes
+  cfe-import-names: [langcodes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langcodes-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:05:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:05:03Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:05:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

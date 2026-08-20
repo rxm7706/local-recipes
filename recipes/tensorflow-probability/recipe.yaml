@@ -16,7 +16,7 @@ source:
     - 001-fix_jax_pytype_mapping.patch
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script:
     - bazel build --copt=-O3 --copt=-march=native :pip_pkg
@@ -85,3 +85,36 @@ extra:
     - jonas-eschle
     - ehfd
     - flferretti
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-probability
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-probability
+  cfe-purls:
+    - pkg:conda/tensorflow-probability@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-probability@${{ version }}
+  cfe-upstream-repo: https://github.com/tensorflow/probability
+  cfe-upstream-homepage: https://pypi.org/project/tensorflow-probability/
+  cfe-import-names: [tensorflow_probability, tensorflow_probability.substrates.jax, tensorflow_probability.substrates.numpy]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tensorflow-probability-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.25.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:25:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:25:19Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:25:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

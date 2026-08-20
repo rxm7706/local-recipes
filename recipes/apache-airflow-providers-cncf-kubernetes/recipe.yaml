@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: apache-airflow-providers-cncf-kubernetes
   version: "10.21.0"
 
 package:
-  name: ${{ name|lower }}
+  name: apache-airflow-providers-cncf-kubernetes
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_cncf_kubernetes-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/apache-airflow-providers-cncf-kubernetes/apache_airflow_providers_cncf_kubernetes-${{ version }}.tar.gz
   sha256: 7b18f248b5d6c1a60b7c38949aeca39bf532d8415e0674041cf559ba341b6416
 
 build:
-  noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -24,34 +25,63 @@ requirements:
   run:
     - python >=${{ python_min }}
     - aiofiles >=23.2.0
-    - apache-airflow >=2.11.0
+    - airflow >=2.11.0
     - apache-airflow-providers-common-compat >=1.15.0
-    # more restrictive for python >=3.14
-    - asgiref >=3.11.1
+    - asgiref >=3.5.2
     - cryptography >=44.0.3
-    - python-kubernetes >=35.0.0,!=36.0.0,<37.0.0
-    - urllib3 >=2.1.0,!=2.6.0
-    - kubernetes_asyncio >=32.0.0,<37.0.0
+    - kubernetes !=36.0.0,<37.0.0,>=35.0.0
+    - urllib3 !=2.6.0,>=2.1.0
+    - kubernetes-asyncio <37.0.0,>=32.0.0
 
 tests:
   - python:
       imports:
-        - airflow.providers.cncf.kubernetes
+        - airflow
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  homepage: https://github.com/apache/airflow/
-  summary: Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow
+  homepage: https://pypi.org/project/apache-airflow-providers-cncf-kubernetes/
   license: Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  documentation: https://airflow.apache.org/docs/apache-airflow-providers-cncf-kubernetes/stable/index.html
-  repository: https://github.com/apache/airflow/
+  license_file: LICENSE
+  summary: Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow
+  description: |
+    Provider package apache-airflow-providers-cncf-kubernetes for Apache Airflow
+  repository: https://github.com/apache/airflow
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-cncf-kubernetes/10.21.0
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apache-airflow-providers-cncf-kubernetes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apache-airflow-providers-cncf-kubernetes
+  cfe-purls:
+    - pkg:conda/apache-airflow-providers-cncf-kubernetes@${{ version }}?channel=conda-forge
+    - pkg:pypi/apache-airflow-providers-cncf-kubernetes@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/airflow
+  cfe-upstream-homepage: https://pypi.org/project/apache-airflow-providers-cncf-kubernetes/
+  cfe-import-names: [airflow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apache-airflow-providers-cncf-kubernetes-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:00:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:00:30Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T06:00:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

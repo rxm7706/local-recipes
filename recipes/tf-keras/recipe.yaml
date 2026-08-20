@@ -2,19 +2,15 @@
 schema_version: 1
 
 context:
-  name: tf-keras
-  version: "2.19.0"
+  version: "2.21.0"
 
 package:
-  name: ${{ name|lower }}
+  name: tf-keras
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tf_keras-${{ version }}.tar.gz
-    sha256: b09a407d87a4571ce1e8ca985cfc68483e3d63b2518a5d79a97ad92cb64dbe9c
-  - url: https://raw.githubusercontent.com/keras-team/tf-keras/master/LICENSE
-    sha256: 58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd
-    file_name: LICENSE
+  url: https://pypi.org/packages/source/t/tf-keras/tf_keras-${{ version }}.tar.gz
+  sha256: f9af0f2546cd5532de0fae7a481f34a1ca2253737d4cd1000f6b713dc733f770
 
 build:
   number: 0
@@ -23,28 +19,70 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - numpy >=1.23
-    - tensorflow >=2.19,<2.20
+    - tensorflow <2.22,>=2.21
 
 tests:
   - python:
       imports:
         - tf_keras
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Deep learning for humans.
+  homepage: https://keras.io/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://keras.io/
-  repository: https://github.com/keras-team/tf-keras
+  summary: Deep learning for humans.
+  description: |
+    Deep learning for humans.
 
 extra:
   recipe-maintainers:
     - conda-forge/keras
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tf-keras
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tf-keras
+  cfe-purls:
+    - pkg:conda/tf-keras@${{ version }}?channel=conda-forge
+    - pkg:pypi/tf-keras@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://keras.io/
+  cfe-import-names: [tf_keras]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tf-keras-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.21.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:31:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:31:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:31:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

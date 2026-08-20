@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  python_min: "3.12"
   version: "26.7"
+  python_min: "3.12"
 
 package:
   name: pysal
@@ -20,27 +20,22 @@ build:
 
 requirements:
   host:
-    - python 3.12.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=61.0
   run:
-    - spml >=0.2.2
-    - lazy_loader >=0.3
-    - arm_pyart
+    - python >=${{ python_min }}
+    - lazy-loader >=0.3
     - beautifulsoup4 >=4.10
     - geopandas >=0.10.0
     - numpy >=1.22
     - packaging >=22
     - pandas >=1.4
     - platformdirs >=2.0.2
-    - pytz
-    - pyyaml
     - requests >=2.27
-    - scikit-learn >=1.1
     - scipy >=1.8
     - shapely >=2.0.1
-    - python >=${{ python_min }}
+    - scikit-learn >=1.1
     - libpysal >=4.15.0
     - access >=1.1.10.post3
     - esda >=2.10.0
@@ -53,8 +48,8 @@ requirements:
     - momepy >=1.0.0
     - spglm >=1.1.0
     - spint >=1.1.0
+    - spml >=0.2.2
     - spreg >=1.9.0
-    - spvcm >=0.3.0
     - tobler >=0.14.0
     - mapclassify >=2.10.0
     - splot >=1.1.7
@@ -64,25 +59,19 @@ tests:
   - python:
       imports:
         - pysal
-        - pysal.viz
-        - pysal.explore
-        - pysal.model
-        - pysal.lib
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pysal/pysal/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Library of spatial analysis functions
+  summary: Meta Package for PySAL - A library of spatial analysis functions
   description: |
-    PySAL(Python Spatial Analysis Library) for spatial data science and the development of high level applications.
-  homepage: http://pysal.org
-  repository: https://github.com/pysal
-  documentation: http://pysal.org/pysal
+    Meta Package for PySAL - A library of spatial analysis functions
+  repository: https://github.com/pysal/pysal
 
 extra:
   recipe-maintainers:
@@ -93,3 +82,40 @@ extra:
     - ocefpaf
     - mariusvniekerk
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysal
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysal
+  cfe-purls:
+    - pkg:conda/pysal@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysal@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/pysal
+  cfe-upstream-homepage: https://github.com/pysal/pysal/
+  cfe-import-names: [pysal]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pysal-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-26.7
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:01:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:01:38Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:01:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

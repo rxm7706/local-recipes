@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
   version: "26.1"
 
 package:
@@ -21,8 +20,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.2,<4
     - pip
+    - flit-core >=3.2,<4
   run:
     - python >=${{ python_min }}
     - django >=5.2
@@ -35,17 +34,48 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - script:
-    - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import django_filters; import django_filters.rest_framework"
 
 about:
-  summary: Django-filter is a reusable Django application for allowing users to filter querysets dynamically.
+  homepage: https://github.com/carltongibson/django-filter/tree/main
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/carltongibson/django-filter/tree/main
+  summary: Django-filter is a reusable Django application for allowing users to filter querysets dynamically.
+  description: |
+    Django-filter is a reusable Django application for allowing users to filter querysets dynamically.
+  repository: https://github.com/carltongibson/django-filter
   documentation: https://django-filter.readthedocs.io/en/main/
 
 extra:
   recipe-maintainers:
     - kwilcox
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-filter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-filter
+  cfe-purls:
+    - pkg:conda/django-filter@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-filter@${{ version }}
+  cfe-upstream-repo: https://github.com/carltongibson/django-filter
+  cfe-upstream-homepage: https://github.com/carltongibson/django-filter/tree/main
+  cfe-import-names: [django_filters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-filter-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:49:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:49:02Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:49:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

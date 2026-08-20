@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: pyfakefs
   version: "6.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyfakefs
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyfakefs/pyfakefs-${{ version }}.tar.gz
   sha256: e59a36db447bf509ce9c97ab3d1510c08cc51895c5311325a560a5e5b5dc1940
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
@@ -36,21 +35,52 @@ tests:
         - "*"
 
 about:
-  license: Apache-2.0
-  license_file: COPYING
-  summary: A fake file system that mocks the Python file system modules.
-  description: |
-    Pyfakefs implements a fake file system that mocks the Python file system
-    modules. Using pyfakefs, your tests operate on a fake file system in
-    memory without touching the real disk. The software under test requires
-    no modification to work with pyfakefs. pyfakefs works with Linux, Windows
-    and macOS.
-
-
   homepage: https://github.com/pytest-dev/pyfakefs
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Implements a fake file system that mocks the Python file system modules.
+  description: |
+    Implements a fake file system that mocks the Python file system modules.
   documentation: https://pytest-pyfakefs.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - tswast
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyfakefs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyfakefs
+  cfe-purls:
+    - pkg:conda/pyfakefs@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyfakefs@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pytest-dev/pyfakefs
+  cfe-import-names: [pyfakefs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyfakefs-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:21:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:21:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:21:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

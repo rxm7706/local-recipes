@@ -3,10 +3,9 @@ schema_version: 1
 
 context:
   version: "26.1.0"
-  python_check_max: "3.14"
 
-recipe:
-  name: service-identity-split
+package:
+  name: service-identity
   version: ${{ version }}
 
 source:
@@ -16,116 +15,70 @@ source:
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: service-identity
-    build:
-      number: 0
-      noarch: python
-      script:
-        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-    requirements:
-      host:
-        - hatch-fancy-pypi-readme
-        - hatch-vcs
-        - hatchling
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - attrs >=19.1.0
-        - cryptography >=47
-        - python >=${{ python_min }}
-      run_constraints:
-        - service_identity ${{ version }}.*
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+    - hatch-fancy-pypi-readme
+  run:
+    - python >=${{ python_min }}
+    - attrs >=19.1.0
+    - cryptography >=47
 
-  - package:
-      name: service_identity
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("service-identity", upper_bound="x.x.x") }}
-    tests:
-      - python:
-          imports: service_identity
-          pip_check: false
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-
-  - package:
-      name: service-identity-with-pyopenssl
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("service-identity", upper_bound="x.x.x") }}
-        - pyopenssl
-    tests:
-      - python:
-          imports: service_identity
-          pip_check: false
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-
-  - package:
-      name: service-identity-with-idna
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("service-identity", upper_bound="x.x.x") }}
-        - idna
-    tests:
-      - python:
-          imports: service_identity
-          pip_check: false
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-
-  - package:
-      name: service-identity-with-all
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("service-identity", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("service-identity-with-idna", upper_bound="x.x.x") }}
-        - ${{ pin_subpackage("service-identity-with-pyopenssl", upper_bound="x.x.x") }}
-    tests:
-      - python:
-          imports: service_identity
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - files:
-          source:
-            - tests/
-        requirements:
-          run:
-            - pytest-cov
-            - python ${{ python_min }}.*
-        script:
-          - coverage run --source=service_identity --branch -m pytest -vv --tb=long --color=yes
-          - coverage report --show-missing --skip-covered --fail-under=98
+tests:
+  - python:
+      imports:
+        - service_identity
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/service-identity/
   license: MIT
   license_file: LICENSE
-  summary: Service identity verification for pyOpenSSL.
+  summary: Service identity verification for pyOpenSSL & cryptography.
   description: |
-    service_identity aspires to give you all the tools you need for verifying
-    whether a certificate is valid for the intended purposes.
-  homepage: https://pypi.org/project/service-identity
+    Service identity verification for pyOpenSSL & cryptography.
   repository: https://github.com/pyca/service-identity
-  documentation: https://service-identity.readthedocs.io
+  documentation: https://service-identity.readthedocs.io/
 
 extra:
-  feedstock-name: service_identity
   recipe-maintainers:
     - isuruf
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: service_identity
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: service-identity
+  cfe-purls:
+    - pkg:conda/service_identity@${{ version }}?channel=conda-forge
+    - pkg:pypi/service-identity@${{ version }}
+  cfe-upstream-repo: https://github.com/pyca/service-identity
+  cfe-upstream-homepage: https://pypi.org/project/service-identity/
+  cfe-import-names: [service_identity]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/service_identity-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:26:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:26:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:26:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

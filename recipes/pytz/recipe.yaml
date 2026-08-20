@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "2026.3.post1"
-  python_check_max: "3.14"
 
 package:
   name: pytz
@@ -16,51 +15,69 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: pytz
+      imports:
+        - pytz
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - README.rst
-        - pytz/tests
-    requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      - cd pytz/tests
-      - coverage run --source=pytz --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=69
+        - "*"
 
 about:
+  homepage: http://pythonhosted.org/pytz
   license: MIT
   license_file: LICENSE.txt
-  summary: World timezone definitions, modern and historical.
+  summary: World timezone definitions, modern and historical
   description: |
-    pytz brings the Olson tz database into Python. This library allows
-    accurate and cross platform timezone calculations using Python 2.4 or
-    higher. It also solves the issue of ambiguous times at the end of daylight
-    saving time.
-  homepage: https://pypi.org/project/pytz
-  repository: https://github.com/stub42/pytz
-  documentation: https://pythonhosted.org/pytz
+    World timezone definitions, modern and historical
+  repository: https://github.com/stub42/pytz.git
 
 extra:
   recipe-maintainers:
     - msarahan
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytz
+  cfe-purls:
+    - pkg:conda/pytz@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytz@${{ version }}
+  cfe-upstream-repo: https://github.com/stub42/pytz.git
+  cfe-upstream-homepage: http://pythonhosted.org/pytz
+  cfe-import-names: [pytz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytz-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:35:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:35:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:35:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

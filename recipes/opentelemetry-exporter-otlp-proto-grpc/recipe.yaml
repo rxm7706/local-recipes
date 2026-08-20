@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-exporter-otlp-proto-grpc
   version: "1.44.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-exporter-otlp-proto-grpc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_otlp_proto_grpc-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-otlp-proto-grpc/opentelemetry_exporter_otlp_proto_grpc-${{ version }}.tar.gz
   sha256: 40d1ae9e03fcc36de3cbac610cc99f35894938bff9cfd90fc4ec68bd85448463
 
 build:
@@ -20,55 +19,36 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - deprecated >=1.2.6
     - googleapis-common-protos ~=1.57
-    - grpcio <2.0.0,>=1.75.1
+    - grpcio <2.0.0,>=1.63.2
     - opentelemetry-api ~=1.15
-    - opentelemetry-proto ==1.44.0
-    - opentelemetry-sdk >=1.44.0,<1.45.dev0
     - opentelemetry-exporter-otlp-proto-common ==1.44.0
-  <conda_recipe_manager.types.SentinelType object at 0x75ed6ec51be0>:  # NOTE backoff only required for py<37 but pip checks fails without it
-    #- backoff >=1.10.0,<3.0.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.6.0
-    # - typing_extensions >=4.6.0
-    # - typing_extensions >=4.6.0
-    # - typing_extensions >=4.6.0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
-    # - typing_extensions >=4.6.0
-    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
+    - opentelemetry-proto ==1.44.0
+    - opentelemetry-sdk ~=1.44.0
+    - typing_extensions >=4.6.0
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.exporter
         - opentelemetry.exporter.otlp.proto.grpc
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Collector Protobuf over gRPC Exporter
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-grpc
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-grpc
+  summary: OpenTelemetry Collector Protobuf over gRPC Exporter
+  description: |
+    OpenTelemetry Collector Protobuf over gRPC Exporter
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
@@ -78,3 +58,36 @@ extra:
     - conda-forge/opentelemetry-proto
     - conda-forge/opentelemetry-sdk
     - conda-forge/opentelemetry-exporter-otlp-proto-common
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-otlp-proto-grpc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-otlp-proto-grpc
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-otlp-proto-grpc@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-exporter-otlp-proto-grpc@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-grpc
+  cfe-import-names: [opentelemetry.exporter.otlp.proto.grpc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-otlp-proto-grpc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.44.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:21:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:21:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:21:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

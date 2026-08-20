@@ -9,23 +9,21 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/p/partd/partd-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/partd/partd-${{ version }}.tar.gz
   sha256: d022c33afbdc8405c226621b015e8067888173d85f7f5ecebb3cafed9a20f02c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.9
     - setuptools >=61.2
-    - versioneer =0.29
-    - tomli
   run:
-    - python >=3.9
+    - python >=${{ python_min }}
     - locket
     - toolz
 
@@ -34,12 +32,17 @@ tests:
       imports:
         - partd
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  summary: Data structure for on-disk shuffle operations
-  homepage: https://github.com/dask/partd
+  homepage: http://github.com/dask/partd/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Appendable key-value storage
+  description: |
+    Appendable key-value storage
 
 extra:
   recipe-maintainers:
@@ -47,3 +50,40 @@ extra:
     - mrocklin
     - TomAugspurger
     - jrbourbeau
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: partd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: partd
+  cfe-purls:
+    - pkg:conda/partd@${{ version }}?channel=conda-forge
+    - pkg:pypi/partd@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/dask/partd/
+  cfe-import-names: [partd]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/partd-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.2
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T02:47:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:47:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:47:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

@@ -3,27 +3,25 @@ schema_version: 1
 
 context:
   version: "3.1.1"
-  sha256: e07bbc54a0d798fe6010a12398422e62a8bfbba95c394fd0956ef58cb4d3e260
-  pkg_name: snowballstemmer
 
 package:
-  name: ${{ pkg_name }}
+  name: snowballstemmer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ pkg_name[0] }}/${{ pkg_name }}/${{ pkg_name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ pkg_name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/snowballstemmer/snowballstemmer-${{ version }}.tar.gz
+  sha256: e07bbc54a0d798fe6010a12398422e62a8bfbba95c394fd0956ef58cb4d3e260
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -31,24 +29,59 @@ tests:
   - python:
       imports:
         - snowballstemmer
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/snowballstem/snowball
   license: BSD-3-Clause
-  license_file: COPYING
-  summary: Snowball stemming library collection for Python
+  license_file: LICENSE
+  summary: This package provides 36 stemmers for 34 languages generated from Snowball algorithms.
   description: |
-    Snowball is a small string processing language designed for creating
-    stemming algorithms for use in Information Retrieval. The Snowball
-    compiler translates a Snowball script into another language - currently
-    ISO C, Java and Python are supported.
-  homepage: https://snowballstem.org/
-  repository: https://github.com/snowballstem/snowball
+    This package provides 36 stemmers for 34 languages generated from Snowball algorithms.
 
 extra:
   recipe-maintainers:
     - chohner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: snowballstemmer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: snowballstemmer
+  cfe-purls:
+    - pkg:conda/snowballstemmer@${{ version }}?channel=conda-forge
+    - pkg:pypi/snowballstemmer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/snowballstem/snowball
+  cfe-import-names: [snowballstemmer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/snowballstemmer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.1.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:36:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:36:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:36:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

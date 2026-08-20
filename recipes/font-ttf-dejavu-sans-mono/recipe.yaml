@@ -39,3 +39,37 @@ about:
 extra:
   recipe-maintainers:
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: font-ttf-dejavu-sans-mono
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: font-ttf-dejavu-sans-mono
+  cfe-purls:
+    - pkg:conda/font-ttf-dejavu-sans-mono@${{ version }}?channel=conda-forge
+    - pkg:pypi/font-ttf-dejavu-sans-mono@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://dejavu-fonts.github.io/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/font-ttf-dejavu-sans-mono-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:32:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:32:56Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:32:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1:  for font-ttf-dejavu-sans-mono...
+Error: Failed to fetch PyPI metadata for 'font-ttf-dejavu-sans-mono' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-dejavu-sans-mono/json
+####

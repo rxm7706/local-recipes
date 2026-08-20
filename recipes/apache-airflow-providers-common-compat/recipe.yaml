@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: apache-airflow-providers-common-compat
   version: "1.18.0"
 
 package:
-  name: ${{ name|lower }}
+  name: apache-airflow-providers-common-compat
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_common_compat-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/apache-airflow-providers-common-compat/apache_airflow_providers_common_compat-${{ version }}.tar.gz
   sha256: 30dbdd9a2bd931469b32c180792630f5e6b84e0e908dfc18da51b4beb7dd521f
 
 build:
-  noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -23,29 +24,58 @@ requirements:
     - flit-core ==3.12.0
   run:
     - python >=${{ python_min }}
-    - apache-airflow >=2.11.0
-    # more restrictive for python >=3.14
-    - asgiref >=3.11.1
+    - airflow >=2.11.0
+    - asgiref >=2.3.0
 
 tests:
   - python:
       imports:
-        - airflow.providers.common.compat
+        - airflow
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
 
 about:
-  homepage: https://github.com/apache/airflow/
-  summary: Provider package apache-airflow-providers-common-compat for Apache Airflow
+  homepage: https://pypi.org/project/apache-airflow-providers-common-compat/
   license: Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  documentation: https://airflow.apache.org/docs/apache-airflow-providers-common-compat/stable/index.html
-  repository: https://github.com/apache/airflow/
+  license_file: LICENSE
+  summary: Provider package apache-airflow-providers-common-compat for Apache Airflow
+  description: |
+    Provider package apache-airflow-providers-common-compat for Apache Airflow
+  repository: https://github.com/apache/airflow
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-common-compat/1.18.0
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apache-airflow-providers-common-compat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apache-airflow-providers-common-compat
+  cfe-purls:
+    - pkg:conda/apache-airflow-providers-common-compat@${{ version }}?channel=conda-forge
+    - pkg:pypi/apache-airflow-providers-common-compat@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/airflow
+  cfe-upstream-homepage: https://pypi.org/project/apache-airflow-providers-common-compat/
+  cfe-import-names: [airflow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apache-airflow-providers-common-compat-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:01:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:01:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:01:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

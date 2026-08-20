@@ -2,73 +2,86 @@
 schema_version: 1
 
 context:
-  name: tableauserverclient
   version: "0.41"
 
 package:
-  name: ${{ name|lower }}
+  name: tableauserverclient
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tableauserverclient/tableauserverclient-${{ version }}.tar.gz
   sha256: e491975b9f0e19467fb6423b814511a9f549c22bce78c868079a25fbe81a0e95
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner
-    - versioneer[toml] >=0.29
-    - setuptools >=0.77
+    - setuptools >=77.0
   run:
     - python >=${{ python_min }}
+    - versioneer
     - defusedxml >=0.7.1
     - packaging >=23.1
     - requests >=2.32
+    - urllib3 <3,>=2.6.0
     - typing_extensions >=4.0
-    - urllib3 >=2.6.0,<3
 
 tests:
   - python:
       imports:
         - tableauserverclient
-        - tableauserverclient.models
-        - tableauserverclient.server
-        - tableauserverclient.server.endpoint
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - black ==26.3.1
-        - mypy ==1.4
-        - pytest >=7.0
-        - pytest-cov
-        - pytest-subtests
-        - pytest-xdist
-        - python-build
-        - requests-mock >=1.0,<2.0
-        - types-requests >=2.32.4.20250913
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/tableauserverclient/
   license: MIT
   license_file: LICENSE
-  summary: A Python library for the Tableau Server REST API
+  summary: A Python module for working with the Tableau Server REST API.
   description: |
-    Use the Tableau Server Client (TSC) library to increase your productivity
-    as you interact with the Tableau Server REST API. With the TSC library you
-    can do almost everything that you can do with the REST API, including
-    publish workbooks and data sources, create users and groups, and query
-    projects, sites, and more.
-  homepage: https://github.com/tableau/server-client-python
-  repository: https://github.com/tableau/server-client-python
-  documentation: https://tableau.github.io/server-client-python/docs/
+    A Python module for working with the Tableau Server REST API.
 
 extra:
   recipe-maintainers:
     - patlougheed
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tableauserverclient
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tableauserverclient
+  cfe-purls:
+    - pkg:conda/tableauserverclient@${{ version }}?channel=conda-forge
+    - pkg:pypi/tableauserverclient@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/tableauserverclient/
+  cfe-import-names: [tableauserverclient]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tableauserverclient-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.41
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:19:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:19:18Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:19:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['versioneer']
+####

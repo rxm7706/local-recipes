@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: branca
   version: "0.8.2"
 
 package:
-  name: ${{ name|lower }}
+  name: branca
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/branca-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/branca/branca-${{ version }}.tar.gz
   sha256: e5040f4c286e973658c27de9225c1a5a7356dd0702a7c8d84c0f0dfbde388fe7
 
 build:
@@ -20,10 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=41.2
     - setuptools-scm
-    - pip
   run:
     - python >=${{ python_min }}
     - jinja2 >=3
@@ -33,15 +32,54 @@ tests:
       imports:
         - branca
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-visualization/branca
   license: MIT
   license_file: LICENSE.txt
-  summary: This library is a spinoff from folium with the non-map-specific features
-  homepage: https://github.com/python-visualization/branca
+  summary: Generate complex HTML+JS pages with Python
+  description: |
+    Generate complex HTML+JS pages with Python
 
 extra:
   recipe-maintainers:
     - BibMartin
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: branca
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: branca
+  cfe-purls:
+    - pkg:conda/branca@${{ version }}?channel=conda-forge
+    - pkg:pypi/branca@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/python-visualization/branca
+  cfe-import-names: [branca]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/branca-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:47:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:47:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:47:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

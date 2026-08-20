@@ -89,3 +89,38 @@ extra:
     - chrisburr
     - kwilcox
     - sodre
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: celery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: celery
+  cfe-purls:
+    - pkg:conda/celery@${{ version }}?channel=conda-forge
+    - pkg:pypi/celery@${{ version }}
+  cfe-upstream-repo: https://github.com/celery/celery
+  cfe-upstream-homepage: http://celeryproject.org
+  cfe-import-names: [celery, celery.app, celery.app.task, celery.apps, celery.backends, celery.bin, celery.concurrency, celery.contrib, celery.events, celery.fixups, celery.loaders, celery.utils, celery.utils.dispatch, celery.worker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/celery-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:56:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:56:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:56:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # generate failed rc=0: Fetching info for celery...
+Generated: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.cursor/cdao-p15-noarch-build/gen/celery/recipe.yaml
+
+####

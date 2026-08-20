@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: plac
-  version: "1.4.5"
+  version: "1.4.6"
 
 package:
-  name: ${{ name|lower }}
+  name: plac
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/plac-${{ version }}.tar.gz
-  sha256: 5f05bf85235c017fcd76c73c8101d4ff8e96beb3dc58b9a37de49cac7de82d14
+  url: https://pypi.org/packages/source/p/plac/plac-${{ version }}.tar.gz
+  sha256: 86a50abd40c5a6ea9695b45a1f08637e744e0a57249c24d1593cad9eda1f8aac
 
 build:
   number: 0
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,17 +29,56 @@ tests:
   - python:
       imports:
         - plac
-        - plac_core
-        - plac_ext
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: The smartest command line arguments parser in the world
-  license: BSD-2-Clause
-  license_file: LICENSE.txt
   homepage: https://github.com/ialbert/plac
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: The smartest command line arguments parser in the world
+  description: |
+    The smartest command line arguments parser in the world
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: plac
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: plac
+  cfe-purls:
+    - pkg:conda/plac@${{ version }}?channel=conda-forge
+    - pkg:pypi/plac@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ialbert/plac
+  cfe-import-names: [plac]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/plac-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.6
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:01:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:01:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:01:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

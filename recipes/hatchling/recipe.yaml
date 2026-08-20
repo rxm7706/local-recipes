@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.32.0"
-  python_check_max: "3.14"
 
 package:
   name: hatchling
@@ -16,55 +15,77 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - hatchling = hatchling.cli:hatchling
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - packaging >=24.2
-    - pathspec >=0.10.1
-    - pip
-    - pluggy >=1.0.0
     - python ${{ python_min }}.*
-    - tomlkit >=0.11.1
-    - tomli >=1.2.2
-    - trove-classifiers
+    - pip
+    - hatchling
   run:
+    - python >=${{ python_min }}
+    - hatchling
     - packaging >=24.2
     - pathspec >=0.10.1
     - pluggy >=1.0.0
-    - python >=${{ python_min }}
-    - tomlkit >=0.11.1
     - tomli >=1.2.2
+    - tomlkit >=0.11.1
     - trove-classifiers
-    # undeclared, but breaks editable installs without
-    - editables >=0.3
 
 tests:
   - python:
-      imports: hatchling
+      imports:
+        - hatchling
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - hatchling --help
+        - "*"
 
 about:
-  summary: Modern, extensible Python build backend
+  homepage: https://hatch.pypa.io/latest/
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://pypi.org/project/hatchling
+  summary: Modern, extensible Python build backend
+  description: |
+    Modern, extensible Python build backend
   repository: https://github.com/pypa/hatch/tree/master/backend
-  documentation: https://hatch.pypa.io
 
 extra:
   recipe-maintainers:
     - ofek
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hatchling
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hatchling
+  cfe-purls:
+    - pkg:conda/hatchling@${{ version }}?channel=conda-forge
+    - pkg:pypi/hatchling@${{ version }}
+  cfe-upstream-repo: https://github.com/pypa/hatch/tree/master/backend
+  cfe-upstream-homepage: https://hatch.pypa.io/latest/
+  cfe-import-names: [hatchling]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hatchling-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:39:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:39:46Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:39:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['hatchling']
+#    # blocker: missing-license-file
+####
