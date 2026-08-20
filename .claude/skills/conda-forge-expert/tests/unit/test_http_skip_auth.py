@@ -2,9 +2,10 @@
 
 The `skip_auth` kwarg is the v8.14.0 call-site opt-out for known-public
 endpoints (e.g. dev.azure.com's public conda-forge feedstock-builds
-project). With JFROG_API_KEY set in env, the auth chain would otherwise
-unconditionally inject `X-JFrog-Art-Api` cross-host — `skip_auth=True`
-short-circuits the chain and returns empty headers.
+project). As of the Rule-2 retro (Story 5.5), the JFrog credential branches
+are additionally host-gated against `_configured_enterprise_hosts()` — see
+`test_http_jfrog_host_gate.py` — so `skip_auth=True` is now defense in
+depth for a configured host rather than the only way to avoid the leak.
 """
 from __future__ import annotations
 
@@ -29,10 +30,13 @@ class TestSkipAuth:
         self, monkeypatch
     ):
         monkeypatch.setenv("JFROG_API_KEY", "dummy-key-12345")
-        # Without skip_auth → JFrog header is injected (sanity check).
+        # dev.azure.com must be a *configured* host for the baseline (no
+        # skip_auth) injection to fire post-retro — see
+        # test_http_jfrog_host_gate.py for the un-configured-host case.
+        monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://dev.azure.com/conda-forge/foo")
         baseline = _http.auth_headers_for("https://dev.azure.com/conda-forge/foo")
         assert baseline.get("X-JFrog-Art-Api") == "dummy-key-12345"
-        # With skip_auth=True → empty.
+        # With skip_auth=True → empty, even though the host is configured.
         skipped = _http.auth_headers_for(
             "https://dev.azure.com/conda-forge/foo", skip_auth=True
         )
@@ -66,9 +70,11 @@ class TestSkipAuth:
         assert "authorization" not in keys_lower
         assert any(k.lower() == "user-agent" for k in headers)
 
-    def test_make_request_default_still_injects_auth(self, monkeypatch):
-        """Regression guard: skip_auth defaults to False; existing behaviour preserved."""
+    def test_make_request_default_injects_auth_for_configured_host(self, monkeypatch):
+        """Regression guard: skip_auth defaults to False; injection still fires
+        for a host the operator actually configured a mirror at."""
         monkeypatch.setenv("JFROG_API_KEY", "dummy-key-12345")
+        monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://anaconda.org/conda-forge")
         req = _http.make_request("https://anaconda.org/conda-forge/repodata.json")
         headers = dict(req.headers)
         keys_lower = {k.lower(): v for k, v in headers.items()}
