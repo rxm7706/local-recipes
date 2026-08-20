@@ -119,7 +119,14 @@ def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
     directly underneath it."""
     remedy = REMEDIES[FindingType.OPTED_OUT]
     assert "while this opt-out stands" in remedy
-    assert "Informational -- the tool will not re-insert" not in remedy
+    # Review finding: this pinned the one exact prefix an earlier revision
+    # happened to use ("Informational -- the tool will not re-insert"),
+    # which no plausible regression reproduces character-for-character.
+    # What must stay true is that the promise is never made UNHEDGED --
+    # every "will not re-insert" in the remedy is qualified.
+    assert "the tool will not re-insert" in remedy
+    assert "while this opt-out stands the tool will not re-insert" in remedy
+    assert remedy.count("will not re-insert") == 1
 
 
 def test_finding_type_is_exactly_the_12_members_the_epics_ac_names():

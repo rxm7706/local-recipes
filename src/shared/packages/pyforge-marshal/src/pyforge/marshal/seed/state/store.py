@@ -1048,13 +1048,24 @@ def clear_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState:
 
     Does NOT refresh ``last_update``, for the reason ``record_opt_out``'s
     own docstring gives: the stamp belongs to the verb that persists the
-    result."""
+    result.
+
+    Sorts AND DEDUPES what it keeps, exactly as ``record_opt_out`` does
+    (review finding, confirmed by execution). ``SeedState.__post_init__``
+    runs ``_reject_duplicates`` on ``managed[].id`` but not on
+    ``opted_out``, so a hand-built state can carry a repeated key; the two
+    mutators disagreed about it, and clearing an UNRELATED pair on such a
+    state returned one whose surviving duplicates then failed
+    ``write_state``'s ``uniqueItems`` check -- a reinstate that could not be
+    persisted, reported against a key the caller never touched. Normalizing
+    on the way out means either mutator repairs the shape, and neither can
+    hand back a state the schema rejects."""
     state = _require_state(state, context="clear_opt_out")
     key = opt_out_key(artifact_id, region)
     return dataclasses.replace(
         state,
         managed=_without_region_claim(state, artifact_id, region),
-        opted_out=tuple(sorted(entry for entry in state.opted_out if entry != key)),
+        opted_out=tuple(sorted({entry for entry in state.opted_out if entry != key})),
     )
 
 

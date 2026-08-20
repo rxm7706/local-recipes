@@ -416,6 +416,19 @@ def test_a_whitespace_only_text_never_derives_an_opt_out_either(text):
         pytest.param("\u200b", id="zero-width-space-only"),
         pytest.param("\x00", id="nul-only"),
         pytest.param("\ufeff\n \t", id="bom-plus-whitespace"),
+        # Review finding, confirmed by execution: `_EMPTY_CATEGORIES` named
+        # `Cc`/`Cf` only, so `_has_content("\U000f0000")` returned `True`
+        # and the rest of the invisible `C` class still read as real
+        # content -- the same permanent retirement reached by a fourth
+        # route. The whole class is named now.
+        pytest.param("\U000f0000", id="private-use-only-Co"),
+        pytest.param("\U0001fffe", id="unassigned-only-Cn"),
+        pytest.param("\U000f0000\n\ufeff ", id="private-use-plus-bom-and-space"),
+        # `Cs` (lone surrogates) is in `_EMPTY_CATEGORIES` for completeness
+        # of the class but is deliberately NOT exercised here: such a text
+        # cannot come off the strict-UTF-8 read path callers use, and
+        # `parse_regions` raises `UnicodeEncodeError` on it well before
+        # `_has_content` is ever consulted.
     ],
 )
 def test_an_invisible_only_text_never_derives_an_opt_out_either(text):
@@ -434,6 +447,44 @@ def test_an_invisible_only_text_never_derives_an_opt_out_either(text):
     (status,) = classify_regions(entry, text, state)
 
     assert status.disposition is RegionDisposition.MISSING
+
+
+@pytest.mark.parametrize(
+    "mangle",
+    [
+        pytest.param(lambda line: f"{line} ", id="trailing-space"),
+        pytest.param(lambda line: f"  {line}", id="leading-indent"),
+        pytest.param(lambda line: f"\t{line}", id="leading-tab"),
+        pytest.param(lambda line: f"  {line}  ", id="indent-and-trailing-space"),
+    ],
+)
+def test_a_region_whose_marker_lines_gained_whitespace_is_never_derived_opted_out(mangle):
+    """Review finding, confirmed by execution: the surviving-marker gate
+    asks ``markers.parse_marker_line``, which GUARANTEES only the exact
+    canonical single-space grammar -- ``_strip_delimiters`` returns ``None``
+    ("ordinary content") for anything else. So an intact, plainly-visible
+    region whose marker lines had merely picked up a trailing space or an
+    indent was invisible to ``parse_regions`` AND to the gate, and rung 3
+    read it as a deletion: a LIVE region retired permanently and its
+    ``body_sha`` dropped with the claim, on a whitespace change an editor
+    or formatter makes silently.
+
+    Each line is now asked twice, raw and ``str.strip()``ed -- the SAME
+    grammar after normalization, which is what ``markers.py`` says S-8.2
+    will do wholesale, never a second spelling of it here."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    text = _doc("intro", *(mangle(line) for line in _rendered_region("tiers")), "outro")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    # The premise: the parser does not see the region, but it is right
+    # there in the file, markers and body.
+    assert parse_regions(text, RegionFormat.HTML) == ()
+    assert "marshal-seed:begin" in text
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.MISSING
+    assert opt_outs_to_record((status,)) == ()
 
 
 def test_a_region_whose_markers_survive_inside_a_fence_is_never_derived_opted_out():
@@ -653,7 +704,12 @@ def test_the_opted_out_message_does_not_promise_a_durability_it_cannot_know():
     (opted,) = region_findings(classify_regions(entry, _doc("intro"), state))
 
     assert "while this opt-out stands" in opted.message
-    assert not opted.message.endswith("the tool will not re-insert this region")
+    # Review finding: this was `not ....endswith("the tool will not
+    # re-insert this region")`, which no regression could ever fail --
+    # the message always ends with the `(opt-out key ...)` tail, so
+    # dropping the hedge the test is named for would still have passed it.
+    # Assert the absence of the UNHEDGED phrasing wherever it appears.
+    assert "opted out; the tool will not re-insert" not in opted.message
 
 
 def test_findings_carry_their_types_documented_remedy():

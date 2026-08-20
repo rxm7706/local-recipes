@@ -143,9 +143,33 @@ def _current_text(state: ArtifactState, repo_root: Path, entry_path: str) -> str
     because `classify()` has ALREADY proven -- to produce that very state
     -- that `entry_path` resolves to an existing target within
     `repo_root` (see the module docstring)."""
+    text, _content_known = _current_text_verbose(state, repo_root, entry_path)
+    return text
+
+
+def _current_text_verbose(
+    state: ArtifactState, repo_root: Path, entry_path: str
+) -> tuple[str, bool]:
+    """`_current_text`'s answer, plus whether that text is what the artifact
+    actually HOLDS (`True`) rather than the `''` an unreadable target
+    degrades to (`False`).
+
+    `ABSENT` is `("", True)`: the blank is `classify()`'s own reported truth
+    about the artifact, not a failed read, so it is a fact about the file
+    and a consumer may reason from it. Only a `PRESENT_DIVERGENT` read that
+    actually fails answers `False`.
+
+    Exists so `_is_fully_opted_out` can refuse to infer consent from a file
+    nobody could read (review finding, confirmed by execution -- see its
+    docstring). `_current_text` keeps the plain-`str` shape its other two
+    consumers want: `hash_content` has nothing better to hash, and
+    `_chosen_anchor` already degrades to `()` on the same input by its own
+    route. This is the same `(text, readable)` pair `fingerprint_drift`
+    consumes through `_read_text_or_blank_verbose`, with `_current_text`'s
+    `ABSENT` short-circuit in front of it."""
     if state is ArtifactState.ABSENT:
-        return ""
-    return _read_text_or_blank(repo_root, entry_path)
+        return "", True
+    return _read_text_or_blank_verbose(repo_root, entry_path)
 
 
 def _read_text_or_blank(repo_root: Path, entry_path: str) -> str:
@@ -256,6 +280,21 @@ class _Pendency:
     left in it to drift") is only true when NOTHING is retained, which is
     exactly what this field measures.
 
+    **`retained` counts a region that IS in the file even when a recorded
+    key opts it out** (review finding, confirmed by execution). An earlier
+    revision excluded those, which defeated the field on the very case it
+    was added for: with `tiers` present, conformant and opted out, and
+    `model-badge` absent and opted out, `retained` came back `()` and the
+    entry was suppressed anyway -- the live `tiers` body left the
+    `RepoFingerprint` and `fingerprint_drift` went blind to it, reachable
+    by nothing worse than opting out and then `git checkout`-ing the file
+    back. It also put the two layers in flat contradiction about one input:
+    `detect/optout.py` rung 1 answers `PRESENT` for that same region ("what
+    is actually in the file wins over anything state believes"), while the
+    planner was treating it as released. Physical presence is the fact;
+    `retained` reports it, and consent is measured against what is really
+    there rather than against what the key set says should be.
+
     Frozen, like every other value object in this package (`Plan`,
     `Action`, `RepoFingerprint`, `fs.NeverWrite`)."""
 
@@ -295,9 +334,9 @@ def _pendency(
     `parse_regions` does not find (present but structurally non-conformant,
     so some -- not necessarily all -- declared regions are missing, and
     possibly none of them). `pending` is `not_present` minus the opted-out
-    ones, and `retained` is the complement of `not_present` minus the
-    opted-out ones -- the regions that ARE in the file and that no opt-out
-    has released, i.e. the managed content this entry still holds."""
+    ones, and `retained` is simply the complement of `not_present` -- every
+    region that IS in the file, opted out or not, i.e. the managed content
+    this entry still physically holds (see `_Pendency`)."""
     if entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
         return None
     # ManifestEntry.__post_init__ guarantees a hybrid-managed-region entry
@@ -324,17 +363,18 @@ def _pendency(
             if not _is_opted_out(entry.id, region.name, opted_out)
         ),
         retained=tuple(
-            region
-            for region in entry.regions
-            if region.name not in not_present_names
-            and not _is_opted_out(entry.id, region.name, opted_out)
+            region for region in entry.regions if region.name not in not_present_names
         ),
     )
 
 
-def _is_fully_opted_out(pendency: _Pendency | None) -> bool:
+def _is_fully_opted_out(pendency: _Pendency | None, *, content_known: bool) -> bool:
     """Whether this entry's every owed region is opted out -- the ONLY
     condition on which `build_plan` skips an otherwise-qualifying entry.
+
+    `content_known` is `_current_text_verbose`'s second value: whether the
+    `current_text` behind `pendency` is what the artifact actually holds,
+    rather than the `''` an unreadable target degrades to.
 
     Requires a real verdict (`None` is never suppressed -- a whole-file
     entry declares no regions, and an unparseable file must not be guessed
@@ -357,9 +397,29 @@ def _is_fully_opted_out(pendency: _Pendency | None) -> bool:
     a live managed region, satisfied the other three conditions and paid
     the same cost without having consented to it (review finding,
     `_Pendency`). The absence itself going unrecorded in `plan.json` is the
-    separate, real gap tracked as `DW-FU-8-5`."""
+    separate, real gap tracked as `DW-FU-8-5`.
+
+    **`content_known` is the fourth requirement, and it is what keeps that
+    consent argument honest for a file nobody could read** (review finding,
+    confirmed by execution). `_current_text` degrades a present-but-
+    unreadable, non-regular-file or non-UTF-8 target to `''`, and `''`
+    parses as "no region found", so every declared region landed in
+    `not_present` and `retained` came back `()` -- not because the file
+    holds no managed content, but because nothing could be measured about
+    it. A `PRESENT_DIVERGENT` `CLAUDE.md` written as non-UTF-8 bytes was
+    suppressed on that reasoning and left `artifact_hashes` while its
+    markers, for all this module knows, sat right there in it. Consent is
+    something the file has to be able to demonstrate: an unreadable one
+    keeps its `Action`, which is the same "cannot safely re-parse, degrade
+    rather than guess" direction `_pendency` takes for a file
+    `parse_regions` refuses, and the same one `detect/optout.py::
+    _has_content` takes before deriving an opt-out from a blank file.
+    `ABSENT` is NOT this case and stays suppressible: its `''` is
+    `classify()`'s own reported truth about the artifact, not a failed
+    read, and the `<intent-contract>` names `ABSENT` explicitly."""
     return (
         pendency is not None
+        and content_known
         and bool(pendency.not_present)
         and not pendency.pending
         and not pendency.retained
@@ -549,14 +609,17 @@ def build_plan(
         if classification.state not in _ACTIONABLE_STATES:
             continue
         entry = entries_by_id[classification.entry_id]
-        current_text = _current_text(classification.state, inventory.repo_root, entry.path)
+        current_text, content_known = _current_text_verbose(
+            classification.state, inventory.repo_root, entry.path
+        )
         pendency = _pendency(entry, classification.state, current_text, opted_out)
-        if _is_fully_opted_out(pendency):
-            # A hybrid entry that was owed insertions and has had every one
-            # of them opted out: nothing to insert, and no `Action` to
-            # review (Story 8.5). An entry owed NOTHING is not this case and
-            # keeps its `Action`; nor is `None` -- a whole-file entry, or a
-            # file that could not be parsed.
+        if _is_fully_opted_out(pendency, content_known=content_known):
+            # A hybrid entry that was owed insertions, has had every one of
+            # them opted out, and retains no region the tool still owns:
+            # nothing to insert, and no `Action` to review (Story 8.5). An
+            # entry owed NOTHING is not this case and keeps its `Action`;
+            # nor is `None` -- a whole-file entry, or a file that could not
+            # be parsed; nor is one whose text could not be READ.
             continue
         actioned.append((entry, classification.state, current_text, pendency))
 
