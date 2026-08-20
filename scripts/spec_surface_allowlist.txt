@@ -82,3 +82,14 @@ pixi.lock                # lockfile (derived from pixi.toml)
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
 conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage as above)
+# --- conda-forge-packaging-inventory-operations prototype: atlas-owned Dream (docs/dreams/
+# conda-forge-packaging-inventory-operations.md, status: dreamt), no Spec produced yet. Pre-existing
+# since 2026-08-16 (0f0b75232e, merged before story 10.4's baseline commit) — discovered ungoverned
+# while landing story 10.4 (bcrypt pin, unrelated to this prototype). Allowlisted pending its Spec,
+# same class as src/sentinel/**/conf/base/knowledge.yml above; govern it when the Spec lands.
+conf/conda-forge-packaging-inventory-operations.local.env.example        # local env template for the identity gist id (gitignored actual file)
+conf/conda-forge-packaging-inventory-operations_curated_groups.json      # curated package-group config consumed by the priority/metrics scripts
+scripts/conda-forge-packaging-inventory-operations_metrics.py            # inventory-ops runner (replay doc: docs/reference/conda-forge-packaging-inventory-operations_replay.md)
+scripts/conda-forge-packaging-inventory-operations_priority.py           # assigns Proposed_Priority on an identity tab
+scripts/conda-forge-packaging-inventory-operations_openteams_identity.py # builds OpenTeams identity rows (PURL Associator join)
+scripts/openteams_identity_dashboards.py                                 # GFM dashboards rendered beside the identity gist row catalog above

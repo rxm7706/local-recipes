@@ -20,6 +20,41 @@ spec_updated: 2026-07-02
 
 > **📌 ADDENDUM (2026-08-14, verified):** `conda-forge/langflow-feedstock` **EXISTS** (v1 `recipe.yaml` + patches, last pushed 2026-08-13) — the suite has since **merged and graduated to a feedstock**. `conda-forge/db-gpt-feedstock` likewise live (2026-07-22). The detailed closure-tracker states below (live as of 2026-07-01) are therefore **stale**; a full reconciliation pass (suite merge date, the ~44 closure PRs' current states, the auto-clearing `lfx-*` reds, § Appendix trackers) plus the Rule-2 CFE retro at closeout is **owed follow-up work** — this addendum records only the verified feedstock facts, it does not re-verify the trackers. **Maintenance item (2026-08-14 solve spike):** `langflow-base` pins `bcrypt ==4.0.1` (recipe line 198), which has no py3.14 conda-forge build — it is the sole blocker to a python-3.14 solve of langflow (+dbgpt+django, which solve clean on 3.14 without it); fix = upstream pin drop or runtime-validated feedstock loosening. Every build/win blocker is fixed: frontend node-build (G73), gunicorn→`run_constraints` (G76), magika-0.6.3 win-skew via exclude-only-0.6.3 (G77); external langchain/langflow-sdk/litellm skews cleared (G68). **Next:** mark ready-for-review (one G64 ping after green) + coordinate the competing pb01ka PRs **#33853** (langflow-base draft) / **#33875** (langflow-sdk open). Build artifacts (incl. `conda_pkgs_noarch` = universal/macos-arm64) are downloadable from the green build via `store_build_artifacts`.
 
+> **📌 ADDENDUM (2026-08-20, story 10.4 — bcrypt pin fix LANDED, one new blocker found):**
+> The 2026-08-14 bcrypt maintenance item is resolved on `conda-forge/langflow-feedstock` v1.11.4
+> (the feedstock had advanced 2 versions since the 08-14 note; resynced the local mirror to
+> the live recipe first). `langflow-base`'s `bcrypt ==4.0.1` loosened to `bcrypt >=4.0.1,<5`
+> (+ a matching source patch so the wheel's `dist-info` METADATA agrees — `pip_check` reads
+> that, not the conda `run:` pin; `build.number` bumped 0→1; a new script test round-trips
+> `passlib.context.CryptContext(schemes=["bcrypt"]).hash()`/`.verify()`, proving the historical
+> "(trapped) error reading bcrypt version" warning (issue #1173) is cosmetic, not functional —
+> re-verified locally: all 8 outputs build + test GREEN, bcrypt resolves to **4.3.0**.
+> **Landed** as maintainer PR [conda-forge/langflow-feedstock#14](https://github.com/conda-forge/langflow-feedstock/pull/14)
+> (rerender requested). **Upstream issue filed**:
+> [langflow-ai/langflow#14685](https://github.com/langflow-ai/langflow/issues/14685) proposing
+> dropping the unmaintained `passlib` dep for direct `bcrypt` or `pwdlib` (no prior open
+> issue/PR covered this — confirmed via search before filing).
+>
+> **⚠️ NEW BLOCKER FOUND (out of scope for story 10.4, unresolved):** a real
+> `python=3.14 + langflow + dbgpt + django` dry-run solve (`mamba create --dry-run`, local
+> channel + conda-forge) does **not** complete cleanly even with bcrypt fixed. The solver
+> confirms the locally-built fixed `langflow-base` is no longer implicated by bcrypt, but is
+> now blocked by a **different**, pre-existing, unrelated pin: `langflow-base`'s
+> `onnxruntime >=1.20,<1.24` has **zero** `cp314` conda-forge builds (live-verified via
+> `linux-64` repodata — the range tops out at onnxruntime 1.22.2 with no `cp314`; the first
+> `cp314` build is 1.24.4, just above the `<1.24` ceiling). This is already on the live
+> feedstock today, unrelated to the bcrypt fix, and out of story 10.4's scope (which was
+> bcrypt-only). Root cause: upstream's `pyproject.toml` splits the pin by Python version
+> (`onnxruntime>=1.20,<1.24; python_version<'3.14'` vs `onnxruntime>=1.26;
+> python_version>='3.14'`), which recipe.yaml's noarch shape can't represent, so the
+> feedstock's single collapsed `onnxruntime >=1.20,<1.24` silently drops py3.14 coverage.
+> `dbgpt` + `django` independently confirmed to solve clean on py3.14 alone (56 packages).
+> **Next:** a follow-up story/spec is needed to loosen/split the `onnxruntime` pin (same
+> pattern as the bcrypt fix: verify the exact upstream marker, patch the source pyproject to
+> match, re-verify with a real dry-run solve) before the epic's "clean py3.14 solve of
+> langflow+dbgpt+django" success criterion is actually met. Tracked as **`DW-FU-10-4`** in
+> the `pyforge-steward` deferred-work ledger (adversarial-review-confirmed, 2026-08-20).
+
 **Gates CLEARED (verified 2026-06-27):**
 
 - **langchain aiosqlite skew** — ✅ **VERIFIED LIVE 2026-07-01:** cf's newest build `langchain-1.3.11-pyhcf101f3_1` (build_number 1) carries the fixed `aiosqlite >=0.19.0,<0.23` (#276); older 1.3.x builds still serve the stale `<0.20` but the solver picks the newest. Clean-channel rebuild (local langchain purged, G68) resolves the suite entirely from **conda-forge** — no workaround langchain.
