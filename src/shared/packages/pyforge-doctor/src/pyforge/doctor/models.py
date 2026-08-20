@@ -150,6 +150,11 @@ class Source(StrEnum):
     # informs rather than gates (always WARN or OK, never FAIL). Judges a
     # Marshal-produced artifact (the factory's own tooling-installation
     # surface); see sources/bmad_method.py for the independence rationale.
+    # Story 10.2 (Epic 10/CAP-2) extends the SAME member's gather() with a
+    # second, independent comparison -- installed vs. the latest release
+    # actually published upstream on npm, not just against the declared
+    # floor -- rather than adding a new member (review finding, Story 10.2:
+    # keep this comment in sync whenever gather()'s own scope grows).
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
 
 
