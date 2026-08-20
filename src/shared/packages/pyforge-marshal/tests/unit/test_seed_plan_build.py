@@ -912,11 +912,20 @@ def test_a_manifest_id_the_opt_out_grammar_cannot_spell_still_plans(tmp_path):
     interior space is legal while `state.opted_out`'s grammar cannot spell
     it. Such an entry must plan exactly as it did before this story -- never
     raise the `ValueError` `opt_out_key` reserves for a caller minting a
-    key."""
+    key.
+
+    The key set here holds an admissible key for an unrelated artifact. It
+    used to hold `"has a space#tiers"` -- the very key the grammar refuses
+    -- which made the test also assert that `build_plan` ACCEPTS an
+    inadmissible element, the silent-suppression failure the element guard
+    was later tightened to refuse (review finding). The property under test
+    is about the ENTRY's id, not the set's contents: `_is_opted_out` must
+    answer "not opted out" for a pair it cannot spell rather than raise,
+    and it still does."""
     manifest = _manifest(_hybrid("has a space", "CLAUDE.md", "tiers"))
     inventory = classify(manifest, tmp_path)
 
-    plan = build_plan(manifest, inventory, opted_out=frozenset({"has a space#tiers"}))
+    plan = build_plan(manifest, inventory, opted_out=frozenset({"unrelated#tiers"}))
 
     (action,) = plan.actions
     assert action.artifact_id == "has a space"
@@ -1030,6 +1039,113 @@ def test_a_non_str_element_is_refused_rather_than_silently_matching_nothing(tmp_
             inventory,
             opted_out=frozenset({("h", "tiers")}),  # type: ignore[arg-type]
         )
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        pytest.param("h#Tiers", id="wrong-case-region-half"),
+        pytest.param("h tiers", id="space-instead-of-separator"),
+        pytest.param("h", id="no-separator-at-all"),
+        pytest.param("h#tiers#tiers", id="two-separators"),
+    ],
+)
+def test_a_key_string_the_grammar_does_not_admit_is_refused(tmp_path, key):
+    """Review finding, confirmed by execution: the element guard tested only
+    `isinstance(key, str)`, so any malformed key string passed it, matched
+    nothing, and suppressed nothing -- the identical silent failure the
+    non-`str` half of the guard exists to turn loud.
+
+    Every key `read_state` produces is schema-validated against the very
+    pattern this guard now asks, so it can only ever fire on a hand-minted
+    one.
+
+    What it deliberately does NOT catch is a well-formed key naming an
+    artifact this manifest does not have. The schema's artifact half is
+    `[^\\s#]+`, so the PATH form `region_findings` prints beside the key
+    (`CLAUDE.md#tiers`) is itself a grammatical key and passes here -- and
+    so is a key left in `state.opted_out` for a manifest entry that has
+    since been removed. Checking the artifact half against
+    `manifest.entries` would catch the first and hard-fail on the second,
+    which is the documented natural call
+    (`build_plan(m, i, opted_out=state.opted_out)`); that trade is refused
+    on purpose."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    with pytest.raises(ValueError, match="must hold rendered opt_out_key strings"):
+        build_plan(manifest, inventory, opted_out=frozenset({key}))
+
+
+@pytest.mark.parametrize(
+    "render",
+    [
+        pytest.param(
+            lambda lines: ("```", *lines, "```"),
+            id="region-wrapped-in-a-closed-fence",
+        ),
+        pytest.param(
+            lambda lines: tuple(f"{line} " for line in lines),
+            id="marker-lines-gained-a-trailing-space",
+        ),
+    ],
+)
+def test_a_fully_keyed_hybrid_whose_region_the_parser_cannot_see_keeps_its_fingerprint(
+    tmp_path, render
+):
+    """Review finding, confirmed by execution: `retained` -- the consent
+    gate `_is_fully_opted_out` requires empty -- was derived from
+    `parse_regions` alone.
+
+    `parse_regions` is fence-aware by design and recognizes only the exact
+    canonical marker grammar, so a region sitting in the file inside a
+    closed ``` fence, or one whose marker lines picked up a trailing space,
+    is invisible to it while being plainly there. It therefore landed in
+    `not_present`, `retained` came back `()`, and the entry was suppressed
+    out of BOTH `actions` and `artifact_hashes` -- the live region left the
+    `RepoFingerprint` and `fingerprint_drift` went blind to it. That is the
+    same defect `retained` was added to close, one layer over, and the same
+    one `detect/optout.py::marker_region_names` closes on the detect side;
+    the planner now asks that function rather than a copy of it.
+
+    Reachable by nothing worse than opting a region out and then running a
+    formatter over the file."""
+    body = "line1\n"
+    region_lines = (
+        render_begin(RegionFormat.HTML, "tiers", _VERSION, region_sha(body)),
+        "line1",
+        render_end(RegionFormat.HTML, "tiers"),
+    )
+    (tmp_path / "CLAUDE.md").write_text(
+        _doc("intro", *render(region_lines), "outro"), encoding="utf-8", newline=""
+    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    # The entry survives: nothing is proposed for insertion (the region is
+    # opted out), but the file stays under `fingerprint_drift`'s eye
+    # because managed content is demonstrably still inside it.
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    assert action.chosen_anchor == ()
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+
+def test_a_fully_opted_out_hybrid_with_the_region_really_gone_is_still_suppressed(tmp_path):
+    """The other side of the test above: `marker_region_names` widens
+    `retained` only for markers that are actually THERE. A file the
+    maintainer really did delete the markers from retains nothing, so the
+    suppression the `<intent-contract>` specifies still fires."""
+    (tmp_path / "CLAUDE.md").write_text(_doc("intro", "outro"), encoding="utf-8", newline="")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
 
 
 def test_a_partially_opted_out_hybrid_keeps_its_action_and_its_fingerprint(tmp_path):

@@ -123,8 +123,10 @@ def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
     # happened to use ("Informational -- the tool will not re-insert"),
     # which no plausible regression reproduces character-for-character.
     # What must stay true is that the promise is never made UNHEDGED --
-    # every "will not re-insert" in the remedy is qualified.
-    assert "the tool will not re-insert" in remedy
+    # every "will not re-insert" in the remedy is qualified. The
+    # bare `"the tool will not re-insert" in remedy` that stood above
+    # the hedged assertion was strictly implied by it and pinned
+    # nothing of its own (review finding).
     assert "while this opt-out stands the tool will not re-insert" in remedy
     assert remedy.count("will not re-insert") == 1
 

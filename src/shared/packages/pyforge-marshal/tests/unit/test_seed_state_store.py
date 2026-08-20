@@ -60,6 +60,7 @@ from pyforge.marshal.seed.state.store import (
     SeedState,
     clear_opt_out,
     copier_data,
+    is_opt_out_key,
     is_opted_out,
     opt_out_key,
     opt_out_key_or_none,
@@ -1485,6 +1486,54 @@ def test_opt_out_key_or_none_is_public_so_plan_build_need_not_re_spell_it():
     assert state_package.opt_out_key_or_none is store.opt_out_key_or_none
 
 
+# --- is_opt_out_key: the same grammar, asked of an already-rendered key ----
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        pytest.param("agents-md#tiers", id="the-canonical-form"),
+        pytest.param("AGENTS.md#tiers", id="artifact-half-is-free-form"),
+    ],
+)
+def test_is_opt_out_key_admits_exactly_what_opt_out_key_mints(key):
+    assert is_opt_out_key(key) is True
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        pytest.param("CLAUDE.md#Tiers", id="region-half-is-not-marker-safe"),
+        pytest.param("agents md#tiers", id="artifact-half-carries-whitespace"),
+        pytest.param("agents-md", id="no-separator-at-all"),
+        pytest.param("", id="empty"),
+        pytest.param(("agents-md", "tiers"), id="a-pair-rather-than-a-key"),
+        pytest.param(None, id="none"),
+        pytest.param(b"agents-md#tiers", id="bytes"),
+    ],
+)
+def test_is_opt_out_key_refuses_everything_else_without_raising(key):
+    """Review finding, confirmed by execution. ``plan/build.py`` takes a set
+    of ALREADY-rendered keys and had no way to check one: its guard tested
+    the element TYPE, so a malformed key string sailed through, matched
+    nothing, and silently suppressed nothing -- the very failure that guard
+    exists to turn loud.
+
+    Takes ``object`` and answers rather than raising, for the reason
+    ``opt_out_key_or_none`` does: its whole job is policing input a type
+    hint did not."""
+    assert is_opt_out_key(key) is False
+
+
+def test_is_opt_out_key_and_opt_out_key_or_none_are_the_one_grammar():
+    """Neither re-spells the pattern; both ask ``_opt_out_pattern``. Asserted
+    as an agreement between the two entry points rather than against a
+    transcribed literal, so a schema move keeps them equal by construction."""
+    for artifact_id, region in (("agents-md", "tiers"), ("a b", "tiers"), ("x", "Tiers")):
+        rendered = opt_out_key_or_none(artifact_id, region)
+        assert is_opt_out_key(f"{artifact_id}#{region}") is (rendered is not None)
+
+
 @pytest.mark.parametrize(
     ("artifact_id", "region"),
     [
@@ -1876,10 +1925,11 @@ def test_neither_mutator_refreshes_last_update():
     assert clear_opt_out(recorded, "agents-md", "tiers").last_update == before.last_update
 
 
-def test_the_five_opt_out_helpers_are_re_exported_from_the_state_package():
+def test_the_six_opt_out_helpers_are_re_exported_from_the_state_package():
     for name in (
         "opt_out_key",
         "opt_out_key_or_none",
+        "is_opt_out_key",
         "is_opted_out",
         "record_opt_out",
         "clear_opt_out",
@@ -1888,8 +1938,10 @@ def test_the_five_opt_out_helpers_are_re_exported_from_the_state_package():
         assert getattr(state_package, name) is getattr(store, name)
     assert len(set(state_package.__all__)) == len(state_package.__all__)
     # ``__all__``'s established convention here is type names first, then
-    # the function names in sorted order -- the group the five join
-    # (the four asserted above plus ``opt_out_key_or_none``, promoted to
-    # public by this story's own review pass).
+    # the function names in sorted order -- the group the six join (the
+    # four the ``<intent-contract>`` names, plus ``opt_out_key_or_none``
+    # and ``is_opt_out_key``, both promoted to public by this story's own
+    # review passes for the same consumer and the same reason: a caller
+    # that cannot reach the grammar re-implements it).
     functions = [name for name in state_package.__all__ if name[0].islower()]
     assert functions == sorted(functions)

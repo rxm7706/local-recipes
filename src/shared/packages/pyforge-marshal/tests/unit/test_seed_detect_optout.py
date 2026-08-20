@@ -398,9 +398,10 @@ def test_a_whitespace_only_text_never_derives_an_opt_out_either(text):
     as much as a zero-byte one does. ``bool(text)`` split those two apart on
     a single byte: ``""`` re-offered the region, ``"\\n"`` retired it
     PERMANENTLY -- the exact outcome the empty-text guard above exists to
-    prevent, reachable by one stray newline. ``bool(text.strip())`` closes
-    it. Confirmed real by reverting to ``bool(text)`` and watching this
-    fail."""
+    prevent, reachable by one stray newline. ``_has_content`` closes it (the
+    ``bool(text.strip())`` this test was written against has since been
+    widened again -- see the sibling test below). Confirmed real by
+    reverting to ``bool(text)`` and watching this fail."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers")
     state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
 
@@ -439,8 +440,12 @@ def test_an_invisible_only_text_never_derives_an_opt_out_either(text):
     -- reads back as ``"\\ufeff"`` and retired every claimed region of it
     PERMANENTLY, which is precisely the failure the guard had just been
     widened from ``bool(text)`` to prevent. ``_has_content`` asks the
-    question by Unicode category (``Cc``/``Cf``) instead, so the whole
-    class is covered rather than the members that happened to be tested."""
+    question by Unicode general category instead -- the whole ``C``
+    (Other) class, ``Cc``/``Cf``/``Cs``/``Co``/``Cn``, after a second
+    review pass found ``Co``/``Cn`` still reading as content -- so the
+    class is covered rather than the members that happened to be tested.
+    What it is deliberately NOT is a test for "invisible": see
+    ``_EMPTY_CATEGORIES`` on why that question has no closing move."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers")
     state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
 
@@ -484,7 +489,7 @@ def test_a_region_whose_marker_lines_gained_whitespace_is_never_derived_opted_ou
     (status,) = classify_regions(entry, text, state)
 
     assert status.disposition is RegionDisposition.MISSING
-    assert opt_outs_to_record((status,)) == ()
+    assert opt_outs_to_record((status,), state) == ()
 
 
 def test_a_region_whose_markers_survive_inside_a_fence_is_never_derived_opted_out():
@@ -511,7 +516,7 @@ def test_a_region_whose_markers_survive_inside_a_fence_is_never_derived_opted_ou
     (status,) = classify_regions(entry, text, state)
 
     assert status.disposition is RegionDisposition.MISSING
-    assert opt_outs_to_record((status,)) == ()
+    assert opt_outs_to_record((status,), state) == ()
 
 
 def test_a_fenced_marker_for_a_DIFFERENT_region_does_not_block_this_one():
@@ -594,7 +599,7 @@ def test_every_pair_opt_outs_to_record_returns_is_one_record_opt_out_accepts():
         _hybrid("agents-md", "AGENTS.md", "tiers"), _doc("intro"), state
     ) + classify_regions(_hybrid("has a space", "OTHER.md", "tiers"), _doc("intro"), state)
 
-    pairs = opt_outs_to_record(statuses)
+    pairs = opt_outs_to_record(statuses, state)
 
     assert pairs == (("agents-md", "tiers"),)
     for artifact_id, region in pairs:
@@ -784,12 +789,17 @@ def test_a_derived_opt_out_is_reinstated_by_clear_opt_out_alone():
 # --- opt_outs_to_record: the derivation a mutating verb owes state ---------
 
 
-def test_opt_outs_to_record_returns_a_pair_for_every_opted_out_status():
-    """Every ``OPTED_OUT`` status, derived (rung 3) and recorded (rung 2)
-    alike, in the order given. Telling the two apart would be a second
-    spelling of rung 2 to save nothing -- ``record_opt_out`` is idempotent,
-    so re-recording the already-recorded pair costs an equal
-    ``SeedState``."""
+def test_opt_outs_to_record_returns_the_derived_pairs_and_not_the_recorded_ones():
+    """Review finding, confirmed by execution: an earlier revision returned
+    EVERY ``OPTED_OUT`` pair, rung 2's included, on the argument that
+    ``record_opt_out`` is idempotent so re-recording one costs nothing.
+
+    It is idempotent in the ``opted_out`` KEY and unconditional in the
+    ``managed[]`` claim it drops, so re-recording an already-recorded pair
+    is not free at all -- see the two tests below for the claims it
+    discarded. A pair rung 2 answered needs no recording by definition: it
+    is already in ``state.opted_out``, and so already in the key set the
+    verb hands ``build_plan``."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers", "model-badge", "portability")
     text = _doc("intro", *_rendered_region("portability"), "outro")
     state = _state(
@@ -804,21 +814,72 @@ def test_opt_outs_to_record_returns_a_pair_for_every_opted_out_status():
         RegionDisposition.OPTED_OUT,
         RegionDisposition.PRESENT,
     ]
-    assert opt_outs_to_record(statuses) == (
-        ("agents-md", "tiers"),
-        ("agents-md", "model-badge"),
+    # `tiers` is rung 3's derivation and needs recording; `model-badge` is
+    # rung 2 reading back what state already says.
+    assert opt_outs_to_record(statuses, state) == (("agents-md", "tiers"),)
+
+
+def test_a_recorded_opt_out_over_a_region_the_parser_cannot_see_is_never_re_recorded():
+    """Review finding, confirmed by execution. ``marker_names`` is computed
+    for the whole entry but consulted only by rung 3, so a region physically
+    in the file whose markers ``parse_regions`` cannot see (here: a trailing
+    space on each marker line) is answered by rung 2 first and classifies
+    ``OPTED_OUT``.
+
+    That answer is correct and contract-frozen -- a recorded opt-out is
+    sticky. Handing the pair BACK to ``record_opt_out`` was not: the mutator
+    drops the ``managed[]`` claim unconditionally, so the live region's
+    ``body_sha`` went with it, violating the precondition both mutators
+    document ("the region must not be PRESENT in the file") through this
+    module's own documented verb loop."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    text = _doc("intro", *(f"{line} " for line in _rendered_region("tiers")), "outro")
+    state = _state(
+        managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),),
+        opted_out=("agents-md#tiers",),
     )
+
+    # The premise: the region is in the file, the parser cannot see it, and
+    # the claim on it is still standing.
+    assert parse_regions(text, RegionFormat.HTML) == ()
+    assert "marshal-seed:begin" in text
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.OPTED_OUT
+    assert opt_outs_to_record((status,), state) == ()
+
+
+def test_a_recorded_opt_out_on_a_moved_path_is_never_re_recorded():
+    """Review finding, confirmed by execution. AD-55 makes ``id`` the stable
+    address, so an entry's ``path`` can move while its claim still records
+    the old one. Rung 3's ``_claims_region`` compares the path and falls
+    through; rung 2 does not, and returning its pair sent it into
+    ``store.py::_without_region_claim``, which compares NO path and dropped
+    the claim describing the region still installed at the OLD path."""
+    entry = _hybrid("agents-md", "docs/AGENTS.md", "tiers")
+    state = _state(
+        managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),),
+        opted_out=("agents-md#tiers",),
+    )
+
+    (status,) = classify_regions(entry, _doc("intro"), state)
+
+    assert status.disposition is RegionDisposition.OPTED_OUT
+    assert opt_outs_to_record((status,), state) == ()
+    # The claim at the old path survives, `body_sha` and all.
+    assert state.managed[0].path == "AGENTS.md"
 
 
 def test_opt_outs_to_record_skips_present_and_missing_statuses():
     entry = _hybrid("agents-md", "AGENTS.md", "tiers", "model-badge")
     text = _doc("intro", *_rendered_region("tiers"), "outro")
 
-    assert opt_outs_to_record(classify_regions(entry, text, _state())) == ()
+    assert opt_outs_to_record(classify_regions(entry, text, _state()), _state()) == ()
 
 
 def test_opt_outs_to_record_over_an_empty_tuple_is_empty():
-    assert opt_outs_to_record(()) == ()
+    assert opt_outs_to_record((), None) == ()
 
 
 def test_every_pair_opt_outs_to_record_returns_feeds_record_opt_out_directly():
@@ -830,7 +891,8 @@ def test_every_pair_opt_outs_to_record_returns_feeds_record_opt_out_directly():
     derived = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
 
     recorded = derived
-    for artifact_id, region in opt_outs_to_record(classify_regions(entry, _doc("intro"), derived)):
+    statuses = classify_regions(entry, _doc("intro"), derived)
+    for artifact_id, region in opt_outs_to_record(statuses, derived):
         recorded = record_opt_out(recorded, artifact_id, region)
 
     assert recorded.opted_out == ("agents-md#tiers",)

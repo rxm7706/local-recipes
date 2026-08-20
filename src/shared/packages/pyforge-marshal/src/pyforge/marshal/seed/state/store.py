@@ -860,6 +860,26 @@ def opt_out_key(artifact_id: str, region: str) -> str:
     return key
 
 
+def is_opt_out_key(key: object) -> bool:
+    """Whether ``key`` is already a rendered opt-out key this grammar
+    admits -- the ASKING half for a key that arrives whole, where
+    ``opt_out_key_or_none`` is the asking half for a pair that arrives in
+    two pieces.
+
+    PUBLIC for the same reason ``opt_out_key_or_none`` is: ``plan/build.py``
+    takes a set of ALREADY-rendered keys and had no way to check one
+    without either splitting it back into halves (re-deriving "a key is two
+    halves joined by ``#``", which is part of the grammar and so a second
+    spelling of it) or reaching into ``_opt_out_pattern``. Both are the
+    defect this group of functions exists to avoid.
+
+    Takes ``object``, not ``str``: its whole job is policing input a type
+    hint did not, so a non-``str`` answers ``False`` rather than raising --
+    the same tolerance ``opt_out_key_or_none`` shows a non-``str`` half,
+    and for the same reason (see its docstring)."""
+    return isinstance(key, str) and _opt_out_pattern().match(key) is not None
+
+
 def is_opted_out(state: SeedState | None, artifact_id: str, region: str) -> bool:
     """Whether ``state`` records an opt-out for this artifact/region pair.
 

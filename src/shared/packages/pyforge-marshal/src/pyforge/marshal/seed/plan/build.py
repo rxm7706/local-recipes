@@ -29,8 +29,9 @@ nothing not-present in the first place is deliberately not on it (see
 has ALREADY run that check once, for every entry, to produce the very
 `ArtifactState` this module switches on: an entry classified `ABSENT`
 because its path escapes `repo_root` is indistinguishable here from one
-genuinely missing (both are `ABSENT`, and this module's own `_current_text`
-never touches the filesystem for that state at all -- see below). An entry
+genuinely missing (both are `ABSENT`, and this module's own
+`_current_text_verbose` never touches the filesystem for that state at all
+-- see below). An entry
 classified `PRESENT_DIVERGENT` can ONLY be `hybrid-managed-region`, and
 `_classify_entry` can only reach that state once the SAME containment
 check has already confirmed the path resolves within `repo_root` -- so a
@@ -105,10 +106,11 @@ from pyforge.core.process import PosixProcess
 
 from ..detect.hashes import hash_content
 from ..detect.inventory import ArtifactState, Inventory
+from ..detect.optout import marker_region_names
 from ..model.manifest import ArtifactClass, Manifest, ManifestEntry, Region
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, parse_regions, resolve_anchor
-from ..state import opt_out_key_or_none
+from ..state import is_opt_out_key, opt_out_key_or_none
 from .types import Action, Plan, RepoFingerprint
 
 # Classifications this module ever turns into an Action -- everything else
@@ -124,74 +126,64 @@ _ACTIONABLE_STATES = frozenset({ArtifactState.ABSENT, ArtifactState.PRESENT_DIVE
 _GIT_TIMEOUT_S = 30.0
 
 
-def _current_text(state: ArtifactState, repo_root: Path, entry_path: str) -> str:
-    """The one text both `_chosen_anchor` and `build_plan`'s own
-    `artifact_hashes` computation read/hash -- a single shared definition
-    so the two can never see a different byte stream for the same
-    artifact.
-
-    `ABSENT` never touches the filesystem: `''` is `classify()`'s own
-    reported truth about this artifact (genuinely missing, or resolving
-    outside `repo_root` -- either way, nothing safe to read). A
-    present-but-non-regular-file, unreadable, or non-UTF-8 target also
-    degrades to `''` -- the identical fallback `detect.inventory.
-    _classify_hybrid` already applies when its own read hits the same
-    failure (this story's Always bullet: "`current_text` is `\"\"` for an
-    absent or unreadable target").
-
-    Only ever reads a real path for a `PRESENT_DIVERGENT` entry, and only
-    because `classify()` has ALREADY proven -- to produce that very state
-    -- that `entry_path` resolves to an existing target within
-    `repo_root` (see the module docstring)."""
-    text, _content_known = _current_text_verbose(state, repo_root, entry_path)
-    return text
-
-
 def _current_text_verbose(
     state: ArtifactState, repo_root: Path, entry_path: str
 ) -> tuple[str, bool]:
-    """`_current_text`'s answer, plus whether that text is what the artifact
-    actually HOLDS (`True`) rather than the `''` an unreadable target
-    degrades to (`False`).
+    """The one text both `_chosen_anchor` and `build_plan`'s own
+    `artifact_hashes` computation read/hash -- a single shared definition
+    so the two can never see a different byte stream for the same artifact
+    -- plus whether that text is what the artifact actually HOLDS (`True`)
+    rather than the `''` an unreadable target degrades to (`False`).
 
-    `ABSENT` is `("", True)`: the blank is `classify()`'s own reported truth
-    about the artifact, not a failed read, so it is a fact about the file
-    and a consumer may reason from it. Only a `PRESENT_DIVERGENT` read that
-    actually fails answers `False`.
+    `ABSENT` never touches the filesystem and answers `("", True)`: the
+    blank is `classify()`'s own reported truth about this artifact
+    (genuinely missing, or resolving outside `repo_root` -- either way,
+    nothing safe to read), so it is a fact about the file and a consumer
+    may reason from it. A present-but-non-regular-file, unreadable, or
+    non-UTF-8 target degrades to `''` too, but answers `False` -- the
+    identical fallback `detect.inventory._classify_hybrid` already applies
+    when its own read hits the same failure (this story's Always bullet:
+    "`current_text` is `\"\"` for an absent or unreadable target"), with the
+    one bit that tells the two blanks apart kept rather than discarded.
 
-    Exists so `_is_fully_opted_out` can refuse to infer consent from a file
-    nobody could read (review finding, confirmed by execution -- see its
-    docstring). `_current_text` keeps the plain-`str` shape its other two
-    consumers want: `hash_content` has nothing better to hash, and
+    Only ever reads a real path for a `PRESENT_DIVERGENT` entry, and only
+    because `classify()` has ALREADY proven -- to produce that very state --
+    that `entry_path` resolves to an existing target within `repo_root`
+    (see the module docstring).
+
+    The second value exists so `_is_fully_opted_out` can refuse to infer
+    consent from a file nobody could read (review finding, confirmed by
+    execution -- see its docstring). Consumers that have nothing to do with
+    it (`hash_content` has nothing better to hash than the blank;
     `_chosen_anchor` already degrades to `()` on the same input by its own
-    route. This is the same `(text, readable)` pair `fingerprint_drift`
-    consumes through `_read_text_or_blank_verbose`, with `_current_text`'s
-    `ABSENT` short-circuit in front of it."""
+    route) simply discard it. This is the same `(text, readable)` pair
+    `fingerprint_drift` consumes through `_read_text_or_blank_verbose`,
+    with an `ABSENT` short-circuit in front of it.
+
+    A plain-`str` wrapper (`_current_text`) stood here for one pass after
+    every consumer had been rewired onto this function, calling it and
+    dropping the second value for nobody -- removed as dead surface in a
+    story that argues against exactly that (review finding)."""
     if state is ArtifactState.ABSENT:
         return "", True
     return _read_text_or_blank_verbose(repo_root, entry_path)
 
 
-def _read_text_or_blank(repo_root: Path, entry_path: str) -> str:
-    """The READ half of `_current_text`, with no `ArtifactState` gate in
-    front of it: the target's UTF-8 text, degrading to `''` for an absent,
-    non-regular-file, unreadable, or non-UTF-8 target.
+def _read_text_or_blank_verbose(repo_root: Path, entry_path: str) -> tuple[str, bool]:
+    """The READ half of `_current_text_verbose`, with no `ArtifactState`
+    gate in front of it: the target's UTF-8 text, degrading to `''` for an
+    absent, non-regular-file, unreadable, or non-UTF-8 target -- plus
+    whether the target was actually READ (`True`) or merely degraded
+    (`False`).
 
-    Factored out of `_current_text` (rather than duplicated inside
+    Factored out of `_current_text_verbose` (rather than duplicated inside
     `fingerprint_drift`) so the one degradation rule this module applies at
     plan-BUILD time is byte-for-byte the same rule it applies at
     VERIFICATION time -- two independent spellings of "unreadable means
     `''`" is exactly the producer/verifier drift `fingerprint_drift` living
-    beside `build_plan` exists to prevent. `_current_text` keeps its own
-    `ABSENT` short-circuit in front of this call; `fingerprint_drift`
-    deliberately does not (see its docstring)."""
-    text, _readable = _read_text_or_blank_verbose(repo_root, entry_path)
-    return text
-
-
-def _read_text_or_blank_verbose(repo_root: Path, entry_path: str) -> tuple[str, bool]:
-    """`_read_text_or_blank`'s answer, plus whether the target was actually
-    READ (`True`) or merely degraded to `''` (`False`).
+    beside `build_plan` exists to prevent. `_current_text_verbose` keeps its
+    own `ABSENT` short-circuit in front of this call; `fingerprint_drift`
+    deliberately does not (see its docstring).
 
     Review finding, verified by execution: collapsing "absent", "not a
     regular file", "unreadable" and "not valid UTF-8" all onto the same
@@ -203,8 +195,8 @@ def _read_text_or_blank_verbose(repo_root: Path, entry_path: str) -> tuple[str, 
     re-hashes identically, and the stale plan is accepted -- apply then
     destroys a file a human put there. Content alone cannot distinguish
     those cases, so `fingerprint_drift` needs the second half of the answer
-    and compares READABILITY as well as bytes. `_current_text` discards it,
-    preserving `build_plan`'s behavior byte-for-byte."""
+    and compares READABILITY as well as bytes. `build_plan`'s hashing
+    discards it, preserving its behavior byte-for-byte."""
     target = repo_root / entry_path
     if not target.is_file():
         return "", False
@@ -295,6 +287,22 @@ class _Pendency:
     `retained` reports it, and consent is measured against what is really
     there rather than against what the key set says should be.
 
+    **And "in the file" is asked the way `detect/optout.py` asks it, not
+    the way `parse_regions` does** (review finding, confirmed by
+    execution). An earlier revision derived `retained` from the parse
+    alone, which put the field back in the same contradiction with rung 1
+    one layer down: `parse_regions` is fence-aware by design and recognizes
+    only the exact canonical marker grammar, so a region sitting in the
+    file inside a closed ``` fence -- or one whose marker lines had picked
+    up a trailing space -- landed in `not_present`, `retained` came back
+    `()`, and a fully-keyed entry was suppressed with a live managed region
+    still in it. `marker_region_names` is the scan `optout.py` added for
+    exactly this premise ("the markers are GONE", not "no span was
+    FOUND"), and it is imported rather than re-spelled -- `plan` already
+    imports `detect.hashes`/`detect.inventory`, so the edge is
+    precedented. Over-detection there only ever keeps an entry, which is
+    the safe direction here (see that function).
+
     Frozen, like every other value object in this package (`Plan`,
     `Action`, `RepoFingerprint`, `fs.NeverWrite`)."""
 
@@ -334,9 +342,13 @@ def _pendency(
     `parse_regions` does not find (present but structurally non-conformant,
     so some -- not necessarily all -- declared regions are missing, and
     possibly none of them). `pending` is `not_present` minus the opted-out
-    ones, and `retained` is simply the complement of `not_present` -- every
-    region that IS in the file, opted out or not, i.e. the managed content
-    this entry still physically holds (see `_Pendency`)."""
+    ones, and `retained` is every region the file physically still holds --
+    the complement of `not_present`, WIDENED by any region whose marker
+    lines survive somewhere `parse_regions` does not look
+    (`detect/optout.py::marker_region_names`; see `_Pendency` for the
+    suppression this protects). Only `retained` is widened that way:
+    `pending` is what a run would INSERT, and a region the parser cannot
+    see is one an insertion still owes."""
     if entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
         return None
     # ManifestEntry.__post_init__ guarantees a hybrid-managed-region entry
@@ -346,12 +358,14 @@ def _pendency(
     try:
         if state is ArtifactState.ABSENT:
             not_present: tuple[Region, ...] = entry.regions
+            surviving: frozenset[str] = frozenset()
         else:
             found_spans = parse_regions(current_text, entry.format)
             found_names = {span.name for span in found_spans}
             not_present = tuple(
                 region for region in entry.regions if region.name not in found_names
             )
+            surviving = marker_region_names(current_text, entry)
     except (RegionParseError, MarkerError, NotImplementedError):
         return None
     not_present_names = {region.name for region in not_present}
@@ -363,7 +377,9 @@ def _pendency(
             if not _is_opted_out(entry.id, region.name, opted_out)
         ),
         retained=tuple(
-            region for region in entry.regions if region.name not in not_present_names
+            region
+            for region in entry.regions
+            if region.name not in not_present_names or region.name in surviving
         ),
     )
 
@@ -401,7 +417,7 @@ def _is_fully_opted_out(pendency: _Pendency | None, *, content_known: bool) -> b
 
     **`content_known` is the fourth requirement, and it is what keeps that
     consent argument honest for a file nobody could read** (review finding,
-    confirmed by execution). `_current_text` degrades a present-but-
+    confirmed by execution). `_current_text_verbose` degrades a present-but-
     unreadable, non-regular-file or non-UTF-8 target to `''`, and `''`
     parses as "no region found", so every declared region landed in
     `not_present` and `retained` came back `()` -- not because the file
@@ -535,7 +551,7 @@ def build_plan(
     `build_plan()` calls against identical repo state must produce
     byte-identical `plan.json` (the epics AC's own requirement).
 
-    Reads only what it needs: `_current_text` is called once per actionable
+    Reads only what it needs: `_current_text_verbose` is called once per actionable
     entry and its result is reused for BOTH `chosen_anchor` resolution and
     `artifact_hashes` -- never read twice for the same artifact.
 
@@ -559,9 +575,30 @@ def build_plan(
     set makes every key that happens to be a substring of it -- and, for a
     single-region entry, the key itself -- read as opted out, dropping
     entries from `actions` AND from `artifact_hashes` with no error at any
-    layer. Non-`str` ELEMENTS are the other one: a `frozenset` of
-    `(id, region)` PAIRS is the right container holding the wrong thing,
-    matches no key, and silently suppresses nothing.
+    layer. ELEMENTS THE GRAMMAR DOES NOT ADMIT are the other one: a
+    `frozenset` of `(id, region)` PAIRS is the right container holding the
+    wrong thing, matches no key, and silently suppresses nothing.
+
+    That second check asks `state.is_opt_out_key`, not `isinstance(...,
+    str)` (review finding, confirmed by execution). Testing only the TYPE
+    left the failure it exists to catch wide open for every malformed key
+    STRING: `'h#Tiers'`, `'h tiers'` and a bare `'h'` are all perfectly
+    ordinary `str`s that match no key, suppress nothing, and re-insert a
+    region FR-112 says must never be re-inserted, with no error at any
+    layer. Every key `read_state` produces already satisfies the grammar --
+    `opted_out` is schema-validated on the way in against the very pattern
+    `is_opt_out_key` asks -- so this can only fire on a hand-minted key.
+
+    It stops at the GRAMMAR and deliberately does not ask whether the
+    artifact half names an entry of THIS manifest. The schema's artifact
+    half is `[^\\s#]+`, so the path form `region_findings` prints beside the
+    key (`CLAUDE.md#tiers` against an entry id of `h`) is itself a
+    grammatical key and passes -- the one copy-paste hazard this check
+    cannot close. Closing it would mean matching against `entries_by_id`,
+    which would also hard-fail the documented natural call
+    (`opted_out=state.opted_out`) whenever state carries a key for an entry
+    the manifest has since dropped -- an orphan nothing prunes today. A
+    caller error that suppresses nothing is the lesser of those two.
 
     Any other `Collection` of `str` is accepted, `frozenset` or not. The
     earlier revision demanded `set`/`frozenset` and rejected `tuple`,
@@ -576,14 +613,18 @@ def build_plan(
             f"{type(opted_out).__name__} -- `in` against a bare str is substring "
             "containment and would silently suppress entries"
         )
-    non_strings = sorted(
-        {type(key).__name__ for key in opted_out if not isinstance(key, str)}
+    inadmissible = sorted(
+        {
+            key if isinstance(key, str) else type(key).__name__
+            for key in opted_out
+            if not is_opt_out_key(key)
+        }
     )
-    if non_strings:
+    if inadmissible:
         raise ValueError(
             "build_plan(opted_out=...) must hold rendered opt_out_key strings; got "
-            f"element type(s) {non_strings!r} -- a non-str element matches no key "
-            "and would silently suppress nothing"
+            f"{inadmissible!r} -- an element the seed-state opted_out grammar does "
+            "not admit matches no key and would silently suppress nothing"
         )
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     unknown_ids = sorted(
@@ -693,7 +734,7 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
 
     **Why content alone is not enough, and what is compared instead.** Every
     recorded hash for an `ABSENT` artifact is `hash_content("")`, because
-    `_current_text` short-circuits that state without reading anything. The
+    `_current_text_verbose` short-circuits that state without reading anything. The
     read this function performs degrades an absent, non-regular-file,
     unreadable, or non-UTF-8 target to `''` too -- so a pure content
     comparison silently equates "still absent" with "a binary, unreadable,

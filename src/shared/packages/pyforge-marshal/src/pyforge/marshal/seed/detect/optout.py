@@ -49,7 +49,7 @@ design; each rung is a different fact about the same name.
    are each a guard against deriving a PERMANENT opt-out from something
    that is not a deletion, and each names the case it closes:
    ``_has_content`` (there is no file here to have deleted markers from),
-   ``_marker_region_names`` (a marker for this region is still sitting in
+   ``marker_region_names`` (a marker for this region is still sitting in
    the text), and ``opt_out_key_or_none`` (the pair is unspellable, so a
    derived opt-out could never be recorded -- see ``_disposition``).
 4. Otherwise ``MISSING`` -- declared, never installed, nothing recorded.
@@ -59,11 +59,11 @@ FR-112 sanctions deleting the MARKERS, not deleting the FILE. An absent,
 empty, or unreadable artifact reaches this module as ``text=""`` -- and a
 file a botched script truncated to a newline, or to a BOM, is the same fact
 with one or two more bytes, which is why the gate is ``_has_content``
-rather than ``text`` or ``text.strip()`` --
-the same ``""``
-``plan/build.py::_current_text`` hands back for ``ArtifactState.ABSENT``, and
-the same one ``detect/inventory.py::_classify_hybrid`` degrades to for a
-target it cannot read -- and ``parse_regions("")`` then finds nothing, so
+rather than ``text`` or ``text.strip()`` -- the same ``""``
+``plan/build.py::_current_text_verbose`` hands back for
+``ArtifactState.ABSENT``, and the same one
+``detect/inventory.py::_classify_hybrid`` degrades to for a target it
+cannot read -- and ``parse_regions("")`` then finds nothing, so
 without this guard ``rm AGENTS.md`` would read as "every claimed region's
 markers were deliberately deleted" and silently record a PERMANENT opt-out
 for every one of them. Whether the file itself is absent or unreadable is
@@ -84,7 +84,10 @@ agree only if a MUTATING verb records what detect derived: it must call
 ``state.record_opt_out(...)`` for every pair ``opt_outs_to_record`` returns,
 and persist the result, BEFORE it calls ``build_plan``. Without that
 ordering a verb reports "opted out" and, in the same breath, builds a plan
-that re-inserts the region. A READ-ONLY ``check`` does the opposite and
+that re-inserts the region. ``opt_outs_to_record`` returns the DERIVED pairs
+only -- a pair rung 2 read back out of ``state`` is already recorded, and
+handing it to the mutator again would drop a claim that is still standing
+(see that function). A READ-ONLY ``check`` does the opposite and
 records nothing at all -- FR-88 forbids ``check`` writing anything, state
 included -- so it reports the derivation and leaves the recording to the
 next mutating run.
@@ -166,9 +169,21 @@ from .findings import Finding, FindingType, Severity
 # private-use or unassigned code points still read as real content and
 # rung 3 retired every claimed region of it PERMANENTLY -- the third route
 # to the outcome `bool(text)` and then `bool(text.strip())` had each been
-# widened to close. Naming the class rather than the members that happened
-# to be tried is the point; over-classifying a file as empty only ever
-# re-offers its regions, which is the non-destructive direction.
+# widened to close. Naming the whole class rather than the members that
+# happened to be tried is the point; over-classifying a file as empty only
+# ever re-offers its regions, which is the non-destructive direction.
+#
+# What this deliberately does NOT try to be is a test for "invisible"
+# (review finding: `_has_content("⠀")`, BRAILLE PATTERN BLANK, is
+# `So`, and `_has_content("ㅤ")`, HANGUL FILLER, is `Lo` -- both still
+# read as content). "Invisible when rendered" is a property of a font and a
+# renderer, not a Unicode class, and chasing it has no closing move. The
+# question this guard actually asks is narrower and IS closed: is this the
+# residue of a file having been emptied -- nothing at all, whitespace, or
+# the control/format bytes a truncating writer leaves behind (`Z*` via
+# `str.isspace()`, plus the whole `C` class here)? A file whose only
+# character is a Braille blank is not that residue; it is a file with
+# content, and rung 3 reading it as one is the correct answer.
 #
 # `Cs` is named for completeness of the class rather than for reach: a
 # lone surrogate cannot come off the strict-UTF-8 read path callers use,
@@ -216,8 +231,10 @@ class RegionStatus:
 
 def _has_content(text: str) -> bool:
     """Whether ``text`` carries at least one character that is neither
-    whitespace nor an invisible control/format character -- rung 3's "is
-    there a FILE here to have deleted markers from" test.
+    whitespace nor a Unicode ``C`` (Other) code point -- rung 3's "is there
+    a FILE here to have deleted markers from" test, and NOT a test for
+    "invisible" (see ``_EMPTY_CATEGORIES`` on why that has no closing move
+    and is the wrong question here).
 
     Not ``bool(text.strip())`` (review finding, confirmed by execution).
     ``str.strip()`` removes whitespace and nothing else, so a file holding
@@ -235,7 +252,7 @@ def _has_content(text: str) -> bool:
     )
 
 
-def _marker_region_names(text: str, entry: ManifestEntry) -> frozenset[str]:
+def marker_region_names(text: str, entry: ManifestEntry) -> frozenset[str]:
     """Every region name that appears in a ``marshal-seed`` BEGIN or END
     marker line anywhere in ``text`` -- including lines ``parse_regions``
     deliberately skips.
@@ -275,13 +292,40 @@ def _marker_region_names(text: str, entry: ManifestEntry) -> frozenset[str]:
     with the claim, on a whitespace change. Re-asking the SAME grammar
     after ``str.strip()`` is normalization, not a second spelling of it --
     it is exactly what ``markers.py`` says S-8.2 will do wholesale ("re-
-    normalizes a file before consulting this grammar"). Over-detection here
-    is free: a name found only stands rung 3 down, which re-offers the
-    region.
+    normalizes a file before consulting this grammar").
 
-    This closes the leading/trailing-whitespace variants and no others. A
-    marker whose INNER spacing moved (``<!--marshal-seed:begin ...-->``) or
-    which acquired a non-whitespace line prefix (a ``>`` blockquote, a list
+    **PUBLIC, because the planner needs the same answer** (review finding,
+    confirmed by execution). ``plan/build.py::_pendency`` derived its
+    ``retained`` set -- the consent gate deciding whether a fully-opted-out
+    entry may leave the ``RepoFingerprint`` -- from ``parse_regions`` alone,
+    so a region physically present but invisible to the parser (fenced, or
+    marker lines carrying a trailing space) read as released there while
+    rung 1 here answered ``PRESENT`` for the same input. That is the
+    identical hole this function was added to close, one layer over, and
+    the fix is this function rather than a copy of it: ``plan`` already
+    imports ``detect.hashes``/``detect.inventory``, so the edge is
+    precedented, and the alternative was a second spelling of a grammar
+    scan in a story whose Always bullets forbid exactly that.
+
+    **Over-detection is CHEAP, not free** (review finding, confirmed by
+    execution). Both consumers take a name found here in the conservative
+    direction -- rung 3 stands down and re-offers the region; ``retained``
+    keeps the entry and its hash -- so a false positive destroys nothing.
+    But it is not harmless: a marker-shaped line in ordinary prose that
+    ``parse_regions`` skips (an INDENTED code block demonstrating the
+    grammar, which ``str.strip()`` normalizes straight into recognition)
+    puts the name here on every run, so rung 3 can never fire for that
+    region. A maintainer who then deletes those markers gets
+    ``managed-region-missing`` and a re-insertion on every ``update``,
+    forever, with no diagnostic saying why FR-112 is not being honoured for
+    that artifact. The trade is deliberate -- silently retiring a LIVE
+    region is the worse failure, and this direction never does that -- and
+    the residual is tracked as ``DW-FU-8-5-11``.
+
+    Under-detection has a residual of its own: this closes the
+    leading/trailing-whitespace variants and no others. A marker whose
+    INNER spacing moved (``<!--marshal-seed:begin ...-->``) or which
+    acquired a non-whitespace line prefix (a ``>`` blockquote, a list
     bullet) is still unrecognized, still reads as a deletion, and still
     derives a permanent opt-out. Closing that needs the looser grammar
     S-8.2 owns; hand-writing one here is what this module's Always bullets
@@ -376,8 +420,17 @@ def _claims_region(state: SeedState, entry: ManifestEntry, region_name: str) -> 
     ``state/store.py::_without_region_claim`` matches on ``id`` and span
     name only, because ``record_opt_out``/``clear_opt_out`` are handed no
     path to compare -- a divergence between the two spellings of this
-    predicate that is latent today (nothing derives an opt-out across a
-    moved path any more) and tracked as `DW-FU-8-5-9`."""
+    predicate tracked as `DW-FU-8-5-9`.
+
+    That divergence was described here as "latent today" for one pass while
+    it was in fact LIVE (review finding, confirmed by execution). The gate
+    added above governs rung 3 only, and ``opt_outs_to_record`` used to hand
+    back rung-2 pairs as well -- so a recorded opt-out on an entry whose
+    manifest ``path`` had since moved travelled the module's own documented
+    verb loop into the path-blind filter and dropped the claim describing
+    the region still installed at the OLD path. It is latent NOW because
+    ``opt_outs_to_record`` returns only the pairs this rung derived, and
+    this rung compares the path; see that function."""
     return any(
         artifact.id == entry.id
         and artifact.path == entry.path
@@ -408,7 +461,7 @@ def classify_regions(
     3 is switched off, so a deleted file re-offers its regions rather than
     retiring them permanently (module docstring, ``_has_content``). Nor is
     a region whose marker lines are still in the file derived from, however
-    they got out of ``parse_regions``'s sight (``_marker_region_names``).
+    they got out of ``parse_regions``'s sight (``marker_region_names``).
 
     Pure: ``text`` is passed in already read, nothing is written, and
     ``state`` is only ever queried."""
@@ -426,7 +479,7 @@ def classify_regions(
     # Every region name whose marker line survives ANYWHERE in the raw
     # text, fenced or not -- so rung 3 tests its own premise ("the markers
     # are gone") rather than the parser's narrower one ("no span found").
-    marker_names = _marker_region_names(text, entry)
+    marker_names = marker_region_names(text, entry)
     return tuple(
         RegionStatus(
             artifact_id=entry.id,
@@ -535,10 +588,13 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
-def opt_outs_to_record(statuses: tuple[RegionStatus, ...]) -> tuple[tuple[str, str], ...]:
-    """The ``(artifact_id, region)`` pairs of every ``OPTED_OUT`` status, in
-    the order given -- the argument list a mutating verb feeds to
-    ``state.record_opt_out`` before it builds a plan.
+def opt_outs_to_record(
+    statuses: tuple[RegionStatus, ...], state: SeedState | None
+) -> tuple[tuple[str, str], ...]:
+    """The ``(artifact_id, region)`` pairs of every ``OPTED_OUT`` status
+    ``state`` does not ALREADY record, in the order given -- the argument
+    list a mutating verb feeds to ``state.record_opt_out`` before it builds
+    a plan.
 
     Exists because the story's two halves key on DIFFERENT things and would
     otherwise silently disagree: ``classify_regions`` DERIVES an opt-out from
@@ -549,12 +605,38 @@ def opt_outs_to_record(statuses: tuple[RegionStatus, ...]) -> tuple[tuple[str, s
     (a mutating verb, before ``build_plan``; never a read-only ``check``,
     which FR-88 forbids from writing).
 
-    Returns EVERY ``OPTED_OUT`` pair, not only the derived ones. Telling the
-    two apart would mean re-asking ``is_opted_out`` per status -- a second
-    spelling of rung 2 -- to save nothing: ``record_opt_out`` is idempotent,
-    so re-recording an already-recorded pair returns an equal ``SeedState``.
-    Simpler, and correct by the mutator's own contract rather than by this
-    function guessing which rung answered.
+    **Returns only the pairs rung 3 DERIVED, never the ones rung 2 read
+    back out of ``state``** (review finding, confirmed by execution). An
+    earlier revision returned every ``OPTED_OUT`` pair, on the argument that
+    re-asking ``is_opted_out`` would be a second spelling of rung 2 and that
+    ``record_opt_out`` is idempotent anyway. The first half was wrong about
+    the function (asking rung 2's OWN function is not a second spelling of
+    it), and the second was wrong about the mutator: ``record_opt_out`` is
+    idempotent in the ``opted_out`` KEY and unconditional in the
+    ``managed[]`` claim it drops. So re-recording an already-recorded pair
+    is not a no-op -- it discards whatever claim still stands, and the two
+    reachable ways for one to stand alongside a recorded key are exactly the
+    two cases the rung-3 gates refuse to derive from:
+
+    * the region is physically in the file but invisible to
+      ``parse_regions`` (fenced, or a marker line that gained a trailing
+      space), so rung 2 answers before ``marker_region_names`` is ever
+      consulted -- and the claim dropped is a LIVE region's, taking its
+      ``body_sha`` with it;
+    * the entry's manifest ``path`` has moved since the claim was recorded,
+      so the claim describes the region still installed at the OLD path and
+      ``_without_region_claim``, which compares no path, drops that one.
+
+    Both are the precondition ``record_opt_out``/``clear_opt_out`` document
+    ("the region must not be PRESENT in the file") being violated by this
+    module's own documented verb loop. A pair rung 2 answered needs no
+    recording by definition -- it is already in ``state.opted_out``, and so
+    already in the key set the verb hands ``build_plan`` -- so filtering it
+    out costs the sequencing contract nothing and closes both.
+
+    Takes ``SeedState | None`` for the reason ``is_opted_out`` does: a
+    never-adopted repo records no opt-out, which makes every derived pair
+    reportable rather than making the call an error.
 
     Returns plain pairs, never rendered ``opt_out_key`` strings: the
     mutators take the two halves separately, and rendering here would only
@@ -564,4 +646,5 @@ def opt_outs_to_record(statuses: tuple[RegionStatus, ...]) -> tuple[tuple[str, s
         (status.artifact_id, status.region)
         for status in statuses
         if status.disposition is RegionDisposition.OPTED_OUT
+        and not is_opted_out(state, status.artifact_id, status.region)
     )
