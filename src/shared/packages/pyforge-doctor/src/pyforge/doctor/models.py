@@ -150,6 +150,15 @@ class Source(StrEnum):
     # informs rather than gates (always WARN or OK, never FAIL). Judges a
     # Marshal-produced artifact (the factory's own tooling-installation
     # surface); see sources/bmad_method.py for the independence rationale.
+    # Story 10.2 (Epic 10/CAP-2) extends the SAME member's gather() with a
+    # second, independent comparison -- installed vs. the latest release
+    # actually published upstream on npm, not just against the declared
+    # floor -- rather than adding a new member (review finding, Story 10.2:
+    # keep this comment in sync whenever gather()'s own scope grows). Story
+    # 10.3 (Epic 10/CAP-3) wires this Source into `doctor check --bmad-core`
+    # (opt-in only, never the default run) and `scripts/fleet_picture.py`'s
+    # ATTENTION block, closing the "undetected until an operator happened to
+    # ask" gap the standalone pixi task left open.
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
 
 

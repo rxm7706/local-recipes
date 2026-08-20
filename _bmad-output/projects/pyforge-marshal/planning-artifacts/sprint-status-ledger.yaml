@@ -149,7 +149,7 @@ development_status:
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: done
   8-3-span-substitution-the-update-primitive: done
   8-4-anchor-resolution-and-region-insertion: done
-  8-5-marker-deletion-as-a-sanctioned-opt-out: blocked
+  8-5-marker-deletion-as-a-sanctioned-opt-out: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done

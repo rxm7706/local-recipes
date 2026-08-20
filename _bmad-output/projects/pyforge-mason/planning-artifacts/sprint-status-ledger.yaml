@@ -50,8 +50,8 @@ development_status:
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
-  5-4-free-inheritance-verification: backlog
-  5-5-rule-2-conda-forge-expert-retrospective: backlog
+  5-4-free-inheritance-verification: blocked
+  5-5-rule-2-conda-forge-expert-retrospective: done
   6-1-slice-map-and-campaign-state: backlog
   6-2-the-divergence-and-endgame-guard-proven-red-first: backlog
   6-3-pilot-slice-recipe-generation-built-and-parallel-validated: backlog

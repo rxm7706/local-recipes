@@ -320,7 +320,20 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # framework version against pixi.toml's own declared floor; mirrors
     # BMAD_DRIFT/DREAM_CHAIN/SPEC_SURFACE/FORWARD_DEPENDENCY's own "factory
     # apparatus" precedent -- Marshal owns the repo's tooling-installation
-    # surface even though applying a fix is steward's territory.
+    # surface even though applying a fix is steward's territory. Story 10.2
+    # (Epic 10/CAP-2) extends the same bmad_method.py gather() to also
+    # compare that installed version against the latest release actually
+    # published upstream (npm), still this one Source -- CAP-2 issues one
+    # live, unauthenticated npm-registry GET (fails open, never raises),
+    # which is not what this field's "runs anywhere" gloss implies either,
+    # same tension CHECK_LAYOUT's own comment above already names for its
+    # loopback-socket/chromium case. Story 10.3 dispatches this Source two
+    # ways: `doctor check --bmad-core` (an opt-in-only category in
+    # `__main__.py`, deliberately excluded from the default run because of
+    # the NFR-4 5s budget tension named above) and
+    # `scripts/fleet_picture.py`'s ATTENTION block (a subprocess probe
+    # naming any `warn` finding under `watch`) -- never `doctor monitor`
+    # (see that story's own Boundaries for why).
 )
 
 
