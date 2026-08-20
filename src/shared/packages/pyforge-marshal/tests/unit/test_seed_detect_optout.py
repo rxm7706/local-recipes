@@ -379,6 +379,63 @@ def test_a_recorded_opt_out_is_still_sticky_with_an_empty_text():
     assert status.disposition is RegionDisposition.OPTED_OUT
 
 
+@pytest.mark.parametrize("text", ["\n", " ", "   \n\t\n"])
+def test_a_whitespace_only_text_never_derives_an_opt_out_either(text):
+    """The guard asks "is there a FILE here to have deleted markers from",
+    and a file a botched script truncated to a newline answers that no just
+    as much as a zero-byte one does. ``bool(text)`` split those two apart on
+    a single byte: ``""`` re-offered the region, ``"\\n"`` retired it
+    PERMANENTLY -- the exact outcome the empty-text guard above exists to
+    prevent, reachable by one stray newline. ``bool(text.strip())`` closes
+    it. Confirmed real by reverting to ``bool(text)`` and watching this
+    fail."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.MISSING
+
+
+def test_a_pair_the_opt_out_grammar_cannot_spell_is_never_derived_opted_out():
+    """Rung 3 read the raw ``managed[].id``, which is the LOOSER grammar --
+    ``SeedState`` accepts an id the ``opted_out`` item pattern rejects. So a
+    derived ``OPTED_OUT`` could name a pair ``record_opt_out`` REFUSES, and
+    the sanctioned verb sequence this module documents broke at its own
+    seam: ``opt_outs_to_record`` handed the caller the pair and feeding it
+    straight to ``record_opt_out`` raised ``ValueError``. Rung 3 now applies
+    the same grammar rung 2 gets for free through ``is_opted_out``."""
+    entry = _hybrid("has a space", "AGENTS.md", "tiers")
+    state = _state(managed=(_region_claim("has a space", "AGENTS.md", "tiers"),))
+
+    (status,) = classify_regions(entry, _doc("intro"), state)
+
+    assert status.disposition is RegionDisposition.MISSING
+
+
+def test_every_pair_opt_outs_to_record_returns_is_one_record_opt_out_accepts():
+    """The property the rung-3 gate above exists to guarantee, asserted
+    directly over both the admissible and the inadmissible id: whatever
+    ``opt_outs_to_record`` hands back can be fed to ``record_opt_out``
+    without raising. An id the grammar cannot spell simply never appears in
+    that tuple."""
+    state = _state(
+        managed=(
+            _region_claim("agents-md", "AGENTS.md", "tiers"),
+            _region_claim("has a space", "OTHER.md", "tiers"),
+        )
+    )
+    statuses = classify_regions(
+        _hybrid("agents-md", "AGENTS.md", "tiers"), _doc("intro"), state
+    ) + classify_regions(_hybrid("has a space", "OTHER.md", "tiers"), _doc("intro"), state)
+
+    pairs = opt_outs_to_record(statuses)
+
+    assert pairs == (("agents-md", "tiers"),)
+    for artifact_id, region in pairs:
+        record_opt_out(state, artifact_id, region)
+
+
 def test_an_empty_text_still_reports_one_status_per_declared_region():
     """The guard switches rung 3 off; it does not switch the entry off. A
     missing region is still reported (and still remediable) rather than
@@ -449,6 +506,40 @@ def test_finding_messages_use_the_path_hash_region_convention():
     assert findings[0].message.startswith("AGENTS.md#tiers: ")
     assert findings[1].message.startswith("AGENTS.md#model-badge: ")
     assert all(finding.path == "AGENTS.md" for finding in findings)
+
+
+def test_the_opted_out_message_carries_the_key_its_own_remedy_asks_for():
+    """A region has two addresses -- ``AGENTS.md#tiers`` (path) and
+    ``agents-md#tiers`` (``opt_out_key``). ``Finding`` carries only ``path``,
+    so the report showed one while its remedy told the operator to run
+    ``--reinstate <artifact>#<region>`` with the OTHER, and the obvious
+    copy-paste was the wrong token. The contract-mandated
+    ``f"{path}#{region}: ..."`` prefix is unchanged; the key is spelled in
+    the tail, where the remedy can be acted on."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    state = _state(opted_out=("agents-md#tiers",))
+
+    (opted,) = region_findings(classify_regions(entry, _doc("intro"), state))
+
+    assert opted.message.startswith("AGENTS.md#tiers: ")
+    assert "agents-md#tiers" in opted.message
+    assert "<artifact>#<region>" in REMEDIES[FindingType.OPTED_OUT]
+
+
+def test_the_opted_out_message_does_not_promise_a_durability_it_cannot_know():
+    """For a DERIVED opt-out (claim present, nothing recorded) durability
+    depends on the caller recording ``opt_outs_to_record``'s pairs before
+    the plan is built -- and a read-only ``check`` deliberately does not
+    (FR-88). An unconditional "the tool will not re-insert this region" was
+    the same unprovable claim already removed from the
+    ``managed-region-missing`` message."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    (opted,) = region_findings(classify_regions(entry, _doc("intro"), state))
+
+    assert "while this opt-out stands" in opted.message
+    assert not opted.message.endswith("the tool will not re-insert this region")
 
 
 def test_findings_carry_their_types_documented_remedy():

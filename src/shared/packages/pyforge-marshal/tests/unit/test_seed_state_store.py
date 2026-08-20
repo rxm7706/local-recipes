@@ -292,6 +292,39 @@ def test_a_corrupt_packaged_schema_is_an_internal_error(monkeypatch, _uncached_s
     assert excinfo.value.remedy.strip()
 
 
+@pytest.mark.parametrize(
+    "schema",
+    [
+        pytest.param({"properties": {}}, id="key-gone"),
+        pytest.param(
+            {"properties": {"opted_out": {"items": {"pattern": "("}}}}, id="uncompilable"
+        ),
+        pytest.param({"properties": {"opted_out": {"items": []}}}, id="wrong-shape"),
+    ],
+)
+def test_a_schema_that_lost_its_opt_out_pattern_is_an_internal_error(monkeypatch, schema):
+    """``_schema_text``/``_load_schema`` wrap both of THEIR failure modes in
+    an exit-10 ``InternalError`` with a reinstall remedy; the raw subscript
+    chain into ``properties.opted_out.items.pattern`` raised a bare
+    ``KeyError``/``TypeError``/``re.error`` instead -- same corrupt install,
+    two different exits. It is reachable from ``build_plan`` through
+    ``opt_out_key_or_none``, which is documented as degrading rather than
+    crashing on a bad pair, so the inconsistency was visible from the plan
+    path. ``opted_out.items`` is also one of only two INLINE patterns in a
+    schema whose dominant convention is ``$ref``, so a refactor toward that
+    convention lands here first."""
+    store._opt_out_pattern.cache_clear()
+    monkeypatch.setattr(store, "_load_schema", lambda: schema)
+    try:
+        with pytest.raises(InternalError) as excinfo:
+            store._opt_out_pattern()
+    finally:
+        store._opt_out_pattern.cache_clear()
+    assert excinfo.value.exit_code == 10
+    assert excinfo.value.remedy.strip()
+    assert "opted_out" in str(excinfo.value)
+
+
 def test_a_broken_packaged_schema_never_escapes_the_read_path(
     tmp_path, monkeypatch, _uncached_schema_text
 ):
@@ -1720,6 +1753,29 @@ def test_the_claim_drop_is_a_no_op_in_the_record_then_clear_sequence():
     assert clear_opt_out(recorded, "agents-md", "tiers").managed == recorded.managed
 
 
+def test_clear_opt_out_drops_a_live_claim_too_which_is_the_callers_to_prevent():
+    """The precondition, pinned rather than left implicit. The claim drop is
+    UNCONDITIONAL, and state alone cannot tell "markers deleted, claim
+    survives" (must lose the claim) from "markers present, claim survives"
+    (must keep it) -- they differ only in the FILE, which this pure function
+    never sees, and the frozen ``(state, artifact_id, region)`` signature
+    cannot be given. Called on the second, it discards a live claim and with
+    it the recorded ``body_sha``, after which
+    ``detect/hashes.py::check_managed_region`` reads the region as adopted
+    out-of-band forever and ``build_plan`` plans no insertion to rebuild it
+    (the region IS present). So the caller must clear only a pair
+    ``detect/optout.py`` classifies ``OPTED_OUT``; ``DW-FU-8-5-4`` carries
+    that guard to S-10.6, where the verb exists to hold it."""
+    live = _clean_state()
+    (claim,) = [artifact for artifact in live.managed if artifact.id == "agents-md"]
+    assert claim.inserted_region_span is not None
+    assert claim.body_sha
+
+    cleared = clear_opt_out(live, "agents-md", "tiers")
+
+    assert [artifact.id for artifact in cleared.managed] == ["dream-template"]
+
+
 def test_clear_opt_out_leaves_a_whole_file_claim_on_the_same_id_untouched():
     """The same two-condition filter ``record_opt_out`` uses, asserted on
     the mutator that gained it: an entry with no recorded span claims the
@@ -1814,6 +1870,8 @@ def test_the_five_opt_out_helpers_are_re_exported_from_the_state_package():
         assert getattr(state_package, name) is getattr(store, name)
     assert len(set(state_package.__all__)) == len(state_package.__all__)
     # ``__all__``'s established convention here is type names first, then
-    # the function names in sorted order -- the group the four join.
+    # the function names in sorted order -- the group the five join
+    # (the four asserted above plus ``opt_out_key_or_none``, promoted to
+    # public by this story's own review pass).
     functions = [name for name in state_package.__all__ if name[0].islower()]
     assert functions == sorted(functions)
