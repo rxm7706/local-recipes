@@ -163,6 +163,163 @@ def test_default_run_includes_durability_but_a_narrowing_flag_excludes_it(
     assert len(calls) == 1, "--env must narrow to env alone, not also run durability"
 
 
+# --- bmad-core category (Story 10.3, Epic 10/CAP-3) ---------------------------
+
+
+def test_bmad_core_findings_reach_both_renders(monkeypatch, tmp_path: Path, capsys):
+    """Story 10.1/10.2 shipped ``sources/bmad_method.py`` with no caller.
+    This is the caller, so its findings must appear in the human render AND
+    in ``--json`` -- FR-9's parity guarantee.
+
+    A lone ``--bmad-core`` narrows to bmad-core ALONE, same "explicit flags
+    narrow" semantics ``--engines``/``--env``/``--durability`` already have
+    amongst each other -- a forbidden-warden sentinel (instead of a
+    healthy-warden stub) proves engines/env/durability never run
+    alongside it."""
+    _forbid_warden_gather(monkeypatch)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.bmad_method.gather",
+        lambda target: (
+            Finding(source=Source.BMAD_METHOD_VERSION_DRIFT,
+                    check="bmad-method-version-drift",
+                    status=DoctorStatus.WARN,
+                    message="installed bmad-method 6.9.0 is behind pixi.toml's "
+                            "declared floor >=6.11.0",
+                    evidence={"installed": "6.9.0", "declared_floor": ">=6.11.0"}),
+        ),
+    )
+
+    assert main(["check", str(tmp_path), "--bmad-core"]) == 0
+    assert "bmad-method-version-drift" in capsys.readouterr().out
+
+    assert main(["check", str(tmp_path), "--bmad-core", "--json"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert [f["source"] for f in doc["findings"]] == ["bmad-method-version-drift"]
+    assert doc["findings"][0]["status"] == "warn"
+
+
+def test_bmad_core_warn_never_drives_the_exit_code(
+    monkeypatch, tmp_path: Path, capsys
+):
+    """This source never emits FAIL (its own module docstring: always OK or
+    WARN) -- confirm a WARN finding leaves the exit code at 0, unlike
+    durability's FAIL-gates test above. Forbidden-warden sentinel keeps this
+    isolated to bmad-core alone (narrows same as the test above)."""
+    _forbid_warden_gather(monkeypatch)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.bmad_method.gather",
+        lambda target: (
+            Finding(source=Source.BMAD_METHOD_VERSION_DRIFT,
+                    check="bmad-method-version-drift", status=DoctorStatus.WARN,
+                    message="drift", evidence={}),
+        ),
+    )
+
+    assert main(["check", str(tmp_path), "--bmad-core"]) == 0
+    assert "warn" in capsys.readouterr().out
+
+
+def test_default_run_never_calls_bmad_core_gather(
+    monkeypatch, tmp_path: Path, capsys
+):
+    """Inverse of ``test_default_run_includes_durability_but_a_narrowing_
+    flag_excludes_it``: unlike durability, ``--bmad-core`` must NEVER join
+    the zero-flag default run (NFR-4 -- its upstream half makes a real,
+    un-mockable npm HTTP call). A forbidden-gather sentinel proves the
+    default run never even calls it."""
+    _stub_healthy_warden(monkeypatch)
+
+    def _forbid_bmad_core(target):
+        raise _ForbiddenGatherError(
+            "must never gather the 'bmad-core' category in the default run"
+        )
+
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.bmad_method.gather", _forbid_bmad_core
+    )
+
+    exit_code = main(["check", str(tmp_path)])
+
+    assert exit_code == 0
+    assert "bmad-method" not in capsys.readouterr().out
+
+
+def test_explicit_bmad_core_flag_excludes_the_default_trio(
+    monkeypatch, tmp_path: Path, capsys
+):
+    """The other direction of the two tests above, mirroring
+    ``test_default_run_includes_durability_but_a_narrowing_flag_excludes_it``
+    exactly: an explicit ``--bmad-core`` must narrow away engines/env/
+    durability, not merely be excluded FROM them (the earlier bug this
+    story's own review pass caught -- ``run_bmad_core`` has to also count
+    as an "explicit flag given" for the default-trio trigger condition,
+    not just be omitted from what that branch sets)."""
+    _forbid_warden_gather(monkeypatch)
+
+    def _forbid_env(target):
+        raise _ForbiddenGatherError("must never gather the 'env' category here")
+
+    def _forbid_durability(target):
+        raise _ForbiddenGatherError(
+            "must never gather the 'durability' category here"
+        )
+
+    monkeypatch.setattr(env_hygiene, "gather", _forbid_env)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather", _forbid_durability
+    )
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.bmad_method.gather",
+        lambda target: (
+            Finding(source=Source.BMAD_METHOD_VERSION_DRIFT,
+                    check="bmad-method-version-drift", status=DoctorStatus.OK,
+                    message="meets floor", evidence={}),
+        ),
+    )
+
+    exit_code = main(["check", str(tmp_path), "--bmad-core", "--json"])
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    assert exit_code == 0
+    assert [f["source"] for f in document["findings"]] == ["bmad-method-version-drift"]
+
+
+def test_explicit_bmad_core_flag_excluded_by_scope_is_a_usage_error(
+    tmp_path: Path, capsys
+):
+    exit_code = main(
+        ["check", str(tmp_path), "--bmad-core", "--scope", "runtime"]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "--bmad-core" in captured.err
+
+
+def test_bmad_core_flag_matching_scope_repo_runs_fine(
+    monkeypatch, tmp_path: Path, capsys
+):
+    _forbid_warden_gather(monkeypatch)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.bmad_method.gather",
+        lambda target: (
+            Finding(source=Source.BMAD_METHOD_VERSION_DRIFT,
+                    check="bmad-method-version-drift", status=DoctorStatus.OK,
+                    message="meets floor", evidence={}),
+        ),
+    )
+
+    exit_code = main(
+        ["check", str(tmp_path), "--bmad-core", "--scope", "repo", "--json"]
+    )
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    assert exit_code == 0
+    assert [f["source"] for f in document["findings"]] == ["bmad-method-version-drift"]
+
+
 # --- --json parity (epics AC2) -----------------------------------------------
 
 
