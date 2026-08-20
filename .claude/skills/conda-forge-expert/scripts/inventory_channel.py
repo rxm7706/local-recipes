@@ -46,6 +46,7 @@ import sqlite3
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from base64 import b64encode
 from dataclasses import dataclass, field
@@ -110,14 +111,41 @@ def _make_request(url: str) -> urllib.request.Request:
     """Build a Request with JFrog/netrc/Bearer auth. Uses _http if available."""
     if _HTTP_AVAILABLE and _http_make_request is not None:
         return _http_make_request(url, user_agent="inventory-channel/1.0")
-    # Fallback: env-var only auth (no .netrc)
+    # Fallback: env-var only auth (no .netrc), used only when _http itself
+    # isn't importable ("offline / external clones", per _HTTP_AVAILABLE's
+    # own comment above). Host-gated the same way _http.auth_headers_for is
+    # (Rule-2 retro, Story 5.5) — this branch previously attached the JFrog
+    # credential to every host unconditionally, the identical cross-resolver
+    # leak _http.py closed, present here too since this fallback duplicates
+    # that logic rather than delegating to it.
     headers: dict[str, str] = {"User-Agent": "inventory-channel/1.0"}
-    if os.environ.get("JFROG_API_KEY"):
+    host = urllib.parse.urlparse(url).netloc.lower().split(":")[0]
+    is_configured_host = host in _fallback_configured_enterprise_hosts()
+    if is_configured_host and os.environ.get("JFROG_API_KEY"):
         headers["X-JFrog-Art-Api"] = os.environ["JFROG_API_KEY"]
-    elif os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):
+    elif is_configured_host and os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):
         creds = f"{os.environ['JFROG_USERNAME']}:{os.environ['JFROG_PASSWORD']}"
         headers["Authorization"] = "Basic " + b64encode(creds.encode()).decode()
     return urllib.request.Request(url, headers=headers)
+
+
+def _fallback_configured_enterprise_hosts() -> set[str]:
+    """Env-var-derived host allowlist for `_make_request`'s no-`_http`
+    fallback. A minimal, local re-derivation (not an `_http` import — that
+    path is already unavailable here by construction) of the same `*_BASE_URL`
+    scan `_http._configured_enterprise_hosts()` performs, so the two auth
+    paths agree even when `_http` can't be loaded."""
+    hosts: set[str] = set()
+    for key, value in os.environ.items():
+        if not key.endswith("_BASE_URL") or not value:
+            continue
+        try:
+            host = urllib.parse.urlparse(value).netloc.lower().split(":")[0]
+        except ValueError:
+            continue
+        if host:
+            hosts.add(host)
+    return hosts
 
 
 def fetch_source(url_or_path: str, no_cache: bool, cache_ttl: int) -> tuple[bytes | None, str | None]:

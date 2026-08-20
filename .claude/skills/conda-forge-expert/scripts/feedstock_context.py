@@ -27,7 +27,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "conda-forge-expert"
+# Sibling helper — canonical path resolution shared across scripts/*.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _paths import get_data_dir  # noqa: E402
+
+_DATA_DIR = get_data_dir()
 _CACHE_DIR = _DATA_DIR / "feedstock_issue_cache"
 _CACHE_TTL_SECONDS = 1800  # 30 min — issue state changes faster than recipe content
 
