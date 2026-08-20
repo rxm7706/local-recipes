@@ -79,6 +79,37 @@ def loop_home_staleness(
     return stale
 
 
+def bmad_core_drift_findings(
+    repo: pathlib.Path = REPO, timeout: int = 15
+) -> list[dict]:
+    """WARN-status Findings from ``pyforge.doctor``'s bmad-method-version-
+    drift source (Story 10.1/10.2's CAP-1/CAP-2 -- installed BMAD-METHOD
+    behind pixi.toml's declared floor, and/or behind the latest release
+    published upstream on npm).
+
+    Shells out via ``sys.executable -m pyforge.doctor.sources
+    bmad-method-version-drift --json`` -- the same subprocess discipline
+    every other cross-package signal in this file already uses
+    (``running_stations()``'s ``marshal status``,
+    ``bmad_loop_baseline_drift_check.py``); this script never imports
+    ``pyforge.doctor`` directly.
+
+    Unlike ``loop_home_staleness``/``running_stations``, this function does
+    NOT catch its own failures -- it raises on any (subprocess error,
+    non-zero exit, malformed JSON, ...). The caller in ``main()``'s
+    ATTENTION block wraps the call in the same ``try/except Exception:
+    watch.append(...)`` idiom every other ATTENTION probe there already
+    uses, so degrading to one "could not check" line is the CALLER's job,
+    not this function's."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources",
+         "bmad-method-version-drift", "--json"],
+        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def running_stations() -> tuple[set[str], dict[str, dict]]:
     """(slugs running, slug -> live row) from marshal status.
 
@@ -230,6 +261,12 @@ def main() -> int:
                          f"origin/main -- resync the loop home before its next spin")
     except Exception:
         watch.append("could not check loop-home staleness")
+
+    try:
+        for finding in bmad_core_drift_findings():
+            watch.append(f"bmad-method: {finding.get('message', 'drift detected')}")
+    except Exception:
+        watch.append("could not check bmad-method core version drift")
 
     print("\nATTENTION:")
     if needs:

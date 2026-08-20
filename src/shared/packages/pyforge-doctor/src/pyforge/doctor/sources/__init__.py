@@ -327,10 +327,13 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # live, unauthenticated npm-registry GET (fails open, never raises),
     # which is not what this field's "runs anywhere" gloss implies either,
     # same tension CHECK_LAYOUT's own comment above already names for its
-    # loopback-socket/chromium case. Nothing dispatches this Source into
-    # `doctor check`/`monitor` yet (Story 10.3's job); the NFR-4 5s budget
-    # has to be revisited against CAP-2's own network round-trip when it is
-    # (review finding, Story 10.2).
+    # loopback-socket/chromium case. Story 10.3 dispatches this Source two
+    # ways: `doctor check --bmad-core` (an opt-in-only category in
+    # `__main__.py`, deliberately excluded from the default run because of
+    # the NFR-4 5s budget tension named above) and
+    # `scripts/fleet_picture.py`'s ATTENTION block (a subprocess probe
+    # naming any `warn` finding under `watch`) -- never `doctor monitor`
+    # (see that story's own Boundaries for why).
 )
 
 

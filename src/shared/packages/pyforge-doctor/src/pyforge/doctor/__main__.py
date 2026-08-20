@@ -46,6 +46,7 @@ from . import fleet_surface, prescribe, score, sources
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas
+from .sources import bmad_method
 from .sources import marshal as marshal_source
 from .sources import warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
@@ -82,6 +83,7 @@ _CATEGORY_SOURCE: dict[str, Source] = {
     "engines": Source.WARDEN_DOCTOR,
     "env": Source.ENV_HYGIENE,
     "durability": Source.MARSHAL_DURABILITY,
+    "bmad-core": Source.BMAD_METHOD_VERSION_DRIFT,
 }
 
 
@@ -143,6 +145,19 @@ def _build_parser() -> tuple[
         ),
     )
     check.add_argument(
+        "--bmad-core",
+        action="store_true",
+        help=(
+            "run the 'bmad-core' category (installed bmad-method framework "
+            "version vs. pixi.toml's declared floor, and vs. the latest "
+            "release actually published upstream) -- whole category only, "
+            "no NAME (see _gather_bmad_core); OPT-IN ONLY, NEVER part of "
+            "the zero-flag default run -- this source's upstream half makes "
+            "a real, un-mockable npm-registry HTTP call (up to 5.0s) that "
+            "would put NFR-4's hard 5-second pre-flight budget at risk"
+        ),
+    )
+    check.add_argument(
         "--scope",
         choices=("repo", "runtime", "all"),
         default="all",
@@ -154,8 +169,8 @@ def _build_parser() -> tuple[
             "runtime-scope yet, so this always yields zero findings today); "
             "default 'all' matches every category (today's behavior, "
             "unchanged); combining with an explicit --engines/--env/"
-            "--durability whose own scope doesn't match is a usage error, "
-            "not a silent empty result -- ignored by --list"
+            "--durability/--bmad-core whose own scope doesn't match is a "
+            "usage error, not a silent empty result -- ignored by --list"
         ),
     )
     check.add_argument(
@@ -164,7 +179,7 @@ def _build_parser() -> tuple[
         help=(
             "list the full check catalog as text and exit -- never "
             "gathers/runs anything (ignores "
-            "--engines/--env/--durability/--json/path/--scope)"
+            "--engines/--env/--durability/--bmad-core/--json/path/--scope)"
         ),
     )
     check.add_argument(
@@ -333,10 +348,10 @@ def _validate_scope_against_explicit_categories(
     args: argparse.Namespace, check_parser: argparse.ArgumentParser
 ) -> None:
     """An EXPLICITLY-requested category (``--engines``/``--env`` given, or
-    ``--durability``) whose registered scope doesn't match a non-``"all"``
-    ``--scope`` is a usage error (``.error()``, exit 2) raised HERE, before
-    dispatch -- mirrors ``_validate_check_names``'s own "validate at the
-    call boundary, not inside gather" discipline.
+    ``--durability``/``--bmad-core``) whose registered scope doesn't match a
+    non-``"all"`` ``--scope`` is a usage error (``.error()``, exit 2) raised
+    HERE, before dispatch -- mirrors ``_validate_check_names``'s own
+    "validate at the call boundary, not inside gather" discipline.
 
     Review finding: without this check, ``doctor check --engines --scope
     runtime`` silently narrowed ``run_engines`` to ``False`` in
@@ -361,6 +376,7 @@ def _validate_scope_against_explicit_categories(
             ("--engines", "engines", args.engines is not None),
             ("--env", "env", args.env is not None),
             ("--durability", "durability", args.durability),
+            ("--bmad-core", "bmad-core", args.bmad_core),
         )
         if given
     ]
@@ -561,6 +577,28 @@ def _gather_durability(target: Path) -> tuple[Finding, ...]:
     return marshal_source.gather(target)
 
 
+def _gather_bmad_core(target: Path) -> tuple[Finding, ...]:
+    """Findings for the "bmad-core" category (Story 10.3, Epic 10/CAP-3).
+
+    WHOLE-CATEGORY ONLY -- mirrors ``_gather_durability``'s own shape and
+    rationale exactly: no per-check NAME, since per-check addressability is
+    a ``checks.registry`` concern this flag deliberately doesn't reach for.
+
+    OPT-IN ONLY -- unlike ``--durability``, this category is deliberately
+    NEVER part of ``_run_check``'s "no flags -> all on" default branch (see
+    that function's own comment): ``bmad_method.gather``'s CAP-2 half makes
+    a real, un-mockable live npm-registry HTTP call (up to 5.0s), which
+    would put NFR-4's hard 5-second pre-flight budget at direct risk if run
+    on every invocation.
+
+    ``bmad_method.gather`` already degrades via its own
+    ``sources.degrade_on_exception`` wrapper (never raises, never FAILs --
+    see that module's own docstring), so there is no synthetic-degradation
+    branch to mirror ``_gather_engines``' either.
+    """
+    return bmad_method.gather(target)
+
+
 def _run_check(args: argparse.Namespace) -> int:
     if args.list:
         return _render_list()
@@ -569,12 +607,18 @@ def _run_check(args: argparse.Namespace) -> int:
     run_engines = args.engines is not None
     run_env = args.env is not None
     run_durability = args.durability
+    # Story 10.3: computed OUTSIDE the "no flags -> all on" branch below --
+    # `--bmad-core` is opt-in ONLY and must never join the default run (see
+    # `_gather_bmad_core`'s own docstring for the NFR-4 rationale), unlike
+    # `--durability`, which does.
+    run_bmad_core = args.bmad_core
     if not run_engines and not run_env and not run_durability:
         # Neither flag given -> both categories run (FR-2), each as the
         # WHOLE category -- args.engines/args.env are still None here (the
         # "flag absent" default, distinct from _WHOLE_CATEGORY, the "flag
         # given with no value" const), so the sentinel must be substituted
-        # explicitly rather than forwarded as-is.
+        # explicitly rather than forwarded as-is. `run_bmad_core` is
+        # deliberately NOT set True here -- see the comment above.
         run_engines = run_env = run_durability = True
         engines_name: object = _WHOLE_CATEGORY
         env_name: object = _WHOLE_CATEGORY
@@ -590,6 +634,7 @@ def _run_check(args: argparse.Namespace) -> int:
     run_engines = run_engines and _category_in_scope("engines", args.scope)
     run_env = run_env and _category_in_scope("env", args.scope)
     run_durability = run_durability and _category_in_scope("durability", args.scope)
+    run_bmad_core = run_bmad_core and _category_in_scope("bmad-core", args.scope)
 
     findings: tuple[Finding, ...] = ()
     if run_engines:
@@ -598,6 +643,8 @@ def _run_check(args: argparse.Namespace) -> int:
         findings += _gather_env(env_name, target)
     if run_durability:
         findings += _gather_durability(target)
+    if run_bmad_core:
+        findings += _gather_bmad_core(target)
 
     # Computed BEFORE emission: a stdout write failure must never replace
     # the already-computed exit code (mirrors warden's cli.py discipline).
