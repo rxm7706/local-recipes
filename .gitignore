@@ -718,7 +718,6 @@ Thumbs.db
 .claude/skills/conda-forge-expert/pypi_conda_mappings/by_conda_name.json
 
 # Generated CVE database and skill-scoped data (refreshed via `pixi run update-cve-db`)
-.claude/skills/data/
 .claude/data/
 
 # Claude Code harness runtime artifacts (session lock from ScheduleWakeup, etc.)

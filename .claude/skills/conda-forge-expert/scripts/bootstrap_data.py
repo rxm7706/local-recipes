@@ -127,11 +127,17 @@ import sys
 import time
 from pathlib import Path
 
-DATA_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent
-    / "data" / "conda-forge-expert"
-)
-REPO_ROOT = Path(__file__).resolve().parents[5]
+# Sibling helper — canonical path resolution shared across scripts/*.py.
+# Guarded: an unconditional insert appends a duplicate every time the module is
+# (re-)imported in a long-lived process, front-loading this directory ahead of
+# site-packages once per import. Same fix as dependency-checker.py's.
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from _paths import get_data_dir, get_repo_root  # noqa: E402
+
+DATA_DIR = get_data_dir()
+REPO_ROOT = get_repo_root()
 
 
 # Per-step timeouts (seconds). Defaults sized for cold `--fresh --profile admin`
@@ -817,6 +823,17 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true",
                         help="Print steps without executing")
     args = parser.parse_args()
+
+    # `_paths` returns None (never raises) when the repo root can't be
+    # resolved. Every DATA_DIR/REPO_ROOT use below is essential — there is no
+    # degraded mode — so fail here with a diagnostic rather than several
+    # hundred lines deeper with an opaque `'NoneType' has no attribute mkdir`.
+    if DATA_DIR is None or REPO_ROOT is None:
+        print("bootstrap-data: cannot resolve the repo root from "
+              f"{Path(__file__).resolve()} — expected it 4 levels above "
+              ".claude/skills/conda-forge-expert/scripts/. Run this script "
+              "from a normal checkout of the repo.", file=sys.stderr)
+        return 2
 
     print("═" * 70)
     print("  conda-forge-expert · bootstrap-data")

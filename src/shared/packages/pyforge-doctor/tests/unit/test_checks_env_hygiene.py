@@ -246,35 +246,54 @@ def test_gather_chained_assignment_with_a_header_target_is_detected(
     assert result[0].evidence["var_name"] == "TOKEN"
 
 
-def test_gather_golden_fixture_finds_the_real_jfrog_api_key_injection():
-    # The real, unmodified _http.py::auth_headers_for -- read-only, never
-    # copied into a synthetic string (spec's context-file instruction).
+def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
+    # The real CFE scripts -- read-only, never copied into a synthetic string
+    # (spec's context-file instruction).
+    #
+    # This assertion is inverted from its original form, and deliberately so.
+    # The fixture was `_http.py`'s live, unconditional `JFROG_API_KEY`
+    # injection: the very bug FR-3 was written to catch. The conda-forge-expert
+    # Rule-2 retro (Story 5.5, CFE v8.82.x) host-gated that injection and its
+    # copy in `inventory_channel.py`, so the detector correctly reports nothing
+    # -- verified by A/B: scanning the pre-retro revision still yields both
+    # findings (`_http.py:215`, `inventory_channel.py:116`), the post-retro
+    # tree yields none.
+    #
+    # Asserting the absence keeps the same property the original had (the
+    # detector runs against real, unmodified code rather than a synthetic
+    # string) and converts it into a live regression guard that the leak class
+    # stays closed. That the detector FINDS such an injection is covered by the
+    # synthetic positive cases above, which do not depend on another package
+    # shipping a real bug.
     if not _HTTP_PY_DIR.is_dir():
         pytest.skip(
-            "CFE _http.py golden fixture not present (non-monorepo context)"
+            "CFE scripts golden fixture not present (non-monorepo context)"
         )
+
+    # An absence assertion cannot tell "scanned real code, found nothing"
+    # apart from "scanned nothing at all": `gather()` over an empty directory
+    # also returns []. So pin the precondition first -- if `_HTTP_PY_DIR` ever
+    # resolves somewhere else, or the walker stops matching these files, this
+    # test must red rather than pass vacuously.
+    scanned = {p.name for p in _HTTP_PY_DIR.glob("*.py")}
+    assert {"_http.py", "inventory_channel.py"} <= scanned, (
+        f"golden-fixture directory {_HTTP_PY_DIR} no longer holds the files "
+        f"this guard is about -- got {sorted(scanned)[:10]}"
+    )
 
     result = gather(_HTTP_PY_DIR)
 
-    jfrog_finding = next(
-        (f for f in result if f.evidence.get("var_name") == "JFROG_API_KEY"),
-        None,
-    )
-    assert jfrog_finding is not None, (
-        "expected a JFROG_API_KEY finding scanning the real _http.py -- "
-        f"got {[f.evidence for f in result]}"
-    )
-    assert jfrog_finding.status is DoctorStatus.WARN
-    assert jfrog_finding.evidence["file"].endswith("_http.py")
+    # A scan that bailed out reports it rather than returning a clean []; that
+    # state must not read as "no leak found" either.
+    incomplete = [f for f in result if f.check == SCAN_INCOMPLETE_CHECK_NAME]
+    assert incomplete == [], f"scan did not complete: {incomplete}"
 
-    # Self-verifying against line drift: the reported line must actually
-    # be the JFROG_API_KEY assignment in the live file, not a stale/wrong
-    # lineno.
-    http_py = Path(jfrog_finding.evidence["file"])
-    reported_line = http_py.read_text(encoding="utf-8").splitlines()[
-        jfrog_finding.evidence["line"] - 1
-    ]
-    assert "JFROG_API_KEY" in reported_line
+    unconditional = [f for f in result if f.check == CHECK_NAME]
+    assert unconditional == [], (
+        "the real CFE scripts must contain no unconditional credential "
+        "injection -- got "
+        f"{[(f.evidence.get('file'), f.evidence.get('line'), f.evidence.get('var_name')) for f in unconditional]}"
+    )
 
 
 # --- gather_one filter-equivalence ---------------------------------------

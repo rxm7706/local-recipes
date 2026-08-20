@@ -44,6 +44,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -112,6 +113,36 @@ _SKIP_PACKAGES: Set[str] = {
     "python", "pip", "setuptools", "wheel", "compiler", "stdlib",
 }
 
+# Make the sibling `_http` importable, ONCE at import time. Doing this inside a
+# per-call helper (as the auth gate previously did) appends a duplicate entry
+# on every call, so sys.path grows without bound in any process that calls it
+# repeatedly, taxing every later import. (The MCP server is NOT such a process:
+# `conda_forge_server.py::_run_script` subprocesses this script per tool call,
+# so each request starts with a fresh sys.path. The unbounded growth is real
+# for an in-process caller; the "long-lived MCP server" framing this comment
+# used to carry was not traced through the actual entry point.)
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
+# Hosts of channels the operator named EXPLICITLY (--channel, CONDA_CHANNEL_URL,
+# enterprise config) — populated by `get_configured_channels`, consumed by the
+# `_auth_headers` host gate. None of these is a `*_BASE_URL`, so the shared
+# `_http` allowlist alone would not cover them.
+_EXPLICIT_CHANNEL_HOSTS: Set[str] = set()
+
+
+def _host_of(url: str) -> str:
+    """Lowercased hostname, userinfo and port stripped — same contract as
+    `_http._host_of` (`urlparse().hostname`, never `netloc.split(':')[0]`,
+    which yields the username for `https://user:pw@host/` and mangles IPv6
+    literals). Defined locally so the gate still works when `_http` cannot be
+    imported."""
+    try:
+        return (urllib.parse.urlparse(url).hostname or "").lower()
+    except ValueError:
+        return ""
+
 # ── Data classes ───────────────────────────────────────────────────────────────
 
 @dataclass
@@ -159,12 +190,43 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
       4. `_http.resolve_conda_forge_urls()` — picks up CONDA_FORGE_BASE_URL
          env, pixi mirrors, and pixi default-channels; falls back to
          repo.prefix.dev and conda.anaconda.org.
+
+    Steps 1-3 are the operator naming a channel EXPLICITLY; step 4 may end at
+    a public default nobody chose. Only the former are remembered in
+    `_EXPLICIT_CHANNEL_HOSTS`, which `_auth_headers`'s host gate honours —
+    without that, gating on `*_BASE_URL`/pixi alone would silently withhold
+    credentials from the operator's own `--channel`/`CONDA_CHANNEL_URL`/
+    enterprise-config Artifactory channel, none of which is a `*_BASE_URL`.
+
+    The remembered set is REPLACED, not accumulated: it is the authorization
+    scope for the channels resolved by THIS call. When it only ever grew, a
+    host named by one call's `--channel` stayed credential-authorized for
+    every later call in the same process — a credential allowlist assembled
+    out of caller arguments.
+
+    That is an in-process hazard only. The MCP server reaches this script
+    through `conda_forge_server.py::_run_script`, which subprocesses it per
+    tool call, so no module-level state crosses requests there; an earlier
+    version of this docstring claimed the MCP path as the reproduction and was
+    wrong about it. `_auth_headers` does depend on this function having run
+    (it reads the set this call populates) — the CLI `main` ordering
+    guarantees that, and an in-process caller must resolve channels before
+    asking for headers.
     """
+    _EXPLICIT_CHANNEL_HOSTS.clear()
+
+    def _explicit(channels: List[str]) -> List[str]:
+        for c in channels:
+            host = _host_of(c)
+            if host:
+                _EXPLICIT_CHANNEL_HOSTS.add(host)
+        return channels
+
     if override:
-        return [override]
+        return _explicit([override])
     env = os.environ.get("CONDA_CHANNEL_URL")
     if env:
-        return [env]
+        return _explicit([env])
 
     cfg = get_skill_config()
     features = cfg.get("features", {})
@@ -172,21 +234,19 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
         # enterprise-config.yaml layout
         primary = cfg.get("artifactory", {}).get("channels", {}).get("primary")
         if primary:
-            return [primary]
+            return _explicit([primary])
         # skill-config.yaml layout
         ent = cfg.get("enterprise", {}).get("artifactory", {})
         url, repo = ent.get("url"), ent.get("conda_virtual_repo")
         if url and repo:
-            return [f"{url.rstrip('/')}/api/conda/{repo}"]
+            return _explicit([f"{url.rstrip('/')}/api/conda/{repo}"])
         env_channels = cfg.get("environment", {}).get("channels", [])
         if env_channels:
-            return env_channels
+            return _explicit(env_channels)
 
     # Fall through to the shared _http resolver (env + pixi config + public).
+    # NOT remembered as explicit: this branch can land on a public default.
     try:
-        import sys as _sys
-        from pathlib import Path as _P
-        _sys.path.insert(0, str(_P(__file__).parent))
         from _http import resolve_conda_forge_urls  # type: ignore[import-not-found]
         return resolve_conda_forge_urls()
     except ImportError:
@@ -194,9 +254,129 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
 
 # ── Auth + SSL ─────────────────────────────────────────────────────────────────
 
+def _is_configured_enterprise_host(url: str) -> bool:
+    """Host-gate for `_auth_headers` below (Rule-2 retro, Story 5.5): is `url`'s
+    host one the operator actually pointed this tool at?
+
+    Two independent sources, unioned:
+
+    * `_http._configured_enterprise_hosts()` — `*_BASE_URL` env vars and pixi
+      mirror config, the shared source of truth with `auth_headers_for`'s own
+      gate (public-default hosts already subtracted there).
+    * `_EXPLICIT_CHANNEL_HOSTS` — channels named via `--channel`,
+      `CONDA_CHANNEL_URL`, or the enterprise config. **Required:** none of
+      those is a `*_BASE_URL`, so gating on `_http`'s allowlist alone
+      withholds the credential from the operator's OWN Artifactory channel —
+      a silent 401/404 on the one channel they configured, and the reason
+      `CONDA_TOKEN` (an anaconda.org channel token, not a JFrog one) would
+      otherwise never be sent anywhere.
+
+    When `_http` is unimportable ("offline / external clones") the explicit
+    channel hosts still gate correctly on their own — deliberately NOT the
+    former "yes, unconditionally", which reinstated the very leak this gate
+    exists to close for anyone in that state.
+
+    This answers only "may this host receive A credential". Which KIND it may
+    receive is a separate question — see `_is_public_default_host`.
+    """
+    host = _host_of(url)
+    if not host:
+        return False
+    if host in _EXPLICIT_CHANNEL_HOSTS:
+        return True
+    try:
+        from _http import _configured_enterprise_hosts  # type: ignore[import-not-found]
+    except ImportError:
+        return False
+    return host in _configured_enterprise_hosts()
+
+
+# Public hosts this tool may legitimately be pointed at by name. Used ONLY to
+# refuse the JFrog-family credentials for them; a channel token (CONDA_TOKEN)
+# is still sent, because a private anaconda.org org channel is exactly what it
+# is for. Derived from `_http`'s own `_DEFAULT_*` globals when importable, so a
+# newly-added resolver's fallback is covered the moment it is declared; the
+# literal set is the offline / no-`_http` floor, not the primary source.
+_PUBLIC_CHANNEL_HOST_FLOOR: frozenset[str] = frozenset({
+    "conda.anaconda.org",
+    "repo.prefix.dev",
+    "repo.anaconda.com",
+})
+
+
+def _is_public_default_host(url: str) -> bool:
+    """Is `url`'s host a well-known PUBLIC package host?
+
+    `_is_configured_enterprise_host` deliberately honours the channel the
+    operator named, and that channel is often public — `--channel
+    https://conda.anaconda.org/myprivateorg` is a routine, supported setup.
+    Host-level authorization alone therefore sent the JFrog API key to
+    anaconda.org (the exact cross-resolver leak the Rule-2 retro exists to
+    close) AND, because the JFrog branch is checked first, shadowed the
+    `CONDA_TOKEN` that channel actually needs — a silent 401 on the one
+    channel the operator configured. Splitting the question by credential
+    KIND fixes both at once.
+    """
+    host = _host_of(url)
+    if not host:
+        return False
+    try:
+        from _http import _public_default_hosts  # type: ignore[import-not-found]
+    except ImportError:
+        return host in _PUBLIC_CHANNEL_HOST_FLOOR
+    return host in _public_default_hosts() or host in _PUBLIC_CHANNEL_HOST_FLOOR
+
+
+# The hosts `CONDA_TOKEN` is actually a credential FOR. Splitting the gate by
+# credential kind stopped the JFrog family reaching public hosts, but left the
+# public branch treating every public host as interchangeable: a named
+# `--channel https://repo.prefix.dev/myorg` or `https://pypi.org/simple` was
+# handed the anaconda.org channel token, which is a different vendor's
+# credential going somewhere it can never authenticate. Same cross-host send
+# the retro exists to close, one level down from where it was fixed.
+_ANACONDA_CHANNEL_HOSTS: frozenset[str] = frozenset({
+    "conda.anaconda.org",
+    "anaconda.org",
+    "repo.anaconda.com",
+})
+
+
+def _is_anaconda_channel_host(url: str) -> bool:
+    """Is `url` on the anaconda.org family that `CONDA_TOKEN` authenticates to?"""
+    return _host_of(url) in _ANACONDA_CHANNEL_HOSTS
+
+
 def _auth_headers(url: str) -> Dict[str, str]:
-    """Build authorization headers for the URL from environment variables."""
-    _ = url  # reserved for future per-domain auth routing
+    """Build authorization headers for the URL from environment variables.
+
+    Host-gated (Rule-2 retro, Story 5.5): a credential is attached only when
+    `url`'s host is one the operator actually configured an enterprise
+    mirror for — mirrors `_http.auth_headers_for`'s own JFrog gate, applied
+    here to this function's broader `ARTIFACTORY_*`/`JFROG_TOKEN`/`JFROG_USER`
+    alias vocabulary, which `_http.py` does not cover. Previously attached
+    unconditionally to every channel URL whenever the env var was merely
+    set — the identical cross-resolver leak class `_http.py` closed, present
+    here too because this function never delegated to `_http.py`.
+
+    Gated on TWO questions, not one. "May this host receive a credential at
+    all?" is `_is_configured_enterprise_host`. "May it receive a JFrog-family
+    one?" additionally requires that it not be a public package host — see
+    `_is_public_default_host`. `CONDA_TOKEN` is an anaconda.org channel token,
+    not a JFrog one, so it is the only credential a named public channel gets
+    — and then only on the anaconda.org family it can actually authenticate
+    to, never on every public host indiscriminately.
+    """
+    if not _is_configured_enterprise_host(url):
+        return {}
+
+    # A public host the operator named as a channel gets its channel token and
+    # nothing else. The JFrog family is skipped entirely rather than merely
+    # deprioritized: attaching it here is the leak, not a fallback order.
+    if _is_public_default_host(url):
+        conda_token = os.environ.get("CONDA_TOKEN")
+        if conda_token and _is_anaconda_channel_host(url):
+            return {"Authorization": f"Bearer {conda_token}"}
+        return {}
 
     # JFrog native API key (preferred over Bearer on Artifactory)
     api_key = os.environ.get("JFROG_API_KEY") or os.environ.get("ARTIFACTORY_API_KEY")
