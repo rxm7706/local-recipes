@@ -13,13 +13,17 @@ the two recipe trees expose):
   https://conda-forge.org/packages/ (feedstock-outputs map + metadata Browse)
 - Staged_Recipes_PR_URL from conda-forge/staged-recipes PRs
 - Local_Recipes_URL from rxm7706/local-recipes/tree/main/recipes
+- Local_Build_Status from the live recipes/ CFE stamp
 
 After writing the workbook tab, publish (edit in place, never create) the
-pinned secret gist file mgmt-wf-python-modernization-identity.md unless
---skip-gist. The gist id is not in git: set OPENTEAMS_IDENTITY_GIST_ID,
+pinned secret gist files mgmt-wf-python-modernization-identity.md (row
+catalog) and mgmt-wf-python-modernization-dashboards.md (P/work, issue
+gap, census, Artifactory map) unless --skip-gist. The gist id is not in
+git: set OPENTEAMS_IDENTITY_GIST_ID,
 conf/conda-forge-packaging-inventory-operations.local.env, or --gist-id.
 
-Output snapshot tab identity-2026-08-12 is not a source input.
+Default output snapshot tab identity-2026-08-12 is not a source input.
+Pass --tab-out to write a dated tab without overwriting an older snapshot.
 """
 
 from __future__ import annotations
@@ -57,6 +61,7 @@ COLUMNS = [
     "Conda-Forge_Metadata_URL",
     "Staged_Recipes_PR_URL",
     "Local_Recipes_URL",
+    "Local_Build_Status",
     "Verification_Timestamp_UTC",
 ]
 
@@ -71,15 +76,17 @@ PACKAGING_TITLE_RE = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
 DEFAULT_GH = Path(__file__).resolve().parent.parent / ".pixi/envs/local-recipes/bin/gh"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = Path("/tmp/openteams-identity")
+ASSOCIATOR_URL = "https://prefix-dev.github.io/purl-associator/mappings-index.json"
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
+GIST_DASHBOARD_FILENAME = "mgmt-wf-python-modernization-dashboards.md"
 GIST_ID_ENV = "OPENTEAMS_IDENTITY_GIST_ID"
 LOCAL_ENV_PATH = REPO_ROOT / "conf/conda-forge-packaging-inventory-operations.local.env"
 GIST_SCHEMA = [
-    ("P", "enum", "yes", "Proposed priority `P1`–`P9` or `P0`."),
+    ("P", "enum", "yes", "Proposed priority `P1`–`P10`."),
     ("Rank", "int", "yes", "1-based rank across the snapshot (P1 first)."),
     ("Score", "int", "yes", "Use-score percentile 1–100."),
     ("Package", "string", "yes", "Display name (same identity as Core_Python_Package_Name)."),
-    ("Work", "enum", "yes", "`Fix vulnerability` | `Create recipe` | `File issue (on conda-forge)` | `File issue (maintained feedstock)` | `Already tracked`."),
+    ("Work", "enum", "yes", "`Fix vulnerability` | `Create recipe` | `File OpenTeams tracking issue [Conda-Forge Packaging]` | `Already tracked`."),
     ("Platforms", "int", "no", "JFROG `platform_env_count`."),
     ("Apps", "int", "no", "JFROG `internal_app_count`."),
     ("Downloads", "int", "no", "JFROG `artifactory_downloads`."),
@@ -125,7 +132,7 @@ COMPILER_LINE_RE = re.compile(
     r"(?:\{\{\s*compiler\s*\(|\$\{\{\s*compiler\s*\(|"
     r"\{\{\s*stdlib\s*\(|\$\{\{\s*stdlib\s*\()"
 )
-P_ORDER = ("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P0")
+P_ORDER = ("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10")
 RECIPE_TYPE_ORDER = (
     "noarch-python",
     "noarch-generic",
@@ -330,14 +337,11 @@ def fetch_project_issues(gh: str) -> list[dict]:
 
 
 def board_packaging_urls(items: list[dict]) -> dict[str, str]:
-    """PEP 503 name -> issue URL for OSS Enhancement [Conda-Forge Packaging] titles."""
+    """PEP 503 name -> issue URL for [Conda-Forge Packaging] titles on project 1."""
     out: dict[str, str] = {}
     for node in items:
         content = node.get("content") or {}
         if content.get("__typename") != "Issue":
-            continue
-        milestone = (content.get("milestone") or {}).get("title") or ""
-        if milestone != OSS_MILESTONE:
             continue
         name = packaging_name_from_title(content.get("title") or "")
         url = content.get("url") or ""
@@ -807,26 +811,26 @@ def read_xlsx_tab(xlsx: Path, tab: str) -> list[dict[str, str]]:
     return rows
 
 
-def read_inventory_tab(xlsx: Path) -> list[dict[str, str]]:
-    return read_xlsx_tab(xlsx, TAB_IN)
+def read_inventory_tab(xlsx: Path, tab: str = TAB_IN) -> list[dict[str, str]]:
+    return read_xlsx_tab(xlsx, tab)
 
 
 def write_csv(path: Path, records: list[dict[str, str]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
+        w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction="ignore")
         w.writeheader()
         for rec in records:
-            w.writerow(rec)
+            w.writerow({c: rec.get(c, "") for c in COLUMNS})
 
 
-def write_xlsx_tab(xlsx: Path, records: list[dict[str, str]]) -> None:
+def write_xlsx_tab(xlsx: Path, records: list[dict[str, str]], tab: str = TAB_OUT) -> None:
     wb = load_workbook(xlsx)
-    if TAB_OUT in wb.sheetnames:
-        del wb[TAB_OUT]
-    ws = wb.create_sheet(TAB_OUT)
+    if tab in wb.sheetnames:
+        del wb[tab]
+    ws = wb.create_sheet(tab)
     ws.append(COLUMNS)
     for rec in records:
-        ws.append([rec[c] for c in COLUMNS])
+        ws.append([rec.get(c, "") for c in COLUMNS])
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     wb.save(xlsx)
@@ -852,11 +856,37 @@ def md_cell(value: str) -> str:
     )
 
 
+def md_table(headers: list[str], rows: list[list[str]]) -> list[str]:
+    lines = [
+        "| " + " | ".join(md_cell(h) for h in headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for row in rows:
+        lines.append("| " + " | ".join(md_cell(str(c)) for c in row) + " |")
+    return lines
+
+
+def _as_int(value: str) -> int:
+    try:
+        return int(float(str(value).replace(",", "").strip() or 0))
+    except ValueError:
+        return 0
+
+
+WORK_DASH_ORDER = (
+    "Fix vulnerability",
+    "Create recipe",
+    "File OpenTeams tracking issue [Conda-Forge Packaging]",
+    "Already tracked",
+)
+
+
 def write_gist_markdown(
     path: Path,
     records: list[dict[str, str]],
     xlsx: Path,
     gist_id: str,
+    tab: str = TAB_OUT,
 ) -> None:
     recipes_dir = REPO_ROOT / "recipes"
     overlay_live_local(records, recipes_dir)
@@ -893,14 +923,16 @@ def write_gist_markdown(
         f"columns: {len(cols)}",
         f"generated: {ts}",
         "source_workbook: docs/Analysis_Dataset-2026-08-12.xlsx",
-        "source_tab: identity-2026-08-12",
+        f"source_tab: {tab}",
         f"workbook_sha256: {sha}",
         "generator: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py --gist-only",
         "blank_means: missing",
         'multi_value_separator: "; "',
         f"gist_id: {gist_id}",
+        f"companion: {GIST_DASHBOARD_FILENAME}",
         "parse:",
         '  - GFM pipe table below heading "## Identity rows"',
+        f"  - Dashboard tables live in companion file {GIST_DASHBOARD_FILENAME}",
         "  - Header row is the canonical column names; do not rename",
         "  - One package per row; Core_Python_Package_Name is unique",
         "  - Empty cell = missing / not applicable (never N/A in this snapshot)",
@@ -947,18 +979,18 @@ def write_gist_markdown(
             "",
             "# mgmt-wf-python-modernization identity",
             "",
-            "Snapshot of workbook tab `identity-2026-08-12`: one row per OpenTeams",
+            f"Snapshot of workbook tab `{tab}`: one row per OpenTeams",
             "universe name (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA`) plus board-only",
-            "`[Conda-Forge Packaging]` extras from org project 1 view 6",
-            "(OSS Enhancements).",
+            "`[Conda-Forge Packaging]` extras from org project 1.",
             "",
             f"- Rows: **{len(rows):,}**",
             f"- Columns: **{len(cols)}** (ranking `P`/`Rank`/`Score`/`Work` plus identity URLs and local build status)",
             "- Primary key: `Core_Python_Package_Name` (unique)",
             f"- Generated: `{ts}`",
-            "- Source: `docs/Analysis_Dataset-2026-08-12.xlsx` tab `identity-2026-08-12`",
+            f"- Source: `docs/Analysis_Dataset-2026-08-12.xlsx` tab `{tab}`",
             f"- Workbook sha256: `{sha}`",
             f"- Gist id (edit in place on every rerun; id is not stored in git): `{gist_id}`",
+            f"- Dashboards (same snapshot as the three canvases): `{GIST_DASHBOARD_FILENAME}` in this gist",
             "",
             "## Parse contract",
             "",
@@ -969,6 +1001,7 @@ def write_gist_markdown(
             "5. Blank cell means missing. Do not invent URLs or PURLs.",
             "6. `Local_Build_Status` is the live CFE stamp (`success` / `failed` / `build-clean-test-blocked` / `not-attempted`).",
             "7. Frontmatter `local_build_by_p` / `local_build_by_type` / `local_build_success_by_p_type` split those stamps by priority and recipe type (`noarch-python` / `noarch-generic` / `compiled` / `arch` / `none`).",
+            f"8. Canvas summaries (P/work, issue gap, census, Artifactory map, workbook tabs) are `{GIST_DASHBOARD_FILENAME}` in this gist, not this table.",
             "",
             "## Column schema",
             "",
@@ -993,13 +1026,69 @@ def write_gist_markdown(
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def publish_identity_gist(gh: str, gist_id: str, filename: str, md_path: Path) -> None:
-    subprocess.check_call(
-        [gh, "gist", "edit", gist_id, "--filename", filename, str(md_path)]
+def write_dashboard_markdown(
+    path: Path,
+    records: list[dict[str, str]],
+    xlsx: Path,
+    gist_id: str,
+    tab: str,
+) -> None:
+    script_dir = str(Path(__file__).resolve().parent)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    import types
+    from openteams_identity_dashboards import render
+
+    path.write_text(
+        render(
+            records,
+            xlsx,
+            gist_id,
+            tab,
+            helpers=types.SimpleNamespace(**globals()),
+        ),
+        encoding="utf-8",
     )
 
 
-def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None) -> int:
+def gist_file_names(gh: str, gist_id: str) -> set[str]:
+    raw = subprocess.check_output(
+        [gh, "api", f"gists/{gist_id}", "--jq", ".files | keys | .[]"],
+        text=True,
+    )
+    return {line.strip().strip('"') for line in raw.splitlines() if line.strip()}
+
+
+def publish_identity_gist(
+    gh: str,
+    gist_id: str,
+    filename: str,
+    md_path: Path,
+    existing: set[str] | None = None,
+) -> None:
+    names = existing if existing is not None else gist_file_names(gh, gist_id)
+    if filename in names:
+        subprocess.check_call(
+            [gh, "gist", "edit", gist_id, "--filename", filename, str(md_path)]
+        )
+    else:
+        subprocess.check_call([gh, "gist", "edit", gist_id, "--add", str(md_path)])
+
+
+def publish_gist_files(
+    gh: str,
+    gist_id: str,
+    identity_path: Path,
+    dashboard_path: Path,
+) -> None:
+    existing = gist_file_names(gh, gist_id)
+    publish_identity_gist(gh, gist_id, GIST_FILENAME, identity_path, existing)
+    publish_identity_gist(
+        gh, gist_id, GIST_DASHBOARD_FILENAME, dashboard_path, existing
+    )
+
+
+def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None, tab: str = TAB_OUT) -> int:
     """Edit the pinned gist from the current identity tab. Does not rewrite the tab."""
     gist_id = resolve_gist_id(gist_id_cli)
     if not gist_id:
@@ -1013,9 +1102,9 @@ def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None) -> int:
     if not gh:
         print("gh not found; cannot publish identity gist", file=sys.stderr)
         return 1
-    records = read_xlsx_tab(xlsx, TAB_OUT)
+    records = read_xlsx_tab(xlsx, tab)
     if not records:
-        print(f"No rows on {xlsx} tab {TAB_OUT}", file=sys.stderr)
+        print(f"No rows on {xlsx} tab {tab}", file=sys.stderr)
         return 1
     missing = [c for c in ("P", "Rank", "Score", "Work") if c not in records[0]]
     if missing:
@@ -1023,10 +1112,12 @@ def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None) -> int:
         return 1
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     md_path = CACHE_DIR / GIST_FILENAME
-    write_gist_markdown(md_path, records, xlsx, gist_id)
+    dash_path = CACHE_DIR / GIST_DASHBOARD_FILENAME
+    write_gist_markdown(md_path, records, xlsx, gist_id, tab)
+    write_dashboard_markdown(dash_path, records, xlsx, gist_id, tab)
     print(f"Publishing {len(records):,} rows ({len(GIST_COLUMNS)} cols) ...", flush=True)
-    publish_identity_gist(gh, gist_id, GIST_FILENAME, md_path)
-    print("Updated pinned identity gist in place")
+    publish_gist_files(gh, gist_id, md_path, dash_path)
+    print("Updated pinned identity gist in place (catalog + dashboards)")
     return 0
 
 
@@ -1038,9 +1129,24 @@ def main() -> int:
         default=Path("docs/Analysis_Dataset-2026-08-12.xlsx"),
     )
     p.add_argument(
+        "--tab-in",
+        default=TAB_IN,
+        help="Inventory source tab. Default: inventory-2026-08-12.",
+    )
+    p.add_argument(
+        "--tab-out",
+        default=TAB_OUT,
+        help="Identity output tab. Default: identity-2026-08-12.",
+    )
+    p.add_argument(
         "--associator",
         type=Path,
         default=Path("/tmp/purl-associator-mappings-index.json"),
+    )
+    p.add_argument(
+        "--refresh-associator",
+        action="store_true",
+        help="Re-download mappings-index.json even if --associator exists.",
     )
     p.add_argument(
         "--output-csv",
@@ -1098,8 +1204,8 @@ def main() -> int:
         "--gist-only",
         action="store_true",
         help=(
-            "Publish the current identity-2026-08-12 tab to the gist without "
-            "regenerating identity rows (keeps priority/score columns)."
+            "Publish the current identity tab to the gist (row catalog + "
+            "canvas dashboards) without regenerating identity rows."
         ),
     )
     p.add_argument(
@@ -1112,7 +1218,7 @@ def main() -> int:
     )
     args = p.parse_args()
     if args.gist_only:
-        return publish_gist_from_tab(args.xlsx, args.gist_id)
+        return publish_gist_from_tab(args.xlsx, args.gist_id, args.tab_out)
 
     cache = args.cache_dir
     cache.mkdir(parents=True, exist_ok=True)
@@ -1120,8 +1226,10 @@ def main() -> int:
     staged_tsv = args.staged_prs or cache / "staged-recipes-prs.tsv"
     staged_open = args.staged_open_prs or cache / "staged-recipes-open-prs.json"
 
+    if args.refresh_associator or not args.associator.is_file():
+        download_json(ASSOCIATOR_URL, args.associator)
     packages = json.loads(args.associator.read_text())["packages"]
-    inventory = read_inventory_tab(args.xlsx)
+    inventory = read_inventory_tab(args.xlsx, args.tab_in)
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     if args.project_items:
@@ -1133,6 +1241,9 @@ def main() -> int:
             return 1
         print(f"Fetching OpenTeams project 1 via {gh} ...", flush=True)
         items = fetch_project_issues(gh)
+        dump = cache / "project1-live.json"
+        dump.write_text(json.dumps(items), encoding="utf-8")
+        print(f"Wrote {len(items):,} project items to {dump}", flush=True)
     board = board_packaging_urls(items)
 
     fs_map, meta_map = load_feedstock_outputs(feedstock_path)
@@ -1170,12 +1281,13 @@ def main() -> int:
         )
         extra += 1
 
-    write_xlsx_tab(args.xlsx, records)
+    overlay_live_local(records, args.recipes_dir)
+    write_xlsx_tab(args.xlsx, records, args.tab_out)
     if args.output_csv:
         write_csv(args.output_csv, records)
 
     counts = Counter(r["identity_source"] for r in records)
-    print(f"Wrote {len(records):,} rows to {args.xlsx} tab {TAB_OUT}")
+    print(f"Wrote {len(records):,} rows to {args.xlsx} tab {args.tab_out}")
     if args.output_csv:
         print(f"Wrote CSV {args.output_csv}")
     print("identity_source:", dict(counts))
@@ -1196,7 +1308,11 @@ def main() -> int:
         "has Staged_Recipes_PR_URL:",
         sum(1 for r in records if r["Staged_Recipes_PR_URL"]),
     )
-    print("has Local_Recipes_URL:", sum(1 for r in records if r["Local_Recipes_URL"]))
+    print("has Local_Recipes_URL:", sum(1 for r in records if r.get("Local_Recipes_URL")))
+    print(
+        "has Local_Build_Status:",
+        sum(1 for r in records if r.get("Local_Build_Status")),
+    )
     print("Verification_Timestamp_UTC:", timestamp)
 
     if args.skip_gist:
@@ -1215,9 +1331,11 @@ def main() -> int:
         print("gh not found; pass --skip-gist to skip identity gist publish", file=sys.stderr)
         return 1
     md_path = cache / GIST_FILENAME
-    write_gist_markdown(md_path, records, args.xlsx, gist_id)
-    print(f"Publishing {md_path} to gist {gist_id} ...", flush=True)
-    publish_identity_gist(gh, gist_id, GIST_FILENAME, md_path)
+    dash_path = cache / GIST_DASHBOARD_FILENAME
+    write_gist_markdown(md_path, records, args.xlsx, gist_id, args.tab_out)
+    write_dashboard_markdown(dash_path, records, args.xlsx, gist_id, args.tab_out)
+    print(f"Publishing {md_path} and {dash_path} to gist {gist_id} ...", flush=True)
+    publish_gist_files(gh, gist_id, md_path, dash_path)
     print(f"Updated gist {gist_id} (gh gist view {gist_id})")
     return 0
 

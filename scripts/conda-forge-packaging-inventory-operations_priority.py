@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assign Proposed_Priority on identity-2026-08-12.
+"""Assign Proposed_Priority on an identity tab (default identity-2026-08-12).
 
 Hierarchy (board P2–P3 kept when they are not current-version vulns):
   P1     current-version vulnerability → work Fix vulnerability
@@ -10,8 +10,8 @@ Hierarchy (board P2–P3 kept when they are not current-version vulns):
   P6     100+ Artifactory downloads or 100+ Artifactory versions
   P7     10+ downloads or 10+ versions (and not already P6)
   P8     leftover Create recipe (JFROG, not on conda-forge)
-  P9     leftover File issue (on conda-forge)
-  P0     leftover File issue (maintained feedstock) + Already tracked remainder
+  P9     leftover File OpenTeams tracking issue [Conda-Forge Packaging] (JFROG, already on conda-forge)
+  P10    leftover File OpenTeams tracking issue [Conda-Forge Packaging] (CDO-ENT-CONDA) + Already tracked remainder
 
 Packaging_Work replaces OpenTeams_Batch A/B/C/TRACKED with the work itself.
 Priority_Score is 1..100 from the use formula; work type does not inflate it.
@@ -32,24 +32,26 @@ from openpyxl import load_workbook
 
 PACK = re.compile(r"^\[Conda-Forge Packaging\]\s+(.+?)\s*$", re.I)
 TAB = "identity-2026-08-12"
-BUCKET_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P0"]
+BUCKET_ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"]
 PRI_N = {b: i for i, b in enumerate(BUCKET_ORDER, start=1)}
 WORK_FIX_VULN = "Fix vulnerability"
 WORK_CREATE = "Create recipe"
-WORK_ISSUE_CF = "File issue (on conda-forge)"
-WORK_ISSUE_MAINT = "File issue (maintained feedstock)"
+WORK_ISSUE_CF = "File OpenTeams tracking issue [Conda-Forge Packaging]"
+WORK_ISSUE_CF_LEGACY = "File issue (on conda-forge)"
+WORK_ISSUE_MAINT_LEGACY = "File issue (maintained feedstock)"
 WORK_TRACKED = "Already tracked"
-WORK_ORDER = [WORK_FIX_VULN, WORK_CREATE, WORK_TRACKED, WORK_ISSUE_CF, WORK_ISSUE_MAINT]
+WORK_ORDER = [WORK_FIX_VULN, WORK_CREATE, WORK_ISSUE_CF, WORK_TRACKED]
 WORK_RANK = {w: i for i, w in enumerate(WORK_ORDER)}
 BATCH_TO_WORK = {
     "A": WORK_CREATE,
     "B": WORK_ISSUE_CF,
-    "C": WORK_ISSUE_MAINT,
+    "C": WORK_ISSUE_CF,
     "TRACKED": WORK_TRACKED,
     WORK_FIX_VULN: WORK_FIX_VULN,
     WORK_CREATE: WORK_CREATE,
     WORK_ISSUE_CF: WORK_ISSUE_CF,
-    WORK_ISSUE_MAINT: WORK_ISSUE_MAINT,
+    WORK_ISSUE_CF_LEGACY: WORK_ISSUE_CF,
+    WORK_ISSUE_MAINT_LEGACY: WORK_ISSUE_CF,
     WORK_TRACKED: WORK_TRACKED,
 }
 PRIORITY_DESC = {
@@ -62,7 +64,7 @@ PRIORITY_DESC = {
     "P7": "Moderate Artifactory use: 10+ downloads or 10+ versions, below the P6 floor.",
     "P8": "Leftover new packaging: consumed from JFROG, not on conda-forge, below the P7 floor (Create recipe).",
     "P9": "Leftover board coverage: already on conda-forge, missing an OpenTeams issue, below the P7 floor.",
-    "P0": "Lowest leftover: maintained feedstock missing an issue, or already tracked with little Artifactory use.",
+    "P10": "Lowest leftover: CDO-ENT-CONDA name missing an OpenTeams tracking issue, or already tracked with little Artifactory use.",
 }
 RANK_COLS = [
     "P",
@@ -205,10 +207,8 @@ def work_label(ident: dict, inv: dict | None, j: dict | None) -> str:
             return WORK_TRACKED
         if cohort == "JFROG_NEW":
             return WORK_CREATE
-        if cohort == "JFROG_ON_CF":
+        if cohort == "JFROG_ON_CF" or cohort == "CONDA_ONLY":
             return WORK_ISSUE_CF
-        if cohort == "CONDA_ONLY":
-            return WORK_ISSUE_MAINT
     if _filled(ident.get("OpenTeams_Issue_URL")):
         return WORK_TRACKED
     if _filled(ident.get("conda_purl")) or _filled(ident.get("Conda-Forge_FeedStock_URL")):
@@ -247,7 +247,7 @@ def assign_lane(ident, name, j, by_url, by_name) -> tuple[str | None, str, str]:
     return None, "remainder", "leftover split by packaging work"
 
 
-def write_canvas(path: Path, records: list[dict], counts: dict[str, int]) -> None:
+def write_canvas(path: Path, records: list[dict], counts: dict[str, int], tab: str) -> None:
     canvas_rows = [
         [
             r["name"],
@@ -302,7 +302,9 @@ def write_canvas(path: Path, records: list[dict], counts: dict[str, int]) -> Non
         separators=(",", ":"),
     )
     path.write_text(
-        _CANVAS_PREFIX + data + _CANVAS_SUFFIX,
+        _CANVAS_PREFIX
+        + data
+        + _CANVAS_SUFFIX.replace("identity-TAB", tab).replace("N_ROWS", f"{len(records):,}"),
         encoding="utf-8",
     )
 
@@ -336,8 +338,8 @@ _CANVAS_SUFFIX = r""" as {
 };
 
 const PAGE = 80;
-const BUCKETS = ["All", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P0"];
-const ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P0"];
+const BUCKETS = ["All", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
+const ORDER = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9", "P10"];
 
 function fmt(n: number): string {
   return n.toLocaleString("en-US");
@@ -370,12 +372,13 @@ export default function IdentityPriorityAll() {
   return (
     <Stack gap={20}>
       <Stack gap={6}>
-        <H1>Priority for every identity-2026-08-12 package</H1>
+        <H1>Priority for every identity-TAB package</H1>
         <Text tone="secondary" size="small">
-          7,515 rows. Fix vulnerability is its own work bucket and P1.
+          N_ROWS rows. Fix vulnerability is its own work bucket and P1.
           Board P2–P3 locked. P4 platforms, P5 apps, P6 100+ downloads or
-          versions, P7 10+. Leftover: P8 Create recipe, P9 File issue (on
-          conda-forge), P0 maintained feedstock + already-tracked remainder.
+          versions, P7 10+. Leftover: P8 Create recipe, P9 File OpenTeams
+          tracking issue [Conda-Forge Packaging] (JFROG on conda-forge), P10
+          same tracking issue (CDO-ENT-CONDA) + already-tracked remainder.
           Score is 1–100 use only. Source: identity tab on
           docs/Analysis_Dataset-2026-08-12.xlsx.
         </Text>
@@ -385,13 +388,14 @@ export default function IdentityPriorityAll() {
         <Stat value={fmt(DATA.workCounts["Fix vulnerability"] || 0)} label="Fix vulnerability" tone="danger" />
         <Stat value={fmt(DATA.workCounts["Create recipe"] || 0)} label="Create recipe" tone="warning" />
         <Stat value={fmt(DATA.counts.P8)} label="P8 leftover new packages" />
-        <Stat value={fmt(DATA.counts.P0)} label="P0 maintained / already tracked" />
+        <Stat value={fmt(DATA.counts.P10)} label="P10 conda-only / already tracked" />
       </Grid>
 
       <Callout tone="info">
         Work labels: Fix vulnerability (current-version HIGH / affected_latest),
-        Create recipe (JFROG, not on conda-forge), File issue (on conda-forge),
-        File issue (maintained feedstock), Already tracked. Score stays
+        Create recipe (JFROG, not on conda-forge), File OpenTeams tracking
+        issue [Conda-Forge Packaging] (already on conda-forge, missing the
+        board issue), Already tracked. Score stays
         100×platforms + 10×apps + 3×components + 2×LOBs + log10(1+downloads) +
         log10(1+versions), percentile 1–100.
       </Callout>
@@ -405,7 +409,7 @@ export default function IdentityPriorityAll() {
         rows={DATA.bucketDefs.map((d) => [d[0], fmt(d[2]), d[1]])}
       />
       <Text tone="secondary" size="small">
-        Proposed_Priority on identity-2026-08-12, with Priority_Bucket_Description on each row.
+        Proposed_Priority on identity-TAB, with Priority_Bucket_Description on each row.
       </Text>
 
       <H2>Bucket counts</H2>
@@ -578,17 +582,23 @@ def main() -> int:
     repo = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--xlsx", type=Path, default=repo / "docs/Analysis_Dataset-2026-08-12.xlsx")
+    parser.add_argument("--tab", default=TAB, help="Identity tab to rank. Default: identity-2026-08-12.")
+    parser.add_argument(
+        "--skip-inventory-sync",
+        action="store_true",
+        help="Do not rewrite inventory-2026-08-12 OpenTeams_Batch / Priority_Bucket.",
+    )
     parser.add_argument(
         "--canvas",
         type=Path,
         default=Path(
-            "/home/rxm7706/.cursor/projects/home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases/identity-priority-p4-p10.canvas.tsx"
+            "/home/rxm7706/.cursor/projects/home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases/identity-2026-08-20.canvas.tsx"
         ),
     )
     args = parser.parse_args()
 
     wb = load_workbook(args.xlsx, data_only=True)
-    ident_header, ident_rows = load_tab(wb, TAB)
+    ident_header, ident_rows = load_tab(wb, args.tab)
     _, jfrog_rows = load_tab(wb, "CDO-ENT-JFROG")
     _, ot_rows = load_tab(wb, "OpenTeams")
     _, inv_rows = load_tab(wb, "inventory-2026-08-12")
@@ -624,6 +634,7 @@ def main() -> int:
         raw = use_score(plat, apps, ic, lob, dl, ver)
         inv = inv_by.get(pep503(ident.get("Core_Python_Package_Name")) or "")
         work = work_label(ident, inv, j)
+        cohort = str((inv or {}).get("OpenTeams_Cohort") or "").strip()
         bucket, src, why = assign_lane(ident, pep503(ident.get("Core_Python_Package_Name")), j, by_url, by_name)
         records.append(
             {
@@ -631,6 +642,7 @@ def main() -> int:
                 "name": name,
                 "ident": ident,
                 "work": work,
+                "cohort": cohort,
                 "bucket": bucket,
                 "src": src,
                 "why": why,
@@ -657,13 +669,14 @@ def main() -> int:
             tier, src = "P8", "work-create-recipe"
             why = "leftover Create recipe: JFROG consumed, not on conda-forge"
         elif r["work"] == WORK_ISSUE_CF:
-            tier, src = "P9", "work-file-issue-on-cf"
-            why = "leftover File issue (on conda-forge)"
-        elif r["work"] == WORK_ISSUE_MAINT:
-            tier, src = "P0", "work-file-issue-maintained"
-            why = "leftover File issue (maintained feedstock)"
+            if r.get("cohort") == "CONDA_ONLY":
+                tier, src = "P10", "work-file-issue-conda-only"
+                why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging] (CDO-ENT-CONDA)"
+            else:
+                tier, src = "P9", "work-file-issue-on-cf"
+                why = "leftover File OpenTeams tracking issue [Conda-Forge Packaging]"
         else:
-            tier, src = "P0", "work-already-tracked-remainder"
+            tier, src = "P10", "work-already-tracked-remainder"
             why = "leftover Already tracked"
         r["bucket"] = tier
         r["src"] = src
@@ -716,9 +729,9 @@ def main() -> int:
     by_idx = {r["idx"]: r for r in records}
 
     wb2 = load_workbook(args.xlsx)
-    if TAB in wb2.sheetnames:
-        del wb2[TAB]
-    ws = wb2.create_sheet(TAB)
+    if args.tab in wb2.sheetnames:
+        del wb2[args.tab]
+    ws = wb2.create_sheet(args.tab)
     ws.append(out_header)
     for idx, ident in enumerate(ident_rows):
         rec = by_idx[idx]
@@ -751,47 +764,51 @@ def main() -> int:
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
 
-    inv_ws = wb2["inventory-2026-08-12"]
-    inv_header = [c.value for c in next(inv_ws.iter_rows(min_row=1, max_row=1))]
-    batch_i = inv_header.index("OpenTeams_Batch")
-    name_i = inv_header.index("Core_Python_Package_Name")
-    pri_i = inv_header.index("Priority_Bucket") if "Priority_Bucket" in inv_header else None
-    if "Priority_Bucket_Description" in inv_header:
-        desc_col = inv_header.index("Priority_Bucket_Description") + 1
-    else:
-        desc_col = len(inv_header) + 1
-        inv_ws.cell(1, desc_col, "Priority_Bucket_Description")
-    bucket_by_name = {r["name"]: r["bucket"] for r in records}
-    n_relabel = 0
-    n_pri = 0
-    for row in inv_ws.iter_rows(min_row=2):
-        name = pep503(row[name_i].value)
-        j = jfrog.get(name or "")
-        if is_current_vuln(j):
-            new = WORK_FIX_VULN
+    if not args.skip_inventory_sync:
+        inv_ws = wb2["inventory-2026-08-12"]
+        inv_header = [c.value for c in next(inv_ws.iter_rows(min_row=1, max_row=1))]
+        batch_i = inv_header.index("OpenTeams_Batch")
+        name_i = inv_header.index("Core_Python_Package_Name")
+        pri_i = inv_header.index("Priority_Bucket") if "Priority_Bucket" in inv_header else None
+        if "Priority_Bucket_Description" in inv_header:
+            desc_col = inv_header.index("Priority_Bucket_Description") + 1
         else:
-            old = str(row[batch_i].value or "").strip()
-            new = BATCH_TO_WORK.get(old, old)
-            if new == WORK_FIX_VULN:
-                new = WORK_TRACKED if _filled(row[batch_i].value) else old
-        if new and new != str(row[batch_i].value or "").strip():
-            row[batch_i].value = new
-            n_relabel += 1
-        bucket = bucket_by_name.get(name or "")
-        if bucket:
-            if pri_i is not None and str(row[pri_i].value or "") != bucket:
-                row[pri_i].value = bucket
-                n_pri += 1
-            inv_ws.cell(row[0].row, desc_col, PRIORITY_DESC[bucket])
+            desc_col = len(inv_header) + 1
+            inv_ws.cell(1, desc_col, "Priority_Bucket_Description")
+        bucket_by_name = {r["name"]: r["bucket"] for r in records}
+        n_relabel = 0
+        n_pri = 0
+        for row in inv_ws.iter_rows(min_row=2):
+            name = pep503(row[name_i].value)
+            j = jfrog.get(name or "")
+            if is_current_vuln(j):
+                new = WORK_FIX_VULN
+            else:
+                old = str(row[batch_i].value or "").strip()
+                new = BATCH_TO_WORK.get(old, old)
+                if new == WORK_FIX_VULN:
+                    new = WORK_TRACKED if _filled(row[batch_i].value) else old
+            if new and new != str(row[batch_i].value or "").strip():
+                row[batch_i].value = new
+                n_relabel += 1
+            bucket = bucket_by_name.get(name or "")
+            if bucket:
+                if pri_i is not None and str(row[pri_i].value or "") != bucket:
+                    row[pri_i].value = bucket
+                    n_pri += 1
+                inv_ws.cell(row[0].row, desc_col, PRIORITY_DESC[bucket])
+        print("relabeled inventory OpenTeams_Batch", n_relabel)
+        print("synced inventory Priority_Bucket", n_pri)
+    else:
+        print("skipped inventory OpenTeams_Batch / Priority_Bucket sync")
+
     wb2.save(args.xlsx)
     wb2.close()
     print("identity header", out_header[:10], "... total", len(out_header))
-    print("relabeled inventory OpenTeams_Batch", n_relabel)
-    print("synced inventory Priority_Bucket", n_pri)
 
     if args.canvas:
         args.canvas.parent.mkdir(parents=True, exist_ok=True)
-        write_canvas(args.canvas, records, counts)
+        write_canvas(args.canvas, records, counts, args.tab)
         print("wrote", args.canvas)
     return 0
 

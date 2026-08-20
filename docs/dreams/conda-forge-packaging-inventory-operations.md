@@ -23,18 +23,24 @@ replay — not a second toolchain.
 - A from-scratch run in a clean workspace regenerates the full inventory from the
   workbook, live indexes, and curated feeds.
 - Every package has one PEP 503 identity, source provenance, and a timestamped
-  verify decision. Ranking stays inspectable: proposed `P1`–`P9` plus `P0`, a
+  verify decision. Ranking stays inspectable: proposed `P1`–`P10`, a
   1–100 use `Score`, and a work label (not A/B/C).
 - `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` is the OpenTeams universe: one issue titled
   `[Conda-Forge Packaging] {name}` per library, plus a dated handoff tab Mason
   can consume (`Fix vulnerability` / `Create recipe` /
-  `File issue (on conda-forge)` / `File issue (maintained feedstock)` /
+  `File OpenTeams tracking issue [Conda-Forge Packaging]` /
   `Already tracked`).
 - Google AOSS Free names that are on PyPI, not on conda-forge, and not in CDO
   consumption are an extra Mason queue. They do not expand the OpenTeams universe.
 - Identity rows (PURLs, issue URL, feedstock, metadata, staged-recipes PR, local
-  recipe) are a workbook tab and an optional pinned secret gist. The gist id is
-  never in git (`OPENTEAMS_IDENTITY_GIST_ID` or gitignored local env).
+  recipe, live CFE `Local_Build_Status`) are a **dated** workbook tab
+  (`identity-YYYY-MM-DD`) and a pinned secret gist. New snapshots get a new
+  dated tab; do not overwrite an older identity tab. The gist id is never in
+  git (`OPENTEAMS_IDENTITY_GIST_ID` or gitignored local env).
+- Three dashboard views exist for the live identity tab (catalog, ops, Artifactory
+  / workbook). Humans read them beside the chat; machines read the same numbers
+  from gist YAML + GFM. A run that ranks identity is not done until those three
+  views and the gist companion are rebuilt.
 - Drift is visible: net-new names, status flips, stale sources.
 
 ## Sources
@@ -67,14 +73,17 @@ Live collection endpoints are primary; workbook tabs are the offline fallback.
 |---|---|
 | `verified-all-packages` | Full inventory (deliverable A; 14 columns) |
 | `inventory-2026-08-12` | OpenTeams universe handoff (14 + 8 columns) |
-| `identity-2026-08-12` | Per-name identity, packaging-location URLs, proposed `P` / `Score` / `Work` |
+| `identity-2026-08-12` | Frozen identity snapshot. Do not overwrite. |
+| `identity-YYYY-MM-DD` | Dated identity output (live: `identity-2026-08-20`). Never ingest. |
 
 Refresh those tabs from a run. Do not keep repo-root CSVs as the stored copy.
 
-**OpenTeams tracker.** Live board:
+**OpenTeams tracker.** Live board is org project 1, **full** `[Conda-Forge
+Packaging]` titles (no OSS-milestone slice). View for humans:
 https://github.com/orgs/OpenTeams-WFT-CDO/projects/1/views/6?sliceBy%5Bvalue%5D=OSS+Enhancements+%28Conda+Forge%2C+Pixi%2C+ect%29
-Workbook `OpenTeams` is the offline snapshot. Optional `.tsv` only if the tab is
-absent. CVE titles (`CVE-… | pkg`) are a different tracker and do not count.
+Workbook `OpenTeams` is the offline snapshot of the full board. Optional `.tsv`
+only if the tab is absent. CVE titles (`CVE-… | pkg`) are a different tracker
+and do not count.
 
 **External endpoints:**
 
@@ -110,18 +119,22 @@ tens instead of tens of thousands) is a fetch bug.
 | Path | Role |
 |---|---|
 | `scripts/conda-forge-packaging-inventory-operations_metrics.py` | Inventory runner |
-| `scripts/conda-forge-packaging-inventory-operations_priority.py` | Proposed `P`, `Score`, `Work` on identity; sync inventory `Priority_Bucket` + `OpenTeams_Batch` |
+| `scripts/conda-forge-packaging-inventory-operations_priority.py` | Proposed `P`, `Score`, `Work` on a dated identity tab (`--tab`); optional inventory sync (`--skip-inventory-sync` to leave `Priority_Bucket` alone); writes the catalog canvas (`--canvas`) |
 | `docs/reference/conda-forge-packaging-inventory-operations_prompt.md` | Prompt the runner must obey |
 | `conf/conda-forge-packaging-inventory-operations_curated_groups.json` | Curated-group sample fallback |
 | `docs/reference/conda-forge-packaging-inventory-operations_replay.md` | Replay / sync contract |
-| `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` | Identity tab + gist publish (`--gist-only` after a priority pass) |
+| `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` | Identity tab (`--tab-out identity-YYYY-MM-DD`) + gist publish (`--gist-only` after a priority pass) |
+| `scripts/openteams_identity_dashboards.py` | Gist companion markdown for the three dashboard views |
 | `conf/conda-forge-packaging-inventory-operations.local.env.example` | Template for the gitignored gist id |
 
 A rule, source, column, or metric change updates runner + prompt + replay in the
 same commit. Identity-column changes update
 `conda-forge-packaging-inventory-operations_openteams_identity.py`. Priority /
-work-label changes update `conda-forge-packaging-inventory-operations_priority.py`.
-Do not overwrite `docs/reference/conda-forge-packaging-inventory-operations_prompt.md`
+work-label / bucket-rule changes update
+`conda-forge-packaging-inventory-operations_priority.py` **and** the three
+dashboard views **and** `openteams_identity_dashboards.py` (gist YAML `rule` /
+`meaning` must stay byte-identical to the priority script). Do not overwrite
+`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`
 unless that is the task.
 
 **From scratch:** empty outputs; ingest the workbook + live endpoints + curated
@@ -171,21 +184,24 @@ Offline-safe: skip + last-good + documented fallback when unreachable.
 |---|---|
 | `Already Packaged` | PyPI Yes AND conda-forge Yes |
 | `High Priority Candidate` | PyPI Yes AND conda-forge No AND P1–P8 |
-| `Low Priority Candidate` | PyPI Yes AND conda-forge No AND P9 or P0 |
+| `Low Priority Candidate` | PyPI Yes AND conda-forge No AND P9 or P10 |
 | `Conda-Forge Only` | PyPI No AND conda-forge Yes |
 | `Not on PyPI` | PyPI No AND conda-forge No |
 
 OpenTeams-universe `Priority_Bucket` is the proposed `P` from the priority pass
 (below). Do not keep the old default (`P4` if on `CDO-ENT-CONDA`, else `P9`).
-There is no `P10`: the floor is `P0`.
+The floor is `P10` (not `P0`).
 
 ## Priority, work, and score
 
 Assigned by `scripts/conda-forge-packaging-inventory-operations_priority.py` onto
-`identity-2026-08-12` and synced onto `inventory-2026-08-12`. Board packaging
-issues with existing **P2** or **P3** are not overwritten. Current-version
-vulnerabilities become **P1** (`Fix vulnerability`) even if they also need an
-issue. JFROG `packaging_tier` is ignored.
+the live dated identity tab (`--tab identity-2026-08-20`; default still
+`identity-2026-08-12`). Do not overwrite a frozen older identity tab. Inventory
+`Priority_Bucket` / `OpenTeams_Batch` sync is optional (`--skip-inventory-sync`
+when the live identity is ahead of inventory). Board packaging issues with
+existing **P2** or **P3** are not overwritten. Current-version vulnerabilities
+become **P1** (`Fix vulnerability`) even if they also need an issue. JFROG
+`packaging_tier` is ignored. There is no `P0`.
 
 **Work** (`OpenTeams_Batch` / identity `Work`) is what Mason does, not A/B/C:
 
@@ -193,8 +209,7 @@ issue. JFROG `packaging_tier` is ignored.
 |---|---|---|
 | `Fix vulnerability` | (new) | Current-version HIGH / `affected_latest`. Wins over recipe/issue/tracked. |
 | `Create recipe` | A | JFROG consumed, not on conda-forge (`JFROG_NEW`). |
-| `File issue (on conda-forge)` | B | JFROG consumed, already on conda-forge, no issue yet (`JFROG_ON_CF`). |
-| `File issue (maintained feedstock)` | C | On `CDO-ENT-CONDA` only, no issue yet (`CONDA_ONLY`). |
+| `File OpenTeams tracking issue [Conda-Forge Packaging]` | B / C | Already on conda-forge, no OpenTeams tracking issue yet (`JFROG_ON_CF` or `CONDA_ONLY`). |
 | `Already tracked` | TRACKED | `[Conda-Forge Packaging] {name}` issue already exists. |
 
 `OpenTeams_Cohort` stays `JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`. Components
@@ -212,8 +227,8 @@ and LOBs never appear without apps, so they do not get their own `P` lane.
 | **P6** | 100+ Artifactory downloads **or** 100+ Artifactory versions, and not already P1–P5. |
 | **P7** | 10+ downloads **or** 10+ versions, below the P6 floor. |
 | **P8** | Leftover `Create recipe` (below the P7 floor). |
-| **P9** | Leftover `File issue (on conda-forge)`. |
-| **P0** | Leftover `File issue (maintained feedstock)` and leftover `Already tracked`. |
+| **P9** | Leftover `File OpenTeams tracking issue [Conda-Forge Packaging]` for `JFROG_ON_CF`. |
+| **P10** | Leftover `File OpenTeams tracking issue [Conda-Forge Packaging]` for `CONDA_ONLY`, plus leftover `Already tracked`. |
 
 Each row carries `Priority_Bucket_Description` with that rule in prose.
 
@@ -263,7 +278,7 @@ these 14 columns, in order:
 15. `OpenTeams_Title` — `[Conda-Forge Packaging] {name}`
 16. `OpenTeams_Cohort` — `JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`
 17. `OpenTeams_Batch` — work label (`Fix vulnerability` / `Create recipe` /
-    `File issue (on conda-forge)` / `File issue (maintained feedstock)` /
+    `File OpenTeams tracking issue [Conda-Forge Packaging]` /
     `Already tracked`; was A / B / C / TRACKED)
 18. `OpenTeams_Labels`
 19. `OpenTeams_Milestone` — `OSS Enhancements (Conda Forge, Pixi, ect)`
@@ -279,12 +294,16 @@ One row per unique name in parseable JFROG ∪ CONDA. Labels always include
 `Conda Forge Packaging` and `No WF org info`; add `WF List 2` if in JFROG;
 add `Packaging: New package` if not on conda-forge.
 
-**Identity** — tab `identity-2026-08-12`. Identity URLs come from
+**Identity** — dated tab `identity-YYYY-MM-DD` (live: `identity-2026-08-20`;
+frozen: `identity-2026-08-12`). Pass `--tab-out` so a new snapshot does not
+overwrite an older one. Identity URLs come from
 `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`
-(one row per universe name plus board-only `[Conda-Forge Packaging]` extras).
-Prefer PURL Associator when the conda name exists; otherwise mint from
-`PyPI_PURL` + `Source_Repository_URL`. Then the priority pass writes ranking
-columns **first**:
+(one row per universe name plus **board-only** `[Conda-Forge Packaging]` extras
+from the full OpenTeams project 1 join — no milestone slice). Prefer PURL
+Associator (`--refresh-associator`) when the conda name exists; otherwise mint
+from `PyPI_PURL` + `Source_Repository_URL`. Overlay live `Local_Recipes_URL` and
+`Local_Build_Status` from `recipes/` at write and at gist publish. Then the
+priority pass (`--tab` matching `--tab-out`) writes ranking columns **first**:
 
 1. `P`
 2. `Rank`
@@ -323,9 +342,10 @@ columns **first**:
 35. `internal_lob_count`
 
 A full identity regen wipes ranking columns. After identity regen, re-run the
-priority pass, then publish the gist with **`--gist-only`** (reads the current
+priority pass on **that** dated tab, rebuild the three dashboard views, then
+publish the gist with **`--gist-only --tab-out <that-tab>`** (reads the current
 tab; does not regenerate). Do not run a full identity regen solely to refresh
-the gist.
+the gist. Do not overwrite `identity-2026-08-12` to refresh `identity-2026-08-20`.
 
 Feedstock + metadata from [conda-forge.org/packages](https://conda-forge.org/packages/);
 staged-recipes PR from
@@ -334,14 +354,36 @@ local recipe from
 [rxm7706/local-recipes/recipes](https://github.com/rxm7706/local-recipes/tree/main/recipes).
 Blank means missing.
 
-After every inventory rerun: regenerate identity, run the priority pass, then
-**edit in place** the pinned secret gist file
-`mgmt-wf-python-modernization-identity.md` with `--gist-only`. The gist id
-comes from `OPENTEAMS_IDENTITY_GIST_ID`,
+After every inventory rerun: regenerate identity onto a **new** dated tab if the
+previous snapshot must be kept, run the priority pass, rebuild the three
+dashboard views, then **edit in place** the pinned secret gist files
+`mgmt-wf-python-modernization-identity.md` (row catalog) and
+`mgmt-wf-python-modernization-dashboards.md` (the three views as GFM + YAML)
+with `--gist-only --tab-out <live-tab>`. The gist id comes from
+`OPENTEAMS_IDENTITY_GIST_ID`,
 `conf/conda-forge-packaging-inventory-operations.local.env` (gitignored; copy
 the tracked `.example`), or `--gist-id`. Do not create a new gist. Do not
 commit the id. `--skip-gist` is offline tests, or when no id is configured.
-The gist carries the same 35 identity columns (ranking first), including live `Local_Recipes_URL` and `Local_Build_Status` overlaid from `recipes/` at publish time. Frontmatter also splits those stamps by priority (`local_build_by_p`), recipe type (`local_build_by_type`: `noarch-python` / `noarch-generic` / `compiled` / `arch` / `none`), and successful builds (`local_build_success_by_p_type`).
+The catalog file carries the same 35 identity columns (ranking first), including live `Local_Recipes_URL` and `Local_Build_Status` overlaid from `recipes/` at publish time. Frontmatter also splits those stamps by priority (`local_build_by_p`), recipe type (`local_build_by_type`: `noarch-python` / `noarch-generic` / `compiled` / `arch` / `none`), and successful builds (`local_build_success_by_p_type`). The dashboards file must include machine YAML `priority_buckets` / `work_labels` (each with `n` + `rule` / `meaning`) and human tables with those same rules — a count-only P table is not enough.
+
+**Three dashboard views** (required; a ranked identity tab without them is
+incomplete). Cursor canvases beside the chat are the interactive rendering;
+gist `mgmt-wf-python-modernization-dashboards.md` is the portable copy of the
+ops + Artifactory/workbook views; gist `mgmt-wf-python-modernization-identity.md`
+is the portable copy of the catalog. Rebuild all three after every priority
+pass.
+
+| View | Canvas (Cursor) | What it shows |
+|---|---|---|
+| **Catalog** | `identity-2026-08-20.canvas.tsx` | Searchable row browser: every live identity package with `P`, `Work`, `Score`, use signals. Written by `priority.py --canvas`. |
+| **Ops** | `identity-ops.canvas.tsx` | Four panes: **Priority** (P1–P10 + work, with rules), **Issues** (packaging-issue gap), **Builds** (CFE stamp by P × noarch/other), **Census** (feedstock / staged-recipes / local build cube). |
+| **Artifactory / workbook** | `jfrog-workbook.canvas.tsx` | Five panes: **Map** (CDO-ENT-JFROG → PyPI / conda-forge), **Staged gap** (need staged-recipes PR), **Board gap** (PyPI-only names still missing a packaging issue), **Workbook** (all tabs), **External** (live index counts vs workbook). |
+
+Canvas files live in the Cursor workspace `canvases/` directory (IDE-owned, not
+git). Do not spawn extra canvases for slices of these three. Do not keep a
+duplicate of the catalog under another name. Bucket **Rule** / work **Meaning**
+on the ops Priority pane and in gist YAML must match
+`PRIORITY_DESC` / work labels in `priority.py`.
 
 **B. Markdown** `cdao_consolidated_inventory_verified_all_packages.md` — totals,
 status breakdown, per-tab and per-source inclusion matrices (100% where
@@ -380,8 +422,14 @@ Count parsed from OpenTeams-style portion:
 7. Handoff `Source_Repository_URL` is filled from channeldata **and** PyPI JSON.
    Skipping PyPI JSON for names not on conda-forge fails the gate.
 8. Identity ranking columns `P`, `Rank`, `Score`, `Work` are filled. `P` uses
-   `P1`–`P9` or `P0` (never `P10`). `OpenTeams_Batch` is a work label, not
-   A/B/C/TRACKED.
+   `P1`–`P10` (no `P0`). `OpenTeams_Batch` is a work label, not
+   A/B/C/TRACKED. Leftover file-issue work is one label:
+   `File OpenTeams tracking issue [Conda-Forge Packaging]`.
+9. The three dashboard views exist for the live identity tab (catalog, ops,
+   Artifactory/workbook). Gist dashboards YAML `priority_buckets` / `work_labels`
+   carry `n` plus the rule/meaning. Count-only P tables fail the gate.
+10. Gist publish edits **both** files in place (`…-identity.md` and
+    `…-dashboards.md`). No new gist. Frozen `identity-2026-08-12` is untouched.
 
 ## Constraints
 
@@ -395,6 +443,12 @@ Count parsed from OpenTeams-style portion:
 - Dropping 10k junk must not remove a JFROG or CONDA name.
 - Do not overwrite OpenTeams board P2/P3 on packaging issues.
 - Do not use JFROG `packaging_tier` as proposed `P`.
+- Do not invent `P0`. Floor is `P10`.
+- Do not overwrite a frozen dated identity tab (`identity-2026-08-12`) when
+  building a newer snapshot.
+- Do not join OpenTeams on the OSS-milestone slice; packaging-issue match is
+  every `[Conda-Forge Packaging] {name}` title on project 1.
+- Do not skip the three dashboard views after a priority pass.
 - Do not commit `OPENTEAMS_IDENTITY_GIST_ID` or create a new identity gist.
 
 ## Non-goals
@@ -406,6 +460,8 @@ Count parsed from OpenTeams-style portion:
 - Not pushing proposed `P` onto the OpenTeams board until asked.
 - Not bootstrapping from a prior consolidated inventory.
 - Not a second runner beside the v3 quartet.
+- Not extra canvases beyond the three views (no per-slice duplicates of catalog
+  / ops / Artifactory-workbook).
 
 ## Kinships
 

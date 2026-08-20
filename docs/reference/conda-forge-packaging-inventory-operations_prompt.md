@@ -140,7 +140,7 @@ Output files:
 - Dated OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` only) — workbook tab `inventory-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx`. Same 14 columns first, then appended handoff columns:
   `OpenTeams_Title`, `OpenTeams_Cohort` (`JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`),
   `OpenTeams_Batch` (`Fix vulnerability` / `Create recipe` /
-  `File issue (on conda-forge)` / `File issue (maintained feedstock)` /
+  `File OpenTeams tracking issue [Conda-Forge Packaging]` /
   `Already tracked`; was A / B / C / TRACKED), `OpenTeams_Labels`,
   `OpenTeams_Milestone`, `OpenTeams_Coverage` (`Have_Issue` / `Missing_Issue`),
   `OpenTeams_Issue_URL`, `Source_Repository_URL`.
