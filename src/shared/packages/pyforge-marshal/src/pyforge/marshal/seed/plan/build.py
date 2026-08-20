@@ -15,8 +15,14 @@ region would be inserted at -- plus a `RepoFingerprint` tying the whole
 `PRESENT_CONFORMANT` per `classify()` itself, so it never reaches this rule
 either; it simply never appears among the qualifying classifications.
 Every entry that DOES qualify gets EXACTLY one `Action` -- there is no
-per-entry branching here that could produce more than one, or skip one
-that qualifies, beyond the plain state-membership test itself.
+per-entry branching here that could produce more than one -- with one
+narrow exception, added by Story 8.5 and stated here so this invariant is
+not read as still absolute: a `hybrid-managed-region` entry whose
+NOT-PRESENT regions are ALL opted out qualifies and produces NONE, because
+the run owes it no insertion. That is the only path on which a qualifying
+entry is skipped, it requires a non-empty `opted_out`, and an entry with
+nothing not-present in the first place is deliberately not on it (see
+`_Pendency`).
 
 **Why this module resolves paths directly rather than re-deriving
 `detect.inventory._resolve_within_repo`'s containment check.** `classify()`
@@ -42,9 +48,36 @@ read-only git calls. `pyforge.core.process`, like `pyforge.core.
 atomic_write` (already imported by `seed/fs.py`), is a precedented
 cross-package import for this package's low layers.
 
+**Opt-outs arrive as a parameter, never as a state read (Story 8.5,
+FR-112).** `build_plan` takes a keyword-only `opted_out` frozenset of
+already-read `state.opted_out` keys, and a hybrid entry that is owed
+insertions but whose owed regions are ALL opted out produces no `Action` at
+all, so an opted-out region is never re-inserted. Keeping the read out of
+this module preserves S-9.6's purity property and its
+byte-identical-output determinism.
+
+That read is an OBLIGATION on the caller, not a service already rendered:
+no verb calls `build_plan` today (`cli/seed.py` is still six unimplemented
+stubs), so this paragraph states what a caller must do rather than what one
+already does. A caller must (1) `read_state`, (2) record every pair
+`detect.optout.opt_outs_to_record` derives -- `classify_regions` DERIVES an
+opt-out from a surviving `managed[]` claim, which this module never sees,
+so a derivation left unrecorded is one the plan below will re-insert over
+-- (3) persist that state, and only THEN (4) pass
+`frozenset(state.opted_out)` here. Record-before-plan, in that order; a
+read-only `check` skips steps 2-3 (FR-88 forbids it writing anything) and
+reports the derivation without acting on it. The one thing imported from
+`seed/state/` is `opt_out_key_or_none`, a pure key-spelling function, so the
+`<artifact-id>#<region>` wire form -- and the rule for a pair that cannot be
+spelled in it -- live once for the whole package rather than re-derived
+here.
+
 Never in this module (see the spec's own Never bullets for the full
-list): no read of `.marshal/seed-state.yml` (`seed/state/` is an empty
-stub -- no story has built it yet); no CLI wiring (`build_plan`/
+list): no read of `.marshal/seed-state.yml` -- this module performs no
+state READ of any kind, and the opted-out key set is a `build_plan`
+parameter (Story 8.5 amended this bullet; it previously claimed
+`seed/state/` was an empty stub, true only until S-10.2 built it); no CLI
+wiring (`build_plan`/
 `write_plan`/`load_plan`/`default_plan_path` are library functions only);
 no fingerprint-based REFUSAL (Story 10.3 added `fingerprint_drift`, which
 only REPORTS how a repo has diverged from a `Plan`'s fingerprint -- turning
@@ -59,6 +92,7 @@ story).
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_bytes
@@ -69,6 +103,7 @@ from ..detect.inventory import ArtifactState, Inventory
 from ..model.manifest import ArtifactClass, Manifest, ManifestEntry, Region
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, parse_regions, resolve_anchor
+from ..state import opt_out_key_or_none
 from .types import Action, Plan, RepoFingerprint
 
 # Classifications this module ever turns into an Action -- everything else
@@ -150,44 +185,162 @@ def _read_text_or_blank_verbose(repo_root: Path, entry_path: str) -> tuple[str, 
         return "", False
 
 
-def _chosen_anchor(
-    entry: ManifestEntry, state: ArtifactState, current_text: str
-) -> tuple[tuple[str, str | None], ...]:
-    """One `(region_name, matched_anchor)` pair per declared region that
-    still needs inserting this run.
+def _is_opted_out(entry_id: str, region_name: str, opted_out: frozenset[str]) -> bool:
+    """Whether `opted_out` records this entry/region pair, keyed through
+    `state.opt_out_key_or_none` so the wire spelling lives in exactly one
+    place.
 
-    `()` for every non-`hybrid-managed-region` class (there is no region to
-    anchor for a whole-file artifact). For a hybrid entry: every declared
-    region when `state is ABSENT` (nothing on disk, so nothing is already
-    present); only the regions `regions.parse.parse_regions` does not find
-    when `state is PRESENT_DIVERGENT` (the entry is present but structurally
-    non-conformant, so some -- not necessarily all -- declared regions are
-    missing).
+    An entry id the grammar REFUSES answers `False`, and that answer is the
+    state package's own, not a rule re-derived here: `opt_out_key_or_none`
+    is the "asking, not minting" half of the key function, returning `None`
+    exactly where `opt_out_key` raises. (An earlier revision wrapped
+    `opt_out_key` in a local `try`/`except ValueError` -- the same rule, in
+    a second place, free to drift from the first.) `ManifestEntry` requires
+    only a non-blank `id`, so an id carrying an interior space (or a literal
+    `#`) is legally constructible while the state schema's `opted_out`
+    grammar cannot spell it -- and a key that grammar rejects can never
+    appear in a schema-valid `opted_out` set, so "not opted out" is the
+    correct and total answer. Raising here instead would make `build_plan`
+    crash on a manifest it planned perfectly well before this story. (A
+    region name cannot reach that branch at all: `Region.__post_init__`
+    already requires `REGION_NAME_PATTERN`, which is the key's own region
+    half verbatim.)
 
-    Catches `RegionParseError`/`MarkerError`/`NotImplementedError` from
-    EITHER the missing-region scan or a `resolve_anchor` call and degrades
-    the WHOLE entry's `chosen_anchor` to `()` -- never a partial list --
-    the identical "cannot safely re-parse this file, so degrade rather than
-    guess" rule `detect.inventory._classify_hybrid` already applies for the
-    same three exception types."""
+    The degradation covers the INADMISSIBLE-KEY case and nothing wider: this
+    call still reaches `state.store._load_schema`, which raises
+    `InternalError` (exit 10) for a missing or corrupt packaged
+    `schema.json`. That is deliberate and is not caught here -- a broken
+    INSTALLATION is a loud failure by design, never a plan quietly built as
+    if nothing were opted out."""
+    key = opt_out_key_or_none(entry_id, region_name)
+    return key is not None and key in opted_out
+
+
+@dataclass(frozen=True)
+class _Pendency:
+    """One hybrid entry's region verdict, in the two facts `build_plan` needs
+    to tell apart: the declared regions NOT PRESENT in the file, and the
+    subset of those still PENDING after opt-outs are removed.
+
+    `pending` alone is not enough, and collapsing the two was a real defect
+    (review finding). The suppression rule below fires on "nothing left to
+    insert", but "nothing left" has two causes that must NOT behave alike:
+    every owed region was opted out (suppress -- FR-112's whole point), or
+    nothing was owed in the first place (do NOT suppress -- that is a
+    `PRESENT_DIVERGENT` entry whose file already carries every declared
+    region at build time, which `classify()` saw as divergent a moment
+    earlier). Suppressing the second silently drops the entry from BOTH
+    `actions` AND `artifact_hashes`, which removes it from the
+    `RepoFingerprint` and leaves `fingerprint_drift` blind to any later
+    change to that file -- and it would have happened under the DEFAULT
+    empty `opted_out`, to callers predating this story. Carrying both facts
+    makes the rule say what it means: suppress only when the emptiness was
+    CAUSED by opt-outs.
+
+    Frozen, like every other value object in this package (`Plan`,
+    `Action`, `RepoFingerprint`, `fs.NeverWrite`)."""
+
+    not_present: tuple[Region, ...]
+    pending: tuple[Region, ...]
+
+
+def _pendency(
+    entry: ManifestEntry, state: ArtifactState, current_text: str, opted_out: frozenset[str]
+) -> _Pendency | None:
+    """This entry's region verdict -- the declared regions not present, and
+    the ones still pending after opt-outs -- or `None` when the entry has no
+    trustworthy verdict at all.
+
+    THE one place pendency is computed. `build_plan`'s suppression rule and
+    `_chosen_anchor` both consume this single result, so the two can never
+    disagree about which regions a run still owes, and the entry's file is
+    parsed exactly once per `build_plan` call rather than once per consumer.
+
+    `None` means "no verdict", and it covers exactly two cases that must
+    behave identically downstream: a non-`hybrid-managed-region` entry
+    (nothing declares a region, so pendency is not a question about it) and
+    a file `parse_regions` refuses -- `RegionParseError`/`MarkerError`/the
+    reserved-format `NotImplementedError`. Both keep their `Action` and both
+    get `chosen_anchor == ()`. That is what stops an unparseable file from
+    reading as "zero pending" and silently retiring every region in it,
+    which is the same "cannot safely re-parse, so degrade rather than guess"
+    rule `detect.inventory._classify_hybrid` applies for the same three
+    types.
+
+    `not_present` is every declared region when `state is ABSENT` (nothing
+    on disk, so nothing can already be present -- and nothing is parsed, so
+    an absent entry is never `None`); otherwise only the regions
+    `parse_regions` does not find (present but structurally non-conformant,
+    so some -- not necessarily all -- declared regions are missing, and
+    possibly none of them). `pending` is `not_present` minus the opted-out
+    ones."""
     if entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
-        return ()
+        return None
     # ManifestEntry.__post_init__ guarantees a hybrid-managed-region entry
     # carries a non-None format -- narrows for the type checker, matching
     # `_classify_hybrid`'s own identical assertion.
     assert entry.format is not None
     try:
         if state is ArtifactState.ABSENT:
-            missing_regions: tuple[Region, ...] = entry.regions
+            not_present: tuple[Region, ...] = entry.regions
         else:
             found_spans = parse_regions(current_text, entry.format)
             found_names = {span.name for span in found_spans}
-            missing_regions = tuple(
+            not_present = tuple(
                 region for region in entry.regions if region.name not in found_names
             )
+    except (RegionParseError, MarkerError, NotImplementedError):
+        return None
+    return _Pendency(
+        not_present=not_present,
+        pending=tuple(
+            region
+            for region in not_present
+            if not _is_opted_out(entry.id, region.name, opted_out)
+        ),
+    )
+
+
+def _is_fully_opted_out(pendency: _Pendency | None) -> bool:
+    """Whether this entry's every owed region is opted out -- the ONLY
+    condition on which `build_plan` skips an otherwise-qualifying entry.
+
+    Requires a real verdict (`None` is never suppressed -- a whole-file
+    entry declares no regions, and an unparseable file must not be guessed
+    at), a NON-EMPTY `not_present` (something actually had to be owed), and
+    an empty `pending` (all of it opted out). An entry with nothing owed
+    keeps the `Action` it produced before Story 8.5, `chosen_anchor == ()`
+    and all -- see `_Pendency` for what suppressing it would have cost."""
+    return pendency is not None and bool(pendency.not_present) and not pendency.pending
+
+
+def _chosen_anchor(
+    entry: ManifestEntry, current_text: str, pendency: _Pendency | None
+) -> tuple[tuple[str, str | None], ...]:
+    """One `(region_name, matched_anchor)` pair per PENDING region --
+    `_pendency`'s `pending`, resolved to the anchor each one would be
+    inserted at.
+
+    `()` when `pendency is None` (see `_pendency`: a whole-file artifact has
+    no region to anchor, and an unparseable file must not be guessed at),
+    and `()` when a `resolve_anchor` call itself raises
+    `RegionParseError`/`MarkerError`/`NotImplementedError` -- degrading the
+    WHOLE entry's `chosen_anchor`, never a partial list, the same rule
+    `_pendency` applies to its own parse.
+
+    Reads `pendency.pending`, never `not_present`: an opted-out region is
+    not going to be inserted, so naming an anchor for it would put a
+    proposed insertion point for a region nobody is inserting in front of
+    the human reviewing the plan."""
+    if pendency is None:
+        return ()
+    # A non-None `_Pendency` is only ever produced for a hybrid entry, which
+    # `ManifestEntry.__post_init__` guarantees carries a format.
+    assert entry.format is not None
+    try:
         return tuple(
             (region.name, resolve_anchor(current_text, entry.format, region.anchor).matched)
-            for region in missing_regions
+            for region in pendency.pending
         )
     except (RegionParseError, MarkerError, NotImplementedError):
         return ()
@@ -235,11 +388,32 @@ def _repo_is_dirty(process: PosixProcess, repo_root: Path) -> bool:
     return bool(result.stdout)
 
 
-def build_plan(manifest: Manifest, inventory: Inventory) -> Plan:
+def build_plan(
+    manifest: Manifest, inventory: Inventory, *, opted_out: frozenset[str] = frozenset()
+) -> Plan:
     """Map each qualifying `Classification` in `inventory` to one `Action`,
     plus a `RepoFingerprint` of `inventory.repo_root` (`inventory.
     repo_root` supplies the target repo -- there is no separate `repo_root`
     parameter, per this story's Always bullet).
+
+    `opted_out` (Story 8.5) is a set of already-read `state.opt_out_key`
+    strings -- `frozenset(state.opted_out)`, which the calling verb owes
+    this function AFTER recording whatever `detect.optout` derived (see the
+    module docstring's record-before-plan sequencing). Keyword-only and
+    defaulted to empty, so every caller predating this story keeps
+    byte-identical output. A `hybrid-managed-region` entry that was owed one
+    or more region insertions and has had ALL of them opted out produces NO
+    `Action` at all, for `PRESENT_DIVERGENT` and `ABSENT` alike, and
+    therefore no `artifact_hashes` entry either: an opted-out region is
+    never re-inserted, which is FR-112's whole requirement.
+
+    Two entries are deliberately NOT suppressed, both of which would be a
+    behavior change under the default empty `opted_out`: one whose file
+    cannot be parsed (never "zero pending" -- see `_pendency`), and one that
+    was owed NOTHING to begin with, whose emptiness no opt-out caused (see
+    `_Pendency` and `_is_fully_opted_out`). The second keeps its `Action`
+    and its `artifact_hashes` pair exactly as it did before this story,
+    which is what keeps `fingerprint_drift` able to see it.
 
     `inventory.classifications` is already in manifest entry order (one
     `Classification` per `manifest.entries`, `classify()`'s own contract);
@@ -273,19 +447,27 @@ def build_plan(manifest: Manifest, inventory: Inventory) -> Plan:
             "inventory references entry id(s) absent from manifest.entries -- "
             f"inventory was not built from this manifest: {unknown_ids!r}"
         )
-    actioned: list[tuple[ManifestEntry, ArtifactState, str]] = [
-        (
-            entries_by_id[classification.entry_id],
-            classification.state,
-            _current_text(
-                classification.state,
-                inventory.repo_root,
-                entries_by_id[classification.entry_id].path,
-            ),
-        )
-        for classification in inventory.classifications
-        if classification.state in _ACTIONABLE_STATES
-    ]
+    # A plain loop rather than the comprehension this used to be: the
+    # suppression rule below has to see each entry's own pending-region
+    # verdict, and that verdict must be computed exactly once and then
+    # REUSED by `_chosen_anchor` -- a comprehension would either recompute
+    # it (re-parsing the same file twice per entry) or let the two consumers
+    # drift onto separately-computed answers.
+    actioned: list[tuple[ManifestEntry, ArtifactState, str, _Pendency | None]] = []
+    for classification in inventory.classifications:
+        if classification.state not in _ACTIONABLE_STATES:
+            continue
+        entry = entries_by_id[classification.entry_id]
+        current_text = _current_text(classification.state, inventory.repo_root, entry.path)
+        pendency = _pendency(entry, classification.state, current_text, opted_out)
+        if _is_fully_opted_out(pendency):
+            # A hybrid entry that was owed insertions and has had every one
+            # of them opted out: nothing to insert, and no `Action` to
+            # review (Story 8.5). An entry owed NOTHING is not this case and
+            # keeps its `Action`; nor is `None` -- a whole-file entry, or a
+            # file that could not be parsed.
+            continue
+        actioned.append((entry, classification.state, current_text, pendency))
 
     actions = tuple(
         sorted(
@@ -296,10 +478,10 @@ def build_plan(manifest: Manifest, inventory: Inventory) -> Plan:
                     current_state=state,
                     target_state=ArtifactState.PRESENT_CONFORMANT,
                     target_path=entry.path,
-                    chosen_anchor=_chosen_anchor(entry, state, current_text),
+                    chosen_anchor=_chosen_anchor(entry, current_text, pendency),
                     rationale=_rationale(entry, state),
                 )
-                for entry, state, current_text in actioned
+                for entry, state, current_text, pendency in actioned
             ),
             key=lambda action: action.artifact_id,
         )
@@ -308,7 +490,7 @@ def build_plan(manifest: Manifest, inventory: Inventory) -> Plan:
         sorted(
             (
                 (entry.id, hash_content(current_text))
-                for entry, _state, current_text in actioned
+                for entry, _state, current_text, _pendency in actioned
             ),
             key=lambda pair: pair[0],
         )
