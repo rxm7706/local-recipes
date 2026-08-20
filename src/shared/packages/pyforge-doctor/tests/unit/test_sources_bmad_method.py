@@ -1,22 +1,49 @@
 """Unit tests for ``pyforge.doctor.sources.bmad_method.gather`` (Story 10.1,
-Epic 10/CAP-1) -- covers every row of the spec's I/O & Edge-Case Matrix
-against REAL tmp fixture trees (a written ``pixi.toml`` +
-``_bmad/_config/manifest.yaml``), mirroring
+Epic 10/CAP-1; Story 10.2, Epic 10/CAP-2) -- covers every row of the spec's
+I/O & Edge-Case Matrix against REAL tmp fixture trees (a written
+``pixi.toml`` + ``_bmad/_config/manifest.yaml``), mirroring
 ``test_sources_chain_due_for_verification.py``'s own real-fixture discipline.
-The one exception is ``test_gather_degrades_on_unexpected_exception``, which
+The exceptions are ``test_gather_degrades_on_unexpected_exception``, which
 deliberately monkeypatches ``_gather`` to force an exception shape no real
 fixture can produce -- proving the outer ``degrade_on_exception`` safety net
 itself, not the comparison logic (review finding: the prior wording claimed
-"no mocks" unconditionally).
+"no mocks" unconditionally) -- and CAP-2's own network-boundary tests, which
+monkeypatch ``_fetch_latest_upstream_version``/``urllib.request.urlopen``
+rather than making a live registry call.
+
+The module-level ``_stub_upstream_fetch`` fixture below is ``autouse=True``
+so every CAP-1 test above it keeps asserting ``len(findings) == 1``
+unmodified, exactly as it did before CAP-2 existed (Boundaries) -- mirrors
+this file's own ``test_gather_degrades_on_unexpected_exception`` monkeypatch
+idiom, and ``test_sources_chain_due_for_verification.py``'s own
+autouse-fixture-per-module convention.
 """
 
 from __future__ import annotations
 
+import email.message
+import http.client
+import json
+import urllib.error
 from pathlib import Path
 
 import pytest
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import bmad_method
+
+#: Captured before the autouse fixture below ever patches the module
+#: attribute of the same name -- the direct ``_fetch_latest_upstream_
+#: version`` unit tests exercise THIS real function object, not the
+#: per-test stub the fixture installs (which would otherwise shadow it and
+#: make every one of those tests observe the stub instead of the real
+#: network-boundary logic under test).
+_real_fetch_latest_upstream_version = bmad_method._fetch_latest_upstream_version
+
+
+@pytest.fixture(autouse=True)
+def _stub_upstream_fetch(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: None)
+
 
 # --- fixture helpers ---------------------------------------------------------
 
@@ -278,6 +305,280 @@ def test_gather_degrades_on_unexpected_exception(
     assert findings[0].status is DoctorStatus.WARN
     assert findings[0].source is Source.BMAD_METHOD_VERSION_DRIFT
     assert "RuntimeError" in findings[0].message
+
+
+# --- upstream npm comparison (Story 10.2, Epic 10/CAP-2) -----------------------
+
+
+def test_installed_behind_latest_upstream_reports_second_warn_naming_both_versions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_610)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 12, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 2
+    upstream = findings[1]
+    assert upstream.source is Source.BMAD_METHOD_VERSION_DRIFT
+    assert upstream.check == "bmad-method-upstream-drift"
+    assert upstream.status is DoctorStatus.WARN
+    assert "6.10.0" in upstream.message
+    assert "6.12.0" in upstream.message
+    assert upstream.evidence == {"installed": "6.10.0", "latest_upstream": "6.12.0"}
+
+
+def test_installed_meets_declared_floor_but_behind_latest_upstream_reports_ok_plus_warn(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Proves the story's own Problem statement: CAP-1 can report ok (installed
+    # meets pixi.toml's declared floor) while CAP-2 still reports drift
+    # against the further-ahead actual latest upstream release.
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 12, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 2
+    assert findings[0].check == "bmad-method-version-drift"
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[1].check == "bmad-method-upstream-drift"
+    assert findings[1].status is DoctorStatus.WARN
+
+
+def test_installed_equal_to_latest_upstream_reports_second_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 2
+    assert findings[1].check == "bmad-method-upstream-drift"
+    assert findings[1].status is DoctorStatus.OK
+
+
+def test_installed_ahead_of_latest_upstream_reports_second_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A pre-release/dev install ahead of the latest published release.
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_612)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 2
+    assert findings[1].check == "bmad-method-upstream-drift"
+    assert findings[1].status is DoctorStatus.OK
+
+
+def test_upstream_fetch_failure_leaves_exactly_the_one_cap1_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_610)
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: None)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-method-version-drift"
+
+
+def test_gather_exercises_the_real_fetch_helper_end_to_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Every other CAP-2 gather-level test stubs _fetch_latest_upstream_version
+    # wholesale, and every direct _fetch_latest_upstream_version test bypasses
+    # gather()/_gather() entirely -- neither exercises the seam between the
+    # two halves with both sides real (review finding, Story 10.2). This one
+    # restores the REAL _fetch_latest_upstream_version (undoing the autouse
+    # stub above) and only stubs urlopen, one layer down.
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", _real_fetch_latest_upstream_version
+    )
+    _stub_urlopen(
+        monkeypatch,
+        json.dumps({"name": "bmad-method", "version": "6.12.0"}).encode(),
+    )
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_610)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 2
+    assert findings[1].check == "bmad-method-upstream-drift"
+    assert findings[1].evidence == {"installed": "6.10.0", "latest_upstream": "6.12.0"}
+
+
+def test_broken_cap1_inputs_never_reach_the_fetch_helper(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # I/O matrix: when CAP-1's own inputs are broken (missing pixi.toml),
+    # degrade_on_exception fires before _gather ever reaches the fetch call
+    # -- the network helper must not be invoked at all.
+    _write_manifest(tmp_path, _MANIFEST_610)
+
+    def _unreachable(**_):
+        raise AssertionError("_fetch_latest_upstream_version must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.WARN
+    assert "could not be evaluated here" in findings[0].message
+
+
+# --- _fetch_latest_upstream_version's own success/failure branches -------------
+
+
+class _FakeUrlopenResponse:
+    """A minimal stand-in for what ``urllib.request.urlopen`` returns as a
+    context manager -- only ``read()`` is ever called on it."""
+
+    def __init__(self, body: bytes) -> None:
+        self._body = body
+
+    def __enter__(self) -> "_FakeUrlopenResponse":
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
+
+
+def _stub_urlopen(monkeypatch: pytest.MonkeyPatch, body: bytes) -> None:
+    monkeypatch.setattr(
+        bmad_method.urllib.request, "urlopen",
+        lambda *args, **kwargs: _FakeUrlopenResponse(body),
+    )
+
+
+def test_fetch_latest_upstream_version_returns_parsed_tuple_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(
+        monkeypatch,
+        json.dumps({"name": "bmad-method", "version": "6.12.0"}).encode(),
+    )
+    assert _real_fetch_latest_upstream_version() == (6, 12, 0)
+
+
+def test_fetch_latest_upstream_version_folds_http_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        # A real urlopen-raised HTTPError always carries a populated headers
+        # object, never `hdrs=None` (review finding, Story 10.2) -- an empty
+        # `email.message.Message()` is the minimal real shape.
+        raise urllib.error.HTTPError(
+            "https://registry.npmjs.org", 500, "boom", email.message.Message(), None
+        )
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_url_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise urllib.error.URLError("no route to host")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_http_exception_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # http.client.HTTPException (e.g. BadStatusLine/IncompleteRead on a
+    # malformed/truncated response) is NOT an OSError subclass, unlike
+    # RemoteDisconnected -- review finding, Story 10.2: this failure mode
+    # was not caught before and would have escaped to degrade_on_exception,
+    # discarding CAP-1's own already-computed Finding too.
+    def _raise(*args, **kwargs):
+        raise http.client.BadStatusLine("garbage")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_os_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_timeout_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_malformed_json_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, b"not json")
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_missing_version_field_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, json.dumps({"name": "bmad-method"}).encode())
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_folds_unparseable_version_field_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(
+        monkeypatch,
+        json.dumps({"name": "bmad-method", "version": "not-a-version"}).encode(),
+    )
+    assert _real_fetch_latest_upstream_version() is None
+
+
+def test_fetch_latest_upstream_version_passes_through_a_custom_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, float] = {}
+
+    def _urlopen(url: str, timeout: float | None = None):
+        seen["timeout"] = timeout
+        return _FakeUrlopenResponse(
+            json.dumps({"name": "bmad-method", "version": "6.12.0"}).encode()
+        )
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+    _real_fetch_latest_upstream_version(timeout=1.5)
+    assert seen["timeout"] == 1.5
 
 
 # --- helper unit coverage ------------------------------------------------------

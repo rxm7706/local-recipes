@@ -1,6 +1,10 @@
 """The bmad-method-version-drift gather filter -- Doctor's verdict on
 whether the installed BMAD-METHOD framework version meets ``pixi.toml``'s
-own declared floor (Story 10.1, Epic 10/CAP-1).
+own declared floor (Story 10.1, Epic 10/CAP-1), and separately, whether that
+same installed version is behind the latest release actually published
+upstream (Story 10.2, Epic 10/CAP-2) -- a stale declared floor can hide a
+further-behind reality, since CAP-1 only ever compares against what
+``pixi.toml`` itself claims.
 
 **Why this module exists, and why it is a dedicated file rather than an
 extension of ``sources/factory.py``'s existing ``BMAD_DRIFT``.** ``BMAD_DRIFT``
@@ -18,10 +22,11 @@ unrelated artifact class.
 **The independence rule.** This module reads two already-tracked files
 directly -- ``pixi.toml`` (``tomllib``, stdlib) and
 ``_bmad/_config/manifest.yaml`` (``yaml.safe_load``, the existing PyYAML
-run-dependency ``sources/chain.py`` also uses) -- no subprocess, no network,
-no git history. It never imports ``pyforge.marshal``, any other station
-package, or ``bmad_loop``; ``tests/meta/test_source_independence.py``
-enforces this fleet-wide, same as every sibling source.
+run-dependency ``sources/chain.py`` also uses) -- no subprocess, no git
+history (CAP-2 adds one narrow network exception -- see below). It never
+imports ``pyforge.marshal``, any other station package, or ``bmad_loop``;
+``tests/meta/test_source_independence.py`` enforces this fleet-wide, same
+as every sibling source.
 
 **Degrades, never crashes** -- the house rule for every Doctor source. Unlike
 ``sources/ledger.py``'s bespoke git-error handling, this module has no git
@@ -37,11 +42,27 @@ that turns any such exception into a single WARN ``Finding`` naming it.
 signal informs (mirrors ``Source.DUE_FOR_VERIFICATION``'s own always-warn
 discipline); CAP-3's non-gating rule is enforced downstream by
 ``verdict.exit_code_for``, unaffected by a ``warn`` Finding either way.
+
+**CAP-2's one exception to "no network, no subprocess."** ``_fetch_latest_
+upstream_version`` queries npm's own public registry live (``GET https://
+registry.npmjs.org/bmad-method/latest``, stdlib ``urllib.request`` only --
+mirrors ``pyforge-mason``'s ``pypi_index.py::version_exists``, the fleet's
+own precedent for a bare unauthenticated JSON-index GET). Fail-open is
+silent: every failure mode the network can produce folds to ``None`` inside
+that helper itself and never raises, so a registry outage degrades CAP-2 to
+"adds nothing" rather than affecting CAP-1's own Finding or triggering the
+outer ``degrade_on_exception`` WARN. Nothing fetched is ever persisted --
+every ``gather()`` call pays its own round-trip (mirrors ``pypi_index.py``'s
+own no-local-persistence precedent).
 """
 
 from __future__ import annotations
 
+import http.client
+import json
 import re
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import tomllib
@@ -128,14 +149,78 @@ def _declared_floors(data: dict) -> list[tuple[int, int, int]]:
     return floors
 
 
+#: npm's own public, unauthenticated per-package ``/latest`` endpoint --
+#: returns a JSON body shaped ``{"name": "bmad-method", "version": "X.Y.Z",
+#: ...}`` on success. Mirrors ``pyforge-mason``'s ``pypi_index.py``'s own
+#: ``_PYPI_JSON_INDEX_URL_TEMPLATE`` precedent for a bare unauthenticated
+#: JSON-index GET, aimed at npm's registry instead of PyPI's -- bmad-method
+#: ships on npm, not PyPI.
+_NPM_LATEST_URL = "https://registry.npmjs.org/bmad-method/latest"
+
+#: Deliberately shorter than ``pypi_index.py``'s own 30s: that precedent is
+#: for ``ship_pypi``'s one-shot, human-triggered publish flow, while this
+#: source runs ambiently and repeatedly (every opt-in ``doctor check
+#: --bmad-core`` invocation, and every ``fleet_picture.py`` ATTENTION-block
+#: probe -- Story 10.3 wired both) -- a short timeout keeps a
+#: slow/unreachable registry from stalling an otherwise-fast local check for
+#: long. Both numbers are metadata-GET-tier per the fleet's own convention
+#: (``engines.gh._GH_PR_LIST_TIMEOUT_SECONDS``); this value is this story's
+#: own judgment call for the ambient-check tier, not drawn from an existing
+#: constant.
+_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0
+
+
+def _fetch_latest_upstream_version(*, timeout: float | None = None) -> tuple[int, int, int] | None:
+    """Query npm's own public registry for bmad-method's latest published
+    release (Story 10.2, CAP-2) -- mirrors ``pypi_index.py``'s
+    ``version_exists`` as the fleet's own precedent for a bare
+    unauthenticated JSON-index GET. Unlike that function's 404-vs-other
+    split, every failure mode here folds to the SAME outcome: CAP-2 has no
+    "conclusively does not exist" answer to give, only "succeeded" or
+    "could not determine."
+
+    Never raises: an ``HTTPError``, ``URLError``, a malformed/truncated HTTP
+    response (``http.client.HTTPException`` -- NOT an ``OSError`` subclass,
+    unlike ``RemoteDisconnected``, so it needs its own name in this tuple;
+    review finding, Story 10.2), ``OSError``, ``TimeoutError``, a malformed
+    JSON body, or a missing/unparseable ``"version"`` field all fold to
+    ``None`` (Boundaries). The ``"version"`` string is parsed with
+    ``_parse_version`` exactly as CAP-1 parses ``manifest.yaml``'s own
+    version, so both capabilities share one parsing/validation path and a
+    malformed npm version string degrades the same way a malformed local one
+    does (Design Notes)."""
+    resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    try:
+        with urllib.request.urlopen(_NPM_LATEST_URL, timeout=resolved_timeout) as response:
+            body = json.loads(response.read())
+        return _parse_version(str(body["version"]))
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        http.client.HTTPException,
+        OSError,
+        TimeoutError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ):
+        return None
+
+
 def gather(target: Path) -> tuple[Finding, ...]:
     """Compare ``pixi.toml``'s max declared ``bmad-method`` floor against
-    ``_bmad/_config/manifest.yaml``'s installed version -- the library form
-    the story's own Intent names. On the success path, ``_gather`` returns
-    exactly one Finding: ``warn`` on drift (installed older than the declared
-    floor), ``ok`` on agreement; the outer ``degrade_on_exception`` wrapper is
-    what guarantees exactly one Finding OVERALL by converting any exception
-    from that success path into one WARN instead.
+    ``_bmad/_config/manifest.yaml``'s installed version (CAP-1) and,
+    separately, that same installed version against the latest release
+    actually published upstream (CAP-2). On the success path, ``_gather``
+    always returns CAP-1's own Finding (``warn`` on drift, ``ok`` on
+    agreement), plus a second CAP-2 Finding whenever
+    ``_fetch_latest_upstream_version`` succeeds (``warn`` when installed is
+    older than the fetched latest, ``ok`` otherwise) -- CAP-2 degrading to
+    a failed fetch never changes CAP-1's own outcome, and adds nothing at
+    all when it fails. The outer ``degrade_on_exception`` wrapper is what
+    guarantees exactly one Finding OVERALL when something genuinely
+    unexpected happens on the success path, by converting any such
+    exception into one WARN instead.
 
     Read-only: never runs ``npx bmad-method install``, never writes to
     ``_bmad/**`` (Boundaries).
@@ -162,20 +247,18 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     }
 
     if installed < declared:
-        return (
-            Finding(
-                source=Source.BMAD_METHOD_VERSION_DRIFT,
-                check="bmad-method-version-drift",
-                status=DoctorStatus.WARN,
-                message=(
-                    f"installed bmad-method {installed_text} is behind "
-                    f"pixi.toml's declared floor >={declared_text}"
-                ),
-                evidence=evidence,
+        drift_finding = Finding(
+            source=Source.BMAD_METHOD_VERSION_DRIFT,
+            check="bmad-method-version-drift",
+            status=DoctorStatus.WARN,
+            message=(
+                f"installed bmad-method {installed_text} is behind "
+                f"pixi.toml's declared floor >={declared_text}"
             ),
+            evidence=evidence,
         )
-    return (
-        Finding(
+    else:
+        drift_finding = Finding(
             source=Source.BMAD_METHOD_VERSION_DRIFT,
             check="bmad-method-version-drift",
             status=DoctorStatus.OK,
@@ -184,5 +267,36 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 f"declared floor >={declared_text}"
             ),
             evidence=evidence,
-        ),
-    )
+        )
+
+    latest_upstream = _fetch_latest_upstream_version()
+    if latest_upstream is None:
+        return (drift_finding,)
+
+    latest_text = ".".join(str(part) for part in latest_upstream)
+    upstream_evidence = {"installed": installed_text, "latest_upstream": latest_text}
+
+    if installed < latest_upstream:
+        upstream_finding = Finding(
+            source=Source.BMAD_METHOD_VERSION_DRIFT,
+            check="bmad-method-upstream-drift",
+            status=DoctorStatus.WARN,
+            message=(
+                f"installed bmad-method {installed_text} is behind the "
+                f"latest upstream release {latest_text}"
+            ),
+            evidence=upstream_evidence,
+        )
+    else:
+        upstream_finding = Finding(
+            source=Source.BMAD_METHOD_VERSION_DRIFT,
+            check="bmad-method-upstream-drift",
+            status=DoctorStatus.OK,
+            message=(
+                f"installed bmad-method {installed_text} meets the "
+                f"latest upstream release {latest_text}"
+            ),
+            evidence=upstream_evidence,
+        )
+
+    return (drift_finding, upstream_finding)

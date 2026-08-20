@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3), 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, exact-pinned `==0.1.1`, Story 12-1; then a second 2026-08-09 pass re-syncing 12 version floors to `pixi.toml` — incl. `fastmcp` 2.14.3->3.4.5 and `pixi` 0.75.0->0.76.1 — and documenting the two deps the catalog had never carried: `pyyaml` (pyforge-doctor) and `httpx2` (pyforge-herald)) and 2026-08-14 (Story 10.2, CAP-5: the new `python-agent-platform` env — the FIRST env in this catalog pinned off `python 3.14.x` (env-scoped `python = "3.12.*"`) — documented with `langflow`/`dbgpt-serve`/`fastapi`/`django-health-check`/`redis-py`; `pixitainer` uncommented + bumped to `>=0.8.3`, linux-64 only; plus 33 unrelated version floors re-synced to `pixi.toml` and `pyforge-core`'s env row added — the catalog was already drifted on these before this story, `llms-full-check` now exits 0). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry), 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3), 2026-08-09 (`kedro-skills` documented — pyforge-atlas-only, exact-pinned `==0.1.1`, Story 12-1; then a second 2026-08-09 pass re-syncing 12 version floors to `pixi.toml` — incl. `fastmcp` 2.14.3->3.4.5 and `pixi` 0.75.0->0.76.1 — and documenting the two deps the catalog had never carried: `pyyaml` (pyforge-doctor) and `httpx2` (pyforge-herald)) and 2026-08-14 (Story 10.2, CAP-5: the new `python-agent-platform` env — the FIRST env in this catalog pinned off `python 3.14.x` (env-scoped `python = "3.12.*"`) — documented with `langflow`/`dbgpt-serve`/`fastapi`/`django-health-check`/`redis-py`; `pixitainer` uncommented + bumped to `>=0.8.3`, linux-64 only; plus 33 unrelated version floors re-synced to `pixi.toml` and `pyforge-core`'s env row added — the catalog was already drifted on these before this story, `llms-full-check` now exits 0) and 2026-08-20 (Story 11.1: the new `platform-dev` env — composes onto `python-agent-platform` — documented with `postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`; `python-agent-platform` itself gains `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg`, four deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`, discovered live wiring the actual Langflow ASGI mount). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -64,7 +64,8 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-mason`| pyforge-mason (no-default-feature)                    | Lean env for the built `pyforge-mason` package (`src/shared/packages/pyforge-mason` path dep -> conda pkg + pytest/hatchling/python-build). The Artisan Builder's CLI (`mason recipe`/`package`/`environment`); **no CLI-framework dep by contract** (FR-41 forbids click/typer — argparse only). Tasks: `pyforge-mason-build{,-conda,-dist}`, `pyforge-mason-test`. Spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/` |
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
 | `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station; `import-linter` is load-bearing, not incidental — it enforces AD-3 (only `adapters/harness_bmadloop.py` may import `bmad_loop`) and AD-4 (`core/**` imports no `subprocess`/`os`/`time`/`adapters`) as **build-breaking contracts** rather than conventions. Task: `pyforge-marshal-test`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
-| `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — the only non-3.14 env in this catalog.** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
+| `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — the only non-3.14 env in this catalog.** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
+| `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`) ONTO `python-agent-platform` — one env for the full local Tier-1 dev baseline (engines + the PostgreSQL/Redis/k8s-CLI processes they need), zero containers or managed services. `pixi install -e platform-dev` alone provisions everything Epic 11's schema-isolation work needs. |
 - **graphviz** (>=14.1.2) — Graph layout engine (the `dot` binary); drives the
   kedro-viz prototype's DAG-image (SVG) emitter.
 - **python-graphviz** (>=0.21) — Python interface to Graphviz — **imports as
@@ -508,6 +509,24 @@ Agentic engines (**`python-agent-platform` env only**, CAP-5, Story 10.2 — the
   feedstock, `python_min` 3.11). Pulls in `slowapi` transitively via
   `langflow-base`, which resolves to a `SelfExplainML`-channel 0.1.10 build here
   (see `channel-priority` note on the feature, § "Version pins" above).
+- **chromadb** (>=1.0.0,<2.0.0) / **langchain-chroma** (>=0.2.6,<0.3.0) /
+  **elevenlabs** (>=1.52.0,<2.0.0) — Story 11.1: `langflow.main.create_app()`
+  hard-imports all three at module load (`langflow.api.v1.knowledge_bases`,
+  `lfx.base.knowledge_bases.backends.chroma`, `langflow.api.v1.voice_mode`),
+  even though the langflow-suite recipe lists all three as `run_constraints`
+  (soft) rather than `run` (hard) for the `langflow` output — `import
+  langflow.main` `ModuleNotFoundError`s on each in turn without them, verified
+  live. Pinned to the SAME floors the recipe's own `run_constraints` declare.
+- **psycopg** (>=3.1) — Story 11.1: Langflow's own SQLAlchemy engine needs a
+  Postgres driver, and neither `psycopg` (v3) nor `asyncpg` is anywhere in the
+  langflow-suite recipe (upstream langflow-base gates one behind an unused pip
+  extra the conda recipe never turns into a dependency). `LANGFLOW_DATABASE_URL`
+  is a `postgresql://` URL; Langflow's own `services/database/service.py`
+  rewrites that scheme to `postgresql+psycopg` itself. A DIFFERENT package
+  from `psycopg2` (below) — psycopg 3 supports SQLAlchemy's async engine
+  natively; conda-forge's `psycopg` build already bundles the compiled
+  `psycopg_c` extension (no separate `psycopg-binary`/`psycopg-c` package
+  exists on conda-forge, unlike PyPI).
 - **dbgpt-serve** (>=0.8.1) — the DB-GPT serving/API layer (db-gpt feedstock),
   installed alongside **dbgpt** (§ 6 — a separate package from the same
   feedstock, also floor `>=0.8.1`, independently pinned in both
@@ -605,6 +624,19 @@ the Django host the § 11 agentic engines mount into, Epic 11):
 - **redis-py** (>=6.0.0) — the Redis client driver for the same constraint.
   **Imports as `redis`** (§ 17). This floor also forces the solver off
   conda-forge's `slowapi` (§ 11) onto the `SelfExplainML` build — do not relax it.
+
+`platform-dev` env only (AD-16, Story 11.1 — composes onto `python-agent-platform`,
+so `pixi install -e platform-dev` gives the engines above PLUS these; per-user local
+PROCESSES, not containers or managed services):
+- **postgresql** (>=17) — per-user local PostgreSQL server (`initdb`/`pg_ctl`/`psql`
+  binaries). The ONE database `public`/`langflow_schema`/`dbgpt_schema` all share.
+- **pgvector** (>=0.8.1) — PostgreSQL extension, same instance — no separate
+  vector-store service (AD-1).
+- **redis-server** (>=8.0) — per-user local Redis server (`redis-server` binary).
+  Cache + Celery broker (AD-1). **No native win-64 build** — AD-16's native-Windows
+  sub-posture note: `fakeredis` + eager-Celery stand in there, or WSL2/a remote.
+- **kubernetes-helm** (>=3.16) — the `helm` CLI, for Epic 12 chart work.
+- **kubernetes-client** (>=1.31) — `kubectl`, for the same chart/deploy work.
 
 Cloud / storage / identity:
 - **google-cloud-bigquery** (>=3.43.0) — `from google.cloud import bigquery`;

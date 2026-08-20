@@ -4,6 +4,10 @@ mismatched-remedy and blank-field rejection, ``Finding.new(...)`` string
 coercion and invalid-value rejection, ``REMEDIES`` completeness, and
 ``to_json_dict()`` stability, plus frozen/hashable dataclass conventions
 matching ``test_seed_model_artifact.py``'s own house style.
+
+Story 8.5 pins the corrected ``REMEDIES[FindingType.OPTED_OUT]`` text: the
+shipped string pointed at ``state.skips``' glob mechanism rather than the
+opt-out's own ``--reinstate`` move.
 """
 
 from __future__ import annotations
@@ -89,6 +93,42 @@ def test_remedies_has_a_non_empty_str_entry_for_every_finding_type():
         remedy = REMEDIES[finding_type]
         assert isinstance(remedy, str)
         assert remedy.strip()
+
+
+def test_the_opted_out_remedy_names_the_real_reinstate_mechanism():
+    """Story 8.5 correction: this remedy used to say "remove the skip glob
+    from state", which pointed at the unrelated ``state.skips`` mechanism
+    (PRD J4 lists opt-out and ``skips[]`` as DISTINCT moves) and described a
+    glob that does not exist. The real move is
+    ``marshal seed adopt --reinstate <artifact>#<region>``, the flag S-10.6
+    wires onto ``state.clear_opt_out``."""
+    remedy = REMEDIES[FindingType.OPTED_OUT]
+    assert "--reinstate" in remedy
+    assert "<artifact>#<region>" in remedy
+    assert "skip glob" not in remedy
+
+
+def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
+    """Review finding: the remedy and the message it prints beside are one
+    report, and they disagreed. ``detect/optout.py::region_findings``
+    deliberately hedges its message to "while this opt-out stands ... will
+    not re-insert" -- because a DERIVED opt-out under a read-only ``check``
+    is not durable until a mutating verb records it (FR-88) -- and
+    ``test_the_opted_out_message_does_not_promise_a_durability_it_cannot_know``
+    pins that. The remedy went on making the flat unconditional promise
+    directly underneath it."""
+    remedy = REMEDIES[FindingType.OPTED_OUT]
+    assert "while this opt-out stands" in remedy
+    # Review finding: this pinned the one exact prefix an earlier revision
+    # happened to use ("Informational -- the tool will not re-insert"),
+    # which no plausible regression reproduces character-for-character.
+    # What must stay true is that the promise is never made UNHEDGED --
+    # every "will not re-insert" in the remedy is qualified. The
+    # bare `"the tool will not re-insert" in remedy` that stood above
+    # the hedged assertion was strictly implied by it and pinned
+    # nothing of its own (review finding).
+    assert "while this opt-out stands the tool will not re-insert" in remedy
+    assert remedy.count("will not re-insert") == 1
 
 
 def test_finding_type_is_exactly_the_12_members_the_epics_ac_names():

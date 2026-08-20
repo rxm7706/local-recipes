@@ -1051,3 +1051,12 @@ status: open
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-FU-8-5: Follow-up review still recommended for 8-5-marker-deletion-as-a-sanctioned-opt-out after the damping cap was spent
+
+- source_spec: `spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md`
+  summary: Follow-up review still recommended for 8-5-marker-deletion-as-a-sanctioned-opt-out after the damping cap was spent
+  evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260820-140537-4cd4; this entry preserves the lingering recommendation for a deliberate later review.
+  promoted: 2026-08-20 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-10` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-10`.
+  severity: low
+  status: open

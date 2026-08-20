@@ -24,8 +24,8 @@ development_status:
   10-1-the-host-renders-into-src-platform: done
   10-2-one-factory-sourced-environment: done
   10-3-one-image-both-engines: done
-  10-4-the-bcrypt-pin-stops-blocking-3-14: backlog
-  11-1-langflow-joins-as-a-pluggable-app: backlog
+  10-4-the-bcrypt-pin-stops-blocking-3-14: done
+  11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-as-a-pluggable-app: backlog
   11-3-async-work-never-blocks-django: backlog
   11-4-isolation-and-statelessness-proven: backlog

@@ -174,8 +174,57 @@ dbgpt-serve = ">=0.8.1"           # agentic engine 3/3 (db-gpt feedstock)
 django = ">=5.2,<6"               # the host web framework the engines mount into (Epic 11)
 fastapi = ">=0.141.1"             # Story 10.1's ASGI/FastAPI-integration seam; also arrives transitively via langflow-base's fastapi >=0.135.0,<1.0.0 -- explicit pin documents intent
 django-health-check = ">=4.5.0"   # Story 10.1's K8s liveness/readiness requirement (CAP-1); needs django>=5.2, matching this env's floor -- a DIFFERENT install from Story 10.1's pip-pinned django-health-check==3.24.0
-psycopg2 = ">=2.9.12"             # PostgreSQL client driver -- "infrastructure is exactly PostgreSQL + Redis" constraint
+psycopg2 = ">=2.9.12"             # PostgreSQL client driver -- "infrastructure is exactly PostgreSQL + Redis" constraint (Django's own sync driver)
 redis-py = ">=6.0.0"              # Redis client driver -- imports as `redis` (name gotcha); DO NOT relax this floor
+# Story 11.1: `langflow.main.create_app()` hard-imports these four at module load
+# (`langflow.api.router` -> `langflow.api.v1` -> `knowledge_bases`/`voice_mode`),
+# even though the langflow-suite recipe lists all four as `run_constraints` (soft,
+# optional) rather than `run` (hard) for the `langflow` package output -- verified
+# live: `import langflow.main` ModuleNotFoundErrors on each in turn until all four
+# are present. Pinned here to the SAME floors the recipe's own `run_constraints`
+# declare, so this env satisfies what the feedstock already documents as the
+# compatible range; not a recipe change (AD-9 -- consume, never fork/vendor).
+chromadb = ">=1.0.0,<2.0.0"        # langflow.api.v1.knowledge_bases hard-imports chromadb.errors
+langchain-chroma = ">=0.2.6,<0.3.0"  # lfx.base.knowledge_bases.backends.chroma hard-imports langchain_chroma.Chroma
+elevenlabs = ">=1.52.0,<2.0.0"     # langflow.api.v1.voice_mode hard-imports elevenlabs.ElevenLabs
+# Story 11.1: neither `psycopg` (v3) nor `asyncpg` is anywhere in the langflow-suite
+# recipe (not even as a run_constraint) -- upstream langflow-base's own wheel gates
+# a Postgres driver behind an unused `[postgresql]` pip extra
+# (`sqlalchemy[postgresql-psycopg]`) that the conda recipe never turns into a
+# dependency, so this env has NO Postgres driver for Langflow's own SQLAlchemy
+# engine without it. `LANGFLOW_DATABASE_URL` (AD-5 schema isolation) is a
+# `postgresql://` URL; Langflow's own `services/database/service.py` rewrites that
+# scheme to `postgresql+psycopg` itself, so plain `psycopg` (its conda-forge build
+# already bundles the compiled `psycopg_c` extension -- no separate
+# `psycopg-binary`/`psycopg-c` package exists on conda-forge, unlike PyPI) is the
+# whole fix; psycopg 3 supports SQLAlchemy's async engine natively.
+psycopg = ">=3.1"
+
+[feature.platform-dev]
+# --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
+# The per-user local-process dev baseline Epic 11's schema-isolation work needs:
+# `postgresql` + `pgvector` (the ONE PostgreSQL instance `langflow_schema`/
+# `dbgpt_schema`/`public` all share, AD-5/AD-1) + `redis-server` (the cache +
+# Celery-broker backend, AD-1), plus `kubernetes-helm`/`kubernetes-client` for
+# later chart work (Epic 12). Verified solving together from conda-forge
+# 2026-08-14 (ARCHITECTURE-SPINE AD-16, dry-run). Platforms mirror
+# `python-agent-platform`'s own list exactly, NOT the workspace default: no
+# win-64 -- `redis-server` has no native win-64 conda-forge build (AD-16's
+# native-Windows sub-posture note: WSL2 or a remote Redis stands in there).
+#
+# NOT a standalone environment -- the `platform-dev` ENVIRONMENT below composes
+# THIS feature onto `python-agent-platform` (langflow/dbgpt/django) so one
+# `pixi install -e platform-dev` gives a full local Tier-1 dev baseline: the
+# engines AND the PostgreSQL/Redis/k8s-CLI processes they need, all pixi-
+# provisioned, zero containers or managed services (AD-16's local-first rule).
+platforms = ["linux-64", "osx-arm64-min"]
+
+[feature.platform-dev.dependencies]
+postgresql = ">=17"           # per-user local PostgreSQL server process -- the ONE database public/langflow_schema/dbgpt_schema share
+pgvector = ">=0.8.1"          # PostgreSQL extension, same instance -- no separate vector-store service (AD-1)
+redis-server = ">=8.0"        # per-user local Redis server process -- cache + Celery broker (AD-1)
+kubernetes-helm = ">=3.16"    # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
+kubernetes-client = ">=1.31"  # kubectl, for the same chart/deploy work
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
@@ -486,6 +535,12 @@ pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge
 # + conda + pip + uv) out, so this env pins python 3.12 env-scoped only --
 # every other environment in this file stays on its own declared floor.
 python-agent-platform = { features = ["python-agent-platform"], no-default-feature = true }
+# platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
+# pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
+# dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
+# `pixi install -e platform-dev` alone provisions everything Epic 11's schema-
+# isolation work needs, no containers or managed services.
+platform-dev = { features = ["python-agent-platform", "platform-dev"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -540,7 +595,7 @@ description = "Batches every tracked planning-artifacts/deferred-work-ledger.md 
 cmd = "python -m pyforge.doctor.sources due-for-verification"
 
 [feature.local-recipes.tasks.bmad-method-version-drift-check]
-description = "Compares this pixi.toml's own declared bmad-method floor (max across every dependencies/feature.*.dependencies/target-scoped table) against _bmad/_config/manifest.yaml's installed version — informs only, always WARN, never gates. Reconcile by running the BMAD-METHOD installer to bring the installed core up to the declared floor, or by lowering the floor if the upgrade is not yet intended. Contract: spec-10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported."
+description = "Compares this pixi.toml's own declared bmad-method floor (max across every dependencies/feature.*.dependencies/target-scoped table) against _bmad/_config/manifest.yaml's installed version, and separately against the latest bmad-method release actually published on npm (a live, fail-open registry query) — informs only, always WARN or OK, never gates. Reconcile by running the BMAD-METHOD installer to bring the installed core up to date, or by lowering the declared floor if an upgrade is not yet intended. Contract: spec-10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported, spec-10-2-the-installed-core-is-compared-against-the-latest-upstream-release."
 cmd = "python -m pyforge.doctor.sources bmad-method-version-drift"
 
 [feature.local-recipes.tasks.story-status-check]

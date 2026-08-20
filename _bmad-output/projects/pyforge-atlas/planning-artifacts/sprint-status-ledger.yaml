@@ -37,7 +37,7 @@ development_status:
   15-2-identity-join-and-internal-flag: done
   15-3-kedro-pipeline-surfacing: done
   16-1-instance-deploy-definition: done
-  16-2-httpx-opener-and-rehearsal: backlog
+  16-2-httpx-opener-and-rehearsal: done
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done
   2-3-implement-incrementalparquetdataset-for-ttl-gating: done
