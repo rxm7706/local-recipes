@@ -71,14 +71,17 @@ def test_platform_api_health_unaffected():
 
 def test_langflow_prefixed_path_forwards_with_prefix_stripped():
     # Same redirect proof as the /api/v1/ case, but reached via the
-    # /langflow/ alias -- the Location header carries no /langflow segment,
-    # proving the scope was actually rewritten before Langflow's router saw
-    # it (a bare unstripped forward would 404 instead: Langflow has no
-    # `/langflow/...` route of its own).
+    # /langflow/ alias. `path`/`raw_path` are rewritten to drop /langflow
+    # before Langflow's router sees them (a bare unstripped forward would
+    # 404 instead: Langflow has no `/langflow/...` route of its own), while
+    # `root_path` is extended by /langflow so Langflow's own redirect
+    # (built from `scope["root_path"] + scope["path"]`, real Starlette
+    # `Mount` semantics) still carries the alias in its Location -- proving
+    # the scope rewrite mirrors `Mount`, not just a naive path substitution.
     response = _get("/langflow/api/v1/flows")
 
     assert response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-    assert response.headers["location"] == "http://testserver/api/v1/flows/"
+    assert response.headers["location"] == "http://testserver/langflow/api/v1/flows/"
 
 
 def test_unknown_non_api_path_falls_through_to_django():
@@ -129,3 +132,58 @@ def test_lifespan_keeps_langflow_services_live_across_requests():
     # down before this request ever landed, so both calls would fail.
     assert second.status_code == HTTPStatus.OK, second.text
     assert second.json()["status"] == "ok"
+
+
+def test_lifespan_startup_failure_rolls_back_already_started_subapp(monkeypatch):
+    """Closes a coverage gap named in `config.asgi._dispatch_lifespan`'s own
+    docstring: a startup failure on either sub-app is claimed to roll back
+    the other sub-app's already-completed startup via the `AsyncExitStack`
+    unwind, but nothing exercised that path. Proven here with two fake ASGI
+    apps (no real Langflow/Postgres/Redis needed for this one) standing in
+    for the platform stub and Langflow: the stub starts fine, Langflow's
+    startup fails, and the stub's shutdown must still fire before the
+    dispatcher reports `lifespan.startup.failed` to the real server.
+    """
+    import config.asgi as asgi_module
+
+    events: list[str] = []
+
+    async def fake_fastapi_app(scope, receive, send):
+        assert scope["type"] == "lifespan"
+        message = await receive()
+        assert message["type"] == "lifespan.startup"
+        events.append("fastapi.started")
+        await send({"type": "lifespan.startup.complete"})
+        message = await receive()
+        assert message["type"] == "lifespan.shutdown"
+        events.append("fastapi.stopped")
+        await send({"type": "lifespan.shutdown.complete"})
+
+    async def failing_langflow_app(scope, receive, send):
+        assert scope["type"] == "lifespan"
+        message = await receive()
+        assert message["type"] == "lifespan.startup"
+        events.append("langflow.startup.failed")
+        await send({"type": "lifespan.startup.failed", "message": "boom"})
+
+    monkeypatch.setattr(asgi_module, "fastapi_application", fake_fastapi_app)
+    monkeypatch.setattr(asgi_module, "langflow_application", failing_langflow_app)
+
+    async def _run():
+        receive_queue: asyncio.Queue = asyncio.Queue()
+        sent: list[dict] = []
+
+        async def receive():
+            return await receive_queue.get()
+
+        async def send(message):
+            sent.append(message)
+
+        await receive_queue.put({"type": "lifespan.startup"})
+        await asgi_module._dispatch_lifespan(receive, send)
+        return sent
+
+    sent = asyncio.run(_run())
+
+    assert events == ["fastapi.started", "langflow.startup.failed", "fastapi.stopped"]
+    assert sent[-1]["type"] == "lifespan.startup.failed"

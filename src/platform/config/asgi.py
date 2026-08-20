@@ -60,19 +60,26 @@ def _is_langflow_prefixed_path(path: str) -> bool:
 
 
 def _strip_langflow_prefix(scope: dict) -> dict:
-    """Rewrite `/langflow/...` -> `/...`, mirroring Starlette `Mount` semantics.
-
-    Langflow has no native `/langflow` route of its own (unlike `/api/v1/` and
-    bare `/health`), so this alias needs an actual scope rewrite rather than
-    an unchanged forward -- a plain dict copy is enough since ASGI scopes are
-    just dicts and Langflow's app never sees the original `/langflow` prefix.
+    """Route `/langflow/...` to Langflow as `/...`, mirroring real Starlette
+    `Mount` semantics -- verified against this env's own installed
+    `starlette.routing.Mount.matches`/`starlette._utils.get_route_path`, not
+    assumed. A real `Mount` does NOT rewrite `scope["path"]`/`raw_path"]` at
+    all: it only extends `root_path` (`root_path + matched_path`), and every
+    internal route-matching call computes the route-relative path via
+    `get_route_path(scope)` (`path` minus the leading `root_path`) instead of
+    reading `path` directly. Leaving `path`/`raw_path` untouched is what
+    keeps `/langflow` in a redirect Location: Starlette's own trailing-slash
+    redirect builds its URL from the copied scope's (unstripped) `path` via
+    `starlette.datastructures.URL(scope=...)`, which never consults
+    `root_path` -- so physically slicing `/langflow` off `path` (an earlier
+    version of this function did) makes routing work but silently loses the
+    prefix from any redirect Langflow's own router issues, proven by this
+    story's own test (`test_langflow_prefixed_path_forwards_with_prefix_
+    stripped`): the Location carried no `/langflow` segment until this
+    function stopped touching `path`.
     """
     new_scope = dict(scope)
-    prefix = "/langflow"
-    new_scope["path"] = scope["path"][len(prefix) :] or "/"
-    raw_path = scope.get("raw_path")
-    if raw_path is not None:
-        new_scope["raw_path"] = raw_path[len(prefix.encode()) :] or b"/"
+    new_scope["root_path"] = scope.get("root_path", "") + "/langflow"
     return new_scope
 
 
