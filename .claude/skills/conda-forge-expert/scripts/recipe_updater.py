@@ -141,7 +141,7 @@ def update_recipe(recipe_path: Path, dry_run: bool = False) -> Dict[str, Any]:
         # same way github_updater.py does (DW-2-10-2) — a bare "python" PATH lookup
         # fails in an environment that only has "python3" on PATH.
         import subprocess
-        python = os.environ.get("CONDA_PYTHON_EXE") or sys.executable
+        python = sys.executable or os.environ.get("CONDA_PYTHON_EXE") or "python"
         cmd = [python, str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         

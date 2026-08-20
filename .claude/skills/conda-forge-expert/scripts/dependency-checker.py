@@ -193,7 +193,15 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
     without that, gating on `*_BASE_URL`/pixi alone would silently withhold
     credentials from the operator's own `--channel`/`CONDA_CHANNEL_URL`/
     enterprise-config Artifactory channel, none of which is a `*_BASE_URL`.
+
+    The remembered set is REPLACED, not accumulated: it is the authorization
+    scope for the channels resolved by THIS call. Accumulating leaked scope
+    across calls in a long-lived process (the MCP server calls this once per
+    `check_dependencies` request), so a host named by one request's
+    `--channel` stayed credential-authorized for every later request.
     """
+    _EXPLICIT_CHANNEL_HOSTS.clear()
+
     def _explicit(channels: List[str]) -> List[str]:
         for c in channels:
             host = _host_of(c)
@@ -254,6 +262,9 @@ def _is_configured_enterprise_host(url: str) -> bool:
     channel hosts still gate correctly on their own — deliberately NOT the
     former "yes, unconditionally", which reinstated the very leak this gate
     exists to close for anyone in that state.
+
+    This answers only "may this host receive A credential". Which KIND it may
+    receive is a separate question — see `_is_public_default_host`.
     """
     host = _host_of(url)
     if not host:
@@ -267,6 +278,42 @@ def _is_configured_enterprise_host(url: str) -> bool:
     return host in _configured_enterprise_hosts()
 
 
+# Public hosts this tool may legitimately be pointed at by name. Used ONLY to
+# refuse the JFrog-family credentials for them; a channel token (CONDA_TOKEN)
+# is still sent, because a private anaconda.org org channel is exactly what it
+# is for. Derived from `_http`'s own `_DEFAULT_*` globals when importable, so a
+# newly-added resolver's fallback is covered the moment it is declared; the
+# literal set is the offline / no-`_http` floor, not the primary source.
+_PUBLIC_CHANNEL_HOST_FLOOR: frozenset[str] = frozenset({
+    "conda.anaconda.org",
+    "repo.prefix.dev",
+    "repo.anaconda.com",
+})
+
+
+def _is_public_default_host(url: str) -> bool:
+    """Is `url`'s host a well-known PUBLIC package host?
+
+    `_is_configured_enterprise_host` deliberately honours the channel the
+    operator named, and that channel is often public — `--channel
+    https://conda.anaconda.org/myprivateorg` is a routine, supported setup.
+    Host-level authorization alone therefore sent the JFrog API key to
+    anaconda.org (the exact cross-resolver leak the Rule-2 retro exists to
+    close) AND, because the JFrog branch is checked first, shadowed the
+    `CONDA_TOKEN` that channel actually needs — a silent 401 on the one
+    channel the operator configured. Splitting the question by credential
+    KIND fixes both at once.
+    """
+    host = _host_of(url)
+    if not host:
+        return False
+    try:
+        from _http import _public_default_hosts  # type: ignore[import-not-found]
+    except ImportError:
+        return host in _PUBLIC_CHANNEL_HOST_FLOOR
+    return host in _public_default_hosts() or host in _PUBLIC_CHANNEL_HOST_FLOOR
+
+
 def _auth_headers(url: str) -> Dict[str, str]:
     """Build authorization headers for the URL from environment variables.
 
@@ -278,8 +325,23 @@ def _auth_headers(url: str) -> Dict[str, str]:
     unconditionally to every channel URL whenever the env var was merely
     set — the identical cross-resolver leak class `_http.py` closed, present
     here too because this function never delegated to `_http.py`.
+
+    Gated on TWO questions, not one. "May this host receive a credential at
+    all?" is `_is_configured_enterprise_host`. "May it receive a JFrog-family
+    one?" additionally requires that it not be a public package host — see
+    `_is_public_default_host`. `CONDA_TOKEN` is an anaconda.org channel token,
+    not a JFrog one, so it is the only credential a named public channel gets.
     """
     if not _is_configured_enterprise_host(url):
+        return {}
+
+    # A public host the operator named as a channel gets its channel token and
+    # nothing else. The JFrog family is skipped entirely rather than merely
+    # deprioritized: attaching it here is the leak, not a fallback order.
+    if _is_public_default_host(url):
+        conda_token = os.environ.get("CONDA_TOKEN")
+        if conda_token:
+            return {"Authorization": f"Bearer {conda_token}"}
         return {}
 
     # JFrog native API key (preferred over Bearer on Artifactory)

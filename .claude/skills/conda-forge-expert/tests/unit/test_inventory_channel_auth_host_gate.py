@@ -106,3 +106,40 @@ class TestInventoryChannelFallbackAuthHostGate:
         result = mod._make_request("https://conda.anaconda.org/conda-forge/linux-64/repodata.json")
         assert result == "sentinel-request"
         assert called["url"] == "https://conda.anaconda.org/conda-forge/linux-64/repodata.json"
+
+
+class TestFallbackExcludesPublicDefaultHosts:
+    """Story 5.5, third review pass.
+
+    `_http._configured_enterprise_hosts()` subtracts its own public fallback
+    hosts, so a merely redundant `CONDA_FORGE_BASE_URL=https://conda.anaconda.org/conda-forge`
+    cannot mark a public host "configured". This fallback omitted that
+    subtraction, making it WIDER than `_http` in the one direction that
+    leaks, while its docstring claimed it was deliberately narrower.
+    """
+
+    def test_redundant_public_base_url_does_not_authorize_the_public_host(
+        self, load_module, monkeypatch
+    ):
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv(
+            "CONDA_FORGE_BASE_URL", "https://conda.anaconda.org/conda-forge"
+        )
+        mod = load_module("inventory_channel.py")
+        monkeypatch.setattr(mod, "_HTTP_AVAILABLE", False)
+        request = mod._make_request(
+            "https://conda.anaconda.org/conda-forge/linux-64/repodata.json"
+        )
+        assert "X-jfrog-art-api" not in request.headers
+
+    def test_public_hosts_are_subtracted_from_the_allowlist(
+        self, load_module, monkeypatch
+    ):
+        monkeypatch.setenv("PYPI_BASE_URL", "https://pypi.org/simple")
+        monkeypatch.setenv(
+            "CONDA_FORGE_BASE_URL", "https://mycompany.jfrog.io/api/conda/cf"
+        )
+        mod = load_module("inventory_channel.py")
+        hosts = mod._fallback_configured_enterprise_hosts()
+        assert "pypi.org" not in hosts
+        assert "mycompany.jfrog.io" in hosts

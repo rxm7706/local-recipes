@@ -159,8 +159,15 @@ def netrc_credentials(url: str) -> tuple[str, str] | None:
 
     Respects the $NETRC environment variable for non-default netrc file path.
     Returns None if no entry is found or netrc cannot be read.
+
+    Uses `_host_of` for the same reason the allowlist does: the old
+    `netloc.split(":")[0]` returned the USERNAME for a userinfo-bearing URL
+    (`https://svc:tok@artifactory.corp/...` -> `svc`), which matches no
+    `machine` line, so `netrc.authenticators` fell through to any `default`
+    entry — silently sending an unrelated credential to the mirror the
+    operator had a correct entry for.
     """
-    host = urlparse(url).netloc.split(":")[0]  # strip port number, keep hostname
+    host = _host_of(url)
     if not host:
         return None
 
@@ -376,7 +383,26 @@ def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
     JFrog gate (never merely "unconfigured"), so a `*_BASE_URL` that happens
     to resolve to one of those two hosts can never shadow GITHUB_TOKEN with
     a JFrog header — GitHub's own dedicated branch (step 3) always wins
-    there. `.netrc` auth (step 4) was already host-scoped and is unaffected.
+    there.
+
+    `.netrc` auth (step 4) is unchanged in itself but is newly REACHABLE
+    while a JFrog credential is set: before the gate, step 1 matched
+    unconditionally, so step 4 never ran in that state. An operator with both
+    a JFrog key and a `default` entry in `.netrc` therefore now sends those
+    Basic credentials to unconfigured hosts where they previously sent the
+    JFrog header. That is `default`'s documented netrc semantics ("use these
+    for any machine not named above") and so is the operator's own declared
+    intent, not a leak this function invents — but it IS a behaviour change,
+    and a `default` entry is the wrong tool for anyone who meant the
+    credential for one host. Name the machine explicitly.
+
+    Host gating is deliberately NOT applied to self-hosted forges: a GHES /
+    self-hosted GitLab host named by `GITHUB_API_BASE_URL` /
+    `GITLAB_API_BASE_URL` enters the allowlist and takes the JFrog branch,
+    so `GITHUB_TOKEN` is not attached to it. That predates this gate (step 1
+    matched unconditionally before) and is tracked separately rather than
+    changed here, because the fix needs `resolve_github_api_urls`'s real call
+    sites checked first.
     """
     if skip_auth:
         return {}

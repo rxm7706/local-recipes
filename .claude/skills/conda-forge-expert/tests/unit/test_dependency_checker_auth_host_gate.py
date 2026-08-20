@@ -161,3 +161,86 @@ class TestDependencyCheckerAuthHostGate:
         for _ in range(50):
             checker._auth_headers("https://conda.anaconda.org/conda-forge/repodata.json")
         assert len(sys.path) == before
+
+
+class TestCredentialKindIsGatedSeparatelyFromHost:
+    """Story 5.5, third review pass.
+
+    `_EXPLICIT_CHANNEL_HOSTS` deliberately authorizes the channel the operator
+    NAMED, and that channel is routinely public — `--channel
+    https://conda.anaconda.org/myprivateorg` is a supported setup. Answering
+    only "is this host authorized?" therefore sent the JFrog API key to
+    anaconda.org (the leak this retro exists to close) and, because the JFrog
+    branch is checked first, shadowed the `CONDA_TOKEN` that channel needs.
+    """
+
+    def test_jfrog_key_is_never_sent_to_an_explicitly_named_public_channel(
+        self, load_module, monkeypatch
+    ):
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv(
+            "CONDA_CHANNEL_URL", "https://conda.anaconda.org/myprivateorg"
+        )
+        checker = load_module("dependency-checker.py")
+        checker.get_configured_channels()
+        headers = checker._auth_headers(
+            "https://conda.anaconda.org/myprivateorg/linux-64/repodata.json"
+        )
+        assert "X-JFrog-Art-Api" not in headers
+
+    def test_conda_token_still_reaches_the_named_public_channel(
+        self, load_module, monkeypatch
+    ):
+        """The previous pass's fix — CONDA_TOKEN reaching the operator's own
+        org channel — must survive the credential-kind split. It is an
+        anaconda.org channel token; that host is exactly its destination."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv("CONDA_TOKEN", "conda-org-token")
+        monkeypatch.setenv(
+            "CONDA_CHANNEL_URL", "https://conda.anaconda.org/myprivateorg"
+        )
+        checker = load_module("dependency-checker.py")
+        checker.get_configured_channels()
+        headers = checker._auth_headers(
+            "https://conda.anaconda.org/myprivateorg/linux-64/repodata.json"
+        )
+        assert headers.get("Authorization") == "Bearer conda-org-token"
+        assert "X-JFrog-Art-Api" not in headers
+
+    def test_enterprise_host_still_gets_the_jfrog_key_first(
+        self, load_module, monkeypatch
+    ):
+        """The split must not disturb the enterprise case: a non-public
+        configured host keeps the original credential priority."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv("CONDA_TOKEN", "conda-org-token")
+        monkeypatch.setenv(
+            "CONDA_CHANNEL_URL", "https://mycompany.jfrog.io/api/conda/cf"
+        )
+        checker = load_module("dependency-checker.py")
+        checker.get_configured_channels()
+        headers = checker._auth_headers(
+            "https://mycompany.jfrog.io/api/conda/cf/linux-64/repodata.json"
+        )
+        assert headers.get("X-JFrog-Art-Api") == "secret-key"
+
+    def test_explicit_channel_authorization_does_not_accumulate_across_calls(
+        self, load_module, monkeypatch
+    ):
+        """The remembered set is the authorization scope for the channels
+        resolved by THIS call. Accumulating leaked scope across calls in a
+        long-lived process: a host named by one `check_dependencies` request's
+        `--channel` stayed credential-authorized for every later request."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        checker = load_module("dependency-checker.py")
+
+        checker.get_configured_channels("https://first.corp.example/api/conda/cf")
+        assert checker._auth_headers(
+            "https://first.corp.example/api/conda/cf/repodata.json"
+        ).get("X-JFrog-Art-Api") == "secret-key"
+
+        checker.get_configured_channels("https://second.corp.example/api/conda/cf")
+        assert checker._EXPLICIT_CHANNEL_HOSTS == {"second.corp.example"}
+        assert checker._auth_headers(
+            "https://first.corp.example/api/conda/cf/repodata.json"
+        ) == {}

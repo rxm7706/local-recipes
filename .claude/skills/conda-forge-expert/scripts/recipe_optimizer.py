@@ -47,7 +47,12 @@ from pathlib import Path
 from typing import Dict, List, NamedTuple
 
 # Sibling helper — canonical path resolution shared across scripts/*.py.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Guarded: an unconditional insert appends a duplicate every time the module is
+# (re-)imported in a long-lived process, front-loading this directory ahead of
+# site-packages once per import. Same fix as dependency-checker.py's.
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
 from _paths import get_repo_root  # noqa: E402
 
 try:

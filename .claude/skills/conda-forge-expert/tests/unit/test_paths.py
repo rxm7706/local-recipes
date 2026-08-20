@@ -29,11 +29,13 @@ class TestPaths:
     def test_get_repo_root_returns_none_rather_than_raising_on_resolution_failure(
         self, load_module, monkeypatch
     ):
-        """Regression guard: get_repo_root() used to compute `_REPO_ROOT` at
-        MODULE IMPORT TIME with no guard, so an IndexError/OSError there took
-        down every script importing this module. It's now a per-call,
-        try/except-guarded computation returning None on failure — verified
-        here by making the underlying resolve() raise directly."""
+        """Contract guard: resolution is per-call and try/except-guarded, so a
+        broken symlink chain returns None instead of raising. It must never go
+        back to a module-scope `_REPO_ROOT = Path(__file__).resolve()...`,
+        where the same failure would take down every script that merely
+        imports this module (that shape was caught in review and never
+        committed — do not go looking for it in the history). Verified here by
+        making the underlying resolve() raise directly."""
         mod = load_module("_paths.py")
 
         class _BoomPath:

@@ -13,9 +13,12 @@ produced a stray directory someone gitignored rather than root-caused).
 invocation path can land one directory off from the real location.
 
 New scripts MUST import ``get_data_dir()`` / ``get_repo_root()`` from here
-rather than hand-rolling a parent-walk. Existing correct-but-duplicated
-copies are not mass-migrated by this module's introduction — see
-CHANGELOG.md's Rule-2 retro entry for the migration note.
+rather than hand-rolling a parent-walk. The existing copies are not
+mass-migrated by this module's introduction — see CHANGELOG.md's Rule-2 retro
+entry for the migration note. They are not merely duplicated, either: ~35
+files under ``scripts/`` still carry an un-``.resolve()``d parent-walk, so a
+large share of them is wrong by this module's own constraint. Migrate one
+whenever you are already editing its file.
 """
 from __future__ import annotations
 

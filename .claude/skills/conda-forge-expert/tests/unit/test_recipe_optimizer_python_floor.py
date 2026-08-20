@@ -36,11 +36,20 @@ class TestReadCondaForgePythonFloor:
     def test_falls_back_to_default_when_pinning_file_absent(
         self, load_module, tmp_path, monkeypatch
     ):
+        """The real pinning file's first `python_min` entry happens to equal
+        `_DEFAULT_CONDA_FORGE_PYTHON_FLOOR`, so asserting against the default
+        alone cannot distinguish "fell back" from "read the real file" — the
+        test would pass even if the monkeypatch silently failed to apply.
+        Re-point the default at a sentinel so only the fallback path can
+        produce it."""
         paths = load_module("_paths.py")
         monkeypatch.setattr(paths, "get_repo_root", lambda: tmp_path)
         optimizer = load_module("recipe_optimizer.py")
+        monkeypatch.setattr(
+            optimizer, "_DEFAULT_CONDA_FORGE_PYTHON_FLOOR", "0.0-sentinel"
+        )
         result = optimizer._read_conda_forge_python_floor()
-        assert result == optimizer._DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+        assert result == "0.0-sentinel"
 
     def test_falls_back_to_default_when_repo_root_unresolvable(
         self, load_module, monkeypatch
@@ -53,5 +62,11 @@ class TestReadCondaForgePythonFloor:
         paths = load_module("_paths.py")
         monkeypatch.setattr(paths, "get_repo_root", lambda: None)
         optimizer = load_module("recipe_optimizer.py")
+        # Sentinel for the same reason as the test above: the real file's
+        # value equals the default, so a plain default-comparison could not
+        # fail.
+        monkeypatch.setattr(
+            optimizer, "_DEFAULT_CONDA_FORGE_PYTHON_FLOOR", "0.0-sentinel"
+        )
         result = optimizer._read_conda_forge_python_floor()
-        assert result == optimizer._DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+        assert result == "0.0-sentinel"

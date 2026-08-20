@@ -380,14 +380,67 @@ class TestJfrogHostGate:
         set for a DIFFERENT mirror, would have the JFrog branch win the
         if/elif chain for github.com requests, sending the JFrog credential
         to GitHub and silencing GITHUB_TOKEN entirely. github.com/
-        api.github.com must always take the dedicated GitHub branch."""
+        api.github.com must always take the dedicated GitHub branch.
+
+        The env-var route into the allowlist cannot express this premise:
+        `_public_default_hosts()` already contains github.com/api.github.com
+        and is subtracted from both halves, so `SOME_MIRROR_BASE_URL=
+        https://github.com/...` yields an EMPTY allowlist and the assertions
+        below would hold with or without the `not is_github_host` clause they
+        exist to guard. Force the host into the allowlist directly instead, so
+        removing that clause actually reds this test."""
         monkeypatch.setenv("JFROG_API_KEY", "unrelated-jfrog-secret")
         monkeypatch.setenv("GITHUB_TOKEN", "ghp_dummy")
-        # A *_BASE_URL that (unusually, but not impossibly) resolves to a
-        # literal github.com host, putting it in _configured_enterprise_hosts().
-        monkeypatch.setenv("SOME_MIRROR_BASE_URL", "https://github.com/some/mirror")
+        monkeypatch.setattr(
+            _http,
+            "_configured_enterprise_hosts",
+            lambda: {"api.github.com", "github.com"},
+        )
 
         headers = _http.auth_headers_for("https://api.github.com/repos/foo/bar")
 
         assert "X-JFrog-Art-Api" not in headers
         assert headers.get("Authorization") == "Bearer ghp_dummy"
+
+
+class TestNetrcHostDerivation:
+    """Story 5.5, third review pass.
+
+    `netrc_credentials` was the third host-parse in this file and the one the
+    previous pass did not migrate — still `urlparse().netloc.split(":")[0]`,
+    the exact form the retro's own new constraint bans.
+    """
+
+    def test_userinfo_bearing_url_matches_the_real_machine_entry(
+        self, monkeypatch, tmp_path
+    ):
+        """`https://svc:tok@artifactory.corp/...` is a routine Artifactory
+        form. The old parse yielded `svc` — the USERNAME — which matches no
+        `machine` line, so `netrc.authenticators` fell through to `default`
+        and sent an unrelated credential to the mirror the operator had a
+        correct entry for."""
+        netrc_path = tmp_path / ".netrc"
+        netrc_path.write_text(
+            "machine artifactory.corp login REALUSER password REALPASS\n"
+            "default login DEFAULTUSER password DEFAULTPASS\n"
+        )
+        monkeypatch.setenv("NETRC", str(netrc_path))
+
+        creds = _http.netrc_credentials(
+            "https://svc:tok@artifactory.corp/api/conda/cf/repodata.json"
+        )
+
+        assert creds == ("REALUSER", "REALPASS")
+
+    def test_port_is_stripped_when_matching_a_machine_entry(
+        self, monkeypatch, tmp_path
+    ):
+        netrc_path = tmp_path / ".netrc"
+        netrc_path.write_text(
+            "machine artifactory.corp login REALUSER password REALPASS\n"
+        )
+        monkeypatch.setenv("NETRC", str(netrc_path))
+
+        creds = _http.netrc_credentials("https://artifactory.corp:8081/api/conda/cf")
+
+        assert creds == ("REALUSER", "REALPASS")

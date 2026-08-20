@@ -150,13 +150,31 @@ def _fallback_host_of(url: str) -> str:
         return ""
 
 
+# Public package hosts that can never be an enterprise mirror, however an
+# operator's `*_BASE_URL` is spelled. The no-`_http` floor for what
+# `_http._public_default_hosts()` derives from its own `_DEFAULT_*` globals —
+# kept short and literal on purpose: this path exists precisely because that
+# module could not be imported.
+_PUBLIC_HOST_FLOOR: frozenset[str] = frozenset({
+    "conda.anaconda.org",
+    "repo.anaconda.com",
+    "repo.prefix.dev",
+    "pypi.org",
+    "files.pythonhosted.org",
+    "registry.npmjs.org",
+    "github.com",
+    "api.github.com",
+    "raw.githubusercontent.com",
+})
+
+
 def _fallback_configured_enterprise_hosts() -> set[str]:
     """Env-var-derived host allowlist for `_make_request`'s no-`_http`
     fallback. A minimal, local re-derivation (not an `_http` import — that
     path is already unavailable here by construction) of the `*_BASE_URL`
     half of `_http._configured_enterprise_hosts()`.
 
-    **Deliberately narrower than `_http`'s:** it does NOT read pixi config,
+    Narrower than `_http`'s in one direction: it does NOT read pixi config,
     which `_http._pixi_configured_hosts()` does. An operator on the
     pixi-only enterprise setup that `docs/reference/pixi-config-jfrog.example.toml`
     documents therefore gets no credential from THIS path. That is the safe
@@ -164,6 +182,16 @@ def _fallback_configured_enterprise_hosts() -> set[str]:
     `_http` — a sibling file in this same directory — cannot be imported at
     all; re-deriving pixi's whole config chain here would be a third
     standalone copy of logic the retro exists to consolidate.
+
+    It must NOT be wider in the other direction. `_http` subtracts its own
+    public fallback hosts (`_public_default_hosts`) from the env-var half, so
+    a merely redundant `CONDA_FORGE_BASE_URL=https://conda.anaconda.org/conda-forge`
+    cannot mark a public host "configured". Omitting that subtraction here
+    re-opened exactly that leak on this path — verified: the same env that
+    made `_http.auth_headers_for` return `{}` for anaconda.org made this
+    fallback attach `X-JFrog-Art-Api` to it. `_PUBLIC_HOST_FLOOR` is the
+    local stand-in for `_DEFAULT_*`-derived hosts, which are unavailable by
+    construction on this path.
     """
     hosts: set[str] = set()
     for key, value in os.environ.items():
@@ -172,7 +200,7 @@ def _fallback_configured_enterprise_hosts() -> set[str]:
         host = _fallback_host_of(value)
         if host:
             hosts.add(host)
-    return hosts
+    return hosts - _PUBLIC_HOST_FLOOR
 
 
 def fetch_source(url_or_path: str, no_cache: bool, cache_ttl: int) -> tuple[bytes | None, str | None]:
