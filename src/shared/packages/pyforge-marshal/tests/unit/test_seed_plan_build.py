@@ -13,6 +13,14 @@ file: the verifier lives beside the fingerprint's sole producer (P-07 --
 see its own docstring), so its tests live beside the producer's tests too,
 driven against a real ``tmp_path`` git repo through the same ``_git``/
 ``_init_git_repo`` helpers.
+
+Story 8.5 appends the ``opted_out`` section: opt-out-caused suppression
+(for ``ABSENT`` and ``PRESENT_DIVERGENT`` alike, with no
+``artifact_hashes`` entry either), the partial opt-out that still plans its
+one remaining region, an unparseable file that is never "zero pending", the
+entry owed NOTHING that must keep the ``Action`` and hash it produced
+before this story, and the default-argument case (which pins the default
+itself -- see its own docstring for what it cannot prove).
 """
 
 from __future__ import annotations
@@ -49,6 +57,7 @@ from pyforge.marshal.seed.regions.markers import (
     render_begin,
     render_end,
 )
+from pyforge.marshal.seed.state import SeedState, clear_opt_out, opt_out_key
 
 _VERSION = ModelVersion.parse("1.0.0")
 
@@ -796,3 +805,542 @@ def test_fingerprint_drift_reports_an_id_hashed_twice_in_the_fingerprint(tmp_pat
     assert any(
         d.startswith(f"{first[0]}:") and "hashed more than once" in d for d in drift
     ), drift
+
+
+# --- opted_out (Story 8.5) ---------------------------------------------------
+#
+# `opted_out` carries already-read `state.opt_out_key` strings; the verb
+# layer passes `frozenset(state.opted_out)` through. Every case below spells
+# its keys with the real `opt_out_key`, never a hand-typed "id#region"
+# literal, so a change to the wire form cannot leave these tests asserting a
+# spelling nothing produces.
+
+
+def test_an_absent_hybrid_whose_only_region_is_opted_out_produces_no_action(tmp_path):
+    """FR-112's whole point: an opted-out region is never re-inserted, so
+    the entry has nothing left to do and never reaches the plan at all."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
+
+
+def test_a_present_divergent_hybrid_whose_missing_region_is_opted_out_produces_no_action(
+    tmp_path,
+):
+    """The AC's plan-suppression row: the markers were deleted from a file
+    that is otherwise present, which classifies `present-divergent` -- and
+    with the region opted out there is nothing to insert."""
+    (tmp_path / "CLAUDE.md").write_text(_doc("intro", "outro"), encoding="utf-8", newline="")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    assert inventory.classifications[0].state is ArtifactState.PRESENT_DIVERGENT
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
+
+
+def test_a_partially_opted_out_hybrid_keeps_one_action_naming_only_the_pending_region(
+    tmp_path,
+):
+    manifest = _manifest(
+        _hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)})
+    )
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    (action,) = plan.actions
+    assert action.current_state == ArtifactState.ABSENT
+    assert action.chosen_anchor == (("model-badge", "<top>"),)
+    assert [pair[0] for pair in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+
+def test_an_opt_out_naming_another_artifacts_region_suppresses_nothing(tmp_path):
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(
+        manifest, inventory, opted_out=frozenset({opt_out_key("other", "tiers")})
+    )
+
+    (action,) = plan.actions
+    assert action.chosen_anchor == (("tiers", None),)
+
+
+def test_an_unparseable_hybrid_file_is_never_zero_pending_and_keeps_its_action(tmp_path):
+    """A structural defect must not retire an entry: "cannot parse" degrades
+    `chosen_anchor` to `()`, but the `Action` (and its hash) stay, so a
+    broken file is still reported rather than silently dropped."""
+    (tmp_path / "CLAUDE.md").write_text(
+        _doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro"),
+        encoding="utf-8",
+        newline="",
+    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    (action,) = plan.actions
+    assert action.current_state == ArtifactState.PRESENT_DIVERGENT
+    assert action.chosen_anchor == ()
+    assert [pair[0] for pair in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+
+def test_a_whole_file_entry_is_never_suppressed_by_an_empty_pending_set(tmp_path):
+    """Suppression is a HYBRID rule. A whole-file artifact declares no
+    regions at all, so "nothing pending" must never be read as "nothing to
+    do" for it."""
+    manifest = _manifest(_whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("a", "tiers")}))
+
+    (action,) = plan.actions
+    assert action.artifact_id == "a"
+    assert action.chosen_anchor == ()
+
+
+def test_a_manifest_id_the_opt_out_grammar_cannot_spell_still_plans(tmp_path):
+    """`ManifestEntry` requires only a non-blank `id`, so an id carrying an
+    interior space is legal while `state.opted_out`'s grammar cannot spell
+    it. Such an entry must plan exactly as it did before this story -- never
+    raise the `ValueError` `opt_out_key` reserves for a caller minting a
+    key.
+
+    The key set here holds an admissible key for an unrelated artifact. It
+    used to hold `"has a space#tiers"` -- the very key the grammar refuses
+    -- which made the test also assert that `build_plan` ACCEPTS an
+    inadmissible element, the silent-suppression failure the element guard
+    was later tightened to refuse (review finding). The property under test
+    is about the ENTRY's id, not the set's contents: `_is_opted_out` must
+    answer "not opted out" for a pair it cannot spell rather than raise,
+    and it still does."""
+    manifest = _manifest(_hybrid("has a space", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({"unrelated#tiers"}))
+
+    (action,) = plan.actions
+    assert action.artifact_id == "has a space"
+    assert action.chosen_anchor == (("tiers", None),)
+
+
+def _seed_state(*, opted_out: tuple[str, ...]) -> SeedState:
+    """A minimal schema-valid ``SeedState`` carrying only the field the verb
+    layer projects into ``build_plan`` -- built here rather than imported so
+    the reinstate test below runs against the REAL ``clear_opt_out``, not a
+    hand-edited tuple that could diverge from what it produces."""
+    return SeedState(
+        model_version=_VERSION,
+        seed_model_version="0.1.0",
+        adopted_at="2026-08-20T09:15:00Z",
+        last_update="2026-08-20T09:15:00Z",
+        mode="adopt",
+        agents=("claude-code",),
+        managed=(),
+        skips=(),
+        legacy=(),
+        migrations_applied=(),
+        opted_out=opted_out,
+    )
+
+
+def test_a_cleared_opt_out_makes_the_region_planned_for_insertion_again(tmp_path):
+    """The AC's reinstate row, through the exact projection the verb layer
+    performs (`frozenset(state.opted_out)`): the region produces no action
+    while the opt-out stands, and is planned again the moment
+    `clear_opt_out` withdraws it -- the `--reinstate` path S-10.6 calls."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    opted = _seed_state(opted_out=(opt_out_key("h", "tiers"),))
+
+    suppressed = build_plan(manifest, inventory, opted_out=frozenset(opted.opted_out))
+    assert suppressed.actions == ()
+
+    reinstated = clear_opt_out(opted, "h", "tiers")
+    plan = build_plan(manifest, inventory, opted_out=frozenset(reinstated.opted_out))
+
+    (action,) = plan.actions
+    assert action.current_state == ArtifactState.ABSENT
+    assert action.chosen_anchor == (("tiers", None),)
+
+
+def test_opted_out_is_keyword_only(tmp_path):
+    """Positional would let a caller pass it where a future third parameter
+    belongs, silently."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    with pytest.raises(TypeError):
+        build_plan(manifest, inventory, frozenset())  # type: ignore[misc]
+
+
+def test_a_bare_str_opted_out_is_refused_rather_than_read_as_substrings(tmp_path):
+    """A type hint is not runtime enforcement, and this failure is SILENT
+    rather than loud: `in` against a `str` is substring containment, so one
+    key passed as a string instead of a one-element set makes every key that
+    is a substring of it read as opted out -- dropping entries from
+    `actions` AND from `artifact_hashes`, with no error at any layer. The
+    same defensive re-check `opt_out_key_or_none` makes on its own two
+    halves, for the same reason."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    with pytest.raises(ValueError, match="must be a collection of opt_out_key strings"):
+        build_plan(manifest, inventory, opted_out="h#tiers")  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="must be a collection of opt_out_key strings"):
+        build_plan(manifest, inventory, opted_out=b"h#tiers")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "container",
+    [
+        pytest.param(("h#tiers",), id="tuple-state-opted-outs-own-type"),
+        pytest.param(["h#tiers"], id="list"),
+        pytest.param({"h#tiers": None}.keys(), id="dict-keys"),
+    ],
+)
+def test_any_collection_of_key_strings_suppresses_the_same_way(tmp_path, container):
+    """Review finding, confirmed by execution: the guard used to demand
+    `set`/`frozenset` and rejected `tuple`, `list` and `dict.keys()` --
+    including `SeedState.opted_out`'s OWN declared type, so the natural
+    `build_plan(m, i, opted_out=state.opted_out)` hard-failed -- citing
+    substring containment as the reason, which is false for all three:
+    `in` is exact membership there. Only `str`/`bytes` have the substring
+    hazard, and only they are refused."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=container)  # type: ignore[arg-type]
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
+
+
+def test_a_non_str_element_is_refused_rather_than_silently_matching_nothing(tmp_path):
+    """The other half of the same review finding: the right container
+    holding the wrong thing. A `frozenset` of `(id, region)` PAIRS passed
+    the old container check, matched no rendered key, and silently
+    suppressed nothing -- exactly the silent failure the guard exists to
+    turn loud."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    with pytest.raises(ValueError, match="must hold rendered opt_out_key strings"):
+        build_plan(
+            manifest,
+            inventory,
+            opted_out=frozenset({("h", "tiers")}),  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        pytest.param("h#Tiers", id="wrong-case-region-half"),
+        pytest.param("h tiers", id="space-instead-of-separator"),
+        pytest.param("h", id="no-separator-at-all"),
+        pytest.param("h#tiers#tiers", id="two-separators"),
+    ],
+)
+def test_a_key_string_the_grammar_does_not_admit_is_refused(tmp_path, key):
+    """Review finding, confirmed by execution: the element guard tested only
+    `isinstance(key, str)`, so any malformed key string passed it, matched
+    nothing, and suppressed nothing -- the identical silent failure the
+    non-`str` half of the guard exists to turn loud.
+
+    Every key `read_state` produces is schema-validated against the very
+    pattern this guard now asks, so it can only ever fire on a hand-minted
+    one.
+
+    What it deliberately does NOT catch is a well-formed key naming an
+    artifact this manifest does not have. The schema's artifact half is
+    `[^\\s#]+`, so the PATH form `region_findings` prints beside the key
+    (`CLAUDE.md#tiers`) is itself a grammatical key and passes here -- and
+    so is a key left in `state.opted_out` for a manifest entry that has
+    since been removed. Checking the artifact half against
+    `manifest.entries` would catch the first and hard-fail on the second,
+    which is the documented natural call
+    (`build_plan(m, i, opted_out=state.opted_out)`); that trade is refused
+    on purpose."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    with pytest.raises(ValueError, match="must hold rendered opt_out_key strings"):
+        build_plan(manifest, inventory, opted_out=frozenset({key}))
+
+
+@pytest.mark.parametrize(
+    "render",
+    [
+        pytest.param(
+            lambda lines: ("```", *lines, "```"),
+            id="region-wrapped-in-a-closed-fence",
+        ),
+        pytest.param(
+            lambda lines: tuple(f"{line} " for line in lines),
+            id="marker-lines-gained-a-trailing-space",
+        ),
+    ],
+)
+def test_a_fully_keyed_hybrid_whose_region_the_parser_cannot_see_keeps_its_fingerprint(
+    tmp_path, render
+):
+    """Review finding, confirmed by execution: `retained` -- the consent
+    gate `_is_fully_opted_out` requires empty -- was derived from
+    `parse_regions` alone.
+
+    `parse_regions` is fence-aware by design and recognizes only the exact
+    canonical marker grammar, so a region sitting in the file inside a
+    closed ``` fence, or one whose marker lines picked up a trailing space,
+    is invisible to it while being plainly there. It therefore landed in
+    `not_present`, `retained` came back `()`, and the entry was suppressed
+    out of BOTH `actions` and `artifact_hashes` -- the live region left the
+    `RepoFingerprint` and `fingerprint_drift` went blind to it. That is the
+    same defect `retained` was added to close, one layer over, and the same
+    one `detect/optout.py::marker_region_names` closes on the detect side;
+    the planner now asks that function rather than a copy of it.
+
+    Reachable by nothing worse than opting a region out and then running a
+    formatter over the file."""
+    body = "line1\n"
+    region_lines = (
+        render_begin(RegionFormat.HTML, "tiers", _VERSION, region_sha(body)),
+        "line1",
+        render_end(RegionFormat.HTML, "tiers"),
+    )
+    (tmp_path / "CLAUDE.md").write_text(
+        _doc("intro", *render(region_lines), "outro"), encoding="utf-8", newline=""
+    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    # The entry survives: nothing is proposed for insertion (the region is
+    # opted out), but the file stays under `fingerprint_drift`'s eye
+    # because managed content is demonstrably still inside it.
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    assert action.chosen_anchor == ()
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+
+def test_a_fully_opted_out_hybrid_with_the_region_really_gone_is_still_suppressed(tmp_path):
+    """The other side of the test above: `marker_region_names` widens
+    `retained` only for markers that are actually THERE. A file the
+    maintainer really did delete the markers from retains nothing, so the
+    suppression the `<intent-contract>` specifies still fires."""
+    (tmp_path / "CLAUDE.md").write_text(_doc("intro", "outro"), encoding="utf-8", newline="")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
+
+
+def test_a_partially_opted_out_hybrid_keeps_its_action_and_its_fingerprint(tmp_path):
+    """Review finding, confirmed by execution and by reverting the guard.
+
+    `_is_fully_opted_out` fired on "every region a run OWES is opted out",
+    not "every region is opted out". A `CLAUDE.md` declaring `tiers`
+    (present, conformant, tool-installed) and `model-badge` (absent, opted
+    out) owed nothing after opt-outs, so it vanished from `actions` AND
+    `artifact_hashes` -- taking the file out of the `RepoFingerprint` while
+    a LIVE managed region sat inside it, and leaving `fingerprint_drift`
+    blind to every later change to it. The consent argument
+    `_is_fully_opted_out`'s docstring makes ("no managed content left in it
+    to drift") was simply untrue on that path."""
+    (tmp_path / "CLAUDE.md").write_text(
+        _hybrid_text("tiers"), encoding="utf-8", newline=""
+    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "model-badge")}))
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    # The opted-out region is not proposed for insertion...
+    assert action.chosen_anchor == ()
+    # ...but the file keeps its fingerprint pair, so the live `tiers`
+    # region stays under `fingerprint_drift`'s eye.
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+    (tmp_path / "CLAUDE.md").write_text(
+        _hybrid_text("tiers").replace("line1", "TAMPERED"), encoding="utf-8", newline=""
+    )
+    assert fingerprint_drift(plan, tmp_path) != ()
+
+
+def test_a_present_region_is_retained_even_when_a_recorded_key_opts_it_out(tmp_path):
+    """Review finding, confirmed by execution and by reverting the clause.
+
+    `retained` was computed as "declared, present, AND not opted out", which
+    defeated the field on the very case it had just been added for: with
+    `tiers` present, conformant and ALSO carrying a recorded opt-out, and
+    `model-badge` absent and opted out, `retained` came back `()`, the entry
+    was suppressed, and the live `tiers` body left the `RepoFingerprint` --
+    `fingerprint_drift` then reported nothing after that body was tampered
+    with. Reachable by opting out and then `git checkout`-ing the file back.
+
+    It also put the two layers in flat contradiction about one input:
+    `detect/optout.py` rung 1 answers `PRESENT` for that same region ("what
+    is actually in the file wins over anything state believes"). Physical
+    presence is the fact; consent is measured against what is really there.
+    """
+    (tmp_path / "CLAUDE.md").write_text(_hybrid_text("tiers"), encoding="utf-8", newline="")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(
+        manifest,
+        inventory,
+        opted_out=frozenset({opt_out_key("h", "tiers"), opt_out_key("h", "model-badge")}),
+    )
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    # Nothing is proposed for insertion -- both regions are opted out...
+    assert action.chosen_anchor == ()
+    # ...but `tiers` is physically in the file, so the entry keeps its
+    # fingerprint pair and stays under `fingerprint_drift`'s eye.
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+    (tmp_path / "CLAUDE.md").write_text(
+        _hybrid_text("tiers").replace("line1", "TAMPERED"), encoding="utf-8", newline=""
+    )
+    assert fingerprint_drift(plan, tmp_path) != ()
+
+
+def test_a_present_but_unreadable_hybrid_is_never_suppressed_by_opt_outs(tmp_path):
+    """Review finding, confirmed by execution. `_current_text` degrades a
+    present-but-unreadable / non-UTF-8 target to `''`, and `''` parses as
+    "no region found" -- so every declared region landed in `not_present`
+    and `retained` came back `()`, not because the file holds no managed
+    content but because nothing could be MEASURED about it. The entry was
+    suppressed on that reasoning and left `artifact_hashes` while its
+    markers, for all this module knows, sat right there in it.
+
+    Consent is something the file has to be able to demonstrate. An
+    unreadable one keeps its `Action` -- the same "cannot safely re-parse,
+    degrade rather than guess" direction taken for a file `parse_regions`
+    refuses. `ABSENT` is not this case (its `''` is `classify()`'s own
+    reported truth) and stays suppressible, as the test above pins."""
+    (tmp_path / "CLAUDE.md").write_bytes(b"\xff\xfe not utf-8 at all \xe9\n")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    # The premise: present (so not the contract-sanctioned ABSENT case), and
+    # unreadable.
+    assert inventory.classifications[0].state is ArtifactState.PRESENT_DIVERGENT
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+
+def test_an_entry_whose_every_declared_region_is_opted_out_is_still_suppressed(tmp_path):
+    """The `retained` guard above narrows suppression; it must not abolish
+    it. Both declared regions opted out, neither in the file: nothing is
+    owed and nothing is retained, so FR-112's suppression still fires."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(
+        manifest,
+        inventory,
+        opted_out=frozenset({opt_out_key("h", "tiers"), opt_out_key("h", "model-badge")}),
+    )
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
+
+
+@pytest.mark.parametrize(
+    "build_fixture",
+    [
+        pytest.param(lambda root: None, id="absent-hybrid"),
+        pytest.param(
+            lambda root: (root / "CLAUDE.md").write_text(
+                _hybrid_text("tiers"), encoding="utf-8", newline=""
+            ),
+            id="present-divergent-hybrid",
+        ),
+        pytest.param(
+            lambda root: (root / "CLAUDE.md").write_text(
+                _doc("intro", render_end(RegionFormat.HTML, "tiers"), "outro"),
+                encoding="utf-8",
+                newline="",
+            ),
+            id="unparseable-hybrid",
+        ),
+    ],
+)
+def test_opted_outs_declared_default_is_the_empty_frozenset(tmp_path, build_fixture):
+    """What this actually proves, retitled from a claim it could not
+    support. Comparing `build_plan(m, i)` against `build_plan(m, i,
+    opted_out=frozenset())` compares the parameter's OWN declared default
+    against that same value, so both calls run identical code -- it can say
+    nothing about the pre-story implementation, which is not on either side
+    of the comparison. What it does pin is the default itself: a default
+    that ever became non-empty would suppress on the left and not on the
+    right, and this would fail.
+
+    The compatibility claim it used to make is made instead by
+    `test_a_present_divergent_hybrid_that_gained_its_region_still_plans`
+    below, which asserts the pre-story OUTPUT directly."""
+    build_fixture(tmp_path)
+    manifest = _manifest(
+        _hybrid("h", "CLAUDE.md", "tiers", "model-badge", anchors={"model-badge": ("<top>",)}),
+        _whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED),
+    )
+    inventory = classify(manifest, tmp_path)
+
+    defaulted = build_plan(manifest, inventory)
+    explicit = build_plan(manifest, inventory, opted_out=frozenset())
+
+    assert json.dumps(defaulted.to_json_dict()) == json.dumps(explicit.to_json_dict())
+    assert defaulted.actions, "fixture must produce at least one action"
+
+
+def test_a_present_divergent_hybrid_that_gained_its_region_still_plans(tmp_path):
+    """The real compatibility regression, under the DEFAULT empty
+    `opted_out`. Suppression must fire only when opt-outs CAUSED the empty
+    pending set, never when nothing was owed in the first place.
+
+    `classify()` and `build_plan` read the file at two different moments,
+    and this exercises that window: the entry classifies `PRESENT_DIVERGENT`
+    with its region absent, and the region appears before the plan is built.
+    Pre-story, that produced an `Action` with `chosen_anchor == ()` and an
+    `artifact_hashes` pair. A suppression rule keyed on "pending is empty"
+    alone deleted the entry from BOTH -- silently removing it from the
+    `RepoFingerprint`, so `fingerprint_drift` could no longer see any later
+    change to that file, for callers who had never heard of this story."""
+    path = tmp_path / "CLAUDE.md"
+    path.write_text(_doc("intro", "outro"), encoding="utf-8", newline="")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    assert inventory.classifications[0].state is ArtifactState.PRESENT_DIVERGENT
+    # The classify/build re-read window: the region arrives between them.
+    path.write_text(_hybrid_text("tiers"), encoding="utf-8", newline="")
+
+    plan = build_plan(manifest, inventory)
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    assert action.current_state == ArtifactState.PRESENT_DIVERGENT
+    assert action.chosen_anchor == ()
+    # The half that matters most: still fingerprinted, so a later edit to
+    # this file is still visible to `fingerprint_drift`.
+    assert plan.repo_fingerprint.artifact_hashes == (("h", hash_content(_hybrid_text("tiers"))),)
