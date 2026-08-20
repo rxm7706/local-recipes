@@ -2877,17 +2877,7 @@ window.DASHBOARD_DATA = {
         "E4",
         "E5"
       ],
-      "inflight": {
-        "key": "5.5",
-        "title": "Rule-2 conda-forge-expert retrospective",
-        "phase": "review",
-        "attempt": "3",
-        "startEpoch": 1787252734,
-        "median": 64,
-        "lo": 14,
-        "hi": 435,
-        "phaseAsOf": "2026-08-20 23:46 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 37 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -3038,7 +3028,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "5.5",
-            233
+            284
           ]
         ],
         "foot": [
@@ -3053,12 +3043,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "36/42",
+            "37/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "6",
+            "5",
             "remaining",
             ""
           ]
@@ -3067,8 +3057,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 4129,
-        "totalLabel": "~68.8 h active compute",
+        "total": 4180,
+        "totalLabel": "~69.7 h active compute",
         "note": "Derived from 37 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
@@ -3107,19 +3097,19 @@ window.DASHBOARD_DATA = {
           "5.2": 48,
           "5.3": 79,
           "5.4": 14,
-          "5.5": 233
+          "5.5": 284
         },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
           "E3": 860,
           "E4": 264,
-          "E5": 407
+          "E5": 458
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "5.5"
+        "state": "paused",
+        "at": "5.4"
       },
       "epics": [
         {
@@ -3337,7 +3327,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "5.5",
-              "active",
+              "done",
               "Rule-2 conda-forge-expert retrospective"
             ]
           ]
@@ -4625,7 +4615,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-20 23:46 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-20 23:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6235,7 +6225,7 @@ window.DASHBOARD_DATA = {
       "title": "conda-forge-expert rebuild — Skill-Forge-authored, slice by slice, parallel-run to an enforced end cutover",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-10",
+      "updated": "2026-08-20",
       "dream": "conda-forge-expert-rebuild",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild"
     },
@@ -6365,7 +6355,7 @@ window.DASHBOARD_DATA = {
       "title": "the factory behind the firewall",
       "caps": 3,
       "companions": 1,
-      "updated": "2026-07-29",
+      "updated": "2026-08-20",
       "dream": "enterprise-airgap",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
     },
@@ -7201,7 +7191,7 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-mason",
           "pkey": null,
           "stories": 38,
-          "state": "running",
+          "state": "in-progress",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
           "done": 37,
           "total": 42,
@@ -7941,7 +7931,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/42",
+        "progress": "37/42",
         "complete": 13,
         "of": 13
       },
@@ -17405,7 +17395,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "2026-08-20T00:00",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -17459,7 +17449,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 1,
+        "openQuestions": 0,
         "overtaken": false,
         "na": [
           "dream",
@@ -18959,7 +18949,13 @@ window.DASHBOARD_DATA = {
     "baseline": {
       "skill": "8.81.0",
       "head": "1dc1ca68be",
-      "deltas": [],
+      "deltas": [
+        {
+          "what": "skill",
+          "baseline": "8.81.0",
+          "live": "8.82.3"
+        }
+      ],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
   },
@@ -19694,7 +19690,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "in flight 5.5",
+        "line": "paused 5.4",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -20041,14 +20037,14 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 447,
-    "done": 23,
+    "open": 448,
+    "done": 24,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 13,
-      "low": 44,
+      "low": 45,
       "unspecified": 389
     },
     "projects": [
@@ -22224,8 +22220,8 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-mason",
         "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 48,
-        "done": 0,
+        "open": 49,
+        "done": 1,
         "triaged": 0,
         "entries": [
           {
@@ -22350,9 +22346,9 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-2-10-2",
             "title": "CFE's `recipe_updater.py` hardcodes the bare command `\"python\"` for its internal `recipe_editor.py` subprocess call, unl",
-            "status": "open",
+            "status": "done",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-2-5-1",
@@ -22560,6 +22556,20 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-2-3-2",
             "title": "Follow-up review still recommended for 2-3-credential-isolation after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-5-1",
+            "title": "The ~26 correct-but-duplicated `_get_data_dir()`/`REPO_ROOT` copies Story 5.5 deliberately left un-migrated to the new s",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-5-5",
+            "title": "Follow-up review still recommended for 5-5-rule-2-conda-forge-expert-retrospective after the damping cap was spent",
             "status": "open",
             "severity": "low",
             "triaged": false
@@ -23418,14 +23428,7 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Mason",
-        "story": "5.5",
-        "phase": "review",
-        "startEpoch": 1787252734
-      }
-    ],
+    "running": [],
     "lastShipped": {
       "station": "steward",
       "story": "11.1",
@@ -23434,8 +23437,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260820-140536-988f/11-1-langflow-joins-as-a-pluggable-app into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-20 23:46 UTC",
-    "generatedEpoch": 1787269568
+    "generatedAt": "2026-08-20 23:53 UTC",
+    "generatedEpoch": 1787270014
   },
   "storySpecs": [
     {
@@ -23844,8 +23847,8 @@ window.DASHBOARD_DATA = {
         "epics": 6,
         "epicsDone": 4,
         "complete": false,
-        "running": true,
-        "projected": 41
+        "running": false,
+        "projected": 37
       },
       {
         "key": "scribe",
@@ -23890,10 +23893,8 @@ window.DASHBOARD_DATA = {
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
-      "running": [
-        "mason"
-      ],
-      "projected": 387
+      "running": [],
+      "projected": 383
     }
   }
 };
