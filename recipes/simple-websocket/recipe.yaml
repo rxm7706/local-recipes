@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: simple-websocket
   version: "1.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: simple-websocket
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/simple_websocket-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/simple-websocket/simple_websocket-${{ version }}.tar.gz
   sha256: 7939234e7aa067c534abdab3a9ed933ec9ce4691b0713c78acb195560aa52ae4
 
 build:
@@ -20,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python >=3.6
-    - setuptools >=61.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.2
   run:
-    - python >=3.7
+    - python >=${{ python_min }}
     - wsproto
 
 tests:
@@ -32,13 +31,51 @@ tests:
       imports:
         - simple_websocket
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Simple WebSocket server and client for Python
+  homepage: https://github.com/miguelgrinberg/simple-websocket
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/miguelgrinberg/simple-websocket
+  summary: Simple WebSocket server and client for Python
+  description: |
+    Simple WebSocket server and client for Python
 
 extra:
   recipe-maintainers:
     - woutdenolf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: simple-websocket
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: simple-websocket
+  cfe-purls:
+    - pkg:conda/simple-websocket@${{ version }}?channel=conda-forge
+    - pkg:pypi/simple-websocket@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/miguelgrinberg/simple-websocket
+  cfe-import-names: [simple_websocket]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/simple-websocket-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:14:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:14:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:14:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

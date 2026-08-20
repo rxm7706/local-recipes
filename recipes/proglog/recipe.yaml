@@ -2,29 +2,28 @@
 schema_version: 1
 
 context:
-  name: proglog
-  version: "0.1.10"
+  version: "0.1.12"
 
 package:
-  name: ${{ name|lower }}
+  name: proglog
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 658c28c9c82e4caeb2f25f488fff9ceace22f8d69b15d0c1c86d64275e4ddab4
+  url: https://pypi.org/packages/source/p/proglog/proglog-${{ version }}.tar.gz
+  sha256: 361ee074721c277b89b75c061336cb8c5f287c92b043efa562ccf7866cda931c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
     - tqdm
 
 tests:
@@ -32,18 +31,51 @@ tests:
       imports:
         - proglog
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/Edinburgh-Genome-Foundry/proglog
   license: MIT
   license_file: LICENSE
-  summary: Logs and progress bars manager for Python
+  summary: Log and progress bar manager for console, notebooks, web...
   description: |
-    Proglog is a progress logging system for Python. It allows to build
-    complex libraries while giving your users control over logs, callbacks
-    and progress bars.
-  homepage: https://github.com/Edinburgh-Genome-Foundry/Proglog
-  repository: https://github.com/Edinburgh-Genome-Foundry/Proglog
+    Log and progress bar manager for console, notebooks, web...
 
 extra:
   recipe-maintainers:
     - mdraw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: proglog
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: proglog
+  cfe-purls:
+    - pkg:conda/proglog@${{ version }}?channel=conda-forge
+    - pkg:pypi/proglog@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Edinburgh-Genome-Foundry/proglog
+  cfe-import-names: [proglog]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/proglog-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.12
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:14:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:14:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:14:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,27 +2,27 @@
 schema_version: 1
 
 context:
-  name: shellingham
   version: "1.5.4"
 
 package:
-  name: ${{ name|lower }}
+  name: shellingham
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/shellingham-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/shellingham/shellingham-${{ version }}.tar.gz
   sha256: 8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -30,18 +30,52 @@ tests:
   - python:
       imports:
         - shellingham
-        - shellingham.posix
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Tool to Detect Surrounding Shell
-  license: MIT
-  license_file:
-    - LICENSE
   homepage: https://github.com/sarugaku/shellingham
-  repository: https://github.com/sarugaku/shellingham
+  license: ISC
+  license_file: LICENSE
+  summary: Tool to Detect Surrounding Shell
+  description: |
+    Tool to Detect Surrounding Shell
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: shellingham
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: shellingham
+  cfe-purls:
+    - pkg:conda/shellingham@${{ version }}?channel=conda-forge
+    - pkg:pypi/shellingham@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/sarugaku/shellingham
+  cfe-import-names: [shellingham]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shellingham-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:27:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:27:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:27:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

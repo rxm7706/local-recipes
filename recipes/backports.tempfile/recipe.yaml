@@ -2,49 +2,79 @@
 schema_version: 1
 
 context:
-  name: backports.tempfile
   version: "1.0"
-  sha256: 1c648c452e8770d759bdc5a5e2431209be70d25484e1be24876cf2168722c762
 
 package:
-  name: ${{ name|lower }}
+  name: backports.tempfile
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/backports.tempfile/backports.tempfile-${{ version }}.tar.gz
+  sha256: 1c648c452e8770d759bdc5a5e2431209be70d25484e1be24876cf2168722c762
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python
+  host:
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm
+    - setuptools
   run:
-    - python
-    - backports.weakref
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - backports.tempfile
-      pip_check: false
+        - backports
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pjdelport/backports.tempfile
   license: PSF-2.0
   license_file: LICENSE
-  summary: Backports of new features in Python's tempfile module
+  summary: Backport of new features in Python's tempfile module
   description: |
-    This package provides backports of new features in Python’s tempfile module under the backports namespace.
-
-
-  homepage: https://github.com/pjdelport/backports.tempfile
+    Backport of new features in Python's tempfile module
 
 extra:
   recipe-maintainers:
     - mvdbeek
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: backports.tempfile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: backports-tempfile
+  cfe-purls:
+    - pkg:conda/backports.tempfile@${{ version }}?channel=conda-forge
+    - pkg:pypi/backports-tempfile@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pjdelport/backports.tempfile
+  cfe-import-names: [backports]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/backports.tempfile-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:35:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:35:05Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T06:35:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

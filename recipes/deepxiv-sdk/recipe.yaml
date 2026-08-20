@@ -16,15 +16,13 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - deepxiv=deepxiv_sdk.cli:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=45,<70
     - pip
+    - setuptools >=45,<70
+    - wheel
   run:
     - python >=${{ python_min }}
     - requests >=2.31.0
@@ -39,20 +37,46 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - deepxiv --help
 
 about:
-  summary: A Python package for arXiv paper access with CLI and MCP server support
+  homepage: https://deepxiv.com
   license: MIT
   license_file: LICENSE
-  homepage: https://1stauthor.com/
-  repository: https://github.com/DeepXiv/deepxiv_sdk
-  documentation: https://data.rag.ac.cn/api/docs
+  summary: Agentic search over arXiv and the web, returning answers with real citations
+  description: |
+    Agentic search over arXiv and the web, returning answers with real citations
+  repository: https://github.com/qhjqhj00/deepxiv-sdk
+  documentation: https://github.com/qhjqhj00/deepxiv-sdk#readme
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deepxiv-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deepxiv-sdk
+  cfe-purls:
+    - pkg:conda/deepxiv-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/deepxiv-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/qhjqhj00/deepxiv-sdk
+  cfe-upstream-homepage: https://deepxiv.com
+  cfe-import-names: [deepxiv_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/deepxiv-sdk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:16:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:16:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:16:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

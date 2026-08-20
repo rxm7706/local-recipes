@@ -2,71 +2,49 @@
 schema_version: 1
 
 context:
-  name: mongomock
   version: "4.3.0"
-  sha256: 32667b79066fabc12d4f17f16a8fd7361b5f4435208b3ba32c226e52212a8c30
 
 package:
-  name: ${{ name|lower }}
+  name: mongomock
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/m/mongomock/mongomock-${{ version }}.tar.gz
+  sha256: 32667b79066fabc12d4f17f16a8fd7361b5f4435208b3ba32c226e52212a8c30
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
+    - hatch-vcs
   run:
     - python >=${{ python_min }}
     - packaging
-    - sentinels
     - pytz
+    - sentinels
 
 tests:
   - python:
       imports:
         - mongomock
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE
-  summary: Small library for mocking pymongo collection objects for testing purposes
-  description: |
-    Mongomock is a small library to help testing Python code that interacts with
-    MongoDB via Pymongo.
-
-    MongoDB is complex. This library aims at a reasonably complete mock of
-    MongoDB for testing purposes, not a perfect replica. This means some
-    features are not likely to make it in any time soon.
-
-    Also, since many corner cases are encountered along the way, our goal is to
-    try and TDD our way into completeness. This means that every time we
-    encounter a missing or broken (incompatible) feature, we write a test for
-    it and fix it. There are probably lots of such issues hiding around
-    lurking, so feel free to open issues and/or pull requests and help the
-    project out!
-
-    NOTE: We don't include pymongo functionality as "stubs" or "placeholders".
-    Since this library is used to validate production code, it is unacceptable
-    to behave differently than the real pymongo implementation. In such cases
-    it is better to throw NotImplementedError than implement a modified version
-    of the original behavior.
   homepage: https://github.com/mongomock/mongomock
-  repository: https://github.com/mongomock/mongomock
-  documentation: https://github.com/mongomock/mongomock
+  license: ISC
+  license_file: LICENSE
+  summary: Fake pymongo stub for testing simple MongoDB-dependent code
+  description: |
+    Fake pymongo stub for testing simple MongoDB-dependent code
 
 extra:
   recipe-maintainers:
@@ -76,3 +54,36 @@ extra:
     - mathiaseitz
     - trendelkampschroer
     - JunAishima
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mongomock
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mongomock
+  cfe-purls:
+    - pkg:conda/mongomock@${{ version }}?channel=conda-forge
+    - pkg:pypi/mongomock@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mongomock/mongomock
+  cfe-import-names: [mongomock]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mongomock-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:12:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:12:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:12:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

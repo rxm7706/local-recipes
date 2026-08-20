@@ -2,48 +2,89 @@
 schema_version: 1
 
 context:
-  name: furl
   version: "2.1.4"
 
 package:
-  name: ${{ name|lower }}
+  name: furl
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/furl/furl-${{ version }}.tar.gz
   sha256: 877657501266c929269739fb5f5980534a41abd6bbabcb367c136d1d3b2a6015
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - six >=1.8.0
-    - orderedmultidict >=1.0
+    - orderedmultidict >=1.0.1
 
 tests:
   - python:
       imports:
         - furl
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE.md
-  license: Unlicense
-  summary: URL manipulation made simple.
   homepage: https://github.com/gruns/furl
-  repository: https://github.com/gruns/furl
-  documentation: https://github.com/gruns/furl
+  license: Unlicense
+  license_file: LICENSE
+  summary: URL manipulation made simple.
+  description: |
+    URL manipulation made simple.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: furl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: furl
+  cfe-purls:
+    - pkg:conda/furl@${{ version }}?channel=conda-forge
+    - pkg:pypi/furl@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gruns/furl
+  cfe-import-names: [furl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/furl-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:30:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:30:26Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:30:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

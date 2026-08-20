@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: aiosignal
   version: "1.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: aiosignal
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiosignal-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiosignal/aiosignal-${{ version }}.tar.gz
   sha256: f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=51.0
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=51.0
   run:
     - python >=${{ python_min }}
     - frozenlist >=1.1.0
@@ -33,14 +32,51 @@ tests:
       imports:
         - aiosignal
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: "aiosignal: a list of registered asynchronous callbacks"
+  homepage: https://github.com/aio-libs/aiosignal
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/aio-libs/aiosignal
+  summary: "aiosignal: a list of registered asynchronous callbacks"
+  description: |
+    aiosignal: a list of registered asynchronous callbacks
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiosignal
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiosignal
+  cfe-purls:
+    - pkg:conda/aiosignal@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiosignal@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/aio-libs/aiosignal
+  cfe-import-names: [aiosignal]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiosignal-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:44:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:44:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:44:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,59 +2,82 @@
 schema_version: 1
 
 context:
-  name: flask-marshmallow
   version: "1.5.0"
-  sha256: 7c06b56e41647eccdb3cd57c25b109f19191b4c62509362bd64920cdf601a066
 
 package:
-  name: ${{ name|lower }}
+  name: flask-marshmallow
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flask-marshmallow/flask_marshmallow-${{ version }}.tar.gz
+  sha256: 7c06b56e41647eccdb3cd57c25b109f19191b4c62509362bd64920cdf601a066
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - flit-core
+    - flit-core <4
   run:
     - python >=${{ python_min }}
     - flask >=2.2
-    - marshmallow >=3.0.0
+    - marshmallow >=4.0.0
 
 tests:
   - python:
       imports:
         - flask_marshmallow
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/flask-marshmallow/
   license: MIT
   license_file: LICENSE
   summary: Flask + marshmallow for beautiful APIs
   description: |
-    Flask-Marshmallow is a thin integration layer for Flask (a Python web
-    framework) and marshmallow (an object serialization/deserialization
-    library) that adds additional features to marshmallow, including URL and
-    Hyperlinks fields for HATEOAS-ready APIs. It also (optionally) integrates
-    with Flask-SQLAlchemy.
-  homepage: https://github.com/marshmallow-code/flask-marshmallow
-  repository: https://github.com/marshmallow-code/flask-marshmallow
-  documentation: http://flask-marshmallow.readthedocs.io/
+    Flask + marshmallow for beautiful APIs
 
 extra:
   recipe-maintainers:
     - frol
     - mediocretech
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-marshmallow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-marshmallow
+  cfe-purls:
+    - pkg:conda/flask-marshmallow@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-marshmallow@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/flask-marshmallow/
+  cfe-import-names: [flask_marshmallow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-marshmallow-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:20:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:20:09Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:20:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

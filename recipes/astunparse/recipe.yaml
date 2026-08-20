@@ -15,7 +15,7 @@ source:
     - 0000-no-wheel-run-dep.patch
 
 build:
-  number: 3
+  number: 0
   noarch: python
   script:
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -34,7 +34,9 @@ tests:
       imports:
         - astunparse
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -60,3 +62,36 @@ extra:
   recipe-maintainers:
     - goanpeca
     - hoechenberger
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: astunparse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: astunparse
+  cfe-purls:
+    - pkg:conda/astunparse@${{ version }}?channel=conda-forge
+    - pkg:pypi/astunparse@${{ version }}
+  cfe-upstream-repo: https://github.com/simonpercivall/astunparse
+  cfe-upstream-homepage: https://github.com/simonpercivall/astunparse
+  cfe-import-names: [astunparse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/astunparse-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.6.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:25:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:25:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:25:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

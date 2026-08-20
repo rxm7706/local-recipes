@@ -9,43 +9,80 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/W/WSGIProxy2/WSGIProxy2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/WSGIProxy2/WSGIProxy2-${{ version }}.tar.gz
   sha256: 0d9ecb141de720e2fd4f7a275a4a83a961ffeb6717483d940021ffa1c46f665c
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - setuptools
     - webob
-    - six
 
 tests:
   - python:
       imports:
         - wsgiproxy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/gawel/WSGIProxy2/
   license: MIT
-  license_file: COPYING
+  license_file: LICENSE
   summary: A WSGI Proxy with various http client backends
-  homepage: https://github.com/gawel/WSGIProxy2
-  repository: https://github.com/gawel/WSGIProxy2
-  documentation: https://wsgiproxy2.readthedocs.org
+  description: |
+    A WSGI Proxy with various http client backends
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wsgiproxy2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wsgiproxy2
+  cfe-purls:
+    - pkg:conda/wsgiproxy2@${{ version }}?channel=conda-forge
+    - pkg:pypi/wsgiproxy2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gawel/WSGIProxy2/
+  cfe-import-names: [wsgiproxy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wsgiproxy2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:20:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:20:59Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:20:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

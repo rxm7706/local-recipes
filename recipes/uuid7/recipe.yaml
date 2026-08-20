@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
   version: "0.1.0"
 
@@ -11,9 +13,9 @@ source:
   sha256: 8c57aa32ee7456d3cc68c95c4530bc571646defac01895cfc73545449894a63c
 
 build:
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
@@ -25,19 +27,51 @@ requirements:
 
 tests:
   - python:
-      python_version:
-        - '*'
-        - ${{ python_min }}.*
       imports:
         - uuid_extensions
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/stevesimmons/uuid7
-  summary: UUID version 7, generating time-sorted UUIDs with 200ns time resolution and 48 bits of randomness
   license: MIT
   license_file: LICENSE
+  summary: UUID version 7, generating time-sorted UUIDs with 200ns time resolution and 48 bits of randomness
+  description: |
+    UUID version 7, generating time-sorted UUIDs with 200ns time resolution and 48 bits of randomness
 
 extra:
   recipe-maintainers:
     - MertErtugrulQC
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: uuid7
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: uuid7
+  cfe-purls:
+    - pkg:conda/uuid7@${{ version }}?channel=conda-forge
+    - pkg:pypi/uuid7@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/stevesimmons/uuid7
+  cfe-import-names: [uuid_extensions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/uuid7-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:34:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:34:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:34:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

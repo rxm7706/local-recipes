@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: bigquery-magics
   version: "0.15.1"
 
 package:
-  name: ${{ name|lower }}
+  name: bigquery-magics
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/bigquery-magics/bigquery_magics-${{ version }}.tar.gz
   sha256: 6922f182dc9eae67cb8f38c9a05c6584b053d449face68c1fef34705061c5dc5
 
 build:
@@ -20,14 +19,13 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - pyopenssl >=23.3.0
     - python >=${{ python_min }}
-    - db-dtypes >=1.1.1,<2.0.0
-    - google-cloud-bigquery-core >=3.41.0,<4.0.0
+    - db-dtypes <2.0.0,>=1.1.1
+    - google-cloud-bigquery <4.0.0,>=3.41.0
     - ipywidgets >=7.7.1
     - ipython >=7.23.1
     - ipykernel >=5.5.6
@@ -35,21 +33,59 @@ requirements:
     - pandas >=1.5.3
     - pyarrow >=12.0.0
     - pydata-google-auth >=1.5.0
-    - tqdm >=4.7.4,<5.0.0
+    - tqdm <5.0.0,>=4.7.4
+    - pyopenssl >=23.3.0
 
 tests:
   - python:
       imports:
         - bigquery_magics
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Google BigQuery magics for Jupyter and IPython
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/bigquery-magics
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/python-bigquery-magics
+  summary: Google BigQuery magics for Jupyter and IPython
+  description: |
+    Google BigQuery magics for Jupyter and IPython
 
 extra:
   recipe-maintainers:
     - tswast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bigquery-magics
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bigquery-magics
+  cfe-purls:
+    - pkg:conda/bigquery-magics@${{ version }}?channel=conda-forge
+    - pkg:pypi/bigquery-magics@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/bigquery-magics
+  cfe-import-names: [bigquery_magics]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bigquery-magics-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:39:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:39:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:39:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

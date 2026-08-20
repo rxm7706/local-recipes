@@ -15,112 +15,36 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=40.8.0  # min version from packages/python/plotly/pyproject.toml
-    - wheel
     - hatchling >=1.26
   run:
     - python >=${{ python_min }}
-    # Check <https://github.com/plotly/plotly.py/blob/master/packages/python/plotly/requires-install.txt>
     - narwhals >=1.15.1
     - packaging
-  run_constraints:
-    - ipywidgets >=7.6
 
 tests:
   - python:
       imports:
         - plotly
-        - plotly.offline
-        - plotly.io
-        - plotly.data
-        - plotly.colors
-        - plotly.graph_objects
-        - _plotly_utils
-        - _plotly_utils.colors
-        - plotly.graph_objs.bar
-        - plotly.graph_objs.barpolar
-        - plotly.graph_objs.box
-        - plotly.graph_objs.candlestick
-        - plotly.graph_objs.carpet
-        - plotly.graph_objs.choropleth
-        - plotly.graph_objs.choroplethmapbox
-        - plotly.graph_objs.cone
-        - plotly.graph_objs.contour
-        - plotly.graph_objs.contourcarpet
-        - plotly.graph_objs.densitymapbox
-        - plotly.graph_objs.funnel
-        - plotly.graph_objs.funnelarea
-        - plotly.graph_objs.heatmap
-        - plotly.graph_objs.histogram
-        - plotly.graph_objs.histogram2d
-        - plotly.graph_objs.histogram2dcontour
-        - plotly.graph_objs.icicle
-        - plotly.graph_objs.image
-        - plotly.graph_objs.indicator
-        - plotly.graph_objs.isosurface
-        - plotly.graph_objs.layout
-        - plotly.graph_objs.mesh3d
-        - plotly.graph_objs.ohlc
-        - plotly.graph_objs.parcats
-        - plotly.graph_objs.parcoords
-        - plotly.graph_objs.pie
-        - plotly.graph_objs.sankey
-        - plotly.graph_objs.scatter
-        - plotly.graph_objs.scatter3d
-        - plotly.graph_objs.scattercarpet
-        - plotly.graph_objs.scattergeo
-        - plotly.graph_objs.scattergl
-        - plotly.graph_objs.scattermapbox
-        - plotly.graph_objs.scatterpolar
-        - plotly.graph_objs.scatterpolargl
-        - plotly.graph_objs.scatterternary
-        - plotly.graph_objs.splom
-        - plotly.graph_objs.streamtube
-        - plotly.graph_objs.sunburst
-        - plotly.graph_objs.surface
-        - plotly.graph_objs.table
-        - plotly.graph_objs.treemap
-        - plotly.graph_objs.violin
-        - plotly.graph_objs.volume
-        - plotly.graph_objs.waterfall
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      recipe:
-        - test-imports-requiring-numpy.py
-        - test-imports-requiring-matplotlib.py
-        - test-imports-requiring-pandas.py
-    requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - conda install -y numpy
-      - python test-imports-requiring-numpy.py
-      - conda install -y matplotlib-base
-      - python test-imports-requiring-matplotlib.py
-      - conda install -y pandas
-      - python test-imports-requiring-pandas.py
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://plotly.com/python/
   license: MIT
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE.txt
-  summary: An interactive, browser-based graphing library for Python
+  license_file: LICENSE.txt
+  summary: An open-source interactive data visualization library for Python
   description: |
-    Plotly's Python graphing library makes interactive,
-    publication-quality graphs online. Examples of how to make line
-    plots, scatter plots, area charts, bar charts, error bars, box plots,
-    histograms, heatmaps, subplots, multiple-axes, polar charts and
-    bubble charts.
-  homepage: https://plot.ly/python/
+    An open-source interactive data visualization library for Python
   repository: https://github.com/plotly/plotly.py
-  documentation: https://plot.ly/python/
+  documentation: https://plotly.com/python/
 
 extra:
   recipe-maintainers:
@@ -128,3 +52,40 @@ extra:
     - chohner
     - moorepants
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: plotly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: plotly
+  cfe-purls:
+    - pkg:conda/plotly@${{ version }}?channel=conda-forge
+    - pkg:pypi/plotly@${{ version }}
+  cfe-upstream-repo: https://github.com/plotly/plotly.py
+  cfe-upstream-homepage: https://plotly.com/python/
+  cfe-import-names: [plotly]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/plotly-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.9.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:03:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:03:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:03:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

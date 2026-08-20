@@ -2,64 +2,48 @@
 schema_version: 1
 
 context:
-  name: PyVISA
   version: "1.16.2"
-  sha256: 75beb93eeafe20a50be5726fa4e3a645948c93d86819f9c1f8c542efa4085a38
 
 package:
   name: pyvisa
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0]|lower }}/${{ name|lower }}/${{ name | lower }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyVISA/pyvisa-${{ version }}.tar.gz
+  sha256: 75beb93eeafe20a50be5726fa4e3a645948c93d86819f9c1f8c542efa4085a38
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir --no-build-isolation -vvv
-  python:
-    entry_points:
-      - pyvisa-info = pyvisa.cmd_line_tools:visa_info
-      - pyvisa-shell = pyvisa.cmd_line_tools:visa_shell
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=61.2
+    - wheel
   run:
     - python >=${{ python_min }}
-    - typing_extensions
+    - typing_extensions >=4.0.0
 
 tests:
   - python:
       imports:
         - pyvisa
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - pyvisa-info
-      - pyvisa-shell -h
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pyvisa/pyvisa
   license: MIT
   license_file: LICENSE
-  summary: Control your instruments with Python.
+  summary: Python VISA bindings for GPIB, RS232, TCPIP and USB instruments
   description: |
-    PyVISA is a Python package that enables you to control all kinds of measurement devices
-    independently of the interface (e.g. GPIB, RS232, USB, Ethernet). As an example, reading
-    self-identification from a Keithley Multimeter with GPIB number 12 is as easy as three
-    lines of Python code:
-  homepage: https://github.com/hgrecco/pyvisa
-  repository: https://github.com/hgrecco/pyvisa
-  documentation: https://pyvisa.readthedocs.io/
+    Python VISA bindings for GPIB, RS232, TCPIP and USB instruments
+  documentation: https://pyvisa.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
@@ -68,3 +52,36 @@ extra:
     - ddale
     - cjermain
     - MatthieuDartiailh
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyvisa
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyvisa
+  cfe-purls:
+    - pkg:conda/pyvisa@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyvisa@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pyvisa/pyvisa
+  cfe-import-names: [pyvisa]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyvisa-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.16.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:37:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:37:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:37:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: iniconfig
   version: "2.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: iniconfig
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/iniconfig/iniconfig-${{ version }}.tar.gz
   sha256: c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - hatch-vcs
-    - hatchling
+    - setuptools >=77
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
 
@@ -32,14 +31,51 @@ tests:
       imports:
         - iniconfig
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: "iniconfig: brain-dead simple config-ini parsing"
+  homepage: https://github.com/pytest-dev/iniconfig
   license: MIT
   license_file: LICENSE
-  homepage: http://github.com/RonnyPfannschmidt/iniconfig
+  summary: brain-dead simple config-ini parsing
+  description: |
+    brain-dead simple config-ini parsing
 
 extra:
   recipe-maintainers:
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: iniconfig
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: iniconfig
+  cfe-purls:
+    - pkg:conda/iniconfig@${{ version }}?channel=conda-forge
+    - pkg:pypi/iniconfig@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pytest-dev/iniconfig
+  cfe-import-names: [iniconfig]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/iniconfig-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:55:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:55:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:55:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

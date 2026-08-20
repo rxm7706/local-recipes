@@ -2,32 +2,28 @@
 schema_version: 1
 
 context:
-  name: csv-diff
   version: "1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: csv-diff
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/csv-diff/csv_diff-${{ version }}.tar.gz
   sha256: f6c251542fbcd9d6eef8b27c3870fc4dfc3592c880c34dac57ed94e382f2d53b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - csv-diff = csv_diff.cli:cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
-    - pytest-runner
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
     - click
     - dictdiffer
 
@@ -36,19 +32,52 @@ tests:
       imports:
         - csv_diff
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - csv-diff --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python CLI tool and library for diffing CSV and JSON files
+  homepage: https://github.com/simonw/csv-diff
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/simonw/csv-diff
+  summary: Python CLI tool and library for diffing CSV and JSON files
+  description: |
+    Python CLI tool and library for diffing CSV and JSON files
 
 extra:
   recipe-maintainers:
     - corneliusroemer
     - tsibley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: csv-diff
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: csv-diff
+  cfe-purls:
+    - pkg:conda/csv-diff@${{ version }}?channel=conda-forge
+    - pkg:pypi/csv-diff@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/simonw/csv-diff
+  cfe-import-names: [csv_diff]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/csv-diff-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:33:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:33:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:33:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

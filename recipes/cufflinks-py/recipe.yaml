@@ -2,80 +2,88 @@
 schema_version: 1
 
 context:
-  name: cufflinks
   version: "0.17.3"
-  build_number: 1
 
-recipe:
-  name: python-${{ name|lower }}
+package:
+  name: cufflinks
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/cufflinks/cufflinks-${{ version }}.tar.gz
   sha256: 48c1b3406dc030004121966489eebc5518cea70fd4e3f16379b491328501a644
 
 build:
-  number: ${{ build_number }}
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - chart-studio >=1.0.0
-    - colorlover >=0.2.1
-    - ipython >=5.3.0
-    - ipywidgets >=7.0.0
-    - numpy >=1.9.2
-    - pandas >=0.19.2
-    - plotly >=4.1.1
-    - six >=1.9.0
-
-outputs:
-  - package:
-      name: python-cufflinks
-  - package:
-      name: cufflinks-py
-    build:
-      number: ${{ build_number }}
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('python-cufflinks', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - cufflinks
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
 
 tests:
   - python:
       imports:
         - cufflinks
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: license.txt
-  summary: Productivity Tools for Plotly + Pandas
   homepage: https://github.com/santosjorge/cufflinks
+  license: MIT
+  license_file: LICENSE
+  summary: Productivity Tools for Plotly + Pandas
+  description: |
+    Productivity Tools for Plotly + Pandas
 
 extra:
   recipe-maintainers:
     - dhirschfeld
+    - cshaley
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cufflinks-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cufflinks
+  cfe-purls:
+    - pkg:conda/cufflinks-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/cufflinks@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/santosjorge/cufflinks
+  cfe-import-names: [cufflinks]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cufflinks-py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.17.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:24:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:24:27Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:24:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

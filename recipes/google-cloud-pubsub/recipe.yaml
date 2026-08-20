@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-pubsub
   version: "2.39.1"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-pubsub
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_pubsub-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-pubsub/google_cloud_pubsub-${{ version }}.tar.gz
   sha256: dacead1fa0aca7b2015f1acc88d279cd4b12852087908f426fbecf71985940e8
 
 build:
@@ -25,46 +24,32 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core-grpc >=2.25.0,<3.0.0
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    - proto-plus >=1.26.1,<2.0.0
-    - protobuf >=6.33.5,<8.0.0
-    - grpc-google-iam-v1 >=0.14.2,<1.0.0
-    # more restrictive constraint for python >=3.14
-    - grpcio-status >=1.75.1,<2.0.0
+    - google-api-core <3.0.0,>=2.25.0
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
+    - grpc-google-iam-v1 <1.0.0,>=0.14.2
+    - grpcio-status <2.0.0,>=1.59.0
     - opentelemetry-api >=1.27.0
     - opentelemetry-sdk >=1.27.0
-    # from the libcst extra
-    - libcst >=0.3.10
 
 tests:
   - python:
       imports:
-        - google.api_core
-        - google.cloud.pubsub
-        - grpc
+        - google.pubsub
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-pubsub
   license: Apache-2.0
   license_file: LICENSE
-  summary: Python Client for Google Cloud Pub / Sub
+  summary: Google Cloud Pub/Sub API client library
   description: |
-    Google Cloud Pub / Sub is a fully-managed real-time messaging service that
-    allows you to send and receive messages between independent applications.
-    You can leverage Cloud Pub/Sub’s flexibility to decouple systems and
-    components hosted on Google Cloud Platform or elsewhere on the Internet. By
-    building on the same technology Google uses, Cloud Pub / Sub is designed to
-    provide “at least once” delivery at low latency with on-demand scalability
-    to 1 million messages per second (and beyond).
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-pubsub
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-pubsub
-  documentation: https://docs.cloud.google.com/python/docs/reference/pubsub/latest
+    Google Cloud Pub/Sub API client library
 
 extra:
   recipe-maintainers:
@@ -72,3 +57,33 @@ extra:
     - hmaarrfk
     - tpdownes
     - tswast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-pubsub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-pubsub
+  cfe-purls:
+    - pkg:conda/google-cloud-pubsub@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-pubsub@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-pubsub
+  cfe-import-names: [google.pubsub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-pubsub-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:31:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:31:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:31:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

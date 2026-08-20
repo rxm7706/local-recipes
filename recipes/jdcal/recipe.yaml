@@ -2,47 +2,83 @@
 schema_version: 1
 
 context:
-  name: jdcal
   version: "1.4.1"
-  sha256: 472872e096eb8df219c23f2689fc336668bdb43d194094b5cc1707e1640acfc8
 
 package:
-  name: ${{ name|lower }}
+  name: jdcal
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jdcal/jdcal-${{ version }}.tar.gz
+  sha256: 472872e096eb8df219c23f2689fc336668bdb43d194094b5cc1707e1640acfc8
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
+  host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - jdcal
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
+  homepage: https://github.com/phn/jdcal
+  license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Julian dates from proleptic Gregorian and Julian calendars.
   description: |
-    This module contains functions for converting between Julian dates and calendar dates.
-  homepage: https://github.com/phn/jdcal
-  repository: https://github.com/phn/jdcal
+    Julian dates from proleptic Gregorian and Julian calendars.
 
 extra:
   recipe-maintainers:
     - curtisalexander
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jdcal
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jdcal
+  cfe-purls:
+    - pkg:conda/jdcal@${{ version }}?channel=conda-forge
+    - pkg:pypi/jdcal@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/phn/jdcal
+  cfe-import-names: [jdcal]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jdcal-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:13:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:13:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:13:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

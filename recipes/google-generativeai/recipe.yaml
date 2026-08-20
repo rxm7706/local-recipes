@@ -1,14 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: google-generativeai
-  version: 0.8.6
+  version: "0.8.6"
 
 package:
-  name: ${{ name|lower }}
+  name: google-generativeai
   version: ${{ version }}
 
 source:
-  url: https://github.com/google-gemini/generative-ai-python/archive/v${{ version }}.tar.gz
+  url: https://github.com/google/generative-ai-python/archive/refs/tags/v${{ version }}.tar.gz
   sha256: e58365ea1c36da40e07c8917cd50b647f6eaf4189f6682728d79327c84ab7e70
 
 build:
@@ -22,7 +23,6 @@ requirements:
     - pip
     - setuptools
   run:
-    - typing_extensions
     - python >=${{ python_min }}
     - google-ai-generativelanguage ==0.6.15
     - google-api-core
@@ -31,27 +31,56 @@ requirements:
     - protobuf
     - pydantic
     - tqdm
-    - grpcio
+    - typing_extensions
 
 tests:
   - python:
       imports:
-        - google
         - google.generativeai
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: The Gemini API Python SDK enables developers to use Google's state-of-the-art generative AI models to build AI-powered features and applications.
+  homepage: https://github.com/google/generative-ai-python
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/google/generative-ai-python
+  summary: Google Generative AI High level API client library and tools.
+  description: |
+    Google Generative AI High level API client library and tools.
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - moritzwilksch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-generativeai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-generativeai
+  cfe-purls:
+    - pkg:conda/google-generativeai@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-generativeai@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/google/generative-ai-python
+  cfe-import-names: [google.generativeai]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-generativeai-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:45:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:45:18Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T10:45:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

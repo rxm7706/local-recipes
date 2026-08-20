@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "2.10.0"
-  python_check_max: "3.14"
 
 package:
   name: httpcore2
@@ -14,54 +13,78 @@ source:
   sha256: 13c0cc3d1919d4f28457f60cd2c2abe04113a8af184ccf1142811beba936f9dc
 
 build:
-  noarch: python
   number: 0
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-fancy-pypi-readme
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
     - uv-dynamic-versioning >=0.14.0
   run:
-    - h11 >=0.16
     - python >=${{ python_min }}
+    - h11 >=0.16
     - truststore >=0.10
-  run_constraints:
-    - anyio >=4.5.0,<5.0
-    - h2 >=3,<5
-    - socksio 1.*
-    - trio >=0.22.0,<1.0
-  # depends on https://github.com/conda/ceps/pull/146
-  # extras:
-  #   asyncio:
-  #     - anyio >=4.5.0,<5.0
-  #   http2:
-  #     - h2 >=3,<5
-  #   socks:
-  #     - socksio 1.*
-  #   trio:
-  #     - trio >=0.22.0,<1.0
 
 tests:
   - python:
-      imports: httpcore2
+      imports:
+        - httpcore2
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
+        - "*"
 
 about:
-  homepage: https://pypi.org/project/httpcore2
-  summary: A minimal low-level HTTP client.
+  homepage: https://github.com/pydantic/httpx2
   license: BSD-3-Clause
-  license_file: LICENSE.md
-  repository: https://github.com/pydantic/httpx2
+  license_file: LICENSE
+  summary: A minimal low-level HTTP client.
+  description: |
+    A minimal low-level HTTP client.
+  repository: https://github.com/pydantic/httpx2/blob/main/src/httpcore2
 
 extra:
   recipe-maintainers:
     - bollwyvl
     - Kludex
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpcore2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpcore2
+  cfe-purls:
+    - pkg:conda/httpcore2@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpcore2@${{ version }}
+  cfe-upstream-repo: https://github.com/pydantic/httpx2/blob/main/src/httpcore2
+  cfe-upstream-homepage: https://github.com/pydantic/httpx2
+  cfe-import-names: [httpcore2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpcore2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T23:38:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:38:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:38:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

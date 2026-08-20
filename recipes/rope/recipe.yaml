@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: rope
   version: "1.14.0"
 
 package:
-  name: ${{ name|lower }}
+  name: rope
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rope-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/rope/rope-${{ version }}.tar.gz
   sha256: 8803e3b667315044f6270b0c69a10c0679f9f322ed8efe6245a93ceb7658da69
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - pytoolconfig >=1.2.2
@@ -32,16 +31,61 @@ tests:
       imports:
         - rope
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: a python refactoring library...
+  homepage: https://pypi.org/project/rope/
   license: LGPL-3.0-or-later
-  license_file: COPYING
-  homepage: https://github.com/python-rope/rope
+  license_file: LICENSE
+  summary: a python refactoring library...
+  description: |
+    a python refactoring library...
   repository: https://github.com/python-rope/rope
+  documentation: https://rope.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rope
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rope
+  cfe-purls:
+    - pkg:conda/rope@${{ version }}?channel=conda-forge
+    - pkg:pypi/rope@${{ version }}
+  cfe-upstream-repo: https://github.com/python-rope/rope
+  cfe-upstream-homepage: https://pypi.org/project/rope/
+  cfe-import-names: [rope]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rope-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.14.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:04:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:04:20Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:04:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

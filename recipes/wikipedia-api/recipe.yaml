@@ -2,52 +2,84 @@
 schema_version: 1
 
 context:
-  name: wikipedia-api
   version: "0.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: wikipedia-api
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/Wikipedia-API/wikipedia_api-${{ version }}.tar.gz
   sha256: acc6965ed4b6948c61de5f6d1edcc49654e2fc7f7239f26111ccb4ea5796cc1d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - hatchling
   run:
+    - python >=${{ python_min }}
+    - click ==8.4.1
     - httpx ==0.28.1
     - tenacity ==9.1.4
-    - click ==8.4.1
-    - python >=${{ python_min }}
-    - requests ==2.32.5
 
 tests:
   - python:
       imports:
         - wikipediaapi
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Wrapper for Wikipedia
-  description: |
-    Wikipedia-API is easy to use Python wrapper for Wikipedias' API. It supports
-    extracting texts, sections, links, categories, translations, etc from Wikipedia.
-    Documentation provides code snippets for the most common use cases.
+  homepage: https://github.com/martin-majlis/Wikipedia-API
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/martin-majlis/Wikipedia-API
+  summary: Python Wrapper for Wikipedia
+  description: |
+    Python Wrapper for Wikipedia
+  repository: https://github.com/martin-majlis/Wikipedia-API
 
 extra:
   recipe-maintainers:
     - BastianZim
     - martin-majlis
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wikipedia-api
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wikipedia-api
+  cfe-purls:
+    - pkg:conda/wikipedia-api@${{ version }}?channel=conda-forge
+    - pkg:pypi/wikipedia-api@${{ version }}
+  cfe-upstream-repo: https://github.com/martin-majlis/Wikipedia-API
+  cfe-upstream-homepage: https://github.com/martin-majlis/Wikipedia-API
+  cfe-import-names: [wikipediaapi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wikipedia-api-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:19:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:19:16Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:19:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

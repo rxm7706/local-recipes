@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: 0.4.27
+  version: "0.4.27"
 
 package:
   name: python-magic
@@ -11,17 +13,16 @@ source:
   sha256: c1ba14b08e4a5f5c31a302b7721239695b2f0f058d125bd5ce1ee36b9d9d3c3b
 
 build:
-  number: 7
+  number: 0
   noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - libmagic
     - python >=${{ python_min }}
 
 tests:
@@ -32,19 +33,46 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - python -c "import magic; magic.Magic()"
 
 about:
-  homepage: https://github.com/ahupp/python-magic
+  homepage: http://github.com/ahupp/python-magic
   license: MIT
   license_file: LICENSE
   summary: File type identification using libmagic
+  description: |
+    File type identification using libmagic
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-magic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-magic
+  cfe-purls:
+    - pkg:conda/python-magic@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-magic@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/ahupp/python-magic
+  cfe-import-names: [magic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-magic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:52:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:52:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:52:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

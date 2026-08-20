@@ -2,56 +2,96 @@
 schema_version: 1
 
 context:
-  name: gcsfs
   version: "2026.8.0"
-  sha256: c2a7c0ffee2d0837243b4f838efaa185c152a4eb4cc529e41b3569bf00b9781e
 
 package:
-  name: ${{ name }}
+  name: gcsfs
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gcsfs/gcsfs-${{ version }}.tar.gz
+  sha256: c2a7c0ffee2d0837243b4f838efaa185c152a4eb4cc529e41b3569bf00b9781e
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - hatchling >=1.27.0
     - hatch-vcs
   run:
     - python >=${{ python_min }}
-    - google-auth >=1.2
-    - google-auth-oauthlib
-    - google-cloud-storage >=3.9.0
-    - google-cloud-storage-control
-    - requests
+    - aiohttp !=4.0.0a0,!=4.0.0a1,>=3.9.0
     - decorator >4.1.2
-    - fsspec >=2026.7.0,<2026.7.1
-    - aiohttp >=3.9.0
+    - fsspec >=2026.7.0
+    - google-auth-oauthlib
+    - google-auth >=1.2
+    - google-cloud-storage-control
+    - google-cloud-storage >=3.11.0
+    - requests
 
 tests:
   - python:
       imports:
         - gcsfs
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/fsspec/gcsfs
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Pythonic file-system interface for Google Cloud Storage
-  homepage: https://github.com/dask/gcsfs
-  documentation: http://gcsfs.readthedocs.io/en/latest/
+  summary: Convenient Filesystem interface over GCS
+  description: |
+    Convenient Filesystem interface over GCS
+  repository: https://github.com/fsspec/gcsfs
+  documentation: https://gcsfs.readthedocs.io
 
 extra:
   recipe-maintainers:
     - martindurant
     - jcrist
     - tomaugspurger
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gcsfs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gcsfs
+  cfe-purls:
+    - pkg:conda/gcsfs@${{ version }}?channel=conda-forge
+    - pkg:pypi/gcsfs@${{ version }}
+  cfe-upstream-repo: https://github.com/fsspec/gcsfs
+  cfe-upstream-homepage: https://github.com/fsspec/gcsfs
+  cfe-import-names: [gcsfs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gcsfs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2026.8.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:41:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:41:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:41:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

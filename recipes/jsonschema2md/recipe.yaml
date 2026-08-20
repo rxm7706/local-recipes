@@ -2,59 +2,85 @@
 schema_version: 1
 
 context:
-  name: jsonschema2md
   version: "1.7.0"
-  sha256: d69a5b011bf355c005e3c18be4515ae46d2689b38b593ced8d03c5ab66ddbaf3
 
 package:
-  name: ${{ name|lower }}
+  name: jsonschema2md
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jsonschema2md/jsonschema2md-${{ version }}.tar.gz
+  sha256: d69a5b011bf355c005e3c18be4515ae46d2689b38b593ced8d03c5ab66ddbaf3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
-  python:
-    entry_points:
-      - jsonschema2md = jsonschema2md:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - poetry >=1.5
-    - babel =2.17.0
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<4
-    - PyYAML =6.0.3
-    - markdown =3.9
-    - babel =2.17.0
+    - python >=${{ python_min }}
+    - pyyaml <7,>=6
+    - babel <3,>=2
+    - markdown <4,>=3
 
 tests:
   - python:
       imports:
         - jsonschema2md
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - jsonschema2md --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Convert JSON Schema to human-readable Markdown documentation
+  homepage: https://pypi.org/project/jsonschema2md/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/sbrunner/jsonschema2md
+  summary: Convert JSON Schema to human-readable Markdown documentation
+  description: |
+    Convert JSON Schema to human-readable Markdown documentation
+  repository: https://github.com/sbrunner/jsonschema2md
 
 extra:
   recipe-maintainers:
     - ollyhensby
     - brynpickering
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonschema2md
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonschema2md
+  cfe-purls:
+    - pkg:conda/jsonschema2md@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonschema2md@${{ version }}
+  cfe-upstream-repo: https://github.com/sbrunner/jsonschema2md
+  cfe-upstream-homepage: https://pypi.org/project/jsonschema2md/
+  cfe-import-names: [jsonschema2md]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonschema2md-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:55:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:55:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:55:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['babel']
+####

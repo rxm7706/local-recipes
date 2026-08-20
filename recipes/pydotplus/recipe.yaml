@@ -17,7 +17,7 @@ source:
     - 0001-Detect-graphviz-executables-with-bat-extension.patch
 
 build:
-  number: 7
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . --no-deps -vv
 
@@ -36,7 +36,9 @@ tests:
       imports:
         - pydotplus
       pip_check: false
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - python ${{ python_min }}
@@ -52,3 +54,36 @@ extra:
     - satra
     - jschueller
     - PaulKMueller
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydotplus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydotplus
+  cfe-purls:
+    - pkg:conda/pydotplus@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydotplus@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://pydotplus.readthedocs.org/
+  cfe-import-names: [pydotplus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydotplus-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:37:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:37:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:37:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,46 +2,79 @@
 schema_version: 1
 
 context:
-  name: jinxed
-  version: "2.0.4"
+  version: "2.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jinxed
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: a92ac48923433c0a88577bb0479191788813fd5055ef17ff2b04a701a1b83f19
+  url: https://pypi.org/packages/source/j/jinxed/jinxed-${{ version }}.tar.gz
+  sha256: 7e755b831faa2443d44fb4ce7c0202eb9c3ed39bd5bf1193365888f4f6092b54
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.8
     - setuptools
-    - wheel
   run:
-    - __${{ target_os }}
-    - ansicon
-    - python >=3.8
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - jinxed
-        - jinxed.terminfo
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Jinxed Terminal Library
-  license: MPL-2.0
+  homepage: https://github.com/Rockhopper-Technologies/jinxed
+  license: MPLv2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/jinxed/
+  summary: Jinxed Terminal Library
+  description: |
+    Jinxed Terminal Library
 
 extra:
   recipe-maintainers:
     - mattip
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jinxed
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jinxed
+  cfe-purls:
+    - pkg:conda/jinxed@${{ version }}?channel=conda-forge
+    - pkg:pypi/jinxed@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Rockhopper-Technologies/jinxed
+  cfe-import-names: [jinxed]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jinxed-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:49:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:49:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:49:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

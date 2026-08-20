@@ -2,16 +2,14 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
-  name: jsonfield
   version: "3.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jsonfield
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsonfield-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jsonfield/jsonfield-${{ version }}.tar.gz
   sha256: ca53871bc3308ae4f4cddc3b4f99ed5c6fc6abb1832fbfb499bc6da566c70e4a
 
 build:
@@ -21,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
-    - setuptools >=77
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
     - django >=4.2
@@ -33,14 +31,52 @@ tests:
       imports:
         - jsonfield
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/jsonfield/
   license: MIT
   license_file: LICENSE
   summary: A reusable Django field that allows you to store validated JSON in your model.
-  homepage: https://github.com/dmkoch/django-jsonfield/
+  description: |
+    A reusable Django field that allows you to store validated JSON in your model.
+  repository: https://github.com/rpkilby/jsonfield
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonfield
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonfield
+  cfe-purls:
+    - pkg:conda/jsonfield@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonfield@${{ version }}
+  cfe-upstream-repo: https://github.com/rpkilby/jsonfield
+  cfe-upstream-homepage: https://pypi.org/project/jsonfield/
+  cfe-import-names: [jsonfield]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonfield-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:20:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:20:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:20:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

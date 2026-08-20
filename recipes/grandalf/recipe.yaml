@@ -2,53 +2,87 @@
 schema_version: 1
 
 context:
-  name: grandalf
   version: "0.8"
 
 package:
-  name: ${{ name|lower }}
+  name: grandalf
   version: ${{ version }}
 
 source:
-  url: https://github.com/bdcht/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 82d80072e5a1928bc46d94a54d2d92a38f73da0af052efc84ce34b5f4601dfa2
+  url: https://pypi.org/packages/source/g/grandalf/grandalf-${{ version }}.tar.gz
+  sha256: 2813f7aab87f0d20f334a3162ccfbcbf085977134a17a5b516940a93a77ea974
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install --no-deps . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner
+    - setuptools
   run:
     - python >=${{ python_min }}
     - pyparsing
-    - future
 
 tests:
   - python:
       imports:
         - grandalf
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: GPL-2.0 OR EPL-1.0
+  homepage: https://github.com/bdcht/grandalf
+  license: GPL-2.0-only
   license_file: LICENSE
   summary: Graph and drawing algorithms framework
-  # The remaining entries in this section are optional, but recommended.
   description: |
-    Grandalf is a Python package made for experimentations with graphs and drawing
-    algorithms. It is written in pure python.
-  homepage: https://github.com/bdcht/grandalf
-  repository: https://github.com/bdcht/grandalf
+    Graph and drawing algorithms framework
 
 extra:
   recipe-maintainers:
     - shcheklein
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grandalf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grandalf
+  cfe-purls:
+    - pkg:conda/grandalf@${{ version }}?channel=conda-forge
+    - pkg:pypi/grandalf@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/bdcht/grandalf
+  cfe-import-names: [grandalf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grandalf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:34:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:34:33Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:34:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

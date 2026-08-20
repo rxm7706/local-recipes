@@ -2,8 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.0b260521"
-  python_min: "3.10"
+  version: "1.0.0b260813"
 
 package:
   name: agent-framework-claude
@@ -11,39 +10,74 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/agent-framework-claude/agent_framework_claude-${{ version }}.tar.gz
-  sha256: 32d87380b9e10cd63859f3cf218a3086ac24dafb200acb1fbba3658f6f71f32f
+  sha256: 2fe87be823fb37426982fd5771e1a93a0cb299c69828d16244c87f0ea1cbaa8b
 
 build:
-  noarch: python
   number: 0
+  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - flit-core <4.0,>=3.11
+    - flit-core >=3.11,<4.0
   run:
     - python >=${{ python_min }}
-    - agent-framework-core <2,>=1.6.0
-    - claude-agent-sdk <0.1.49,>=0.1.36
+    - agent-framework-core >=1.13.0,<2
+    - claude-agent-sdk >=0.1.46,<0.3
 
 tests:
   - python:
       imports:
         - agent_framework_claude
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: |
-    Claude Agent SDK integration for Microsoft Agent Framework.
-  homepage: https://pypi.org/project/agent-framework-claude/
-  repository: https://github.com/microsoft/agent-framework
+  homepage: https://aka.ms/agent-framework
   license: MIT
   license_file: LICENSE
+  summary: Claude Agent SDK integration for Microsoft Agent Framework.
+  description: |
+    Claude Agent SDK integration for Microsoft Agent Framework.
+  repository: https://github.com/microsoft/agent-framework/tree/main/python
 
 extra:
   recipe-maintainers:
     - killua156
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-framework-claude
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-framework-claude
+  cfe-purls:
+    - pkg:conda/agent-framework-claude@${{ version }}?channel=conda-forge
+    - pkg:pypi/agent-framework-claude@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/agent-framework/tree/main/python
+  cfe-upstream-homepage: https://aka.ms/agent-framework
+  cfe-import-names: [agent_framework_claude]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/agent-framework-claude-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-1.0.0b260813
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:13:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:13:19Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:13:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

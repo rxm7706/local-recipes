@@ -2,39 +2,33 @@
 schema_version: 1
 
 context:
-  name: sqllineage
   version: "1.5.8"
 
 package:
-  name: ${{ name|lower }}
+  name: sqllineage
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqllineage-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sqllineage/sqllineage-${{ version }}.tar.gz
   sha256: d5c7496b09f9ceec1b24aa4bdc3a19d8f6f2d7133848fa8a742148e756cf4715
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - sqllineage = sqllineage.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - hatchling >=1.27.0
-    # Not listed upstream but needs
-    - nodejs
   run:
     - python >=${{ python_min }}
-    - sqlparse >=0.5.4
-    - sqlfluff >=3.2.0
-    - sqlalchemy >=1.4.0
     - networkx >=2.4
     - rustworkx >=0.16.0
+    - sqlalchemy >=1.4.0
+    - sqlfluff >=3.2.0
+    - sqlparse >=0.5.4
 
 tests:
   - python:
@@ -44,18 +38,47 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - sqllineage --help
 
 about:
-  summary: SQL Lineage Analysis Tool powered by Python
+  homepage: https://reata.github.io/sqllineage/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/reata/sqllineage
+  summary: SQL Lineage Analysis Tool powered by Python
+  description: |
+    SQL Lineage Analysis Tool powered by Python
+  repository: https://github.com/reata/sqllineage.git
+  documentation: https://sqllineage.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqllineage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqllineage
+  cfe-purls:
+    - pkg:conda/sqllineage@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqllineage@${{ version }}
+  cfe-upstream-repo: https://github.com/reata/sqllineage.git
+  cfe-upstream-homepage: https://reata.github.io/sqllineage/
+  cfe-import-names: [sqllineage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqllineage-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:03:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:03:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T06:03:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

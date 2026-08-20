@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: python-docx
   version: "1.2.0"
-  hash_val: 7bc9d7b7d8a69c9c02ca09216118c86552704edc23bac179283f2e38f86220ce
 
 package:
-  name: ${{ name }}
+  name: python-docx
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-docx/python_docx-${{ version }}.tar.gz
+  sha256: 7bc9d7b7d8a69c9c02ca09216118c86552704edc23bac179283f2e38f86220ce
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools >=61.0
+    - setuptools >=61.0.0
   run:
     - python >=${{ python_min }}
     - lxml >=3.1.0
@@ -34,29 +31,55 @@ tests:
   - python:
       imports:
         - docx
-        - docx.dml
-        - docx.enum
-        - docx.image
-        - docx.opc
-        - docx.opc.parts
-        - docx.oxml
-        - docx.oxml.text
-        - docx.parts
-        - docx.styles
-        - docx.text
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-openxml/python-docx
   license: MIT
   license_file: LICENSE
-  summary: Create and update Microsoft Word .docx files.
-  homepage: https://github.com/python-openxml/python-docx
+  summary: Create, read, and update Microsoft Word .docx files.
+  description: |
+    Create, read, and update Microsoft Word .docx files.
+  repository: https://github.com/python-openxml/python-docx
+  documentation: https://python-docx.readthedocs.org/en/latest/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-docx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-docx
+  cfe-purls:
+    - pkg:conda/python-docx@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-docx@${{ version }}
+  cfe-upstream-repo: https://github.com/python-openxml/python-docx
+  cfe-upstream-homepage: https://github.com/python-openxml/python-docx
+  cfe-import-names: [docx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-docx-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:20:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:20:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:20:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

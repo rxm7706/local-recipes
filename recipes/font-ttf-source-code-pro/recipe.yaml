@@ -59,3 +59,37 @@ about:
 extra:
   recipe-maintainers:
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: font-ttf-source-code-pro
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: font-ttf-source-code-pro
+  cfe-purls:
+    - pkg:conda/font-ttf-source-code-pro@${{ version }}?channel=conda-forge
+    - pkg:pypi/font-ttf-source-code-pro@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://adobe-fonts.github.io/source-code-pro/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/font-ttf-source-code-pro-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:33:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:33:57Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:33:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: nfo for font-ttf-source-code-pro...
+Error: Failed to fetch PyPI metadata for 'font-ttf-source-code-pro' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-source-code-pro/json
+####

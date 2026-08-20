@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: drf-spectacular
   version: "0.30.0"
 
 package:
-  name: ${{ name|lower }}
+  name: drf-spectacular
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/drf_spectacular-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/drf-spectacular/drf_spectacular-${{ version }}.tar.gz
   sha256: 53e79e7ba00e240441b63c32273754a5368e4c2ab44a19f2595277cc1cd559c9
 
 build:
@@ -20,9 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61.0
+    - wheel
   run:
     - python >=${{ python_min }}
     - django >=2.2
@@ -31,23 +31,61 @@ requirements:
     - pyyaml >=5.1
     - jsonschema >=2.6.0
     - inflection >=0.3.1
-    - typing-extensions
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - drf_spectacular
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Sane and flexible OpenAPI 3 schema generation for Django REST framework
+  homepage: https://github.com/tfranzel/drf-spectacular
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/tfranzel/drf-spectacular
+  summary: Sane and flexible OpenAPI 3 schema generation for Django REST framework
+  description: |
+    Sane and flexible OpenAPI 3 schema generation for Django REST framework
   repository: https://github.com/tfranzel/drf-spectacular
+  documentation: https://drf-spectacular.readthedocs.io
 
 extra:
   recipe-maintainers:
     - rxm7706
     - MichelML
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: drf-spectacular
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: drf-spectacular
+  cfe-purls:
+    - pkg:conda/drf-spectacular@${{ version }}?channel=conda-forge
+    - pkg:pypi/drf-spectacular@${{ version }}
+  cfe-upstream-repo: https://github.com/tfranzel/drf-spectacular
+  cfe-upstream-homepage: https://github.com/tfranzel/drf-spectacular
+  cfe-import-names: [drf_spectacular]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-spectacular-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.30.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:54:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:54:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:54:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

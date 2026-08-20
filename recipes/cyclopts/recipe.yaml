@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: cyclopts
-  version: "4.22.5"
+  version: "4.23.0"
 
 package:
-  name: ${{ name|lower }}
+  name: cyclopts
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cyclopts-${{ version }}.tar.gz
-  sha256: 94044506317462cad90fb01a917dadce1f48a0915ba3605dc8d178dea1229e24
+  url: https://pypi.org/packages/source/c/cyclopts/cyclopts-${{ version }}.tar.gz
+  sha256: 2f764bbd90f1888073971c09576f90e594f80353588e10aa615b7d59bc009821
 
 build:
   number: 0
@@ -21,17 +20,17 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
-    - pip
   run:
     - python >=${{ python_min }}
     - attrs >=23.1.0
+    - docstring_parser <4.0,>=0.15
+    - rich-rst <3.0.0,>=1.3.1
     - rich >=13.6.0
-    - docstring_parser >=0.15,<4.0
-    - rich-rst >=1.3.1,<3.0.0
-    - typing_extensions >=4.8.0
     - tomli >=2.0.0
+    - typing_extensions >=4.8.0
 
 tests:
   - python:
@@ -43,12 +42,46 @@ tests:
         - "*"
 
 about:
-  summary: Intuitive, easy CLIs based on python type hints.
+  homepage: https://github.com/BrianPugh/cyclopts
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/BrianPugh/cyclopts
-  documentation: https://cyclopts.readthedocs.io/
+  summary: Intuitive, easy CLIs based on type hints.
+  description: |
+    Intuitive, easy CLIs based on type hints.
+  repository: https://github.com/BrianPugh/cyclopts
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cyclopts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cyclopts
+  cfe-purls:
+    - pkg:conda/cyclopts@${{ version }}?channel=conda-forge
+    - pkg:pypi/cyclopts@${{ version }}
+  cfe-upstream-repo: https://github.com/BrianPugh/cyclopts
+  cfe-upstream-homepage: https://github.com/BrianPugh/cyclopts
+  cfe-import-names: [cyclopts]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cyclopts-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-4.23.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:36:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:36:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:36:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-allauth
   version: "65.19.1"
 
 package:
-  name: ${{ name|lower }}
+  name: django-allauth
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/django_allauth-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-allauth/django_allauth-${{ version }}.tar.gz
   sha256: 999d01d5c422a82734cf5804df9f5a0d1d4ddd6acbb2f807db976ed7d49f9cb3
 
 build:
@@ -20,12 +19,13 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=40.8.0
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=75.3.0
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
-    - django >=4.2
+    - django >=4.2.16
     - asgiref >=3.8.1
 
 tests:
@@ -33,16 +33,19 @@ tests:
       imports:
         - allauth
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://allauth.org
   license: MIT
   license_file: LICENSE
-  summary: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication
-  description: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication
-  homepage: https://github.com/pennersr/django-allauth
-  repository: https://github.com/pennersr/django-allauth
-  documentation: https://django-allauth.readthedocs.io/en/latest/
+  summary: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication.
+  description: |
+    Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication.
+  repository: https://codeberg.org/allauth/django-allauth
+  documentation: https://docs.allauth.org/en/latest/
 
 extra:
   recipe-maintainers:
@@ -50,3 +53,36 @@ extra:
     - jacksund
     - cshaley
     - sannykr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-allauth
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-allauth
+  cfe-purls:
+    - pkg:conda/django-allauth@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-allauth@${{ version }}
+  cfe-upstream-repo: https://codeberg.org/allauth/django-allauth
+  cfe-upstream-homepage: https://allauth.org
+  cfe-import-names: [allauth]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-allauth-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-65.19.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:45:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:45:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:45:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

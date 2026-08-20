@@ -2,49 +2,85 @@
 schema_version: 1
 
 context:
-  name: clr_loader
   version: "0.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: clr_loader
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/clr_loader/clr_loader-${{ version }}.tar.gz
   sha256: 2e073e9aaf49d1ae2f56ecba27987ad5fb68be4bcd9dd34a5bed8f0e4e128366
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - dotnet-sdk 8.0.*
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=80
-    - setuptools-scm
-    - wheel
   run:
-    - cffi >=1.17
     - python >=${{ python_min }}
+    - cffi >=1.17
 
 tests:
   - python:
       imports:
         - clr_loader
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
+  homepage: https://pypi.org/project/clr_loader/
+  license: REPLACE_LICENSE
   license_file: LICENSE
   summary: Generic pure Python loader for .NET runtimes
-  homepage: https://github.com/pythonnet/clr-loader
-  repository: https://github.com/pythonnet/clr-loader
+  description: |
+    Generic pure Python loader for .NET runtimes
+  documentation: https://pythonnet.github.io/clr-loader/
 
 extra:
   recipe-maintainers:
     - m-rossi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: clr_loader
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: clr-loader
+  cfe-purls:
+    - pkg:conda/clr_loader@${{ version }}?channel=conda-forge
+    - pkg:pypi/clr-loader@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/clr_loader/
+  cfe-import-names: [clr_loader]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/clr_loader-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T08:30:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:30:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:30:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

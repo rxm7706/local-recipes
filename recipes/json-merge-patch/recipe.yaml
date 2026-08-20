@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: json-merge-patch
   version: "0.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: json-merge-patch
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/json-merge-patch/json_merge_patch-${{ version }}.tar.gz
   sha256: 4a022d78fc2f09cb49d96c646efc380d3b5ead2b5c7dabe22c3928c2c2e9c4e0
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,22 +29,57 @@ tests:
   - python:
       imports:
         - json_merge_patch
-        - json_merge_patch.cli
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: JSON Merge Patch library (https://tools.ietf.org/html/rfc7386)
-  license: BSD-3-Clause
+  homepage: https://github.com/open-contracting/json-merge-patch
+  license: REPLACE_LICENSE
   license_file: LICENSE
+  summary: "JSON Merge Patch library (https://tools.ietf.org/html/rfc7386)"
   description: |
-    json-merge-patch library provides functions to merge json in
-    accordance with https://tools.ietf.org/html/rfc7386
-  homepage: https://github.com/OpenDataServices/json-merge-patch
-  repository: https://github.com/OpenDataServices/json-merge-patch
-  documentation: https://tools.ietf.org/html/rfc7386
+    JSON Merge Patch library (https://tools.ietf.org/html/rfc7386)
 
 extra:
   recipe-maintainers:
     - BrentDorsey
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-merge-patch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-merge-patch
+  cfe-purls:
+    - pkg:conda/json-merge-patch@${{ version }}?channel=conda-forge
+    - pkg:pypi/json-merge-patch@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/open-contracting/json-merge-patch
+  cfe-import-names: [json_merge_patch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-merge-patch-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T00:19:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:19:56Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:19:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

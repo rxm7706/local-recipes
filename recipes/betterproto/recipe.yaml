@@ -2,51 +2,86 @@
 schema_version: 1
 
 context:
-  name: betterproto
-  version: 2.0.0b7
+  version: "1.2.5"
 
 package:
-  name: ${{ name|lower }}
+  name: betterproto
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/betterproto-${{ version }}.tar.gz
-  sha256: 1b1458ca5278d519bcd62556a4c236f998a91d503f0f71c67b0b954747052af2
+  url: https://pypi.org/packages/source/b/betterproto/betterproto-${{ version }}.tar.gz
+  sha256: 74a3ab34646054f674d236d1229ba8182dc2eae86feb249b8590ef496ce9803d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - protoc-gen-python_betterproto=betterproto.plugin:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - poetry-core
     - setuptools
-    - python ${{ python_min }}
   run:
-    - grpclib >=0.4.1,<0.5.0
     - python >=${{ python_min }}
-    - python-dateutil >=2.8,<3.0
-    - typing-extensions >=4.7.1,<5.0.0
-    - importlib-metadata >=1.6.0
 
 tests:
   - python:
       imports:
         - betterproto
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A better Protobuf / gRPC generator & library
-  license: MIT
-  license_file: LICENSE
   homepage: http://github.com/danielgtaylor/python-betterproto
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A better Protobuf / gRPC generator & library
+  description: |
+    A better Protobuf / gRPC generator & library
 
 extra:
   recipe-maintainers:
     - asford
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: betterproto
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: betterproto
+  cfe-purls:
+    - pkg:conda/betterproto@${{ version }}?channel=conda-forge
+    - pkg:pypi/betterproto@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/danielgtaylor/python-betterproto
+  cfe-import-names: [betterproto]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/betterproto-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.5
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T06:38:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:38:25Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:38:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

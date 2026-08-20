@@ -2,52 +2,92 @@
 schema_version: 1
 
 context:
-  name: msrest
   version: "0.7.1"
 
 package:
-  name: ${{ name|lower }}
+  name: msrest
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  url: https://pypi.org/packages/source/m/msrest/msrest-0.7.1.zip
   sha256: 6e7661f46f3afd88b75667b7187a92829924446c7ea1d169be8c4bb7eeb788b9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - azure-core >=1.24.0
-    - certifi >=2017.4.17
-    - isodate >=0.6.0
     - python >=${{ python_min }}
-    - requests >=2.16,<3.dev0
-    - requests-oauthlib >=0.5.0
+    - azure-core
+    - certifi
+    - isodate
+    - requests-oauthlib
+    - requests
 
 tests:
   - python:
       imports:
         - msrest
-        - msrest.authentication
-        - msrest.exceptions
-        - msrest.pipeline
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: LICENSE.md
-  summary: AutoRest swagger generator Python client runtime.
   homepage: https://github.com/Azure/msrest-for-python
+  license: MIT
+  license_file: LICENSE
+  summary: AutoRest swagger generator Python client runtime.
+  description: |
+    AutoRest swagger generator Python client runtime.
 
 extra:
   recipe-maintainers:
     - xylar
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: msrest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: msrest
+  cfe-purls:
+    - pkg:conda/msrest@${{ version }}?channel=conda-forge
+    - pkg:pypi/msrest@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Azure/msrest-for-python
+  cfe-import-names: [msrest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/msrest-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T10:17:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:17:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:17:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

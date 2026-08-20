@@ -2,441 +2,50 @@
 schema_version: 1
 
 context:
-  name: sqlalchemy
   version: "2.0.52"
 
-recipe:
+package:
   name: sqlalchemy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/SQLAlchemy/sqlalchemy-${{ version }}.tar.gz
   sha256: 5e2d46356ac2ccb7d268ab6c2319ac6a2b42f1b8d5fd8bd3d46855cd82abee97
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: ${{ name }}
-    build:
-      script:
-        - ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
-    requirements:
-      build:
-        - if: build_platform != target_platform
-          then:
-            - python
-            - cross-python_${{ target_platform }}
-            - cython >=0.29.24
-        - ${{ compiler('c') }}
-        - ${{ stdlib("c") }}
-      host:
-        - python
-        - setuptools >=61.0
-        - cython >=0.29.24
-        - pip
-      run:
-        - python
-        - greenlet !=0.4.17
-        - typing-extensions >=4.6.0
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-  - package:
-      name: ${{ name }}-with-asyncio
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - greenlet !=0.4.17
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-mssql
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - pyodbc
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-mssql-pymssql
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - pymssql
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-mssql-pyodbc
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - pyodbc
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-mysql
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - mysqlclient >=1.4.0
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-mysql-connector
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - mysql-connector-python
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-mariadb-connector
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - mariadb >=1.0.1,!=1.1.2,!=1.1.5,!=1.1.10
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-oracle
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - cx_oracle >=8
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-oracle-oracledb
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - oracledb >=1.0.1
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-postgresql
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - psycopg2 >=2.7
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version: ${{ python_min }}.*
-  - package:
-      name: ${{ name }}-with-postgresql-pg8000
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - pg8000 >=1.29.3
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-postgresql-asyncpg
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - ${{ name }}-with-asyncio
-        - asyncpg
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-postgresql-psycopg2binary
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - psycopg2-binary
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-postgresql-psycopg
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - psycopg >=3.0.7,!=3.1.15
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-postgresql-psycopgbinary
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        # psycopg-binary doesn't exist (or make sense, since psycopg is also
-        # binary) on conda-forge
-        - ${{ name }}-with-postgresql-psycopg
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-pymysql
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - pymysql
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-aiomysql
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - ${{ name }}-with-asyncio
-        - aiomysql
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
-  - package:
-      name: ${{ name }}-with-aiosqlite
-    build:
-      # noarch so just build it once
-      skip: not (linux and x86_64) or match(python, "!=3.10")
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
-        - ${{ name }}-with-asyncio
-        - aiosqlite
-    tests:
-      - python:
-          imports:
-            - sqlalchemy
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - "*"
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - cython >=0.29.24
+  run:
+    - python >=${{ python_min }}
+    - importlib-metadata
+    - greenlet >=1
+    - typing_extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - lib.sqlalchemy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.sqlalchemy.org
   license: MIT
   license_file: LICENSE
-  summary: Database Abstraction Library.
+  summary: Database Abstraction Library
   description: |
-    SQLAlchemy is the Python SQL toolkit and Object Relational Mapper that
-    gives application developers the full power and flexibility of SQL.
-  homepage: https://www.sqlalchemy.org/
-  repository: https://github.com/sqlalchemy/sqlalchemy
-  documentation: https://docs.sqlalchemy.org/
+    Database Abstraction Library
+  documentation: https://docs.sqlalchemy.org
 
 extra:
   recipe-maintainers:
@@ -444,3 +53,34 @@ extra:
     - ocefpaf
     - nehaljwani
     - igortg
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy
+  cfe-purls:
+    - pkg:conda/sqlalchemy@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.sqlalchemy.org
+  cfe-import-names: [lib.sqlalchemy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlalchemy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:58:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:58:41Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:58:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['lib']
+####

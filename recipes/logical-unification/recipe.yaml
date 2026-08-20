@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: logical-unification
   version: "0.4.7"
 
 package:
-  name: ${{ name|lower }}
+  name: logical-unification
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/logical-unification/logical_unification-${{ version }}.tar.gz
   sha256: 3d73b263a870827b3f52d89c94f3336afd7fcaecf1e0c67fa18e73025399775c
 
 build:
@@ -20,10 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=80.0.0
     - setuptools-scm
-    - pip
   run:
     - python >=${{ python_min }}
     - toolz
@@ -34,23 +33,56 @@ tests:
       imports:
         - unification
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - python -c "from importlib.metadata import version; print(version('${{ name }}'))"
-      - python -c "from importlib.metadata import version; print(version('${{ name }}'))" | grep ${{ version }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Logical unification in Python
+  homepage: https://github.com/pythological/unification
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://github.com/pythological/unification/
-  repository: https://github.com/pythological/unification
+  summary: Logical unification in Python
+  description: |
+    Logical unification in Python
 
 extra:
   recipe-maintainers:
     - maresb
     - brandonwillard
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: logical-unification
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: logical-unification
+  cfe-purls:
+    - pkg:conda/logical-unification@${{ version }}?channel=conda-forge
+    - pkg:pypi/logical-unification@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pythological/unification
+  cfe-import-names: [unification]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/logical-unification-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.7
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:20:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:20:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:20:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

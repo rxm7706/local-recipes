@@ -13,44 +13,76 @@ source:
   sha256: c9925374c961577d0aee403b09e6f8ea1971d913f011f00ca70c76beaf7a77e7
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - geocode = geocoder.cli:cli
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - requests
-    - ratelim
     - click
+    - ratelim
+    - requests
     - six
-    - future
 
 tests:
   - python:
       imports:
         - geocoder
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - geocode --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/DenisCarriere/geocoder
   license: Apache-2.0
   license_file: LICENSE
-  summary: Geocoder is a simple and consistent geocoding library
-  homepage: https://github.com/DenisCarriere/geocoder
+  summary: Geocoder is a simple and consistent geocoding library.
+  description: |
+    Geocoder is a simple and consistent geocoding library.
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: geocoder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: geocoder
+  cfe-purls:
+    - pkg:conda/geocoder@${{ version }}?channel=conda-forge
+    - pkg:pypi/geocoder@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/DenisCarriere/geocoder
+  cfe-import-names: [geocoder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/geocoder-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.38.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:42:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:42:42Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T08:42:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['six']
+#    # added run deps from import test: ['requests']
+#    # added run deps from import test: ['ratelim']
+#    # added run deps from import test: ['click']
+####

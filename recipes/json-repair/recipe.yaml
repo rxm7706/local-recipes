@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: json-repair
   version: "0.63.2"
 
 package:
-  name: ${{ name|lower }}
+  name: json-repair
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_repair-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/json-repair/json_repair-${{ version }}.tar.gz
   sha256: 8385ca04afbf411eebd9f0ba064155d1afe37442aaad52f693825c65cc314586
 
 build:
@@ -21,8 +20,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=61.0
     - pip
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
 
@@ -31,14 +30,48 @@ tests:
       imports:
         - json_repair
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A package to repair broken json strings
+  homepage: https://github.com/mangiucugna/json_repair/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/mangiucugna/json_repair/
+  summary: A package to repair broken json strings
+  description: |
+    A package to repair broken json strings
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-repair
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-repair
+  cfe-purls:
+    - pkg:conda/json-repair@${{ version }}?channel=conda-forge
+    - pkg:pypi/json-repair@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mangiucugna/json_repair/
+  cfe-import-names: [json_repair]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-repair-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:50:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:50:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:50:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,44 +2,80 @@
 schema_version: 1
 
 context:
-  name: asyncache
   version: "0.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: asyncache
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/asyncache-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/asyncache/asyncache-${{ version }}.tar.gz
   sha256: 9a1e60a75668e794657489bdea6540ee7e3259c483517b934670db7600bf5035
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - poetry-core
   run:
-    - python >=${{ python_min }},<4.0
-    - cachetools >=5.2.0,<6.0.0
+    - python >=${{ python_min }}
+    - cachetools
 
 tests:
   - python:
       imports:
         - asyncache
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Helpers to use cachetools with async code.
+  homepage: https://pypi.org/project/asyncache/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/hephex/asyncache
+  summary: Helpers to use cachetools with async code.
+  description: |
+    Helpers to use cachetools with async code.
 
 extra:
   recipe-maintainers:
     - maresb
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asyncache
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asyncache
+  cfe-purls:
+    - pkg:conda/asyncache@${{ version }}?channel=conda-forge
+    - pkg:pypi/asyncache@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/asyncache/
+  cfe-import-names: [asyncache]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asyncache-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:06:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:06:30Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T08:06:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

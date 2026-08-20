@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: types-protobuf
   version: "7.34.1.20260816"
 
 package:
-  name: ${{ name|lower }}
+  name: types-protobuf
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 6f43846e7a3cc2621abfa79e2bb03461e6769a74cdae7462efaddf84580fd5c1
+  url: https://pypi.org/packages/py3/t/types-protobuf/types_protobuf-7.34.1.20260816-py3-none-any.whl
+  sha256: 2e3a225b3c21f0022daa34cec155f03858bb9aff9792947b8e71f0e9f1791fdb
 
 build:
   number: 0
@@ -20,33 +19,61 @@ build:
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}.*
   run:
     - python >=${{ python_min }}
-    - types-futures
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-
-  - package_contents:
-      site_packages:
-        - google-stubs/protobuf/__init__.pyi
+  - python:
+      imports:
+        - types_protobuf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Typing stubs for protobuf
-  license: Apache-2.0 AND MIT
-  license_file: LICENSE
   homepage: https://github.com/python/typeshed
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Typing stubs for protobuf
+  description: |
+    Typing stubs for protobuf
   repository: https://github.com/python/typeshed
 
 extra:
   recipe-maintainers:
     - fhoehle
     - conda-forge/mypy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-protobuf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-protobuf
+  cfe-purls:
+    - pkg:conda/types-protobuf@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-protobuf@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_protobuf]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-protobuf-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:57:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:57:07Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:57:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

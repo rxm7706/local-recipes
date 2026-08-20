@@ -13,38 +13,75 @@ source:
   sha256: 7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0
 
 build:
-  number: 4
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - coloredlogs = coloredlogs.cli:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
-    - humanfriendly >=9.1
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - humanfriendly >=9.1
+    - humanfriendly
 
 tests:
   - python:
       imports:
         - coloredlogs
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://coloredlogs.readthedocs.io
   license: MIT
   license_file: LICENSE.txt
   summary: Colored terminal output for Python's logging module
-  homepage: https://coloredlogs.readthedocs.org
+  description: |
+    Colored terminal output for Python's logging module
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - andfoy
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: coloredlogs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: coloredlogs
+  cfe-purls:
+    - pkg:conda/coloredlogs@${{ version }}?channel=conda-forge
+    - pkg:pypi/coloredlogs@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://coloredlogs.readthedocs.io
+  cfe-import-names: [coloredlogs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/coloredlogs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-15.0.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:07:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:07:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:07:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

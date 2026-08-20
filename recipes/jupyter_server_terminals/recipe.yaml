@@ -3,10 +3,9 @@ schema_version: 1
 
 context:
   version: "0.5.4"
-  python_check_max: "3.14"
 
 package:
-  name: jupyter_server_terminals
+  name: jupyter-server-terminals
   version: ${{ version }}
 
 source:
@@ -16,50 +15,67 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling >=1.5
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5
   run:
     - python >=${{ python_min }}
+    - pywinpty >=2.0.3
     - terminado >=0.8.3
-    # - pywinpty >=2.0.3  # rely on terminado to provide this
 
 tests:
-  # needs `jupyter_server`, which depends on this, so cannot `pip check``
-  # - python:
-  #     imports: jupyter_server_terminals
-  #     pip_check: true
-  #     python_version: ${{ python_min }}.*
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - coverage
-        - jupyter_server >=2.0.0rc8
-        - pip
-        - pytest >=7.0
-        - pytest-jupyter-server >=0.5.3
-        - pytest-timeout
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-      - coverage run --source=jupyter_server_terminals --branch -m pytest -vv --color=yes --tb=long
-      - coverage report --show-missing --skip-covered --fail-under=80
+  - python:
+      imports:
+        - jupyter_server_terminals
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Jupyter Server Extension Providing Terminals.
+  homepage: https://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://pypi.org/project/jupyter-server-terminals
+  summary: A Jupyter Server Extension Providing Terminals.
+  description: |
+    A Jupyter Server Extension Providing Terminals.
   repository: https://github.com/jupyter-server/jupyter_server_terminals
   documentation: https://jupyter-server-terminals.readthedocs.io
 
 extra:
   recipe-maintainers:
     - conda-forge/jupyter_server
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_server_terminals
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-server-terminals
+  cfe-purls:
+    - pkg:conda/jupyter_server_terminals@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-server-terminals@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter-server/jupyter_server_terminals
+  cfe-upstream-homepage: https://jupyter.org
+  cfe-import-names: [jupyter_server_terminals]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_server_terminals-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:34:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:34:30Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:34:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,71 +2,69 @@
 schema_version: 1
 
 context:
-  name: streamlit
   version: "1.61.1"
 
 package:
-  name: ${{ name|lower }}
+  name: streamlit
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/streamlit-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/streamlit/streamlit-${{ version }}.tar.gz
   sha256: 68acf1ff1b6005b19205c2777d832deea0c1edd6fbbf7f43f091b96220e5e35f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - streamlit = streamlit.web.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=65.5.1
+    - wheel
   run:
-    - anyio >=4.0.0,<5
-    - httptools >=0.6.3,<1
-    - itsdangerous >=2.1.2,<3
-    - python-multipart >=0.0.10,<1
-    - starlette >=0.46.0,<1.4.0
-    - uvicorn >=0.30.0,<1
-    - websockets >=12.0.0,<17
-    - altair >=5.0.0,<7,!=5.4.0,!=5.4.1
-    - blinker >=1.5.0,<2
-    - cachetools >=5.5,<8
-    - click >=7.0,<9
-    - gitpython >=3.0.7,<4,!=3.1.19
-    - numpy >=1.23,<3
-    - packaging >=20
-    - pandas >=1.4.0,<4
-    - pillow >=7.1.0,<13
-    - protobuf >=5.26.1,<8
-    - pyarrow >=7.0,<25
-    - pydeck >=0.8.0b4,<1
     - python >=${{ python_min }}
-    - requests >=2.27,<3
-    - tenacity >=8.1.0,<10
-    - toml >=0.10.1,<2
-    - tornado >=6.0.3,<7,!=6.5.0
-    - typing_extensions >=4.10.0,<5
-    - watchdog >=2.1.5,<7
+    - altair !=5.4.0,!=5.4.1,<7,>=5.0.0
+    - blinker <2,>=1.5.0
+    - click <9,>=7.0
+    - numpy <3,>=1.23
+    - packaging >=20
+    - pandas <4,>=1.4.0
+    - pillow <13,>=7.1.0
+    - pydeck <1,>=0.8.0b4
+    - protobuf <8,>=5.26.1
+    - pyarrow <25,>=7.0
+    - requests <3,>=2.27
+    - tenacity <10,>=8.1.0
+    - toml <2,>=0.10.1
+    - typing_extensions <5,>=4.10.0
+    - starlette <1.4.0,>=0.46.0
+    - uvicorn <1,>=0.30.0
+    - httptools <1,>=0.6.3
+    - anyio <5,>=4.0.0
+    - python-multipart <1,>=0.0.10
+    - websockets <17,>=12.0.0
+    - itsdangerous <3,>=2.1.2
 
 tests:
   - python:
       imports:
         - streamlit
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A faster way to build and share data apps
+  homepage: https://streamlit.io
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://streamlit.io
+  summary: A faster way to build and share data apps
+  description: |
+    A faster way to build and share data apps
   repository: https://github.com/streamlit/streamlit
+  documentation: https://docs.streamlit.io/
 
 extra:
   recipe-maintainers:
@@ -81,3 +79,43 @@ extra:
     - sfc-gh-bnisco
     - sfc-gh-lwilby
     - sfc-gh-nbellante
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit
+  cfe-purls:
+    - pkg:conda/streamlit@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit@${{ version }}
+  cfe-upstream-repo: https://github.com/streamlit/streamlit
+  cfe-upstream-homepage: https://streamlit.io
+  cfe-import-names: [streamlit]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/streamlit-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.61.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:10:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:10:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:10:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

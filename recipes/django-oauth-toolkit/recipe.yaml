@@ -2,47 +2,85 @@
 schema_version: 1
 
 context:
-  name: django-oauth-toolkit
   version: "3.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-oauth-toolkit
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-oauth-toolkit/django_oauth_toolkit-${{ version }}.tar.gz
   sha256: e43bef1568d6322b44175e27eff82ed7d7cf210889a07d10b8a64e4190ff1351
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
-    - django >=3.2,!=4.0.0
+    - django >=4.2
     - requests >=2.13.0
-    - oauthlib >=3.1.0
-    - jwcrypto >=0.8.0
-    - pytz >=2024.1
+    - urllib3 >=1.26
+    - oauthlib >=3.3.0
+    - jwcrypto >=1.5.0
 
 tests:
   - python:
       imports:
         - oauth2_provider
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OAuth2 Provider for Django
-  license: BSD-2-Clause
+  homepage: https://django-oauth-toolkit.readthedocs.io/
+  license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/jazzband/django-oauth-toolkit
+  summary: OAuth2 Provider for Django
+  description: |
+    OAuth2 Provider for Django
+  repository: https://github.com/django-oauth/django-oauth-toolkit
 
 extra:
   recipe-maintainers:
     - abraha2d
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-oauth-toolkit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-oauth-toolkit
+  cfe-purls:
+    - pkg:conda/django-oauth-toolkit@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-oauth-toolkit@${{ version }}
+  cfe-upstream-repo: https://github.com/django-oauth/django-oauth-toolkit
+  cfe-upstream-homepage: https://django-oauth-toolkit.readthedocs.io/
+  cfe-import-names: [oauth2_provider]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-oauth-toolkit-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:50:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:50:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:50:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

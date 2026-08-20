@@ -2,47 +2,80 @@
 schema_version: 1
 
 context:
-  name: contextvars
   version: "2.4"
 
 package:
-  name: ${{ name|lower }}
+  name: contextvars
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/contextvars-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/contextvars/contextvars-${{ version }}.tar.gz
   sha256: f38c908aaa59c14335eeea12abea5f443646216c4e29380d7bf34d2018e2c39e
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - immutables >=0.9
 
 tests:
   - python:
       imports:
         - contextvars
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/MagicStack/contextvars
   license: Apache-2.0
   license_file: LICENSE
   summary: PEP 567 Backport
-  description: Implements a backport of Python 3.7 contextvar module (see PEP 567)
-  homepage: http://github.com/MagicStack/contextvars
-  repository: https://github.com/MagicStack/contextvars
+  description: |
+    PEP 567 Backport
 
 extra:
   recipe-maintainers:
     - nicoddemus
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: contextvars
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: contextvars
+  cfe-purls:
+    - pkg:conda/contextvars@${{ version }}?channel=conda-forge
+    - pkg:pypi/contextvars@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/MagicStack/contextvars
+  cfe-import-names: [contextvars]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/contextvars-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:31:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:31:57Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T08:31:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

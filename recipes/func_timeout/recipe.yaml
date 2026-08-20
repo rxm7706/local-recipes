@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: func_timeout
   version: "4.3.5"
 
 package:
-  name: ${{ name|lower }}
+  name: func-timeout
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/func-timeout/func_timeout-${{ version }}.tar.gz
   sha256: 74cd3c428ec94f4edfba81f9b2f14904846d5ffccc27c92433b8b5939b5575dd
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,20 +29,52 @@ tests:
   - python:
       imports:
         - func_timeout
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-3.0-or-later
-  license_file: LICENSE
-  summary: Python module to support running any existing function with a given timeout.
   homepage: https://github.com/kata198/func_timeout
-  repository: https://github.com/kata198/func_timeout
-  documentation: http://htmlpreview.github.io/?https://github.com/kata198/func_timeout/blob/master/doc/func_timeout.html?vers=1
+  license: LGPLv2
+  license_file: LICENSE
+  summary: Python module which allows you to specify timeouts when calling any existing function. Also provides support for stoppable-threads
+  description: |
+    Python module which allows you to specify timeouts when calling any existing function. Also provides support for stoppable-threads
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: func_timeout
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: func-timeout
+  cfe-purls:
+    - pkg:conda/func_timeout@${{ version }}?channel=conda-forge
+    - pkg:pypi/func-timeout@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/kata198/func_timeout
+  cfe-import-names: [func_timeout]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/func_timeout-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.3.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:28:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:28:47Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:28:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

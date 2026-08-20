@@ -15,60 +15,44 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - keyring = keyring.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm >=3.4.1
-    - setuptools >=56
-    - toml
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
-    - if: win
-      then: pywin32-ctypes >=0.2.0
-    - if: linux
-      then: secretstorage >=3.2
-    - if: linux
-      then: jeepney >=0.4.2
     - importlib-metadata >=4.11.4
     - jaraco.classes
-    - importlib_resources
     - jaraco.functools
     - jaraco.context
-    - if: linux
-      then: __linux
     - if: win
-      then: __win
-    - if: osx
-      then: __osx
+      then:
+        - pywin32-ctypes
+    - if: linux
+      then:
+        - secretstorage
+        - jeepney
 
 tests:
   - python:
       imports:
         - keyring
-        - keyring.backends
-        - keyring.util
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - keyring --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/keyring/
   license: MIT
   license_file: LICENSE
-  summary: Store and access your passwords safely
-  homepage: https://github.com/jaraco/keyring
+  summary: Store and access your passwords safely.
+  description: |
+    Store and access your passwords safely.
   repository: https://github.com/jaraco/keyring
-  documentation: https://pypi.org/project/keyring/
 
 extra:
   recipe-maintainers:
@@ -76,3 +60,36 @@ extra:
     - licode
     - tacaswell
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: keyring
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: keyring
+  cfe-purls:
+    - pkg:conda/keyring@${{ version }}?channel=conda-forge
+    - pkg:pypi/keyring@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/keyring
+  cfe-upstream-homepage: https://pypi.org/project/keyring/
+  cfe-import-names: [keyring]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/keyring-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-25.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:54:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:54:26Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:54:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

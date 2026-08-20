@@ -2,45 +2,79 @@
 schema_version: 1
 
 context:
-  name: pyu2f
   version: "0.1.5"
 
 package:
-  name: ${{ name|lower }}
+  name: pyu2f
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyu2f/pyu2f-${{ version }}.tar.gz
   sha256: a3caa3a11842fc7d5746376f37195e6af5f17c0a15737538bb1cebf656fb306b
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - ez_setup
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - six
 
 tests:
   - python:
       imports:
         - pyu2f
-        - pyu2f.convenience
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: U2F host library for interacting with a U2F device over USB.
+  homepage: https://github.com/google/pyu2f/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/pyu2f/
+  summary: U2F host library for interacting with a U2F device over USB.
+  description: |
+    U2F host library for interacting with a U2F device over USB.
 
 extra:
   recipe-maintainers:
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyu2f
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyu2f
+  cfe-purls:
+    - pkg:conda/pyu2f@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyu2f@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/google/pyu2f/
+  cfe-import-names: [pyu2f]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyu2f-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:36:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:36:26Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:36:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

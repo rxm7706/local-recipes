@@ -2,54 +2,82 @@
 schema_version: 1
 
 context:
-  name: autoflake
   version: "2.3.3"
 
 package:
-  name: ${{ name|lower }}
+  name: autoflake
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/autoflake/autoflake-${{ version }}.tar.gz
   sha256: c24809541e23999f7a7b0d2faadf15deb0bc04cdde49728a2fd943a0c8055504
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - autoflake = autoflake:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - hatchling
   run:
-    - pyflakes >=3.0.0
     - python >=${{ python_min }}
-    - tomli >=2.0.1  # remove when python <=3.10 is no longer supported
+    - pyflakes >=3.0.0
+    - tomli >=2.0.1
 
 tests:
   - python:
       imports:
         - autoflake
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - autoflake --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.github.com/PyCQA/autoflake
   license: MIT
-  license_file: LICENSE.txt
+  license_file: LICENSE
   summary: Removes unused imports and unused variables
-  homepage: https://github.com/myint/autoflake
+  description: |
+    Removes unused imports and unused variables
 
 extra:
   recipe-maintainers:
     - pmgrafe
     - asford
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: autoflake
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: autoflake
+  cfe-purls:
+    - pkg:conda/autoflake@${{ version }}?channel=conda-forge
+    - pkg:pypi/autoflake@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.github.com/PyCQA/autoflake
+  cfe-import-names: [autoflake]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/autoflake-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:08:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:08:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:08:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

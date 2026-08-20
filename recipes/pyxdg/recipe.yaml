@@ -2,44 +2,84 @@
 schema_version: 1
 
 context:
-  name: pyxdg
   version: "0.28"
 
 package:
-  name: ${{ name|lower }}
+  name: pyxdg
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyxdg/pyxdg-${{ version }}.tar.gz
   sha256: 3267bb3074e934df202af2ee0868575484108581e6f3cb006af1da35395e88b4
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - xdg
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-2.0-only
-  license_file: COPYING
-  summary: PyXDG contains implementations of freedesktop.org standards in python.
-  description: PyXDG is a python library to access freedesktop.org standards
   homepage: http://freedesktop.org/wiki/Software/pyxdg
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: PyXDG contains implementations of freedesktop.org standards in python.
+  description: |
+    PyXDG contains implementations of freedesktop.org standards in python.
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
     - h-vetinari
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyxdg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyxdg
+  cfe-purls:
+    - pkg:conda/pyxdg@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyxdg@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://freedesktop.org/wiki/Software/pyxdg
+  cfe-import-names: [xdg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyxdg-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.28
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T04:38:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:38:48Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:38:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: fasttransform
   version: "0.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: fasttransform
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fasttransform/fasttransform-${{ version }}.tar.gz
   sha256: 18ea6964128be779a1c483d4775f1b5a2e452f915c2d30dfa2d91adca98453d7
 
 build:
@@ -20,43 +19,66 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=64.0
   run:
     - python >=${{ python_min }}
+    - pkg-resources
     - fastcore
     - plum-dispatch
-    - numpy
-    - pandas
-    - matplotlib-base
 
 tests:
   - python:
       imports:
         - fasttransform
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Transform is the main building block of data pipelines in fastai. And elsewhere if you want.
-  description: |
-    Transform is a class that lets you create reusable data transformations.
-    You initialize a Transform by passing in or decorating a raw function.
-    The Transform then provides an enhanced version of that function via
-    Transform.encodes, which can be used in your data pipeline.
-
-    It provides various conveniences:
-    - Reversibility. You can collect the raw function and its inverse into one transform object.
-    - Customized initialization. You can customize the exact behavior of a transform function on initialization.
-    - Type-based multiple dispatch. Transforms can specialize their behavior based on the runtime types of their arguments.
-    - Type conversion/preservation. Transforms help you maintain desired return types.
+  homepage: https://github.com/AnswerDotAI/fasttransform
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/AnswerDotAI/fasttransform
-  repository: https://github.com/AnswerDotAI/fasttransform
-  documentation: https://answerdotai.github.io/fasttransform
+  summary: Transform is the main building block of data pipelines in fastai. And elsewhere if you want.
+  description: |
+    Transform is the main building block of data pipelines in fastai. And elsewhere if you want.
 
 extra:
   recipe-maintainers:
     - tonyhoo
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fasttransform
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fasttransform
+  cfe-purls:
+    - pkg:conda/fasttransform@${{ version }}?channel=conda-forge
+    - pkg:pypi/fasttransform@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/AnswerDotAI/fasttransform
+  cfe-import-names: [fasttransform]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fasttransform-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:12:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:12:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:12:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

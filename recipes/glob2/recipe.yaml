@@ -2,42 +2,79 @@
 schema_version: 1
 
 context:
-  name: glob2
   version: "0.7"
 
 package:
-  name: ${{ name }}
+  name: glob2
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/glob2/glob2-${{ version }}.tar.gz
   sha256: 85c3dbd07c8aa26d63d7aacee34fa86e9a91a3873bc30bf62ec46e531f92ab8c
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed . --verbose
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - glob2
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
+  homepage: http://github.com/miracle2k/python-glob2/
+  license: BSD-3-Clause
   license_file: LICENSE
-  summary: Version of the glob module that supports recursion via **, and can capture patterns.
-  homepage: https://github.com/miracle2k/python-glob2
+  summary: Version of the glob module that can capture patterns and supports recursive wildcards
+  description: |
+    Version of the glob module that can capture patterns and supports recursive wildcards
 
 extra:
   recipe-maintainers:
     - dfroger
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: glob2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: glob2
+  cfe-purls:
+    - pkg:conda/glob2@${{ version }}?channel=conda-forge
+    - pkg:pypi/glob2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/miracle2k/python-glob2/
+  cfe-import-names: [glob2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/glob2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:46:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:46:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:46:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

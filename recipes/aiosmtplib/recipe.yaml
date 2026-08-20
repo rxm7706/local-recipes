@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: aiosmtplib
   version: "5.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: aiosmtplib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiosmtplib/aiosmtplib-${{ version }}.tar.gz
   sha256: 04a0ea3c678f5b719f998f290dce010ca512e1385836d3944206299df03b060f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -36,13 +35,49 @@ tests:
         - "*"
 
 about:
+  homepage: https://pypi.org/project/aiosmtplib/
   license: MIT
   license_file: LICENSE.txt
-  summary: Asynchronous SMTP client for use with asyncio.
-  homepage: https://github.com/cole/aiosmtplib
+  summary: asyncio SMTP client
+  description: |
+    asyncio SMTP client
   repository: https://github.com/cole/aiosmtplib
-  documentation: https://aiosmtplib.readthedocs.io/
+  documentation: https://aiosmtplib.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiosmtplib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiosmtplib
+  cfe-purls:
+    - pkg:conda/aiosmtplib@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiosmtplib@${{ version }}
+  cfe-upstream-repo: https://github.com/cole/aiosmtplib
+  cfe-upstream-homepage: https://pypi.org/project/aiosmtplib/
+  cfe-import-names: [aiosmtplib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiosmtplib-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T05:44:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:44:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:44:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

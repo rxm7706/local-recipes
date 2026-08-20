@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  version: "12.0.1"
-  python_min: "3.11.0"
+  version: "12.3.0"
+  python_min: "3.11"
 
 package:
   name: testfixtures
@@ -11,41 +11,80 @@ package:
 
 source:
   url: https://pypi.org/packages/source/t/testfixtures/testfixtures-${{ version }}.tar.gz
-  sha256: aad7ba894d0093ea41b5b14bbb4c12fef727e50c9fb086facf5d9a972174171a
+  sha256: d807ceb9bdd6ea7cc0663370dd5568339056b35dc15c26effd1ae267e323acf1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.11.0.*
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
+    - typing_extensions >=4.12
 
 tests:
   - python:
       imports:
         - testfixtures
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/Simplistix/testfixtures
   license: MIT
   license_file: LICENSE.txt
   summary: A collection of helpers and mock objects for unit tests and doc tests.
-  homepage: https://testfixtures.readthedocs.io
+  description: |
+    A collection of helpers and mock objects for unit tests and doc tests.
   repository: https://github.com/Simplistix/testfixtures
-  documentation: https://testfixtures.readthedocs.io
+  documentation: http://testfixtures.readthedocs.org/en/latest/
 
 extra:
   recipe-maintainers:
     - ChrisBarker-NOAA
     - JamesMakela-NOAA
     - cjw296
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: testfixtures
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: testfixtures
+  cfe-purls:
+    - pkg:conda/testfixtures@${{ version }}?channel=conda-forge
+    - pkg:pypi/testfixtures@${{ version }}
+  cfe-upstream-repo: https://github.com/Simplistix/testfixtures
+  cfe-upstream-homepage: https://github.com/Simplistix/testfixtures
+  cfe-import-names: [testfixtures]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/testfixtures-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-12.3.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:25:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:25:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:25:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

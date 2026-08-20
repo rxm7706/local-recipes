@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: pytest-randomly
   version: "4.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-randomly
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-randomly/pytest_randomly-${{ version }}.tar.gz
   sha256: 47f1d9746c3bc3efabd53ae1ebfb8bb385cf3d4df4b505b6d58d9c97a3dfe70f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools >=77
   run:
     - python >=${{ python_min }}
@@ -32,15 +31,53 @@ tests:
       imports:
         - pytest_randomly
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pytest plugin to randomly order tests and control random.seed
+  homepage: https://pypi.org/project/pytest-randomly/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/pytest-dev/pytest-randomly
+  summary: Pytest plugin to randomly order tests and control random.seed.
+  description: |
+    Pytest plugin to randomly order tests and control random.seed.
+  repository: https://github.com/pytest-dev/pytest-randomly
 
 extra:
   recipe-maintainers:
     - cpcloud
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-randomly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-randomly
+  cfe-purls:
+    - pkg:conda/pytest-randomly@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-randomly@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-randomly
+  cfe-upstream-homepage: https://pypi.org/project/pytest-randomly/
+  cfe-import-names: [pytest_randomly]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-randomly-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:38:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:38:53Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:38:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

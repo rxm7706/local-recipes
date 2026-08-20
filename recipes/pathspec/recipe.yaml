@@ -2,8 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.12.1"
-  python_check_max: "3.14"
+  version: "1.1.1"
 
 package:
   name: pathspec
@@ -11,52 +10,73 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pathspec/pathspec-${{ version }}.tar.gz
-  sha256: a482d51503a1ab33b1c67a6c3813a26953dbdc71c31dacaef9a838c4e29f5712
+  sha256: 17db5ecd524104a120e173814c90367a96a98d07c45b2e10c2f3919fff91bf5a
 
 build:
+  number: 0
   noarch: python
-  number: 2
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core >=3.2,<4
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<5
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: pathspec
+      imports:
+        - pathspec
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}.*
-    script:
-      env:
-        # skip symlink tests on windows
-        # https://github.com/cpburnz/python-path-specification/commit/d268375a4c6aa
-        PYTEST_ADDOPTS: ${{ '-k "not (2_1_check_realpath or 2_4_recursive_links or 2_5_recursive_circular_links)"' if win }}
-      content:
-        - pytest -vv --tb=long --color=yes
+        - "*"
 
 about:
-  homepage: https://github.com/cpburnz/python-pathspec
-  repository: https://github.com/cpburnz/python-pathspec
-  summary: A utility library for pattern matching of file paths
+  homepage: https://pypi.org/project/pathspec/
   license: MPL-2.0
   license_file: LICENSE
+  summary: Utility library for gitignore style pattern matching of file paths.
+  description: |
+    Utility library for gitignore style pattern matching of file paths.
+  repository: https://github.com/cpburnz/python-pathspec
+  documentation: https://python-path-specification.readthedocs.io/en/latest/index.html
 
 extra:
   recipe-maintainers:
     - bollwyvl
     - proinsias
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pathspec
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pathspec
+  cfe-purls:
+    - pkg:conda/pathspec@${{ version }}?channel=conda-forge
+    - pkg:pypi/pathspec@${{ version }}
+  cfe-upstream-repo: https://github.com/cpburnz/python-pathspec
+  cfe-upstream-homepage: https://pypi.org/project/pathspec/
+  cfe-import-names: [pathspec]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pathspec-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-1.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:50:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:50:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:50:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

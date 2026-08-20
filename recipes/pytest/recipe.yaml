@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "9.1.1"
-  python_min: '3.10'
 
 package:
   name: pytest
@@ -14,56 +13,44 @@ source:
   sha256: 1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - pytest = _pytest.config:_console_main
-      - py.test = _pytest.config:_console_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=77
-    - setuptools_scm >=6.2.3
   run:
-    - colorama
-    - pygments >=2.7.2
     - python >=${{ python_min }}
+    - exceptiongroup >=1
     - iniconfig >=1.0.1
     - packaging >=22
-    - pluggy >=1.5,<2
+    - pluggy <2,>=1.5
+    - pygments >=2.7.2
     - tomli >=1
-    - exceptiongroup >=1
-  run_constraints:
-    - pytest-faulthandler >=2
+    - if: win
+      then:
+        - colorama
 
 tests:
   - python:
       imports:
         - pytest
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-      - pytest -h
+        - "*"
 
 about:
+  homepage: https://docs.pytest.org/en/latest/
   license: MIT
   license_file: LICENSE
-  summary: Simple and powerful testing with Python.
+  summary: "pytest: simple powerful testing with Python"
   description: |
-    The pytest framework makes it easy to write small tests, yet scales to
-    support complex functional testing for applications and libraries.
-  homepage: https://docs.pytest.org/en/latest/
-  repository: https://github.com/pytest-dev/pytest/
-  documentation: https://docs.pytest.org/en/latest/
+    pytest: simple powerful testing with Python
+  repository: https://github.com/pytest-dev/pytest
 
 extra:
   recipe-maintainers:
@@ -72,3 +59,33 @@ extra:
     - nicoddemus
     - ocefpaf
     - mingwandroid
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest
+  cfe-purls:
+    - pkg:conda/pytest@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest
+  cfe-upstream-homepage: https://docs.pytest.org/en/latest/
+  cfe-import-names: [pytest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:06:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:06:50Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:06:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

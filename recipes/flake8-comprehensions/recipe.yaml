@@ -2,47 +2,81 @@
 schema_version: 1
 
 context:
-  name: flake8-comprehensions
   version: "3.17.0"
-  sha256: bf4fa102b2bf4d6c9e999e29e4b2724cbadffb70b937600fc782161be4dc0f4a
 
 package:
-  name: ${{ name|lower }}
+  name: flake8-comprehensions
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flake8-comprehensions/flake8_comprehensions-${{ version }}.tar.gz
+  sha256: bf4fa102b2bf4d6c9e999e29e4b2724cbadffb70b937600fc782161be4dc0f4a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
-    - flake8 >=3.0,!=3.2.0
+    - flake8 !=3.2,>=3
 
 tests:
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-        flake8 --version | grep flake8-comprehensions:
+  - python:
+      imports:
+        - flake8_comprehensions
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/flake8-comprehensions/
   license: MIT
   license_file: LICENSE
-  summary: A flake8 plugin that helps you write better list/set/dict comprehensions.
-  homepage: https://github.com/adamchainz/flake8-comprehensions
+  summary: A flake8 plugin to help you write better list/set/dict comprehensions.
+  description: |
+    A flake8 plugin to help you write better list/set/dict comprehensions.
   repository: https://github.com/adamchainz/flake8-comprehensions
 
 extra:
   recipe-maintainers:
     - dopplershift
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-comprehensions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-comprehensions
+  cfe-purls:
+    - pkg:conda/flake8-comprehensions@${{ version }}?channel=conda-forge
+    - pkg:pypi/flake8-comprehensions@${{ version }}
+  cfe-upstream-repo: https://github.com/adamchainz/flake8-comprehensions
+  cfe-upstream-homepage: https://pypi.org/project/flake8-comprehensions/
+  cfe-import-names: [flake8_comprehensions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-comprehensions-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.17.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:15:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:15:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:15:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

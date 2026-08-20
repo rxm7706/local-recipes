@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-proto
   version: "1.44.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-proto
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_proto-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-proto/opentelemetry_proto-${{ version }}.tar.gz
   sha256: c547a79c2f8c0c515d31509154682e5921c7cfd5ca67b70e1f9266e2c3e103f3
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -30,16 +29,20 @@ requirements:
 tests:
   - python:
       imports:
-        - opentelemetry
         - opentelemetry.proto
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Python Proto
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-proto
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-proto
+  summary: OpenTelemetry Python Proto
+  description: |
+    OpenTelemetry Python Proto
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
@@ -47,3 +50,36 @@ extra:
     - mparry
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-proto
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-proto
+  cfe-purls:
+    - pkg:conda/opentelemetry-proto@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-proto@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-proto
+  cfe-import-names: [opentelemetry.proto]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-proto-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.44.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:23:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:23:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:23:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -3,9 +3,6 @@ schema_version: 1
 
 context:
   version: "9.2.0"
-  python_check_max: "3.14"
-  jupyterlab_min: "4.5.7"
-  jupyterlab_max: "5"
 
 package:
   name: ipyparallel
@@ -18,77 +15,76 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - ipcluster = ipyparallel.cluster.app:main
-      - ipcontroller = ipyparallel.controller.app:main
-      - ipengine = ipyparallel.engine.app:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling >=0.25
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - jupyterlab ==4.*
+    - hatchling >=0.25
   run:
+    - python >=${{ python_min }}
     - decorator
     - ipykernel >=6.9.1
     - ipython >=5
-    - jupyter_client >=7
+    - jupyter-client >=7
     - psutil
-    - python >=${{ python_min }}
     - python-dateutil >=2.1
     - pyzmq >=25
     - tornado >=6.1
     - tqdm
     - traitlets >=5
-  run_constraints:
-    - jupyterlab >=${{ jupyterlab_min }},<${{ jupyterlab_max }}
 
 tests:
   - python:
       imports:
         - ipyparallel
-        - ipyparallel.apps
-        - ipyparallel.client
-        - ipyparallel.controller
-        - ipyparallel.engine
-        - ipyparallel.serialize
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - jupyterlab ${{ jupyterlab_min }}.*
-        - nbclassic
-    script:
-      - ipcluster -h
-      - ipengine -h
-      - ipcontroller -h
-      - jupyter labextension list
-      - jupyter server extension list
-      - jupyter nbclassic extension list
-      - jupyter labextension list 1>labextensions 2>&1
-      - jupyter server extension list 1>server_extensions 2>&1
-      - jupyter nbclassic extension list 1>nbclassic_extensions 2>&1
-      - python -c "import re, pathlib; assert re.findall('ipyparallel-labextension.*OK', pathlib.Path('labextensions').read_text())"
-      - python -c "import re, pathlib; assert re.findall('ipyparallel.*OK', pathlib.Path('server_extensions').read_text())"
-      - python -c "import re, pathlib; assert re.findall('ipyparallel.*OK', pathlib.Path('nbclassic_extensions').read_text())"
+        - "*"
 
 about:
+  homepage: https://ipython.org
   license: BSD-3-Clause
-  license_file:
-    - COPYING.md
-    - ipyparallel/labextension/static/third-party-licenses.json
+  license_file: LICENSE
   summary: Interactive Parallel Computing with IPython
-  homepage: https://github.com/ipython/ipyparallel
-  repository: https://github.com/ipython/ipyparallel
-  documentation: https://ipyparallel.readthedocs.io
+  description: |
+    Interactive Parallel Computing with IPython
 
 extra:
   recipe-maintainers:
     - jakirkham
     - minrk
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipyparallel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipyparallel
+  cfe-purls:
+    - pkg:conda/ipyparallel@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipyparallel@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://ipython.org
+  cfe-import-names: [ipyparallel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipyparallel-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:01:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:01:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:01:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

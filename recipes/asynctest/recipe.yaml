@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: asynctest
   version: "0.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: asynctest
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/asynctest/asynctest-${{ version }}.tar.gz
   sha256: c27862842d15d83e6a34eb0b2866c323880eb3a75e4485b079ea11748fd77fac
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}
   run:
     - python >=${{ python_min }}
 
@@ -30,21 +29,60 @@ tests:
   - python:
       imports:
         - asynctest
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE.md
-  summary: Enhance the standard unittest package with features for testing asyncio libraries
   homepage: https://github.com/Martiusweb/asynctest/
-  repository: https://github.com/Martiusweb/asynctest/
-  documentation: http://asynctest.readthedocs.org
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Enhance the standard unittest package with features for testing asyncio libraries
+  description: |
+    Enhance the standard unittest package with features for testing asyncio libraries
 
 extra:
   recipe-maintainers:
     - hodgsonw
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asynctest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asynctest
+  cfe-purls:
+    - pkg:conda/asynctest@${{ version }}?channel=conda-forge
+    - pkg:pypi/asynctest@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Martiusweb/asynctest/
+  cfe-import-names: [asynctest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asynctest-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.13.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T06:26:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:26:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:26:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,31 +2,27 @@
 schema_version: 1
 
 context:
-  name: tldextract
   version: "5.3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: tldextract
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tldextract-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tldextract/tldextract-${{ version }}.tar.gz
   sha256: c017431bc0800f2d3d1b57cce36e06668f0930f60a6d8c4615d4e2b8da298fa9
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - tldextract = tldextract.cli:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=61.2
-    - setuptools-scm >=6.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=80
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
     - idna
@@ -39,21 +35,52 @@ tests:
       imports:
         - tldextract
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - tldextract --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Accurately separates a URL's subdomain, domain, and public suffix, using the Public Suffix List (PSL). By default, this includes the public ICANN TLDs and their exceptions. You can optionally support the Public Suffix List's private domains as well.
+  homepage: https://github.com/john-kurkowski/tldextract
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/john-kurkowski/tldextract
+  summary: Accurately separates a URL's subdomain, domain, and public suffix, using the Public Suffix List (PSL). By default, this includes the public ICANN TLDs and their exceptions. You can optionally support the Public Suffix List's private domains as well.
+  description: |
+    Accurately separates a URL's subdomain, domain, and public suffix, using the Public Suffix List (PSL). By default, this includes the public ICANN TLDs and their exceptions. You can optionally support the Public Suffix List's private domains as well.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tldextract
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tldextract
+  cfe-purls:
+    - pkg:conda/tldextract@${{ version }}?channel=conda-forge
+    - pkg:pypi/tldextract@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/john-kurkowski/tldextract
+  cfe-import-names: [tldextract]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tldextract-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.3.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:39:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:39:22Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T06:39:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

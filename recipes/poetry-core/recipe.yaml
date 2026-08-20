@@ -33,8 +33,9 @@ tests:
         - poetry.core
         - poetry.core._vendor
       pip_check: true
-      python_version: ${{ python_min }}.*
-
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 about:
   summary: Poetry PEP 517 Build Backend
   license: MIT
@@ -47,3 +48,33 @@ extra:
   recipe-maintainers:
     - ocefpaf
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: poetry-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: poetry-core
+  cfe-purls:
+    - pkg:conda/poetry-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/poetry-core@${{ version }}
+  cfe-upstream-repo: https://github.com/python-poetry/poetry-core
+  cfe-upstream-homepage: https://pypi.org/project/poetry-core/
+  cfe-import-names: [poetry.core, poetry.core._vendor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/poetry-core-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:10:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:10:55Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:10:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

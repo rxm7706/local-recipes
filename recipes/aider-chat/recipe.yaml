@@ -158,3 +158,35 @@ about:
 extra:
   recipe-maintainers:
     - MementoRC
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aider-chat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aider-chat
+  cfe-purls:
+    - pkg:conda/aider-chat@${{ version }}?channel=conda-forge
+    - pkg:pypi/aider-chat@${{ version }}
+  cfe-upstream-repo: https://github.com/Aider-AI/aider
+  cfe-upstream-homepage: https://github.com/Aider-AI/aider
+  cfe-import-names: [aider, aider.main]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aider-chat-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T04:22:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T04:22:26Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T04:22:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

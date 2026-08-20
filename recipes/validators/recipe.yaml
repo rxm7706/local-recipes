@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: validators
   version: "0.35.0"
 
 package:
-  name: ${{ name|lower }}
+  name: validators
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/validators-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/v/validators/validators-${{ version }}.tar.gz
   sha256: 992d6c48a4e77c81f1b4daba10d16c3a9bb0dbb79b3a19ea847ff0928e70497a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -31,21 +30,58 @@ tests:
       imports:
         - validators
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Data Validation for Humans™
+  homepage: https://python-validators.github.io/validators
   license: MIT
   license_file: LICENSE.txt
+  summary: Python Data Validation for Humans™
   description: |
-    Python data validation for Humans.
-
-    Python has all kinds of data validation tools, but every one of them seems to require defining a schema or form. I wanted to create a simple validation library where validating a simple value does not require defining a form or a schema.
-  homepage: https://github.com/kvesteri/validators
-  repository: https://github.com/kvesteri/validators
-  documentation: https://validators.readthedocs.io/
+    Python Data Validation for Humans™
+  repository: https://github.com/python-validators/validators
+  documentation: https://yozachar.github.io/pyvalidators
 
 extra:
   recipe-maintainers:
     - brl0
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: validators
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: validators
+  cfe-purls:
+    - pkg:conda/validators@${{ version }}?channel=conda-forge
+    - pkg:pypi/validators@${{ version }}
+  cfe-upstream-repo: https://github.com/python-validators/validators
+  cfe-upstream-homepage: https://python-validators.github.io/validators
+  cfe-import-names: [validators]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/validators-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.35.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:05:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:05:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:05:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

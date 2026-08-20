@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: flask-mail
   version: "0.10.0"
 
 package:
-  name: ${{ name }}
+  name: flask-mail
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flask_mail-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Mail/flask_mail-${{ version }}.tar.gz
   sha256: 44083e7b02bbcce792209c06252f8569dd5a325a7aaa76afe7330422bd97881d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - flit-core <4
   run:
@@ -33,17 +32,56 @@ tests:
       imports:
         - flask_mail
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/Flask-Mail/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Flask extension for sending email
-  homepage: https://pythonhosted.org/Flask-Mail/
-  repository: https://github.com/mattupstate/flask-mail
-  documentation: https://pythonhosted.org/Flask-Mail/
+  description: |
+    Flask extension for sending email
+  repository: https://github.com/pallets-eco/flask-mail/
+  documentation: https://flask-mail.readthedocs.io
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-mail
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-mail
+  cfe-purls:
+    - pkg:conda/flask-mail@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-mail@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/flask-mail/
+  cfe-upstream-homepage: https://pypi.org/project/Flask-Mail/
+  cfe-import-names: [flask_mail]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-mail-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.10.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:25:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:25:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:25:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

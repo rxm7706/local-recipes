@@ -2,27 +2,27 @@
 schema_version: 1
 
 context:
-  name: Chameleon
   version: "4.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: chameleon
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/Chameleon-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/Chameleon/Chameleon-${{ version }}.tar.gz
   sha256: 910cd729f6f7f38adad132ee51faa4f3ccc8344a6721aac31aa51a31f5781c1b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=42
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -31,14 +31,56 @@ tests:
       imports:
         - chameleon
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Fast HTML/XML Template Compiler.
-  license: BSD-4-Clause
-  license_file: LICENSE.txt
   homepage: https://chameleon.readthedocs.io
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Fast HTML/XML Template Compiler.
+  description: |
+    Fast HTML/XML Template Compiler.
+  documentation: https://chameleon.readthedocs.io
 
 extra:
   recipe-maintainers:
     - ReimarBauer
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chameleon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chameleon
+  cfe-purls:
+    - pkg:conda/chameleon@${{ version }}?channel=conda-forge
+    - pkg:pypi/chameleon@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://chameleon.readthedocs.io
+  cfe-import-names: [chameleon]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/chameleon-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.6.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T06:57:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:57:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:57:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

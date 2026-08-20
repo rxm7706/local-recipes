@@ -20,8 +20,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - paramiko
@@ -36,12 +36,48 @@ tests:
         - "*"
 
 about:
-  summary: scp module for paramiko
+  homepage: https://github.com/jbardin/scp.py
   license: LGPL-2.1-or-later
   license_file: LICENSE.txt
-  homepage: https://github.com/jbardin/scp.py
+  summary: scp module for paramiko
+  description: |
+    scp module for paramiko
 
 extra:
   recipe-maintainers:
     - kwilcox
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scp
+  cfe-purls:
+    - pkg:conda/scp@${{ version }}?channel=conda-forge
+    - pkg:pypi/scp@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jbardin/scp.py
+  cfe-import-names: [scp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/scp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:15:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:15:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:15:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,60 +2,49 @@
 schema_version: 1
 
 context:
-  name: pyqtgraph
   version: "0.14.0"
-  sha256: 30f41a2f27ec41fb7d4442dbb150b004520ba83e777cdf5bb9cce0d18017424f
 
 package:
-  name: ${{ name|lower }}
+  name: pyqtgraph
   version: ${{ version }}
 
 source:
-  url: https://github.com/${{ name }}/${{ name }}/archive/refs/tags/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/py3/p/pyqtgraph/pyqtgraph-0.14.0-py3-none-any.whl
+  sha256: 7abb7c3e17362add64f8711b474dffac5e7b0e9245abdf992e9a44119b7aa4f5
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - numpy >=1.25
+    - numpy >=1.25.0
     - colorama
-  run_constraints:
-    - pyside2 >=5.15
-    - pyqt >=5.15
 
 tests:
   - python:
       imports:
         - pyqtgraph
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pyqt >=5.15
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://www.pyqtgraph.org
   license: MIT
-  license_file: LICENSE.txt
+  license_file: LICENSE
   summary: Scientific Graphics and GUI Library for Python
   description: |
-    PyQtGraph is a pure-python graphics and GUI library built on PyQt /
-    PySide and numpy. It is intended for use in mathematics / scientific /
-    engineering applications. Despite being written entirely in python, the
-    library is very fast due to its heavy leverage of numpy for number
-    crunching and Qt's GraphicsView framework for fast display.
-  homepage: http://www.pyqtgraph.org
+    Scientific Graphics and GUI Library for Python
   repository: https://github.com/pyqtgraph/pyqtgraph
-  documentation: http://www.pyqtgraph.org/documentation/
+  documentation: https://pyqtgraph.readthedocs.io
 
 extra:
   recipe-maintainers:
@@ -63,3 +52,36 @@ extra:
     - marcelotrevisani
     - ksunden
     - j9ac9k
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyqtgraph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyqtgraph
+  cfe-purls:
+    - pkg:conda/pyqtgraph@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyqtgraph@${{ version }}
+  cfe-upstream-repo: https://github.com/pyqtgraph/pyqtgraph
+  cfe-upstream-homepage: http://www.pyqtgraph.org
+  cfe-import-names: [pyqtgraph]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyqtgraph-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:00:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:00:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:00:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

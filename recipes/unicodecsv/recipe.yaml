@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: unicodecsv
   version: "0.14.1"
 
 package:
-  name: ${{ name|lower }}
+  name: unicodecsv
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/unicodecsv-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/u/unicodecsv/unicodecsv-${{ version }}.tar.gz
   sha256: 018c08037d48649a0412063ff4eda26eaa81eff1546dbffa51fa5293276ff7fc
 
 build:
-  number: 3
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,20 +30,58 @@ tests:
       imports:
         - unicodecsv
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
-  # https://github.com/jdunck/python-unicodecsv/issues/80
-  license_file: LICENSE
-  summary: Drop-in replacement for csv module which supports unicode strings
-  description: |
-    The unicodecsv is a drop-in replacement for Python 2.7's csv module which
-    supports unicode strings without a hassle. Supported versions are python
-    2.6, 2.7, 3.3, 3.4, 3.5, and pypy 2.4.0.
   homepage: https://github.com/jdunck/python-unicodecsv
-  repository: https://github.com/jdunck/python-unicodecsv
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python2's stdlib csv module is nice, but it doesn't support unicode. This module is a drop-in replacement which *does*.
+  description: |
+    Python2's stdlib csv module is nice, but it doesn't support unicode. This module is a drop-in replacement which *does*.
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unicodecsv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unicodecsv
+  cfe-purls:
+    - pkg:conda/unicodecsv@${{ version }}?channel=conda-forge
+    - pkg:pypi/unicodecsv@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jdunck/python-unicodecsv
+  cfe-import-names: [unicodecsv]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/unicodecsv-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:00:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:00:41Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:00:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

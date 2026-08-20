@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: flask-session
   version: "0.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-session
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flask_session-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Session/flask_session-${{ version }}.tar.gz
   sha256: 20e045eb01103694e70be4a49f3a80dbb1b57296a22dc6f44bbf3f83ef0742ff
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core <4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core <4
   run:
     - python >=${{ python_min }}
     - flask >=2.2
@@ -34,14 +33,60 @@ tests:
       imports:
         - flask_session
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Server-side session support for Flask
+  homepage: https://pypi.org/project/Flask-Session/
   license: BSD-3-Clause
-  license_file: LICENSE.rst
-  homepage: https://github.com/pallets-eco/flask-session
+  license_file: LICENSE
+  summary: Server-side session support for Flask
+  description: |
+    Server-side session support for Flask
+  repository: https://github.com/pallets-eco/flask-session/
+  documentation: https://flask-session.readthedocs.io
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-session
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-session
+  cfe-purls:
+    - pkg:conda/flask-session@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-session@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/flask-session/
+  cfe-upstream-homepage: https://pypi.org/project/Flask-Session/
+  cfe-import-names: [flask_session]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-session-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:29:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:29:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:29:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

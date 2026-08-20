@@ -19,9 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
     - python-dateutil >=2.7
@@ -31,14 +32,53 @@ tests:
       imports:
         - freezegun
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/spulec/freezegun
   license: Apache-2.0
   license_file: LICENSE
   summary: Let your Python tests travel through time
-  homepage: https://github.com/spulec/freezegun
+  description: |
+    Let your Python tests travel through time
+  repository: https://github.com/spulec/freezegun
+  documentation: https://github.com/spulec/freezegun/blob/master/README.rst
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: freezegun
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: freezegun
+  cfe-purls:
+    - pkg:conda/freezegun@${{ version }}?channel=conda-forge
+    - pkg:pypi/freezegun@${{ version }}
+  cfe-upstream-repo: https://github.com/spulec/freezegun
+  cfe-upstream-homepage: https://github.com/spulec/freezegun
+  cfe-import-names: [freezegun]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/freezegun-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:28:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:28:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:28:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

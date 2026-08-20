@@ -15,7 +15,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -26,26 +26,66 @@ requirements:
     - hatch-fancy-pypi-readme >=22.8.0
   run:
     - python >=${{ python_min }}
-    - typing-extensions
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - structlog
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0 OR MIT
+  homepage: https://pypi.org/project/structlog/
+  license: MIT OR Apache-2.0
+  license_file: LICENSE
   summary: Structured Logging for Python
-  license_file:
-    - LICENSE-MIT
-    - LICENSE-APACHE
-  homepage: http://www.structlog.org
+  description: |
+    Structured Logging for Python
   repository: https://github.com/hynek/structlog
+  documentation: https://www.structlog.org/
 
 extra:
   recipe-maintainers:
     - vamega
     - aldanor
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: structlog
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: structlog
+  cfe-purls:
+    - pkg:conda/structlog@${{ version }}?channel=conda-forge
+    - pkg:pypi/structlog@${{ version }}
+  cfe-upstream-repo: https://github.com/hynek/structlog
+  cfe-upstream-homepage: https://pypi.org/project/structlog/
+  cfe-import-names: [structlog]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/structlog-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:12:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:12:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:12:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

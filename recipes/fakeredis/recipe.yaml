@@ -2,47 +2,82 @@
 schema_version: 1
 
 context:
-  name: fakeredis
   version: "2.37.0"
 
 package:
-  name: ${{ name|lower }}
+  name: fakeredis
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fakeredis/fakeredis-${{ version }}.tar.gz
   sha256: 7461f124dcba04a80691d72270b3d1d5cd100ef14dc068c76db825940f3ed799
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - hatchling
   run:
-    - python >=${{ python_min }},<4
-    - redis-py >=4.3
-    - sortedcontainers >=2.4.0,<3
-    - typing-extensions >=4.7,<5
+    - python >=${{ python_min }}
+    - redis-py <7.2
+    - sortedcontainers >=2
+    - typing_extensions >=4.7
 
 tests:
   - python:
       imports:
         - fakeredis
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/cunla/fakeredis-py
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Fake implementation of redis API (redis-py) for testing purposes.
-  homepage: https://github.com/cunla/fakeredis-py
+  summary: Python implementation of redis API, can be used for testing purposes.
+  description: |
+    Python implementation of redis API, can be used for testing purposes.
+  repository: https://github.com/cunla/fakeredis-py
+  documentation: https://fakeredis.moransoftware.ca/
 
 extra:
   recipe-maintainers:
     - cunla
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fakeredis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fakeredis
+  cfe-purls:
+    - pkg:conda/fakeredis@${{ version }}?channel=conda-forge
+    - pkg:pypi/fakeredis@${{ version }}
+  cfe-upstream-repo: https://github.com/cunla/fakeredis-py
+  cfe-upstream-homepage: https://github.com/cunla/fakeredis-py
+  cfe-import-names: [fakeredis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fakeredis-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:11:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:11:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:11:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

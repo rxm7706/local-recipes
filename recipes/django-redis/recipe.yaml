@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-redis
   version: "7.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-redis
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-redis/django_redis-${{ version }}.tar.gz
   sha256: e48491c862f4350b0747ceb1016700686fb93c4f4e0fb9c490fe6c6658ffd933
 
 build:
@@ -20,37 +19,32 @@ build:
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=77.0.3
   run:
-    - typing_extensions >=4.12
     - python >=${{ python_min }}
-    - django >=5.2,<7.0
+    - django <7.0,>=5.2
     - redis-py >=4.0.2
-    # - Django >=4.2
-    # - typing_extensions >=4.12
-    # - pyzstd >=0.15
-    # - msgpack-python >=0.6.0
-    # - lz4 >=0.15
-    # - Django <7.0,>=5.2
+    - typing_extensions >=4.12
 
 tests:
   - python:
       imports:
         - django_redis
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/jazzband/django-redis
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Full featured redis cache backend for Django
+  summary: Full featured redis cache backend for Django.
   description: |
-    django-redis is a BSD Licensed, full featured Redis cache/session backend for Django.
-  homepage: https://github.com/niwinz/django-redis
-  repository: https://github.com/niwinz/django-redis
-  documentation: https://niwinz.github.io/django-redis/latest/
+    Full featured redis cache backend for Django.
+  repository: https://github.com/jazzband/django-redis
 
 extra:
   recipe-maintainers:
@@ -60,3 +54,36 @@ extra:
     - elanqo
     - zaigner
     - sannykr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-redis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-redis
+  cfe-purls:
+    - pkg:conda/django-redis@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-redis@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-redis
+  cfe-upstream-homepage: https://github.com/jazzband/django-redis
+  cfe-import-names: [django_redis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-redis-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:55:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:55:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:55:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

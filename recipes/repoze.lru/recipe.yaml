@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: repoze.lru
   version: "0.8"
 
 package:
-  name: ${{ name|lower }}
+  name: repoze-lru
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/repoze_lru-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/repoze-lru/repoze_lru-${{ version }}.tar.gz
   sha256: a252408cd93fe670c88d6665b96fe5d42e071dba2507a1f21a1e609ae4fa891a
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -29,21 +28,60 @@ requirements:
 tests:
   - python:
       imports:
-        - repoze
         - repoze.lru
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause AND 0BSD
-  license_file:
-    - COPYRIGHT.txt
-    - LICENSE.txt
+  homepage: https://pypi.org/project/repoze-lru/
+  license: LicenseRef-Repoze-BSD-derived
+  license_file: LICENSE.txt
   summary: A tiny LRU cache implementation and decorator
-  homepage: http://www.repoze.org
+  description: |
+    A tiny LRU cache implementation and decorator
   repository: https://github.com/repoze/repoze.lru
+  documentation: https://repozelru.readthedocs.io/en/stable/index.html
 
 extra:
   recipe-maintainers:
     - rxm7706
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: repoze.lru
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: repoze-lru
+  cfe-purls:
+    - pkg:conda/repoze.lru@${{ version }}?channel=conda-forge
+    - pkg:pypi/repoze-lru@${{ version }}
+  cfe-upstream-repo: https://github.com/repoze/repoze.lru
+  cfe-upstream-homepage: https://pypi.org/project/repoze-lru/
+  cfe-import-names: [repoze.lru]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/repoze.lru-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:01:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:01:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:01:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,43 +2,81 @@
 schema_version: 1
 
 context:
-  name: singledispatchmethod
   version: "1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: singledispatchmethod
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/singledispatchmethod-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/singledispatchmethod/singledispatchmethod-${{ version }}.tar.gz
   sha256: 183a7fbeab53b9c9d182f8b8f9c2d7e109a7d40afaa30261d81dd8de68cd73bf
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=2.7
+    - python ${{ python_min }}.*
     - pip
-    - setuptools-scm
+    - setuptools
   run:
-    - python >=2.7
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - singledispatchmethod
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Backport of @functools.singledispatchmethod to Python 2.7-3.7.
+  homepage: https://github.com/ikalnytskyi/singledispatchmethod
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/ikalnytskyi/singledispatchmethod
+  summary: Backport of @functools.singledispatchmethod to Python 2.7-3.7.
+  description: |
+    Backport of @functools.singledispatchmethod to Python 2.7-3.7.
   repository: https://github.com/ikalnytskyi/singledispatchmethod
+  documentation: https://docs.python.org/3.8/library/functools.html#functools.singledispatchmethod
 
 extra:
   recipe-maintainers:
     - AntoineD
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: singledispatchmethod
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: singledispatchmethod
+  cfe-purls:
+    - pkg:conda/singledispatchmethod@${{ version }}?channel=conda-forge
+    - pkg:pypi/singledispatchmethod@${{ version }}
+  cfe-upstream-repo: https://github.com/ikalnytskyi/singledispatchmethod
+  cfe-upstream-homepage: https://github.com/ikalnytskyi/singledispatchmethod
+  cfe-import-names: [singledispatchmethod]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/singledispatchmethod-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:29:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:29:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:29:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

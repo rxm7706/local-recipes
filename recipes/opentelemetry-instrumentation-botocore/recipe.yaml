@@ -2,99 +2,88 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-botocore
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-botocore
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_botocore-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-botocore/opentelemetry_instrumentation_botocore-${{ version }}.tar.gz
   sha256: 64987326ac98a47a85821606a981f5058864de0e98b43c8de892eb0fe625b04e
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
+    - botocore
     - opentelemetry-api ~=1.37
     - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
     - opentelemetry-propagator-aws-xray ~=1.0
-    # - opentelemetry-test-utils ==0.37b0
-    # - opentelemetry-instrumentation-botocore
-    # - moto ~=2.2.6
-    # - markupsafe ==2.0.1
-    # - botocore ~=1.0
-    # - opentelemetry-test-utils ==0.38b0
-    # - opentelemetry-instrumentation-botocore
-    # - moto ~=2.2.6
-    # - markupsafe ==2.0.1
-    # - botocore ~=1.0
-    # - opentelemetry-test-utils ==0.39b0
-    # - opentelemetry-instrumentation-botocore
-    # - moto ~=2.2.6
-    # - markupsafe ==2.0.1
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - botocore ~=1.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - botocore ~=1.0
-    # - aiobotocore ~=2.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - botocore ~=1.0
-    # - aiobotocore ~=2.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - botocore ~=1.0
-    # - aiobotocore ~=2.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - botocore ~=1.0
-    # - aiobotocore ~=2.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - botocore ~=1.0
-    # - aiobotocore <4.0,>=2.0
-    # - wrapt <3.0.0,>=1.0.0
-    # - botocore ~=1.0
-    # - aiobotocore <4.0,>=2.0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - wrapt <3.0.0,>=1.0.0
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.botocore
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Botocore instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-botocore
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-botocore
+  summary: OpenTelemetry Botocore instrumentation
+  description: |
+    OpenTelemetry Botocore instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-botocore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-botocore
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-botocore@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-botocore@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-botocore
+  cfe-import-names: [opentelemetry.instrumentation.botocore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-botocore-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:33:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:33:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:33:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['botocore']
+####

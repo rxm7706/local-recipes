@@ -3,10 +3,9 @@ schema_version: 1
 
 context:
   version: "0.13.2"
-  build: 3
 
-recipe:
-  name: seaborn-split
+package:
+  name: seaborn
   version: ${{ version }}
 
 source:
@@ -14,64 +13,81 @@ source:
   sha256: 93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7
 
 build:
-  number: ${{ build }}
+  number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: seaborn-base
-    build:
-      noarch: python
-      script:
-        file: ${{ 'build_base.sh' if not win else 'build_base.bat' if win else '' }}
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - pip
-        - flit-core >=3.2,<4
-      run:
-        - python >=${{ python_min }}
-        - numpy >=1.20,!=1.24.0
-        - matplotlib-base >=3.4,!=3.6.1
-        - scipy >=1.7
-        - pandas >=1.2
-      test:
-        requires:
-          - python ${{ python_min }}
-        imports:
-          - seaborn
-      run_constraints:
-        - seaborn =${{ version }}=*_${{ build }}
-  - package:
-      name: seaborn
-    build:
-      noarch: python
-    requirements:
-      run:
-        - statsmodels >=0.12
-        - ${{ pin_subpackage('seaborn-base', exact=True) }}
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.20,!=1.24.0
+    - pandas >=1.2
+    - matplotlib-base >=3.4,!=3.6.1
 
 tests:
   - python:
       imports:
         - seaborn
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/seaborn/
   license: BSD-3-Clause
-  license_file: LICENSE.md
+  license_file: LICENSE
   summary: Statistical data visualization
   description: |
-    Seaborn is a Python visualization library based on matplotlib. It
-    provides a high-level interface for drawing attractive statistical graphics.
-  homepage: https://seaborn.pydata.org
+    Statistical data visualization
   repository: https://github.com/mwaskom/seaborn
-  documentation: https://seaborn.pydata.org
+  documentation: http://seaborn.pydata.org
 
 extra:
-  feedstock-name: seaborn
   recipe-maintainers:
     - msarahan
     - r-jain1
     - croth1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: seaborn
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: seaborn
+  cfe-purls:
+    - pkg:conda/seaborn@${{ version }}?channel=conda-forge
+    - pkg:pypi/seaborn@${{ version }}
+  cfe-upstream-repo: https://github.com/mwaskom/seaborn
+  cfe-upstream-homepage: https://pypi.org/project/seaborn/
+  cfe-import-names: [seaborn]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/seaborn-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:18:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:18:40Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:18:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

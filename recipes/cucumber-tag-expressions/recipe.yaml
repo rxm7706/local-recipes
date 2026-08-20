@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: cucumber-tag-expressions
   version: "11.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: cucumber-tag-expressions
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/cucumber-tag-expressions/cucumber_tag_expressions-${{ version }}.tar.gz
   sha256: f8304dd16e546517816e62ace6c486575023812f42e8a60526fcec1694016146
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - uv-build >=0.12.0,<0.13.0
   run:
     - python >=${{ python_min }}
@@ -36,11 +35,44 @@ tests:
         - "*"
 
 about:
-  summary: Provides tag-expression parser for cucumber/behave
+  homepage: https://github.com/cucumber/tag-expressions
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/cucumber/tag-expressions
+  summary: Provides a tag-expression parser and evaluation logic for cucumber/behave
+  description: |
+    Provides a tag-expression parser and evaluation logic for cucumber/behave
+  repository: https://github.com/cucumber/tag-expressions
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cucumber-tag-expressions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cucumber-tag-expressions
+  cfe-purls:
+    - pkg:conda/cucumber-tag-expressions@${{ version }}?channel=conda-forge
+    - pkg:pypi/cucumber-tag-expressions@${{ version }}
+  cfe-upstream-repo: https://github.com/cucumber/tag-expressions
+  cfe-upstream-homepage: https://github.com/cucumber/tag-expressions
+  cfe-import-names: [cucumber_tag_expressions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cucumber-tag-expressions-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:34:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:34:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:34:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

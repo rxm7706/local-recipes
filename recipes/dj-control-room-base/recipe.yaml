@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.0"
+  version: "1.5.0"
 
 package:
   name: dj-control-room-base
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dj-control-room-base/dj_control_room_base-${{ version }}.tar.gz
-  sha256: a137f9aee8cd1b43ac8b286a04d00fe515f372d62f584ba18c0a9c92da73ab0a
+  sha256: 299bfb1e887c4d9cc024c478f05166185fad7520a0c1a5995b51501871598337
 
 build:
   number: 0
@@ -20,9 +20,9 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=61.0
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
     - django >=4.2
@@ -37,13 +37,45 @@ tests:
         - "*"
 
 about:
-  summary: Core framework for Django Control Room panels
+  homepage: https://django-control-room.github.io/dj-control-room-base/
   license: MIT
   license_file: LICENSE
-  homepage: https://yassi.github.io/dj-control-room-base/
-  repository: https://yassi.github.io/dj-control-room-base/
-  documentation: https://yassi.github.io/dj-control-room-base/
+  summary: Core framework for Django Control Room panels
+  description: |
+    Core framework for Django Control Room panels
+  repository: https://github.com/django-control-room/dj-control-room-base
+  documentation: https://django-control-room.github.io/dj-control-room-base/
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dj-control-room-base
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dj-control-room-base
+  cfe-purls:
+    - pkg:conda/dj-control-room-base@${{ version }}?channel=conda-forge
+    - pkg:pypi/dj-control-room-base@${{ version }}
+  cfe-upstream-repo: https://github.com/django-control-room/dj-control-room-base
+  cfe-upstream-homepage: https://django-control-room.github.io/dj-control-room-base/
+  cfe-import-names: [dj_control_room_base]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:17:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:17:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:17:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

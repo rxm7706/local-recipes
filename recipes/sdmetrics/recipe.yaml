@@ -2,57 +2,88 @@
 schema_version: 1
 
 context:
-  name: sdmetrics
   version: "0.28.2"
 
 package:
-  name: ${{ name|lower }}
+  name: sdmetrics
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sdmetrics-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sdmetrics/sdmetrics-${{ version }}.tar.gz
   sha256: 79cec150478721a890406fec1e8752b3afadba78d37b637d77976b0c9b116e9f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner >=2.11.1
-    - python ${{ python_min }}
     - setuptools
+    - wheel
   run:
-    - copulas >=0.12.1
+    - python >=${{ python_min }}
     - numpy >=1.22.2
-    - pandas >=1.4.0,<3
-    - plotly >=5.19.0,<6
-    - python >=${{ python_min }},<3.15
-    - scikit-learn >=1.0.2,<2
-    - scipy >=1.7.3,<2
+    - pandas <3.0.0,>=1.4.0
+    - scikit-learn >=1.0.2
+    - scipy >=1.7.3
+    - copulas >=0.12.1
     - tqdm >=4.29
+    - plotly >=5.19.0
 
 tests:
   - python:
       imports:
         - sdmetrics
-        - sdmetrics.column_pairs
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Metrics for Synthetic Data Generation Projects
+  homepage: https://pypi.org/project/sdmetrics/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/sdv-dev/SDMetrics
+  summary: Metrics for Synthetic Data Generation Projects
+  description: |
+    Metrics for Synthetic Data Generation Projects
+  repository: https://github.com/sdv-dev/SDMetrics
 
 extra:
   recipe-maintainers:
     - conda-forge/sdv
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sdmetrics
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sdmetrics
+  cfe-purls:
+    - pkg:conda/sdmetrics@${{ version }}?channel=conda-forge
+    - pkg:pypi/sdmetrics@${{ version }}
+  cfe-upstream-repo: https://github.com/sdv-dev/SDMetrics
+  cfe-upstream-homepage: https://pypi.org/project/sdmetrics/
+  cfe-import-names: [sdmetrics]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sdmetrics-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.28.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:16:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:16:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:16:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

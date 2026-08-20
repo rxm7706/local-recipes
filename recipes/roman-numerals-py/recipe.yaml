@@ -9,8 +9,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/r/roman-numerals-py/roman_numerals_py-${{ version }}.tar.gz
-  sha256: f5d7b2b4ca52dd855ef7ab8eb3590f428c0b1ea480736ce32b01fef2a5f8daf9
+  url: https://github.com/AA-Turner/roman-numerals/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c12d098de0c0befa3de91be3f456f272978f481411fb22441a6b9fe386c24f80
 
 build:
   number: 0
@@ -19,27 +19,64 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=77
   run:
-    - roman-numerals ==4.1.0
     - python >=${{ python_min }}
+    - roman-numerals ==4.1.0
 
 tests:
   - python:
       imports:
-        - roman_numerals
+        - roman_numerals_py
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/roman-numerals-py/
   license: 0BSD OR CC0-1.0
-  license_file: LICENCE.rst
-  summary: Manipulate well-formed Roman numerals
-  homepage: https://github.com/AA-Turner/roman-numerals
-  repository: https://github.com/AA-Turner/roman-numerals
+  license_file: LICENSE
+  summary: This package is deprecated, switch to roman-numerals.
+  description: |
+    This package is deprecated, switch to roman-numerals.
+  repository: https://github.com/AA-Turner/roman-numerals/
 
 extra:
   recipe-maintainers:
     - AA-Turner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: roman-numerals-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: roman-numerals-py
+  cfe-purls:
+    - pkg:conda/roman-numerals-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/roman-numerals-py@${{ version }}
+  cfe-upstream-repo: https://github.com/AA-Turner/roman-numerals/
+  cfe-upstream-homepage: https://pypi.org/project/roman-numerals-py/
+  cfe-import-names: [roman_numerals_py]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/roman-numerals-py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:03:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:03:29Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:03:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

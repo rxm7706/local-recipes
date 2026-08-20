@@ -2,30 +2,26 @@
 schema_version: 1
 
 context:
-  name: factory_boy
   version: "3.3.3"
-  bundle: tar.gz
-  hash: 866862d226128dfac7f2b4160287e899daf54f2612778327dd03d0e2cb1e3d03
 
 package:
-  name: ${{ name|lower }}
+  name: factory-boy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/f/factory-boy/factory_boy-${{ version }}.tar.gz
+  sha256: 866862d226128dfac7f2b4160287e899daf54f2612778327dd03d0e2cb1e3d03
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=0.8.0
+    - setuptools
   run:
     - python >=${{ python_min }}
     - faker >=0.7.0
@@ -34,21 +30,49 @@ tests:
   - python:
       imports:
         - factory
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/FactoryBoy/factory_boy
   license: MIT
   license_file: LICENSE
-  summary: A versatile test fixtures replacement based on thoughtbot's factory_girl for Ruby.
-  homepage: https://github.com/FactoryBoy/factory_boy
-  repository: https://github.com/FactoryBoy/factory_boy
-  documentation: https://factoryboy.readthedocs.io/en/latest/
+  summary: A versatile test fixtures replacement based on thoughtbot's factory_bot for Ruby.
+  description: |
+    A versatile test fixtures replacement based on thoughtbot's factory_bot for Ruby.
 
 extra:
   recipe-maintainers:
-    - pmlandwehr
-    - dhirschfeld
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: factory-boy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: factory-boy
+  cfe-purls:
+    - pkg:conda/factory-boy@${{ version }}?channel=conda-forge
+    - pkg:pypi/factory-boy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/FactoryBoy/factory_boy
+  cfe-import-names: [factory]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:07:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:07:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:07:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

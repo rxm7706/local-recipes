@@ -2,53 +2,84 @@
 schema_version: 1
 
 context:
-  name: pathos
-  version: 0.3.5
+  version: "0.3.5"
 
 package:
-  name: ${{ name|lower }}
+  name: pathos
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pathos/pathos-${{ version }}.tar.gz
   sha256: 8fe041b8545c5d3880a038f866022bdebf935e5cf68f56ed3407cb7e65193a61
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=42
   run:
-    - dill >=0.4.1
-    - multiprocess >=0.70.19
-    - pox >=0.3.7
-    - ppft >=1.7.8
     - python >=${{ python_min }}
+    - ppft >=1.7.8
+    - dill >=0.4.1
+    - pox >=0.3.7
+    - multiprocess >=0.70.19
 
 tests:
   - python:
       imports:
         - pathos
-        - pathos.helpers
-        - pathos.secure
-        - pathos.xmlrpc
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/uqfoundation/pathos
   license: BSD-3-Clause
   license_file: LICENSE
   summary: parallel graph management and execution in heterogeneous computing
-  homepage: https://github.com/uqfoundation/pathos
+  description: |
+    parallel graph management and execution in heterogeneous computing
   repository: https://github.com/uqfoundation/pathos
+  documentation: http://pathos.rtfd.io
 
 extra:
   recipe-maintainers:
     - jschueller
     - mariusvniekerk
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pathos
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pathos
+  cfe-purls:
+    - pkg:conda/pathos@${{ version }}?channel=conda-forge
+    - pkg:pypi/pathos@${{ version }}
+  cfe-upstream-repo: https://github.com/uqfoundation/pathos
+  cfe-upstream-homepage: https://github.com/uqfoundation/pathos
+  cfe-import-names: [pathos]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pathos-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:49:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:49:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:49:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: red-black-tree-mod
   version: "1.22"
 
 package:
-  name: ${{ name|lower }}
+  name: red-black-tree-mod
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/red-black-tree-mod-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/red-black-tree-mod/red-black-tree-mod-${{ version }}.tar.gz
   sha256: 38e3652903a2bf96379c27c2082ca0b7b905158662dd7ef0c97f4fd93a9aa908
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -29,22 +28,57 @@ requirements:
 tests:
   - python:
       imports:
-        - red_black_dict_mod
-        - red_black_set_mod
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+        - red_black_tree_mod
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Flexible python implementation of red black trees
-  license: MIT
-  license_file: COPYING
   homepage: http://stromberg.dnsalias.org/~strombrg/red-black-tree-mod/
+  license: MIT
+  license_file: LICENSE
+  summary: Flexible python implementation of red black trees
+  description: |
+    Flexible python implementation of red black trees
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: red-black-tree-mod
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: red-black-tree-mod
+  cfe-purls:
+    - pkg:conda/red-black-tree-mod@${{ version }}?channel=conda-forge
+    - pkg:pypi/red-black-tree-mod@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://stromberg.dnsalias.org/~strombrg/red-black-tree-mod/
+  cfe-import-names: [red_black_tree_mod]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/red-black-tree-mod-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:50:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:50:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:50:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

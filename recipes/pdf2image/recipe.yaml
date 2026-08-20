@@ -2,47 +2,46 @@
 schema_version: 1
 
 context:
-  name: pdf2image
   version: "1.17.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pdf2image
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pdf2image/pdf2image-${{ version }}.tar.gz
   sha256: eaa959bc116b420dd7ec415fcae49b98100dda3dd18cd2fdfa86d09f112f6d57
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
     - pillow
-    - poppler
 
 tests:
   - python:
       imports:
         - pdf2image
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/Belval/pdf2image
   license: MIT
   license_file: LICENSE
   summary: A wrapper around the pdftoppm and pdftocairo command line tools to convert PDF to a PIL Image list.
-  homepage: https://github.com/Belval/pdf2image
+  description: |
+    A wrapper around the pdftoppm and pdftocairo command line tools to convert PDF to a PIL Image list.
 
 extra:
   recipe-maintainers:
@@ -51,3 +50,36 @@ extra:
     - oblute
     - rluria14
     - m-rossi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pdf2image
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pdf2image
+  cfe-purls:
+    - pkg:conda/pdf2image@${{ version }}?channel=conda-forge
+    - pkg:pypi/pdf2image@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Belval/pdf2image
+  cfe-import-names: [pdf2image]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pdf2image-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.17.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:53:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:53:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:53:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

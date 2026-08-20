@@ -2,59 +2,83 @@
 schema_version: 1
 
 context:
-  name: mdit-py-plugins
   version: "0.6.1"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: mdit-py-plugins
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/mdit-py-plugins/mdit_py_plugins-${{ version }}.tar.gz
   sha256: a2bca0f039f39dbd35fb74ae1b5f998608c437463371f0ff7f49a19a17a114d0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core >=3.4,<4
+    - python ${{ python_min }}.*
     - pip
-    - python 3.10.*
+    - flit-core >=3.4,<4
   run:
-    - markdown-it-py >=2.0.0,<5.0.0
     - python >=${{ python_min }}
+    - markdown-it-py <5.0.0,>=2.0.0
 
 tests:
   - python:
       imports:
         - mdit_py_plugins
-        - mdit_py_plugins.amsmath
-        - mdit_py_plugins.anchors
-        - mdit_py_plugins.container
-        - mdit_py_plugins.deflist
-        - mdit_py_plugins.dollarmath
-        - mdit_py_plugins.footnote
-        - mdit_py_plugins.front_matter
-        - mdit_py_plugins.myst_blocks
-        - mdit_py_plugins.myst_role
-        - mdit_py_plugins.tasklists
-        - mdit_py_plugins.texmath
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/executablebooks/mdit-py-plugins
   license: MIT
   license_file: LICENSE
   summary: Collection of plugins for markdown-it-py
-  homepage: https://github.com/executablebooks/mdit-py-plugins
-  documentation: https://markdown-it-py.readthedocs.io/en/latest/plugins.html
+  description: |
+    Collection of plugins for markdown-it-py
+  documentation: https://mdit-py-plugins.readthedocs.io
 
 extra:
   recipe-maintainers:
     - dopplershift
     - choldgraf
     - chrisjsewell
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mdit-py-plugins
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mdit-py-plugins
+  cfe-purls:
+    - pkg:conda/mdit-py-plugins@${{ version }}?channel=conda-forge
+    - pkg:pypi/mdit-py-plugins@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/executablebooks/mdit-py-plugins
+  cfe-import-names: [mdit_py_plugins]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mdit-py-plugins-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:33:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:33:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:33:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

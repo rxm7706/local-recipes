@@ -2,44 +2,81 @@
 schema_version: 1
 
 context:
-  name: hijri-converter
-  version: "2.3.1"
+  version: "2.3.2.post1"
 
 package:
-  name: ${{ name|lower }}
+  name: hijri-converter
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 069b6789291e0830f4860a79dcd34fb3ceea3b95516ed4010202b9656ba1ab61
+  url: https://pypi.org/packages/source/h/hijri-converter/hijri_converter-${{ version }}.tar.gz
+  sha256: 986657ccd83a5beaf233ce5a219645747e885c45d4833bd2a8fa1b927fa39570
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=51
   run:
     - python >=${{ python_min }}
+    - hijridate ==2.3.0
 
 tests:
   - python:
       imports:
         - hijri_converter
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Accurate Hijri-Gregorian dates converter based on the Umm al-Qura calendar
+  homepage: https://pypi.org/project/hijri-converter/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/dralshehri/hijri-converter
+  summary: [DEPRECATED] Use 'hijridate' package instead
+  description: |
+    [DEPRECATED] Use 'hijridate' package instead
 
 extra:
   recipe-maintainers:
     - dralshehri
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hijri-converter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hijri-converter
+  cfe-purls:
+    - pkg:conda/hijri-converter@${{ version }}?channel=conda-forge
+    - pkg:pypi/hijri-converter@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/hijri-converter/
+  cfe-import-names: [hijri_converter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/hijri-converter-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.2.post1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:40:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:40:25Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:40:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

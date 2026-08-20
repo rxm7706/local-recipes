@@ -2,49 +2,87 @@
 schema_version: 1
 
 context:
-  name: stack_data
   version: "0.6.3"
 
 package:
-  name: ${{ name|lower }}
+  name: stack-data
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/stack-data/stack_data-${{ version }}.tar.gz
   sha256: 836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools >=44
-    - setuptools_scm >=3.4.3
+    - wheel
   run:
-    - asttokens
-    - executing
-    - pure_eval
     - python >=${{ python_min }}
+    - executing >=1.2.0
+    - asttokens >=2.1.0
+    - pure_eval
 
 tests:
   - python:
       imports:
         - stack_data
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/alexmojaki/stack_data
   license: MIT
   license_file: LICENSE.txt
   summary: Extract data from python stack frames and tracebacks for informative displays
-  homepage: http://github.com/alexmojaki/stack_data
-  repository: http://github.com/alexmojaki/stack_data
-  documentation: http://github.com/alexmojaki/stack_data
+  description: |
+    Extract data from python stack frames and tracebacks for informative displays
 
 extra:
   recipe-maintainers:
     - alexmojaki
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: stack_data
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: stack-data
+  cfe-purls:
+    - pkg:conda/stack_data@${{ version }}?channel=conda-forge
+    - pkg:pypi/stack-data@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/alexmojaki/stack_data
+  cfe-import-names: [stack_data]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/stack_data-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:21:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:21:58Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:21:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

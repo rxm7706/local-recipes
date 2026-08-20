@@ -20,11 +20,12 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
+    - pycares
   run:
     - python >=${{ python_min }}
-    - pycares >=5.0.0,<6
+    - pycares <6,>=5.0.0
 
 tests:
   - python:
@@ -34,31 +35,46 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - script:
-      - python -m pytest -vv --asyncio-mode=auto
-    files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest
-        - pytest-asyncio
-        - if: unix
-          then: uvloop
 
 about:
+  homepage: https://pypi.org/project/aiodns/
   license: MIT
   license_file: LICENSE
   summary: Simple DNS resolver for asyncio
   description: |
-    aiodns provides a simple way for doing asynchronous DNS resolutions using
-    pycares.
-  homepage: https://github.com/saghul/aiodns
-  repository: https://github.com/saghul/aiodns
-  documentation: https://github.com/saghul/aiodns
+    Simple DNS resolver for asyncio
 
 extra:
   recipe-maintainers:
     - CurtLH
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiodns
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiodns
+  cfe-purls:
+    - pkg:conda/aiodns@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiodns@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/aiodns/
+  cfe-import-names: [aiodns]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiodns-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:46:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:46:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:46:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

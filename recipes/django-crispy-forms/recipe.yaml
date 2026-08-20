@@ -2,51 +2,86 @@
 schema_version: 1
 
 context:
-  name: django-crispy-forms
-  version: "2.6"
-  sha256: 4921a1087c6cd4f9fa3c139654c1de1c1c385f8bd6729aaee530bc0121ab4b93
+  version: "2.7"
 
 package:
-  name: ${{ name|lower }}
+  name: django-crispy-forms
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-crispy-forms/django_crispy_forms-${{ version }}.tar.gz
+  sha256: 4c59bed60417375cba26cebb2c67ab350b655934670270b1c89dbcd7e60f1b4c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.5
-    - setuptools
+    - setuptools >=77.0.3
   run:
-    - python >=3.5
-    - django >=2.2
+    - python >=${{ python_min }}
+    - django >=5.2
+
+tests:
+  - python:
+      imports:
+        - crispy_forms
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/django-crispy-forms/django-crispy-forms
   license: MIT
   license_file: LICENSE.txt
-  summary: The best way to have DRY Django forms. The app provides a tag and filter that lets you quickly render forms in a div format while providing an enormous amount of capability to configure and control the rendered HTML.
+  summary: Best way to have Django DRY forms
   description: |
-    Build programmatic reusable layouts out of components, having full control of the rendered
-    HTML without writing HTML in templates. All this without breaking the standard way of doing
-    things in Django, so it plays nice with any other form application.
-    django-crispy-forms supports Python 2.7/Python 3.2+ and Django 1.8+
-    Django-crispy-forms supports several frontend frameworks, such as Twitter Bootstrap (versions 2 and 3),
-    Uni-form and Foundation. You can also easily adapt your custom company's one, creating your own, see
-    the docs for more information. You can easily switch among them using CRISPY_TEMPLATE_PACK setting variable.
-  homepage: https://github.com/django-crispy-forms/django-crispy-forms
-  repository: https://github.com/django-crispy-forms/django-crispy-forms
-  documentation: https://readthedocs.org/projects/django-crispy-forms/
+    Best way to have Django DRY forms
 
 extra:
   recipe-maintainers:
     - cshaley
     - sannykr
     - smithdc1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-crispy-forms
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-crispy-forms
+  cfe-purls:
+    - pkg:conda/django-crispy-forms@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-crispy-forms@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/django-crispy-forms/django-crispy-forms
+  cfe-import-names: [crispy_forms]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-crispy-forms-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.7
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:51:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:51:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:51:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

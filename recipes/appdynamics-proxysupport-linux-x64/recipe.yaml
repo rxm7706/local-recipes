@@ -2,66 +2,76 @@
 schema_version: 1
 
 context:
-  name: appdynamics-proxysupport-linux-x64
-  version: "11.72.3"
-  python_min: "3.7"
+  version: "11.88.0"
 
 package:
-  name: ${{ name|lower }}
+  name: appdynamics-proxysupport-linux-x64
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py2.py3/a/appdynamics-proxysupport-linux-x64/appdynamics_proxysupport_linux_x64-${{ version }}-py2.py3-none-any.whl
-  sha256: 0689aaa801c9d675aa70500fbe002fbb600ef23671667846a0419abdae3d9740
+  url: https://pypi.org/packages/py2.py3/a/appdynamics-proxysupport-linux-x64/appdynamics_proxysupport_linux_x64-11.88.0-py2.py3-none-any.whl
+  sha256: d83a38e176c255021fb052102c506b29b554d8260ac4c9b4d21bfca13db62dcf
 
 build:
   number: 0
-  string: py2.py3
   noarch: python
-  script:
-    - ${{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics-proxysupport-linux-x64
-  dynamic_linking:
-    missing_dso_allowlist:
-      - "*/libjvm.so"
-  <conda_recipe_manager.types.SentinelType object at 0x72b45864dbe0>:  #ignore_run_exports:
-    #- openjdk
-    #- python >={{ python_min }},<4.0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - cmake
-    - ninja
   host:
-    - python 3.7.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=38.0
-  #- openjdk =8
+    - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    #- openjdk
-  ignore_run_exports:
-    from_package:
-      - ${{ stdlib('c') }}
-      - ${{ compiler('c') }}
+    - python >=${{ python_min }}
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pip check
+  - python:
+      imports:
+        - appdynamics_proxysupport_linux_x64
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Proxysupport for AppDynamics Python agent
+  homepage: http://www.appdynamics.com
   license: Proprietary
-  license_file:
-    - LICENSE
-  homepage: https://www.appdynamics.com/python
-  documentation: https://pypi.org/project/appdynamics-proxysupport-linux-x64/
+  license_file: LICENSE
+  summary: Proxysupport for AppDynamics Python agent
+  description: |
+    Proxysupport for AppDynamics Python agent
 
 extra:
-  copy_test_source_files: true
-  final: true
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: appdynamics-proxysupport-linux-x64
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: appdynamics-proxysupport-linux-x64
+  cfe-purls:
+    - pkg:conda/appdynamics-proxysupport-linux-x64@${{ version }}?channel=conda-forge
+    - pkg:pypi/appdynamics-proxysupport-linux-x64@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://www.appdynamics.com
+  cfe-import-names: [appdynamics_proxysupport_linux_x64]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:53:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:53:23Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:53:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

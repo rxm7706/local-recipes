@@ -2,48 +2,48 @@
 schema_version: 1
 
 context:
-  name: koalas
   version: "1.8.2"
 
 package:
-  name: ${{ name|lower }}
+  name: koalas
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/koalas/koalas-${{ version }}.tar.gz
   sha256: cd072f1a9ae97e87e85e53a1c8a3097777c76f45504e79782d0acff5282fe586
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.5,<3.10
+    - setuptools
   run:
-    - numpy >=1.14
-    - pandas >=0.23.2
-    - pyarrow >=0.10
-    - python >=3.5,<3.10
+    - python >=${{ python_min }}
+    - pandas
+    - pyarrow
+    - numpy
 
 tests:
   - python:
       imports:
         - databricks
-        - databricks.koalas
-        - databricks.koalas.missing
-      pip_check: false
-  - requirements:
-      run:
-        - pyspark >=2.4
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE
-  summary: pandas API on Apache Spark
   homepage: https://github.com/databricks/koalas
+  license: http://www.apache.org/licenses/LICENSE-2.0
+  license_file: LICENSE
+  summary: "Koalas: pandas API on Apache Spark"
+  description: |
+    Koalas: pandas API on Apache Spark
   repository: https://github.com/databricks/koalas
   documentation: https://koalas.readthedocs.io/
 
@@ -56,3 +56,36 @@ extra:
     - HyukjinKwon
     - ueshin
     - itholic
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: koalas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: koalas
+  cfe-purls:
+    - pkg:conda/koalas@${{ version }}?channel=conda-forge
+    - pkg:pypi/koalas@${{ version }}
+  cfe-upstream-repo: https://github.com/databricks/koalas
+  cfe-upstream-homepage: https://github.com/databricks/koalas
+  cfe-import-names: [databricks]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/koalas-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.8.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:57:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:57:36Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:57:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

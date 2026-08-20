@@ -49,7 +49,9 @@ tests:
       imports:
         - sympy
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - python ${{ python_min }}
@@ -76,3 +78,36 @@ extra:
     - msarahan
     - scopatz
     - isuruf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sympy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sympy
+  cfe-purls:
+    - pkg:conda/sympy@${{ version }}?channel=conda-forge
+    - pkg:pypi/sympy@${{ version }}
+  cfe-upstream-repo: https://github.com/sympy/sympy
+  cfe-upstream-homepage: https://sympy.org
+  cfe-import-names: [sympy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sympy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.14.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:17:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:17:52Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:17:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

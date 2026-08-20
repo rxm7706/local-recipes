@@ -19,41 +19,66 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
+    - tomli
   run:
     - python >=${{ python_min }}
-    - pandoc
 
 tests:
   - python:
       imports:
         - pypandoc
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - python -c "import pypandoc; print(pypandoc.get_pandoc_version())"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pypandoc/
   license: MIT
   license_file: LICENSE
-  summary: Thin wrapper for pandoc
+  summary: Thin wrapper for pandoc.
   description: |
-    pypandoc is a thin wrapper for pandoc that provides a simple
-    Python interface for document conversion.
-
-
-  homepage: https://github.com/JessicaTegner/pypandoc
+    Thin wrapper for pandoc.
   repository: https://github.com/JessicaTegner/pypandoc
-  documentation: https://github.com/JessicaTegner/pypandoc#readme
 
 extra:
   recipe-maintainers:
     - jankatins
     - ocefpaf
     - jessicategner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pypandoc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pypandoc
+  cfe-purls:
+    - pkg:conda/pypandoc@${{ version }}?channel=conda-forge
+    - pkg:pypi/pypandoc@${{ version }}
+  cfe-upstream-repo: https://github.com/JessicaTegner/pypandoc
+  cfe-upstream-homepage: https://pypi.org/project/pypandoc/
+  cfe-import-names: [pypandoc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pypandoc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.17
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:56:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:56:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:56:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

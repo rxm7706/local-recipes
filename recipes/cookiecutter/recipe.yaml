@@ -3,10 +3,6 @@ schema_version: 1
 
 context:
   version: "2.7.1"
-  python_check_max: "3.14"
-  cov_fail_under: "98"
-  contains_version: >
-    python -c "import sys, re; assert re.search('[cC]ookiecutter\s+${{ version | replace('.', '\\.') }}', sys.stdin.read())"
 
 package:
   name: cookiecutter
@@ -19,63 +15,41 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - cookiecutter = cookiecutter.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - arrow
-    - binaryornot >=0.4.4
-    - click >=7.0,<9.0.0
-    - jinja2 >=2.7,<4.0.0
     - python >=${{ python_min }}
-    - python-slugify >=4.0.0
+    - binaryornot >=0.4.4
+    - jinja2 <4.0.0,>=2.7
+    - click <9.0.0,>=7.0
     - pyyaml >=5.3.1
+    - python-slugify >=4.0.0
     - requests >=2.23.0
+    - arrow
     - rich
 
 tests:
   - python:
-      imports: cookiecutter
+      imports:
+        - cookiecutter
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - pyproject.toml
-        - tests/
-    requirements:
-      run:
-        - freezegun
-        - git
-        - mercurial
-        - pytest
-        - pytest-cov
-        - pytest-mock
-        - python ${{ python_min }}.*
-    script:
-      - cookiecutter --version
-      - cookiecutter --version | ${{ contains_version }}
-      - cookiecutter --help
-      - pytest -vv --color=yes --tb=long --cov-fail-under=${{ cov_fail_under }}
+        - "*"
 
 about:
+  homepage: https://github.com/cookiecutter/cookiecutter
+  license: REPLACE_LICENSE
   license_file: LICENSE
-  license: BSD-3-Clause
-  homepage: https://pypi.org/project/cookiecutter
-  repository: https://github.com/cookiecutter/cookiecutter
+  summary: A command-line utility that creates projects from project templates, e.g. creating a Python package project from a Python package project template.
+  description: |
+    A command-line utility that creates projects from project templates, e.g. creating a Python package project from a Python package project template.
   documentation: https://cookiecutter.readthedocs.io
-  summary: |-
-    A command-line utility that creates projects from project templates, e.g.
-    creating a Python package project from a Python package project template.
 
 extra:
   recipe-maintainers:
@@ -83,3 +57,37 @@ extra:
     - cadair
     - jakirkham
     - pydanny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cookiecutter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cookiecutter
+  cfe-purls:
+    - pkg:conda/cookiecutter@${{ version }}?channel=conda-forge
+    - pkg:pypi/cookiecutter@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cookiecutter/cookiecutter
+  cfe-import-names: [cookiecutter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cookiecutter-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T07:17:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:17:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:17:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

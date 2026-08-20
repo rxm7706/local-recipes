@@ -2,47 +2,80 @@
 schema_version: 1
 
 context:
-  name: ghp-import
   version: "2.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: ghp-import
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/ghp-import/ghp-import-${{ version }}.tar.gz
   sha256: 9c535c4c61193c2df8871222567d7fd7e5014d835f97dc7b7439069e2413d343
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - ghp-import = ghp_import:main
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - python-dateutil >=2.8.1
+    - python-dateutil
 
 tests:
   - python:
       imports:
         - ghp_import
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/c-w/ghp-import
   license: Apache-2.0
   license_file: LICENSE
   summary: Copy your docs directly to the gh-pages branch.
-  homepage: http://github.com/davisp/ghp-import
+  description: |
+    Copy your docs directly to the gh-pages branch.
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ghp-import
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ghp-import
+  cfe-purls:
+    - pkg:conda/ghp-import@${{ version }}?channel=conda-forge
+    - pkg:pypi/ghp-import@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/c-w/ghp-import
+  cfe-import-names: [ghp_import]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ghp-import-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:31:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:31:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:31:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

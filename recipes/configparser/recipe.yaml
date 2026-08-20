@@ -19,31 +19,65 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm >=3.4.1
-    - toml
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - backports
         - backports.configparser
-        - configparser
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/configparser/
   license: MIT
   license_file: LICENSE
-  summary: Updated configparser from Python 3.8 for Python 2.6+.
-  homepage: http://docs.python.org/3/library/configparser.html
+  summary: Updated configparser from stdlib for earlier Pythons.
+  description: |
+    Updated configparser from stdlib for earlier Pythons.
+  repository: https://github.com/jaraco/configparser
 
 extra:
   recipe-maintainers:
     - jakirkham
     - ocefpaf
     - bgruening
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: configparser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: configparser
+  cfe-purls:
+    - pkg:conda/configparser@${{ version }}?channel=conda-forge
+    - pkg:pypi/configparser@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/configparser
+  cfe-upstream-homepage: https://pypi.org/project/configparser/
+  cfe-import-names: [backports.configparser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/configparser-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:13:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:13:33Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:13:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

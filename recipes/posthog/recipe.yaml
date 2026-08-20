@@ -2,49 +2,51 @@
 schema_version: 1
 
 context:
-  name: posthog
   version: "7.39.1"
 
 package:
-  name: ${{ name|lower }}
+  name: posthog
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/posthog/posthog-${{ version }}.tar.gz
   sha256: 0d184596e35057457fc1094883646fd23de2d6338db8b9c3ea770643fb55d8a2
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=83.0.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - requests >=2.7.0,<3.0.0
-    - six >=1.5.0
-    - monotonic >=1.5.0
+    - requests <3.0,>=2.7
     - backoff >=1.10.0
-    - python-dateutil >=2.2.0
-    - distro >=1.5.0  # Required for Linux OS detection in Python 3.9+
-    - typing-extensions >=4.2.0
+    - distro >=1.5.0
+    - typing_extensions >=4.2.0
 
 tests:
   - python:
       imports:
         - posthog
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/posthog/posthog-python
   license: MIT
   license_file: LICENSE
-  summary: Integrate PostHog into any python application
-  homepage: https://github.com/PostHog/posthog-python
+  summary: Integrate PostHog into any python application.
+  description: |
+    Integrate PostHog into any python application.
+  repository: https://github.com/posthog/posthog-python
 
 extra:
   recipe-maintainers:
@@ -52,3 +54,36 @@ extra:
     - dmarticus
     - k11kirky
     - posthog-bot
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: posthog
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: posthog
+  cfe-purls:
+    - pkg:conda/posthog@${{ version }}?channel=conda-forge
+    - pkg:pypi/posthog@${{ version }}
+  cfe-upstream-repo: https://github.com/posthog/posthog-python
+  cfe-upstream-homepage: https://github.com/posthog/posthog-python
+  cfe-import-names: [posthog]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/posthog-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.39.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:11:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:11:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:11:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

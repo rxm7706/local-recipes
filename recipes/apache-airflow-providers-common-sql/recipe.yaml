@@ -1,138 +1,84 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-context:
-  name: apache-airflow-providers-common-sql
-  version: "2.1.0"
-  latest_airflow: 3.3.0
+schema_version: 1
 
-recipe:
-  name: ${{ name|lower }}
+context:
+  version: "2.1.0"
+
+package:
+  name: apache-airflow-providers-common-sql
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_common_sql-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/apache-airflow-providers-common-sql/apache_airflow_providers_common_sql-${{ version }}.tar.gz
   sha256: 2c6053a2753596df2fce834da39d6095063dfae28f417291997b203b60692b9f
 
 build:
-  noarch: python
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: ${{ name }}
-    build:
-      noarch: python
-      script: python -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - pip
-        - flit-core ==3.12.0
-      run:
-        - python >=${{ python_min }}
-        - apache-airflow >=2.11.0
-        - apache-airflow-providers-common-compat >=1.14.1
-        - sqlparse >=0.5.1
-        - more-itertools >=9.0.0
-        - methodtools >=0.4.7
-    tests:
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-            - pip
-            - apache-airflow ${{ latest_airflow }}.*
-        script:
-          - python -c "import airflow.providers.common.sql"
-          - pip check
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.12.0
+  run:
+    - python >=${{ python_min }}
+    - airflow >=2.11.0
+    - apache-airflow-providers-common-compat >=1.14.1
+    - sqlparse >=0.5.1
+    - more-itertools >=9.0.0
+    - methodtools >=0.4.7
 
-  - package:
-      name: ${{ name }}-with-openlineage
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, exact=True) }}
-        - apache-airflow-providers-openlineage
-    tests:
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-            - pip
-            - apache-airflow ${{ latest_airflow }}.*
-        script:
-          - python -c "import airflow.providers.common.sql"
-          - pip check
-
-  - package:
-      name: ${{ name }}-with-pandas
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, exact=True) }}
-        # more restrictive for python >=3.14
-        - pandas >=2.3.3
-        # start pandas[sql-other]
-        - sqlalchemy >=2.0.36
-        - adbc-driver-postgresql >=1.2.0
-        - adbc-driver-sqlite >=1.2.0
-        # end pandas[sql-other]
-    tests:
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-            - pip
-            - apache-airflow ${{ latest_airflow }}.*
-        script:
-          - python -c "import airflow.providers.common.sql"
-          - pip check
-
-  - package:
-      name: ${{ name }}-with-polars
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, exact=True) }}
-        - polars >=1.26.0
-    tests:
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-            - pip
-            - apache-airflow ${{ latest_airflow }}.*
-        script:
-          - python -c "import airflow.providers.common.sql"
-          - pip check
-
-  # skipping output amazon
-
-  # skipping output apache.iceberg
-
-  # skipping output datafusion
-
-  # skipping output pyiceberg-core
-
-  # skipping output sqlalchemy
+tests:
+  - python:
+      imports:
+        - airflow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/apache/airflow/
-  summary: Provider package apache-airflow-providers-common-sql for Apache Airflow
+  homepage: https://pypi.org/project/apache-airflow-providers-common-sql/
   license: Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  documentation: https://airflow.apache.org/docs/apache-airflow-providers-common-sql/stable/index.html
-  repository: https://github.com/apache/airflow/
+  license_file: LICENSE
+  summary: Provider package apache-airflow-providers-common-sql for Apache Airflow
+  description: |
+    Provider package apache-airflow-providers-common-sql for Apache Airflow
+  repository: https://github.com/apache/airflow
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-common-sql/2.1.0
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apache-airflow-providers-common-sql
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apache-airflow-providers-common-sql
+  cfe-purls:
+    - pkg:conda/apache-airflow-providers-common-sql@${{ version }}?channel=conda-forge
+    - pkg:pypi/apache-airflow-providers-common-sql@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/airflow
+  cfe-upstream-homepage: https://pypi.org/project/apache-airflow-providers-common-sql/
+  cfe-import-names: [airflow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apache-airflow-providers-common-sql-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:02:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:02:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:02:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

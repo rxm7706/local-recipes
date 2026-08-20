@@ -2,47 +2,83 @@
 schema_version: 1
 
 context:
-  name: apispec-webframeworks
-  version: "0.5.2"
+  version: "1.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: apispec-webframeworks
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/apispec-webframeworks-${{ version }}.tar.gz
-  sha256: 0db35b267914b3f8c562aca0261957dbcb4176f255eacc22520277010818dcf3
+  url: https://pypi.org/packages/source/a/apispec-webframeworks/apispec_webframeworks-${{ version }}.tar.gz
+  sha256: 5689288c266a2713c2f516eacc14ea2fec9b21f193edc8f659c770342b97fd81
 
 build:
-  number: 4
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - flit-core <4
   run:
-    - apispec >=2.0.0
-    - python >=3.6
+    - python >=${{ python_min }}
+    - apispec >=6.0.0
 
 tests:
   - python:
       imports:
         - apispec_webframeworks
-        - apispec_webframeworks.tests
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/apispec-webframeworks/
   license: MIT
   license_file: LICENSE
   summary: Web framework plugins for apispec.
-  homepage: https://github.com/marshmallow-code/apispec-webframeworks
+  description: |
+    Web framework plugins for apispec.
   repository: https://github.com/marshmallow-code/apispec-webframeworks
-  documentation: https://pypi.org/project/apispec-webframeworks/#description
 
 extra:
   recipe-maintainers:
     - ndmaxar
     - oblute
     - rluria14
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apispec-webframeworks
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apispec-webframeworks
+  cfe-purls:
+    - pkg:conda/apispec-webframeworks@${{ version }}?channel=conda-forge
+    - pkg:pypi/apispec-webframeworks@${{ version }}
+  cfe-upstream-repo: https://github.com/marshmallow-code/apispec-webframeworks
+  cfe-upstream-homepage: https://pypi.org/project/apispec-webframeworks/
+  cfe-import-names: [apispec_webframeworks]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apispec-webframeworks-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:52:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:52:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:52:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

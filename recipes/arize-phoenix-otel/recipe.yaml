@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: arize-phoenix-otel
-  version: "0.16.1"
-  python_min: "3.10"
+  version: "0.17.1"
 
 package:
-  name: ${{ name|lower }}
+  name: arize-phoenix-otel
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/arize_phoenix_otel-${{ version }}.tar.gz
-  sha256: 28ba1d43dcd2dc556f6cac25622c3333e613e2cf1d687832a9ed5ce2c20e17be
+  url: https://pypi.org/packages/source/a/arize-phoenix-otel/arize_phoenix_otel-${{ version }}.tar.gz
+  sha256: 63baec1128a036895dd49fa50222b9deac2cdeababbcca3d0f1f9b96e615fd6b
 
 build:
   number: 0
@@ -21,18 +19,18 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-semantic-conventions
+    - openinference-instrumentation >=0.1.38
+    - openinference-semantic-conventions >=0.1.17
     - opentelemetry-exporter-otlp
     - opentelemetry-proto >=1.12.0
     - opentelemetry-sdk
-    - openinference-semantic-conventions >=0.1.17
-    - openinference-instrumentation >=0.1.38
-    - typing-extensions >=4.5,<5
+    - opentelemetry-semantic-conventions
+    - typing_extensions <5,>=4.5
     - wrapt
 
 tests:
@@ -40,14 +38,19 @@ tests:
       imports:
         - phoenix.otel
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: LLM Observability
-  license: Elastic-2.0
+  homepage: https://pypi.org/project/arize-phoenix-otel/
+  license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/Arize-ai/phoenix/tree/main/packages/phoenix-otel
-  documentation: https://arize-phoenix.readthedocs.io/en/latest/api/otel.html
+  summary: LLM Observability
+  description: |
+    LLM Observability
+  repository: https://github.com/Arize-ai/phoenix
+  documentation: https://arize.com/docs/phoenix/
 
 extra:
   recipe-maintainers:
@@ -57,3 +60,36 @@ extra:
     - michaelschiff
     - fjcasti1
     - axiomofjoy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arize-phoenix-otel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arize-phoenix-otel
+  cfe-purls:
+    - pkg:conda/arize-phoenix-otel@${{ version }}?channel=conda-forge
+    - pkg:pypi/arize-phoenix-otel@${{ version }}
+  cfe-upstream-repo: https://github.com/Arize-ai/phoenix
+  cfe-upstream-homepage: https://pypi.org/project/arize-phoenix-otel/
+  cfe-import-names: [phoenix.otel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arize-phoenix-otel-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.17.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:59:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:59:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:59:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

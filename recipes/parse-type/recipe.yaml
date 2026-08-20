@@ -2,31 +2,32 @@
 schema_version: 1
 
 context:
-  version: 0.6.6
+  version: "0.6.6"
 
 package:
-  name: parse_type
+  name: parse-type
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/parse_type/parse_type-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/parse-type/parse_type-${{ version }}.tar.gz
   sha256: 513a3784104839770d690e04339a8b4d33439fcd5dd99f2e4580f9fc1097bfb2
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
-    - setuptools_scm
+    - setuptools
+    - setuptools-scm
     - wheel
   run:
     - python >=${{ python_min }}
-    - parse >=1.18.0
+    - parse >=1.13.1
+    - enum34
     - six >=1.15
 
 tests:
@@ -34,24 +35,49 @@ tests:
       imports:
         - parse_type
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
+  homepage: https://github.com/jenisys/parse_type
+  license: MIT
   license_file: LICENSE
   summary: Simplifies to build parse types based on the parse module
   description: |
-    parse_type extends the parse module (opposite of string.format()) with the following features:
-    * build type converters for common use cases (enum/mapping, choice)
-    * build a type converter with a cardinality constraint (0..1, 0..*, 1..*) from the type converter with cardinality=1.
-    * compose a type converter from other type converters
-    * an extended parser that supports the CardinalityField naming schema and creates missing type variants (0..1, 0..*, 1..*) from the primary type converter
-    dev_url: https://github.com/jenisys/parse_type
-
-
-  homepage: https://github.com/jenisys/parse_type
+    Simplifies to build parse types based on the parse module
+  repository: https://github.com/jenisys/parse_type
 
 extra:
   recipe-maintainers:
-    - stuertz
-    - thewchan
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: parse-type
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: parse-type
+  cfe-purls:
+    - pkg:conda/parse-type@${{ version }}?channel=conda-forge
+    - pkg:pypi/parse-type@${{ version }}
+  cfe-upstream-repo: https://github.com/jenisys/parse_type
+  cfe-upstream-homepage: https://github.com/jenisys/parse_type
+  cfe-import-names: [parse_type]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:02:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:02:17Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:02:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

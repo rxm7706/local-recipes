@@ -2,46 +2,79 @@
 schema_version: 1
 
 context:
-  name: pylint-celery
   version: "0.3"
-  sha256: 41e32094e7408d15c044178ea828dd524beedbdbe6f83f712c5e35bde1de4beb
 
 package:
-  name: ${{ name|lower }}
+  name: pylint-celery
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pylint-celery/pylint-celery-${{ version }}.tar.gz
+  sha256: 41e32094e7408d15c044178ea828dd524beedbdbe6f83f712c5e35bde1de4beb
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
   run:
-    - python
-    - pylint >=1.0
-    - astroid >=1.0
-    - pylint-plugin-utils >=0.2.1
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pylint_celery
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: NGPL
-  summary: pylint-celery is a Pylint plugin to aid Pylint in recognising and understandingerrors caused when using the Celery library
   homepage: https://github.com/landscapeio/pylint-celery
+  license: GPLv2
+  license_file: LICENSE
+  summary: pylint-celery is a Pylint plugin to aid Pylint in recognising and understandingerrors caused when using the Celery library
+  description: |
+    pylint-celery is a Pylint plugin to aid Pylint in recognising and understandingerrors caused when using the Celery library
 
 extra:
   recipe-maintainers:
     - jakirkham
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylint-celery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylint-celery
+  cfe-purls:
+    - pkg:conda/pylint-celery@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylint-celery@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/landscapeio/pylint-celery
+  cfe-import-names: [pylint_celery]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pylint-celery-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:22:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:22:52Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:22:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

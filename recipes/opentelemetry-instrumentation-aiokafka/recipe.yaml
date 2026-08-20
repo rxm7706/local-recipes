@@ -20,20 +20,19 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.27,<2.dev0
-    - opentelemetry-instrumentation ==${{ version }}
-    - opentelemetry-semantic-conventions ==${{ version }}
-    - typing_extensions >=4.1,<5.dev0
-    - aiokafka >=0.8,<1.0
+    - aiokafka
+    - opentelemetry-api ~=1.27
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - typing_extensions ~=4.1
 
 tests:
   - python:
       imports:
-        - opentelemetry
         - opentelemetry.instrumentation.aiokafka
       pip_check: true
       python_version:
@@ -41,11 +40,45 @@ tests:
         - "*"
 
 about:
-  summary: OpenTelemetry aiokafka instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-aiokafka
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-aiokafka
+  summary: OpenTelemetry aiokafka instrumentation
+  description: |
+    OpenTelemetry aiokafka instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - BrownMunda1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-aiokafka
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-aiokafka
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-aiokafka@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-aiokafka@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-aiokafka
+  cfe-import-names: [opentelemetry.instrumentation.aiokafka]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-aiokafka-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:32:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:32:03Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:32:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['aiokafka']
+####

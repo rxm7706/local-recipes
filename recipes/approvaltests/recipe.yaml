@@ -21,21 +21,20 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=69.0.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    # requirements.prod.required.txt
     - pytest >=8.0.0
     - empty-files >=0.0.3
     - typing_extensions >=4.12.0
-    # requirements.prod.extras.txt
     - pyperclip >=1.5.29
     - beautifulsoup4 >=4.9.0
     - allpairspy >=2.1.0
-    - testfixtures >=7.1.0,<12
+    - testfixtures <12,>=7.1.0
     - mock >=5.1.0
     - psutil >=5.9.0
-    - approval-utilities ==${{ version }}
+    - approval-utilities ==19.1.1
 
 tests:
   - python:
@@ -47,12 +46,44 @@ tests:
         - "*"
 
 about:
-  summary: Assertion/verification library to aid testing
+  homepage: https://github.com/approvals/ApprovalTests.Python
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/approvals/ApprovalTests.Python
+  summary: Assertion/verification library to aid testing
+  description: |
+    Assertion/verification library to aid testing
 
 extra:
   recipe-maintainers:
     - apmorton
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: approvaltests
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: approvaltests
+  cfe-purls:
+    - pkg:conda/approvaltests@${{ version }}?channel=conda-forge
+    - pkg:pypi/approvaltests@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/approvals/ApprovalTests.Python
+  cfe-import-names: [approvaltests]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/approvaltests-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:54:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:54:08Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:54:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

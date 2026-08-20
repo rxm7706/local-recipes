@@ -19,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - jinja2
@@ -32,16 +32,53 @@ tests:
       imports:
         - mpld3
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://mpld3.github.com
   license: BSD-3-Clause
   license_file: LICENSE
   summary: D3 Viewer for Matplotlib
-  homepage: http://mpld3.github.com
+  description: |
+    D3 Viewer for Matplotlib
 
 extra:
   recipe-maintainers:
     - etgalloway
     - jakevdp
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mpld3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mpld3
+  cfe-purls:
+    - pkg:conda/mpld3@${{ version }}?channel=conda-forge
+    - pkg:pypi/mpld3@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://mpld3.github.com
+  cfe-import-names: [mpld3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mpld3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.12
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:46:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:46:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:46:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

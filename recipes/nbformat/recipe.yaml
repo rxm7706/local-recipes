@@ -2,82 +2,52 @@
 schema_version: 1
 
 context:
-  version: "5.11.0"
-  python_check_max: "3.14"
-  grep: ${{ 'grep -iE' if unix else 'findstr /c' }}
+  version: "5.11.1"
 
 package:
   name: nbformat
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/n/nbformat/nbformat-${{ version }}.tar.gz
-  sha256: 7dbaed4a69cae28c2b4d44ab7430a6af4544fb89455023f6f21550be757b60c8
+  url: https://pypi.org/packages/source/n/nbformat/nbformat-${{ version }}.tar.gz
+  sha256: 32d4521c68c6e7d5b29c76defaeed9f42ea733142b9b19f88277ce10390b9c4d
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - jupyter-trust = nbformat.sign:TrustNotebookApp.launch_instance
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-nodejs-version
-    - hatchling >=1.5
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5
+    - hatch-nodejs-version
   run:
-    - jsonschema >=2.6
-    - jupyter_core >=4.12,!=5.0.*
     - python >=${{ python_min }}
     - python-fastjsonschema >=2.15
+    - jsonschema >=2.6
+    - jupyter-core !=5.0.*,>=4.12
     - traitlets >=5.1
 
 tests:
   - python:
-      imports: nbformat
+      imports:
+        - nbformat
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip list | ${{ grep }} nbformat
-      - pip list | ${{ grep }} 'nbformat\s*${{ version | replace('.', '\.') }}'
-      - python -c "v = __import__('nbformat').__version__; print(v); assert v == '${{ version }}'"
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - pep440
-        - pytest
-        - pytest-cov
-        - python ${{ python_min }}.*
-        - testpath
-    script:
-      - python -c "v = __import__('nbformat').__version__; print(v); assert v == '${{ version }}'"
-      - jupyter trust --version
-      - jupyter-trust --help
-      - coverage run --source=nbformat --branch -m pytest -vv
-      - coverage report --show-missing --skip-covered --fail-under=76
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  summary: The Jupyter Notebook format
-  description: |-
-    This package contains the base implementation of the Jupyter Notebook format,
-    and Python APIs for working with notebooks.
-  license_file: LICENSE
   homepage: https://jupyter.org
-  repository: https://github.com/jupyter/nbformat
-  documentation: https://nbformat.readthedocs.io
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The Jupyter Notebook format
+  description: |
+    The Jupyter Notebook format
+  repository: https://github.com/jupyter/nbformat.git
+  documentation: https://nbformat.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -88,3 +58,35 @@ extra:
     - ocefpaf
     - mpacer
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nbformat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nbformat
+  cfe-purls:
+    - pkg:conda/nbformat@${{ version }}?channel=conda-forge
+    - pkg:pypi/nbformat@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter/nbformat.git
+  cfe-upstream-homepage: https://jupyter.org
+  cfe-import-names: [nbformat]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/nbformat-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-5.11.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:59:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:59:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:59:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

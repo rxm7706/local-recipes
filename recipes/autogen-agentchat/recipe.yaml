@@ -1,21 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: autogen-agentchat
   version: "0.7.5"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: autogen-agentchat
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/autogen_agentchat-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/autogen-agentchat/autogen_agentchat-${{ version }}.tar.gz
   sha256: 8d9c718db52ef24a518806b3a0ef848f0e4c1902877675dc0abed73a8e6e7755
 
 build:
-  noarch: python
-  script: python -m pip install . -vv
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -23,25 +23,64 @@ requirements:
     - pip
     - hatchling
   run:
-    - python >=${{ python_min }},<3.13
-    - autogen-core =${{ version }}
+    - python >=${{ python_min }}
+    - autogen-core ==0.7.5
 
 tests:
   - python:
       imports:
         - autogen_agentchat
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://microsoft.github.io/autogen
-  summary: 'Enabling Next-Gen LLM Applications via Multi-Agent Conversation Framework'
-  license: Apache-2.0 AND EPL-2.0 AND MIT
-  license_file: LICENSE-CODE
-  documentation: https://microsoft.github.io/autogen
-  repository: https://github.com/microsoft/autogen
+  homepage: https://pypi.org/project/autogen-agentchat/
+  license: MIT
+  license_file: LICENSE
+  summary: AutoGen agents and teams library
+  description: |
+    AutoGen agents and teams library
 
 extra:
   recipe-maintainers:
     - raybellwaves
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: autogen-agentchat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: autogen-agentchat
+  cfe-purls:
+    - pkg:conda/autogen-agentchat@${{ version }}?channel=conda-forge
+    - pkg:pypi/autogen-agentchat@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/autogen-agentchat/
+  cfe-import-names: [autogen_agentchat]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/autogen-agentchat-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:09:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:09:44Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:09:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

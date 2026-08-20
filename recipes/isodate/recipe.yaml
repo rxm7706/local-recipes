@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: isodate
   version: "0.7.2"
 
 package:
-  name: ${{ name|lower }}
+  name: isodate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/isodate-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/isodate/isodate-${{ version }}.tar.gz
   sha256: 4cd1aa0f43ca76f4a6c6c0292a85f40b35ec2e43e315b59f06e6d32171a953e6
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
-    - setuptools-scm
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -32,19 +30,51 @@ tests:
       imports:
         - isodate
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/gweis/isodate/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: An ISO 8601 date/time/duration parser and formatter.
+  summary: An ISO 8601 date/time/duration parser and formatter
   description: |
-    This module implements ISO 8601 date, time and duration parsing. The
-    implementation follows ISO8601:2004 standard, and implements only date/time
-    representations mentioned in the standard.
-  homepage: https://github.com/gweis/isodate/
-  repository: https://github.com/gweis/isodate
+    An ISO 8601 date/time/duration parser and formatter
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: isodate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: isodate
+  cfe-purls:
+    - pkg:conda/isodate@${{ version }}?channel=conda-forge
+    - pkg:pypi/isodate@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gweis/isodate/
+  cfe-import-names: [isodate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/isodate-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:05:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:05:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:05:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

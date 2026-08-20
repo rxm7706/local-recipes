@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: drf-spectacular-sidecar
   version: "2026.8.1"
 
 package:
-  name: ${{ name|lower }}
+  name: drf-spectacular-sidecar
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/drf_spectacular_sidecar-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/drf-spectacular-sidecar/drf_spectacular_sidecar-${{ version }}.tar.gz
   sha256: 9d9ee678e5ec70cdda2c7ed95cafcdb6141664dc3e11def8a8599c8ad36cf6f5
 
 build:
@@ -20,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - django >=2.2
 
 tests:
@@ -32,16 +31,54 @@ tests:
       imports:
         - drf_spectacular_sidecar
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Serve self-contained distribution builds of Swagger UI and Redoc with Django
+  homepage: https://github.com/tfranzel/drf-spectacular-sidecar
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/tfranzel/drf-spectacular-sidecar
+  summary: Serve self-contained distribution builds of Swagger UI and Redoc with Django
+  description: |
+    Serve self-contained distribution builds of Swagger UI and Redoc with Django
   repository: https://github.com/tfranzel/drf-spectacular-sidecar
+  documentation: https://drf-spectacular.readthedocs.io
 
 extra:
   recipe-maintainers:
     - rxm7706
     - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: drf-spectacular-sidecar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: drf-spectacular-sidecar
+  cfe-purls:
+    - pkg:conda/drf-spectacular-sidecar@${{ version }}?channel=conda-forge
+    - pkg:pypi/drf-spectacular-sidecar@${{ version }}
+  cfe-upstream-repo: https://github.com/tfranzel/drf-spectacular-sidecar
+  cfe-upstream-homepage: https://github.com/tfranzel/drf-spectacular-sidecar
+  cfe-import-names: [drf_spectacular_sidecar]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-spectacular-sidecar-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2026.8.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:06:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:06:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:06:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

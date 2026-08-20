@@ -2,106 +2,49 @@
 schema_version: 1
 
 context:
-  name: arviz
   version: "1.3.0"
   python_min: "3.12"
 
-recipe:
-  name: arviz-suite
+package:
+  name: arviz
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/arviz/arviz-${{ version }}.tar.gz
   sha256: 9e332c0a0da370cb1c00823678065e9b0462fbdf1efa0f38c37485cc78c8a576
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: arviz
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - flit-core >=3.4,<4
-        - pip
-      run:
-        - python >=${{ python_min }}
-        - arviz-base >=1.3.0,<1.4.0
-        - arviz-stats >=1.3.0,<1.4.0
-        - arviz-plots >=1.3.0,<1.4.0
-        - matplotlib-base >=3.9
-    tests:
-      - python:
-          imports:
-            - arviz
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - 3.*
-  - package:
-      name: arviz-bokeh
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - flit-core >=3.4,<4
-        - pip
-      run:
-        - python >=${{ python_min }}
-        - arviz-base >=1.3.0,<1.4.0
-        - arviz-stats >=1.3.0,<1.4.0
-        - arviz-plots >=1.3.0,<1.4.0
-        - bokeh >=3.4
-    tests:
-      - python:
-          imports:
-            - arviz
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - 3.*
-  - package:
-      name: arviz-plotly
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - flit-core >=3.4,<4
-        - pip
-      run:
-        - python >=${{ python_min }}
-        - arviz-base >=1.3.0,<1.4.0
-        - arviz-stats >=1.3.0,<1.4.0
-        - arviz-plots >=1.3.0,<1.4.0
-        - plotly >=5.19
-        - webcolors
-    tests:
-      - python:
-          imports:
-            - arviz
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - 3.*
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.4,<4
+  run:
+    - python >=${{ python_min }}
+    - arviz-base <1.4.0,>=1.3.0
+    - arviz-stats <1.4.0,>=1.3.0
+    - arviz-plots <1.4.0,>=1.3.0
+
+tests:
+  - python:
+      imports:
+        - arviz
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/arviz/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Exploratory analysis of Bayesian models with Python
+  summary: Expose features from _ArviZverse_ refactored packages together in the ``arviz`` namespace.
   description: |
-    ArviZ (pronounced "AR-vees") is a Python package for exploratory analysis
-    of Bayesian models. Includes functions for posterior analysis, model
-    checking, comparison and diagnostics.
-
-  homepage: https://python.arviz.org
+    Expose features from _ArviZverse_ refactored packages together in the ``arviz`` namespace.
   repository: https://github.com/arviz-devs/arviz
   documentation: https://python.arviz.org
 
@@ -114,3 +57,33 @@ extra:
     - ColCarroll
     - ahartikainen
     - OriolAbril
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arviz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arviz
+  cfe-purls:
+    - pkg:conda/arviz@${{ version }}?channel=conda-forge
+    - pkg:pypi/arviz@${{ version }}
+  cfe-upstream-repo: https://github.com/arviz-devs/arviz
+  cfe-upstream-homepage: https://pypi.org/project/arviz/
+  cfe-import-names: [arviz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arviz-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:19:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:19:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:19:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

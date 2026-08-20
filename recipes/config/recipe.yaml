@@ -2,26 +2,26 @@
 schema_version: 1
 
 context:
-  name: config
   version: "0.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: config
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/config-${{ version }}.zip
+  url: https://pypi.org/packages/source/c/config/config-0.5.1.zip
   sha256: 2dd4a03aa383d30711d5a3325a1858de225328d61950a85be5b74c100f63016d
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -30,14 +30,51 @@ tests:
       imports:
         - config
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A hierarchical, easy-to-use, powerful configuration module for Python
+  homepage: http://docs.red-dove.com/cfg/python.html
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: http://docs.red-dove.com/cfg/python.html
+  summary: A hierarchical, easy-to-use, powerful configuration module for Python
+  description: |
+    A hierarchical, easy-to-use, powerful configuration module for Python
 
 extra:
   recipe-maintainers:
     - zklaus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: config
+  cfe-purls:
+    - pkg:conda/config@${{ version }}?channel=conda-forge
+    - pkg:pypi/config@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://docs.red-dove.com/cfg/python.html
+  cfe-import-names: [config]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/config-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:31:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:31:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:31:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

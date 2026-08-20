@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: requests
   version: "2.34.2"
 
 package:
-  name: ${{ name|lower }}
+  name: requests
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/requests-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/requests/requests-${{ version }}.tar.gz
   sha256: f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
 
 build:
@@ -21,34 +20,33 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
-    - wheel
     - pip
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
+    - charset-normalizer <4,>=2
+    - idna <4,>=2.5
+    - urllib3 <3,>=1.26
     - certifi >=2023.5.7
-    - charset-normalizer >=2,<4
-    - idna >=2.5,<4
-    - urllib3 >=1.26,<3
-  run_constraints:
-    # requests >=2.33.0 has a run time constraint in its __init__.py: chardet >=3.0.2,<8
-    # https://github.com/psf/requests/blob/v2.33.1/src/requests/__init__.py#L79
-    # https://github.com/psf/requests/blob/111d2b77790bf49943c0dfa09b365371c24aec7e/src/requests/__init__.py#L79
-    - chardet >=3.0.2,<8
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - requests
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: http://python-requests.org
+  homepage: https://pypi.org/project/requests/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Requests is an elegant and simple HTTP library for Python, built with ♥.
+  summary: Python HTTP for Humans.
+  description: |
+    Python HTTP for Humans.
   repository: https://github.com/psf/requests
+  documentation: https://requests.readthedocs.io
 
 extra:
   recipe-maintainers:
@@ -61,3 +59,33 @@ extra:
     - sigmavirus24
     - ocefpaf
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests
+  cfe-purls:
+    - pkg:conda/requests@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests@${{ version }}
+  cfe-upstream-repo: https://github.com/psf/requests
+  cfe-upstream-homepage: https://pypi.org/project/requests/
+  cfe-import-names: [requests]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:32:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:32:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:32:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

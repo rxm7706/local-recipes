@@ -2,55 +2,80 @@
 schema_version: 1
 
 context:
-  name: PyHive
   version: "0.7.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyhive
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyHive/PyHive-${{ version }}.tar.gz
   sha256: 585beff9578a61b99aed47140fec97e26323e8c685a5b5d0c8550a8ebf8a24e0
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    # https://github.com/apache/kyuubi/commit/996cdccc097e046fc2f61c7be5d0069b6c8eda9b
-    - setuptools <72
+    - setuptools
   run:
-    - future
     - python >=${{ python_min }}
-    - python-dateutil
-    - thrift >=0.10.0
-    - thrift_sasl >0.2.1
-    - requests >=1.0.0
-    - sqlalchemy >=0.8.7
 
 tests:
   - python:
       imports:
-        - TCLIService
         - pyhive
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python interface to Hive
+  homepage: https://github.com/dropbox/PyHive
   license: Apache-2.0
   license_file: LICENSE
+  summary: Python interface to Hive
   description: |
-    PyHive is a collection of Python DB-API and SQLAlchemy interfaces for Presto and Hive.
-  homepage: https://pypi.org/project/PyHive/
-  documentation: https://pypi.python.org/pypi/PyHive
+    Python interface to Hive
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
     - bandersen23
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyhive
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyhive
+  cfe-purls:
+    - pkg:conda/pyhive@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyhive@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dropbox/PyHive
+  cfe-import-names: [pyhive]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyhive-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:44:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:44:40Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T03:44:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,59 +2,54 @@
 schema_version: 1
 
 context:
-  python_min: "3.12"
-  name: pointpats
   version: "2.6.0"
+  python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: pointpats
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pointpats-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pointpats/pointpats-${{ version }}.tar.gz
   sha256: 6c21e0a03d9ad4ca0f62393f888842212580d99b828b4b68ddeb1929eac8bdf2
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.12.*
     - setuptools >=61.0
-    - setuptools-scm >=6.2
   run:
-    - libpysal >=4.10
-    - matplotlib-base >=3.9
-    - numpy >=1.26
-    - pandas >=2.2
     - python >=${{ python_min }}
-    - scipy >=1.12
+    - libpysal >=4.12
+    - geopandas >=1.1.0
+    - matplotlib-base >=3.10
+    - numpy >=2.0.0
+    - pandas >=2.3.0
+    - scipy >=1.14.0
     - shapely >=2.1
-    - geopandas >=1.0
 
 tests:
   - python:
       imports:
         - pointpats
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pysal/pointpats/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: Statistical analysis of planar point patterns.
+  summary: Methods and Functions for planar point pattern analysis
   description: |
-    This pointpats package is intended to support the statistical analysis
-    of planar point patterns.
-  homepage: http://pysal.org
+    Methods and Functions for planar point pattern analysis
   repository: https://github.com/pysal/pointpats
-  documentation: https://pointpats.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
@@ -63,3 +58,40 @@ extra:
     - martinfleis
     - knaaptime
     - jGaboardi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pointpats
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pointpats
+  cfe-purls:
+    - pkg:conda/pointpats@${{ version }}?channel=conda-forge
+    - pkg:pypi/pointpats@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/pointpats
+  cfe-upstream-homepage: https://github.com/pysal/pointpats/
+  cfe-import-names: [pointpats]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pointpats-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:08:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:08:44Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T03:08:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

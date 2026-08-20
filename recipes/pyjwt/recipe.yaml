@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pyjwt
   version: "2.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyjwt
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyJWT/pyjwt-${{ version }}.tar.gz
   sha256: 41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423
 
 build:
@@ -26,26 +25,56 @@ requirements:
   run:
     - python >=${{ python_min }}
     - typing_extensions >=4.0
-  run_constraints:
-    - cryptography >=3.4.0
 
 tests:
   - python:
       imports:
         - jwt
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/jpadilla/pyjwt
   license: MIT
   license_file: LICENSE
   summary: JSON Web Token implementation in Python
-  homepage: https://github.com/jpadilla/pyjwt
-  repository: https://github.com/jpadilla/pyjwt
-  documentation: https://pyjwt.readthedocs.io/en/latest/
+  description: |
+    JSON Web Token implementation in Python
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - ocefpaf
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyjwt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyjwt
+  cfe-purls:
+    - pkg:conda/pyjwt@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyjwt@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jpadilla/pyjwt
+  cfe-import-names: [jwt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyjwt-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:45:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:45:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:45:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

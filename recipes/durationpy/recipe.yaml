@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: durationpy
   version: "0.10"
 
 package:
-  name: ${{ name|lower }}
+  name: durationpy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/durationpy-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/durationpy/durationpy-${{ version }}.tar.gz
   sha256: 1fa6893409a6e739c9c72334fc65cca1f355dbdd93405d30f726deb5bde42fba
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -31,14 +30,51 @@ tests:
       imports:
         - durationpy
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Module for converting between datetime.timedelta and Go's Duration strings.
+  homepage: https://github.com/icholy/durationpy
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/icholy/durationpy
+  summary: Module for converting between datetime.timedelta and Go's Duration strings.
+  description: |
+    Module for converting between datetime.timedelta and Go's Duration strings.
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: durationpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: durationpy
+  cfe-purls:
+    - pkg:conda/durationpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/durationpy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/icholy/durationpy
+  cfe-import-names: [durationpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/durationpy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.10
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:56:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:56:44Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:56:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

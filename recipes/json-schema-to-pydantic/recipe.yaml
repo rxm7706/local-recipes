@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: json-schema-to-pydantic
   version: "0.4.11"
 
 package:
-  name: ${{ name|lower }}
+  name: json-schema-to-pydantic
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_schema_to_pydantic-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/json-schema-to-pydantic/json_schema_to_pydantic-${{ version }}.tar.gz
   sha256: 35448ed711a28dd33396b095c8492939b4925aa30eb31942e9b8e08d04279465
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
-    - uv-dynamic-versioning
     - pip
+    - hatchling
+    - hatch-vcs
   run:
     - python >=${{ python_min }}
     - pydantic >=2.10.4
@@ -33,14 +32,49 @@ tests:
       imports:
         - json_schema_to_pydantic
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Python library for automatically generating Pydantic v2 models from JSON Schema definitions
+  homepage: https://github.com/richard-gyiko/json-schema-to-pydantic
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/richard-gyiko/json-schema-to-pydantic
+  summary: A Python library for automatically generating Pydantic v2 models from JSON Schema definitions
+  description: |
+    A Python library for automatically generating Pydantic v2 models from JSON Schema definitions
+  documentation: https://github.com/richard-gyiko/json-schema-to-pydantic#readme
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-schema-to-pydantic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-schema-to-pydantic
+  cfe-purls:
+    - pkg:conda/json-schema-to-pydantic@${{ version }}?channel=conda-forge
+    - pkg:pypi/json-schema-to-pydantic@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/richard-gyiko/json-schema-to-pydantic
+  cfe-import-names: [json_schema_to_pydantic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json-schema-to-pydantic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:51:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:51:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:51:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

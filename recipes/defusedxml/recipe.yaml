@@ -9,35 +9,72 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/d/defusedxml/defusedxml-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/defusedxml/defusedxml-${{ version }}.tar.gz
   sha256: 1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - defusedxml
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: PSF-2.0
+  homepage: https://github.com/tiran/defusedxml
+  license: PSFL
   license_file: LICENSE
   summary: XML bomb protection for Python stdlib modules
-  homepage: https://github.com/tiran/defusedxml
-  repository: https://bitbucket.org/tiran/defusedxml
-  documentation: https://bitbucket.org/tiran/defusedxml
+  description: |
+    XML bomb protection for Python stdlib modules
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: defusedxml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: defusedxml
+  cfe-purls:
+    - pkg:conda/defusedxml@${{ version }}?channel=conda-forge
+    - pkg:pypi/defusedxml@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/tiran/defusedxml
+  cfe-import-names: [defusedxml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/defusedxml-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:42:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:42:26Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:42:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

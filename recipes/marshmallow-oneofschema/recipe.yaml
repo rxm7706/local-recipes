@@ -2,48 +2,82 @@
 schema_version: 1
 
 context:
-  name: marshmallow-oneofschema
-  version: "3.1.1"
+  version: "3.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: marshmallow-oneofschema
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 68b4a57d0281a04ac25d4eb7a4c5865a57090a0a8fd30fd6362c8e833ac6a6d9
+  url: https://pypi.org/packages/source/m/marshmallow-oneofschema/marshmallow_oneofschema-${{ version }}.tar.gz
+  sha256: c06c8d9f14d51ffff152d66d85bd5f27d55cff10752a3b1f8c1f948bf5f597a0
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core <4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core <4
   run:
     - python >=${{ python_min }}
-    - marshmallow >=3.0.0,<4.0.0
+    - marshmallow <5.0.0,>=3.0.0
 
 tests:
   - python:
       imports:
         - marshmallow_oneofschema
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/marshmallow-oneofschema/
   license: MIT
   license_file: LICENSE
-  summary: Marshmallow library extension that allows schema (de)multiplexing
-  homepage: https://github.com/marshmallow-code/marshmallow-oneofschema
+  summary: marshmallow multiplexing schema
+  description: |
+    marshmallow multiplexing schema
+  repository: https://github.com/marshmallow-code/marshmallow-oneofschema
 
 extra:
   recipe-maintainers:
     - dhirschfeld
     - rzillman
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: marshmallow-oneofschema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: marshmallow-oneofschema
+  cfe-purls:
+    - pkg:conda/marshmallow-oneofschema@${{ version }}?channel=conda-forge
+    - pkg:pypi/marshmallow-oneofschema@${{ version }}
+  cfe-upstream-repo: https://github.com/marshmallow-code/marshmallow-oneofschema
+  cfe-upstream-homepage: https://pypi.org/project/marshmallow-oneofschema/
+  cfe-import-names: [marshmallow_oneofschema]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/marshmallow-oneofschema-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:28:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:28:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:28:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -1,48 +1,82 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: 4.7.4
+  version: "4.7.4"
 
 package:
   name: flask-jwt-extended
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/f/flask-jwt-extended/flask_jwt_extended-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-JWT-Extended/flask_jwt_extended-${{ version }}.tar.gz
   sha256: 78fd0f460317facf3a0084a6457ffaf2f1dda9eefbd576f94cea35b0eadd5531
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
-    - flask >=2.0,<4.0
-    - pyjwt >=2.11.0,<3.0
     - python >=${{ python_min }}
     - werkzeug >=0.14
+    - flask <4.0,>=2.0
+    - pyjwt <3.0,>=2.11.0
+
 tests:
   - python:
       imports:
         - flask_jwt_extended
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/vimalloc/flask-jwt-extended
   license: MIT
   license_file: LICENSE
-  summary: A Flask JWT extension
+  summary: Extended JWT integration with Flask
   description: |
-    A Flask JWT extension that supports refresh tokens, blacklisting/revoking tokens,
-    and token freshness (for accessing critical views)
-  homepage: https://github.com/vimalloc/flask-jwt-extended
+    Extended JWT integration with Flask
 
 extra:
   recipe-maintainers:
     - lvoliveira
     - nicoddemus
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-jwt-extended
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-jwt-extended
+  cfe-purls:
+    - pkg:conda/flask-jwt-extended@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-jwt-extended@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/vimalloc/flask-jwt-extended
+  cfe-import-names: [flask_jwt_extended]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-jwt-extended-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:22:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:22:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:22:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

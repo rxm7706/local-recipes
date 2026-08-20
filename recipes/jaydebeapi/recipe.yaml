@@ -2,58 +2,85 @@
 schema_version: 1
 
 context:
-  name: JayDeBeApi
   version: "1.2.3"
-  sha256: f25e9307fbb5960cb035394c26e37731b64cc465b197c4344cee85ec450ab92f
 
 package:
-  name: ${{ name|lower }}
+  name: jaydebeapi
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/j/JayDeBeApi/JayDeBeApi-${{ version }}.tar.gz
+  sha256: f25e9307fbb5960cb035394c26e37731b64cc465b197c4344cee85ec450ab92f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
     - jpype1
 
 tests:
   - python:
       imports:
         - jaydebeapi
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-3.0-only
-  license_file: COPYING
-  summary: A Python DB-APIv2.0 compliant library for JDBC Drivers
-  description: |
-    The JayDeBeApi module allows you to connect from Python code to
-    databases using Java JDBC. It provides a Python DB-API v2.0 to that
-    database.
-
-    It works on ordinary Python (cPython) using the JPype Java
-    integration or on Jython to make use of the Java JDBC driver.
-
-    In contrast to zxJDBC from the Jython project JayDeBeApi let's you
-    access a database with Jython AND Python with only minor code
-    modifications. JayDeBeApi's future goal is to provide a unique and
-    fast interface to different types of JDBC-Drivers through a flexible
-    plug-in mechanism.
   homepage: https://github.com/baztian/jaydebeapi
-  repository: https://github.com/baztian/jaydebeapi
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Use JDBC database drivers from Python 2/3 or Jython with a DB-API.
+  description: |
+    Use JDBC database drivers from Python 2/3 or Jython with a DB-API.
 
 extra:
   recipe-maintainers:
     - sodre
     - scopatz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jaydebeapi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jaydebeapi
+  cfe-purls:
+    - pkg:conda/jaydebeapi@${{ version }}?channel=conda-forge
+    - pkg:pypi/jaydebeapi@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/baztian/jaydebeapi
+  cfe-import-names: [jaydebeapi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jaydebeapi-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.3
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T00:13:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:13:38Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:13:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

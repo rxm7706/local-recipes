@@ -20,18 +20,18 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
+    - poetry-core
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - cryptography >=44.0.1
-    - robocorp-log >=2.4,<4
+    - robocorp-log <4,>=2.4
     - robocorp-truststore >=0.8.0
-    - psutil >=5.0,<8.0
-    - docstring_parser_fork >=0.0.5,<0.0.6
-    - pydantic >=2.11.7,<3.0.0
-    - sema4ai-http-helper >=2.0.1,<3.0.0
-    - pyyaml >=6.0.0,<7.0.0
+    - psutil <8.0,>=5.0
+    - docstring_parser_fork <0.0.6,>=0.0.5
+    - pydantic <3.0.0,>=2.11.7
+    - sema4ai-http-helper <3.0.0,>=2.0.1
+    - pyyaml <7.0,>=6.0
 
 tests:
   - python:
@@ -39,15 +39,47 @@ tests:
         - sema4ai.actions
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Sema4AI Actions
+  homepage: https://github.com/Sema4AI/actions/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/Sema4AI/actions/
+  summary: Sema4AI Actions
+  description: |
+    Sema4AI Actions
+  repository: https://github.com/Sema4AI/actions/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sema4ai-actions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sema4ai-actions
+  cfe-purls:
+    - pkg:conda/sema4ai-actions@${{ version }}?channel=conda-forge
+    - pkg:pypi/sema4ai-actions@${{ version }}
+  cfe-upstream-repo: https://github.com/Sema4AI/actions/
+  cfe-upstream-homepage: https://github.com/Sema4AI/actions/
+  cfe-import-names: [sema4ai.actions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sema4ai-actions-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:22:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:22:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:22:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

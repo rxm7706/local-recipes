@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  python_min: '3.10'
-  name: fastlite
-  version: 0.2.3
+  version: "0.2.4"
 
 package:
-  name: ${{ name|lower }}
+  name: fastlite
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastlite-${{ version }}.tar.gz
-  sha256: 72de35edcc0701caf9b9fcabf828db07563576a62732d2581ba601a960440a8a
+  url: https://pypi.org/packages/source/f/fastlite/fastlite-${{ version }}.tar.gz
+  sha256: f1ac4329fe18c7bf027a09d05e856215ae9c2fc8e1c0044e110f9a8a36ea1995
 
 build:
   number: 0
@@ -26,21 +24,60 @@ requirements:
     - setuptools >=64.0
   run:
     - python >=${{ python_min }}
-    - apswutils >=0.1.2
+    - pkg-resources
     - fastcore >=1.7.1
+    - apswutils >=0.1.2
+
 tests:
   - python:
       imports:
         - fastlite
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A bit of extra usability for sqlite
+  homepage: https://github.com/AnswerDotAI/fastlite
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/AnswerDotAI/fastlite
+  summary: A bit of extra usability for sqlite
+  description: |
+    A bit of extra usability for sqlite
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastlite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastlite
+  cfe-purls:
+    - pkg:conda/fastlite@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastlite@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/AnswerDotAI/fastlite
+  cfe-import-names: [fastlite]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastlite-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-0.2.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:10:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:10:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:10:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

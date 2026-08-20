@@ -2,69 +2,91 @@
 schema_version: 1
 
 context:
-  name: ipdb
   version: "0.13.13"
-  sha256: 5bf95ec55224e5fa96a21acf6d13df075aa405cfb4ba946e717aa5e36c2a2def
-  gh_org: gotcha
-  gh_repo: name
 
 package:
-  name: ${{ name }}
+  name: ipdb
   version: ${{ version }}
 
 source:
-  url: https://github.com/${{ gh_org }}/${{ gh_repo }}/archive/${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/ipdb/ipdb-${{ version }}.tar.gz
+  sha256: e3ac6018ef05126d442af680aad863006ec19d02290561ac88b8b1c0b0cfc726
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv
-    - if: win
-      then: call %RECIPE_DIR%/install-scripts.bat
-    - if: not win
-      then: . ${RECIPE_DIR}/install-scripts.sh
-  python:
-    entry_points:
-      - ipdb = ipdb.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
     - ipython
-    - toml >=0.10.2
+    - toml
     - decorator
+    - pathlib
+    - tomli
 
 tests:
   - python:
       imports:
         - ipdb
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - python -c 'import os; assert(os.environ["PYTHONBREAKPOINT"] == "ipdb.set_trace")'
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/gotcha/ipdb
   license: BSD-3-Clause
-  license_file: COPYING.txt
-  summary: Integration of IPython pdb
+  license_file: LICENSE
+  summary: IPython-enabled pdb
   description: |
-    ipdb exports functions to access the IPython debugger,
-    which features tab completion, syntax highlighting, better
-    tracebacks, better introspection with the same interface
-    as the pdb module.
-  homepage: https://github.com/${{ gh_org }}/${{ gh_repo }}
-  repository: https://github.com/${{ gh_org }}/${{ gh_repo }}
+    IPython-enabled pdb
 
 extra:
   recipe-maintainers:
     - vamega
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipdb
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipdb
+  cfe-purls:
+    - pkg:conda/ipdb@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipdb@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gotcha/ipdb
+  cfe-import-names: [ipdb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipdb-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.13.13
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:46:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:46:30Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:46:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

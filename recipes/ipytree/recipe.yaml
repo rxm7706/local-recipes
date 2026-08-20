@@ -2,63 +2,83 @@
 schema_version: 1
 
 context:
-  name: ipytree
   version: "0.2.2"
-  sha256: d53d739bbaaa45415733cd06e0dc420a2af3d173438617db472a517bc7a61e56
 
 package:
-  name: ${{ name|lower }}
+  name: ipytree
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/i/ipytree/ipytree-${{ version }}.tar.gz
+  sha256: d53d739bbaaa45415733cd06e0dc420a2af3d173438617db472a517bc7a61e56
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
-    - jupyter-packaging
+    - python ${{ python_min }}.*
     - pip
+    - jupyter-packaging ~=0.7.0
+    - jupyterlab ==3.*
+    - setuptools >=40.8.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - ipywidgets >=7.6.0,<9
+    - ipywidgets
 
 tests:
   - python:
       imports:
         - ipytree
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - if: unix
-        then: test -f ${PREFIX}/share/jupyter/nbextensions/${{ name }}/extension.js
-      - if: unix
-        then: test -f ${PREFIX}/share/jupyter/nbextensions/${{ name }}/index.js
-      - if: unix
-        then: test -f ${PREFIX}/share/jupyter/labextensions/${{ name }}/package.json
-      - if: win
-        then: if not exist %PREFIX%\\share\\jupyter\\nbextensions\\${{ name }}\\extension.js (exit 1)
-      - if: win
-        then: if not exist %PREFIX%\\share\\jupyter\\nbextensions\\${{ name }}\\index.js (exit 1)
-      - if: win
-        then: if not exist %PREFIX%\\share\\jupyter\\labextensions\\${{ name }}\\package.json (exit 1)
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/martinRenou/ipytree
   license: MIT
   license_file: LICENSE
-  summary: A Jupyter Notebook Tree Widget using jsTree
-  homepage: http://github.com/QuantStack/ipytree
-  repository: https://github.com/QuantStack/ipytree
+  summary: A Tree Widget using jsTree
+  description: |
+    A Tree Widget using jsTree
 
 extra:
   recipe-maintainers:
     - martinRenou
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipytree
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipytree
+  cfe-purls:
+    - pkg:conda/ipytree@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipytree@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/martinRenou/ipytree
+  cfe-import-names: [ipytree]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipytree-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:03:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:03:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:03:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,44 +2,81 @@
 schema_version: 1
 
 context:
-  name: gin-config
   version: "0.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: gin-config
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/gin-config-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gin-config/gin-config-${{ version }}.tar.gz
   sha256: 0c6ea5026ded927c8c93c990b01c695257c1df446e45e549a158cfbc79e19ed6
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - gin
-        - gin.testdata
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/google/gin-config
   license: Apache-2.0
   license_file: LICENSE
   summary: "Gin-Config: A lightweight configuration library for Python"
-  homepage: https://github.com/google/gin-config
+  description: |
+    Gin-Config: A lightweight configuration library for Python
   repository: https://github.com/google/gin-config
-  documentation: https://github.com/google/gin-config/blob/master/docs/index.md
+  documentation: https://github.com/google/gin-config/docs
 
 extra:
   recipe-maintainers:
     - mxr-conda
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gin-config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gin-config
+  cfe-purls:
+    - pkg:conda/gin-config@${{ version }}?channel=conda-forge
+    - pkg:pypi/gin-config@${{ version }}
+  cfe-upstream-repo: https://github.com/google/gin-config
+  cfe-upstream-homepage: https://github.com/google/gin-config
+  cfe-import-names: [gin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gin-config-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:44:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:44:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:44:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

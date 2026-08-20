@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: arize-phoenix-client
   version: "3.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: arize-phoenix-client
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/arize_phoenix_client-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/arize-phoenix-client/arize_phoenix_client-${{ version }}.tar.gz
   sha256: d4ffce060d9a97446cb4dc67de4b025478fc915152a0f7faf63c120215491989
 
 build:
@@ -20,32 +19,71 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
     - httpx
-    - typing_extensions
-    - tqdm
+    - openinference-instrumentation >=0.1.20
     - openinference-semantic-conventions
-    - openinference-instrumentation
-    - opentelemetry-sdk
     - opentelemetry-exporter-otlp
+    - opentelemetry-sdk
+    - tqdm
+    - typing_extensions
 
 tests:
   - python:
       imports:
         - phoenix.client
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: LLM Observability
-  license: Elastic-2.0
+  homepage: https://pypi.org/project/arize-phoenix-client/
+  license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/Arize-ai/phoenix/
+  summary: LLM Observability
+  description: |
+    LLM Observability
+  repository: https://github.com/Arize-ai/phoenix
+  documentation: https://arize.com/docs/phoenix/
 
 extra:
   recipe-maintainers:
     - RogerHYang
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arize-phoenix-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arize-phoenix-client
+  cfe-purls:
+    - pkg:conda/arize-phoenix-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/arize-phoenix-client@${{ version }}
+  cfe-upstream-repo: https://github.com/Arize-ai/phoenix
+  cfe-upstream-homepage: https://pypi.org/project/arize-phoenix-client/
+  cfe-import-names: [phoenix.client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arize-phoenix-client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:57:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:57:33Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:57:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

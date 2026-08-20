@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: cachelib
   version: "0.15.4"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: cachelib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cachelib-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/cachelib/cachelib-${{ version }}.tar.gz
   sha256: 66fb75f48f9077713c8a1ce2319f523d08418a1576f2cbdaad8aad15c884afa0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
-    - flit-core
+    - flit-core <4
   run:
     - python >=${{ python_min }}
 
@@ -32,14 +31,55 @@ tests:
       imports:
         - cachelib
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A collection of cache libraries in the same API interface.
+  homepage: https://pypi.org/project/cachelib/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://github.com/pallets-eco/cachelib
+  summary: A collection of cache libraries in the same API interface.
+  description: |
+    A collection of cache libraries in the same API interface.
+  repository: https://github.com/pallets-eco/cachelib/
+  documentation: https://cachelib.readthedocs.io
 
 extra:
   recipe-maintainers:
     - fuglede
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cachelib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cachelib
+  cfe-purls:
+    - pkg:conda/cachelib@${{ version }}?channel=conda-forge
+    - pkg:pypi/cachelib@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/cachelib/
+  cfe-upstream-homepage: https://pypi.org/project/cachelib/
+  cfe-import-names: [cachelib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cachelib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.15.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:51:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:51:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:51:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

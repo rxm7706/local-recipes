@@ -2,31 +2,26 @@
 schema_version: 1
 
 context:
-  name: tabulate
   version: "0.10.0"
 
 package:
-  name: ${{ name|lower }}
+  name: tabulate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tabulate/tabulate-${{ version }}.tar.gz
   sha256: e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
-  python:
-    entry_points:
-      - tabulate = tabulate:_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
 
@@ -35,21 +30,49 @@ tests:
       imports:
         - tabulate
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - tabulate --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/astanin/python-tabulate
   license: MIT
   license_file: LICENSE
-  summary: Pretty-print tabular data in Python, a library and a command-line utility.
-  homepage: https://github.com/astanin/python-tabulate
-  repository: https://github.com/astanin/python-tabulate
+  summary: Pretty-print tabular data
+  description: |
+    Pretty-print tabular data
 
 extra:
   recipe-maintainers:
     - jakirkham
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tabulate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tabulate
+  cfe-purls:
+    - pkg:conda/tabulate@${{ version }}?channel=conda-forge
+    - pkg:pypi/tabulate@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/astanin/python-tabulate
+  cfe-import-names: [tabulate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tabulate-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:19:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:19:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:19:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

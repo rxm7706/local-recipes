@@ -2,56 +2,55 @@
 schema_version: 1
 
 context:
-  name: anthropic
   version: "0.122.0"
 
 package:
-  name: ${{ name|lower }}
+  name: anthropic
   version: ${{ version }}
 
 source:
-  url: https://github.com/anthropics/anthropic-sdk-python/archive/v${{ version }}.tar.gz
-  sha256: c3f0ff4a7000f81d2b25d5e4fbd30230690dbf1496e88e6d4e853afb744cc246
+  url: https://pypi.org/packages/source/a/anthropic/anthropic-${{ version }}.tar.gz
+  sha256: ffec56ae96657c8d19fa575ec96f140f380c353a07ab7d61b92eb18ee6536601
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core >=1.0.0
-    - hatch-fancy-pypi-readme
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling ==1.26.3
+    - hatch-fancy-pypi-readme >=22.4,<26
   run:
-    - docstring_parser >=0.15,<1
-    - typing_extensions >=4.14,<5
-    - python >=${{ python_min }},<4.0.0
-    - httpx >=0.25.0,<1
-    - pydantic >=1.9.0,<3
-    - typing-extensions >=4.7,<5
-    - anyio >=3.5.0,<5
-    - distro >=1.7.0,<2
-    - sniffio >=1,<2
-    - cached-property
-    - tokenizers >=0.13.0
-    - jiter >=0.4.0,<1
+    - python >=${{ python_min }}
+    - anyio <5,>=3.5.0
+    - distro <2,>=1.7.0
+    - docstring_parser <1,>=0.15
+    - httpx <1,>=0.25.0
+    - jiter <1,>=0.4.0
+    - pydantic <3,>=1.9.0
+    - sniffio <2,>=1
+    - typing_extensions <5,>=4.14
 
 tests:
   - python:
       imports:
         - anthropic
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/anthropics/anthropic-sdk-python
   license: MIT
   license_file: LICENSE
-  summary: Library for accessing the anthropic API
-  homepage: https://github.com/anthropics/anthropic-sdk-python
-  documentation: https://console.anthropic.com/docs
+  summary: The official Python library for the anthropic API
+  description: |
+    The official Python library for the anthropic API
+  repository: https://github.com/anthropics/anthropic-sdk-python
 
 extra:
   recipe-maintainers:
@@ -60,3 +59,36 @@ extra:
     - moritzwilksch
     - siboehm
     - x5a
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: anthropic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: anthropic
+  cfe-purls:
+    - pkg:conda/anthropic@${{ version }}?channel=conda-forge
+    - pkg:pypi/anthropic@${{ version }}
+  cfe-upstream-repo: https://github.com/anthropics/anthropic-sdk-python
+  cfe-upstream-homepage: https://github.com/anthropics/anthropic-sdk-python
+  cfe-import-names: [anthropic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/anthropic-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.122.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:51:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:51:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:51:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

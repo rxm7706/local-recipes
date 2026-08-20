@@ -2,56 +2,45 @@
 schema_version: 1
 
 context:
-  name: nose
   version: "1.3.7"
 
 package:
-  name: ${{ name|lower }}
+  name: nose
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/nose-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/n/nose/nose-${{ version }}.tar.gz
   sha256: f1bffef9cbc82628f6e7d7b40d7e255aefaa1adb6a1b1d26c69a8b79e6208a98
 
 build:
-  number: 1006
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - nosetests = nose:run_exit
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - nose
-        - nose.ext
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - nosetests --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-2.1-only
-  license_file: lgpl.txt
-  summary: Nose extends unittest to make testing easier
-  description: |
-    NOTE: Nose has been in maintenance mode for the past several years and will
-    likely cease without a new person/team to take over maintainership. New
-    projects should consider using Nose2, py.test, or just plain
-    unittest/unittest2.
   homepage: http://readthedocs.org/docs/nose/
-  repository: https://github.com/nose-devs/nose/
-  documentation: https://nose.readthedocs.org
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: nose extends unittest to make testing easier
+  description: |
+    nose extends unittest to make testing easier
 
 extra:
   recipe-maintainers:
@@ -60,3 +49,40 @@ extra:
     - msarahan
     - scopatz
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nose
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nose
+  cfe-purls:
+    - pkg:conda/nose@${{ version }}?channel=conda-forge
+    - pkg:pypi/nose@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://readthedocs.org/docs/nose/
+  cfe-import-names: [nose]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/nose-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.7
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T02:03:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:03:23Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:03:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

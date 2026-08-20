@@ -2,26 +2,26 @@
 schema_version: 1
 
 context:
-  name: requests-oauthlib
   version: "2.0.0"
 
 package:
-  name: ${{ name }}
+  name: requests-oauthlib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/requests-oauthlib-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/requests-oauthlib/requests-oauthlib-${{ version }}.tar.gz
   sha256: b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - oauthlib >=3.0.0
@@ -31,66 +31,53 @@ tests:
   - python:
       imports:
         - requests_oauthlib
-        - requests_oauthlib.oauth1_auth
-        - requests_oauthlib.oauth1_session
-        - requests_oauthlib.oauth2_auth
-        - requests_oauthlib.oauth2_session
-        - requests_oauthlib.compliance_fixes
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/requests/requests-oauthlib
   license: ISC
   license_file: LICENSE
   summary: OAuthlib authentication support for Requests.
   description: |
-    Requests-OAuthlib
-    =========================================================
-
-    This project provides first-class OAuth library support for [Requests](http://python-requests.org).
-
-    The OAuth 1 workflow
-    --------------------
-
-    OAuth 1 can seem overly complicated and it sure has its quirks. Luckily,
-    requests_oauthlib hides most of these and let you focus at the task at hand.
-
-    Accessing protected resources using requests_oauthlib is as simple as:
-
-    >>> from requests_oauthlib import OAuth1Session
-    >>> twitter = OAuth1Session('client_key',
-    client_secret='client_secret',
-    resource_owner_key='resource_owner_key',
-    resource_owner_secret='resource_owner_secret')
-    >>> url = 'https://api.twitter.com/1/account/settings.json'
-    >>> r = twitter.get(url)
-
-    Before accessing resources you will need to obtain a few credentials from your
-    provider (e.g. Twitter) and authorization from the user for whom you wish to
-    retrieve resources for. You can read all about this in the full
-    [OAuth 1 workflow guide on RTD](https://requests-oauthlib.readthedocs.io/en/latest/oauth1_workflow.html)
-
-    The OAuth 2 workflow
-    --------------------
-
-    OAuth 2 is generally simpler than OAuth 1 but comes in more flavours. The most
-    common being the Authorization Code Grant, also known as the WebApplication
-    flow.
-
-    Fetching a protected resource after obtaining an access token can be extremely
-    simple. However, before accessing resources you will need to obtain a few
-    credentials from your provider (e.g. Google) and authorization from the user
-    for whom you wish to retrieve resources for. You can read all about this in the
-    full [OAuth 2 workflow guide on RTD](https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html).
-
-  homepage: https://github.com/requests/requests-oauthlib
-  repository: https://github.com/requests/requests-oauthlib
-  documentation: https://github.com/requests/requests-oauthlib
+    OAuthlib authentication support for Requests.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests-oauthlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests-oauthlib
+  cfe-purls:
+    - pkg:conda/requests-oauthlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests-oauthlib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/requests/requests-oauthlib
+  cfe-import-names: [requests_oauthlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests-oauthlib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:54:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:54:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:54:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,18 +2,14 @@
 schema_version: 1
 
 context:
-  name: pdfminer-six
-  version: 20260107
-  python_min: "3.10"
+  version: "20260107"
 
 package:
-  name: ${{ name|lower }}
+  name: pdfminer.six
   version: ${{ version }}
 
 source:
-  # patches:
-  #   - patch.diff
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pdfminer.six/pdfminer_six-${{ version }}.tar.gz
   sha256: 96bfd431e3577a55a0efd25676968ca4ce8fd5b53f14565f85716ff363889602
 
 build:
@@ -23,28 +19,67 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
-    - setuptools
-    - setuptools-git-versioning <3
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.0
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
+    - fuzzing
     - charset-normalizer >=2.0.0
     - cryptography >=36.0.0
 
 tests:
   - python:
       imports:
-        - pdfminer
+        - fuzzing
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: PDF parser and analyzer
+  homepage: https://github.com/pdfminer/pdfminer.six
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/pdfminer/pdfminer.six
+  summary: PDF parser and analyzer
+  description: |
+    PDF parser and analyzer
 
 extra:
   recipe-maintainers:
     - sarthakpati
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pdfminer-six
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pdfminer-six
+  cfe-purls:
+    - pkg:conda/pdfminer-six@${{ version }}?channel=conda-forge
+    - pkg:pypi/pdfminer-six@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pdfminer/pdfminer.six
+  cfe-import-names: [fuzzing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pdfminer-six-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-20260107
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:20:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:20:58Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:20:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['fuzzing']
+####

@@ -9,39 +9,71 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/types-aiofiles/types_aiofiles-${{ version }}.tar.gz
-  sha256: c0c95eb78755d4fa7b397d4f0332c632714dd7cd0d17f49b96e31d4d7a8d8c76
+  url: https://pypi.org/packages/py3/t/types-aiofiles/types_aiofiles-25.1.0.20260518-py3-none-any.whl
+  sha256: f776bdfb4bec17f743d9ef042e61edf03bdcc7821fc08556fba9b63d873fdea9
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
-  - package_contents:
-      site_packages:
-        - aiofiles-stubs/__init__.pyi
   - python:
-      imports: []
+      imports:
+        - types_aiofiles
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/python/typeshed
-  summary: Typing stubs for aiofiles
-  license: Apache-2.0 AND MIT
+  license: Apache-2.0
   license_file: LICENSE
+  summary: Typing stubs for aiofiles
+  description: |
+    Typing stubs for aiofiles
+  repository: https://github.com/python/typeshed
 
 extra:
   recipe-maintainers:
     - fhoehle
     - conda-forge/mypy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-aiofiles
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-aiofiles
+  cfe-purls:
+    - pkg:conda/types-aiofiles@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-aiofiles@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_aiofiles]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-aiofiles-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:28:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:28:15Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:28:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

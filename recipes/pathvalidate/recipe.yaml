@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pathvalidate
   version: "3.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pathvalidate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pathvalidate-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pathvalidate/pathvalidate-${{ version }}.tar.gz
   sha256: b18c07212bfead624345bb8e1d6141cdcf15a39736994ea0b94035ad2b1ba177
 
 build:
@@ -20,11 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=64
-    - setuptools-scm
-    - releasecmd
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=64
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
 
@@ -33,15 +31,53 @@ tests:
       imports:
         - pathvalidate
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.
+  homepage: https://github.com/thombashi/pathvalidate
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/thombashi/pathvalidate
+  summary: pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.
+  description: |
+    pathvalidate is a Python library to sanitize/validate a string such as filenames/file-paths/etc.
   repository: https://github.com/thombashi/pathvalidate
+  documentation: https://pathvalidate.rtfd.io/
 
 extra:
   recipe-maintainers:
     - basnijholt
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pathvalidate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pathvalidate
+  cfe-purls:
+    - pkg:conda/pathvalidate@${{ version }}?channel=conda-forge
+    - pkg:pypi/pathvalidate@${{ version }}
+  cfe-upstream-repo: https://github.com/thombashi/pathvalidate
+  cfe-upstream-homepage: https://github.com/thombashi/pathvalidate
+  cfe-import-names: [pathvalidate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pathvalidate-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:04:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:04:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:04:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

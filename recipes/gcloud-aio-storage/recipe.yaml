@@ -2,52 +2,81 @@
 schema_version: 1
 
 context:
-  name: gcloud-aio-storage
-  version: 9.6.4
+  version: "9.6.4"
 
 package:
-  name: ${{ name|lower }}
+  name: gcloud-aio-storage
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gcloud_aio_storage-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gcloud-aio-storage/gcloud_aio_storage-${{ version }}.tar.gz
   sha256: 4da741e9e45f0ab5f57aa9ba2d46032dde4b80f3eb0a03de31ac741add420485
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core >=1.0.0
     - pip
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<4.0
-    - aiofiles >=0.6.0,<26.0.0
-    - gcloud-aio-auth >=5.4.4,<6.0.0
-    - pyasn1-modules >=0.2.1,<0.5.0
-    - rsa >=3.1.4,<5.0.0
+    - python >=${{ python_min }}
+    - aiofiles <26.0.0,>=0.6.0
+    - gcloud-aio-auth <6.0.0,>=5.4.4
+    - pyasn1-modules <0.5.0,>=0.2.1
+    - rsa <5.0.0,>=3.1.4
 
 tests:
   - python:
       imports:
         - gcloud.aio.storage
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Client for Google Cloud Storage
+  homepage: https://pypi.org/project/gcloud-aio-storage/
   license: MIT
-  license_file: LICENSE.txt
-  homepage: https://github.com/talkiq/gcloud-aio
+  license_file: LICENSE
+  summary: Python Client for Google Cloud Storage
+  description: |
+    Python Client for Google Cloud Storage
+  repository: https://github.com/talkiq/gcloud-aio
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gcloud-aio-storage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gcloud-aio-storage
+  cfe-purls:
+    - pkg:conda/gcloud-aio-storage@${{ version }}?channel=conda-forge
+    - pkg:pypi/gcloud-aio-storage@${{ version }}
+  cfe-upstream-repo: https://github.com/talkiq/gcloud-aio
+  cfe-upstream-homepage: https://pypi.org/project/gcloud-aio-storage/
+  cfe-import-names: [gcloud.aio.storage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gcloud-aio-storage-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:40:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:40:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:40:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

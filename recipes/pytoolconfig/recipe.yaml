@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.2.5"
+  version: "1.3.1"
 
 package:
   name: pytoolconfig
@@ -10,38 +10,73 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pytoolconfig/pytoolconfig-${{ version }}.tar.gz
-  sha256: a50f9dfe23b03a9d40414c1fdf902fefbeae12f2ac75a3c8f915944d6ffac279
+  sha256: 51e6bd1a6f108238ae6aab6a65e5eed5e75d456be1c2bf29b04e5c1e7d7adbae
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip <22
-    - pdm
-    - pdm-pep517 >=1.0.5
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend >=1.0.5
   run:
-    - packaging >=22.0
     - python >=${{ python_min }}
     - tomli >=2.0.1
-    - typing-extensions >=4.4.0
+    - packaging >=23.2
 
 tests:
   - python:
       imports:
         - pytoolconfig
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python tool configuration
+  homepage: https://github.com/bageljrkhanofemus/pytoolconfig
   license: LGPL-3.0-or-later
   license_file: LICENSE
-  homepage: https://pypi.org/project/pytoolconfig
+  summary: Python tool configuration
+  description: |
+    Python tool configuration
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytoolconfig
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytoolconfig
+  cfe-purls:
+    - pkg:conda/pytoolconfig@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytoolconfig@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/bageljrkhanofemus/pytoolconfig
+  cfe-import-names: [pytoolconfig]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytoolconfig-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:34:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:34:36Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:34:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

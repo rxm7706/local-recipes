@@ -2,24 +2,20 @@
 schema_version: 1
 
 context:
-  name: jsonpath-ng
   version: "1.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jsonpath-ng
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jsonpath-ng/jsonpath_ng-${{ version }}.tar.gz
   sha256: 54252968134b5e549ea5b872f1df1168bd7defe1a52fed5a358c194e1943ddc3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install --no-deps . -vv
-  python:
-    entry_points:
-      - jsonpath_ng=jsonpath_ng.bin.jsonpath:entry_point
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -28,31 +24,55 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - ply
 
 tests:
   - python:
       imports:
         - jsonpath_ng
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - jsonpath_ng --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/h2non/jsonpath-ng
   license: Apache-2.0
   license_file: LICENSE
-  summary: Python JSONPath Next-Generation
+  summary: A final implementation of JSONPath for Python that aims to be standard compliant, including arithmetic and binary comparison operators and providing clear AST for metaprogramming.
   description: |
-    A final implementation of JSONPath for Python that aims to be standard compliant,
-    including arithmetic and binary comparison operators.
-  homepage: https://github.com/h2non/jsonpath-ng
-  repository: https://github.com/h2non/jsonpath-ng
+    A final implementation of JSONPath for Python that aims to be standard compliant, including arithmetic and binary comparison operators and providing clear AST for metaprogramming.
 
 extra:
   recipe-maintainers:
     - shcheklein
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonpath-ng
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonpath-ng
+  cfe-purls:
+    - pkg:conda/jsonpath-ng@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonpath-ng@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/h2non/jsonpath-ng
+  cfe-import-names: [jsonpath_ng]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonpath-ng-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:52:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:52:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:52:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

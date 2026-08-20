@@ -2,46 +2,84 @@
 schema_version: 1
 
 context:
-  name: sklearn-pandas
   version: "2.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sklearn-pandas
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/sklearn-pandas-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sklearn-pandas/sklearn-pandas-${{ version }}.tar.gz
   sha256: bf908ea0e384e132da04355c7db67bd4f8efe145f0c9cd9f14726ce899d27542
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.7
+    - setuptools
   run:
-    - python >=3.7
-    - scikit-learn >=0.23.0
-    - scipy >=1.5.1
-    - pandas >=1.1.4
-    - numpy >=1.18.1
+    - python >=${{ python_min }}
+    - scikit-learn
+    - scipy
+    - pandas
+    - numpy
 
 tests:
   - python:
       imports:
         - sklearn_pandas
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pandas integration with sklearn
-  license: BSD-3-Clause
-  license_file: LICENSE
   homepage: https://github.com/scikit-learn-contrib/sklearn-pandas
+  license: MIT
+  license_file: LICENSE
+  summary: Pandas integration with sklearn
+  description: |
+    Pandas integration with sklearn
 
 extra:
   recipe-maintainers:
     - FernandezMathieu
     - ragrawal
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sklearn-pandas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sklearn-pandas
+  cfe-purls:
+    - pkg:conda/sklearn-pandas@${{ version }}?channel=conda-forge
+    - pkg:pypi/sklearn-pandas@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/scikit-learn-contrib/sklearn-pandas
+  cfe-import-names: [sklearn_pandas]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sklearn-pandas-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:32:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:32:08Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:32:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

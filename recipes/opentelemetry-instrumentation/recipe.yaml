@@ -1,75 +1,51 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Common to all opentelemetry python libraries
-# not all packages in opentelemetry are at the most recent version
-# Since we have the case where
-# 1.4.1 -> 0.23b2, 1.4.0 -> 0.23b0, we assume that there is an offset when non-zero?
-# determine the canonical minor version of the 1.x opentelemetry associated with this package
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation
-  version: 0.65b0
-  python_min: python_min|default("3.9")
-  vsegments: ${{ version | split('.') }}
-  preoffset: 19
-  is_rel: ${{ (vsegments[0] == '1') }}
-  canonical_minor_pre: ${{ (vsegments[1] | split('b')[0] | int) - (preoffset | int) }}
-  canonical_minor_rel: ${{ (vsegments[1] | int) }}
-  canonical_patch_pre: ${{ (vsegments[1].split('b')[1] | int) if (not is_rel) else -1 }}
-  canonical_patch_rel: ${{ (vsegments[2] | int) if (is_rel) else -1 }}
-  canonical_minor: canonical_minor_rel if is_rel else canonical_minor_pre
-  vpre: {{ '0.{}b{}' | format(canonical_minor + preoffset, canonical_patch + patchoffset) }}
-  vrel: "'1.{}.{}' | format(canonical_minor, canonical_patch)"
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation/opentelemetry_instrumentation-${{ version }}.tar.gz
   sha256: 071d9d9eced9bd6460444ec3b0c77229870ed05a881c22c84fdede58e4eed09b
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - opentelemetry-instrument = opentelemetry.instrumentation.auto_instrumentation:run
-      - opentelemetry-bootstrap = opentelemetry.instrumentation.bootstrap:run
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.4
-    - setuptools >=16.0
-    - wrapt <3.0.0,>=1.0.0
-    - packaging >=18.0
     - opentelemetry-semantic-conventions ==0.65b0
+    - packaging >=18.0
+    - wrapt <3.0.0,>=1.0.0
 
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation._labeler
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - opentelemetry-instrument --help
-      - opentelemetry-bootstrap --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Instrumentation Tools & Auto Instrumentation for OpenTelemetry Python
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/opentelemetry-instrumentation
   license: Apache-2.0
-  license_file: LICENSE.txt
-  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/master/opentelemetry-instrumentation
+  license_file: LICENSE
+  summary: Instrumentation Tools & Auto Instrumentation for OpenTelemetry Python
+  description: |
+    Instrumentation Tools & Auto Instrumentation for OpenTelemetry Python
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
@@ -78,3 +54,36 @@ extra:
     - twoodwark
     - mariusvniekerk
     - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/opentelemetry-instrumentation
+  cfe-import-names: [opentelemetry.instrumentation._labeler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:30:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:30:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:30:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

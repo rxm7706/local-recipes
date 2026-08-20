@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: aiomysql
   version: "0.3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: aiomysql
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiomysql/aiomysql-${{ version }}.tar.gz
   sha256: 72d15ef5cfc34c03468eb41e1b90adb9fd9347b0b589114bd23ead569a02ac1a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm >=6.4,<7
-    - pymysql >=1.0
+    - setuptools >=80
   run:
     - python >=${{ python_min }}
     - pymysql >=1.0
@@ -32,19 +30,55 @@ tests:
   - python:
       imports:
         - aiomysql
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: aiomysql is a library for accessing a MySQL database from the asyncio
+  homepage: https://github.com/aio-libs/aiomysql
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/aio-libs/aiomysql
+  summary: MySQL driver for asyncio.
+  description: |
+    MySQL driver for asyncio.
+  repository: https://github.com/aio-libs/aiomysql
+  documentation: https://aiomysql.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - kszucs
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiomysql
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiomysql
+  cfe-purls:
+    - pkg:conda/aiomysql@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiomysql@${{ version }}
+  cfe-upstream-repo: https://github.com/aio-libs/aiomysql
+  cfe-upstream-homepage: https://github.com/aio-libs/aiomysql
+  cfe-import-names: [aiomysql]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiomysql-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:43:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:43:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:43:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,47 +2,86 @@
 schema_version: 1
 
 context:
-  name: mimerender
   version: "0.6.0"
-  compress_type: tar.gz
-  hash_val: e7f1377efee18c3f562cee54907a3329223c824332889fb74b745ddfd0a9b1c6
 
 package:
-  name: ${{ name|lower }}
+  name: mimerender
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+  url: https://pypi.org/packages/source/m/mimerender/mimerender-${{ version }}.tar.gz
+  sha256: e7f1377efee18c3f562cee54907a3329223c824332889fb74b745ddfd0a9b1c6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
-    - python-mimeparse >=0.1.4
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - mimerender
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  # license_file: No MANIFEST.in - see https://github.com/martinblech/mimerender/issues/34
-  summary: RESTful HTTP Content Negotiation for Flask, Bottle, web.py and webapp2 (Google App Engine)
   homepage: https://github.com/martinblech/mimerender
-  repository: https://github.com/martinblech/mimerender
-  documentation: https://mimerender.readthedocs.io/en/latest/
+  license: MIT
+  license_file: LICENSE
+  summary: RESTful HTTP Content Negotiation for Flask, Bottle, web.py and webapp2 (Google App Engine)
+  description: |
+    RESTful HTTP Content Negotiation for Flask, Bottle, web.py and webapp2 (Google App Engine)
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mimerender
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mimerender
+  cfe-purls:
+    - pkg:conda/mimerender@${{ version }}?channel=conda-forge
+    - pkg:pypi/mimerender@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/martinblech/mimerender
+  cfe-import-names: [mimerender]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mimerender-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:37:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:37:25Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:37:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

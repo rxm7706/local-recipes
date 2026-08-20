@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 context:
-  version: "22.1.8"
+  version: "18.1.1"
   build_number: 6
   # derived quanities
   major_version: "${{ (version | split('.'))[0] }}"
@@ -993,3 +993,35 @@ extra:
     - xhochy
     - h-vetinari
   feedstock-name: clangdev
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: clangdev
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libclang
+  cfe-purls:
+    - pkg:conda/clangdev@${{ version }}?channel=conda-forge
+    - pkg:pypi/libclang@${{ version }}
+  cfe-upstream-repo: https://github.com/llvm/llvm-project
+  cfe-upstream-homepage: http://llvm.org/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/clangdev-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-18.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:58:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:58:44Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:58:44Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

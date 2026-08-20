@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 26.4.0
+  version: "26.4.0"
 
 package:
   name: pyopenssl
@@ -24,45 +24,26 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - cryptography >=49.0.0,<51
+    - cryptography <51,>=49.0.0
     - typing_extensions >=4.9
+
 tests:
   - python:
       imports:
         - OpenSSL
-        - OpenSSL.crypto
-        - OpenSSL.rand
-        - OpenSSL.SSL
-      python_version: ${{ python_min }}.*
-  - files:
-      source:
-        - tests/*
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}.*
-        - pretend
-        - pytest-rerunfailures
-    script:
-      - pip check
-      # Skip test_client_receives_servers_data due to upstream bug: https://github.com/pyca/pyopenssl/issues/1455
-      - pytest tests -k "not test_client_receives_servers_data"
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pyopenssl.org/
   license: Apache-2.0
   license_file: LICENSE
   summary: Python wrapper module around the OpenSSL library
   description: |
-    pyOpenSSL is a high-level wrapper around a subset of the OpenSSL library.
-    It includes:
-    -SSL.Connection objects, wrapping the methods of Python's portable sockets
-    -Callbacks written in Python
-    -Extensive error-handling mechanism, mirroring OpenSSL's error codes
-    and much more.
-  homepage: https://github.com/pyca/pyopenssl
+    Python wrapper module around the OpenSSL library
   repository: https://github.com/pyca/pyopenssl
-  documentation: https://pyopenssl.readthedocs.org/en/stable/
 
 extra:
   recipe-maintainers:
@@ -70,3 +51,33 @@ extra:
     - janjagusch
     - nehaljwani
     - h-vetinari
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyopenssl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyopenssl
+  cfe-purls:
+    - pkg:conda/pyopenssl@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyopenssl@${{ version }}
+  cfe-upstream-repo: https://github.com/pyca/pyopenssl
+  cfe-upstream-homepage: https://pyopenssl.org/
+  cfe-import-names: [OpenSSL]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyopenssl-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:54:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:54:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:54:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

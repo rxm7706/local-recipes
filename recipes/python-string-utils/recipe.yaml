@@ -9,22 +9,19 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/daveoncode/python-string-utils/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 0f0ec393ec2ac0f936e766be7fad605980a474de7d0421ed56fd79e8c1a2e2c7
+  url: https://pypi.org/packages/source/p/python-string-utils/python-string-utils-${{ version }}.tar.gz
+  sha256: dcf9060b03f07647c0a603408dc8b03f807f3b54a05c6e19eb14460256fac0cb
 
 build:
   number: 0
   noarch: python
-  script:
-    env:
-      PYTHONUTF8: "1"
-    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -39,10 +36,49 @@ tests:
 
 about:
   homepage: https://github.com/daveoncode/python-string-utils
-  summary: Utility functions for strings validation and manipulation
   license: MIT
   license_file: LICENSE
+  summary: Utility functions for strings validation and manipulation.
+  description: |
+    Utility functions for strings validation and manipulation.
 
 extra:
   recipe-maintainers:
     - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-string-utils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-string-utils
+  cfe-purls:
+    - pkg:conda/python-string-utils@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-string-utils@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/daveoncode/python-string-utils
+  cfe-import-names: [string_utils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-string-utils-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:54:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:54:47Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:54:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

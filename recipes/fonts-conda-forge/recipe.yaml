@@ -43,3 +43,41 @@ about:
 extra:
   recipe-maintainers:
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fonts-conda-forge
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fonts-conda-forge
+  cfe-purls:
+    - pkg:conda/fonts-conda-forge@${{ version }}?channel=conda-forge
+    - pkg:pypi/fonts-conda-forge@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://conda-forge.org/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fonts-conda-forge-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:35:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:35:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:35:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for fonts-conda-forge...
+Error: Failed to fetch PyPI metadata for 'fonts-conda-forge' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/fonts-conda-forge/json
+
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

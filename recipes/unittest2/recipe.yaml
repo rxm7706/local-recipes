@@ -52,3 +52,36 @@ about:
 extra:
   recipe-maintainers:
     - pkgw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unittest2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unittest2
+  cfe-purls:
+    - pkg:conda/unittest2@${{ version }}?channel=conda-forge
+    - pkg:pypi/unittest2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/unittest2/
+  cfe-import-names: [unittest2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/unittest2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:32:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:32:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:32:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

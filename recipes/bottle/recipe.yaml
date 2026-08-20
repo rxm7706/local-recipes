@@ -2,28 +2,25 @@
 schema_version: 1
 
 context:
-  version: 0.13.4
+  version: "0.13.4"
 
 package:
   name: bottle
   version: ${{ version }}
 
 source:
-  url: https://github.com/bottlepy/bottle/archive/${{ version }}.tar.gz
-  sha256: 807c789c3184d7070010dbdf1339ee46ff9fb9b6694d7caa3047f975f8a7df60
+  url: https://pypi.org/packages/source/b/bottle/bottle-${{ version }}.tar.gz
+  sha256: 787e78327e12b227938de02248333d788cfe45987edca735f8f88e03472c3f47
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . --no-deps --no-build-isolation -vv
-  python:
-    entry_points:
-      - bottle = bottle:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -33,26 +30,51 @@ tests:
       imports:
         - bottle
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - script:
-      - bottle --help
-    requirements:
-      run:
-        - python ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://bottlepy.org/
   license: MIT
   license_file: LICENSE
-  summary: Bottle is a fast, simple and lightweight WSGI micro web-framework for Python.
+  summary: Fast and simple WSGI-framework for small web-applications.
   description: |
-    Bottle is a fast, simple and lightweight WSGI micro web-framework for Python.
-    It is distributed as a single file module and has no dependencies other than the Python Standard Library.
-  homepage: http://bottlepy.org
+    Fast and simple WSGI-framework for small web-applications.
   repository: https://github.com/bottlepy/bottle
-  documentation: http://bottlepy.org/docs/0.12/
 
 extra:
   recipe-maintainers:
     - hajapy
     - jmeppley
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bottle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bottle
+  cfe-purls:
+    - pkg:conda/bottle@${{ version }}?channel=conda-forge
+    - pkg:pypi/bottle@${{ version }}
+  cfe-upstream-repo: https://github.com/bottlepy/bottle
+  cfe-upstream-homepage: http://bottlepy.org/
+  cfe-import-names: [bottle]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bottle-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:45:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:45:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:45:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

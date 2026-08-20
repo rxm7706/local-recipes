@@ -2,47 +2,80 @@
 schema_version: 1
 
 context:
-  name: pytest-custom-exit-code
   version: "0.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-custom-exit-code
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/p/pytest-custom-exit-code/pytest-custom_exit_code-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-custom-exit-code/pytest-custom_exit_code-${{ version }}.tar.gz
   sha256: 51ffff0ee2c1ddcc1242e2ddb2a5fd02482717e33a2326ef330e3aa430244635
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - pytest >=4.0.2
     - python >=${{ python_min }}
+    - pytest
 
 tests:
   - python:
       imports:
         - pytest_custom_exit_code
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/yashtodi94/pytest-custom_exit_code
   license: MIT
   license_file: LICENSE
   summary: Exit pytest test session with custom exit code in different scenarios
-  homepage: https://github.com/yashtodi94/pytest-custom_exit_code
+  description: |
+    Exit pytest test session with custom exit code in different scenarios
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-custom-exit-code
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-custom-exit-code
+  cfe-purls:
+    - pkg:conda/pytest-custom-exit-code@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-custom-exit-code@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/yashtodi94/pytest-custom_exit_code
+  cfe-import-names: [pytest_custom_exit_code]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-custom-exit-code-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:32:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:32:17Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:32:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

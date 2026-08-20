@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: rich-argparse
   version: "1.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: rich-argparse
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rich_argparse-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/rich-argparse/rich_argparse-${{ version }}.tar.gz
   sha256: 679df3d832fa94ad6e4bdb07ded088cd7ea2dddc58ae9b2b46346a40b06cbc0c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling >=1.11.0
+    - python ${{ python_min }}.*
     - pip
+    - hatchling >=1.11.0
   run:
     - python >=${{ python_min }}
     - rich >=11.0.0
@@ -32,15 +31,52 @@ tests:
       imports:
         - rich_argparse
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Rich help formatters for argparse and optparse
+  homepage: https://github.com/hamdanal/rich-argparse
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/hamdanal/rich-argparse
-  repository: https://github.com/hamdanal/rich-argparse
+  summary: Rich help formatters for argparse and optparse
+  description: |
+    Rich help formatters for argparse and optparse
+  documentation: https://github.com/hamdanal/rich-argparse#rich-argparse
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rich-argparse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rich-argparse
+  cfe-purls:
+    - pkg:conda/rich-argparse@${{ version }}?channel=conda-forge
+    - pkg:pypi/rich-argparse@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/hamdanal/rich-argparse
+  cfe-import-names: [rich_argparse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rich-argparse-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.8.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:01:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:01:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:01:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,46 +2,82 @@
 schema_version: 1
 
 context:
-  name: unittest-xml-reporting
-  version: "3.2.0"
+  version: "4.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: unittest-xml-reporting
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: edd8d3170b40c3a81b8cf910f46c6a304ae2847ec01036d02e9c0f9b85762d28
+  url: https://pypi.org/packages/source/u/unittest-xml-reporting/unittest_xml_reporting-${{ version }}.tar.gz
+  sha256: bfa1ed65e9e6f33c161d04470d89050458cfb65a5a5d0358834ef7ce037d9136
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.5
+    - setuptools >=77
   run:
-    - python >=3.5
+    - python >=${{ python_min }}
+    - lxml
 
 tests:
   - python:
       imports:
         - xmlrunner
-        - xmlrunner.extra
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: 0BSD
+  homepage: http://github.com/xmlrunner/unittest-xml-reporting/tree/master/
+  license: BSD-2-Clause
   license_file: LICENSE
   summary: unittest-based test runner with Ant/JUnit like XML reporting.
-  homepage: http://github.com/xmlrunner/unittest-xml-reporting/tree/master/
-  repository: http://github.com/xmlrunner/unittest-xml-reporting
-  documentation: https://pypi.org/project/unittest-xml-reporting/
+  description: |
+    unittest-based test runner with Ant/JUnit like XML reporting.
 
 extra:
   recipe-maintainers:
     - mxr-conda
     - oblute
     - benhuff
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unittest-xml-reporting
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unittest-xml-reporting
+  cfe-purls:
+    - pkg:conda/unittest-xml-reporting@${{ version }}?channel=conda-forge
+    - pkg:pypi/unittest-xml-reporting@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/xmlrunner/unittest-xml-reporting/tree/master/
+  cfe-import-names: [xmlrunner]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/unittest-xml-reporting-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:32:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:32:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:32:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

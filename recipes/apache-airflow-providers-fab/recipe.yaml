@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: apache-airflow-providers-fab
   version: "3.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: apache-airflow-providers-fab
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_fab-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/apache-airflow-providers-fab/apache_airflow_providers_fab-${{ version }}.tar.gz
   sha256: 1d1a86e040ad3bdadcb0fc56e05ee10d3efca5755fb0e66155288f364c170419
 
 build:
-  noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -24,31 +25,26 @@ requirements:
     - packaging ==26.2
     - pathspec ==1.1.1
     - pluggy ==1.6.0
-    # for all python to stay noarch: python
     - tomli ==2.4.1
-    - trove-classifiers ==2026.6.1.19
   run:
     - python >=${{ python_min }}
-    - apache-airflow >=3.0.2
     - apache-airflow-providers-common-compat >=1.18.0
+    - airflow >=3.0.2
     - blinker >=1.6.2
-    - flask >=2.2.1
-    - flask-appbuilder ==5.2.2
-    - pyjwt >=2.11.0
-    # more restrictive for python >=3.14
-    - flask-login >=0.6.3
-    - flask-session >=0.8.0
-    - msgpack-python >=1.0.0
-    - flask-sqlalchemy >=3.0.5
-    # more restrictive for python >=3.14
-    - flask-wtf >=1.2.2
-    - jmespath >=0.7.0
-    # more restrictive for python >=3.14
-    - werkzeug >=3.1.6
-    - wtforms >=3.0
     - cachetools >=6.0
-    - marshmallow >=3
+    - flask-appbuilder ==5.2.2
     - flask-limiter >3
+    - flask-login >=0.6.2
+    - flask-session >=0.8.0
+    - flask-sqlalchemy >=3.0.5
+    - flask-wtf >=1.1.0
+    - flask >=2.2.1
+    - jmespath >=0.7.0
+    - marshmallow >=3
+    - msgpack >=1.0.0
+    - pyjwt >=2.11.0
+    - werkzeug >=2.2
+    - wtforms >=3.0
 
 tests:
   - python:
@@ -60,15 +56,45 @@ tests:
         - "*"
 
 about:
-  homepage: https://github.com/apache/airflow/
-  summary: Provider package apache-airflow-providers-fab for Apache Airflow
+  homepage: https://pypi.org/project/apache-airflow-providers-fab/
   license: Apache-2.0
-  license_file:
-    - LICENSE
-    - NOTICE
-  documentation: https://airflow.apache.org/docs/apache-airflow-providers-fab/stable/index.html
-  repository: https://github.com/apache/airflow/
+  license_file: LICENSE
+  summary: Provider package apache-airflow-providers-fab for Apache Airflow
+  description: |
+    Provider package apache-airflow-providers-fab for Apache Airflow
+  repository: https://github.com/apache/airflow
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-fab/3.8.0
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apache-airflow-providers-fab
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apache-airflow-providers-fab
+  cfe-purls:
+    - pkg:conda/apache-airflow-providers-fab@${{ version }}?channel=conda-forge
+    - pkg:pypi/apache-airflow-providers-fab@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/airflow
+  cfe-upstream-homepage: https://pypi.org/project/apache-airflow-providers-fab/
+  cfe-import-names: [airflow.providers.fab]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apache-airflow-providers-fab-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:04:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:04:08Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T06:04:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

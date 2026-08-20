@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "1.13"
-  python_min: "3.6"
 
 package:
   name: easydict
@@ -14,13 +13,13 @@ source:
   sha256: b1135dedbc41c8010e2bc1f77ec9744c7faa42bce1a1c87416791449d6c87780
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.6.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,40 +29,56 @@ tests:
   - python:
       imports:
         - easydict
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  description: |
-    *EasyDict* allows to access dict values as attributes (works recursively).
-    A Javascript-like properties dot notation for python dicts.
-
-    =====
-    USAGE
-    =====
-
-    ::
-
-    >>> from easydict import EasyDict as edict
-    >>> d = edict({'foo':3, 'bar':{'x':1, 'y':2}})
-    >>> d.foo
-    3
-    >>> d.bar.x
-    1
-
-    >>> d = edict(foo=3)
-    >>> d.foo
-    3
-
+  homepage: https://github.com/makinacorpus/easydict
   license: LGPL-3.0-only
   license_file: LICENSE
   summary: Access dict values as attributes (works recursively).
-  homepage: https://github.com/makinacorpus/easydict
+  description: |
+    Access dict values as attributes (works recursively).
 
 extra:
   recipe-maintainers:
     - zhaofeng-shu33
     - jeongseok-meta
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: easydict
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: easydict
+  cfe-purls:
+    - pkg:conda/easydict@${{ version }}?channel=conda-forge
+    - pkg:pypi/easydict@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/makinacorpus/easydict
+  cfe-import-names: [easydict]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/easydict-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.13
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:57:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:57:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:57:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=0: Fetching info for easydict...
+Generated: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.cursor/cdao-p15-noarch-build/gen/easydict/recipe.yaml
+
+####

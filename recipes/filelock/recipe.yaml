@@ -2,29 +2,27 @@
 schema_version: 1
 
 context:
-  name: filelock
   version: "3.32.3"
 
 package:
-  name: ${{ name }}
+  name: filelock
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/filelock/filelock-${{ version }}.tar.gz
   sha256: 0ffa185a3540854c95caa7fa76b76cb219d907415e2c5dc9af25fd970563487f
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install --no-deps .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - hatchling >=1.11.1
-    - hatch-vcs >=0.3
+    - hatch-vcs >=0.5
+    - hatchling >=1.29
   run:
     - python >=${{ python_min }}
 
@@ -32,20 +30,59 @@ tests:
   - python:
       imports:
         - filelock
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Unlicense
+  homepage: https://github.com/tox-dev/py-filelock
+  license: MIT
   license_file: LICENSE
   summary: A platform independent file lock.
-  homepage: https://github.com/tox-dev/py-filelock
+  description: |
+    A platform independent file lock.
+  repository: https://github.com/tox-dev/py-filelock
+  documentation: https://py-filelock.readthedocs.io
 
 extra:
   recipe-maintainers:
     - jakirkham
     - mariusvniekerk
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: filelock
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: filelock
+  cfe-purls:
+    - pkg:conda/filelock@${{ version }}?channel=conda-forge
+    - pkg:pypi/filelock@${{ version }}
+  cfe-upstream-repo: https://github.com/tox-dev/py-filelock
+  cfe-upstream-homepage: https://github.com/tox-dev/py-filelock
+  cfe-import-names: [filelock]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/filelock-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.32.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:14:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:14:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:14:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=0: Fetching info for filelock...
+Generated: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.cursor/cdao-p15-noarch-build/gen/filelock/recipe.yaml
+
+####

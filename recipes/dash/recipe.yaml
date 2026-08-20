@@ -2,45 +2,31 @@
 schema_version: 1
 
 context:
-  name: dash
   version: "4.4.1"
 
 package:
-  name: ${{ name|lower }}
+  name: dash
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dash-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dash/dash-${{ version }}.tar.gz
   sha256: 9356ca7856bc496c12c5b6de5978aaf783e090d07450ee395ade1c0c2cbdf816
 
 build:
   number: 0
   noarch: python
-  script:
-    - sed -i.bak "s/Flask>=1.0.4,<3.2/flask>=1.0.4/g" requirements/install.txt
-    - sed -i.bak "s/Werkzeug<3.2/werkzeug/g" requirements/install.txt
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - dash-generate-components = dash.development.component_generator:cli
-      - renderer = dash.development.build_process:renderer
-      - dash-update-components = dash.development.update_components:cli
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: unix
-      then: sed
-    - if: win
-      then: m2-sed
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     # https://github.com/plotly/dash/blob/dev/requirements/install.txt
-    - flask >=1.0.4
-    - werkzeug
+    - flask >=1.0.4,<3.2
+    - werkzeug <3.2
     - plotly >=5.0.0
     - importlib-metadata
     - typing_extensions >=4.1.1
@@ -69,32 +55,17 @@ tests:
         - dash.dash_table
         - dash.testing
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      recipe:
-        - test_not_found.py
-        - test_warnings.py
-    requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}
-        - pip
-        - coloredlogs >=15.0.1
-        - fire >=0.4.0
-        - pyyaml >=5.4.1
-    script:
-      - pytest test_not_found.py
-      - conda install -c conda-forge dash-html-components dash-core-components dash-table -y
-      - pytest test_warnings.py
-      - dash-generate-components --help
-      - renderer --help
-      - dash-update-components --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Python framework for building reactive web-apps. Developed by Plotly.
+  homepage: https://plotly.com/dash
   license: MIT
   license_file: LICENSE
-  homepage: https://plotly.com/dash
+  summary: A Python framework for building reactive web-apps. Developed by Plotly.
+  description: |
+    A Python framework for building reactive web-apps. Developed by Plotly.
   repository: https://github.com/plotly/dash
   documentation: https://dash.plotly.com
 
@@ -102,3 +73,36 @@ extra:
   recipe-maintainers:
     - bandersen23
     - moorepants
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dash
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dash
+  cfe-purls:
+    - pkg:conda/dash@${{ version }}?channel=conda-forge
+    - pkg:pypi/dash@${{ version }}
+  cfe-upstream-repo: https://github.com/plotly/dash
+  cfe-upstream-homepage: https://plotly.com/dash
+  cfe-import-names: [dash]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dash-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.4.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:25:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:25:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:25:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

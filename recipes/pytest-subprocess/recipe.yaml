@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: pytest-subprocess
   version: "1.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-subprocess
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-subprocess/pytest_subprocess-${{ version }}.tar.gz
   sha256: b2d746eb1b768a6f9087e5c7c91f87fb9d40c7fdc777550dc00397af428a0654
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - pytest >=4.0.0
@@ -32,16 +31,54 @@ tests:
       imports:
         - pytest_subprocess
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A plugin to fake subprocess for pytest
+  homepage: https://pypi.org/project/pytest-subprocess/
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/pytest-subprocess/
+  summary: A plugin to fake subprocess for pytest
+  description: |
+    A plugin to fake subprocess for pytest
   repository: https://github.com/aklajnert/pytest-subprocess
+  documentation: https://pytest-subprocess.readthedocs.io
 
 extra:
   recipe-maintainers:
     - aklajnert
     - henryiii
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-subprocess
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-subprocess
+  cfe-purls:
+    - pkg:conda/pytest-subprocess@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-subprocess@${{ version }}
+  cfe-upstream-repo: https://github.com/aklajnert/pytest-subprocess
+  cfe-upstream-homepage: https://pypi.org/project/pytest-subprocess/
+  cfe-import-names: [pytest_subprocess]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-subprocess-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:41:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:41:15Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:41:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

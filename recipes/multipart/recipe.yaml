@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: multipart
   version: "2.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: multipart
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/multipart-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/multipart/multipart-${{ version }}.tar.gz
   sha256: d6076567b489270271d9ec103d404745da1501ad5b70e3a7f1f07f5623d82850
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - flit-core
+    - flit-core >=3.9,<4
   run:
     - python >=${{ python_min }}
 
@@ -31,14 +30,53 @@ tests:
       imports:
         - multipart
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Parser for multipart/form-data.
+  homepage: https://multipart.readthedocs.io/
   license: MIT
   license_file: LICENSE
-  homepage: http://github.com/defnull/multipart
+  summary: Parser for multipart/form-data
+  description: |
+    Parser for multipart/form-data
+  repository: https://github.com/defnull/multipart
+  documentation: https://multipart.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: multipart
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: multipart
+  cfe-purls:
+    - pkg:conda/multipart@${{ version }}?channel=conda-forge
+    - pkg:pypi/multipart@${{ version }}
+  cfe-upstream-repo: https://github.com/defnull/multipart
+  cfe-upstream-homepage: https://multipart.readthedocs.io/
+  cfe-import-names: [multipart]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/multipart-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:51:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:51:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:51:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

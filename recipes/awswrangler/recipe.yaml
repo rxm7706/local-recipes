@@ -2,88 +2,55 @@
 schema_version: 1
 
 context:
-  name: awswrangler
   version: "3.17.1"
 
 package:
-  name: ${{ name|lower }}
+  name: awswrangler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/awswrangler/awswrangler-${{ version }}.tar.gz
   sha256: cc9735a854446c2ccfa25a87295078036361fc170a01c0246e4cf30d4739a2d1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - uv
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
-    - typing_extensions >=4.4.0,<5
-    - python >=${{ python_min }},<4.0
-    - boto3 >=1.20.32,<2
-    - botocore >=1.23.32,<2
-    - pandas >=1.2.0,<4.0.0
-    - numpy >=1.26,<3.0
-    - pyarrow >=8.0.0,<26.0.0
-    - typing-extensions >=4.4.0,<5.0.0
-    - packaging >=21.1,<27.0
+    - python >=${{ python_min }}
+    - boto3 <2,>=1.20.32
+    - botocore <2,>=1.23.32
+    - numpy <3.0,>=1.26
+    - packaging <27.0,>=21.1
+    - pandas <4.0.0,>=1.2.0
+    - pyarrow <26.0.0,>=8.0.0
     - setuptools
-  run_constraints:
-    - redshift_connector >=2.0.0,<3.0.0
-    - pymysql >=1.0.0,<2.0.0
-    - pg8000 >=1.29.0,<2.0.0
-    - pyodbc >=4.0.0,<6.0.0
-    - oracledb >=1.0.0,<4.0.0
-    - gremlinpython >=3.7.1,<4.0.0
-    - sparqlwrapper >=2.0.0,<3.0.0
-    - requests >=2.0.0,<3.0.0
-    - aiohttp >=3.12.14,<4.0.0
-    - async-timeout >=4.0.3,<6.0.0
-    - opensearch-py >=2,<4
-    - requests-aws4auth >=1.1.1,<2.0.0
-    - jsonpath-ng >=1.5.3,<2.0.0
-    - openpyxl >=3.0.0,<4.0.0
-    - progressbar2 >=4.0.0,<5.0.0
-    - rdflib >=6.0.0,=6.0
-    - deltalake >=0.18.0,<1.7.0
-    - geopandas >=1.0.0,<2
-    - pyiceberg >=0.7.0,<1
-    - modin >=0.31,<0.38
-    - ray >=2.49.0,<3
+    - typing_extensions <5,>=4.4.0
 
 tests:
   - python:
       imports:
         - awswrangler
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pandas on AWS
-  description: |
-    An open-source Python package that extends the power of Pandas library to AWS connecting DataFrames
-    and AWS data related services. Easy integration with Athena, Redshift, Glue, Timestream, Neptune,
-    OpenSearch, QuickSight, Chime, CloudWatchLogs, DynamoDB, EMR, SecretManager, PostgreSQL, MySQL, SQLServer
-    and S3 (Parquet, CSV, JSON and EXCEL).
-
-    Built on top of other open-source projects like Pandas, Apache Arrow and Boto3,
-    it offers abstracted functions to execute usual ETL tasks like load/unload
-    data from Data Lakes, Data Warehouses and Databases.
+  homepage: https://aws-sdk-pandas.readthedocs.io/
   license: Apache-2.0
-  license_file:
-    - LICENSE.txt
-    - NOTICE.txt
-    - THIRD_PARTY.txt
-  homepage: https://aws-sdk-pandas.readthedocs.io
+  license_file: LICENSE.txt
+  summary: Pandas on AWS.
+  description: |
+    Pandas on AWS.
   repository: https://github.com/aws/aws-sdk-pandas
-  documentation: https://aws-sdk-pandas.readthedocs.io
+  documentation: https://aws-sdk-pandas.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -97,3 +64,40 @@ extra:
     - kukushking
     - BastianZim
     - EthanBunce
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: awswrangler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: awswrangler
+  cfe-purls:
+    - pkg:conda/awswrangler@${{ version }}?channel=conda-forge
+    - pkg:pypi/awswrangler@${{ version }}
+  cfe-upstream-repo: https://github.com/aws/aws-sdk-pandas
+  cfe-upstream-homepage: https://aws-sdk-pandas.readthedocs.io/
+  cfe-import-names: [awswrangler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/awswrangler-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.17.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:11:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:11:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:11:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

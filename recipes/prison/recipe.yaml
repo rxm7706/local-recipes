@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: prison
   version: "0.2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: prison
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prison-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/prison/prison-${{ version }}.tar.gz
   sha256: e6cd724044afcb1a8a69340cad2f1e3151a5839fd3a8027fd1357571e797c599
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,14 +31,51 @@ tests:
       imports:
         - prison
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Rison encoder/decoder
+  homepage: https://github.com/betodealmeida/python-rison
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/betodealmeida/python-rison
+  summary: Rison encoder/decoder
+  description: |
+    Rison encoder/decoder
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: prison
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: prison
+  cfe-purls:
+    - pkg:conda/prison@${{ version }}?channel=conda-forge
+    - pkg:pypi/prison@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/betodealmeida/python-rison
+  cfe-import-names: [prison]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/prison-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:13:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:13:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:13:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

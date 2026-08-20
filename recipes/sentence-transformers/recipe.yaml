@@ -2,70 +2,55 @@
 schema_version: 1
 
 context:
-  name: sentence-transformers
   version: "5.7.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sentence-transformers
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sentence-transformers/sentence_transformers-${{ version }}.tar.gz
   sha256: fd8c8fc35e6323631dff9f3760969ebf7980dc3cfda0ab1354bc6a774cc0e5d8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
-    - numpy
-    - scipy
-    - scikit-learn
-    - tqdm
+    - transformers <6.0.0,>=4.41.0
+    - tokenizers >=0.19
+    - huggingface-hub >=0.23.0
     - pytorch >=1.11.0
-    - transformers >=4.41.0,<6.0.0
-    - huggingface_hub >=0.23.0
+    - numpy >=1.20.0
+    - scikit-learn >=0.22.0
+    - scipy >=1.0.0
     - typing_extensions >=4.5.0
-    - pillow
+    - tqdm >=4.0.0
 
 tests:
   - python:
       imports:
         - sentence_transformers
-        - sentence_transformers.datasets
-        - sentence_transformers.evaluation
-        - sentence_transformers.losses
-        - sentence_transformers.models
-        - sentence_transformers.models.tokenizer
-        - sentence_transformers.readers
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.SBERT.net
   license: Apache-2.0
   license_file: LICENSE
-  summary: Sentence Embeddings using BERT / RoBERTa / XLNet
+  summary: Embeddings, Retrieval, and Reranking
   description: |
-    ## Sentence Transformers: Multilingual Sentence, Paragraph, and Image Embeddings using BERT & Co.
-
-    This framework provides an easy method to compute dense vector representations for sentences,
-    paragraphs, and images. The models are based on transformer networks like
-    BERT / RoBERTa / XLM-RoBERTa etc. and achieve state-of-the-art performance in various task.
-    Text is embedding in vector space such that similar text is close and can efficiently be
-    found using cosine similarity.
-
-    PyPI: [https://pypi.org/project/sentence-transformers/](https://pypi.org/project/sentence-transformers/)
-
-  homepage: https://github.com/UKPLab/sentence-transformers
-  repository: https://github.com/UKPLab/sentence-transformers
-  documentation: https://pypi.org/project/sentence-transformers/
+    Embeddings, Retrieval, and Reranking
+  repository: https://github.com/huggingface/sentence-transformers/
 
 extra:
   recipe-maintainers:
@@ -74,3 +59,36 @@ extra:
     - ndmaxar
     - sugatoray
     - glemaitre
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sentence-transformers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sentence-transformers
+  cfe-purls:
+    - pkg:conda/sentence-transformers@${{ version }}?channel=conda-forge
+    - pkg:pypi/sentence-transformers@${{ version }}
+  cfe-upstream-repo: https://github.com/huggingface/sentence-transformers/
+  cfe-upstream-homepage: https://www.SBERT.net
+  cfe-import-names: [sentence_transformers]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sentence-transformers-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:24:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:24:29Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:24:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

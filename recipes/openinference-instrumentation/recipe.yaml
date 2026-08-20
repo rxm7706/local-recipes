@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: openinference-instrumentation
   version: "0.1.57"
 
 package:
-  name: ${{ name|lower }}
+  name: openinference-instrumentation
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openinference_instrumentation-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/openinference-instrumentation/openinference_instrumentation-${{ version }}.tar.gz
   sha256: 2bd00a1f95ebb8a47d11615c1039128101e4abc0e9722cc4331849afdeb248fc
 
 build:
@@ -20,29 +19,32 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<3.15
+    - python >=${{ python_min }}
+    - openinference-semantic-conventions >=0.1.31
     - opentelemetry-api
     - opentelemetry-sdk
-    - openinference-semantic-conventions
-    - typing-extensions
-    - wrapt >=1.14.0,<2
+    - wrapt <3,>=1.14.0
 
 tests:
   - python:
       imports:
         - openinference.instrumentation
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenInference instrumentation utilities
+  homepage: https://github.com/Arize-ai/openinference/tree/main/python/openinference-instrumentation
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/Arize-ai/openinference/tree/main/python/openinference-instrumentation
+  summary: OpenInference instrumentation utilities
+  description: |
+    OpenInference instrumentation utilities
 
 extra:
   recipe-maintainers:
@@ -51,3 +53,36 @@ extra:
     - RogerHYang
     - michaelschiff
     - axiomofjoy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openinference-instrumentation
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openinference-instrumentation
+  cfe-purls:
+    - pkg:conda/openinference-instrumentation@${{ version }}?channel=conda-forge
+    - pkg:pypi/openinference-instrumentation@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Arize-ai/openinference/tree/main/python/openinference-instrumentation
+  cfe-import-names: [openinference.instrumentation]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openinference-instrumentation-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.57
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:24:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:24:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:24:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

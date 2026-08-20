@@ -56,3 +56,36 @@ extra:
   recipe-maintainers:
     - rxm7706
     - killua156
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-method
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bmad-method
+  cfe-purls:
+    - pkg:conda/bmad-method@${{ version }}?channel=conda-forge
+    - pkg:pypi/bmad-method@${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/BMAD-METHOD
+  cfe-upstream-homepage: https://github.com/bmad-code-org/BMAD-METHOD
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bmad-method-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:22:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:22:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:22:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for bmad-method...
+Error: Failed to fetch PyPI metadata for 'bmad-method' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/bmad-method/json
+
+####

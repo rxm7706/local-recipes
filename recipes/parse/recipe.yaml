@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: parse
   version: "1.22.1"
-  sha256: d3a4740ec3da338e2b258b2d69741b731eadfddca59e24a14bc4ee5fce38c911
 
 package:
-  name: ${{ name|lower }}
+  name: parse
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/parse/parse-${{ version }}.tar.gz
+  sha256: d3a4740ec3da338e2b258b2d69741b731eadfddca59e24a14bc4ee5fce38c911
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
 
@@ -32,22 +29,52 @@ tests:
   - python:
       imports:
         - parse
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/r1chardj0n3s/parse
   license: MIT
   license_file: LICENSE
   summary: parse() is the opposite of format()
   description: |
-    Parse strings using a specification based on the Python format() syntax.
-  homepage: https://github.com/r1chardj0n3s/parse
-  repository: https://github.com/r1chardj0n3s/parse
-  documentation: https://github.com/r1chardj0n3s/parse/blob/master/README.rst
+    parse() is the opposite of format()
 
 extra:
   recipe-maintainers:
     - stuertz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: parse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: parse
+  cfe-purls:
+    - pkg:conda/parse@${{ version }}?channel=conda-forge
+    - pkg:pypi/parse@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/r1chardj0n3s/parse
+  cfe-import-names: [parse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/parse-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.22.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:01:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:01:33Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:01:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

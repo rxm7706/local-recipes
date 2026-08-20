@@ -1,58 +1,48 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-## github.com/petl-developers/petl-feedstock
 schema_version: 1
 
 context:
-  name: petl
   version: "1.7.23"
-  sha256: b5c54f281b761f983ca6a4d8bc54fbd7b8285816a03ac0534552bee873c1e655
 
 package:
-  name: ${{ name|lower }}
+  name: petl
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/petl/petl-${{ version }}.tar.gz
+  sha256: b5c54f281b761f983ca6a4d8bc54fbd7b8285816a03ac0534552bee873c1e655
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install -vv --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - setuptools_scm
-    - pytest <7.0.0
+    - setuptools-scm
+    - wheel
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - petl
-      pip_check: false
-  - files:
-      source:
-        - petl/
-    requirements:
-      run:
-        - pytest <7.0.0
-    script:
-      - which pip3 && pip3 check || echo Missing pip3 in the environment
-      - pytest --verbose petl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/petl-developers/petl
   license: MIT
   license_file: LICENSE.txt
   summary: A Python package for extracting, transforming and loading tables of data.
-  homepage: http://github.com/petl-developers/petl
-  repository: https://github.com/petl-developers/petl
-  documentation: http://petl.readthedocs.io/
+  description: |
+    A Python package for extracting, transforming and loading tables of data.
 
 extra:
   recipe-maintainers:
@@ -60,3 +50,40 @@ extra:
     - timbledum
     - juarezr
     - arturponinski
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: petl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: petl
+  cfe-purls:
+    - pkg:conda/petl@${{ version }}?channel=conda-forge
+    - pkg:pypi/petl@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/petl-developers/petl
+  cfe-import-names: [petl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/petl-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.23
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:06:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:06:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:06:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -5,54 +5,82 @@ context:
   version: "3.0.6"
 
 package:
-  name: pyviz_comms
+  name: pyviz-comms
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pyviz_comms/pyviz_comms-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyviz-comms/pyviz_comms-${{ version }}.tar.gz
   sha256: 73d66b620390d97959b2c4d8a2c0778d41fe20581be4717f01e46b8fae8c5695
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - param
+    - python ${{ python_min }}.*
     - pip
-    - jupyter-packaging >=0.7.9,<0.8
-    - jupyterlab >=4.0,<5
-    - notebook
-    - hatchling
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
     - hatch-nodejs-version
-    - hatch-jupyter-builder
   run:
     - python >=${{ python_min }}
     - param
-  run_constraints:
-    - jupyterlab >=4.0,<5
 
 tests:
   - python:
       imports:
         - pyviz_comms
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - param
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Bidirectional communication for PyViz
+  homepage: https://github.com/holoviz/pyviz_comms
   license: BSD-3-Clause
-  license_file: LICENSE.txt
-  homepage: https://www.holoviz.org
+  license_file: LICENSE
+  summary: A JupyterLab extension for rendering HoloViz content.
+  description: |
+    A JupyterLab extension for rendering HoloViz content.
+  repository: https://github.com/holoviz/pyviz_comms.git
 
 extra:
   recipe-maintainers:
     - jlstevens
     - philippjfr
     - maximlt
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyviz_comms
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyviz-comms
+  cfe-purls:
+    - pkg:conda/pyviz_comms@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyviz-comms@${{ version }}
+  cfe-upstream-repo: https://github.com/holoviz/pyviz_comms.git
+  cfe-upstream-homepage: https://github.com/holoviz/pyviz_comms
+  cfe-import-names: [pyviz_comms]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyviz_comms-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.6
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:38:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:38:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:38:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

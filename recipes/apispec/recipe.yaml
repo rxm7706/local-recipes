@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: apispec
-  version: 6.10.0
+  version: "6.10.0"
 
 package:
-  name: ${{ name|lower }}
+  name: apispec
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apispec-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/apispec/apispec-${{ version }}.tar.gz
   sha256: 0a888555cd4aa5fb7176041be15684154fd8961055e1672e703abf737e8761bf
 
 build:
@@ -21,32 +20,62 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core <4
     - pip
+    - flit-core <4
   run:
     - python >=${{ python_min }}
     - packaging >=21.3
-    # yaml extra:
-    - pyyaml >=3.10
+
 tests:
   - python:
       imports:
         - apispec
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/apispec/
   license: MIT
   license_file: LICENSE
-  summary: A pluggable API specification generator
+  summary: A pluggable API specification generator. Currently supports the OpenAPI Specification (f.k.a. the Swagger specification).
   description: |
-    A pluggable API specification generator. Currently supports the OpenAPI
-    specification (f.k.a. Swagger 2.0).
-  homepage: https://github.com/marshmallow-code/apispec
+    A pluggable API specification generator. Currently supports the OpenAPI Specification (f.k.a. the Swagger specification).
   repository: https://github.com/marshmallow-code/apispec
-  documentation: http://apispec.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - xylar
     - rth
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apispec
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apispec
+  cfe-purls:
+    - pkg:conda/apispec@${{ version }}?channel=conda-forge
+    - pkg:pypi/apispec@${{ version }}
+  cfe-upstream-repo: https://github.com/marshmallow-code/apispec
+  cfe-upstream-homepage: https://pypi.org/project/apispec/
+  cfe-import-names: [apispec]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apispec-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:15:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:15:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:15:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

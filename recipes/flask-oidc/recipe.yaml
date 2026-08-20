@@ -20,15 +20,14 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
-    - flask
+    - poetry-core >=1.0.0
   run:
     - python >=${{ python_min }}
-    - flask >=0.12.2,<4.0.0
-    - authlib >=1.2.0,<2.0.0
-    - requests >=2.20.0,<3.0.0
-    - blinker >=1.4.0,<2.0.0
+    - authlib <2.0.0,>=1.2.0
+    - blinker <2.0.0,>=1.4.0
+    - flask <4.0.0,>=0.12.2
+    - requests <3.0.0,>=2.20.0
 
 tests:
   - python:
@@ -40,18 +39,52 @@ tests:
         - "*"
 
 about:
+  homepage: https://github.com/fedora-infra/flask-oidc
   license: BSD-2-Clause
-  license_file: LICENSES/BSD-2-Clause.txt
+  license_file: LICENSE
   summary: OpenID Connect extension for Flask
   description: |
-    Flask-OIDC is an extension to Flask that allows you to add OpenID
-    Connect based authentication to your website in a matter of minutes.
-
-  homepage: https://github.com/fedora-infra/flask-oidc
+    OpenID Connect extension for Flask
   repository: https://github.com/fedora-infra/flask-oidc
-  documentation: https://flask-oidc.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - mxr-conda
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-oidc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-oidc
+  cfe-purls:
+    - pkg:conda/flask-oidc@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-oidc@${{ version }}
+  cfe-upstream-repo: https://github.com/fedora-infra/flask-oidc
+  cfe-upstream-homepage: https://github.com/fedora-infra/flask-oidc
+  cfe-import-names: [flask_oidc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-oidc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:21:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:21:46Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:21:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

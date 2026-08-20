@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-exporter-prometheus
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-exporter-prometheus
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_prometheus-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-prometheus/opentelemetry_exporter_prometheus-${{ version }}.tar.gz
   sha256: 2777cbf41c403c119e10f418fce5d645c956b47f673a2ee120285d1d0c6df2d5
 
 build:
@@ -21,29 +20,31 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.12,<2.dev0
-    - opentelemetry-sdk >=1.44.0,<1.45.dev0
-    - prometheus_client >=0.5.0,<1.0.0
+    - opentelemetry-api ~=1.12
+    - opentelemetry-sdk ~=1.44.0
+    - prometheus_client <1.0.0,>=0.5.0
+
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.exporter
         - opentelemetry.exporter.prometheus
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - '*'
+        - "*"
 
 about:
   homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-prometheus
-  summary: Prometheus Metric Exporter for OpenTelemetry
   license: Apache-2.0
   license_file: LICENSE
+  summary: Prometheus Metric Exporter for OpenTelemetry
+  description: |
+    Prometheus Metric Exporter for OpenTelemetry
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
@@ -52,3 +53,33 @@ extra:
     - conda-forge/opentelemetry-api
     - conda-forge/opentelemetry-sdk
     - zbowling
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-prometheus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-prometheus
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-prometheus@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-exporter-prometheus@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-prometheus
+  cfe-import-names: [opentelemetry.exporter.prometheus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-prometheus-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:23:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:23:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:23:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

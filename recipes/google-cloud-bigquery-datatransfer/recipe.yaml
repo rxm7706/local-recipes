@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-bigquery-datatransfer
   version: "3.23.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-bigquery-datatransfer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_bigquery_datatransfer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-bigquery-datatransfer/google_cloud_bigquery_datatransfer-${{ version }}.tar.gz
   sha256: 2d0100a93f6e89a115d668d4fc2abc0f0c223ea099f5b7c736bce0102ba623f9
 
 build:
@@ -25,35 +24,60 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.17.1,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    # more restrictive constraint for python >=3.13
-    - proto-plus >=1.25.0,<2.0.0
-    - protobuf >=4.25.8,<8.0.0
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
 
 tests:
   - python:
       imports:
         - google.cloud.bigquery_datatransfer
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Google Cloud Bigquery Datatransfer API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-datatransfer
   license: Apache-2.0
   license_file: LICENSE
+  summary: Google Cloud Bigquery Datatransfer API client library
   description: |
-    BigQuery Data Transfer API is a Google Cloud service that lets client applications transfer data from partner SaaS applications to Google BigQuery on a scheduled, managed basis.
-    See the [quick start guide](https://googleapis.dev/python/bigquerydatatransfer/latest/index.html#quick-start).
-
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-datatransfer
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-datatransfer
-  documentation: https://googleapis.dev/python/bigquerydatatransfer/latest/index.html
+    Google Cloud Bigquery Datatransfer API client library
 
 extra:
   recipe-maintainers:
     - parthea
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-bigquery-datatransfer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-bigquery-datatransfer
+  cfe-purls:
+    - pkg:conda/google-cloud-bigquery-datatransfer@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-bigquery-datatransfer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-datatransfer
+  cfe-import-names: [google.cloud.bigquery_datatransfer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-bigquery-datatransfer-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:12:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:12:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:12:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

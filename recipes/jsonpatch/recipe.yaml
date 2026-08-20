@@ -2,48 +2,84 @@
 schema_version: 1
 
 context:
-  name: jsonpatch
   version: "1.33"
 
 package:
-  name: ${{ name|lower }}
+  name: jsonpatch
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsonpatch-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jsonpatch/jsonpatch-${{ version }}.tar.gz
   sha256: 9fcd4009c41e6d12348b4a0ff2563ba56a2923a7dfee731d004e212e1ee5030c
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pypandoc
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - jsonpointer >=1.9
+    - jsonpointer
 
 tests:
   - python:
       imports:
         - jsonpatch
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/stefankoegl/python-json-patch
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Apply JSON-Patches (RFC 6902)
-  homepage: https://github.com/stefankoegl/python-json-patch
-  repository: https://github.com/stefankoegl/python-json-patch
-  documentation: https://python-json-patch.readthedocs.io/en/latest/
+  description: |
+    Apply JSON-Patches (RFC 6902)
+  repository: https://github.com/stefankoegl/python-json-patch.git
+  documentation: https://python-json-patch.readthedocs.org/
 
 extra:
   recipe-maintainers:
     - pavelzw
     - anguslees
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonpatch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonpatch
+  cfe-purls:
+    - pkg:conda/jsonpatch@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonpatch@${{ version }}
+  cfe-upstream-repo: https://github.com/stefankoegl/python-json-patch.git
+  cfe-upstream-homepage: https://github.com/stefankoegl/python-json-patch
+  cfe-import-names: [jsonpatch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonpatch-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.33
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:21:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:21:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:21:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

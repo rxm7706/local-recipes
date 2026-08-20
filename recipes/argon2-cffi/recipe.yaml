@@ -2,54 +2,81 @@
 schema_version: 1
 
 context:
-  name: argon2-cffi
   version: "25.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: argon2-cffi
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/argon2-cffi/argon2_cffi-${{ version }}.tar.gz
   sha256: 694ae5cc8a42f4c4e2bf2ca0e64e51e23a040c6a517a85074683d3959e1346c1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
     - hatch-fancy-pypi-readme
-    - pip
   run:
     - python >=${{ python_min }}
     - argon2-cffi-bindings
-    - typing-extensions
-  run_constraints:
-    - argon2_cffi ==999
 
 tests:
   - python:
       imports:
         - argon2
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/argon2-cffi/
   license: MIT
   license_file: LICENSE
-  summary: The secure Argon2 password hashing algorithm.
+  summary: Argon2 for Python
   description: |
-    Argon2 won the Password Hashing Competition and argon2_cffi is the simplest
-    way to use it in Python and PyPy
-  homepage: https://argon2-cffi.readthedocs.org/
-  repository: https://github.com/hynek/argon2_cffi/
-  documentation: https://argon2-cffi.readthedocs.io/en/stable/
+    Argon2 for Python
+  repository: https://github.com/hynek/argon2-cffi
+  documentation: https://argon2-cffi.readthedocs.io/
 
 extra:
   recipe-maintainers:
-    - stuertz
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: argon2-cffi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: argon2-cffi
+  cfe-purls:
+    - pkg:conda/argon2-cffi@${{ version }}?channel=conda-forge
+    - pkg:pypi/argon2-cffi@${{ version }}
+  cfe-upstream-repo: https://github.com/hynek/argon2-cffi
+  cfe-upstream-homepage: https://pypi.org/project/argon2-cffi/
+  cfe-import-names: [argon2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:18:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:18:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:18:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

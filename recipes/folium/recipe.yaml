@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: folium
   version: "0.20.0"
 
 package:
-  name: ${{ name|lower }}
+  name: folium
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/folium-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/folium/folium-${{ version }}.tar.gz
   sha256: a0d78b9d5a36ba7589ca9aedbd433e84e9fcab79cd6ac213adbcff922e454cb9
 
 build:
@@ -20,10 +19,11 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=41.2
     - setuptools-scm
-    - pip
+    - wheel
   run:
     - python >=${{ python_min }}
     - branca >=0.6.0
@@ -37,15 +37,54 @@ tests:
       imports:
         - folium
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-visualization/folium
   license: MIT
   license_file: LICENSE.txt
-  summary: Make beautiful maps with Leaflet.js and Python
-  homepage: https://github.com/python-visualization/folium
+  summary: Make beautiful maps with Leaflet.js & Python
+  description: |
+    Make beautiful maps with Leaflet.js & Python
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - BibMartin
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: folium
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: folium
+  cfe-purls:
+    - pkg:conda/folium@${{ version }}?channel=conda-forge
+    - pkg:pypi/folium@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/python-visualization/folium
+  cfe-import-names: [folium]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/folium-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.20.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:32:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:32:26Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:32:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,50 +2,83 @@
 schema_version: 1
 
 context:
-  name: keyrings.alt
   version: "5.0.2"
-  sha256: 8f097ebe9dc8b185106502b8cdb066c926d2180e13b4689fd4771a3eab7d69fb
 
 package:
-  name: ${{ name|lower }}
+  name: keyrings.alt
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/keyrings_alt-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/keyrings.alt/keyrings_alt-${{ version }}.tar.gz
+  sha256: 8f097ebe9dc8b185106502b8cdb066c926d2180e13b4689fd4771a3eab7d69fb
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.8
-    - setuptools >=56
-    - setuptools_scm >=3.4.1
+    - setuptools >=61.2
   run:
+    - python >=${{ python_min }}
     - jaraco.classes
     - jaraco.context
-    - python >=3.8
 
 tests:
   - python:
       imports:
-        - keyrings.alt
+        - keyrings
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/keyrings.alt/
   license: MIT
   license_file: LICENSE
-  summary: Alternate keyring backend implementations for use with the keyring package.
-  homepage: https://github.com/jaraco/keyrings.alt
-  repository: https://github.com/jaraco/keyrings.alt/
-  documentation: http://pythonhosted.org/keyrings.alt/
+  summary: Alternate keyring implementations
+  description: |
+    Alternate keyring implementations
+  repository: https://github.com/jaraco/keyrings.alt
 
 extra:
   recipe-maintainers:
     - astaric
     - yarikoptic
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: keyrings.alt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: keyrings-alt
+  cfe-purls:
+    - pkg:conda/keyrings.alt@${{ version }}?channel=conda-forge
+    - pkg:pypi/keyrings-alt@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/keyrings.alt
+  cfe-upstream-homepage: https://pypi.org/project/keyrings.alt/
+  cfe-import-names: [keyrings]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/keyrings.alt-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:55:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:55:13Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:55:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

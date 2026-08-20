@@ -3,12 +3,8 @@ schema_version: 1
 
 context:
   version: "5.5.1"
-  python_check_max: "3.14"
-  # workaround https://github.com/conda-forge/openssl-feedstock/issues/237
-  # python 3.10,3.11 are (temporarily) broken by openssl on Windows
-  python_min_test: ${{ python_min if not win else "3.12" }}
 
-recipe:
+package:
   name: jupyterhub
   version: ${{ version }}
 
@@ -19,146 +15,89 @@ source:
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: jupyterhub-base
-      version: ${{ version }}
-    build:
-      noarch: python
-      script:
-        - python -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
-      python:
-        entry_points:
-          - jupyterhub = jupyterhub.app:main
-          - jupyterhub-singleuser = jupyterhub.singleuser:main
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}.*
-        - setuptools
-        - setuptools-scm
-      run:
-        - __${{ noarch_platform }}
-        - alembic >=1.4
-        - certipy >=0.1.2
-        - idna
-        - jinja2 >=2.11.0
-        - jupyter_events
-        - oauthlib >=3.0
-        - packaging
-        - prometheus_client >=0.5.0
-        - pydantic >=2
-        - python >=${{ python_min }}
-        - python-dateutil
-        - requests
-        - sqlalchemy >=1.4.1
-        - tornado >=5.1
-        - traitlets >=4.3.2
-        - if: noarch_platform == "unix"
-          then:
-            - pamela
-          else:
-            - psutil
-      run_constraints:
-        - psutil >=5.6.5
-        - pamela >=1.1.0
-    tests:
-      - package_contents:
-          files:
-            - share/jupyterhub/templates/page.html
-            - share/jupyterhub/static/components/jquery/dist/jquery.min.js
-            - share/jupyterhub/static/css/style.min.css
-            - share/jupyterhub/static/js/home.js
-      - python:
-          pip_check: true
-          python_version:
-            - ${{ python_min_test }}.*
-            - ${{ python_check_max }}.*
-          imports:
-            - jupyterhub
-            - jupyterhub.apihandlers
-            - jupyterhub.handlers
-            - jupyterhub.app
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min_test }}.*
-        script:
-          - python -m pip list --format=freeze
-          - python -m pip list --format=freeze | python -c "import sys; assert 'jupyterhub==${{ version }}' in sys.stdin.read()"
-          - jupyterhub --version
-          - jupyterhub --version | python -c "import sys; assert sys.stdin.read().strip() == '${{ version }}'"
-          - jupyterhub --help-all
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - alembic >=1.4
+    - async_generator >=1.9
+    - certipy >=0.1.2
+    - idna
+    - importlib-metadata >=3.6
+    - jinja2 >=2.11.0
+    - jupyter-events
+    - oauthlib >=3.0
+    - packaging
+    - prometheus_client >=0.5.0
+    - pydantic >=2
+    - python-dateutil
+    - requests
+    - sqlalchemy >=1.4.1
+    - tornado >=5.1
+    - traitlets >=4.3.2
+    - if: win
+      then:
+        - psutil
 
-  - package:
-      name: jupyterhub-singleuser
-      version: ${{ version }}
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - __${{ noarch_platform }}
-        - ${{ pin_subpackage("jupyterhub-base", exact=True) }}
-        - jupyterlab >=3.1
-    tests:
-      - python:
-          imports: jupyterhub.singleuser
-          pip_check: true
-          python_version:
-            - ${{ python_min_test }}.*
-            - ${{ python_check_max }}.*
-      - requirements:
-          run:
-            - python ${{ python_min_test }}.*
-        script:
-          - jupyterhub-singleuser --help-all
-
-  - package:
-      name: jupyterhub
-      version: ${{ version }}
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - __${{ noarch_platform }}
-        - ${{ pin_subpackage("jupyterhub-base", exact=True) }}
-        - configurable-http-proxy >=4
-        - nodejs >=12
-        - psutil # undeclared extra, used preferentially for logging
-        - pycurl # undeclared extra, used preferentially for performance
-    tests:
-      - python:
-          imports: jupyterhub
-          pip_check: true
-          python_version:
-            - ${{ python_min_test }}.*
-            - ${{ python_check_max }}.*
-      - script:
-          - jupyterhub --help-all
-          - if: noarch_platform == "unix"
-            then:
-              - configurable-http-proxy --help
+tests:
+  - python:
+      imports:
+        - jupyterhub
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://hub.jupyter.org
   license: BSD-3-Clause
-  license_file:
-    - LICENSE
-    - share/jupyterhub/static/components/@fortawesome/fontawesome-free/LICENSE.txt
-    - share/jupyterhub/static/components/bootstrap/LICENSE
-    - share/jupyterhub/static/components/jquery/LICENSE.txt
-    - share/jupyterhub/static/components/moment/LICENSE
-    - share/jupyterhub/static/js/admin-react.js.LICENSE.txt
-  summary: A multi-user server for Jupyter notebooks
+  license_file: LICENSE
+  summary: "JupyterHub: A multi-user server for Jupyter notebooks"
+  description: |
+    JupyterHub: A multi-user server for Jupyter notebooks
   repository: https://github.com/jupyterhub/jupyterhub
   documentation: https://jupyterhub.readthedocs.io
 
 extra:
-  feedstock-name: jupyterhub
   recipe-maintainers:
     - minrk
     - blink1073
     - consideRatio
     - manics
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterhub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterhub
+  cfe-purls:
+    - pkg:conda/jupyterhub@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterhub@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyterhub/jupyterhub
+  cfe-upstream-homepage: https://hub.jupyter.org
+  cfe-import-names: [jupyterhub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterhub-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:36:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:36:27Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:36:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  python_min: "3.11"
-  name: music21
   version: "10.5.0"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: music21
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/music21/music21-${{ version }}.tar.gz
   sha256: f72676fb953cb592bfb4e3bb246b0a234446f89088aa8a55ec9b5fcef2ce3db2
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.11.*
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling >=1.8.1
   run:
     - python >=${{ python_min }}
     - chardet
@@ -39,27 +38,53 @@ tests:
   - python:
       imports:
         - music21
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - python -m music21.stream.tests
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause OR LGPL-3.0-or-later
-  license_file: LICENSE
-  summary: A Toolkit for Computer-Aided Musical Analysis.
-  description: |
-    People use music21 to answer questions from musicology using computers,
-    to study large datasets of music, to generate musical examples, to teach
-    fundamentals of music theory, to edit musical notation, study music and
-    the brain, and to compose music (both algorithmically and directly).
   homepage: https://github.com/cuthbertLab/music21
-  repository: https://github.com/cuthbertLab/music21
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A Toolkit for Computer-Aided Musical Analysis and Computational Musicology.
+  description: |
+    A Toolkit for Computer-Aided Musical Analysis and Computational Musicology.
   documentation: https://www.music21.org/music21docs/
 
 extra:
   recipe-maintainers:
     - jacobtylerwalls
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: music21
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: music21
+  cfe-purls:
+    - pkg:conda/music21@${{ version }}?channel=conda-forge
+    - pkg:pypi/music21@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cuthbertLab/music21
+  cfe-import-names: [music21]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/music21-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-10.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:53:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:53:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:53:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

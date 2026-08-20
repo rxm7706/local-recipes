@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: google-cloud-bigtable
   version: "2.41.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-bigtable
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-bigtable/google_cloud_bigtable-${{ version }}.tar.gz
   sha256: d0c424bae6238eb16ffc0922be79da00d20d23e0750ea46742ffd4542c50fd26
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --verbose
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -25,66 +24,63 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.24.2,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    - proto-plus >=1.26.1,<2.0.0
-    - protobuf >=6.33.5,<8.0.0
-    - google-cloud-core >=2.0.0,<3.0.0
-    - grpc-google-iam-v1 >=0.14.2,<1.0.0
-    - google-crc32c >=1.6.0,<2.0.0dev
+    - google-api-core <3.0.0,>=2.24.2
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
+    - google-cloud-core <3.0.0,>=2.0.0
+    - grpc-google-iam-v1 <1.0.0,>=0.14.2
+    - google-crc32c <2.0.0dev,>=1.6.0
 
 tests:
   - python:
       imports:
         - google.cloud.bigtable
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigtable
   license: Apache-2.0
   license_file: LICENSE
-  summary: Python Client for Google Cloud Bigtable
+  summary: Google Cloud Bigtable API client library
   description: |
-    Python Client for Google Cloud Bigtable
-    -------------------------
-
-    [Google Cloud Bigtable](https://cloud.google.com/bigtable) is Google's NoSQL Big Data database service. It's the
-    same database that powers many core Google services, including Search,
-    Analytics, Maps, and Gmail.
-
-    - [Client Library Documentation](https://googleapis.github.io/google-cloud-python/latest/bigtable/usage.html)
-    - [Product Documentation](https://cloud.google.com/bigtable/docs)
-
-    Quick Start
-    -----------
-
-    In order to use this library, you first need to go through the following steps:
-
-    1. [Select or create a Cloud Platform project.](https://console.cloud.google.com/project)
-    2. [Enable billing for your project.](https://cloud.google.com/billing/docs/how-to/modify-project#enable_billing_for_a_project)
-    3. [Enable the Cloud Bigtable API.](https://cloud.google.com/bigtable)
-    4. [Setup Authentication.](https://googleapis.github.io/google-cloud-python/latest/core/auth.html)
-
-    Supported Python Versions
-    -------------------------
-    Python >= 3.7
-
-    Deprecated Python Versions
-    -------------------------
-    * Python 2.7: the last released version which supported Python 2.7 was version 1.7.0, released 2021-02-09.
-    * Python 3.5: the last released version which supported Python 3.5 was version 1.7.0, released 2021-02-09.
-    * Python 3.6: the last released version which supported Python 3.6 was version v2.10.1, released 2022-06-03.
-
-  homepage: https://github.com/googleapis/python-bigtable
-  repository: https://github.com/googleapis/python-bigtable
-  documentation: https://googleapis.dev/python/bigtable/latest/index.html
+    Google Cloud Bigtable API client library
 
 extra:
   recipe-maintainers:
     - BrentDorsey
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-bigtable
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-bigtable
+  cfe-purls:
+    - pkg:conda/google-cloud-bigtable@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-bigtable@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigtable
+  cfe-import-names: [google.cloud.bigtable]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-bigtable-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:14:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:14:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:14:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

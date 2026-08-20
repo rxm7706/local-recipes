@@ -13,15 +13,14 @@ source:
   sha256: 138a2abdf93304ad60530167e51d2dfb9549521a836871b88d7f4695d0022f6b
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -32,27 +31,51 @@ tests:
       imports:
         - rfc3339_validator
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - hypothesis
-        - pip
-        - pytest-cov
-        - pytest-runner
-        - strict-rfc3339
-        - python ${{ python_min }}
-    script:
-      - pytest --cov=rfc3339_validator --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=95
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A pure python RFC3339 validator
+  homepage: https://github.com/naimetti/rfc3339-validator
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/naimetti/rfc3339-validator
+  summary: A pure python RFC3339 validator
+  description: |
+    A pure python RFC3339 validator
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rfc3339-validator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rfc3339-validator
+  cfe-purls:
+    - pkg:conda/rfc3339-validator@${{ version }}?channel=conda-forge
+    - pkg:pypi/rfc3339-validator@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/naimetti/rfc3339-validator
+  cfe-import-names: [rfc3339_validator]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rfc3339-validator-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:58:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:58:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:58:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

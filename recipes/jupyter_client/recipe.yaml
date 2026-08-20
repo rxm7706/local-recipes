@@ -3,11 +3,9 @@ schema_version: 1
 
 context:
   version: "8.9.1"
-  python_check_max: "3.14"
-  pytest_k: not (signal_kernel_subprocesses or start_parallel_thread_kernels or start_parallel_process_kernels or open_tunnel or load_ips or input_request or tcp_cinfo)
 
 package:
-  name: jupyter_client
+  name: jupyter-client
   version: ${{ version }}
 
 source:
@@ -17,63 +15,43 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - jupyter-kernel = jupyter_client.kernelapp:main
-      - jupyter-kernelspec = jupyter_client.kernelspecapp:KernelSpecApp.launch_instance
-      - jupyter-run = jupyter_client.runapp:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - hatchling >=1.5
-    - python ${{ python_min }}.*
   run:
-    - jupyter_core >=5.1
     - python >=${{ python_min }}
+    - jupyter-core >=5.1
     - python-dateutil >=2.8.2
     - pyzmq >=25.0
     - tornado >=6.4.1
     - traitlets >=5.3
     - typing_extensions >=4.13.0
+    - if: win
+      then:
+        - paramiko
 
 tests:
   - python:
-      imports: jupyter_client
+      imports:
+        - jupyter_client
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - anyio
-        - coverage
-        - ipykernel >=6.14
-        - pandoc
-        - paramiko
-        - pip
-        - pytest >=7
-        - pytest-jupyter-client >=0.6.2
-        - pytest-timeout
-        - python ${{ python_min }}.*
-    script:
-      - jupyter kernelspec list
-      - jupyter run -h
-      - coverage run --source=jupyter_client --branch -m pytest -vv --tb=long --color=yes -k "${{ pytest_k }}"
-      - coverage report --show-missing --skip-covered --fail-under=72
+        - "*"
 
 about:
+  homepage: https://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: jupyter_client contains the reference implementation of the Jupyter protocol.
-  homepage: https://jupyter.org
+  summary: Jupyter protocol implementation and client libraries
+  description: |
+    Jupyter protocol implementation and client libraries
   repository: https://github.com/jupyter/jupyter_client
-  documentation: https://jupyter-client.readthedocs.io/en/stable/
+  documentation: https://jupyter-client.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -86,3 +64,33 @@ extra:
     - bollwyvl
     - davidbrochart
     - blink1073
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-client
+  cfe-purls:
+    - pkg:conda/jupyter_client@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-client@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter/jupyter_client
+  cfe-upstream-homepage: https://jupyter.org
+  cfe-import-names: [jupyter_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_client-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:27:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:27:50Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:27:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

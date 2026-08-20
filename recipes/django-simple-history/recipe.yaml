@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-simple-history
   version: "3.13.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-simple-history
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_simple_history-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-simple-history/django_simple_history-${{ version }}.tar.gz
   sha256: ca3c1e4ccd5f16f45fbbef6015ee2a246465fd9bd924100df8e9dfb368c4f26c
 
 build:
@@ -20,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - hatch-fancy-pypi-readme
     - hatch-vcs
     - hatchling
-    - pip
   run:
     - python >=${{ python_min }}
     - django >=5.2
@@ -34,19 +33,59 @@ tests:
       imports:
         - simple_history
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/django-commons/django-simple-history
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Store model history and view/revert changes from admin site.
-  description: django-simple-history stores Django model state on every create/update/delete.
-  homepage: https://github.com/treyhunner/django-simple-history
-  repository: https://github.com/treyhunner/django-simple-history
-  documentation: https://django-simple-history.readthedocs.io/
+  description: |
+    Store model history and view/revert changes from admin site.
+  repository: https://github.com/django-commons/django-simple-history
+  documentation: https://django-simple-history.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - cshaley
     - rxm7706
     - sannykr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-simple-history
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-simple-history
+  cfe-purls:
+    - pkg:conda/django-simple-history@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-simple-history@${{ version }}
+  cfe-upstream-repo: https://github.com/django-commons/django-simple-history
+  cfe-upstream-homepage: https://github.com/django-commons/django-simple-history
+  cfe-import-names: [simple_history]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-simple-history-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.13.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:58:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:58:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:58:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

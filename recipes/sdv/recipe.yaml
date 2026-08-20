@@ -2,62 +2,61 @@
 schema_version: 1
 
 context:
-  name: sdv
   version: "1.38.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sdv
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sdv-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sdv/sdv-${{ version }}.tar.gz
   sha256: 34c2fa49a1b7043678b3910e5d7e899e45524de7c79a1b159e5f0e5cecf57dce
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - pytest-runner >=2.11.1
-    - python ${{ python_min }}
     - setuptools
+    - wheel
   run:
-    - boto3 >=1.28.0,<2
-    - botocore >=1.31,<2
+    - python >=${{ python_min }}
+    - boto3 <2.0.0,>=1.28
+    - botocore <2.0.0,>=1.31
     - cloudpickle >=2.1.0
+    - python-graphviz >=0.13.2
+    - numpy >=1.22.2
+    - pandas <3,>=1.4.0
+    - tqdm >=4.29
     - copulas >=0.12.1
     - ctgan >=0.11.1
     - deepecho >=0.7.0
-    - python-graphviz >=0.13.2
-    - numpy >=1.22.2,<2
-    - pandas >=1.4.0,<3
-    - platformdirs >=4.0
-    - python >=${{ python_min }},<3.15
-    - pyyaml >=6.0.1
     - rdt >=1.18.2
-    - sdmetrics >=0.28.0
-    - tqdm >=4.29
+    - sdmetrics >=0.28.1
+    - platformdirs >=4.0
+    - pyyaml >=6.0.1
 
 tests:
   - python:
       imports:
         - sdv
-        - sdv.constraints
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Synthetic Data Generation for tabular, relational and time series data.
+  homepage: https://pypi.org/project/sdv/
   license: BUSL-1.1
   license_file: LICENSE
-  homepage: https://github.com/sdv-dev/SDV
+  summary: Generate synthetic data for single table, multi table and sequential data
+  description: |
+    Generate synthetic data for single table, multi table and sequential data
+  repository: https://github.com/sdv-dev/SDV/
 
 extra:
   recipe-maintainers:
@@ -69,3 +68,36 @@ extra:
     - gsheni
     - R-Palazzo
     - sarahmish
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sdv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sdv
+  cfe-purls:
+    - pkg:conda/sdv@${{ version }}?channel=conda-forge
+    - pkg:pypi/sdv@${{ version }}
+  cfe-upstream-repo: https://github.com/sdv-dev/SDV/
+  cfe-upstream-homepage: https://pypi.org/project/sdv/
+  cfe-import-names: [sdv]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sdv-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.38.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:17:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:17:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:17:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

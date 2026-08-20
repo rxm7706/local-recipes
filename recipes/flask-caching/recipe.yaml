@@ -2,50 +2,85 @@
 schema_version: 1
 
 context:
-  name: Flask-Caching
   version: "2.4.1"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-caching
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name.replace('-', '_') | lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Caching/flask_caching-${{ version }}.tar.gz
   sha256: ecef4ca80b9cb1fa01d461373a0fce441527cd57eecee1aa71c1f6d750d7ff77
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - flit-core >=3.11,<4
   run:
     - python >=${{ python_min }}
-    - flask
+    - flask >=2.0
     - cachelib >=0.9.0
 
 tests:
   - python:
       imports:
         - flask_caching
-        - flask_caching.backends
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/Flask-Caching/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Adds caching support to your Flask application
-  homepage: https://github.com/sh4nks/flask-caching
-  repository: https://github.com/sh4nks/flask-caching
-  documentation: https://pythonhosted.org/Flask-Caching
+  summary: Adds caching support to Flask applications.
+  description: |
+    Adds caching support to Flask applications.
+  repository: https://github.com/pallets-eco/flask-caching
+  documentation: https://flask-caching.readthedocs.io
 
 extra:
   recipe-maintainers:
     - halldc
     - ap--
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-caching
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-caching
+  cfe-purls:
+    - pkg:conda/flask-caching@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-caching@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/flask-caching
+  cfe-upstream-homepage: https://pypi.org/project/Flask-Caching/
+  cfe-import-names: [flask_caching]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-caching-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.4.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:20:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:20:41Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:20:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,52 +2,84 @@
 schema_version: 1
 
 context:
-  name: thefuzz
   version: "0.22.1"
 
 package:
-  name: ${{ name|lower }}
+  name: thefuzz
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/thefuzz-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/thefuzz/thefuzz-${{ version }}.tar.gz
   sha256: 7138039a7ecf540da323792d8592ef9902b1d79eb78c147d4f20664de79f3680
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
-    - python-levenshtein >=0.12
+    - python >=${{ python_min }}
+    - rapidfuzz <4.0.0,>=3.0.0
 
 tests:
   - python:
       imports:
         - thefuzz
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Fuzzy string matching in python
-  license: GPL-2.0-only
-  license_file: LICENSE.txt
-  description: |
-    Fuzzy string matching like a boss. It uses [Levenshtein Distance][_LD] to
-    calculate the differences between sequences in a simple-to-use package.
-
-    [_LD]: https://en.wikipedia.org/wiki/Levenshtein_distance
-
-    PyPI: [https://pypi.org/project/thefuzz/](https://pypi.org/project/thefuzz/)
-
   homepage: https://github.com/seatgeek/thefuzz
-  repository: https://github.com/seatgeek/thefuzz
-  documentation: https://github.com/seatgeek/thefuzz
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Fuzzy string matching in python
+  description: |
+    Fuzzy string matching in python
 
 extra:
   recipe-maintainers:
     - sugatoray
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: thefuzz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: thefuzz
+  cfe-purls:
+    - pkg:conda/thefuzz@${{ version }}?channel=conda-forge
+    - pkg:pypi/thefuzz@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/seatgeek/thefuzz
+  cfe-import-names: [thefuzz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/thefuzz-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.22.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:32:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:32:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:32:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

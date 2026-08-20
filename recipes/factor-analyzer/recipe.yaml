@@ -2,51 +2,87 @@
 schema_version: 1
 
 context:
-  name: factor-analyzer
   version: "0.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: factor-analyzer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/factor_analyzer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/factor-analyzer/factor_analyzer-${{ version }}.tar.gz
   sha256: 03703cd128ee9f91c9bd191a452b06e4a28296b5a24d11823ebb5d8250e8fdf6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=59.0.0
   run:
     - python >=${{ python_min }}
-    - numpy
     - pandas
-    - pre-commit
-    - python >=${{ python_min }}
-    - scikit-learn
     - scipy
+    - numpy
+    - scikit-learn
 
 tests:
   - python:
       imports:
         - factor_analyzer
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Factor Analysis tool written in Python
-  license: GPL-2.0-or-later
-  license_file: LICENSE
   homepage: https://github.com/EducationalTestingService/factor_analyzer
-  repository: https://github.com/EducationalTestingService/factor_analyzer
-  documentation: https://factor-analyzer.readthedocs.io/en/latest/index.html
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: A Factor Analysis tool written in Python
+  description: |
+    A Factor Analysis tool written in Python
 
 extra:
   recipe-maintainers:
     - kellend-git
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: factor-analyzer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: factor-analyzer
+  cfe-purls:
+    - pkg:conda/factor-analyzer@${{ version }}?channel=conda-forge
+    - pkg:pypi/factor-analyzer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/EducationalTestingService/factor_analyzer
+  cfe-import-names: [factor_analyzer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/factor-analyzer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T08:06:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:06:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:06:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

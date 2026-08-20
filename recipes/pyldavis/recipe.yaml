@@ -2,69 +2,91 @@
 schema_version: 1
 
 context:
-  name: pyLDAvis
   version: "3.4.1"
-  sha256: 501775a4a7b7482e9033c924ef0e84eab3f657efce5c9fdb2ac85b77b60c91bb
 
 package:
-  name: ${{ name|lower }}
+  name: pyldavis
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/p/pyLDAvis/pyLDAvis-${{ version }}.tar.gz
+  sha256: 501775a4a7b7482e9033c924ef0e84eab3f657efce5c9fdb2ac85b77b60c91bb
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - numpy >=1.14.0
-    - scipy >=0.18.0
-    - pandas >=1.3.4
-    - joblib >=1.2.0
+    - numpy
+    - scipy
+    - pandas
+    - joblib
     - jinja2
     - numexpr
-    - future
     - funcy
-    - scikit-learn >=1.0.0
+    - scikit-learn
     - gensim
     - setuptools
-    # Required for gensim
-    - fuzzytm
 
 tests:
   - python:
       imports:
         - pyLDAvis
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/bmabey/pyLDAvis
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Python library for interactive topic model visualization
+  summary: Interactive topic model visualization. Port of the R package.
   description: |
-    pyLDAvis is designed to help users interpret the topics in a topic
-    model that has been fit to a corpus of text data. The package extracts
-    information from a fitted LDA topic model to inform an interactive
-    web-based visualization.
-
-    The visualization is intended to be used within an IPython notebook
-    but can also be saved to a stand-alone HTML file for easy sharing.
-  homepage: https://github.com/bmabey/pyLDAvis
-  repository: https://github.com/bmabey/pyLDAvis
-  documentation: http://pyldavis.readthedocs.io/
+    Interactive topic model visualization. Port of the R package.
 
 extra:
   recipe-maintainers:
     - sodre
     - CurtLH
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyldavis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyldavis
+  cfe-purls:
+    - pkg:conda/pyldavis@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyldavis@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/bmabey/pyLDAvis
+  cfe-import-names: [pyLDAvis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyldavis-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.4.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:46:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:46:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:46:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

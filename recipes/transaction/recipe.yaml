@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: transaction
   version: "5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: transaction
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/transaction-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/transaction/transaction-${{ version }}.tar.gz
   sha256: f6ca8639a3e54f6991de0d9c0983a7cd91acb21a825cb544c168269be956bd41
 
 build:
@@ -20,9 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=78.1.1,<81
+    - wheel
   run:
     - python >=${{ python_min }}
     - zope.interface
@@ -32,15 +32,58 @@ tests:
       imports:
         - transaction
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/transaction/
   license: ZPL-2.1
+  license_file: LICENSE.txt
   summary: Transaction management for Python
-  homepage: https://github.com/zopefoundation/transaction
+  description: |
+    Transaction management for Python
+  repository: https://github.com/zopefoundation/transaction
+  documentation: https://transaction.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: transaction
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: transaction
+  cfe-purls:
+    - pkg:conda/transaction@${{ version }}?channel=conda-forge
+    - pkg:pypi/transaction@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/transaction
+  cfe-upstream-homepage: https://pypi.org/project/transaction/
+  cfe-import-names: [transaction]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/transaction-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:47:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:47:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:47:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

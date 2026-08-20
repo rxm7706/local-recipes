@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: momentchi2
   version: "0.1.8"
 
 package:
-  name: ${{ name|lower }}
+  name: momentchi2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/momentchi2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/momentchi2/momentchi2-${{ version }}.tar.gz
   sha256: 95d4becfd181d447c0281292c5827d74a09b04c38bd312da48a8a08932e8de1f
 
 build:
@@ -20,28 +19,65 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=42
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
-    - scipy >=1
-    - numpy >=1
+    - scipy
+    - numpy
 
 tests:
   - python:
       imports:
         - momentchi2
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A collection of methods for computing the cdf of a weighted sum of chi-squared random variables.
+  homepage: https://github.com/pypa/momentchi2
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/deanbodenham/momentchi2py
+  summary: A collection of methods for computing the cdf of a weighted sum of chi-squared random variables.
+  description: |
+    A collection of methods for computing the cdf of a weighted sum of chi-squared random variables.
 
 extra:
   recipe-maintainers:
     - martinRenou
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: momentchi2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: momentchi2
+  cfe-purls:
+    - pkg:conda/momentchi2@${{ version }}?channel=conda-forge
+    - pkg:pypi/momentchi2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pypa/momentchi2
+  cfe-import-names: [momentchi2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/momentchi2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:42:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:42:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:42:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

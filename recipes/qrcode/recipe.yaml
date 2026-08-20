@@ -2,57 +2,82 @@
 schema_version: 1
 
 context:
-  python_min: "3.9.0"
-  name: qrcode
   version: "8.2"
 
 package:
-  name: ${{ name|lower }}
+  name: qrcode
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/qrcode-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/q/qrcode/qrcode-${{ version }}.tar.gz
   sha256: 35c3f2a4172b33136ab9f6b3ef1c00260dd2f66f858f24d88418a015f446506c
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - qr = qrcode.console_scripts:main
 
 requirements:
   host:
-    - python 3.9.0.*
-    - poetry-core
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core
   run:
-    - python >=${{ python_min }},<4.0.0
-    - colorama
-  run_constraints:
-    - pillow >=9.1.0
+    - python >=${{ python_min }}
+    - if: win
+      then:
+        - colorama
 
 tests:
   - python:
       imports:
         - qrcode
-        - qrcode.image
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - qr --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: QR Code image generator
+  homepage: https://github.com/lincolnloop/python-qrcode
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/lincolnloop/python-qrcode
+  summary: QR Code image generator
+  description: |
+    QR Code image generator
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: qrcode
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: qrcode
+  cfe-purls:
+    - pkg:conda/qrcode@${{ version }}?channel=conda-forge
+    - pkg:pypi/qrcode@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/lincolnloop/python-qrcode
+  cfe-import-names: [qrcode]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/qrcode-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-8.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:40:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:40:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:40:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

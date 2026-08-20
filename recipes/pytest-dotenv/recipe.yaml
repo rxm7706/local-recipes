@@ -2,45 +2,81 @@
 schema_version: 1
 
 context:
-  name: pytest-dotenv
   version: "0.5.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-dotenv
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-dotenv-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-dotenv/pytest-dotenv-${{ version }}.tar.gz
   sha256: 2dc6c3ac6d8764c71c6d2804e902d0ff810fa19692e95fe138aefc9b1aa73732
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - pytest >=5.0.0
     - python >=${{ python_min }}
-    - python-dotenv >=0.9.1
+    - pytest
+    - python-dotenv
 
 tests:
   - python:
       imports:
         - pytest_dotenv
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A py.test plugin that parses environment files before running tests
+  homepage: https://github.com/quiqua/pytest-dotenv
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/quiqua/pytest-dotenv
+  summary: A py.test plugin that parses environment files before running tests
+  description: |
+    A py.test plugin that parses environment files before running tests
 
 extra:
   recipe-maintainers:
     - hadim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-dotenv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-dotenv
+  cfe-purls:
+    - pkg:conda/pytest-dotenv@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-dotenv@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/quiqua/pytest-dotenv
+  cfe-import-names: [pytest_dotenv]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-dotenv-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:33:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:33:25Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:33:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

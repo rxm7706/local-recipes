@@ -15,34 +15,68 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
-  - files:
-      recipe:
-        - test.xls
-    requirements:
-      run:
-        - python ${{ python_min }}
+  - python:
+      imports:
+        - xlrd
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause AND BSD-4-Clause
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
-  summary: Library for developers to extract data from Microsoft Excel (tm) spreadsheet files
   homepage: http://www.python-excel.org/
-  repository: https://github.com/python-excel/xlrd/
-  documentation: http://xlrd.readthedocs.io/en/stable/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Library for developers to extract data from Microsoft Excel (tm) .xls spreadsheet files
+  description: |
+    Library for developers to extract data from Microsoft Excel (tm) .xls spreadsheet files
 
 extra:
   recipe-maintainers:
     - cokelaer
     - notestaff
     - mjhoptics
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xlrd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xlrd
+  cfe-purls:
+    - pkg:conda/xlrd@${{ version }}?channel=conda-forge
+    - pkg:pypi/xlrd@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://www.python-excel.org/
+  cfe-import-names: [xlrd]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xlrd-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:25:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:25:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:25:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 2.13.4
+  version: "2.13.4"
 
 package:
   name: pydantic
@@ -15,20 +15,20 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
-    - hatch-fancy-pypi-readme >=22.5.0
     - pip
+    - hatchling
   run:
-    - typing-inspection >=0.4.2
-    - typing_extensions >=4.14.1
     - python >=${{ python_min }}
     - annotated-types >=0.6.0
     - pydantic-core ==2.46.4
+    - typing_extensions >=4.14.1
+    - typing-inspection >=0.4.2
+
 tests:
   - python:
       imports:
@@ -36,15 +36,15 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - '*'
+        - "*"
 
 about:
+  homepage: https://github.com/pydantic/pydantic
   license: MIT
   license_file: LICENSE
-  summary: Data validation and settings management using python type hinting
+  summary: Data validation using Python type hints
   description: |
-    Data validation and settings management using python type hinting.
-  homepage: https://github.com/pydantic/pydantic
+    Data validation using Python type hints
   repository: https://github.com/pydantic/pydantic
   documentation: https://docs.pydantic.dev
 
@@ -55,3 +55,33 @@ extra:
     - dgasmith
     - davidbrochart
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydantic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydantic
+  cfe-purls:
+    - pkg:conda/pydantic@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydantic@${{ version }}
+  cfe-upstream-repo: https://github.com/pydantic/pydantic
+  cfe-upstream-homepage: https://github.com/pydantic/pydantic
+  cfe-import-names: [pydantic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydantic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:30:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:30:56Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:30:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

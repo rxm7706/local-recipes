@@ -2,25 +2,21 @@
 schema_version: 1
 
 context:
-  name: kaggle
-  version: "2.2.3"
-  python_min: '3.11'
+  version: "2.2.4"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: kaggle
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ce292c459a13950553d894ee7368d6454be53291bd75c2d27ad2bed149cdd6c4
+  url: https://pypi.org/packages/source/k/kaggle/kaggle-${{ version }}.tar.gz
+  sha256: 28a58f6c1b9f46ce2afdfb439e0c4e91219e818b377ea4254f4e479456d8cb78
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - kaggle = kaggle.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -30,46 +26,72 @@ requirements:
   run:
     - python >=${{ python_min }}
     - bleach
-    - kagglesdk >=0.1.30,<1.0
-    - python-slugify
-    - requests
-    - python-dateutil
-    - tqdm
-    - urllib3 >=1.15.1
+    - jupytext
+    - kagglesdk <1.0,>=0.1.35
     - packaging
     - protobuf
-    - jupytext
+    - python-dateutil
     - python-dotenv
+    - python-slugify
+    - requests
+    - tqdm
+    - urllib3 >=1.15.1
+
 tests:
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pip
-    script:
-      - pip check
-      - if: unix
-        then:
-          - export KAGGLE_USERNAME=datadinosaur
-          - export KAGGLE_KEY=xxxxxxxxxxxxxx
-      - if: win
-        then:
-          - set KAGGLE_USERNAME=datadinosaur
-          - set KAGGLE_KEY=xxxxxxxxxxxxxx
-      - kaggle --help
+  - python:
+      imports:
+        - kaggle
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/Kaggle/kaggle-cli
   license: Apache-2.0
   license_file: LICENSE.txt
-  summary: Kaggle API
+  summary: Access Kaggle resources anywhere
   description: |
-    Official API for https://www.kaggle.com, accessible using a command
-    line tool implemented in Python.
-  homepage: https://github.com/Kaggle/kaggle-api
-  repository: https://github.com/Kaggle/kaggle-api
-  documentation: https://github.com/Kaggle/kaggle-api
+    Access Kaggle resources anywhere
 
 extra:
   recipe-maintainers:
     - ngam
     - CurtLH
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kaggle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kaggle
+  cfe-purls:
+    - pkg:conda/kaggle@${{ version }}?channel=conda-forge
+    - pkg:pypi/kaggle@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Kaggle/kaggle-cli
+  cfe-import-names: [kaggle]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kaggle-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-2.2.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:48:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:48:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:48:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

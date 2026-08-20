@@ -2,52 +2,79 @@
 schema_version: 1
 
 context:
-  name: celery-types
   version: "0.26.0"
 
 package:
-  name: ${{ name|lower }}
+  name: celery-types
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: fa318136fdad83f83f1531deecd9fe664b5dfffff29f3c31e9120a46b8e3908f
+  url: https://pypi.org/packages/py3/c/celery-types/celery_types-0.26.0-py3-none-any.whl
+  sha256: eb9da76f461786091970df466ec647d9a27956399852542cb6cab9309970f950
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python ${{ python_min }}.*
-    - uv-build
-    - pip
   host:
     - python ${{ python_min }}.*
-    - uv-build
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - typing_extensions >=4.15.0,<5
+    - typing_extensions <5,>=4.15.0
+
 tests:
-  - package_contents:
-      site_packages:
-        - amqp-stubs/__init__.pyi
-        - billiard-stubs/__init__.pyi
-        - celery-stubs/__init__.pyi
-        - django_celery_results-stubs/__init__.pyi
-        - ephem-stubs/__init__.pyi
-        - kombu-stubs/__init__.pyi
-        - vine-stubs/__init__.pyi
+  - python:
+      imports:
+        - celery_types
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Type stubs for Celery and its related packages
+  homepage: https://pypi.org/project/celery-types/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/sbdchd/celery-types
+  summary: Type stubs for Celery and its related packages
+  description: |
+    Type stubs for Celery and its related packages
+  repository: https://github.com/sbdchd/celery-types
 
 extra:
   recipe-maintainers:
     - StevenSchaererQC
     - janjagusch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: celery-types
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: celery-types
+  cfe-purls:
+    - pkg:conda/celery-types@${{ version }}?channel=conda-forge
+    - pkg:pypi/celery-types@${{ version }}
+  cfe-upstream-repo: https://github.com/sbdchd/celery-types
+  cfe-upstream-homepage: https://pypi.org/project/celery-types/
+  cfe-import-names: [celery_types]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/celery-types-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:24:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:24:56Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:24:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

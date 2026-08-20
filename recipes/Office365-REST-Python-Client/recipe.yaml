@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: office365-rest-python-client
-  version: "2.6.2"
+  version: "3.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: office365-rest-python-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/office365_rest_python_client-${{ version }}.tar.gz
-  sha256: ce27f5a1c0cc3ff97041ccd9b386145692be4c64739f243f7d6ac3edbe0a3c46
+  url: https://pypi.org/packages/source/o/office365-rest-python-client/office365_rest_python_client-${{ version }}.tar.gz
+  sha256: 3f95d29794ee0adc58e0b16f6574257c885c74af108e1789e4b3c286bc2ce5ac
 
 build:
   number: 0
@@ -20,31 +19,67 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - uv-build >=0.9,<0.10
   run:
-    - typing_extensions >=4.0.0
     - python >=${{ python_min }}
-    - requests
-    - msal
-    - pytz
-    - typing-extensions >=4.0.0
+    - msal <2,>=1.28
+    - pytz >=2021.1
+    - requests <3,>=2.32.4
+    - typing_extensions >=4.5
 
 tests:
   - python:
       imports:
         - office365
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Microsoft 365 & Microsoft Graph Library for Python
+  homepage: https://pypi.org/project/office365-rest-python-client/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/vgrem/Office365-REST-Python-Client
+  summary: Microsoft 365 & Microsoft Graph Library for Python
+  description: |
+    Microsoft 365 & Microsoft Graph Library for Python
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: Office365-REST-Python-Client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: office365-rest-python-client
+  cfe-purls:
+    - pkg:conda/Office365-REST-Python-Client@${{ version }}?channel=conda-forge
+    - pkg:pypi/office365-rest-python-client@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/office365-rest-python-client/
+  cfe-import-names: [office365]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/Office365-REST-Python-Client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:34:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:34:33Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:34:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

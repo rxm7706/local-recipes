@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: asyncio
-  version: 4.0.0
+  version: "4.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: asyncio
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/asyncio-${{ version }}.tar.gz
-  sha256: 570cd9e50db83bc1629152d4d0b7558d6451bb1bfd5dfc2e935d96fc2f40329b
+  url: https://pypi.org/packages/py3/a/asyncio/asyncio-4.0.0-py3-none-any.whl
+  sha256: c1eddb0659231837046809e68103969b2bef8b0400d59cfa6363f6b5ed8cc88b
 
 build:
   number: 0
@@ -20,23 +19,60 @@ build:
 
 requirements:
   host:
-    - python >=3.4
-    - setuptools >=77
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.4
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - asyncio
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Deprecated backport of asyncio; use the stdlib package instead
+  homepage: https://docs.python.org/3/library/asyncio.html
   license: Apache-2.0
-  license_file: COPYING
+  license_file: LICENSE
+  summary: Deprecated backport of asyncio; use the stdlib package instead
+  description: |
+    Deprecated backport of asyncio; use the stdlib package instead
+  repository: https://github.com/python/asyncio
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asyncio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asyncio
+  cfe-purls:
+    - pkg:conda/asyncio@${{ version }}?channel=conda-forge
+    - pkg:pypi/asyncio@${{ version }}
+  cfe-upstream-repo: https://github.com/python/asyncio
+  cfe-upstream-homepage: https://docs.python.org/3/library/asyncio.html
+  cfe-import-names: [asyncio]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:25:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:25:38Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:25:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

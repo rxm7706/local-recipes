@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: grpcio-status
-  version: 1.83.0
+  version: "1.83.0"
 
 package:
-  name: ${{ name|lower }}
+  name: grpcio-status
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpcio_status-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/grpcio-status/grpcio_status-${{ version }}.tar.gz
   sha256: 837219c6de9afdccb6f6f72b34bc71e151a2011ef04040e3faaca746a57e54ae
 
 build:
@@ -22,36 +21,63 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=77.0.1
+    - wheel
   run:
     - python >=${{ python_min }}
-    - protobuf >=6.33.5,<8.0.0
+    - protobuf <8.0.0,>=6.33.5
     - grpcio >=1.83.0
     - googleapis-common-protos >=1.5.5
+
 tests:
   - python:
       imports:
         - grpc_status
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Status proto mapping for gRPC
+  homepage: https://grpc.io
   license: Apache-2.0
   license_file: LICENSE
+  summary: Status proto mapping for gRPC
   description: |
-    Reference package for GRPC Python status proto mapping.
-
-    gRPC Python: https://grpc.io/docs/languages/python/quickstart/
-    gRPC Python API: https://grpc.github.io/grpc/python/
-
-    PyPI: [https://pypi.org/project/grpcio-status](https://pypi.org/project/grpcio-status)
-
-  homepage: https://grpc.io
-  repository: https://github.com/grpc/grpc/tree/master/src/python/grpcio_status
-  documentation: https://grpc.io/docs/languages/python/quickstart/
+    Status proto mapping for gRPC
+  documentation: https://grpc.github.io/grpc/python/grpc_status.html
 
 extra:
   recipe-maintainers:
     - sugatoray
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grpcio-status
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grpcio-status
+  cfe-purls:
+    - pkg:conda/grpcio-status@${{ version }}?channel=conda-forge
+    - pkg:pypi/grpcio-status@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://grpc.io
+  cfe-import-names: [grpc_status]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grpcio-status-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:52:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:52:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:52:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

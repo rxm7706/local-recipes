@@ -2,48 +2,82 @@
 schema_version: 1
 
 context:
-  name: pytest-json-report
   version: "1.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-json-report
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-json-report/pytest-json-report-${{ version }}.tar.gz
   sha256: 2dde3c647851a19b5f3700729e8310a6e66efb2077d674f27ddea3d34dc615de
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
-    - pytest >=3.8.0
-    - pytest-metadata
     - python >=${{ python_min }}
+    - pytest
+    - pytest-metadata
 
 tests:
   - python:
       imports:
         - pytest_jsonreport
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A pytest plugin to report test results as JSON files
+  homepage: https://github.com/numirias/pytest-json-report
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/pytest-json-report/
+  summary: A pytest plugin to report test results as JSON files
+  description: |
+    A pytest plugin to report test results as JSON files
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
     - megies
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-json-report
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-json-report
+  cfe-purls:
+    - pkg:conda/pytest-json-report@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-json-report@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/numirias/pytest-json-report
+  cfe-import-names: [pytest_jsonreport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-json-report-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:36:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:36:29Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:36:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

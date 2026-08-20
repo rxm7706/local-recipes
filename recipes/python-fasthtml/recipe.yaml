@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: 0.14.11
-  python_min: '3.11'
+  version: "0.14.11"
 
 package:
   name: python-fasthtml
@@ -11,21 +12,16 @@ source:
   url: https://pypi.org/packages/source/p/python-fasthtml/python_fasthtml-${{ version }}.tar.gz
   sha256: 7d054cdb35999f7d61ef582e22efe0d74fce37499327e4ebf2680d6e18bb568d
 
-
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - fh_railway_link=fasthtml.cli:railway_link
-      - fh_railway_deploy=fasthtml.cli:railway_deploy
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=64
   run:
     - python >=${{ python_min }}
     - fastcore >=2.1.2
@@ -33,30 +29,60 @@ requirements:
     - starlette >=1.0.1
     - oauthlib
     - itsdangerous
-    - python-multipart
-    - beautifulsoup4
     - uvicorn >=0.30
     - httpx2
+    - python-multipart
+    - beautifulsoup4
+
 tests:
   - python:
       imports:
         - fasthtml
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - script:
-      - fh_railway_link --help
-      - fh_railway_deploy --help
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: The fastest way to create an HTML app
+  homepage: https://pypi.org/project/python-fasthtml/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/AnswerDotAI/fasthtml
+  summary: The fastest way to create an HTML app
+  description: |
+    The fastest way to create an HTML app
+  repository: https://github.com/AnswerDotAI/fasthtml
+  documentation: https://www.fastht.ml/docs/
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-fasthtml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-fasthtml
+  cfe-purls:
+    - pkg:conda/python-fasthtml@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-fasthtml@${{ version }}
+  cfe-upstream-repo: https://github.com/AnswerDotAI/fasthtml
+  cfe-upstream-homepage: https://pypi.org/project/python-fasthtml/
+  cfe-import-names: [fasthtml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-fasthtml-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:21:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:21:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:21:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

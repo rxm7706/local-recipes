@@ -15,39 +15,68 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77
     - pip
-    - setuptools-scm >=3.4.1
-    - coherent.licensed
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
-    - jaraco.functools
     - jaraco.context >=4.1
-    - typer-slim
+    - jaraco.functools
     - more-itertools
+    - typer-slim
 
 tests:
   - python:
-      imports: jaraco.text
+      imports:
+        - jaraco.text
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/jaraco.text/
   license: MIT
   license_file: LICENSE
   summary: Module for text manipulation
-  homepage: https://github.com/jaraco/jaraco.text
+  description: |
+    Module for text manipulation
   repository: https://github.com/jaraco/jaraco.text
-  documentation: https://jaracotext.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jaraco.text
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jaraco-text
+  cfe-purls:
+    - pkg:conda/jaraco.text@${{ version }}?channel=conda-forge
+    - pkg:pypi/jaraco-text@${{ version }}
+  cfe-upstream-repo: https://github.com/jaraco/jaraco.text
+  cfe-upstream-homepage: https://pypi.org/project/jaraco.text/
+  cfe-import-names: [jaraco.text]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jaraco.text-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:48:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:48:02Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:48:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

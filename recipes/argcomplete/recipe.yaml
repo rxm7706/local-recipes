@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  name: argcomplete
   version: "3.7.2"
 
 package:
@@ -10,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/argcomplete-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/argcomplete/argcomplete-${{ version }}.tar.gz
   sha256: aad8b69a0b9969edb62db0d1752354c0d50717b10e0cbb00e2a958381b9fc6b9
 
 build:
@@ -21,9 +20,9 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
-    - pip
   run:
     - python >=${{ python_min }}
 
@@ -37,16 +36,53 @@ tests:
         - "*"
 
 about:
-  license: Apache-2.0
-  summary: Bash tab completion for argparse
-  license_file:
-    - LICENSE.rst
-    - NOTICE
   homepage: https://github.com/kislyuk/argcomplete
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Bash tab completion for argparse
+  description: |
+    Bash tab completion for argparse
   repository: https://github.com/kislyuk/argcomplete
-  documentation: https://argcomplete.readthedocs.io
+  documentation: https://kislyuk.github.io/argcomplete
 
 extra:
   recipe-maintainers:
     - asmeurer
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: argcomplete
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: argcomplete
+  cfe-purls:
+    - pkg:conda/argcomplete@${{ version }}?channel=conda-forge
+    - pkg:pypi/argcomplete@${{ version }}
+  cfe-upstream-repo: https://github.com/kislyuk/argcomplete
+  cfe-upstream-homepage: https://github.com/kislyuk/argcomplete
+  cfe-import-names: [argcomplete]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/argcomplete-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T06:17:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:17:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:17:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

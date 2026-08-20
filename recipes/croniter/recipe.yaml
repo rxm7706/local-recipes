@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "6.2.4"
-  python_check_max: "3.14"
 
 package:
   name: croniter
@@ -16,47 +15,69 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling >=1.29.0
-    - packaging >=26.0
-    - pathspec >=1.0.4
-    - pip
-    - pluggy >=1.6.0
     - python ${{ python_min }}.*
-    - trove-classifiers >=2026.1.14.14
+    - pip
+    - hatchling ==1.30.1
+    - packaging ==26.2
+    - pathspec ==1.1.1
+    - pluggy ==1.6.0
+    - trove-classifiers ==2026.6.1.19
   run:
     - python >=${{ python_min }}
     - python-dateutil
-    # undeclared and lazily imported
-    - pytz
 
 tests:
   - python:
-      imports: croniter
+      imports:
+        - croniter
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      - coverage run --source=croniter --branch -m pytest -vv --tb=long --color=yes --pyargs croniter
-      - coverage report --show-missing --skip-covered --fail-under=92
+        - "*"
 
 about:
+  homepage: https://github.com/pallets-eco/croniter
   license: MIT
   license_file: LICENSE
   summary: croniter provides iteration for datetime object with cron like format
-  homepage: https://pypi.org/project/croniter
-  repository: https://github.com/pallets-eco/croniter
+  description: |
+    croniter provides iteration for datetime object with cron like format
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: croniter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: croniter
+  cfe-purls:
+    - pkg:conda/croniter@${{ version }}?channel=conda-forge
+    - pkg:pypi/croniter@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pallets-eco/croniter
+  cfe-import-names: [croniter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/croniter-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:19:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:19:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:19:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,54 +2,49 @@
 schema_version: 1
 
 context:
-  name: pygam
   version: "0.12.0"
-  sha256: 7c098dfbfbb7a6b9fa4e1a579380e3b0b866fe8fa56f9d852ffdeaecfe56d5ea
 
 package:
-  name: ${{ name }}
+  name: pygam
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pygam/pygam-${{ version }}.tar.gz
+  sha256: 7c098dfbfbb7a6b9fa4e1a579380e3b0b866fe8fa56f9d852ffdeaecfe56d5ea
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - poetry
-    - poetry-dynamic-versioning
+    - setuptools >=61
+    - wheel
   run:
     - python >=${{ python_min }}
-    - numpy
-    - scipy >=1.10
-    - progressbar2
-    - future
+    - numpy >=1.5.0
+    - progressbar2 <5,>=4.2.0
+    - scipy <1.17,>=1.11.1
 
 tests:
   - python:
       imports:
         - pygam
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pygam/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Generalized Additive Models in Python
+  summary: Generalized Additive Models in Python.
   description: |
-    pyGAM is a library for training generalized additive models in Python.
-    GAMs are powerful and interpretable, which makes it easy to fit
-    complex data while still being able to understand the model.
-  homepage: https://github.com/dswah/pyGAM
-  repository: https://github.com/dswah/pyGAM
+    Generalized Additive Models in Python.
 
 extra:
   recipe-maintainers:
@@ -57,3 +52,36 @@ extra:
     - jtilly
     - fkiraly
     - marrov
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pygam
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pygam
+  cfe-purls:
+    - pkg:conda/pygam@${{ version }}?channel=conda-forge
+    - pkg:pypi/pygam@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/pygam/
+  cfe-import-names: [pygam]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pygam-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.12.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:40:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:40:02Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:40:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

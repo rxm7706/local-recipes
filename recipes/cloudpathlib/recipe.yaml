@@ -2,161 +2,82 @@
 schema_version: 1
 
 context:
-  name: cloudpathlib
   version: "0.24.0"
 
-recipe:
-  name: cloudpathlib-meta
+package:
+  name: cloudpathlib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/cloudpathlib/cloudpathlib-${{ version }}.tar.gz
   sha256: c521a984e77b47e656fe78e20a7e3e260e0ab45fc69e33ac01094227c979e34a
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >4
 
-outputs:
-  - package:
-      name: cloudpathlib
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - flit-core >=3.2,<4
-      run:
-        - python >=${{ python_min }}
-        - typing_extensions
-    tests:
-      - python:
-          imports:
-            - cloudpathlib
-          pip_check: true
-          python_version: ${{ python_min }}
-  - package:
-      name: cloudpathlib-azure
-    build:
-      noarch: python
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - flit-core >=3.2,<4
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('cloudpathlib', exact=True) }}
-        - azure-storage-blob >=12
-        - azure-storage-file-datalake >=12
-    tests:
-      - python:
-          imports:
-            - cloudpathlib
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['azure'].validate_completeness()"
-  - package:
-      name: cloudpathlib-gs
-    build:
-      noarch: python
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - flit-core >=3.2,<4
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('cloudpathlib', exact=True) }}
-        - google-cloud-storage
-    tests:
-      - python:
-          imports:
-            - cloudpathlib
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['gs'].validate_completeness()"
-  - package:
-      name: cloudpathlib-s3
-    build:
-      noarch: python
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - flit-core >=3.2,<4
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('cloudpathlib', exact=True) }}
-        - boto3 >=1.34.0
-    tests:
-      - python:
-          imports:
-            - cloudpathlib
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['s3'].validate_completeness()"
-  - package:
-      name: cloudpathlib-all
-    build:
-      noarch: python
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-        - flit-core >=3.2,<4
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('cloudpathlib-azure', exact=True) }}
-        - ${{ pin_subpackage('cloudpathlib-gs', exact=True) }}
-        - ${{ pin_subpackage('cloudpathlib-s3', exact=True) }}
-    tests:
-      - python:
-          imports:
-            - cloudpathlib
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}
-        script:
-          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['azure'].validate_completeness()"
-          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['gs'].validate_completeness()"
-          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['s3'].validate_completeness()"
+tests:
+  - python:
+      imports:
+        - cloudpathlib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: pathlib.Path-style classes for interacting with files in different cloud storage services.
+  homepage: https://pypi.org/project/cloudpathlib/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/drivendataorg/cloudpathlib
+  summary: pathlib-style classes for cloud storage services.
+  description: |
+    pathlib-style classes for cloud storage services.
   repository: https://github.com/drivendataorg/cloudpathlib
   documentation: https://cloudpathlib.drivendata.org/
 
 extra:
-  feedstock-name: cloudpathlib
   recipe-maintainers:
     - jayqi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cloudpathlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cloudpathlib
+  cfe-purls:
+    - pkg:conda/cloudpathlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/cloudpathlib@${{ version }}
+  cfe-upstream-repo: https://github.com/drivendataorg/cloudpathlib
+  cfe-upstream-homepage: https://pypi.org/project/cloudpathlib/
+  cfe-import-names: [cloudpathlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cloudpathlib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.24.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:02:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:02:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:02:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

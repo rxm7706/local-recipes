@@ -64,3 +64,36 @@ extra:
     - bollwyvl
     - mingwandroid
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-libarchive-c
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-libarchive-c
+  cfe-purls:
+    - pkg:conda/python-libarchive-c@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-libarchive-c@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Changaco/python-libarchive-c
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-libarchive-c-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:25:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:25:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:25:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for python-libarchive-c...
+Error: Failed to fetch PyPI metadata for 'python-libarchive-c' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-libarchive-c/json
+
+####

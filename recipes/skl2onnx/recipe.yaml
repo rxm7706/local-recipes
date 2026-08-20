@@ -2,55 +2,47 @@
 schema_version: 1
 
 context:
-  name: skl2onnx
   version: "1.20.0"
 
 package:
-  name: ${{ name|lower }}
+  name: skl2onnx
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/skl2onnx-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/skl2onnx/skl2onnx-${{ version }}.tar.gz
   sha256: c74ea827d92ba186fe659695e8fc989cd97bfc320edce3d32b9936a5878da10a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
-    - setuptools
+    - pip
+    - setuptools >=70
   run:
     - python >=${{ python_min }}
-    - numpy >=1.15
     - onnx >=1.2.1
-    - onnxconverter-common >=1.7.0
-    - protobuf
     - scikit-learn >=1.1
-    - scipy >=1.0
-    - packaging
 
 tests:
   - python:
       imports:
         - skl2onnx
-        - skl2onnx.algebra
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Convert scikit-learn models to ONNX
+  homepage: https://github.com/onnx/sklearn-onnx
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/onnx/sklearn-onnx
+  summary: Convert scikit-learn models to ONNX
+  description: |
+    Convert scikit-learn models to ONNX
 
 extra:
   recipe-maintainers:
@@ -58,3 +50,33 @@ extra:
     - janjagusch
     - cbourjau
     - jtilly
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: skl2onnx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: skl2onnx
+  cfe-purls:
+    - pkg:conda/skl2onnx@${{ version }}?channel=conda-forge
+    - pkg:pypi/skl2onnx@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/onnx/sklearn-onnx
+  cfe-import-names: [skl2onnx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/skl2onnx-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:15:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:15:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:15:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

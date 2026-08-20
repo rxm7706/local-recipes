@@ -2,61 +2,87 @@
 schema_version: 1
 
 context:
-  name: jupyternotify
   version: "0.1.15"
 
 package:
-  name: ${{ name|lower }}
+  name: jupyternotify
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyternotify/jupyternotify-${{ version }}.tar.gz
   sha256: 843509e7c3e3369f221a87af310165d51122e0ee8ed1c4ce0cdc34338e17b73a
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - setuptools
-    - ipython
-    - jupyter
+    - pkg-resources
+    - IPython
 
 tests:
   - python:
       imports:
         - jupyternotify
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/shoprunner/jupyter-notify
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: A Jupyter Notebook magic for browser notifications of cell completion
+  summary: A Jupyter Notebook %%magic for Browser Notifications of Cell Completion
   description: |
-    This package provides a Jupyter notebook cell magic %%notify that notifies
-    the user upon completion of a potentially long-running cell via a browser
-    push notification. Use cases include long-running machine learning models,
-    grid searches, or Spark computations. This magic allows you to navigate
-    away to other work (or even another Mac desktop entirely) and still get a
-    notification when your cell completes. Clicking on the body of the
-    notification will bring you directly to the browser window and tab with
-    the notebook, even if you're on a different desktop (clicking the "Close"
-    button in the notification will keep you where you are).
-  homepage: http://github.com/ShopRunner/jupyter-notify
-  repository: https://github.com/ShopRunner/jupyter-notify
-  documentation: https://github.com/ShopRunner/jupyter-notify
+    A Jupyter Notebook %%magic for Browser Notifications of Cell Completion
 
 extra:
   recipe-maintainers:
     - djsutherland
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyternotify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyternotify
+  cfe-purls:
+    - pkg:conda/jupyternotify@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyternotify@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/shoprunner/jupyter-notify
+  cfe-import-names: [jupyternotify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyternotify-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.15
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:56:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:56:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:56:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['IPython']
+#    # added run deps from import test: ['pkg-resources']
+#    # blocker: missing-license-file
+####

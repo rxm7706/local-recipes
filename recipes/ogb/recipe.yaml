@@ -2,55 +2,94 @@
 schema_version: 1
 
 context:
-  name: ogb
   version: "1.3.6"
 
 package:
-  name: ${{ name|lower }}
+  name: ogb
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ogb-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/ogb/ogb-${{ version }}.tar.gz
   sha256: ce90418a0e3206483187aa7b7ecac1a2c5d85b3b99aceedb807138ee43115914
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - outdated
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
-    - numpy >=1.16.0
-    - outdated >=0.2.0
-    - pandas >=0.24.0
     - python >=${{ python_min }}
-    - scikit-learn >=0.20.0
-    - six >=1.12.0
-    - pytorch >=1.6.0
-    - tqdm >=4.29.0
-    - urllib3 >=1.24.0
+    - pytorch
+    - numpy
+    - tqdm
+    - scikit-learn
+    - pandas
+    - six
+    - urllib3
+    - outdated
 
 tests:
   - python:
       imports:
         - ogb
-        - ogb.graphproppred
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Open Graph Benchmark
+  homepage: https://github.com/snap-stanford/ogb
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/snap-stanford/ogb
+  summary: Open Graph Benchmark
+  description: |
+    Open Graph Benchmark
 
 extra:
   recipe-maintainers:
     - hadim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ogb
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ogb
+  cfe-purls:
+    - pkg:conda/ogb@${{ version }}?channel=conda-forge
+    - pkg:pypi/ogb@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/snap-stanford/ogb
+  cfe-import-names: [ogb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ogb-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.6
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:09:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:09:48Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:09:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

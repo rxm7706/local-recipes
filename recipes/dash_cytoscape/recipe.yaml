@@ -2,43 +2,46 @@
 schema_version: 1
 
 context:
-  name: dash_cytoscape
-  version: "0.2.0"
+  version: "1.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: dash-cytoscape
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 0669c79c197e4b150a5db7a278d1c7acebc947f3f5cbad5274835ebb44f712cd
+  url: https://pypi.org/packages/source/d/dash-cytoscape/dash_cytoscape-${{ version }}.tar.gz
+  sha256: a61019d2184d63a2b3b5c06d056d3b867a04223a674cc3c7cf900a561a9a59aa
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.5
+    - setuptools
   run:
+    - python >=${{ python_min }}
     - dash
-    - python >=3.5
 
 tests:
   - python:
       imports:
         - dash_cytoscape
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://dash.plotly.com/cytoscape
   license: MIT
   license_file: LICENSE
   summary: A Component Library for Dash aimed at facilitating network visualization in Python, wrapped around Cytoscape.js
-  homepage: https://github.com/plotly/dash-cytoscape
-  repository: https://github.com/plotly/dash-cytoscape
-  documentation: https://dash.plot.ly/cytoscape
+  description: |
+    A Component Library for Dash aimed at facilitating network visualization in Python, wrapped around Cytoscape.js
 
 extra:
   recipe-maintainers:
@@ -46,3 +49,37 @@ extra:
     - rluria14
     - oblute
     - adbeda
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dash_cytoscape
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dash-cytoscape
+  cfe-purls:
+    - pkg:conda/dash_cytoscape@${{ version }}?channel=conda-forge
+    - pkg:pypi/dash-cytoscape@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://dash.plotly.com/cytoscape
+  cfe-import-names: [dash_cytoscape]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dash_cytoscape-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:28:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:28:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:28:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['dash']
+####

@@ -92,11 +92,11 @@ extra:
     - version-update-to-1.5.6
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:35:40Z
+  cfe-last-checked: 2026-08-17T04:24:53Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:35:40Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T01:35:40Z
+  cfe-generated-at-datetime: 2026-08-17T04:24:53Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T04:24:53Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

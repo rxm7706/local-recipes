@@ -1,33 +1,31 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Generated using grayskull; edited by @ericmjl.
 schema_version: 1
 
 context:
-  python_min: "3.12"
-  name: xarray-einstats
   version: "0.11.0"
+  python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: xarray-einstats
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/x/xarray-einstats/xarray_einstats-${{ version }}.tar.gz
   sha256: 69f48a60f62151d40c49fd6d9a6dc0b970aecef2813a33209e4dcde897fca48b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip >=21.3
-    - python 3.12.*
-    - flit
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.4,<4
   run:
-    - numpy >=2.0
     - python >=${{ python_min }}
+    - numpy >=2.0
     - scipy >=1.14
     - xarray >=2024.07.0
 
@@ -36,16 +34,54 @@ tests:
       imports:
         - xarray_einstats
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Stats, linear algebra and einops for xarray.
+  homepage: https://pypi.org/project/xarray-einstats/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/arviz-devs/xarray-einstats
-  documentation: https://xarray-einstats.readthedocs.io/
+  summary: Stats, linear algebra and einops for xarray
+  description: |
+    Stats, linear algebra and einops for xarray
+  repository: https://github.com/arviz-devs/xarray-einstats
+  documentation: https://einstats.python.arviz.org
 
 extra:
   recipe-maintainers:
     - ericmjl
     - OriolAbril
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xarray-einstats
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xarray-einstats
+  cfe-purls:
+    - pkg:conda/xarray-einstats@${{ version }}?channel=conda-forge
+    - pkg:pypi/xarray-einstats@${{ version }}
+  cfe-upstream-repo: https://github.com/arviz-devs/xarray-einstats
+  cfe-upstream-homepage: https://pypi.org/project/xarray-einstats/
+  cfe-import-names: [xarray_einstats]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xarray-einstats-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.11.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:24:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:24:26Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:24:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

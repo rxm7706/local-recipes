@@ -2,47 +2,84 @@
 schema_version: 1
 
 context:
-  name: path.py
   version: "12.5.0"
-  checksum: 8d885e8b2497aed005703d94e0fd97943401f035e42a136810308bff034529a8
 
 package:
-  name: ${{ name }}
+  name: path.py
   version: ${{ version }}
 
 source:
-  # path.py is a metapackage which depends on path, source is retained here
-  # to allow to update bot to bump the version
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ checksum }}
+  url: https://pypi.org/packages/source/p/path.py/path.py-${{ version }}.tar.gz
+  sha256: 8d885e8b2497aed005703d94e0fd97943401f035e42a136810308bff034529a8
 
 build:
   number: 0
-  noarch: true
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=34.4
+    - wheel
+    - setuptools-scm >=1.15
   run:
-    - python >=3.5
+    - python >=${{ python_min }}
     - path
 
 tests:
   - python:
       imports:
-        - path
-      pip_check: false
+        - path.py
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/jaraco/path
   license: MIT
   license_file: LICENSE
   summary: A module wrapper for os.path
   description: |
-    path.py implements a path objects as first-class entities, allowing common
-    operations on files to be invoked on those path objects directly.
-  homepage: https://github.com/jaraco/path.py
-  repository: https://github.com/jaraco/path.py
-  documentation: https://pathpy.readthedocs.io/en/latest/
+    A module wrapper for os.path
 
 extra:
   recipe-maintainers:
     - jakirkham
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: path.py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: path-py
+  cfe-purls:
+    - pkg:conda/path.py@${{ version }}?channel=conda-forge
+    - pkg:pypi/path-py@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jaraco/path
+  cfe-import-names: [path.py]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/path.py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-12.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:49:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:49:07Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T02:49:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['path']
+####

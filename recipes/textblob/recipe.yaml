@@ -15,34 +15,69 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core <4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core <4
   run:
     - python >=${{ python_min }}
-    - nltk >=3.1
+    - nltk >=3.9
 
 tests:
   - python:
       imports:
         - textblob
-        - textblob.en
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/textblob/
   license: MIT
   license_file: LICENSE
   summary: Simple, Pythonic text processing. Sentiment analysis, part-of-speech tagging, noun phrase parsing, and more.
-  homepage: https://github.com/sloria/TextBlob
+  description: |
+    Simple, Pythonic text processing. Sentiment analysis, part-of-speech tagging, noun phrase parsing, and more.
   repository: https://github.com/sloria/TextBlob
-  documentation: https://textblob.readthedocs.io/en/dev/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: textblob
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: textblob
+  cfe-purls:
+    - pkg:conda/textblob@${{ version }}?channel=conda-forge
+    - pkg:pypi/textblob@${{ version }}
+  cfe-upstream-repo: https://github.com/sloria/TextBlob
+  cfe-upstream-homepage: https://pypi.org/project/textblob/
+  cfe-import-names: [textblob]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/textblob-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.20.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:29:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:29:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:29:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

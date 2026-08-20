@@ -1,30 +1,54 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
 schema_version: 1
 
 context:
-  name: datefinder
-  version: "0.7.3"
+  version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: datefinder
   version: ${{ version }}
 
 source:
-  url: https://github.com/akoumjian/datefinder/archive/v${{ version }}.tar.gz
-  sha256: c0eec1097d05c793892c46465206c23f87eb1419a683c2fad587cad89be61a31
+  url: https://pypi.org/packages/source/d/datefinder/datefinder-${{ version }}.tar.gz
+  sha256: badac271404c500791e6a03e325462dd16bdaca3b3016807ae9f555d93c8acc6
 
 build:
-  number: 1
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
   host:
-    - python ${{ python_min }}
+    - python
     - pip
+    - maturin >=1.7,<2.0
   run:
-    - python >=${{ python_min }}
-    - regex >=2017.02.08
+    - python
+    - regex >=2017.2.8
     - python-dateutil >=2.4.2
     - pytz
 
@@ -32,20 +56,51 @@ tests:
   - python:
       imports:
         - datefinder
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
 
 about:
-  license: MIT
-  license_file: LICENSE
-  summary: A python module for locating dates inside text.
   homepage: https://github.com/akoumjian/datefinder
-  repository: https://github.com/akoumjian/datefinder
-  documentation: https://github.com/akoumjian/datefinder
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Extract datetime objects from natural language text
+  description: |
+    Extract datetime objects from natural language text
 
 extra:
   recipe-maintainers:
     - kellend-git
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datefinder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datefinder
+  cfe-purls:
+    - pkg:conda/datefinder@${{ version }}?channel=conda-forge
+    - pkg:pypi/datefinder@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/akoumjian/datefinder
+  cfe-import-names: [datefinder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datefinder-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:35:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:35:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:35:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

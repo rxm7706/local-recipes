@@ -124,3 +124,33 @@ extra:
     - synapticarbors
     - bollwyvl
     - davidbrochart
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastapi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastapi
+  cfe-purls:
+    - pkg:conda/fastapi@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastapi@${{ version }}
+  cfe-upstream-repo: https://github.com/fastapi/fastapi
+  cfe-upstream-homepage: https://pypi.org/project/fastapi
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastapi-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:08:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:08:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:08:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,43 +2,85 @@
 schema_version: 1
 
 context:
-  name: ecs-logging
-  version: "2.0.0"
+  version: "2.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: ecs-logging
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/ecs-logging-${{ version }}.tar.gz
-  sha256: d4b791f044e8b96a4707edd4156a35fbe0e593c27ba5f05bae6b007cfab7622c
+  url: https://pypi.org/packages/source/e/ecs-logging/ecs_logging-${{ version }}.tar.gz
+  sha256: be7f618e71e10c33a61165aea58813ebd702f6c0044538155871cb9a1609ab4e
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
-    - flit >=2,<3
+    - flit-core >=2,<4
   run:
-    - python >=3.3
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - ecs_logging
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Logging formatters for ECS (Elastic Common Schema) in Python
+  homepage: https://github.com/elastic/ecs-logging-python
   license: Apache-2.0
   license_file: LICENSE.txt
-  homepage: https://github.com/elastic/ecs-logging-python
+  summary: Logging formatters for ECS (Elastic Common Schema) in Python
+  description: |
+    Logging formatters for ECS (Elastic Common Schema) in Python
   repository: https://github.com/elastic/ecs-logging-python
+  documentation: https://github.com/elastic/ecs-logging-python
 
 extra:
   recipe-maintainers:
     - deantvv
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ecs-logging
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ecs-logging
+  cfe-purls:
+    - pkg:conda/ecs-logging@${{ version }}?channel=conda-forge
+    - pkg:pypi/ecs-logging@${{ version }}
+  cfe-upstream-repo: https://github.com/elastic/ecs-logging-python
+  cfe-upstream-homepage: https://github.com/elastic/ecs-logging-python
+  cfe-import-names: [ecs_logging]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ecs-logging-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.3.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:07:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:07:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:07:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

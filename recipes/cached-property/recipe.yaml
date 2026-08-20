@@ -2,59 +2,80 @@
 schema_version: 1
 
 context:
-  name: cached_property
-  version: "1.5.2"
+  version: "2.0.1"
 
-recipe:
-  name: ${{ name|lower }}
+package:
+  name: cached-property
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cached-property-${{ version }}.tar.gz
-  sha256: 9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130
+  url: https://pypi.org/packages/source/c/cached-property/cached_property-${{ version }}.tar.gz
+  sha256: 484d617105e3ee0e4f1f58725e72a8ef9e93deee462222dbd51cd91230897641
 
 build:
-  number: 2
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: ${{ name }}
-    build:
-      noarch: python
-      script:
-        file: build_base.sh
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-  - package:
-      name: cached-property
-    build:
-      noarch: python
-    requirements:
-      run:
-        - ${{ pin_subpackage('cached_property', upper_bound="x.x.x") }}
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - cached_property
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pydanny/cached-property
   license: BSD-3-Clause
   license_file: LICENSE
   summary: A decorator for caching properties in classes.
   description: |
-    Cached-property is a decorator for caching properties in classes. It
-    makes caching of time or computational expensive properties quick and easy.
-  homepage: https://github.com/pydanny/cached-property
-  repository: https://github.com/pydanny/cached-property
-  documentation: https://pypi.python.org/pypi/cached-property
+    A decorator for caching properties in classes.
 
 extra:
   recipe-maintainers:
     - anthchirp
     - mvdbeek
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cached-property
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cached-property
+  cfe-purls:
+    - pkg:conda/cached-property@${{ version }}?channel=conda-forge
+    - pkg:pypi/cached-property@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pydanny/cached-property
+  cfe-import-names: [cached_property]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cached-property-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:50:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:50:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:50:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

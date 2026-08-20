@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.1.4"
+  version: "1.0.3"
 
 package:
   name: ansible-aap-api-client
@@ -10,11 +10,11 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/ansible-aap-api-client/ansible_aap_api_client-${{ version }}.tar.gz
-  sha256: 0d133ac8b01fe84b6c57b1d1a3c71c979dbd2ba782bed661dac854d3e9f93786
+  sha256: 6b1cf71588e60a0743dd7c0fb2e24c27c4c1d1aa18e055fff0c99f354304d786
 
 build:
-  noarch: python
   number: 0
+  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -22,28 +22,64 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=67.6.0
+    - wheel >=0.40.0
   run:
     - python >=${{ python_min }}
-    - requests ~=2.32.0
+    - niquests >=3.18.6
+    - urllib3 >=2.7.0
 
 tests:
   - python:
       imports:
         - ansible_aap_api_client
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: |
-    A client to interact with Ansible AAP REST API
-  homepage: https://github.com/btr1975/ansible-aap-api-client
-  repository: https://github.com/btr1975/ansible-aap-api-client
+  homepage: https://pypi.org/project/ansible-aap-api-client/
   license: MIT
   license_file: LICENSE
+  summary: A client to interact with Ansible AAP REST API
+  description: |
+    A client to interact with Ansible AAP REST API
+  repository: https://github.com/btr1975/ansible-aap-api-client
+  documentation: https://ansible-aap-api-client.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - killua156
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ansible-aap-api-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ansible-aap-api-client
+  cfe-purls:
+    - pkg:conda/ansible-aap-api-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/ansible-aap-api-client@${{ version }}
+  cfe-upstream-repo: https://github.com/btr1975/ansible-aap-api-client
+  cfe-upstream-homepage: https://pypi.org/project/ansible-aap-api-client/
+  cfe-import-names: [ansible_aap_api_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ansible-aap-api-client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-1.0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:28:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:28:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:28:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

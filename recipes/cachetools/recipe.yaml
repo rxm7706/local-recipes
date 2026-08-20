@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: cachetools
   version: "7.1.7"
 
 package:
-  name: ${{ name|lower }}
+  name: cachetools
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cachetools-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/cachetools/cachetools-${{ version }}.tar.gz
   sha256: a3e2a00b14d8f8a6b70c1dae7b4685e7ad3bc965c5b42124a2d6ce895da6cf50
 
 build:
@@ -20,9 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=80
+    - setuptools-scm >=8.2
   run:
     - python >=${{ python_min }}
 
@@ -31,20 +31,55 @@ tests:
       imports:
         - cachetools
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/tkem/cachetools/
   license: MIT
   license_file: LICENSE
   summary: Extensible memoizing collections and decorators
   description: |
-    This module provides various memoizing collections and decorators, including variants of the Python 3 Standard Library @lru_cache function decorator.
-  homepage: https://github.com/tkem/cachetools
-  repository: https://github.com/tkem/cachetools
-  documentation: http://pythonhosted.org/cachetools/
+    Extensible memoizing collections and decorators
+  repository: https://github.com/tkem/cachetools/
+  documentation: https://cachetools.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - rxm7706
     - maartenbreddels
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cachetools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cachetools
+  cfe-purls:
+    - pkg:conda/cachetools@${{ version }}?channel=conda-forge
+    - pkg:pypi/cachetools@${{ version }}
+  cfe-upstream-repo: https://github.com/tkem/cachetools/
+  cfe-upstream-homepage: https://github.com/tkem/cachetools/
+  cfe-import-names: [cachetools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cachetools-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-7.1.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:52:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:52:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:52:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

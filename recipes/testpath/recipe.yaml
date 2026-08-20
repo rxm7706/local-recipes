@@ -13,15 +13,15 @@ source:
   sha256: 2f1b97e6442c02681ebe01bd84f531028a7caea1af3825000f52345c30285e0f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - flit
+    - flit-core >=3.2.0,<4
   run:
     - python >=${{ python_min }}
 
@@ -29,25 +29,56 @@ tests:
   - python:
       imports:
         - testpath
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/testpath/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Testpath is a collection of utilities for Python code working with files and commands.
+  summary: Test utilities for code working with files and commands
   description: |
-    Testpath contains functions to check things on the filesystem,
-    and tools for mocking system commands and recording calls to those.
-  homepage: https://testpath.readthedocs.io
+    Test utilities for code working with files and commands
   repository: https://github.com/jupyter/testpath
-  documentation: https://testpath.readthedocs.io
+  documentation: https://testpath.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - minrk
     - takluyver
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: testpath
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: testpath
+  cfe-purls:
+    - pkg:conda/testpath@${{ version }}?channel=conda-forge
+    - pkg:pypi/testpath@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter/testpath
+  cfe-upstream-homepage: https://pypi.org/project/testpath/
+  cfe-import-names: [testpath]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/testpath-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:28:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:28:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:28:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

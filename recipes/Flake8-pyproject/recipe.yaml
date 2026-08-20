@@ -2,50 +2,82 @@
 schema_version: 1
 
 context:
-  name: flake8-pyproject
   version: "1.2.4"
 
 package:
-  name: ${{ name|lower }}
+  name: flake8-pyproject
   version: ${{ version }}
 
 source:
-  url: https://github.com/john-hen/Flake8-pyproject/archive/${{ version }}.tar.gz
+  url: https://github.com/john-hen/Flake8-pyproject/archive/refs/tags/${{ version }}.tar.gz
   sha256: 9075bdd9712b03a9dad78652425081bbee63c9ad759bf9efb3a0eb1cd1b180c3
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - flake8p = flake8p:main
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - flit-core >=3.4
-    - flake8
-    - tomli
   run:
     - python >=${{ python_min }}
     - flake8 >=5
-    - tomli
+    - tomli <2
 
 tests:
   - python:
       imports:
         - flake8p
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Flake8 plug-in loading the configuration from pyproject.toml
+  homepage: https://pypi.org/project/Flake8-pyproject/
   license: MIT
-  license_file: license.txt
-  homepage: https://github.com/john-hen/Flake8-pyproject
+  license_file: LICENSE
+  summary: Flake8 plug-in loading the configuration from pyproject.toml
+  description: |
+    Flake8 plug-in loading the configuration from pyproject.toml
+  repository: https://github.com/john-hen/Flake8-pyproject
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: Flake8-pyproject
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-pyproject
+  cfe-purls:
+    - pkg:conda/Flake8-pyproject@${{ version }}?channel=conda-forge
+    - pkg:pypi/flake8-pyproject@${{ version }}
+  cfe-upstream-repo: https://github.com/john-hen/Flake8-pyproject
+  cfe-upstream-homepage: https://pypi.org/project/Flake8-pyproject/
+  cfe-import-names: [flake8p]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/Flake8-pyproject-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:43:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:43:48Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:43:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['flake8']
+####

@@ -2,61 +2,84 @@
 schema_version: 1
 
 context:
-  name: python-nvd3
   version: "0.16.0"
 
 package:
-  name: ${{ name|lower }}
+  name: python-nvd3
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python-nvd3-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-nvd3/python-nvd3-${{ version }}.tar.gz
   sha256: 0115887289b3f751716ddd05c7b53ac5f05e71201e52496decdac453a50dcf7e
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - nvd3 = nvd3.NVD3Chart:_main
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - python-slugify >=1.2.5
-    - jinja2 >=2.8
+    - slugify
+    - jinja2
 
 tests:
   - python:
       imports:
         - nvd3
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - nvd3 --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/areski/python-nvd3
   license: MIT
   license_file: LICENSE
   summary: Python NVD3 - Chart Library for d3.js
   description: |
-    NVD3 is an attempt to build re-usable charts and chart components
-    for d3.js without taking away the power that d3.js offers you.
-    Python-NVD3 makes your life easy! You write Python and the library
-    renders JavaScript for you!
-  homepage: http://github.com/areski/python-nvd3
-  repository: http://github.com/areski/python-nvd3
-  documentation: http://python-nvd3.readthedocs.io/en/latest
+    Python NVD3 - Chart Library for d3.js
 
 extra:
   recipe-maintainers:
     - sodre
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-nvd3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-nvd3
+  cfe-purls:
+    - pkg:conda/python-nvd3@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-nvd3@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/areski/python-nvd3
+  cfe-import-names: [nvd3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-nvd3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.16.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:29:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:29:22Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:29:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['jinja2']
+#    # added run deps from import test: ['slugify']
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: syncer
   version: "2.0.3"
 
 package:
-  name: ${{ name|lower }}
+  name: syncer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/syncer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/syncer/syncer-${{ version }}.tar.gz
   sha256: 4340eb54b54368724a78c5c0763824470201804fe9180129daf3635cb500550f
 
 build:
@@ -20,7 +19,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,14 +30,51 @@ tests:
       imports:
         - syncer
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Async to sync converter
+  homepage: https://github.com/miyakogi/syncer
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/miyakogi/syncer
+  summary: Async to sync converter
+  description: |
+    Async to sync converter
 
 extra:
   recipe-maintainers:
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: syncer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: syncer
+  cfe-purls:
+    - pkg:conda/syncer@${{ version }}?channel=conda-forge
+    - pkg:pypi/syncer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/miyakogi/syncer
+  cfe-import-names: [syncer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/syncer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:24:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:24:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:24:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

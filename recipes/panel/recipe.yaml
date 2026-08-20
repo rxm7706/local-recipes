@@ -2,109 +2,67 @@
 schema_version: 1
 
 context:
-  version: "1.9.3"
-  python_min: "3.10"
+  version: "1.9.4"
 
-recipe:
-  name: panel-core
+package:
+  name: panel
   version: ${{ version }}
 
 source:
   url: https://pypi.org/packages/source/p/panel/panel-${{ version }}.tar.gz
-  sha256: 4d7de30561e31674451ade5f029cddbec6156fd30f3e4cfd7da82f6ecfcbb98f
+  sha256: 373bdb124c1b33c3dd4c112f348f4cfb2a7f1634b36a51e6ab01a4b5b6ec833c
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: panel-core
-    build:
-      number: 0
-      noarch: python
-      script: python -m pip install . -vv
-      python:
-        entry_points:
-          - panel = panel.command:main
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - pip
-        - nodejs >=18
-        # These are also needed at build time.
-        - hatchling
-        - hatch-vcs
-        - param >=2.1.0
-        - bokeh >=3.8.0,<3.10.0
-        - pyviz_comms >=0.7.4
-        - requests
-        - packaging
-      run:
-        - python >=${{ python_min }}
-        - bokeh >=3.7.0,<3.10.0
-        - param >=2.1.0,<3.0
-        - pyviz_comms >=2.0.0
-        - markdown
-        - markdown-it-py
-        - linkify-it-py
-        - mdit-py-plugins
-        - narwhals >=2
-        - requests
-        - nh3
-        - typing_extensions
-        - pandas >=1.2
-        - packaging
-        - tqdm
-      run_constraints:
-        - holoviews >=1.18.0
-    tests:
-      - python:
-          imports:
-            - panel
-            - panel.io
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-            - pip
-        script:
-          - panel --help
-  - package:
-      name: panel
-    build:
-      number: 0
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('panel-core', exact=True) }}
-        - panel-material-ui >=0.10.0
-    tests:
-      - python:
-          imports:
-            - panel
-          pip_check: true
-          python_version: ${{ python_min }}
-    about:
-      summary: The powerful data exploration & web app framework for Python.
-      description: |
-        Panel provides tools for easily composing widgets, plots, tables, and other
-        viewable objects and controls into control panels, apps, and dashboards.
-      license: BSD-3-Clause
-      license_file: LICENSE.txt
-      homepage: https://panel.holoviz.org
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+    - param >=2.1.0
+    - bokeh >=3.8.0,<3.10.0
+    - pyviz_comms >=0.7.4
+    - requests
+    - packaging
+  run:
+    - python >=${{ python_min }}
+    - bokeh <3.10.0,>=3.7.0
+    - linkify-it-py
+    - markdown
+    - markdown-it-py
+    - mdit-py-plugins
+    - narwhals >=2
+    - nh3
+    - packaging
+    - pandas >=1.2
+    - panel-material-ui >=0.10.0
+    - param <3.0,>=2.1.0
+    - pyviz_comms >=2.0.0
+    - requests
+    - tqdm
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - panel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: The powerful data exploration & web app framework for Python.
-  description: |
-    Panel provides tools for easily composing widgets, plots, tables, and other
-    viewable objects and controls into control panels, apps, and dashboards.
+  homepage: https://panel.holoviz.org
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://panel.holoviz.org
+  summary: The powerful data exploration & web app framework for Python.
+  description: |
+    The powerful data exploration & web app framework for Python.
+  repository: https://github.com/holoviz/panel
 
 extra:
   recipe-maintainers:
@@ -112,3 +70,40 @@ extra:
     - philippjfr
     - ocefpaf
     - maximlt
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: panel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: panel
+  cfe-purls:
+    - pkg:conda/panel@${{ version }}?channel=conda-forge
+    - pkg:pypi/panel@${{ version }}
+  cfe-upstream-repo: https://github.com/holoviz/panel
+  cfe-upstream-homepage: https://panel.holoviz.org
+  cfe-import-names: [panel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/panel-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.9.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:42:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:42:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:42:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

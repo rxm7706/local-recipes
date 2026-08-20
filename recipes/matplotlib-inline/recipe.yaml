@@ -2,45 +2,48 @@
 schema_version: 1
 
 context:
-  name: matplotlib-inline
   version: "0.2.2"
 
 package:
-  name: ${{ name|lower }}
+  name: matplotlib-inline
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/matplotlib-inline/matplotlib_inline-${{ version }}.tar.gz
   sha256: 72f3fe8fce36b70d4a5b612f899090cd0401deddc4ea90e1572b9f4bfb058c79
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core >=3.2,<4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.2
   run:
     - python >=${{ python_min }}
+    - IPython
+    - matplotlib
     - traitlets
 
 tests:
   - python:
       imports:
         - matplotlib_inline
-        - matplotlib_inline.backend_inline
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/ipython/matplotlib-inline
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Inline Matplotlib backend for Jupyter
-  homepage: https://github.com/ipython/matplotlib-inline
-  repository: https://github.com/ipython/matplotlib-inline
+  description: |
+    Inline Matplotlib backend for Jupyter
 
 extra:
   recipe-maintainers:
@@ -48,3 +51,38 @@ extra:
     - SylvainCorlay
     - martinRenou
     - fperez
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: matplotlib-inline
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: matplotlib-inline
+  cfe-purls:
+    - pkg:conda/matplotlib-inline@${{ version }}?channel=conda-forge
+    - pkg:pypi/matplotlib-inline@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ipython/matplotlib-inline
+  cfe-import-names: [matplotlib_inline]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/matplotlib-inline-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:31:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:31:06Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:31:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['matplotlib']
+#    # added run deps from import test: ['IPython']
+####

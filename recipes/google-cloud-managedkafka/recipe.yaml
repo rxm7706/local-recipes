@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-managedkafka
   version: "0.4.1"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-managedkafka
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_managedkafka-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-managedkafka/google_cloud_managedkafka-${{ version }}.tar.gz
   sha256: ae53f50d60d716473adee3019100873912b88fb82380eeae494e879e656ac42e
 
 build:
@@ -25,32 +24,59 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core >=2.17.1,<3.0.0
-    - google-api-core-grpc
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    # more restrictive constraint for python >=3.13
-    - proto-plus >=1.25.0,<2.0.0
-    - protobuf >=4.25.8,<8.0.0
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
 
 tests:
   - python:
       imports:
         - google.cloud.managedkafka
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: Google Cloud Managedkafka API client library
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-managedkafka
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-managedkafka
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-managedkafka
-  documentation: https://github.com/googleapis/google-cloud-python/blob/main/packages/google-cloud-managedkafka/README.rst
+  summary: Google Cloud Managedkafka API client library
+  description: |
+    Google Cloud Managedkafka API client library
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-managedkafka
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-managedkafka
+  cfe-purls:
+    - pkg:conda/google-cloud-managedkafka@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-managedkafka@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-managedkafka
+  cfe-import-names: [google.cloud.managedkafka]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-managedkafka-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:27:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:27:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:27:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

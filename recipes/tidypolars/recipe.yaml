@@ -2,46 +2,82 @@
 schema_version: 1
 
 context:
-  name: tidypolars
-  version: "0.2.19"
+  version: "0.3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: tidypolars
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tidypolars-${{ version }}.tar.gz
-  sha256: 344e7abe3a973b0320a27d7eea48ffaf4efb5dd6f3d5441a2dfd835f6342ee93
+  url: https://pypi.org/packages/source/t/tidypolars/tidypolars-${{ version }}.tar.gz
+  sha256: 009cb92d3211fb20a375adbfcf043703b04411aa22c05351addd13addff84f67
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - poetry
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<3.11
-    - polars >=0.14.18
+    - python >=${{ python_min }}
+    - numpy >=1.16.0
+    - polars >=1.0.0
 
 tests:
   - python:
       imports:
         - tidypolars
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Tidy interface to polars
-  license: MIT
-  license_file:
-    - LICENSE
   homepage: https://pypi.org/project/tidypolars/
+  license: MIT
+  license_file: LICENSE
+  summary: Tidy interface to polars
+  description: |
+    Tidy interface to polars
 
 extra:
   recipe-maintainers:
     - markfairbanks
     - nsandau
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tidypolars
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tidypolars
+  cfe-purls:
+    - pkg:conda/tidypolars@${{ version }}?channel=conda-forge
+    - pkg:pypi/tidypolars@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/tidypolars/
+  cfe-import-names: [tidypolars]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tidypolars-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:35:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:35:33Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:35:33Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

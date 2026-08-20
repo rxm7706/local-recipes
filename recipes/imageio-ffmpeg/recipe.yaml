@@ -2,52 +2,80 @@
 schema_version: 1
 
 context:
-  name: imageio-ffmpeg
   version: "0.6.0"
-  sha256: e2556bed8e005564a9f925bb7afa4002d82770d6b08825078b7697ab88ba1755
 
 package:
-  name: ${{ name }}
+  name: imageio-ffmpeg
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/imageio-ffmpeg/imageio_ffmpeg-${{ version }}.tar.gz
+  sha256: e2556bed8e005564a9f925bb7afa4002d82770d6b08825078b7697ab88ba1755
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - setuptools
-    - ffmpeg
 
 tests:
   - python:
       imports:
         - imageio_ffmpeg
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: FFMPEG wrapper for Python
+  homepage: https://github.com/imageio/imageio-ffmpeg
   license: BSD-2-Clause
   license_file: LICENSE
-  homepage: https://github.com/imageio/imageio-ffmpeg
-  repository: https://github.com/imageio/imageio-ffmpeg
-  documentation: https://github.com/imageio/imageio-ffmpeg
+  summary: FFMPEG wrapper for Python
+  description: |
+    FFMPEG wrapper for Python
 
 extra:
   recipe-maintainers:
     - anjos
     - almarklein
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: imageio-ffmpeg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: imageio-ffmpeg
+  cfe-purls:
+    - pkg:conda/imageio-ffmpeg@${{ version }}?channel=conda-forge
+    - pkg:pypi/imageio-ffmpeg@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/imageio/imageio-ffmpeg
+  cfe-import-names: [imageio_ffmpeg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/imageio-ffmpeg-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:48:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:48:48Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:48:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

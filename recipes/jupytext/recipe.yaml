@@ -2,42 +2,33 @@
 schema_version: 1
 
 context:
-  name: jupytext
   version: "1.19.5"
 
 package:
-  name: ${{ name|lower }}
+  name: jupytext
   version: ${{ version }}
 
 source:
-  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  url: https://github.com/jupytext/jupytext/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: c4c9ca5bc755eef100c7f2bbde38fd7f240db4a056870a3ed0d9d74cf24af36c
+  url: https://pypi.org/packages/source/j/jupytext/jupytext-${{ version }}.tar.gz
+  sha256: 605026446d605aa54fd7f7fc69df6ae51c7a46053d4cebf05afdc64d66de3df0
 
 build:
   number: 0
   noarch: python
-  script: HATCH_BUILD_HOOKS_ENABLE=true ${{ PYTHON }} -m pip install . --no-deps -vvv
-  python:
-    entry_points:
-      - jupytext = jupytext.cli:jupytext
-      - jupytext-config = jupytext_config.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - python-build
-    - hatch-jupyter-builder >=0.3.2
-    - hatchling >=1.5.0
-    # needed for jlpm
-    - jupyterlab
-    - nodejs
+    - python ${{ python_min }}.*
     - pip
+    - hatchling >=1.5.0
+    - hatch-jupyter-builder >=0.5
+    - jupyter-builder >=1.0.0
   run:
     - python >=${{ python_min }}
-    - nbformat
-    - mdit-py-plugins
     - markdown-it-py >=1.0
+    - mdit-py-plugins
+    - nbformat
     - packaging
     - pyyaml
     - tomli
@@ -46,36 +37,55 @@ tests:
   - python:
       imports:
         - jupytext
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - jupytext --help
-      - if: unix
-        then: test -f ${PREFIX}/share/jupyter/labextensions/jupyterlab-jupytext/package.json
-      - if: win
-        then: if exist %PREFIX%\\share\\jupyter\\labextensions\\jupyterlab-jupytext\\package.json (exit 0) else (exit 1)
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/jupytext/jupytext
   license: MIT
   license_file: LICENSE
   summary: Jupyter notebooks as Markdown documents, Julia, Python or R scripts
   description: |
-    Represent Jupyter notebooks as Markdown documents or Julia, Python or R scripts. Convert any
-    script or Markdown document to a Jupyter notebook. Round trip conversion is robust and well tested.
-
-    Use these simpler representations to do version control and collaborate on Jupyter notebooks.
-    And refactor your notebooks encoded as scripts in your favorite IDE.
-
-    Jupytext is available directly in Jupyter Notebook and JupyterLab, and also on the command line.
-
-
-  homepage: https://github.com/jupytext/jupytext
-  documentation: https://github.com/jupytext/jupytext/blob/main/README.md
+    Jupyter notebooks as Markdown documents, Julia, Python or R scripts
+  repository: https://github.com/jupytext/jupytext
+  documentation: https://jupytext.org
 
 extra:
   recipe-maintainers:
     - grst
     - mwouts
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupytext
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupytext
+  cfe-purls:
+    - pkg:conda/jupytext@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupytext@${{ version }}
+  cfe-upstream-repo: https://github.com/jupytext/jupytext
+  cfe-upstream-homepage: https://github.com/jupytext/jupytext
+  cfe-import-names: [jupytext]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupytext-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.19.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:46:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:46:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:46:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,28 +2,25 @@
 schema_version: 1
 
 context:
-  name: itsdangerous
   version: "2.2.0"
-  hash: e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173
 
 package:
-  name: ${{ name|lower }}
+  name: itsdangerous
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/itsdangerous/itsdangerous-${{ version }}.tar.gz
+  sha256: e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - flit-core <4
   run:
     - python >=${{ python_min }}
@@ -32,25 +29,18 @@ tests:
   - python:
       imports:
         - itsdangerous
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/itsdangerous/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: Safely pass data to untrusted environments and back.
   description: |
-    Various helpers to pass data to untrusted environments and to get it
-    back safe and sound. Data is cryptographically signed to ensure that a
-    token has not been tampered with.
-
-    It's possible to customize how data is serialized. Data is compressed as
-    needed. A timestamp can be added and verified automatically while
-    loading a token.
-  homepage: https://palletsprojects.com/p/itsdangerous/
+    Safely pass data to untrusted environments and back.
   repository: https://github.com/pallets/itsdangerous/
   documentation: https://itsdangerous.palletsprojects.com/
 
@@ -59,3 +49,40 @@ extra:
     - goanpeca
     - nicoddemus
     - williamjamir
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: itsdangerous
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: itsdangerous
+  cfe-purls:
+    - pkg:conda/itsdangerous@${{ version }}?channel=conda-forge
+    - pkg:pypi/itsdangerous@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets/itsdangerous/
+  cfe-upstream-homepage: https://pypi.org/project/itsdangerous/
+  cfe-import-names: [itsdangerous]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/itsdangerous-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:09:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:09:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:09:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

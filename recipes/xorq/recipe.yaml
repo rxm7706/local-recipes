@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.3.36"
+  version: "0.3.39"
 
 package:
   name: xorq
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/x/xorq/xorq-${{ version }}.tar.gz
-  sha256: ac00fedff1d95d63b3b44621936b25a27ea01b9c123bb9f16474b5083a9f8372
+  sha256: 0ae1d30480bef060e0681f8b0cbba5b8a79b20a2af46b5757eeb168968432434
   patches:
     - patches/0001-strip-cli-tool-deps-for-conda-forge.patch
 
@@ -92,3 +92,33 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xorq
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xorq
+  cfe-purls:
+    - pkg:conda/xorq@${{ version }}?channel=conda-forge
+    - pkg:pypi/xorq@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.xorq.dev/
+  cfe-import-names: [xorq]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:23:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:23:03Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:23:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

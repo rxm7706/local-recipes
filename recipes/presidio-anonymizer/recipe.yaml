@@ -2,56 +2,46 @@
 schema_version: 1
 
 context:
-  name: presidio-anonymizer
-  version: "2.2.360"
+  version: "2.2.364"
 
 package:
-  name: ${{ name|lower }}
+  name: presidio-anonymizer
   version: ${{ version }}
 
 source:
-  url: https://github.com/microsoft/presidio/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 47542f1bf1ff6a6fb0cc4786d4e6001573b35da7bf92d872d863dc912d7428d2
+  url: https://pypi.org/packages/source/p/presidio-anonymizer/presidio_anonymizer-${{ version }}.tar.gz
+  sha256: eced015f1195f79a91ad11b34a531ceca2e5c673ed57e97649efea3d3293155d
 
 build:
   number: 0
   noarch: python
-  script: cd ${{ name }} && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - poetry-core
   run:
-    - python >=${{ python_min }},<4
-    - cryptography <44.1
-  run_constraints:
-    - flask >=1.1
-    - gunicorn
+    - python >=${{ python_min }}
+    - cryptography <49.0.0,>=48.0.1
 
 tests:
   - python:
       imports:
         - presidio_anonymizer
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - pip list
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/data-privacy-stack/presidio
+  license: MIT
+  license_file: LICENSE
   summary: Presidio Anonymizer package - replaces analyzed text with desired values.
   description: |
     Presidio Anonymizer package - replaces analyzed text with desired values.
-  license: MIT
-  license_file: LICENSE
-  homepage: https://github.com/microsoft/presidio
-  repository: https://github.com/microsoft/presidio
-  documentation: https://microsoft.github.io/presidio
 
 extra:
   recipe-maintainers:
@@ -60,3 +50,43 @@ extra:
     - julcsii
     - geoHeil
     - heckert
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: presidio-anonymizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: presidio-anonymizer
+  cfe-purls:
+    - pkg:conda/presidio-anonymizer@${{ version }}?channel=conda-forge
+    - pkg:pypi/presidio-anonymizer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/data-privacy-stack/presidio
+  cfe-import-names: [presidio_anonymizer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/presidio-anonymizer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.364
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:14:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:14:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:14:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.8.0"
+  version: "0.9.0"
   python_min: "3.12"
 
 package:
@@ -11,26 +11,22 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/django-ai-boost/django_ai_boost-${{ version }}.tar.gz
-  sha256: 881c073edf0ae4ee6eca6ed961ce6c54f020eb4662ca7bc2a5638a1edb727b5d
+  sha256: ba0dfd42f4a28f06f40210d22ccabe64ba5970538bc9d127329c3c2f91f64b3e
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - django-ai-boost = django_ai_boost:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
     - django >=4.2
-    - fastmcp >=2.14.5
-    - joserfc
+    - fastmcp <4,>=3.2.4
 
 tests:
   - python:
@@ -38,21 +34,48 @@ tests:
         - django_ai_boost
       pip_check: true
       python_version:
-      - ${{ python_min }}
-      - "*"
-  - requirements:
-      run:
-        - pip
-        - python
-    script:
-      - django-ai-boost --help
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Model Context Protocol (MCP) server for Django applications, inspired by Laravel Boost
+  homepage: https://github.com/vintasoftware/django-ai-boost
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/vintasoftware/django-ai-boost
+  summary: A Model Context Protocol (MCP) server for Django applications, inspired by Laravel Boost
+  description: |
+    A Model Context Protocol (MCP) server for Django applications, inspired by Laravel Boost
 
 extra:
   recipe-maintainers:
-    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-ai-boost
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-ai-boost
+  cfe-purls:
+    - pkg:conda/django-ai-boost@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-ai-boost@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/vintasoftware/django-ai-boost
+  cfe-import-names: [django_ai_boost]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-ai-boost-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-0.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:18:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:18:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:18:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

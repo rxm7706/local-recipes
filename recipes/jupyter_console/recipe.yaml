@@ -5,54 +5,50 @@ context:
   version: "6.6.3"
 
 package:
-  name: jupyter_console
+  name: jupyter-console
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/j/jupyter_console/jupyter_console-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyter-console/jupyter_console-${{ version }}.tar.gz
   sha256: 566a4bf31c87adbfadf22cdf846e3069b59a71ed5da71d6ba4d8aaad14a53539
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
-  python:
-    entry_points:
-      - jupyter-console = jupyter_console.app:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling >=1.5
   run:
     - python >=${{ python_min }}
-    - jupyter_client >=7.0.0
-    - ipython
     - ipykernel >=6.14
-    - jupyter_core >=4.12,!=5.0.*
-    - prompt_toolkit >=3.0.30
+    - ipython
+    - jupyter-client >=7.0.0
+    - jupyter-core !=5.0.*,>=4.12
+    - prompt-toolkit >=3.0.30
+    - pygments
     - pyzmq >=17
     - traitlets >=5.4
-    - pygments
 
 tests:
   - python:
       imports:
         - jupyter_console
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - jupyter-console -h
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Jupyter terminal console
-  homepage: http://jupyter.org
+  description: |
+    Jupyter terminal console
 
 extra:
   recipe-maintainers:
@@ -65,3 +61,36 @@ extra:
     - blink1073
     - Carreau
     - davidbrochart
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_console
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-console
+  cfe-purls:
+    - pkg:conda/jupyter_console@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-console@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://jupyter.org
+  cfe-import-names: [jupyter_console]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_console-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.6.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:28:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:28:39Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:28:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

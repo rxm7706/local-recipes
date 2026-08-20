@@ -56,3 +56,37 @@ extra:
     - patricksnape
     - pelson
     - scopatz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ca-certificates
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ca-certificates
+  cfe-purls:
+    - pkg:conda/ca-certificates@${{ version }}?channel=conda-forge
+    - pkg:pypi/ca-certificates@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/conda-forge/ca-certificates-feedstock
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ca-certificates-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:50:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:50:06Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:50:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for ca-certificates...
+Error: Failed to fetch PyPI metadata for 'ca-certificates' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/ca-certificates/json
+####

@@ -15,35 +15,72 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - botocore >=1.37.4,<2.0a.0
+    - botocore <2.0a.0,>=1.37.4
 
 tests:
   - python:
       imports:
         - s3transfer
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE.txt
-  license: Apache-2.0
-  summary: An Amazon S3 Transfer Manager
   homepage: https://github.com/boto/s3transfer
-  repository: https://github.com/boto/s3transfer
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: An Amazon S3 Transfer Manager
+  description: |
+    An Amazon S3 Transfer Manager
 
 extra:
   recipe-maintainers:
     - tkelman
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: s3transfer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: s3transfer
+  cfe-purls:
+    - pkg:conda/s3transfer@${{ version }}?channel=conda-forge
+    - pkg:pypi/s3transfer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/boto/s3transfer
+  cfe-import-names: [s3transfer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/s3transfer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.19.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:09:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:09:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:09:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

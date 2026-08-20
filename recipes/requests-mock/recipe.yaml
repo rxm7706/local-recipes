@@ -13,38 +13,71 @@ source:
   sha256: e9e12e333b525156e82a3c852f22016b9158220d2f47454de9cae8a77d371401
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install . --no-deps --ignore-installed
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - setuptools
-    - setuptools-scm
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools >=56
+    - setuptools-scm
   run:
     - python >=${{ python_min }}
-    - requests >=2.22,<3
+    - requests <3,>=2.22
 
 tests:
   - python:
       imports:
         - requests_mock
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
+  homepage: https://requests-mock.readthedocs.io/
+  license: Apache-2
   license_file: LICENSE
-  summary: requests-mock provides a building block to stub out the HTTP requests portions of your testing code.
-  description: requests-mock provides a building block to stub out the HTTP requests portions of your testing code.
-  homepage: https://github.com/jamielennox/requests-mock
-  documentation: https://requests-mock.readthedocs.io/en/latest/
+  summary: Mock out responses from the requests package
+  description: |
+    Mock out responses from the requests package
+  repository: https://github.com/jamielennox/requests-mock
 
 extra:
   recipe-maintainers:
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests-mock
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests-mock
+  cfe-purls:
+    - pkg:conda/requests-mock@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests-mock@${{ version }}
+  cfe-upstream-repo: https://github.com/jamielennox/requests-mock
+  cfe-upstream-homepage: https://requests-mock.readthedocs.io/
+  cfe-import-names: [requests_mock]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests-mock-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.12.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:03:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:03:52Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:03:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,45 +2,87 @@
 schema_version: 1
 
 context:
-  name: pytest-dependency
-  version: "0.5.1"
+  version: "0.6.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-dependency
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: c2a892906192663f85030a6ab91304e508e546cddfe557d692d61ec57a1d946b
+  url: https://pypi.org/packages/source/p/pytest-dependency/pytest_dependency-${{ version }}.tar.gz
+  sha256: 246c24d2a5fc743a942cec4408853640e56a05ba58d46e5b213a1d4b738a2464
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools_scm
     - setuptools
   run:
-    - pytest >=3.6.0
     - python >=${{ python_min }}
+    - pytest
 
 tests:
   - python:
       imports:
         - pytest_dependency
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Manage dependencies of tests
+  homepage: https://github.com/RKrahl/pytest-dependency
   license: Apache-2.0
   license_file: LICENSE.txt
-  homepage: https://github.com/RKrahl/pytest-dependency
+  summary: Manage dependencies of tests
+  description: |
+    Manage dependencies of tests
+  repository: https://github.com/RKrahl/pytest-dependency
+  documentation: https://pytest-dependency.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - Windiana42
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-dependency
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-dependency
+  cfe-purls:
+    - pkg:conda/pytest-dependency@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-dependency@${{ version }}
+  cfe-upstream-repo: https://github.com/RKrahl/pytest-dependency
+  cfe-upstream-homepage: https://github.com/RKrahl/pytest-dependency
+  cfe-import-names: [pytest_dependency]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-dependency-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:32:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:32:31Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:32:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['pytest']
+#    # blocker: missing-license-file
+####

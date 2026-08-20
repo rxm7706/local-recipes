@@ -1,42 +1,52 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
+
 context:
-  name: dataclasses-json
-  version: 0.6.7
+  version: "0.6.7"
+
 package:
-  name: ${{ name }}
+  name: dataclasses-json
   version: ${{ version }}
+
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dataclasses_json-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dataclasses-json/dataclasses_json-${{ version }}.tar.gz
   sha256: b6b3e528266ea45b9535223bc53ca645f5208833c29229e847b3f26a1cc55fc0
+
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - poetry-core >=1.2.0
     - poetry-dynamic-versioning
-    - pip
   run:
-    - python >=${{ python_min }},<4.0.0
-    - typing_inspect >=0.4.0,<1
-    - marshmallow >=3.18.0,<4.0.0
+    - python >=${{ python_min }}
+    - marshmallow <4.0.0,>=3.18.0
+    - typing_inspect <1,>=0.4.0
+
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - dataclasses_json
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
   homepage: https://github.com/lidatong/dataclasses-json
   license: MIT
-  license_family: MIT
   license_file: LICENSE
-  summary: Easily serialize dataclasses to and from JSON
-  documentation: https://lidatong.github.io/dataclasses-json/
+  summary: Easily serialize dataclasses to and from JSON.
+  description: |
+    Easily serialize dataclasses to and from JSON.
   repository: https://github.com/lidatong/dataclasses-json
+  documentation: https://lidatong.github.io/dataclasses-json/
+
 extra:
   recipe-maintainers:
     - oblute
@@ -44,3 +54,33 @@ extra:
     - ndmaxar
     - mxr-conda
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dataclasses-json
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dataclasses-json
+  cfe-purls:
+    - pkg:conda/dataclasses-json@${{ version }}?channel=conda-forge
+    - pkg:pypi/dataclasses-json@${{ version }}
+  cfe-upstream-repo: https://github.com/lidatong/dataclasses-json
+  cfe-upstream-homepage: https://github.com/lidatong/dataclasses-json
+  cfe-import-names: [dataclasses_json]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dataclasses-json-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:42:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:42:11Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T08:42:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

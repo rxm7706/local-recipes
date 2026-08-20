@@ -20,11 +20,11 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - python-kubernetes >=12.0
+    - kubernetes
     - python-string-utils
     - six
 
@@ -39,10 +39,42 @@ tests:
 
 about:
   homepage: https://github.com/openshift/openshift-restclient-python
-  summary: OpenShift python client
   license: Apache-2.0
   license_file: LICENSE
+  summary: OpenShift python client
+  description: |
+    OpenShift python client
 
 extra:
   recipe-maintainers:
     - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openshift
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openshift
+  cfe-purls:
+    - pkg:conda/openshift@${{ version }}?channel=conda-forge
+    - pkg:pypi/openshift@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/openshift/openshift-restclient-python
+  cfe-import-names: [openshift]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openshift-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:28:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:28:41Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T10:28:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

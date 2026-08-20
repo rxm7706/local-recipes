@@ -2,31 +2,26 @@
 schema_version: 1
 
 context:
-  python_min: python_min|default("3.9")
-  name: sphinxcontrib-confluencebuilder
-  version: "3.1.0"
+  version: "3.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sphinxcontrib-confluencebuilder
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sphinxcontrib_confluencebuilder-${{ version }}.tar.gz
-  sha256: e5e06bd7e42a4432b05d90c28501b959fe69efdceabc21b2094a772a0360d721
+  url: https://pypi.org/packages/source/s/sphinxcontrib-confluencebuilder/sphinxcontrib_confluencebuilder-${{ version }}.tar.gz
+  sha256: 802d069f09dc27730fad6addcf3e77ee28616c9379b8797fa292e752670cf911
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - sphinx-build-confluence = sphinxcontrib.confluencebuilder.__main__:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core >=3.7
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.11,<4
   run:
     - python >=${{ python_min }}
     - requests >=2.30.0
@@ -35,27 +30,56 @@ requirements:
 tests:
   - python:
       imports:
-        - sphinxcontrib
         - sphinxcontrib.confluencebuilder
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - sphinx-build-confluence --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Sphinx extension to build Atlassian Confluence Storage Markup
+  homepage: https://pypi.org/project/sphinxcontrib-confluencebuilder/
   license: BSD-2-Clause
-  license_file:
-    - LICENSE-3RD-PARTY
-    - LICENSE
-  homepage: https://github.com/sphinx-contrib/confluencebuilder
+  license_file: LICENSE
+  summary: Sphinx extension to build Atlassian Confluence Storage Markup
+  description: |
+    Sphinx extension to build Atlassian Confluence Storage Markup
   repository: https://github.com/sphinx-contrib/confluencebuilder
+  documentation: https://sphinxcontrib-confluencebuilder.readthedocs.io
 
 extra:
   recipe-maintainers:
     - conda-forge/sphinx
     - maresb
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sphinxcontrib-confluencebuilder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sphinxcontrib-confluencebuilder
+  cfe-purls:
+    - pkg:conda/sphinxcontrib-confluencebuilder@${{ version }}?channel=conda-forge
+    - pkg:pypi/sphinxcontrib-confluencebuilder@${{ version }}
+  cfe-upstream-repo: https://github.com/sphinx-contrib/confluencebuilder
+  cfe-upstream-homepage: https://pypi.org/project/sphinxcontrib-confluencebuilder/
+  cfe-import-names: [sphinxcontrib.confluencebuilder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sphinxcontrib-confluencebuilder-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:18:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:18:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:18:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

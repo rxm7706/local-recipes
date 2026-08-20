@@ -2,55 +2,83 @@
 schema_version: 1
 
 context:
-  name: odo
-  version: "0.5.1"
-  sha256: e3ae46d57bfb4430eba0dfe1f13911fc91f1d9e76d6d364b908b24eb9a604fa9
+  version: "0.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: odo
   version: ${{ version }}
 
 source:
-  url: https://github.com/blaze/odo/archive/${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/odo/odo-${{ version }}.tar.gz
+  sha256: e892ffe58e87d6b1c12838c4ab252bd0ae8c0ec43e5179409309ded4929905d6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
     - setuptools
   run:
-    - python
-    - datashape >=0.5.0
-    - numpy >=1.7
-    - pandas >=0.15.0
-    - toolz >=0.7.3
-    - multipledispatch >=0.4.7
-    - networkx >=1.0
-    - dask >=0.11.1
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - odo
-        - odo.backends
-        - odo.backends.tests
-        - odo.tests
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  summary: Data migration in Python
   homepage: https://github.com/blaze/odo
-  documentation: https://odo.readthedocs.io/en/latest/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Data migration utilities
+  description: |
+    Data migration utilities
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: odo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: odo
+  cfe-purls:
+    - pkg:conda/odo@${{ version }}?channel=conda-forge
+    - pkg:pypi/odo@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/blaze/odo
+  cfe-import-names: [odo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/odo-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T02:08:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:08:58Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:08:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

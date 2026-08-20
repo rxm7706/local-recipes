@@ -19,35 +19,32 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - typing_extensions >=4.5.0
     - python >=${{ python_min }}
     - opentelemetry-api ==1.44.0
     - opentelemetry-semantic-conventions ==0.65b0
-    - typing-extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - pyyaml >=6.0
-    # - jsonschema >=4.0
-    # - pyyaml >=6.0
-    # - jsonschema >=4.0
-    # - opentelemetry-configuration ==0.65b0
+    - typing_extensions >=4.5.0
 
 tests:
   - python:
       imports:
-        - opentelemetry.sdk
-        - opentelemetry.sdk.resources
+        - opentelemetry.sdk.util
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Python SDK
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-sdk
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-sdk
+  summary: OpenTelemetry Python SDK
+  description: |
+    OpenTelemetry Python SDK
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
@@ -56,3 +53,36 @@ extra:
     - mariusvniekerk
     - conda-forge/opentelemetry-api
     - conda-forge/opentelemetry-semantic-conventions
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-sdk
+  cfe-purls:
+    - pkg:conda/opentelemetry-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-sdk
+  cfe-import-names: [opentelemetry.sdk.util]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-sdk-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.44.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:31:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:31:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:31:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

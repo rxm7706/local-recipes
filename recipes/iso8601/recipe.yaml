@@ -2,46 +2,83 @@
 schema_version: 1
 
 context:
-  name: iso8601
   version: "2.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: iso8601
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/iso8601-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/iso8601/iso8601-${{ version }}.tar.gz
   sha256: 6b1d3829ee8921c4301998c909f7829fa9ed3cbdac0d3b16af2d743aed1ba8df
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
     - pip
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - iso8601
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/micktwomey/pyiso8601
   license: MIT
   license_file: LICENSE
   summary: Simple module to parse ISO 8601 dates
-  homepage: https://github.com/micktwomey/pyiso8601
-  documentation: http://pyiso8601.readthedocs.io/en/latest/
+  description: |
+    Simple module to parse ISO 8601 dates
+  repository: https://github.com/micktwomey/pyiso8601
+  documentation: https://pyiso8601.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - ChrisBarker-NOAA
     - JamesMakela-NOAA
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: iso8601
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: iso8601
+  cfe-purls:
+    - pkg:conda/iso8601@${{ version }}?channel=conda-forge
+    - pkg:pypi/iso8601@${{ version }}
+  cfe-upstream-repo: https://github.com/micktwomey/pyiso8601
+  cfe-upstream-homepage: https://github.com/micktwomey/pyiso8601
+  cfe-import-names: [iso8601]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/iso8601-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:05:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:05:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:05:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

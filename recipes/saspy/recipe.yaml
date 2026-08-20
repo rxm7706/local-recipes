@@ -2,53 +2,89 @@
 schema_version: 1
 
 context:
-  name: saspy
   version: "5.108.6"
-  hash_val: 9e949888f66d8227e27e53e1e5ddb4f65d434e2e3cbc04a2d38609d73a3af349
 
 package:
-  name: ${{ name }}
+  name: saspy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('_', '-') }}-${{ version }}.tar.gz
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/saspy/saspy-${{ version }}.tar.gz
+  sha256: 9e949888f66d8227e27e53e1e5ddb4f65d434e2e3cbc04a2d38609d73a3af349
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
-    - ipython >=4
-    - pygments
-    - pandas
 
 tests:
   - python:
       imports:
         - saspy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
-  summary: A Python interface module to the SAS System
   homepage: https://github.com/sassoftware/saspy
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Python interface to SAS
+  description: |
+    A Python interface to SAS
 
 extra:
   recipe-maintainers:
     - tomweber-sas
     - DMcGee-SAS
     - pecarmon-sas
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: saspy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: saspy
+  cfe-purls:
+    - pkg:conda/saspy@${{ version }}?channel=conda-forge
+    - pkg:pypi/saspy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/sassoftware/saspy
+  cfe-import-names: [saspy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/saspy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.108.6
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:12:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:12:26Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:12:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

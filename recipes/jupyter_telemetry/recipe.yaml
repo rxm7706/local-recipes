@@ -2,53 +2,84 @@
 schema_version: 1
 
 context:
-  name: jupyter_telemetry
   version: "0.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jupyter-telemetry
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyter-telemetry/jupyter_telemetry-${{ version }}.tar.gz
   sha256: 445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.5
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.5
+    - python >=${{ python_min }}
     - jsonschema
+    - python-json-logger
     - traitlets
     - ruamel.yaml
-    - python-json-logger
 
 tests:
   - python:
       imports:
         - jupyter_telemetry
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Telemetry for Jupyter Applications and extensions.
+  summary: Jupyter telemetry library
   description: |
-    Telemetry provides a configurable traitlets object, EventLog,
-    for structured event-logging in Python.
-    It leverages Python’s standard logging library for filtering, handling, and recording events.
-    All events are validated (using jsonschema) against registered JSON schemas.
-  homepage: https://jupyter-telemetry.readthedocs.io
-  repository: https://github.com/jupyter/telemetry
-  documentation: https://jupyter-telemetry.readthedocs.io
+    Jupyter telemetry library
 
 extra:
   recipe-maintainers:
     - minrk
     - consideratio
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_telemetry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-telemetry
+  cfe-purls:
+    - pkg:conda/jupyter_telemetry@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-telemetry@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://jupyter.org
+  cfe-import-names: [jupyter_telemetry]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_telemetry-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:35:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:35:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:35:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

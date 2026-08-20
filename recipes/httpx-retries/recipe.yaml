@@ -2,16 +2,14 @@
 schema_version: 1
 
 context:
-  name: httpx-retries
   version: "0.6.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: httpx-retries
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/httpx_retries-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/httpx-retries/httpx_retries-${{ version }}.tar.gz
   sha256: 3e0b404969a564829d368417964fd21e6b400a10d17c92d29b8bc247ce8186e3
 
 build:
@@ -34,22 +32,51 @@ tests:
       imports:
         - httpx_retries
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/will-ockmore/httpx-retries
   license: MIT
   license_file: LICENSE
-  summary: A retry layer for HTTPX
+  summary: A retry layer for HTTPX.
   description: |
-    HTTPX Retries implements request retry for [HTTPX](https://www.python-httpx.org/).
-
-    It's very common to deal with **flaky** and **unreliable** APIs.
-    When requests fail, your program needs to be able to retry them.
-  homepage: https://github.com/will-ockmore/httpx-retries
+    A retry layer for HTTPX.
   repository: https://github.com/will-ockmore/httpx-retries
-  documentation: https://will-ockmore.github.io/httpx-retries/
+  documentation: https://will-ockmore.github.io/httpx-retries
 
 extra:
   recipe-maintainers:
     - will-ockmore
     - matthewfeickert
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpx-retries
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpx-retries
+  cfe-purls:
+    - pkg:conda/httpx-retries@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpx-retries@${{ version }}
+  cfe-upstream-repo: https://github.com/will-ockmore/httpx-retries
+  cfe-upstream-homepage: https://github.com/will-ockmore/httpx-retries
+  cfe-import-names: [httpx_retries]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpx-retries-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:42:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:42:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:42:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

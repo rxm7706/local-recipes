@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pydantic-settings
   version: "2.15.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pydantic-settings
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pydantic_settings-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pydantic-settings/pydantic_settings-${{ version }}.tar.gz
   sha256: 694b793e84f766ba76a90ebdefc01d0a9a045dab0382bee70393da93712ad117
 
 build:
@@ -21,30 +20,64 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - typing-inspection >=0.4.0
     - python >=${{ python_min }}
     - pydantic >=2.7.0
     - python-dotenv >=0.21.0
+    - typing-inspection >=0.4.0
 
 tests:
   - python:
       imports:
         - pydantic_settings
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Settings management using Pydantic
+  homepage: https://github.com/pydantic/pydantic-settings
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/pydantic/pydantic-settings
+  summary: Settings management using Pydantic
+  description: |
+    Settings management using Pydantic
   repository: https://github.com/pydantic/pydantic-settings
-  documentation: https://docs.pydantic.dev/latest/usage/pydantic_settings/
+  documentation: https://docs.pydantic.dev/dev-v2/concepts/pydantic_settings/
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - fhoehle
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydantic-settings
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydantic-settings
+  cfe-purls:
+    - pkg:conda/pydantic-settings@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydantic-settings@${{ version }}
+  cfe-upstream-repo: https://github.com/pydantic/pydantic-settings
+  cfe-upstream-homepage: https://github.com/pydantic/pydantic-settings
+  cfe-import-names: [pydantic_settings]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydantic-settings-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:31:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:31:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:31:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

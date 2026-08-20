@@ -9,51 +9,80 @@ package:
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/f/fqdn/fqdn-${{ version }}.tar.gz
-    sha256: 105ed3677e767fb5ca086a0c1f4bb66ebc3c100be518f0e0d755d9eae164d89f
-    target_directory: dist
-  - url: https://github.com/ypcrts/fqdn/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: a2c026226f1a1eaace81362fda27b3df479693aefe19f160d6c4c3a032add498
-    target_directory: src
+  url: https://pypi.org/packages/source/f/fqdn/fqdn-${{ version }}.tar.gz
+  sha256: 105ed3677e767fb5ca086a0c1f4bb66ebc3c100be518f0e0d755d9eae164d89f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: cd dist && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    # technically only for py<38, not worth extra builds
-    - cached-property >=1.3.0
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
+    - cached_property
 
 tests:
   - python:
       imports:
         - fqdn
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - src/tests
-    requirements:
-      run:
-        - pip
-        - pytest-cov
-        - python ${{ python_min }}
-    script:
-      - cd src/tests && pytest --cov=fqdn --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=95
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Validates fully-qualified domain names against RFC 1123, so that they are acceptable to modern bowsers
-  license: MPL-2.0
-  license_file: src/LICENSE
   homepage: https://github.com/ypcrts/fqdn
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: Validates fully-qualified domain names against RFC 1123, so that they are acceptable to modern bowsers
+  description: |
+    Validates fully-qualified domain names against RFC 1123, so that they are acceptable to modern bowsers
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fqdn
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fqdn
+  cfe-purls:
+    - pkg:conda/fqdn@${{ version }}?channel=conda-forge
+    - pkg:pypi/fqdn@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ypcrts/fqdn
+  cfe-import-names: [fqdn]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fqdn-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.5.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:37:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:37:01Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:37:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

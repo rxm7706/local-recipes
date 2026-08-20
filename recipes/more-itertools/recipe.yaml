@@ -2,46 +2,77 @@
 schema_version: 1
 
 context:
-  name: more-itertools
   version: "11.1.0"
 
 package:
-  name: ${{ name }}
+  name: more-itertools
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/more_itertools-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/more-itertools/more_itertools-${{ version }}.tar.gz
   sha256: 48e8f4d9e7e5878571ecf6f2b4e57634f93cd474cc8cfbd2376f2d11b396e30d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.12,<4
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - more_itertools
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/more-itertools/more-itertools
-  repository: https://github.com/more-itertools/more-itertools
-  documentation: https://more-itertools.readthedocs.io/en/latest/api.html
   license: MIT
-  license_family: MIT
   license_file: LICENSE
   summary: More routines for operating on iterables, beyond itertools
+  description: |
+    More routines for operating on iterables, beyond itertools
+  documentation: https://more-itertools.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: more-itertools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: more-itertools
+  cfe-purls:
+    - pkg:conda/more-itertools@${{ version }}?channel=conda-forge
+    - pkg:pypi/more-itertools@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/more-itertools/more-itertools
+  cfe-import-names: [more_itertools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/more-itertools-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:44:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:44:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:44:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

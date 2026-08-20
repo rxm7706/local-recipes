@@ -1,239 +1,54 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Have certain top-level requirements so conda-smithy can render the correct variants
 schema_version: 1
 
 context:
-  number: 1
   version: "13.3.1"
-  sha256: 5d21c94fb373c9dc5c71f922a4356bb0e292b85c1a3c04930a37834f5201a00d
-  bindings_major_version: ${{ (version | split("."))[0] | int }}
-  bindings_minor_version: ${{ (version | split("."))[1] | int }}
-  bindings_patch_version: ${{ (version | split("."))[2] | int }}
-  target_name: ${{ "sbsa-linux" if aarch64 else 'x86_64-linux' if linux else "x64" if win else "" }}
-  subdir: ${{ "targets/" ~ target_name if aarch64 or linux else "Library\\" if win else "" }}
 
-recipe:
-  name: cuda-python-split
-  version: 1
+package:
+  name: cuda-bindings
+  version: ${{ version }}
 
 source:
-  url: https://github.com/NVIDIA/cuda-python/releases/download/v${{ version }}/cuda-python-v${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://github.com/NVIDIA/cuda-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 731f2bcae67f7fa7acd1720c4457239b9f1f1f279c8d4fbfd23a164220abe8e2
 
 build:
   number: 0
-  skip: match(python, "<3.10") or ppc64le or osx
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: cuda-python
-      version: ${{ version }}
-    build:
-      number: ${{ number }}
-      skip: not linux64
-      noarch: python
-      # Deterministic build string so all variant.use_keys: [python] builds
-      # produce the same artifact filename — required for upload-time dedupe
-      # via hash collision (see `variant.use_keys` note below).
-      string: py_min_${{ python_min | replace(".", "") }}_${{ number }}
-      variant:
-        # Ensures conda-smithy splits CI jobs per Python version. Without
-        # this, the noarch output drops `python` from the intersection of
-        # used loop vars (since CFEP-25 uses `python_min`), collapsing all
-        # Python variants into a single serialized job. The redundant noarch
-        # builds dedupe on upload via hash collision (the explicit `string`
-        # above keeps the filename identical across variants).
-        use_keys:
-          - python
-      script:
-        env:
-          SUBDIR: ${{ subdir }}
-          TARGET_NAME: ${{ target_name }}
-        file: ${{ 'build_output.bat' if win else 'build_output.sh' if linux else '' }}
-    requirements:
-      host:
-        - python ${{ python_min }}.*
-        - pip
-        - setuptools
-        - setuptools-scm >=8
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('cuda-bindings', upper_bound='x.x') }}
-        - cuda-core >=1.0.0,<1.1.0
-        - cuda-version >=13.0,<14.0a0
-    tests:
-      - script:
-          - python -c "import importlib.metadata; importlib.metadata.version('cuda-python')"
-          # Imports depend on numpy
-          - if: linux
-            then: python -c "import cuda.bindings.cufile"
-          - python -c "import cuda.bindings.nvml"
-          - if: aarch64
-            then: python -c "import cuda.bindings.cudla"
-        requirements:
-          run:
-            # Range (not pinned to python_min) so the test env can use the
-            # variant's Python, matching the locally-built cuda-bindings ABI.
-            - python >=${{ python_min }}
-            - numpy
-      - python:
-          imports:
-            - cuda.bindings
-            - cuda.bindings.driver
-            - cuda.bindings.runtime
-            - cuda.bindings.nvrtc
-            - cuda.bindings.nvjitlink
-            - cuda.bindings.nvvm
-            - cuda.bindings.nvfatbin
-          pip_check: false
-    about:
-      license: LicenseRef-NVIDIA-SOFTWARE-LICENSE
-      license_file: cuda_python/LICENSE
-      summary: CUDA Python
-      description: |
-        CUDA Python is the home for accessing NVIDIA’s CUDA platform from Python.
-      homepage: https://nvidia.github.io/cuda-python/
-      repository: https://github.com/NVIDIA/cuda-python
-      documentation: https://nvidia.github.io/cuda-python/
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=80.0.0
+  run:
+    - python >=${{ python_min }}
+    - cuda-pathfinder >=1.4.2
+    - if: linux
+      then:
+        - cuda-toolkit
 
-  - package:
-      name: cuda-bindings
-      version: ${{ version }}
-    build:
-      number: ${{ number }}
-      script:
-        env:
-          SUBDIR: ${{ subdir }}
-          TARGET_NAME: ${{ target_name }}
-        file: ${{ 'build_output.bat' if win else 'build_output.sh' if linux else '' }}
-    requirements:
-      build:
-        - ${{ compiler('c') }}
-        - ${{ compiler('cxx') }}
-        - ${{ stdlib('c') }}
-        - if: build_platform != target_platform
-          then:
-          - cross-python_${{ target_platform }}
-          - python
-          - cython
-      host:
-        # cuda.bindings needs to be built with the matching major.minor headers
-        - cuda-version ==${{ bindings_major_version }}.${{ bindings_minor_version }}
-        - cuda-crt-dev_${{ target_platform }}
-        - cuda-cudart-dev
-        - cuda-cudart-static
-        - cuda-cudart
-        - cuda-nvvm-impl
-        - cuda-nvrtc
-        - cuda-nvrtc-dev
-        - cuda-profiler-api
-        - if: linux
-          then:
-          - libcufile
-          - libcufile-dev
-        - cython
-        - pip
-        - pyclibrary
-        - python
-        - setuptools
-        - setuptools-scm >=8
-        - cuda-pathfinder >=1.5.5,<2
-      run:
-        - python
-        - cuda-pathfinder >=1.5.5,<2
-        - ${{ pin_compatible('cuda-version', lower_bound='x', upper_bound='x') }}
-        # cuda-python requires cuda-nvrtc from the same major version. We ignored
-        # run-exports of cuda-nvrtc-dev and instead allow a looser pinning here.
-        # Same for cuda-nvvm-impl.
-        - ${{ pin_compatible('cuda-nvrtc', lower_bound='x', upper_bound='x') }}
-        - ${{ pin_compatible('cuda-nvvm-impl', lower_bound='x', upper_bound='x') }}
-        - if: linux
-          then: ${{ pin_compatible('libcufile', lower_bound='x', upper_bound='x') }}
-        - if: aarch64
-          then: libcudla >=13.0,<14.0a0
-        - libnvfatbin >=13.0,<14.0a0
-        - libnvjitlink >=13.0,<14.0a0
-      ignore_run_exports:
-        from_package:
-          # The run-exports from these dev packages are too tight, so we ignore them.
-          # The cuda-python package supports CUDA Enhanced Compatibility through its
-          # use of dlopen, so it is compatible with other CUDA minor versions.
-          - cuda-nvvm-impl
-          - cuda-cudart-dev
-          - cuda-cudart-static
-          - cuda-nvrtc-dev
-          - if: linux
-            then: libcufile-dev
-      run_constraints:
-        # cuda-cudart is not a hard dependency because cuda-python statically links to
-        # cudart. This package is optionally dlopen'd for getting the local cudart
-        # version with cuda.cudart.getLocalRuntimeVersion(). We ignored run-exports
-        # of cuda-cudart-dev and instead allow a looser pinning here.
-        - ${{ pin_compatible('cuda-cudart', lower_bound='x', upper_bound='x') }}
-    tests:
-      - script:
-          - if: linux
-            then: export C_INCLUDE_PATH="$CONDA_PREFIX/${{ subdir }}/include"
-          - if: win
-            then: set "CL=%CL% /I%CONDA_PREFIX%\${{ subdir }}\include"
-          # Workaround for https://github.com/conda-forge/setuptools-feedstock/issues/399
-          - pip install setuptools
-          - cythonize -i -3 -Xfreethreading_compatible=True *.pyx
-          - python -c "import test_cimport; test_cimport.test()"
-          - python -c "import cuda.bindings; print(cuda.bindings.__version__)"
-          # Imports depend on numpy
-          - python -c "import cuda.bindings.nvml"
-          - if: linux
-            then: python -c "import cuda.bindings.cufile"
-          - if: aarch64
-            then: python -c "import cuda.bindings.cudla"
-        requirements:
-          run:
-            - ${{ compiler('c') }}
-            - ${{ compiler('cxx') }}
-            - cuda-nvcc
-            - cuda-nvrtc-dev
-            - cuda-profiler-api
-            - cython
-            - pip
-            - numpy
-        files:
-          recipe:
-            - test_cimport.pyx
-      - python:
-          imports:
-            - cuda
-            - cuda.bindings
-            - cuda.bindings.driver
-            - cuda.bindings.runtime
-            - cuda.bindings.nvrtc
-            - cuda.bindings.nvjitlink
-            - cuda.bindings.nvvm
-            - cuda.bindings.nvfatbin
-          pip_check: false
-    about:
-      license: LicenseRef-NVIDIA-SOFTWARE-LICENSE
-      license_file: cuda_bindings/LICENSE
-      summary: CUDA Python Low-level Bindings
-      description: |
-        CUDA Python provides a standard set of low-level interfaces,
-        providing full coverage of and access to the CUDA host APIs from Python.
-      homepage: https://nvidia.github.io/cuda-python/cuda-bindings
-      repository: https://github.com/NVIDIA/cuda-python
-      documentation: https://nvidia.github.io/cuda-python/cuda-bindings
+tests:
+  - python:
+      imports:
+        - cuda_python_test_helpers.cuda_python_test_helpers
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/cuda-bindings/
   license: LicenseRef-NVIDIA-SOFTWARE-LICENSE
-  license_file: LICENSE.md
-  summary: CUDA Python
+  license_file: LICENSE
+  summary: Python bindings for CUDA
   description: |
-    CUDA Python is the home for accessing NVIDIA's CUDA platform from Python.
-  homepage: https://nvidia.github.io/cuda-python/
+    Python bindings for CUDA
   repository: https://github.com/NVIDIA/cuda-python
   documentation: https://nvidia.github.io/cuda-python/
 
 extra:
-  feedstock-name: cuda-python
   recipe-maintainers:
     - rwgk
     - rparolin
@@ -246,3 +61,33 @@ extra:
     - vzhurba01
     - kkraus14
     - oleksandr-pavlyk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cuda-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cuda-bindings
+  cfe-purls:
+    - pkg:conda/cuda-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/cuda-bindings@${{ version }}
+  cfe-upstream-repo: https://github.com/NVIDIA/cuda-python
+  cfe-upstream-homepage: https://pypi.org/project/cuda-bindings/
+  cfe-import-names: [cuda_python_test_helpers.cuda_python_test_helpers]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cuda-python-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:23:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:23:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:23:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

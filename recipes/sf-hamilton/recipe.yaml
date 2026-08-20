@@ -2,48 +2,81 @@
 schema_version: 1
 
 context:
-  name: sf-hamilton
-  version: "1.88.0"
+  version: "1.90.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sf-hamilton
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 58fbc5ad1e5b130d7256b11d3e5e6823afd06fe9f4b1d49203a72ff99eaa94cc
+  url: https://pypi.org/packages/py3/s/sf-hamilton/sf_hamilton-1.90.0-py3-none-any.whl
+  sha256: 09b75e2c8b857bde57e097f3a0f6e4759ee7574876df77c62840051fb2c4bce9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools >=72.1
+    - setuptools
   run:
-    - numpy
-    - pandas
     - python >=${{ python_min }}
-    - typing_extensions >4.0.0
-    - typing_inspect
+    - apache-hamilton ==1.90.0
 
 tests:
   - python:
       imports:
-        - hamilton
+        - sf_hamilton
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Hamilton, the micro-framework for creating dataframes.
-  license: BSD-3-Clause
+  homepage: https://github.com/apache/hamilton
+  license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/DAGWorks-Inc/hamilton
-  documentation: https://hamilton.dagworks.io/en/latest/
+  summary: This package has moved to apache-hamilton. Install apache-hamilton instead.
+  description: |
+    This package has moved to apache-hamilton. Install apache-hamilton instead.
+  documentation: https://hamilton.apache.org/
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sf-hamilton
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sf-hamilton
+  cfe-purls:
+    - pkg:conda/sf-hamilton@${{ version }}?channel=conda-forge
+    - pkg:pypi/sf-hamilton@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/apache/hamilton
+  cfe-import-names: [sf_hamilton]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sf-hamilton-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.90.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:13:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:13:41Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:13:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

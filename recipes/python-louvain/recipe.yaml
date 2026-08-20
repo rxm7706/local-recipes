@@ -15,7 +15,7 @@ source:
     - 0000-use-entry-points.patch
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script:
     - ${{ PYTHON }} -c "__import__('pathlib').Path('bin/community').rename('community/_cli.py')"
@@ -39,7 +39,9 @@ tests:
       imports:
         - community
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -68,3 +70,36 @@ extra:
     - ericmjl
     - MridulS
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-louvain
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-louvain
+  cfe-purls:
+    - pkg:conda/python-louvain@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-louvain@${{ version }}
+  cfe-upstream-repo: https://github.com/taynaud/python-louvain
+  cfe-upstream-homepage: https://github.com/taynaud/python-louvain
+  cfe-import-names: [community]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-louvain-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.16
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:25:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:25:41Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:25:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: pytorch_revgrad
   version: "0.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytorch_revgrad
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytorch_revgrad-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytorch_revgrad/pytorch_revgrad-${{ version }}.tar.gz
   sha256: 9cf097a7d18cbadddeaec9fef74b258d70b6cb8d0c77f524baab18bffc7d7be9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit
-    - numpy
+    - python ${{ python_min }}.*
     - pip
-    - pytorch >=1.0.0
+    - flit
   run:
     - python >=${{ python_min }}
     - numpy
@@ -35,16 +32,51 @@ tests:
       imports:
         - pytorch_revgrad
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A pytorch module (and function) to reverse gradients.
-  license: MIT
-  license_file:
-    - LICENSE.md
-    - LICENSE
   homepage: https://github.com/janfreyberg/pytorch-revgrad
+  license: MIT
+  license_file: LICENSE
+  summary: A pytorch module (and function) to reverse gradients.
+  description: |
+    A pytorch module (and function) to reverse gradients.
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytorch_revgrad
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytorch-revgrad
+  cfe-purls:
+    - pkg:conda/pytorch_revgrad@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytorch-revgrad@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/janfreyberg/pytorch-revgrad
+  cfe-import-names: [pytorch_revgrad]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytorch_revgrad-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:35:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:35:18Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:35:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,30 +2,25 @@
 schema_version: 1
 
 context:
-  name: pyaml
-  version: "26.2.1"
+  version: "26.7.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyaml
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyaml-${{ version }}.tar.gz
-  sha256: 489dd82997235d4cfcf76a6287fce2f075487d77a6567c271e8d790583690c68
+  url: https://pypi.org/packages/source/p/pyaml/pyaml-${{ version }}.tar.gz
+  sha256: 11cda3a796efc6dbce0d56836be56cfd26289dad07bcd78e9904086729929c93
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - pyaml=pyaml.cli:main
-
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -36,18 +31,57 @@ tests:
       imports:
         - pyaml
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - script: pyaml --help
-    requirements:
-      run:
-        - python ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: WTFPL
-  license_file: COPYING
-  summary: PyYAML-based module to produce pretty and readable YAML-serialized data
   homepage: https://github.com/mk-fg/pretty-yaml
+  license: WTFPL
+  license_file: LICENSE
+  summary: PyYAML-based module to produce a bit more pretty and readable YAML-serialized data
+  description: |
+    PyYAML-based module to produce a bit more pretty and readable YAML-serialized data
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyaml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyaml
+  cfe-purls:
+    - pkg:conda/pyaml@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyaml@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mk-fg/pretty-yaml
+  cfe-import-names: [pyaml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyaml-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-26.7.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:23:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:23:23Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:23:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -9,8 +9,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/types-requests/types_requests-${{ version }}.tar.gz
-  sha256: 2141b67ab534a5c5cd2dac5034f2a35f42e699c5bf185eee608c5246a069d7fb
+  url: https://pypi.org/packages/py3/t/types-requests/types_requests-2.33.0.20260712-py3-none-any.whl
+  sha256: de027e28c171d3da529689cbfa023b0b4eab188c8dfa22fd834eebd2cee6e7bb
 
 build:
   number: 0
@@ -19,32 +19,62 @@ build:
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - urllib3 >=2
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
-  - package_contents:
-      site_packages:
-        - requests-stubs/__init__.pyi
+  - python:
+      imports:
+        - types_requests
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Typing stubs for requests
-  license: Apache-2.0 AND MIT
-  license_file: LICENSE
   homepage: https://github.com/python/typeshed
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Typing stubs for requests
+  description: |
+    Typing stubs for requests
   repository: https://github.com/python/typeshed
 
 extra:
   recipe-maintainers:
     - fhoehle
     - conda-forge/mypy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-requests
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-requests
+  cfe-purls:
+    - pkg:conda/types-requests@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-requests@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_requests]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-requests-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:29:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:29:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:29:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

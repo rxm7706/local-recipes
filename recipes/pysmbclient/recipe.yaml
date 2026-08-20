@@ -2,45 +2,82 @@
 schema_version: 1
 
 context:
-  name: PySmbClient
   version: "0.1.5"
-  hash: dc528959ffe3fae5cdd2053c0d68b6dfca706d8f4ea78b9b3e741daedc87aed4
-  build: 1
 
 package:
-  name: ${{ name|lower }}
+  name: pysmbclient
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PySmbClient/PySmbClient-${{ version }}.tar.gz
+  sha256: dc528959ffe3fae5cdd2053c0d68b6dfca706d8f4ea78b9b3e741daedc87aed4
 
 build:
-  number: ${{ build }}
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - smbclient
-      pip_check: false
+        - pysmbclient
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: ${{ RECIPE_DIR }}/LICENSE
-  license: GPL-3.0-only
+  homepage: http://bitbucket.org/nosklo/pysmbclient
+  license: UNKNOWN
+  license_file: LICENSE
   summary: A convenient smbclient wrapper
-  homepage: https://bitbucket.org/nosklo/pysmbclient
-  repository: https://bitbucket.org/nosklo/pysmbclient
+  description: |
+    A convenient smbclient wrapper
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysmbclient
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysmbclient
+  cfe-purls:
+    - pkg:conda/pysmbclient@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysmbclient@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://bitbucket.org/nosklo/pysmbclient
+  cfe-import-names: [pysmbclient]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pysmbclient-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.5
+
+  cfe-forge-blocker-list:
+    - license-unresolved:UNKNOWN
+
+  cfe-last-checked: 2026-08-18T04:02:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:02:59Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:02:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # blocker: license-unresolved:UNKNOWN
+####

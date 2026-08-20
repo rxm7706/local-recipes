@@ -2,65 +2,47 @@
 schema_version: 1
 
 context:
-  name: isort
   version: "8.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: isort
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/isort-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/isort/isort-${{ version }}.tar.gz
   sha256: 171ac4ff559cdc060bcfff550bc8404a486fee0caab245679c2abe7cb253c78d
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - isort = isort.main:main
-      - isort-identify-imports = isort.main:identify_imports_main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
-    - hatch-vcs
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - importlib-metadata >=4.6.0
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - isort
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - isort --help
-      - isort-identify-imports --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pycqa.github.io/isort/index.html
   license: MIT
-  license_file:
-    - LICENSE
-    - isort/_vendored/tomli/LICENSE
+  license_file: LICENSE
   summary: A Python utility / library to sort Python imports.
   description: |
-    isort is a Python utility / library to sort imports alphabetically, and
-    automatically separated into sections. It provides a command line utility,
-    Python library and plugins for various editors to quickly sort all your
-    imports. It currently cleanly supports Python 2.6 - 3.5 using pies to
-    achieve this without ugly hacks and/or py2to3.
-  homepage: https://github.com/timothycrosley/isort
-  repository: https://github.com/timothycrosley/isort
-  documentation: http://isort.readthedocs.io/en/latest/
+    A Python utility / library to sort Python imports.
+  repository: https://github.com/PyCQA/isort
+  documentation: https://pycqa.github.io/isort/index.html
 
 extra:
   recipe-maintainers:
@@ -68,3 +50,36 @@ extra:
     - nicoddemus
     - nehaljwani
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: isort
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: isort
+  cfe-purls:
+    - pkg:conda/isort@${{ version }}?channel=conda-forge
+    - pkg:pypi/isort@${{ version }}
+  cfe-upstream-repo: https://github.com/PyCQA/isort
+  cfe-upstream-homepage: https://pycqa.github.io/isort/index.html
+  cfe-import-names: [isort]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/isort-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-8.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:07:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:07:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:07:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

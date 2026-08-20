@@ -2,53 +2,86 @@
 schema_version: 1
 
 context:
-  name: google-api-python-client
   version: "2.198.0"
 
 package:
-  name: ${{ name|lower }}
+  name: google-api-python-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_api_python_client-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-api-python-client/google_api_python_client-${{ version }}.tar.gz
   sha256: dfe3e16fb241af6e9c460a33f65085b3450e05cea09364f6b5d8997fb7e43e2a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - httplib2 >=0.19.0,<1.0.0
-    - google-auth >=1.32.0,<3.0.0,!=2.24.0,!=2.25.0
-    - google-auth-httplib2 >=0.2.0,<1.0.0
-    - google-api-core >=1.31.5,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0
-    - uritemplate >=3.0.1,<5
+    - httplib2 <1.0.0,>=0.19.0
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=1.32.0
+    - google-auth-httplib2 <1.0.0,>=0.2.0
+    - google-api-core !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0,<3.0.0,>=1.31.5
+    - uritemplate <5,>=3.0.1
 
 tests:
   - python:
       imports:
         - apiclient
-        - googleapiclient
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0 and MIT
+  homepage: https://github.com/googleapis/google-api-python-client/
+  license: Apache-2.0
   license_file: LICENSE
   summary: Google API Client Library for Python
-  homepage: https://github.com/google/google-api-python-client/
-  repository: https://github.com/google/google-api-python-client/
-  documentation: https://developers.google.com/api-client-library/python/start/get_started
+  description: |
+    Google API Client Library for Python
 
 extra:
   recipe-maintainers:
     - xylar
     - akrherz
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-api-python-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-api-python-client
+  cfe-purls:
+    - pkg:conda/google-api-python-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-api-python-client@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-api-python-client/
+  cfe-import-names: [apiclient]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-api-python-client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.198.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:50:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:50:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:50:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

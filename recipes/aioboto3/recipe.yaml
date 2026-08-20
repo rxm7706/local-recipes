@@ -2,56 +2,49 @@
 schema_version: 1
 
 context:
-  name: aioboto3
   version: "15.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: aioboto3
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aioboto3/aioboto3-${{ version }}.tar.gz
   sha256: ea8d8787d315594842fbfcf2c4dce3bac2ad61be275bc8584b2ce9a3402a6979
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install --no-deps .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=68.2.0
-    - setuptools-scm >=8.0.0
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
     - aiobotocore ==2.25.1
     - aiofiles >=23.2.1
-    - boto3 >=1.21.21
-    - cryptography >=44.0.1
-    - idna >=3.3.0
 
 tests:
   - python:
       imports:
         - aioboto3
-        - aioboto3.s3
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Wrapper to use boto3 resources with the aiobotocore async backend
-  description: |
-    aiobotocore allows you to use near enough all of the boto3 client commands in an async manner just by prefixing the command with await.
+  homepage: https://github.com/terricain/aioboto3
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/terrycain/aioboto3
-  repository: https://github.com/terrycain/aioboto3
-  documentation: https://aioboto3.readthedocs.io/en/latest/
+  summary: Async boto3 wrapper
+  description: |
+    Async boto3 wrapper
+  documentation: https://readthedocs.org/projects/aioboto3/
 
 extra:
   recipe-maintainers:
@@ -59,3 +52,36 @@ extra:
     - dgasmith
     - skrsna
     - markllama
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aioboto3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aioboto3
+  cfe-purls:
+    - pkg:conda/aioboto3@${{ version }}?channel=conda-forge
+    - pkg:pypi/aioboto3@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/terricain/aioboto3
+  cfe-import-names: [aioboto3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aioboto3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-15.5.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:46:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:46:10Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:46:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

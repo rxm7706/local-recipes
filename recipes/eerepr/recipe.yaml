@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: eerepr
   version: "0.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: eerepr
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/eerepr-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/eerepr/eerepr-${{ version }}.tar.gz
   sha256: 304dc23c365d6fa7cc3b07bc09cf77b565c19af86733e5deed804fdce16fb51f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
-    - setuptools-scm
   run:
     - python >=${{ python_min }}
     - earthengine-api
@@ -32,18 +30,56 @@ tests:
   - python:
       imports:
         - eerepr
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Code Editor-style reprs for Earth Engine data in a Jupyter notebook.
-  license: MIT
-  license_file: LICENSE
   homepage: https://github.com/aazuspan/eerepr
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Code Editor-style reprs for Earth Engine data in a Jupyter notebook.
+  description: |
+    Code Editor-style reprs for Earth Engine data in a Jupyter notebook.
 
 extra:
   recipe-maintainers:
     - aazuspan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: eerepr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: eerepr
+  cfe-purls:
+    - pkg:conda/eerepr@${{ version }}?channel=conda-forge
+    - pkg:pypi/eerepr@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/aazuspan/eerepr
+  cfe-import-names: [eerepr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/eerepr-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.2
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T07:58:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:58:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:58:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

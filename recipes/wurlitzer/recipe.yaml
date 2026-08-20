@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: wurlitzer
   version: "3.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: wurlitzer
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/wurlitzer/wurlitzer-${{ version }}.tar.gz
   sha256: bfb9144ab9f02487d802b9ff89dbd3fa382d08f73e12db8adc4c2fb00cd39bd9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,17 +29,18 @@ tests:
   - python:
       imports:
         - wurlitzer
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/minrk/wurlitzer
   license: MIT
   license_file: LICENSE
-  summary: Capture C-level stdout/stderr in Python
-  homepage: https://github.com/minrk/wurlitzer
+  summary: Capture C-level output in context managers
+  description: |
+    Capture C-level output in context managers
 
 extra:
   recipe-maintainers:
@@ -48,3 +48,36 @@ extra:
     - bjodah
     - asmeurer
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wurlitzer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wurlitzer
+  cfe-purls:
+    - pkg:conda/wurlitzer@${{ version }}?channel=conda-forge
+    - pkg:pypi/wurlitzer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/minrk/wurlitzer
+  cfe-import-names: [wurlitzer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wurlitzer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:22:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:22:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:22:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

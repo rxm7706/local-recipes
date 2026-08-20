@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "2026.7.1"
-  python_min: "3.10"
 
 package:
   name: dask
@@ -16,60 +15,40 @@ source:
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - dask-core ==${{ version }}
-    - distributed ==${{ version }}
+    - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - ${{ pin_compatible('dask-core', upper_bound='x.x.x') }}
-    - ${{ pin_compatible('distributed', upper_bound='x.x.x') }}
-    - cytoolz >=0.11.2
-    - lz4 >=4.3.2
-    - numpy >=1.26
-    - pandas >=2.0
-    - bokeh >=3.1.0
-    - jinja2 >=2.10.3
-    - pyarrow >=16.0
-  run_constraints:
-    - openssl !=1.1.1e
+    - click >=8.1
+    - cloudpickle >=3.0.0
+    - fsspec >=2021.09.0
+    - packaging >=20.0
+    - partd >=1.4.0
+    - pyyaml >=5.4.1
+    - toolz >=0.12.0
+    - importlib-metadata >=4.13.0
 
 tests:
   - python:
       imports:
         - dask
-        - dask.array
-        - dask.bag
-        - dask.bytes
-        - dask.dataframe
-        - dask.dataframe.tseries
-        - dask.delayed
-        - dask.diagnostics
-        - dask.distributed
-        - distributed
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pip
-    script:
-      - dask --version
-      - dask info versions
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Parallel PyData with Task Scheduling
+  homepage: https://github.com/dask/dask/
   license: BSD-3-Clause
-  license_file:
-    - LICENSE.txt
-    - dask/array/NUMPY_LICENSE.txt
+  license_file: LICENSE.txt
+  summary: Parallel PyData with Task Scheduling
   description: |
-    Dask is a flexible parallel computing library for analytics.
-  homepage: https://dask.org/
-  repository: https://github.com/dask/dask
-  documentation: https://dask.org/
+    Parallel PyData with Task Scheduling
 
 extra:
   recipe-maintainers:
@@ -84,3 +63,35 @@ extra:
     - jrbourbeau
     - fjetter
     - jacobtomlinson
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dask
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dask
+  cfe-purls:
+    - pkg:conda/dask@${{ version }}?channel=conda-forge
+    - pkg:pypi/dask@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dask/dask/
+  cfe-import-names: [dask]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dask-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:29:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:29:13Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:29:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

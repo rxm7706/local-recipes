@@ -2,54 +2,83 @@
 schema_version: 1
 
 context:
-  name: pyOutlook
   version: "5.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyoutlook
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyOutlook/pyoutlook-${{ version }}.tar.gz
   sha256: 1e4d9b3e2ade410f79cb9d976d02a8dc8d69232f051d6e553225aed31698f828
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - python-dateutil
-    - requests
-    - setuptools
+    - setuptools >=61.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - python-dateutil
     - requests
+    - python-dateutil
 
 tests:
   - python:
       imports:
         - pyOutlook
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.python.org/pypi/pyOutlook
   license: MIT
   license_file: LICENSE
-  summary: A Python module for connecting to the Outlook REST API
+  summary: A Python module for connecting to the Outlook REST API, without the hassle of dealing with the JSON formatting for requests/responses and the REST endpoints and their varying requirements
   description: |
-    pyOutlook was created after I found myself attempting to connect to
-    the Outlook REST API in multiple projects. This provided some much
-    needed uniformity. It’s easier to deal with than the win32com package
-    by Microsoft, but obviously has a far smaller scope.
-  homepage: https://gitlab.com/jensastrup/pyOutlook
-  repository: https://gitlab.com/jensastrup/pyOutlook
-  documentation: https://pyoutlook.readthedocs.io/
+    A Python module for connecting to the Outlook REST API, without the hassle of dealing with the JSON formatting for requests/responses and the REST endpoints and their varying requirements
+  documentation: http://pyoutlook.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyoutlook
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyoutlook
+  cfe-purls:
+    - pkg:conda/pyoutlook@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyoutlook@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.python.org/pypi/pyOutlook
+  cfe-import-names: [pyOutlook]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyoutlook-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:55:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:55:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:55:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

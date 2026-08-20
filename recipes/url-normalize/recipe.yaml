@@ -2,50 +2,82 @@
 schema_version: 1
 
 context:
-  name: url-normalize
   version: "3.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: url-normalize
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/u/url-normalize/url_normalize-${{ version }}.tar.gz
   sha256: 0552cbf2831a32a28994a13d29bca58a60e10ff6c0380e343ec6d1c2a0d232d8
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - poetry
+    - setuptools >=77
+    - wheel
   run:
     - python >=${{ python_min }}
-    - six
-    - idna
+    - idna >=3.3
 
 tests:
   - python:
       imports:
         - url_normalize
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/niksite/url-normalize
   license: MIT
   license_file: LICENSE
   summary: URL normalization for Python
   description: |
-    URL normalization for Python.
-    Normalizes encoding, schemes, hosts, ports, IDN domains, authorities, and other URL variations.
-  homepage: https://github.com/niksite/url-normalize
+    URL normalization for Python
   repository: https://github.com/niksite/url-normalize
-  documentation: https://github.com/niksite/url-normalize
 
 extra:
   recipe-maintainers:
     - jwcook
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: url-normalize
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: url-normalize
+  cfe-purls:
+    - pkg:conda/url-normalize@${{ version }}?channel=conda-forge
+    - pkg:pypi/url-normalize@${{ version }}
+  cfe-upstream-repo: https://github.com/niksite/url-normalize
+  cfe-upstream-homepage: https://github.com/niksite/url-normalize
+  cfe-import-names: [url_normalize]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/url-normalize-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:34:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:34:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:34:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

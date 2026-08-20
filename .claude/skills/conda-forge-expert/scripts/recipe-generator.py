@@ -988,8 +988,6 @@ def _render_cfe_block(info: "PackageInfo", conda_name: str, noarch_kind: str) ->
 ####
 # CFE comments
 # Header:
-#    # (agent rationale parks here, organized by recipe location — never
-#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
 ####
 """
 

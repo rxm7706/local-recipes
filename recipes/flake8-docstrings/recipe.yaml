@@ -2,48 +2,81 @@
 schema_version: 1
 
 context:
-  name: flake8-docstrings
   version: "1.7.0"
-  sha256: 4c8cc748dc16e6869728699e5d0d685da9a10b0ea718e090b1ba088e67a941af
 
 package:
-  name: ${{ name|lower }}
+  name: flake8-docstrings
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flake8-docstrings/flake8_docstrings-${{ version }}.tar.gz
+  sha256: 4c8cc748dc16e6869728699e5d0d685da9a10b0ea718e090b1ba088e67a941af
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - pydocstyle >=2.1
-    - flake8 >=3
+    - flake8
+    - pydocstyle
 
 tests:
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - flake8 --version | grep flake8_docstrings
+  - python:
+      imports:
+        - flake8_docstrings
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pycqa/flake8-docstrings
   license: MIT
   license_file: LICENSE
   summary: Extension for flake8 which uses pydocstyle to check docstrings
-  homepage: https://github.com/PyCQA/flake8-docstrings
-  repository: https://github.com/PyCQA/flake8-docstrings
+  description: |
+    Extension for flake8 which uses pydocstyle to check docstrings
 
 extra:
   recipe-maintainers:
     - dopplershift
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-docstrings
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-docstrings
+  cfe-purls:
+    - pkg:conda/flake8-docstrings@${{ version }}?channel=conda-forge
+    - pkg:pypi/flake8-docstrings@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pycqa/flake8-docstrings
+  cfe-import-names: [flake8_docstrings]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flake8-docstrings-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:16:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:16:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:16:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

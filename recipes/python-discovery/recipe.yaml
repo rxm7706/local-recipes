@@ -20,13 +20,13 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatch-vcs >=0.5
-    - hatchling >=1.28
     - pip
+    - hatch-vcs >=0.5
+    - hatchling >=1.27
+    - 3.10
   run:
     - python >=${{ python_min }}
     - filelock >=3.15.4
-    - platformdirs <5,>=4.3.6
 
 tests:
   - python:
@@ -38,13 +38,45 @@ tests:
         - "*"
 
 about:
-  summary: Python interpreter discovery
+  homepage: https://github.com/tox-dev/python-discovery
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/tox-dev/python-discovery
+  summary: Python interpreter discovery
+  description: |
+    Python interpreter discovery
   repository: https://github.com/tox-dev/python-discovery
   documentation: https://python-discovery.readthedocs.io
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-discovery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-discovery
+  cfe-purls:
+    - pkg:conda/python-discovery@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-discovery@${{ version }}
+  cfe-upstream-repo: https://github.com/tox-dev/python-discovery
+  cfe-upstream-homepage: https://github.com/tox-dev/python-discovery
+  cfe-import-names: [python_discovery]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-discovery-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:19:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:19:55Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:19:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

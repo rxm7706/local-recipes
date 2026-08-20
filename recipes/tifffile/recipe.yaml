@@ -2,60 +2,49 @@
 schema_version: 1
 
 context:
+  version: "2026.8.16"
   python_min: "3.12"
-  name: tifffile
-  version: "2026.7.31"
 
 package:
-  name: ${{ name|lower }}
+  name: tifffile
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 79b1f4b1aba3ef3e6b6f1691a32abb62f5d7383faa52a12771c695232ba40bee
+  url: https://pypi.org/packages/source/t/tifffile/tifffile-${{ version }}.tar.gz
+  sha256: 523a18b8183253e1e594162eed45f157c959d8cff6decde3f2d58f20a5a45389
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - tifffile = tifffile:main
-      - tiffcomment = tifffile.tiffcomment:main
-      - tiff2fsspec = tifffile.tiff2fsspec:main
-      - lsm2bin = tifffile.lsm2bin:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.12.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - numpy >=2.1
-    - imagecodecs >=2026.5.10
-  run_constraints:
-    - matplotlib-base >=3.3
 
 tests:
   - python:
       imports:
         - tifffile
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - tifffile --help
-      - tiff2fsspec --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.cgohlke.com
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Read and write image data from and to TIFF files.
-  homepage: https://github.com/cgohlke/tifffile
+  summary: Read and write TIFF files
+  description: |
+    Read and write TIFF files
+  repository: https://github.com/cgohlke/tifffile
+  documentation: https://www.cgohlke.com/docs/tifffile/
 
 extra:
   recipe-maintainers:
@@ -65,3 +54,36 @@ extra:
     - mrakitin
     - ocefpaf
     - stuarteberg
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tifffile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tifffile
+  cfe-purls:
+    - pkg:conda/tifffile@${{ version }}?channel=conda-forge
+    - pkg:pypi/tifffile@${{ version }}
+  cfe-upstream-repo: https://github.com/cgohlke/tifffile
+  cfe-upstream-homepage: https://www.cgohlke.com
+  cfe-import-names: [tifffile]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tifffile-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2026.8.16
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:36:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:36:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:36:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -21,16 +21,13 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    # setup.py imports pkg_resources, which setuptools removed in 82.0.0
-    - setuptools <82
-    - setuptools_scm
+    - setuptools
+    - setuptools-scm
     - six
   run:
     - python >=${{ python_min }}
-    # pytest plugin (pytest11 entry point); pytest_pilot imports pytest at
-    # import time, so it is a hard runtime dep even though upstream omits it
-    # from install_requires.
-    - pytest
+    - pkg-resources
+    - enum34
 
 tests:
   - python:
@@ -43,13 +40,44 @@ tests:
 
 about:
   homepage: https://github.com/smarie/python-pytest-pilot
-  repository: https://github.com/smarie/python-pytest-pilot
-  documentation: https://smarie.github.io/python-pytest-pilot/
-  summary: Slice in your test base thanks to powerful markers.
   license: BSD-3-Clause
   license_file: LICENSE
+  summary: Slice in your test base thanks to powerful markers.
+  description: |
+    Slice in your test base thanks to powerful markers.
 
 extra:
   recipe-maintainers:
     - killua156
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-pilot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-pilot
+  cfe-purls:
+    - pkg:conda/pytest-pilot@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-pilot@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/smarie/python-pytest-pilot
+  cfe-import-names: [pytest_pilot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-pilot-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:38:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:38:03Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:38:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

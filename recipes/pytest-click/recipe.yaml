@@ -2,46 +2,82 @@
 schema_version: 1
 
 context:
-  name: pytest-click
   version: "1.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-click
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_click-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-click/pytest_click-${{ version }}.tar.gz
   sha256: fdd9f6721f877dda021e7c5dc73e70aecd37e5ed23ec6820f8a7b3fd7b4f8d30
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=40.6.0
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
-    - click >=6.0
-    - pytest >=5.0
+    - click
+    - pytest
 
 tests:
   - python:
       imports:
         - pytest_click
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pytest plugin for Click
+  homepage: https://github.com/Stranger6667/pytest-click
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/Stranger6667/pytest-click
+  summary: Pytest plugin for Click
+  description: |
+    Pytest plugin for Click
 
 extra:
   recipe-maintainers:
     - chrisburr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-click
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-click
+  cfe-purls:
+    - pkg:conda/pytest-click@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-click@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Stranger6667/pytest-click
+  cfe-import-names: [pytest_click]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-click-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:31:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:31:32Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:31:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

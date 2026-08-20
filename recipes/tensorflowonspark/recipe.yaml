@@ -49,3 +49,36 @@ about:
 extra:
   recipe-maintainers:
     - afloren
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflowonspark
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflowonspark
+  cfe-purls:
+    - pkg:conda/tensorflowonspark@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflowonspark@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/yahoo/TensorFlowOnSpark
+  cfe-import-names: [tensorflowonspark]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tensorflowonspark-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:26:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:26:03Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:26:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

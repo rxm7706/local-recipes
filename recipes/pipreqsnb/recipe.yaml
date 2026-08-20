@@ -2,66 +2,86 @@
 schema_version: 1
 
 context:
-  name: pipreqsnb
   version: "0.2.4"
 
 package:
-  name: ${{ name|lower }}
+  name: pipreqsnb
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pipreqsnb-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pipreqsnb/pipreqsnb-${{ version }}.tar.gz
   sha256: ca4306d526ea3ec3cc4fdcf753cae3eaa359b626a4f88ef267badce4bf2efc10
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - pipreqsnb=pipreqsnb.pipreqsnb:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
-    - pipreqs
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pipreqsnb
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - pipreqsnb --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pipreqs with jupyter notebook support
-  license: MIT
-  license_file: LICENSE.txt
-  # TODO: remove the file "LICENSE.txt" from the recipe
-  #       once the PR (https://github.com/ivanlen/pipreqsnb/pull/23)
-  #       to include license file in pypi-source gets merged.
-  description: |
-    This is a very simple fully compatible pipreqs wrapper that
-    supports python files and jupyter notebooks.
-
-    - All the arguments and options are the same as pipreqs.
-    - pipreqs commands are still valid
-
-    Please see [pipreqs][_pipreqs] documenation for more information.
-
-    [_pipreqs]: https://github.com/bndr/pipreqs/
-
   homepage: https://github.com/ivanlen/pipreqsnb
-  repository: https://github.com/ivanlen/pipreqsnb
-  documentation: https://github.com/ivanlen/pipreqsnb
+  license: MIT
+  license_file: LICENSE
+  summary: Pipreqs with jupyter notebook support
+  description: |
+    Pipreqs with jupyter notebook support
 
 extra:
   recipe-maintainers:
     - sugatoray
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pipreqsnb
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pipreqsnb
+  cfe-purls:
+    - pkg:conda/pipreqsnb@${{ version }}?channel=conda-forge
+    - pkg:pypi/pipreqsnb@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ivanlen/pipreqsnb
+  cfe-import-names: [pipreqsnb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pipreqsnb-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:10:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:10:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:10:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

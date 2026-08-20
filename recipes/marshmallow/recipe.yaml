@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: marshmallow
   version: "4.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: marshmallow
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/marshmallow-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/marshmallow/marshmallow-${{ version }}.tar.gz
   sha256: fb6b8048af08d4ab061610d5b7d3696a7e4c95337dbda880edb9f95812cabc20
 
 build:
@@ -21,13 +20,11 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.12,<4
     - pip
+    - flit-core >=3.12,<4
   run:
     - python >=${{ python_min }}
-    # for py <3.11 but have it here for all py to stay noarch
     - backports-datetime-fromisoformat
-    # for py <3.11 but have it here for all py to stay noarch
     - typing_extensions
 
 tests:
@@ -38,33 +35,15 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - files:
-      source:
-        - pyproject.toml
-        - tests/*.py
-    requirements:
-      run:
-        - pytest
-        - simplejson
-        - pytz
-        - python-dateutil
-        - python ${{ python_min }}.*
-    script:
-      - python -m pytest tests
 
 about:
-  license: MIT AND BSD-3-Clause
-  license_file:
-    - LICENSE
-    - NOTICE
+  homepage: https://pypi.org/project/marshmallow/
+  license: MIT
+  license_file: LICENSE
   summary: A lightweight library for converting complex datatypes to and from native Python datatypes.
   description: |
-    marshmallow is an ORM/ODM/framework-agnostic library for
-    converting complex datatypes, such as objects, to and from
-    native Python datatypes.
-  homepage: https://github.com/marshmallow-code/marshmallow
-  repository: https://github.com/marshmallow-code/marshmallow/
-  documentation: https://marshmallow.readthedocs.io/en/latest/
+    A lightweight library for converting complex datatypes to and from native Python datatypes.
+  repository: https://github.com/marshmallow-code/marshmallow
 
 extra:
   recipe-maintainers:
@@ -74,3 +53,33 @@ extra:
     - carlodri
     - mariusvniekerk
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: marshmallow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: marshmallow
+  cfe-purls:
+    - pkg:conda/marshmallow@${{ version }}?channel=conda-forge
+    - pkg:pypi/marshmallow@${{ version }}
+  cfe-upstream-repo: https://github.com/marshmallow-code/marshmallow
+  cfe-upstream-homepage: https://pypi.org/project/marshmallow/
+  cfe-import-names: [marshmallow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/marshmallow-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:26:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:26:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:26:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

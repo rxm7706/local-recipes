@@ -2,50 +2,85 @@
 schema_version: 1
 
 context:
-  name: wirerope
   version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: wirerope
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/wirerope/wirerope-${{ version }}.tar.gz
   sha256: 7da8bb6feeff9dd939bd7141ef0dc392674e43ba662e20909d6729db81a7c8d0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=40.8.0
+    - wheel
   run:
     - python >=${{ python_min }}
+    - pkg-resources
     - six >=1.11.0
+    - inspect2 >=0.1.0
+    - singledispatch >=3.4.0.3
 
 tests:
   - python:
       imports:
         - wirerope
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/youknowone/wirerope
   license: BSD-2-Clause
   license_file: LICENSE
-  summary: Turn functions and methods into fully controllable objects
+  summary: 'Turn functions and methods into fully controllable objects'
   description: |
-    Turn functions and methods into fully controllable objects
-  homepage: https://github.com/youknowone/wirerope
-  repository: https://github.com/youknowone/wirerope
+    'Turn functions and methods into fully controllable objects'
 
 extra:
   recipe-maintainers:
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wirerope
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wirerope
+  cfe-purls:
+    - pkg:conda/wirerope@${{ version }}?channel=conda-forge
+    - pkg:pypi/wirerope@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/youknowone/wirerope
+  cfe-import-names: [wirerope]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wirerope-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:20:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:20:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:20:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

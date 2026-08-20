@@ -58,3 +58,38 @@ about:
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-colab
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-colab
+  cfe-purls:
+    - pkg:conda/google-colab@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-colab@${{ version }}
+  cfe-upstream-repo: https://github.com/googlecolab/colabtools
+  cfe-upstream-homepage: https://colab.research.google.com/
+  cfe-import-names: [google, google.colab]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-colab-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:43:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:43:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T10:43:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for google-colab...
+Error: Failed to fetch PyPI metadata for 'google-colab' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/google-colab/json
+
+####

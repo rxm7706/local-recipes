@@ -2,43 +2,80 @@
 schema_version: 1
 
 context:
-  name: ipyfilechooser
   version: "0.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: ipyfilechooser
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/ipyfilechooser/ipyfilechooser-${{ version }}.tar.gz
   sha256: 41df9e4395a924f8e1b78e2804dbe5066dc3fdc233fb07fecfcdc2a0c9a7d8d3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
+    - python >=${{ python_min }}
     - ipywidgets
-    - python >=3.6
 
 tests:
   - python:
       imports:
         - ipyfilechooser
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/crahan/ipyfilechooser
   license: MIT
   license_file: LICENSE
   summary: Python file chooser widget for use in Jupyter/IPython in conjunction with ipywidgets
-  homepage: https://github.com/crahan/ipyfilechooser
-  repository: https://github.com/crahan/ipyfilechooser
+  description: |
+    Python file chooser widget for use in Jupyter/IPython in conjunction with ipywidgets
 
 extra:
   recipe-maintainers:
     - crahan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipyfilechooser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipyfilechooser
+  cfe-purls:
+    - pkg:conda/ipyfilechooser@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipyfilechooser@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/crahan/ipyfilechooser
+  cfe-import-names: [ipyfilechooser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipyfilechooser-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:59:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:59:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:59:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

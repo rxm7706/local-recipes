@@ -2,30 +2,29 @@
 schema_version: 1
 
 context:
-  name: elastic-transport
   version: "9.4.2"
 
 package:
-  name: ${{ name|lower }}
+  name: elastic-transport
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/elastic-transport/elastic_transport-${{ version }}.tar.gz
   sha256: 366f4614f4544c5fb5d780c82f57af8f30492b44a68ed20750390aa81e20c2ea
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - python ${{ python_min }}
   run:
     - python >=${{ python_min }}
-    - urllib3 >=1.26.2,<3
+    - urllib3 <3,>=2
     - certifi
     - sniffio
 
@@ -34,13 +33,19 @@ tests:
       imports:
         - elastic_transport
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Transport classes and utilities shared among Python Elastic client libraries
+  homepage: https://github.com/elastic/elastic-transport-python
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/elastic/elastic-transport-python
+  summary: Transport classes and utilities shared among Python Elastic client libraries
+  description: |
+    Transport classes and utilities shared among Python Elastic client libraries
+  repository: https://github.com/elastic/elastic-transport-python
+  documentation: https://elastic-transport-python.readthedocs.io
 
 extra:
   recipe-maintainers:
@@ -48,3 +53,36 @@ extra:
     - joshmock
     - pquentin
     - miguelgrinberg
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: elastic-transport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: elastic-transport
+  cfe-purls:
+    - pkg:conda/elastic-transport@${{ version }}?channel=conda-forge
+    - pkg:pypi/elastic-transport@${{ version }}
+  cfe-upstream-repo: https://github.com/elastic/elastic-transport-python
+  cfe-upstream-homepage: https://github.com/elastic/elastic-transport-python
+  cfe-import-names: [elastic_transport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/elastic-transport-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-9.4.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:00:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:00:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:00:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

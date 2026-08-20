@@ -1,49 +1,46 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Parquet-cpp has been migrated to arrow codebase, so this is a meta package
-# which install's the appropiate version of arrow-cpp.
-# https://github.com/apache/arrow/blob/master/cpp/src/parquet/.parquetcppversion
-# Don't forget to update me!
 schema_version: 1
 
 context:
-  parquet_version: "1.5.1"
-  arrow_version: "0.12.0"
+  version: "0.0.1"
 
 package:
   name: parquet-cpp
-  version: ${{ parquet_version }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/parquet-cpp/parquet-cpp-${{ version }}.tar.gz
+  sha256: e76d3841952695b48e4065eae613550a13029bf546b4979e58f4456797fac6bb
 
 build:
-  number: 4
-  noarch: generic
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - arrow-cpp >=${{ arrow_version }}
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
   run:
-    - arrow-cpp >=${{ arrow_version }}
+    - python >=${{ python_min }}
 
 tests:
-  - script:
-      - if: unix
-        then: test -f $PREFIX/include/parquet/api/reader.h
-      - if: win
-        then: if not exist %LIBRARY_INC%\\parquet\\api\\reader.h exit 1
-      - if: unix
-        then: test -f $PREFIX/lib/libparquet.a
-      - if: win
-        then: if not exist %PREFIX%\\Library\\lib\\parquet_static.lib exit 1
-      - if: linux
-        then: test -f $PREFIX/lib/libparquet.so
-      - if: osx
-        then: test -f $PREFIX/lib/libparquet.dylib
-      - if: win
-        then: if not exist %PREFIX%\\Library\\bin\\parquet.dll exit 1
+  - python:
+      imports:
+        - parquet_cpp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Apache-2.0
-  summary: C++ libraries for the Apache Parquet file format
-  homepage: http://github.com/apache/arrow
+  homepage: https://pypi.org/project/parquet-cpp/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: parquet-cpp
+  description: |
+    parquet-cpp
 
 extra:
   recipe-maintainers:
@@ -56,3 +53,40 @@ extra:
     - kou
     - kszucs
     - pitrou
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: parquet-cpp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: parquet-cpp
+  cfe-purls:
+    - pkg:conda/parquet-cpp@${{ version }}?channel=conda-forge
+    - pkg:pypi/parquet-cpp@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/parquet-cpp/
+  cfe-import-names: [parquet_cpp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/parquet-cpp-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.0.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T02:44:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:44:59Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:44:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

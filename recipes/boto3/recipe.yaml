@@ -3,57 +3,84 @@ schema_version: 1
 
 context:
   version: "1.43.72"
-  hash: 6280ce03cc85e9110fd9fb7e2fbf11eae0b1177cb041a0d69aa88edc9d178cf9
 
 package:
   name: boto3
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/b/boto3/boto3-${{ version }}.tar.gz
-  sha256: ${{ hash }}
+  url: https://pypi.org/packages/source/b/boto3/boto3-${{ version }}.tar.gz
+  sha256: 6280ce03cc85e9110fd9fb7e2fbf11eae0b1177cb041a0d69aa88edc9d178cf9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - botocore >=1.43.72,<1.44.0
-    - jmespath >=0.7.1,<2.0.0
-    - s3transfer >=0.19.0,<0.20.0
+    - botocore <1.44.0,>=1.43.72
+    - jmespath <2.0.0,>=0.7.1
+    - s3transfer <0.20.0,>=0.19.0
 
 tests:
   - python:
       imports:
         - boto3
-        - boto3.docs
-        - boto3.dynamodb
-        - boto3.ec2
-        - boto3.resources
-        - boto3.s3
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/boto/boto3
   license: Apache-2.0
   license_file: LICENSE
-  summary: Amazon Web Services SDK for Python
+  summary: The AWS SDK for Python
   description: |
-    Boto3 makes it easy to integrate you Python application, library or script
-    with AWS services. It allows Python developers to write softare that makes
-    use of services like Amazon S3 and Amazon EC2.
-  homepage: https://aws.amazon.com/sdk-for-python
+    The AWS SDK for Python
   repository: https://github.com/boto/boto3
-  documentation: https://boto3.readthedocs.org
+  documentation: https://docs.aws.amazon.com/boto3/latest/
 
 extra:
   recipe-maintainers:
     - tkelman
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: boto3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: boto3
+  cfe-purls:
+    - pkg:conda/boto3@${{ version }}?channel=conda-forge
+    - pkg:pypi/boto3@${{ version }}
+  cfe-upstream-repo: https://github.com/boto/boto3
+  cfe-upstream-homepage: https://github.com/boto/boto3
+  cfe-import-names: [boto3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/boto3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.43.72
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:44:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:44:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:44:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

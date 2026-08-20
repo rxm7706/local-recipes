@@ -19,34 +19,66 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - typing-extensions >=4.5.0
-    - importlib-metadata >=6.0,<8.8.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
-    # - typing_extensions >=4.5.0
+    - typing_extensions >=4.5.0
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.context
+        - opentelemetry._logs
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Python API
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
+  summary: OpenTelemetry Python API
+  description: |
+    OpenTelemetry Python API
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-api
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-api
+  cfe-purls:
+    - pkg:conda/opentelemetry-api@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-api@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-api
+  cfe-import-names: [opentelemetry._logs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-api-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.44.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:18:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:18:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:18:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

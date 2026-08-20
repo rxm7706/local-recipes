@@ -2,27 +2,24 @@
 schema_version: 1
 
 context:
-  name: contextlib2
   version: "21.6.0"
-  hash_val: ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869
 
 package:
-  name: ${{ name }}
+  name: contextlib2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ hash_val }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/contextlib2/contextlib2-${{ version }}.tar.gz
+  sha256: ab1e2bfe1d01d968e1b7e8d9023bc51ef3509bba217bb730cee3827e1ee82869
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,21 +29,59 @@ tests:
   - python:
       imports:
         - contextlib2
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: PSF-2.0
+  homepage: http://contextlib2.readthedocs.org
+  license: Apache-2.0
   license_file: LICENSE.txt
   summary: Backports and enhancements for the contextlib module
-  homepage: http://contextlib2.readthedocs.org
-  repository: https://github.com/jazzband/contextlib2
-  documentation: http://contextlib2.readthedocs.org
+  description: |
+    Backports and enhancements for the contextlib module
 
 extra:
   recipe-maintainers:
     - dopplershift
     - jakirkham
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: contextlib2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: contextlib2
+  cfe-purls:
+    - pkg:conda/contextlib2@${{ version }}?channel=conda-forge
+    - pkg:pypi/contextlib2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://contextlib2.readthedocs.org
+  cfe-import-names: [contextlib2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/contextlib2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-21.6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:16:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:16:06Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:16:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=0: Fetching info for contextlib2...
+Generated: /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.cursor/cdao-p15-noarch-build/gen/contextlib2/recipe.yaml
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

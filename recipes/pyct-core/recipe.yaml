@@ -28,6 +28,7 @@ requirements:
     - setuptools >=61.0
     - pip
   run:
+    - distutils
     - python >=3.7
     - param >=1.7.0
     # cli
@@ -58,3 +59,39 @@ about:
 extra:
   recipe-maintainers:
     - ceball
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyct-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyct-core
+  cfe-purls:
+    - pkg:conda/pyct-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyct-core@${{ version }}
+  cfe-upstream-repo: https://github.com/pyviz/pyct
+  cfe-upstream-homepage: https://github.com/pyviz/pyct
+  cfe-import-names: [pyct]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyct-core-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:30:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:30:06Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T03:30:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for pyct-core...
+Error: Failed to fetch PyPI metadata for 'pyct-core' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/pyct-core/json
+
+#    # added run deps from import test: ['distutils']
+####

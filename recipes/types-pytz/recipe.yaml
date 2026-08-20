@@ -2,47 +2,78 @@
 schema_version: 1
 
 context:
-  name: types-pytz
   version: "2026.3.1.20260727"
 
 package:
-  name: ${{ name | lower }}
+  name: types-pytz
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_pytz-${{ version }}.tar.gz
-  sha256: 4364075b6867dd15b210bb8c1d29727d609917129b45600defe1d4b3eda5ecb9
+  url: https://pypi.org/packages/py3/t/types-pytz/types_pytz-2026.3.1.20260727-py3-none-any.whl
+  sha256: 42ac44e83645bfceb46597342c8fb8ec028a1407e2feae9c5c539986eab6b57a
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
-  - package_contents:
-      site_packages:
-        - pytz-stubs/__init__.pyi
   - python:
-      imports: []
+      imports:
+        - types_pytz
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/python/typeshed
-  summary: Typing stubs for pytz
-  license: Apache-2.0 AND MIT
+  license: Apache-2.0
   license_file: LICENSE
+  summary: Typing stubs for pytz
+  description: |
+    Typing stubs for pytz
+  repository: https://github.com/python/typeshed
 
 extra:
   recipe-maintainers:
     - fhoehle
     - conda-forge/mypy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: types-pytz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: types-pytz
+  cfe-purls:
+    - pkg:conda/types-pytz@${{ version }}?channel=conda-forge
+    - pkg:pypi/types-pytz@${{ version }}
+  cfe-upstream-repo: https://github.com/python/typeshed
+  cfe-upstream-homepage: https://github.com/python/typeshed
+  cfe-import-names: [types_pytz]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/types-pytz-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:57:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:57:14Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:57:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

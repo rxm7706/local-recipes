@@ -41,7 +41,9 @@ tests:
       imports:
         - anaconda_project
       pip_check: false
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - python ${{ python_min }}
@@ -71,3 +73,37 @@ extra:
     - bollwyvl
     - albertdefusco
     - mcg1969
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: anaconda-project
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: anaconda-project
+  cfe-purls:
+    - pkg:conda/anaconda-project@${{ version }}?channel=conda-forge
+    - pkg:pypi/anaconda-project@${{ version }}
+  cfe-upstream-repo: https://github.com/Anaconda-Platform/anaconda-project
+  cfe-upstream-homepage: https://github.com/Anaconda-Platform/anaconda-project
+  cfe-import-names: [anaconda_project]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/anaconda-project-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:52:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:52:38Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:52:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for anaconda-project...
+Error: Failed to fetch PyPI metadata for 'anaconda-project' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/anaconda-project/json
+####

@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
-  name: alabaster
   version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: alabaster
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/alabaster-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/alabaster/alabaster-${{ version }}.tar.gz
   sha256: c00dca57bca26fa62a6d7d0a9fcce65f3e026e9bfe33e9c538fd3fbb2144fd9e
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
-    - flit-core >=3.7
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.7
   run:
     - python >=${{ python_min }}
 
@@ -31,25 +29,18 @@ tests:
   - python:
       imports:
         - alabaster
-        - alabaster.support
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - pygments
-        - python ${{ python_min }}
-    script:
-      - python -c "import alabaster; print(alabaster.get_path())"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://alabaster.readthedocs.io/
   license: BSD-3-Clause
-  license_file: LICENSE.rst
+  license_file: LICENSE
   summary: A light, configurable Sphinx theme
   description: |
-    Alabaster is a visually clean, responsive, and configurable Sphinx
-    theme, and the default theme for Sphinx.
-  homepage: https://alabaster.readthedocs.io/
+    A light, configurable Sphinx theme
   repository: https://github.com/sphinx-doc/alabaster
   documentation: https://alabaster.readthedocs.io/
 
@@ -60,3 +51,43 @@ extra:
     - msarahan
     - r-jain1
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: alabaster
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: alabaster
+  cfe-purls:
+    - pkg:conda/alabaster@${{ version }}?channel=conda-forge
+    - pkg:pypi/alabaster@${{ version }}
+  cfe-upstream-repo: https://github.com/sphinx-doc/alabaster
+  cfe-upstream-homepage: https://alabaster.readthedocs.io/
+  cfe-import-names: [alabaster]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/alabaster-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T05:47:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:47:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:47:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

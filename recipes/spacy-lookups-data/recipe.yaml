@@ -2,52 +2,80 @@
 schema_version: 1
 
 context:
-  name: spacy-lookups-data
   version: "1.0.5"
 
 package:
-  name: ${{ name|lower }}
+  name: spacy-lookups-data
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/spacy_lookups_data-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/spacy-lookups-data/spacy_lookups_data-${{ version }}.tar.gz
   sha256: 6f935c81f145bdcc84fc6115f648764285c7ff3e8ff246295046814e96dad63c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
     - setuptools
-    - srsly >=0.1.0,<1.1.0
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
     - setuptools
 
 tests:
   - python:
       imports:
         - spacy_lookups_data
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://spacy.io
   license: MIT
   license_file: LICENSE
   summary: Additional lookup tables and data resources for spaCy
-  # The remaining entries in this section are optional, but recommended.
   description: |
-    This package contains additional data files to be used with spaCy v2.2+.
-    When it's installed in the same environment as spaCy, this package makes
-    the resources for each language available as an entry point, which spaCy
-    checks when setting up the Vocab and Lookups.
-  homepage: https://github.com/explosion/spacy-lookups-data
-  repository: https://github.com/explosion/spacy-lookups-data
-  documentation: https://spacy.io/
+    Additional lookup tables and data resources for spaCy
 
 extra:
   recipe-maintainers:
     - conda-forge/spacy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spacy-lookups-data
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spacy-lookups-data
+  cfe-purls:
+    - pkg:conda/spacy-lookups-data@${{ version }}?channel=conda-forge
+    - pkg:pypi/spacy-lookups-data@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://spacy.io
+  cfe-import-names: [spacy_lookups_data]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spacy-lookups-data-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:16:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:16:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:16:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

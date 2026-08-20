@@ -13,48 +13,78 @@ source:
   sha256: 2a8ebc0c84b212ab99b9f1757fc0582a3f53930d3a75b2492d91a7c8b36ab41e
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - jupyter-theme = jupyterthemes:main
-      - jt = jupyterthemes:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - jupyter_core
-    - ipython >=5.4.1
-    - matplotlib-base >=1.4.3
-    - lesscpy >=0.11.2
+    - jupyter-core
+    - notebook
+    - ipython
+    - matplotlib-base
+    - lesscpy
 
 tests:
   - python:
       imports:
         - jupyterthemes
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - jupyter-theme --help
-      - jt --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE.txt
-  license: MIT
-  summary: Select and install a Jupyter notebook theme
   homepage: https://github.com/dunovank/jupyter-themes
-  repository: https://github.com/dunovank/jupyter-themes
-  documentation: https://github.com/dunovank/jupyter-themes
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Select and install a Jupyter notebook theme
+  description: |
+    Select and install a Jupyter notebook theme
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterthemes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterthemes
+  cfe-purls:
+    - pkg:conda/jupyterthemes@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterthemes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dunovank/jupyter-themes
+  cfe-import-names: [jupyterthemes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterthemes-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.20.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:45:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:45:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:45:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

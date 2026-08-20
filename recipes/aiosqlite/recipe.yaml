@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: aiosqlite
-  version: 0.22.1
+  version: "0.22.1"
 
 package:
-  name: ${{ name|lower }}
+  name: aiosqlite
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiosqlite/aiosqlite-${{ version }}.tar.gz
   sha256: 043e0bd78d32888c0a9ca90fc788b38796843360c855a7262a532813133a0650
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -30,24 +29,51 @@ tests:
   - python:
       imports:
         - aiosqlite
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pip check
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/aiosqlite/
   license: MIT
   license_file: LICENSE
   summary: asyncio bridge to the standard sqlite3 module
   description: |
-    AsyncIO bridge to the standard sqlite3 module for Python 3.5+.
-  homepage: https://github.com/omnilib/aiosqlite
-  repository: https://github.com/omnilib/aiosqlite
+    asyncio bridge to the standard sqlite3 module
+  documentation: https://aiosqlite.omnilib.dev
 
 extra:
   recipe-maintainers:
     - flaviomartins
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiosqlite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiosqlite
+  cfe-purls:
+    - pkg:conda/aiosqlite@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiosqlite@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/aiosqlite/
+  cfe-import-names: [aiosqlite]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiosqlite-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:45:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:45:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:45:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

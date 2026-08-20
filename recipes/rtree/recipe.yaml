@@ -36,7 +36,9 @@ tests:
       imports:
         - rtree
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - files:
       source:
         - tests/
@@ -52,3 +54,36 @@ extra:
     - ocefpaf
     - hobu
     - mwtoews
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rtree
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rtree
+  cfe-purls:
+    - pkg:conda/rtree@${{ version }}?channel=conda-forge
+    - pkg:pypi/rtree@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Toblerity/rtree
+  cfe-import-names: [rtree]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rtree-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:08:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:08:02Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T05:08:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

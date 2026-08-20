@@ -2,27 +2,25 @@
 schema_version: 1
 
 context:
-  name: injector
   version: "0.24.0"
 
 package:
-  name: ${{ name|lower }}
+  name: injector
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/injector-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/injector/injector-${{ version }}.tar.gz
   sha256: e85a75d1516cff2f03170f3fd1219f56acb25c9a05e307819ae0dcde3dad3d3f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - pypandoc
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -33,15 +31,55 @@ tests:
       imports:
         - injector
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Injector - Python dependency injection framework, inspired by Guice
-  license: BSD-3-Clause
-  # License file manually packaged: See: https://github.com/alecthomas/injector/pull/160
-  license_file: COPYING
   homepage: https://github.com/alecthomas/injector
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Injector - Python dependency injection framework, inspired by Guice
+  description: |
+    Injector - Python dependency injection framework, inspired by Guice
 
 extra:
   recipe-maintainers:
     - fuglede
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: injector
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: injector
+  cfe-purls:
+    - pkg:conda/injector@${{ version }}?channel=conda-forge
+    - pkg:pypi/injector@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/alecthomas/injector
+  cfe-import-names: [injector]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/injector-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.24.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T09:44:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:44:23Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:44:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

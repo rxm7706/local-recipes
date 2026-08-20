@@ -2,11 +2,10 @@
 schema_version: 1
 
 context:
-  name: python-mimeparse
   version: "2.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: python-mimeparse
   version: ${{ version }}
 
 source:
@@ -16,44 +15,71 @@ source:
 build:
   number: 0
   noarch: python
-  script: python -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=47
+    - wheel >=0.34
   run:
     - python >=${{ python_min }}
+    - python-mimeparse
 
 tests:
   - python:
       imports:
-        - mimeparse
+        - python_mimeparse
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - mimeparse_test.py
-        - testdata.json
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - pytest mimeparse_test.py
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/falconry/python-mimeparse
   license: MIT
   license_file: LICENSE
   summary: A module provides basic functions for parsing mime-type names and matching them against a list of media-ranges.
-  homepage: https://github.com/dbtsai/python-mimeparse
-  repository: https://github.com/dbtsai/python-mimeparse
-  documentation: https://github.com/dbtsai/python-mimeparse
+  description: |
+    A module provides basic functions for parsing mime-type names and matching them against a list of media-ranges.
 
 extra:
   recipe-maintainers:
     - MementoRC
     - anguslees
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-mimeparse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-mimeparse
+  cfe-purls:
+    - pkg:conda/python-mimeparse@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-mimeparse@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/falconry/python-mimeparse
+  cfe-import-names: [python_mimeparse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-mimeparse-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:28:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:28:18Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:28:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['python-mimeparse']
+####

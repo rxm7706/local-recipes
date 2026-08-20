@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Need these up here for conda-smithy to handle them properly.
 schema_version: 1
 
 context:
@@ -10,56 +9,73 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/timofurrer/colorful/archive/v${{ version }}.zip
-  sha256: 31adc852e53ba3980cc834c0d3bd6efcfee28bf88940f892d1ce55f0dcbd9ab7
+  url: https://pypi.org/packages/source/c/colorful/colorful-${{ version }}.tar.gz
+  sha256: bb16502b198be2f1c42ba3c52c703d5f651d826076817185f0294c1a549a7445
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - colorama
 
 tests:
   - python:
       imports:
         - colorful
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/timofurrer/colorful
   license: MIT
   license_file: LICENSE
-  summary: Terminal string styling done right, in Python
+  summary: Terminal string styling done right, in Python.
   description: |
     Terminal string styling done right, in Python.
-    Key Features:
-    * expressive and consistent API
-    * support for different color modes (8 ANSI, 256 ANSI, true colors)
-    * support for predefined awesome styles (solarized, ...)
-    * support for custom color palettes
-    * support nesting styles
-    * support for different platforms (using colorama on Windows)
-    * context managers for clean color mode, color palette or style switch
-    * support len() on colored strings
-    * support color names from X11 rgb.txt
-    * no dependencies
-
-  homepage: http://github.com/timofurrer/colorful
-  repository: https://github.com/timofurrer/colorful
-  documentation: https://github.com/timofurrer/colorful
 
 extra:
   recipe-maintainers:
     - vnlitvinov
     - timofurrer
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: colorful
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: colorful
+  cfe-purls:
+    - pkg:conda/colorful@${{ version }}?channel=conda-forge
+    - pkg:pypi/colorful@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/timofurrer/colorful
+  cfe-import-names: [colorful]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/colorful-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:07:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:07:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:07:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

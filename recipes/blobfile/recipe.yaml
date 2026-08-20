@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: blobfile
   version: "3.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: blobfile
   version: ${{ version }}
 
 source:
-  url: https://github.com/christopher-hesse/blobfile/archive/v${{ version }}.tar.gz
-  sha256: 0f3404a05aff1f2effa2b328852bff37de90ee49f910148110caace22890949c
+  url: https://pypi.org/packages/source/b/blobfile/blobfile-${{ version }}.tar.gz
+  sha256: 78514a9265b9aa7d4607042dc77c5e6461ab27036450ad8e1f6ef9a7f29bf958
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=64
+    - setuptools >=69
   run:
     - python >=${{ python_min }}
     - pycryptodomex >=3.8
@@ -35,14 +34,55 @@ tests:
       imports:
         - blobfile
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Unlicense
+  homepage: https://github.com/blobfile/blobfile
+  license: REPLACE_LICENSE
   license_file: LICENSE
-  summary: Read Google Cloud Storage, Azure Blobs, and local paths with the same interface
-  homepage: https://github.com/christopher-hesse/blobfile
+  summary: Read GCS, ABS and local paths with the same interface, clone of tensorflow.io.gfile
+  description: |
+    Read GCS, ABS and local paths with the same interface, clone of tensorflow.io.gfile
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: blobfile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: blobfile
+  cfe-purls:
+    - pkg:conda/blobfile@${{ version }}?channel=conda-forge
+    - pkg:pypi/blobfile@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/blobfile/blobfile
+  cfe-import-names: [blobfile]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/blobfile-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T06:43:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:43:20Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:43:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

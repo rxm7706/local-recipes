@@ -19,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77.0.0
   run:
     - python >=${{ python_min }}
 
@@ -30,13 +30,17 @@ tests:
       imports:
         - decorator
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/decorator/
   license: BSD-2-Clause
   license_file: LICENSE.txt
   summary: Decorators for Humans
-  homepage: https://github.com/micheles/decorator
+  description: |
+    Decorators for Humans
 
 extra:
   recipe-maintainers:
@@ -44,3 +48,40 @@ extra:
     - pelson
     - ocefpaf
     - scopatz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: decorator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: decorator
+  cfe-purls:
+    - pkg:conda/decorator@${{ version }}?channel=conda-forge
+    - pkg:pypi/decorator@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/decorator/
+  cfe-import-names: [decorator]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/decorator-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.3.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:40:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:40:56Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:40:56Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

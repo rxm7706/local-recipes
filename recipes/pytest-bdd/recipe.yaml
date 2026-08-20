@@ -2,24 +2,20 @@
 schema_version: 1
 
 context:
-  name: pytest-bdd
   version: "8.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-bdd
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-bdd/pytest_bdd-${{ version }}.tar.gz
   sha256: ef0896c5cd58816dc49810e8ff1d632f4a12019fb3e49959b2d349ffc1c9bfb5
 
 build:
-  noarch: python
   number: 0
+  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pytest-bdd = pytest_bdd.scripts:main
 
 requirements:
   host:
@@ -29,10 +25,10 @@ requirements:
   run:
     - python >=${{ python_min }}
     - mako
-    - gherkin-official >=29.0.0,<30.0.0
+    - gherkin-official <30.0.0,>=29.0.0
     - packaging
     - parse
-    - parse_type
+    - parse-type
     - pytest >=7.0.0
     - typing_extensions
 
@@ -41,16 +37,17 @@ tests:
       imports:
         - pytest_bdd
       pip_check: true
-      python_version: ["${{ python_min }}.*", "*"]
-  - script:
-      - pytest-bdd --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  homepage: https://github.com/pytest-dev/pytest-bdd
+  homepage: https://pytest-bdd.readthedocs.io/
   license: MIT
   license_file: LICENSE.txt
   summary: BDD for pytest
-  description: pytest-bdd implements a subset of the Gherkin language to enable automating project requirements testing and to facilitate behavioral driven development.
+  description: |
+    BDD for pytest
   repository: https://github.com/pytest-dev/pytest-bdd
   documentation: https://pytest-bdd.readthedocs.io/
 
@@ -60,3 +57,37 @@ extra:
     - PertuyF
     - breathe
     - killua156
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-bdd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-bdd
+  cfe-purls:
+    - pkg:conda/pytest-bdd@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-bdd@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-bdd
+  cfe-upstream-homepage: https://pytest-bdd.readthedocs.io/
+  cfe-import-names: [pytest_bdd]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-bdd-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:30:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:30:04Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:30:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

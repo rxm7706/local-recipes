@@ -9,34 +9,75 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/b/backports_abc/backports_abc-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/backports_abc/backports_abc-${{ version }}.tar.gz
   sha256: 033be54514a03e255df75c5aee8f9e672f663f93abb723444caec8fe43437bde
-  file_name: backports_abc-${{ version }}.tar.gz
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - backports_abc
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: PSF-2.0
-  summary: A backport of recent additions to the `collections.abc` module.
   homepage: https://github.com/cython/backports_abc
+  license: UNKNOWN
+  license_file: LICENSE
+  summary: A backport of recent additions to the 'collections.abc' module.
+  description: |
+    A backport of recent additions to the 'collections.abc' module.
 
 extra:
   recipe-maintainers:
     - jakirkham
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: backports_abc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: backports-abc
+  cfe-purls:
+    - pkg:conda/backports_abc@${{ version }}?channel=conda-forge
+    - pkg:pypi/backports-abc@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cython/backports_abc
+  cfe-import-names: [backports_abc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/backports_abc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5
+
+  cfe-forge-blocker-list:
+    - license-unresolved:UNKNOWN
+
+  cfe-last-checked: 2026-08-17T06:35:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:35:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:35:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # blocker: license-unresolved:UNKNOWN
+####

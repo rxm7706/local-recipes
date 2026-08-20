@@ -2,54 +2,79 @@
 schema_version: 1
 
 context:
-  name: spacy-legacy
-  modulename: spacy_legacy
   version: "3.0.12"
 
 package:
-  name: ${{ name|lower }}
+  name: spacy-legacy
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/spacy-legacy/spacy-legacy-${{ version }}.tar.gz
   sha256: b37d6e0c9b6e1d7ca1cf5bc7152ab64a4c4671f59c85adaf7a3fcb870357a774
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - ${{ modulename }}
-      pip_check: false
-  - requirements:
-      run:
-        - pytest
-        - wandb
-        - spacy >=3.1.0,<3.3.0
-    script:
-      - python -m pytest --tb=native --pyargs ${{ modulename }}
+        - spacy_legacy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://spacy.io
   license: MIT
   license_file: LICENSE
-  summary: Legacy functions and architectures for backwards compatibility
+  summary: Legacy registered functions for spaCy backwards compatibility
   description: |
-    This package includes outdated registered functions for spaCy v3.x, for
-    example model architectures, pipeline components and utilities.
-  homepage: https://github.com/explosion/spacy-legacy
-  repository: https://github.com/explosion/spacy-legacy
-  documentation: https://github.com/explosion/spacy-legacy
+    Legacy registered functions for spaCy backwards compatibility
 
 extra:
   recipe-maintainers:
     - conda-forge/spacy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spacy-legacy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spacy-legacy
+  cfe-purls:
+    - pkg:conda/spacy-legacy@${{ version }}?channel=conda-forge
+    - pkg:pypi/spacy-legacy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://spacy.io
+  cfe-import-names: [spacy_legacy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spacy-legacy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.12
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:40:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:40:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:40:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,90 +2,49 @@
 schema_version: 1
 
 context:
-  name: pooch
   version: "1.9.0"
 
-recipe:
-  name: ${{ name|lower }}
+package:
+  name: pooch
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pooch/pooch-${{ version }}.tar.gz
   sha256: de46729579b9857ffd3e741987a2f6d5e0e03219892c167c6578c0091fb511ed
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - platformdirs >=2.5.0
+    - packaging >=20.0
+    - requests >=2.19.0
 
-outputs:
-  - package:
-      name: ${{ name }}
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . --no-deps -vv
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - pip
-        - setuptools_scm >=6.2
-      run:
-        - python >=${{ python_min }}
-        - platformdirs >=2.5.0
-        - packaging >=20.0
-        - requests >=2.19.0
-    tests:
-      - python:
-          imports:
-            - pooch
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pytest
-            - python ${{ python_min }}
-        script:
-          - pytest --pyargs pooch.tests.test_integration
-  - package:
-      name: ${{ name }}-extra
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - ${{ pin_subpackage(name, exact=True) }}
-        - tqdm >=4.41.0,<5.0.0
-        - python-xxhash >=1.4.3
-        - paramiko >=2.7.0
-    tests:
-      - python:
-          imports:
-            - pooch
-            - xxhash
-            - tqdm
-            - paramiko
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - pytest
-            - python ${{ python_min }}
-        script:
-          - pytest --pyargs pooch.tests.test_integration
+tests:
+  - python:
+      imports:
+        - pooch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pooch/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: A friend to fetch your data files
   description: |
-    Pooch manages your remote data files. It automatically downloads and stores
-    them in a local directory (using HTTP or FTP), with support for versioning,
-    corruption checks, and custom download and post-processing operations.
-  homepage: https://github.com/fatiando/pooch
+    A friend to fetch your data files
   repository: https://github.com/fatiando/pooch
   documentation: https://www.fatiando.org/pooch
 
@@ -93,3 +52,40 @@ extra:
   recipe-maintainers:
     - leouieda
     - dopplershift
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pooch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pooch
+  cfe-purls:
+    - pkg:conda/pooch@${{ version }}?channel=conda-forge
+    - pkg:pypi/pooch@${{ version }}
+  cfe-upstream-repo: https://github.com/fatiando/pooch
+  cfe-upstream-homepage: https://pypi.org/project/pooch/
+  cfe-import-names: [pooch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pooch-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.9.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:10:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:10:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:10:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

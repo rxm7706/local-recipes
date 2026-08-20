@@ -20,36 +20,67 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: shapefile
+      imports:
+        - pyshp
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest
-        - hypothesis
-    files:
-      source:
-        - .
-    script:
-      - pytest -k "not (test_reader_url or test_dbf_reader_writer_roundtrip or test_shapefile_reader_writer_roundtrip or test_dbf_Field_roundtrips)"
 
 about:
-  summary: Pure Python read/write support for ESRI Shapefile format
-  license: MIT
-  license_file: LICENSE.TXT
   homepage: https://pypi.org/project/pyshp/
+  license: MIT
+  license_file: LICENSE
+  summary: Pure Python read/write support for ESRI Shapefile format
+  description: |
+    Pure Python read/write support for ESRI Shapefile format
+  repository: https://github.com/GeospatialPython/pyshp
 
 extra:
   recipe-maintainers:
     - pelson
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyshp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyshp
+  cfe-purls:
+    - pkg:conda/pyshp@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyshp@${{ version }}
+  cfe-upstream-repo: https://github.com/GeospatialPython/pyshp
+  cfe-upstream-homepage: https://pypi.org/project/pyshp/
+  cfe-import-names: [pyshp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyshp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:02:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:02:54Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:02:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

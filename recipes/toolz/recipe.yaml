@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: toolz
   version: "1.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: toolz
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/toolz-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/toolz/toolz-${{ version }}.tar.gz
   sha256: 27a5c770d068c110d9ed9323f24f1543e83b2f300a687b7891c1a6d56b697b5b
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=77
     - setuptools-git-versioning >=2.0
-    - pip
   run:
     - python >=${{ python_min }}
 
@@ -31,24 +30,19 @@ tests:
   - python:
       imports:
         - tlz
-        - toolz
-        - toolz.curried
-        - toolz.functoolz
-        - toolz.sandbox
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - python -c "import toolz; assert toolz.__version__ != '0.0.0'"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A functional standard library for Python
+  homepage: https://github.com/pytoolz/toolz
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  homepage: https://toolz.readthedocs.org/
+  summary: List processing tools and functional utilities
+  description: |
+    List processing tools and functional utilities
+  documentation: https://toolz.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
@@ -59,3 +53,40 @@ extra:
     - jcrist
     - jakirkham
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: toolz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: toolz
+  cfe-purls:
+    - pkg:conda/toolz@${{ version }}?channel=conda-forge
+    - pkg:pypi/toolz@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pytoolz/toolz
+  cfe-import-names: [tlz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/toolz-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:42:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:42:41Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:42:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

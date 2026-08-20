@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pyparsing
   version: "3.3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pyparsing
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyparsing-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyparsing/pyparsing-${{ version }}.tar.gz
   sha256: c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc
 
 build:
@@ -22,7 +21,7 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - flit-core >=3.2,<4
+    - flit-core >=3.12,<4
   run:
     - python >=${{ python_min }}
 
@@ -30,21 +29,20 @@ tests:
   - python:
       imports:
         - pyparsing
-      python_version: ["${{ python_min }}.*", "3.*"]
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pyparsing/pyparsing/
   license: MIT
   license_file: LICENSE
-  summary: Create and execute simple grammars
+  summary: pyparsing - Classes and methods to define and execute parsing grammars
   description: |
-    The pyparsing module is an alternative approach to creating and executing
-    simple grammars, vs. the traditional lex/yacc approach, or the use of
-    regular expressions. The pyparsing module provides a library of classes
-    that client code uses to construct the grammar directly in Python code.
-  homepage: https://pyparsing-docs.readthedocs.io
-  repository: https://github.com/pyparsing/pyparsing
-  documentation: https://pyparsing-docs.readthedocs.io
+    pyparsing - Classes and methods to define and execute parsing grammars
+  repository: https://github.com/pyparsing/pyparsing.git
+  documentation: https://pyparsing-docs.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
@@ -52,3 +50,33 @@ extra:
     - msarahan
     - ocefpaf
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyparsing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyparsing
+  cfe-purls:
+    - pkg:conda/pyparsing@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyparsing@${{ version }}
+  cfe-upstream-repo: https://github.com/pyparsing/pyparsing.git
+  cfe-upstream-homepage: https://github.com/pyparsing/pyparsing/
+  cfe-import-names: [pyparsing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyparsing-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:57:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:57:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:57:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

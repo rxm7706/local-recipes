@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: dbt-core
-  version: 1.12.2
+  version: "1.11.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dbt_core-${{ version }}.tar.gz
-  sha256: 9c4d60c58ed759ceff3cc20c065420abc4d26cb092b0e142b39b8747ee43c79b
+  sha256: 0a8558e03776231969a9614075eb31eb7daca03bcee1db7bc36f85f027826965
   patches:
     - 0001-drop-experimental-parser-hard-dep.patch
 
@@ -96,9 +96,38 @@ about:
 extra:
   feedstock-name: dbt
   recipe-maintainers:
-    - rxm7706
-    - drewbanin
-    - jthandy
     - maresb
-    - thewchan
-    - zaneselvans
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-postgres
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-postgres
+  cfe-purls:
+    - pkg:conda/dbt-postgres@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-postgres@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dbt-labs/dbt-core
+  cfe-import-names: [dbt, dbt.adapters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-postgres-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.11.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:45:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:45:01Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:45:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

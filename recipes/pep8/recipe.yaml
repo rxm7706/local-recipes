@@ -2,49 +2,87 @@
 schema_version: 1
 
 context:
-  name: pep8
   version: "1.7.1"
-  bundle: tar.gz
-  hash: fe249b52e20498e59e0b5c5256aa52ee99fc295b26ec9eaa85776ffdb9fe6374
-  build: 0
 
 package:
-  name: ${{ name|lower }}
+  name: pep8
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/p/pep8/pep8-${{ version }}.tar.gz
+  sha256: fe249b52e20498e59e0b5c5256aa52ee99fc295b26ec9eaa85776ffdb9fe6374
 
 build:
-  number: ${{ build }}
+  number: 0
   noarch: python
-  script: python setup.py install --single-version-externally-managed --record=record.txt
-  python:
-    entry_points:
-      - pep8 = pep8:_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python
+  host:
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
-  - script:
-      - pep8 --help
-      - pep8 --version
+  - python:
+      imports:
+        - testsuite
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://pep8.readthedocs.org/
   license: MIT
+  license_file: LICENSE
   summary: Python style guide checker
-  homepage: https://pep8.readthedocs.org/
-  repository: https://github.com/treyhunner/pep8
-  documentation: https://pep8.readthedocs.org/
+  description: |
+    Python style guide checker
 
 extra:
   recipe-maintainers:
     - jakirkham
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pep8
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pep8
+  cfe-purls:
+    - pkg:conda/pep8@${{ version }}?channel=conda-forge
+    - pkg:pypi/pep8@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://pep8.readthedocs.org/
+  cfe-import-names: [testsuite]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pep8-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:58:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:58:31Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:58:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

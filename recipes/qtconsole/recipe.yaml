@@ -3,10 +3,9 @@ schema_version: 1
 
 context:
   version: "5.7.2"
-  python_min: "3.10"
 
-recipe:
-  name: qtconsole-base
+package:
+  name: qtconsole
   version: ${{ version }}
 
 source:
@@ -16,79 +15,40 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - jupyter-qtconsole = qtconsole.qtconsoleapp:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: build_platform != target_platform
-      then: python
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - traitlets
-    - jupyter_core
-    - jupyter_client >=4.1
+    - traitlets !=5.2.1,!=5.2.2
+    - jupyter-core
+    - jupyter-client >=4.1
     - pygments
-    - ipykernel >=4.1  # not a real dependency, but require the reference kernel
+    - ipykernel >=4.1
     - ipython_pygments_lexers
     - qtpy >=2.4.0
     - packaging
-
-outputs:
-  - package:
-      name: qtconsole-base
-  - package:
-      name: qtconsole
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - ${{ pin_subpackage('qtconsole-base', upper_bound='x.x.x') }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage('qtconsole-base', upper_bound='x.x.x') }}
-        - pyqt
-    tests:
-      - requirements:
-          run:
-            - python ${{ python_min }}
-        script:
-          - DISPLAY=localhost:1.0 xvfb-run -a bash -c 'jupyter qtconsole --help'
 
 tests:
   - python:
       imports:
         - qtconsole
-        - qtconsole.tests
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Jupyter Qt console
   description: |
-    A rich Qt-based console for working with Jupyter kernels, supporting rich
-    media output, session export, and more. The Qt console is a very
-    lightweight application that largely feels like a terminal, but provides
-    a number of enhancements only possible in a GUI, such as inline figures,
-    proper multiline editing with syntax highlighting, graphical calltips, and
-    more.
-  homepage: http://jupyter.org
-  repository: https://github.com/jupyter/qtconsole
-  documentation: https://qtconsole.readthedocs.org/en/stable/
+    Jupyter Qt console
 
 extra:
   recipe-maintainers:
@@ -99,4 +59,36 @@ extra:
     - minrk
     - takluyver
     - ocefpaf
-  feedstock-name: qtconsole
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: qtconsole
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: qtconsole
+  cfe-purls:
+    - pkg:conda/qtconsole@${{ version }}?channel=conda-forge
+    - pkg:pypi/qtconsole@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://jupyter.org
+  cfe-import-names: [qtconsole]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/qtconsole-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.7.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:43:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:43:01Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T04:43:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

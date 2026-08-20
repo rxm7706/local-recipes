@@ -2,51 +2,83 @@
 schema_version: 1
 
 context:
-  name: vaderSentiment
   version: "3.3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: vadersentiment
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/v/vaderSentiment/vaderSentiment-${{ version }}.tar.gz
   sha256: 5d7c06e027fc8b99238edb0d53d970cf97066ef97654009890b83703849632f9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - requests
 
 tests:
   - python:
       imports:
         - vaderSentiment
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/cjhutto/vaderSentiment
   license: MIT
   license_file: LICENSE.txt
-  summary: VADER Sentiment Analysis.
+  summary: VADER Sentiment Analysis. VADER (Valence Aware Dictionary and sEntiment Reasoner) is a lexicon and rule-based sentiment analysis tool that is specifically attuned to sentiments expressed in social media, and works well on texts from other domains.
   description: |
-    VADER Sentiment Analysis. VADER (Valence Aware Dictionary and sEntiment Reasoner)
-    is a lexicon and rule-based sentiment analysis tool that is specifically
-    attuned to sentiments expressed in social media, and works well on texts
-    from other domains..
-
-
-  homepage: https://github.com/cjhutto/vaderSentiment
+    VADER Sentiment Analysis. VADER (Valence Aware Dictionary and sEntiment Reasoner) is a lexicon and rule-based sentiment analysis tool that is specifically attuned to sentiments expressed in social media, and works well on texts from other domains.
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vadersentiment
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vadersentiment
+  cfe-purls:
+    - pkg:conda/vadersentiment@${{ version }}?channel=conda-forge
+    - pkg:pypi/vadersentiment@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cjhutto/vaderSentiment
+  cfe-import-names: [vaderSentiment]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vadersentiment-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.3.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:05:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:05:12Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:05:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

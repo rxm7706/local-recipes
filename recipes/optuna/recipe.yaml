@@ -2,55 +2,54 @@
 schema_version: 1
 
 context:
-  name: optuna
   version: "4.9.0"
-  python_min: "3.9"
 
 package:
-  name: ${{ name|lower }}
+  name: optuna
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/optuna/optuna-${{ version }}.tar.gz
   sha256: b322e5cbdf1655fb84c37646c4a7a1f391de1b47806bbe222e015825d0a82b87
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - optuna = optuna.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python 3.9.*
+    - setuptools >=61.1.0
+    - wheel
   run:
+    - python >=${{ python_min }}
     - alembic >=1.5.0
     - colorlog
     - numpy
     - packaging >=20.0
-    - python >=${{ python_min }}
     - sqlalchemy >=1.4.2
     - tqdm
-    - PyYAML
+    - pyyaml
 
 tests:
   - python:
       imports:
         - optuna
-      pip_check: false
-  - script:
-      - optuna --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://optuna.org/
   license: MIT
   license_file: LICENSE
   summary: A hyperparameter optimization framework
-  homepage: https://optuna.org/
-  repository: https://github.com/optuna/optuna
-  documentation: https://optuna.readthedocs.io/
+  description: |
+    A hyperparameter optimization framework
+  documentation: https://optuna.readthedocs.io
 
 extra:
   recipe-maintainers:
@@ -70,3 +69,36 @@ extra:
     - smly
     - toshihikoyanase
     - ytsmiling
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: optuna
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: optuna
+  cfe-purls:
+    - pkg:conda/optuna@${{ version }}?channel=conda-forge
+    - pkg:pypi/optuna@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://optuna.org/
+  cfe-import-names: [optuna]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/optuna-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:29:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:29:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:29:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

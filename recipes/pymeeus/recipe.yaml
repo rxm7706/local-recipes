@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: pymeeus
   version: "0.5.12"
 
 package:
-  name: ${{ name|lower }}
+  name: pymeeus
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyMeeus-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyMeeus/PyMeeus-${{ version }}.tar.gz
   sha256: 548f7186bd8b96cbc069cf649a8e8e377dce49ac74486709849fe63a99cad684
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -31,14 +30,51 @@ tests:
       imports:
         - pymeeus
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python implementation of Jean Meeus astronomical routines
-  license: LGPL-3.0-or-later
-  license_file: COPYING.LESSER
   homepage: https://github.com/architest/pymeeus
+  license: LGPLv3
+  license_file: LICENSE
+  summary: Python implementation of Jean Meeus astronomical routines
+  description: |
+    Python implementation of Jean Meeus astronomical routines
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymeeus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymeeus
+  cfe-purls:
+    - pkg:conda/pymeeus@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymeeus@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/architest/pymeeus
+  cfe-import-names: [pymeeus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pymeeus-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.12
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:50:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:50:15Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:50:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

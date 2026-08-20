@@ -2,58 +2,81 @@
 schema_version: 1
 
 context:
-  name: jupyterlab_execute_time
-  version: "3.2.0"
+  version: "3.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: jupyterlab-execute-time
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 9b13b65c2c139bfabb3f6ff1706c4d33ed5a56203a89d0297608334e15bc9c0b
+  url: https://pypi.org/packages/source/j/jupyterlab-execute-time/jupyterlab_execute_time-${{ version }}.tar.gz
+  sha256: 900fd1aebbfd3d943d3625eef973eed555bb2745d49840402783959c8a1dfc3a
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - jupyter-packaging
+    - hatchling
+    - jupyterlab ~=4.0.0
+    - hatch-nodejs-version >=0.3.2
   run:
     - python >=${{ python_min }}
-    - jupyterlab >=4,<5
+    - jupyterlab <5,>=4
 
 tests:
   - python:
       imports:
-        - jupyterlab
+        - jupyterlab_execute_time
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - nodejs >=12
-        - pip
-        - jupyter-packaging
-        - python ${{ python_min }}
-    script:
-      - jupyter lab --version
-      - jlpm --version
-      - jupyter labextension list
-      - jupyter labextension list 2>&1 | grep -ie "jupyterlab-execute-time.*OK"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  summary: Execute Time Plugin for Jupyter Lab
-  description: Display cell timings in Jupyter Lab
   homepage: https://github.com/deshaw/jupyterlab-execute-time
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Display cell timings in Jupyter Lab
+  description: |
+    Display cell timings in Jupyter Lab
 
 extra:
   recipe-maintainers:
-    - krassowski
-    - moble
-    - mlucool
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterlab-execute-time
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterlab-execute-time
+  cfe-purls:
+    - pkg:conda/jupyterlab-execute-time@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterlab-execute-time@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/deshaw/jupyterlab-execute-time
+  cfe-import-names: [jupyterlab_execute_time]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-3.3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:39:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:39:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:39:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

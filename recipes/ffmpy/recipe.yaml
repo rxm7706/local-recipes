@@ -2,43 +2,86 @@
 schema_version: 1
 
 context:
-  name: ffmpy
-  version: "0.3.0"
+  version: "1.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: ffmpy
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/ffmpy-${{ version }}.tar.gz
-  sha256: 757591581eee25b4a50ac9ffb9b58035a2794533db47e0512f53fb2d7b6f9adc
+  url: https://pypi.org/packages/source/f/ffmpy/ffmpy-${{ version }}.tar.gz
+  sha256: b12932e95435c8820f1cd041024402765f821971e4bae753b327fc02a6e12f8b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
-    - ffmpeg
+    - uv-build >=0.7.9,<0.10.0
   run:
-    - python >=3.6
-    - ffmpeg
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - ffmpy
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A simple Python wrapper for ffmpeg
+  homepage: https://pypi.org/project/ffmpy/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/Ch00k/ffmpy
+  summary: A simple Python wrapper for FFmpeg
+  description: |
+    A simple Python wrapper for FFmpeg
 
 extra:
   recipe-maintainers:
     - MattTriano
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ffmpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ffmpy
+  cfe-purls:
+    - pkg:conda/ffmpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/ffmpy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/ffmpy/
+  cfe-import-names: [ffmpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ffmpy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:13:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:13:25Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:13:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

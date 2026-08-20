@@ -9,42 +9,82 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/j/jupyter_latex_envs/jupyter_latex_envs-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jupyter_latex_envs/jupyter_latex_envs-${{ version }}.tar.gz
   sha256: 070a31eb2dc488bba983915879a7c2939247bf5c3b669b398bdb36a9b5343872
 
 build:
-  number: 1002
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=2.7
+    - python ${{ python_min }}.*
     - pip
-  run:
-    - python >=2.7
-    - ipython
-    - jupyter_contrib_core >=0.3
-    - nbconvert
-    - notebook >=4.0
     - setuptools
-    - traitlets >=4.1
+  run:
+    - python >=${{ python_min }}
+    - nbconvert
+    - IPython
 
 tests:
   - python:
       imports:
         - latex_envs
-        - latex_envs.latex_envs
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Jupyter nbextension providing some LaTeX environments for markdown cells.
-  license_file: LICENSE.txt
-  license: BSD-3-Clause
   homepage: https://github.com/jfbercher/jupyter_latex_envs
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Jupyter notebook extension which supports (some) LaTeX environments within markdown cells. Also provides support for labels and crossreferences, document wide numbering, bibliography, and more...
+  description: |
+    Jupyter notebook extension which supports (some) LaTeX environments within markdown cells. Also provides support for labels and crossreferences, document wide numbering, bibliography, and more...
 
 extra:
   recipe-maintainers:
     - jcb91
     - jfbercher
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_latex_envs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-latex-envs
+  cfe-purls:
+    - pkg:conda/jupyter_latex_envs@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-latex-envs@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jfbercher/jupyter_latex_envs
+  cfe-import-names: [latex_envs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_latex_envs-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.6
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:32:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:32:11Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:32:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['IPython']
+#    # added run deps from import test: ['nbconvert']
+#    # blocker: missing-license-file
+####

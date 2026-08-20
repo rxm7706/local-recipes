@@ -2,45 +2,85 @@
 schema_version: 1
 
 context:
-  name: djongo
-  version: "1.3.6"
+  version: "1.3.7"
 
 package:
-  name: ${{ name|lower }}
+  name: djongo
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/djongo-${{ version }}.tar.gz
-  sha256: 2250d484d4b4025661c139162bafd359eabaffd0deeba18debc59df78a325dc7
+  url: https://pypi.org/packages/source/d/djongo/djongo-${{ version }}.tar.gz
+  sha256: 347f5a310c8111a3e4a540294533c7a975e5a9e1766ef63b62bf044c9d64bab6
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - django >=2.1,<=3.0.5
-    - pymongo >=3.2.0
-    - python >=3.6
-    - sqlparse 0.2.4.*
+    - python >=${{ python_min }}
+    - sqlparse ==0.2.4
+    - pymongo <=3.11.4,>=3.7.0
+    - django <=3.1.12,>=2.1
+    - pytz >=2018.5
 
 tests:
   - python:
       imports:
         - djongo
-        - djongo.dynamic_formsets
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Driver for allowing Django to use MongoDB as the database backend.
-  license: AGPL-3.0-only
+  homepage: https://www.djongomapper.com/
+  license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://nesdis.github.io/djongo/
+  summary: "Djongo: The Django MongoDB connector"
+  description: |
+    Djongo: The Django MongoDB connector
+  repository: https://github.com/doableware/djongo.git
+  documentation: https://www.djongomapper.com/docs/
 
 extra:
   recipe-maintainers:
     - marcelotrevisani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djongo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djongo
+  cfe-purls:
+    - pkg:conda/djongo@${{ version }}?channel=conda-forge
+    - pkg:pypi/djongo@${{ version }}
+  cfe-upstream-repo: https://github.com/doableware/djongo.git
+  cfe-upstream-homepage: https://www.djongomapper.com/
+  cfe-import-names: [djongo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djongo-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:05:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:05:10Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:05:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

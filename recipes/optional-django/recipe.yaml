@@ -2,41 +2,79 @@
 schema_version: 1
 
 context:
-  name: optional-django
   version: "0.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: optional-django
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/optional-django-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/optional-django/optional-django-${{ version }}.tar.gz
   sha256: 2cd56b864ecf88e420aa882209ca7849114f38bc7089344cc9e476ea91aeb010
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - optional_django
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Utils for providing optional support for django
-  license: MIT
-  license_file: LICENSE
   homepage: https://github.com/markfinger/optional-django
+  license: UNKNOWN
+  license_file: LICENSE
+  summary: Utils for providing optional support for django
+  description: |
+    Utils for providing optional support for django
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: optional-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: optional-django
+  cfe-purls:
+    - pkg:conda/optional-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/optional-django@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/markfinger/optional-django
+  cfe-import-names: [optional_django]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:UNKNOWN
+
+  cfe-last-checked: 2026-08-18T02:28:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:28:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:28:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # blocker: license-unresolved:UNKNOWN
+####

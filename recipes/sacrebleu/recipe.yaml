@@ -15,20 +15,16 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - sacrebleu = sacrebleu.sacrebleu:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm
-    - setuptools
+    - setuptools >=77
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
-    - typing
     - portalocker
     - regex
     - tabulate >=0.8.9
@@ -41,22 +37,56 @@ tests:
       imports:
         - sacrebleu
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/sacrebleu/
   license: Apache-2.0
   license_file: LICENSE.txt
-  summary: Reference BLEU implementation that auto-downloads test sets and reports a version string to facilitate cross-lab comparisons
+  summary: Hassle-free computation of shareable, comparable, and reproducible BLEU, chrF, and TER scores
   description: |
-    SacreBLEU (Post, 2018) provides hassle-free computation of shareable,
-    comparable, and reproducible BLEU scores. Inspired by Rico Sennrich's
-    multi-bleu-detok.perl, it produces the official WMT scores but works with
-    plain text. It also knows all the standard test sets and handles
-    downloading, processing, and tokenization for you.
-
-
-  homepage: https://github.com/mjpost/sacrebleu
+    Hassle-free computation of shareable, comparable, and reproducible BLEU, chrF, and TER scores
+  repository: https://github.com/mjpost/sacrebleu
 
 extra:
   recipe-maintainers:
     - hmaarrfk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sacrebleu
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sacrebleu
+  cfe-purls:
+    - pkg:conda/sacrebleu@${{ version }}?channel=conda-forge
+    - pkg:pypi/sacrebleu@${{ version }}
+  cfe-upstream-repo: https://github.com/mjpost/sacrebleu
+  cfe-upstream-homepage: https://pypi.org/project/sacrebleu/
+  cfe-import-names: [sacrebleu]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sacrebleu-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:09:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:09:42Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:09:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

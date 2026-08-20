@@ -2,55 +2,90 @@
 schema_version: 1
 
 context:
-  name: stumpy
   version: "1.14.1"
 
 package:
-  name: ${{ name|lower }}
+  name: stumpy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/stumpy/stumpy-${{ version }}.tar.gz
   sha256: 1cb13696724ddab4b512b16843d37ccf4047aee19e072d1ad83024e1fa6fde96
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
+    - setuptools-scm
   run:
     - python >=${{ python_min }}
-    - numpy >=1.17
-    - scipy >=1.5
-    - numba >=0.54
+    - numpy >=1.24
+    - scipy >=1.10
+    - numba >=0.61.2
 
 tests:
   - python:
       imports:
         - stumpy
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - setuptools
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/stumpy-dev/stumpy
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: STUMPY is a powerful and scalable Python library that computes something called a matrix profile, which can then be used for a variety of time series data mining tasks
+  summary: A powerful and scalable library that can be used for a variety of time series data mining tasks
   description: |
-    STUMPY is a powerful and scalable Python library that computes something called a matrix profile, which can then be used for a variety of time series data mining tasks.
-  homepage: http://github.com/TDAmeritrade/stumpy
-  repository: https://github.com/TDAmeritrade/stumpy
-  documentation: https://github.com/TDAmeritrade/stumpy/blob/master/README.rst
+    A powerful and scalable library that can be used for a variety of time series data mining tasks
+  repository: https://github.com/stumpy-dev/stumpy
+  documentation: https://stumpy.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - seanlaw
     - NimaSarajpoor
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: stumpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: stumpy
+  cfe-purls:
+    - pkg:conda/stumpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/stumpy@${{ version }}
+  cfe-upstream-repo: https://github.com/stumpy-dev/stumpy
+  cfe-upstream-homepage: https://github.com/stumpy-dev/stumpy
+  cfe-import-names: [stumpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/stumpy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.14.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:12:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:12:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:12:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

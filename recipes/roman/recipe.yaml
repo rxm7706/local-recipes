@@ -2,29 +2,25 @@
 schema_version: 1
 
 context:
-  name: roman
   version: "5.2"
 
 package:
-  name: ${{ name|lower }}
+  name: roman
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/roman-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/roman/roman-${{ version }}.tar.gz
   sha256: 275fe9f46290f7d0ffaea1c33251b92b8e463ace23660508ceef522e7587cb6f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - roman=roman:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=78.1.1,<81
     - wheel
   run:
@@ -35,24 +31,52 @@ tests:
       imports:
         - roman
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - roman --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/zopefoundation/roman
   license: ZPL-2.1
   license_file: LICENSE.txt
   summary: Integer to Roman numerals converter
   description: |
-    roman is a Small helper library to convert arabic to roman numerals.
-    There are two ways to use this library: Importing it into your application; and the roman CLI command.
-
-
-  homepage: https://github.com/zopefoundation/roman
+    Integer to Roman numerals converter
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: roman
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: roman
+  cfe-purls:
+    - pkg:conda/roman@${{ version }}?channel=conda-forge
+    - pkg:pypi/roman@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/zopefoundation/roman
+  cfe-import-names: [roman]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/roman-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:01:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:01:59Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:01:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

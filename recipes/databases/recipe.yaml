@@ -2,19 +2,18 @@
 schema_version: 1
 
 context:
-  name: databases
-  version: 0.9.0
+  version: "0.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: databases
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/databases-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/databases/databases-${{ version }}.tar.gz
   sha256: d2f259677609bf187737644c95fa41701072e995dfeb8d2882f335795c5b61b0
 
 build:
-  number: 3
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -25,28 +24,63 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - sqlalchemy >=2.0.7
+    - sqlalchemy
 
 tests:
   - python:
       imports:
         - databases
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Async database support for Python.
-  license: BSD-3-Clause
-  license_file: LICENSE.md
-  description: |
-    Databases gives you simple asyncio support for a range of databases.
-
-    It allows you to make queries using the powerful SQLAlchemy Core expression
-    language, and provides support for PostgreSQL, MySQL, and SQLite.
-
-
   homepage: https://github.com/encode/databases
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Async database support for Python.
+  description: |
+    Async database support for Python.
 
 extra:
   recipe-maintainers:
     - carlodri
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: databases
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: databases
+  cfe-purls:
+    - pkg:conda/databases@${{ version }}?channel=conda-forge
+    - pkg:pypi/databases@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/encode/databases
+  cfe-import-names: [databases]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/databases-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:41:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:41:28Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:41:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

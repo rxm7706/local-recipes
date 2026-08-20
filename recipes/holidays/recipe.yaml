@@ -2,51 +2,81 @@
 schema_version: 1
 
 context:
-  name: holidays
   version: "0.102"
 
 package:
-  name: ${{ name|lower }}
+  name: holidays
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/holidays/holidays-${{ version }}.tar.gz
   sha256: fc29b2fc76d262c822a200c50095e2dadc974b3e41e245875a33f1436bafe7d3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
-    - python-dateutil >=2.9.0.post0,<3
+    - python-dateutil <3,>=2.9.0.post0
+
 tests:
   - python:
       imports:
         - holidays
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/holidays/
   license: MIT
   license_file: LICENSE
-  summary: Generate and work with holidays in Python
+  summary: Open World Holidays Framework
   description: |
-    A fast, efficient Python library for generating country, province and state
-    specific sets of holidays on the fly. It aims to make determining whether a
-    specific date is a holiday as fast and flexible as possible.
-  homepage: https://github.com/vacanza/python-holidays/
-  repository: https://github.com/vacanza/python-holidays/
-  documentation: https://python-holidays.readthedocs.io/en/latest/
+    Open World Holidays Framework
+  repository: https://github.com/vacanza/holidays/
+  documentation: https://holidays.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - bletham
     - rpanai
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: holidays
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: holidays
+  cfe-purls:
+    - pkg:conda/holidays@${{ version }}?channel=conda-forge
+    - pkg:pypi/holidays@${{ version }}
+  cfe-upstream-repo: https://github.com/vacanza/holidays/
+  cfe-upstream-homepage: https://pypi.org/project/holidays/
+  cfe-import-names: [holidays]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/holidays-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:58:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:58:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:58:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

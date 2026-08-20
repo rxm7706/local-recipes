@@ -2,52 +2,86 @@
 schema_version: 1
 
 context:
-  name: flask-smorest
   version: "0.47.0"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-smorest
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flask-smorest/flask_smorest-${{ version }}.tar.gz
   sha256: a415ce7db3d7e63dd854eb16d59047686dbf5d31c4913e245fa5657f88e7788d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - flit-core
+    - flit-core <4
   run:
-    - apispec >=5
-    - flask >=2
-    - marshmallow <4,>=3.24.1
     - python >=${{ python_min }}
-    - webargs >=8
-    - werkzeug >=2
+    - werkzeug <4,>=3.0.1
+    - flask <4,>=3.0.2
+    - marshmallow <5,>=3.24.1
+    - webargs <9,>=8.0.0
+    - apispec <7,>=6.0.0
 
 tests:
   - python:
       imports:
         - flask_smorest
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/flask-smorest/
   license: MIT
   license_file: LICENSE
-  summary: DB agnostic framework to build auto-documented REST APIs with Flask and marshmallow
-  homepage: https://github.com/marshmallow-code/flask-smorest
+  summary: Flask/Marshmallow-based REST API framework
+  description: |
+    Flask/Marshmallow-based REST API framework
   repository: https://github.com/marshmallow-code/flask-smorest
-  documentation: https://flask-smorest.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - mcs07
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-smorest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-smorest
+  cfe-purls:
+    - pkg:conda/flask-smorest@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-smorest@${{ version }}
+  cfe-upstream-repo: https://github.com/marshmallow-code/flask-smorest
+  cfe-upstream-homepage: https://pypi.org/project/flask-smorest/
+  cfe-import-names: [flask_smorest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-smorest-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.47.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:24:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:24:59Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:24:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

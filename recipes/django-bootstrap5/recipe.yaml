@@ -2,16 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-bootstrap5
-  version: '26.2'
-  python_min: '3.10'
+  version: "26.2"
 
 package:
-  name: ${{ name|lower }}
+  name: django-bootstrap5
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_bootstrap5-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-bootstrap5/django_bootstrap5-${{ version }}.tar.gz
   sha256: 12331059c8230ba372ffaad990a706151e1ad8f721a870aa2e862cf6746f0d33
 
 build:
@@ -22,28 +20,62 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - uv-build >=0.8.3,<0.9.0
     - pip
+    - uv-build >=0.9.6,<0.11.0
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - django >=4.2
-    - jinja2
+
 tests:
   - python:
       imports:
         - django_bootstrap5
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Bootstrap 5 for Django
   homepage: https://github.com/zostera/django-bootstrap5
   license: BSD-3-Clause
   license_file: LICENSE
+  summary: Bootstrap 5 for Django
+  description: |
+    Bootstrap 5 for Django
   repository: https://github.com/zostera/django-bootstrap5
-  documentation: https://github.com/zostera/django-bootstrap5#readme
+  documentation: https://django-bootstrap5.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - rxm7706
     - swainn
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-bootstrap5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-bootstrap5
+  cfe-purls:
+    - pkg:conda/django-bootstrap5@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-bootstrap5@${{ version }}
+  cfe-upstream-repo: https://github.com/zostera/django-bootstrap5
+  cfe-upstream-homepage: https://github.com/zostera/django-bootstrap5
+  cfe-import-names: [django_bootstrap5]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-bootstrap5-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:48:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:48:18Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:48:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

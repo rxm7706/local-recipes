@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  version: 1.0.2
+  version: "1.0.2"
 
 package:
   name: python-pptx
@@ -11,39 +13,72 @@ source:
   sha256: 479a8af0eaf0f0d76b6f00b0887732874ad2e3188230315290cd1f9dd9cc7095
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61.0.0
   run:
     - python >=${{ python_min }}
-    - lxml >=3.1.0
     - pillow >=3.3.2
     - xlsxwriter >=0.5.7
-    - libiconv
-    - typing-extensions
+    - lxml >=3.1.0
+    - typing_extensions >=4.9.0
 
 tests:
   - python:
       imports:
-      - pptx
+        - pptx
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://github.com/scanny/python-pptx
   license: MIT
-  summary: Generate and manipulate Open XML PowerPoint (.pptx) files
-  homepage: http://github.com/scanny/python-pptx
-  repository: http://github.com/scanny/python-pptx
-  documentation: https://python-pptx.readthedocs.io
+  license_file: LICENSE
+  summary: Create, read, and update PowerPoint 2007+ (.pptx) files.
+  description: |
+    Create, read, and update PowerPoint 2007+ (.pptx) files.
+  repository: https://github.com/scanny/python-pptx
+  documentation: https://python-pptx.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-pptx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-pptx
+  cfe-purls:
+    - pkg:conda/python-pptx@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-pptx@${{ version }}
+  cfe-upstream-repo: https://github.com/scanny/python-pptx
+  cfe-upstream-homepage: https://github.com/scanny/python-pptx
+  cfe-import-names: [pptx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-pptx-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:30:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:30:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:30:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

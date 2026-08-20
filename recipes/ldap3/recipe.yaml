@@ -2,55 +2,85 @@
 schema_version: 1
 
 context:
-  name: ldap3
   version: "2.9.1"
-  sha256: f3e7fc4718e3f09dda568b57100095e0ce58633bcabbed8667ce3f8fbaa4229f
 
 package:
-  name: ${{ name|lower }}
+  name: ldap3
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/ldap3/ldap3-${{ version }}.tar.gz
+  sha256: f3e7fc4718e3f09dda568b57100095e0ce58633bcabbed8667ce3f8fbaa4229f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
-    - pyasn1 >=0.4.6
   run:
     - python >=${{ python_min }}
-    - pyasn1 >=0.4.6
+    - pyasn1
 
 tests:
   - python:
       imports:
         - ldap3
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: LGPL-3.0-or-later
-  license_file:
-    - LICENSE.txt
-    - COPYING.LESSER.txt
-  summary: A strictly RFC 4510 conforming LDAP V3 pure Python client library
   homepage: https://github.com/cannatag/ldap3
-  repository: https://github.com/cannatag/ldap3
-  documentation: http://ldap3.readthedocs.io
+  license: LGPL-3.0-only
+  license_file: LICENSE.txt
+  summary: A strictly RFC 4510 conforming LDAP V3 pure Python client library
+  description: |
+    A strictly RFC 4510 conforming LDAP V3 pure Python client library
 
 extra:
   recipe-maintainers:
     - mcs07
     - adament
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ldap3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ldap3
+  cfe-purls:
+    - pkg:conda/ldap3@${{ version }}?channel=conda-forge
+    - pkg:pypi/ldap3@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cannatag/ldap3
+  cfe-import-names: [ldap3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ldap3-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.9.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:13:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:13:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:13:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

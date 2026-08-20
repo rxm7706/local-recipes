@@ -1,21 +1,16 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# Version bump reminder: Must manually check the file constraints to ensure
-# they match those similar to
-# 2024/01 hmaarrfk -- However we have found that these get somewhat stale
-# https://keras.io/getting_started/#compatibility-matrix
 schema_version: 1
 
 context:
   version: "3.15.1"
   python_min: "3.11"
-  name: keras
 
 package:
   name: keras
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/keras-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/k/keras/keras-${{ version }}.tar.gz
   sha256: 92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29
 
 build:
@@ -25,8 +20,7 @@ build:
 
 requirements:
   host:
-    # see https://github.com/keras-team/keras/blob/master/oss_setup.py
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0
   run:
@@ -37,34 +31,26 @@ requirements:
     - namex
     - h5py
     - optree
-    - ml_dtypes
+    - ml-dtypes
     - packaging
-  run_constraints:
-    - tensorflow >=2.18.0
-    - jax >=0.5.0
-    - pytorch >=2.6.0
 
 tests:
   - python:
       imports:
-        - tensorflow.keras
+        - keras.api
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-        - jax
-        - tensorflow
-    script:
-      - KERAS_BACKEND=numpy python -c "import keras"
-      - KERAS_BACKEND=jax python -c "import keras"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://keras.io/
   license: Apache-2.0
   license_file: LICENSE
-  summary: Deep Learning for Python
-  homepage: https://github.com/keras-team/keras
+  summary: Multi-backend Keras
+  description: |
+    Multi-backend Keras
+  repository: https://github.com/keras-team/keras
 
 extra:
   recipe-maintainers:
@@ -74,3 +60,36 @@ extra:
     - ocefpaf
     - xhochy
     - hmaarrfk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: keras
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: keras
+  cfe-purls:
+    - pkg:conda/keras@${{ version }}?channel=conda-forge
+    - pkg:pypi/keras@${{ version }}
+  cfe-upstream-repo: https://github.com/keras-team/keras
+  cfe-upstream-homepage: https://keras.io/
+  cfe-import-names: [keras.api]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/keras-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.15.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:50:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:50:51Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:50:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

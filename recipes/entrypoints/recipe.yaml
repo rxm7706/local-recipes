@@ -13,15 +13,15 @@ source:
   sha256: b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - flit
+    - flit-core >=2,<4
   run:
     - python >=${{ python_min }}
 
@@ -29,17 +29,19 @@ tests:
   - python:
       imports:
         - entrypoints
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/takluyver/entrypoints
   license: MIT
   license_file: LICENSE
-  summary: Discover and load entry points from installed packages
-  homepage: https://entrypoints.readthedocs.io/
+  summary: Discover and load entry points from installed packages.
+  description: |
+    Discover and load entry points from installed packages.
+  documentation: https://entrypoints.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
@@ -47,3 +49,36 @@ extra:
     - minrk
     - takluyver
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: entrypoints
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: entrypoints
+  cfe-purls:
+    - pkg:conda/entrypoints@${{ version }}?channel=conda-forge
+    - pkg:pypi/entrypoints@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/takluyver/entrypoints
+  cfe-import-names: [entrypoints]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/entrypoints-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:03:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:03:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:03:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

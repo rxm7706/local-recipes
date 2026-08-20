@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: accelerate
   version: "1.14.0"
 
 package:
-  name: ${{ name|lower }}
+  name: accelerate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/accelerate-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/accelerate/accelerate-${{ version }}.tar.gz
   sha256: 41b9c4377a54e0b460a959b0defa1b736e4ca0a2373252d9a539964c2afe3c8d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - accelerate=accelerate.commands.accelerate_cli:main
@@ -27,8 +26,8 @@ build:
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -45,7 +44,9 @@ tests:
       imports:
         - accelerate
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - datasets
@@ -64,12 +65,45 @@ tests:
       - accelerate-merge-weights --help
 
 about:
-  summary: Training loop of PyTorch without boilerplate code
+  homepage: https://github.com/huggingface/accelerate
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/huggingface/accelerate
+  summary: Training loop of PyTorch without boilerplate code
+  description: |
+    Accelerate, Training loop of PyTorch without boilerplate code
   documentation: https://huggingface.co/docs/accelerate
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: accelerate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: accelerate
+  cfe-purls:
+    - pkg:conda/accelerate@${{ version }}?channel=conda-forge
+    - pkg:pypi/accelerate@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/huggingface/accelerate
+  cfe-import-names: [accelerate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/accelerate-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:36:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:36:27Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:36:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license-mapped:Apache->Apache-2.0
+####

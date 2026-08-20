@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
   version: "3.0"
 
@@ -13,13 +15,14 @@ source:
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vvv --no-build-isolation --no-deps && mkdir -p ${SP_DIR}/pycparser/utils && cp -r utils/fake_libc_include ${SP_DIR}/pycparser/utils
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
-    - setuptools
     - python ${{ python_min }}.*
+    - pip
+    - setuptools >=69
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -28,19 +31,49 @@ tests:
       imports:
         - pycparser
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/eliben/pycparser
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Complete C99 parser in pure Python
+  summary: C parser in Python
   description: |
-    pycparser is a complete parser of the C language, written in pure Python using the PLY parsing library.
-    It parses C code into an AST and can serve as a front-end for C compilers or analysis tools.
-  homepage: https://github.com/eliben/pycparser
-  repository: https://github.com/eliben/pycparser
+    C parser in Python
 
 extra:
   recipe-maintainers:
     - synapticarbors
     - scopatz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pycparser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pycparser
+  cfe-purls:
+    - pkg:conda/pycparser@${{ version }}?channel=conda-forge
+    - pkg:pypi/pycparser@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/eliben/pycparser
+  cfe-import-names: [pycparser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pycparser-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:28:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:28:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:28:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

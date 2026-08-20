@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: zc.lockfile
   version: "4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: zc.lockfile
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/zc_lockfile-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/z/zc.lockfile/zc_lockfile-${{ version }}.tar.gz
   sha256: d3ab0f53974296a806db3219b9191ba0e6d5cbbd1daa2e0d17208cb9b29d2102
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  preserve_egg_dir: true
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
     - setuptools
@@ -31,21 +30,57 @@ requirements:
 tests:
   - python:
       imports:
-        - zc
         - zc.lockfile
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/zopefoundation/zc.lockfile
   license: ZPL-2.1
   license_file: LICENSE.txt
   summary: Basic inter-process locks
-  homepage: https://github.com/zopefoundation/zc.lockfile
-  repository: https://github.com/zopefoundation/zc.lockfile
+  description: |
+    Basic inter-process locks
 
 extra:
   recipe-maintainers:
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zc.lockfile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zc-lockfile
+  cfe-purls:
+    - pkg:conda/zc.lockfile@${{ version }}?channel=conda-forge
+    - pkg:pypi/zc-lockfile@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/zopefoundation/zc.lockfile
+  cfe-import-names: [zc.lockfile]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zc.lockfile-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:30:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:30:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:30:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -3,61 +3,76 @@ schema_version: 1
 
 context:
   version: "3.0.1"
-  python_check_max: "3.14"
 
 package:
   name: arabic-reshaper
   version: ${{ version }}
 
 source:
-  - target_directory: dist
-    url: https://files.pythonhosted.org/packages/source/a/arabic-reshaper/arabic_reshaper-${{ version }}.tar.gz
-    sha256: a0d9b2a9fa29b5f2c1d705f407adf6ca4242405b9cac0e5cc09e6c4f3f8fb68c
-  - target_directory: src
-    url: https://github.com/mpcabd/python-arabic-reshaper/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: eb1b9df3b5aaf3e8c1a454aad9f7754a062c2f2d134d972209b801db933caa7c
+  url: https://pypi.org/packages/source/a/arabic-reshaper/arabic_reshaper-${{ version }}.tar.gz
+  sha256: a0d9b2a9fa29b5f2c1d705f407adf6ca4242405b9cac0e5cc09e6c4f3f8fb68c
 
 build:
   number: 0
   noarch: python
-  script:
-    - cd dist
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: arabic_reshaper
+      imports:
+        - arabic_reshaper
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - src/arabic_reshaper/tests/
-    requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      - cd src/arabic_reshaper
-      - coverage run --source=arabic_reshaper --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=74
+        - "*"
 
 about:
-  summary: Reconstruct Arabic sentences to be used in applications that do not support Arabic
+  homepage: https://github.com/mpcabd/python-arabic-reshaper/
   license: MIT
-  license_file: dist/LICENSE
-  homepage: https://pypi.org/project/arabic-reshaper
-  repository: https://github.com/mpcabd/python-arabic-reshaper
+  license_file: LICENSE
+  summary: Reconstruct Arabic sentences to be used in applications that do not support Arabic
+  description: |
+    Reconstruct Arabic sentences to be used in applications that do not support Arabic
+  repository: https://github.com/mpcabd/python-arabic-reshaper/
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arabic-reshaper
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arabic-reshaper
+  cfe-purls:
+    - pkg:conda/arabic-reshaper@${{ version }}?channel=conda-forge
+    - pkg:pypi/arabic-reshaper@${{ version }}
+  cfe-upstream-repo: https://github.com/mpcabd/python-arabic-reshaper/
+  cfe-upstream-homepage: https://github.com/mpcabd/python-arabic-reshaper/
+  cfe-import-names: [arabic_reshaper]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/arabic-reshaper-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:16:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:16:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:16:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

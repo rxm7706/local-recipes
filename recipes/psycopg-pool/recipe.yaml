@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: psycopg-pool
   version: "3.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: psycopg-pool
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/psycopg-pool/psycopg_pool-${{ version }}.tar.gz
   sha256: b10b10b7a175d5cc1592147dc5b7eec8a9e0834eb3ed2c4a92c858e2f51eb63c
 
 build:
@@ -21,30 +20,68 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=80.3.1
     - pip
+    - setuptools >=80.3.1
+    - wheel >=0.37
   run:
     - python >=${{ python_min }}
+    - psycopg
     - typing_extensions >=4.6
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-        - psycopg >=3.0
-    script:
-      - pip check
-      - python -c "import psycopg_pool"
+  - python:
+      imports:
+        - psycopg_pool
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Connection Pool for Psycopg
-  license: LGPL-3.0-or-later
+  homepage: https://psycopg.org/
+  license: LGPL-3.0-only
   license_file: LICENSE.txt
-  homepage: https://psycopg.org/psycopg3/
-  repository: https://github.com/psycopg/psycopg/
+  summary: Connection Pool for Psycopg
+  description: |
+    Connection Pool for Psycopg
+  repository: https://github.com/psycopg/psycopg
   documentation: https://www.psycopg.org/psycopg3/docs/advanced/pool.html
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: psycopg-pool
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: psycopg-pool
+  cfe-purls:
+    - pkg:conda/psycopg-pool@${{ version }}?channel=conda-forge
+    - pkg:pypi/psycopg-pool@${{ version }}
+  cfe-upstream-repo: https://github.com/psycopg/psycopg
+  cfe-upstream-homepage: https://psycopg.org/
+  cfe-import-names: [psycopg_pool]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/psycopg-pool-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:16:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:16:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:16:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # added run deps from import test: ['psycopg']
+#    # blocker: missing-license-file
+####

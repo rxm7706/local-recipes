@@ -2,57 +2,80 @@
 schema_version: 1
 
 context:
-  name: oauthlib
   version: "3.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: oauthlib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/oauthlib/oauthlib-${{ version }}.tar.gz
   sha256: 0f0f8aa759826a193cf66c12ea1af1637f87b9b4622d46e866952bb022e538c9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - cryptography
-    - pyjwt >=1.0.0
-    - blinker
 
 tests:
   - python:
       imports:
         - oauthlib
-        - oauthlib.oauth1
-        - oauthlib.oauth1.rfc5849
-        - oauthlib.oauth1.rfc5849.endpoints
-        - oauthlib.oauth2
-        - oauthlib.oauth2.rfc6749
-        - oauthlib.oauth2.rfc6749.clients
-        - oauthlib.oauth2.rfc6749.endpoints
-        - oauthlib.oauth2.rfc6749.grant_types
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://github.com/oauthlib/oauthlib
   license: BSD-3-Clause
+  license_file: LICENSE
   summary: A generic, spec-compliant, thorough implementation of the OAuth request-signing logic
-  homepage: https://github.com/idan/oauthlib
-  repository: https://github.com/idan/oauthlib
-  documentation: https://oauthlib.readthedocs.io
+  description: |
+    A generic, spec-compliant, thorough implementation of the OAuth request-signing logic
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oauthlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oauthlib
+  cfe-purls:
+    - pkg:conda/oauthlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/oauthlib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/oauthlib/oauthlib
+  cfe-import-names: [oauthlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/oauthlib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:08:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:08:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:08:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

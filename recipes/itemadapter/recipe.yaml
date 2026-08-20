@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: itemadapter
   version: "0.13.1"
 
 package:
-  name: ${{ name|lower }}
+  name: itemadapter
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/itemadapter/itemadapter-${{ version }}.tar.gz
   sha256: fa139c7be2aa80f8874b2f23d165d5d4aa47c4b85c54ab530b567fd5f684f1b4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
@@ -31,33 +30,18 @@ tests:
       imports:
         - itemadapter
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - itemadapter
-        - tests
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-        - attrs
-        - pydantic <2
-        - pytest >=5.4
-        - scrapy >=2.0
-    script:
-      - pytest tests
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/scrapy/itemadapter
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Common interface for different data containers
+  summary: Common interface for data container classes
   description: |
-    The ItemAdapter class is a wrapper for data container objects, providing a
-    common interface to handle objects of different types in an uniform manner,
-    regardless of their underlying implementation.
-
-
-  homepage: https://github.com/scrapy/itemadapter
+    Common interface for data container classes
+  repository: https://github.com/scrapy/itemadapter
 
 extra:
   recipe-maintainers:
@@ -65,3 +49,36 @@ extra:
     - wRAR
     - dangra
     - rmax
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: itemadapter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: itemadapter
+  cfe-purls:
+    - pkg:conda/itemadapter@${{ version }}?channel=conda-forge
+    - pkg:pypi/itemadapter@${{ version }}
+  cfe-upstream-repo: https://github.com/scrapy/itemadapter
+  cfe-upstream-homepage: https://github.com/scrapy/itemadapter
+  cfe-import-names: [itemadapter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/itemadapter-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.13.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:07:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:07:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:07:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

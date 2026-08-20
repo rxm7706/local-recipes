@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: joserfc
   version: "1.7.4"
 
 package:
-  name: ${{ name|lower }}
+  name: joserfc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/joserfc-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/joserfc/joserfc-${{ version }}.tar.gz
   sha256: b3bc561672ae541b17a9237053b48a03dacddd92d68047b3ecdfb4b5714a88ed
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - cryptography >=45.0.1
@@ -32,15 +31,53 @@ tests:
       imports:
         - joserfc
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT
+  homepage: https://pypi.org/project/joserfc/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://jose.authlib.org/en/dev/
+  summary: The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT
+  description: |
+    The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT
   repository: https://github.com/authlib/joserfc
+  documentation: https://jose.authlib.org/
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: joserfc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: joserfc
+  cfe-purls:
+    - pkg:conda/joserfc@${{ version }}?channel=conda-forge
+    - pkg:pypi/joserfc@${{ version }}
+  cfe-upstream-repo: https://github.com/authlib/joserfc
+  cfe-upstream-homepage: https://pypi.org/project/joserfc/
+  cfe-import-names: [joserfc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/joserfc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:19:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:19:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:19:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

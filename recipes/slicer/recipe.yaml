@@ -2,43 +2,81 @@
 schema_version: 1
 
 context:
-  name: slicer
   version: "0.0.8"
 
 package:
-  name: ${{ name|lower }}
+  name: slicer
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/slicer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/slicer/slicer-${{ version }}.tar.gz
   sha256: 2e7553af73f0c0c2d355f4afcc3ecf97c6f2156fcf4593955c3f56cf6c4d6eb7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - slicer
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A small package for big slicing.
+  homepage: https://github.com/interpretml/slicer
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/interpretml/slicer
+  summary: A small package for big slicing.
+  description: |
+    A small package for big slicing.
 
 extra:
   recipe-maintainers:
     - slundberg
     - connortann
     - paulbkoch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: slicer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: slicer
+  cfe-purls:
+    - pkg:conda/slicer@${{ version }}?channel=conda-forge
+    - pkg:pypi/slicer@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/interpretml/slicer
+  cfe-import-names: [slicer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/slicer-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.0.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:34:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:34:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:34:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

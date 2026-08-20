@@ -2,53 +2,86 @@
 schema_version: 1
 
 context:
-  python_min: "3.10"
-  name: dask-expr
   version: "2.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: dask-expr
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dask_expr-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dask-expr/dask_expr-${{ version }}.tar.gz
   sha256: e6d5a7bdff927aa4a1754a76cad79c5925254c525f568038df7832fcd558fc11
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=62.6
-    - versioneer =0.28
-    - tomli
   run:
     - python >=${{ python_min }}
-    - dask-core >=2025.1.0
+    - dask >=2025.1.0
 
 tests:
   - python:
       imports:
         - dask_expr
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/dask-expr/
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
   summary: High Level Expressions for Dask
   description: |
     High Level Expressions for Dask
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  homepage: https://github.com/dask/dask-expr
-  repository: https://github.com/dask/dask-expr
-  documentation: https://github.com/dask/dask-expr/blob/main/README.md
 
 extra:
   recipe-maintainers:
     - fjetter
     - phofl
     - jrbourbeau
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dask-expr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dask-expr
+  cfe-purls:
+    - pkg:conda/dask-expr@${{ version }}?channel=conda-forge
+    - pkg:pypi/dask-expr@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/dask-expr/
+  cfe-import-names: [dask_expr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dask-expr-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:40:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:40:39Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T08:40:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

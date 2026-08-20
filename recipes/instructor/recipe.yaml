@@ -2,79 +2,91 @@
 schema_version: 1
 
 context:
-  name: instructor
   version: "1.15.4"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: instructor
   version: ${{ version }}
 
 source:
-  url: https://github.com/jxnl/instructor/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 511dc875660153e74bb83d1dac87a00182b345fa35132081bfb4431a4019eb7d
+  url: https://pypi.org/packages/source/i/instructor/instructor-${{ version }}.tar.gz
+  sha256: ea2280c3678d0f6891c4d826104f95624b680e69877113a6345b1d7c9027ba0f
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - instructor = instructor.cli.cli:app
 
 requirements:
   host:
-    - python 3.10.*
-    - poetry-core
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - openai >=2.0.0,<3.0.0
-    - pydantic >=2.8.0,<3.0.0
-    - docstring_parser >=0.16,<1.0
-    - typer >=0.9.0,<1.0.0
-    - rich >=13.7.0,<15.0.0
-    - aiohttp >=3.9.1,<4.0.0
-    - tenacity >=8.2.3,<10.0.0
-    - pydantic-core >=2.18.0,<3.0.0
-    - jiter >=0.6.1,<0.12
-    - jinja2 >=3.1.4,<4.0.0
-    - requests >=2.32.3,<3.0.0
-    - diskcache >=5.6.3
-  run_constraints:
-    - anthropic ==0.76.0
-    - xmltodict >=0.13,<1.1
-    - groq >=0.4.2,<1.1.0
-    - cohere >=5.1.8,<6.0.0
-    - jsonref >=1.1.0,<2.0.0
-    - writer-sdk >=2.2.0,<3.0.0
-    - boto3 >=1.34.0,<2.0.0
-    - mistralai >=1.5.1,<2.0.0
-    - openai >=2.0.0,<3.0.0
-    - google-genai >=1.5.0
-    - litellm >=1.35.31,<2.0.0
-    - xai-sdk >=0.2.0
-    - python-dotenv >=1.0.0
-    - sqlmodel >=0.0.22,<1.0.0
-    - trafilatura >=1.12.2,<3.0.0
-    - pydub >=0.25.1,<1.0.0
-    - datasets >=3.0.1,<5.0.0
+    - aiohttp <4.0.0,>=3.9.1
+    - docstring_parser <1.0,>=0.16
+    - jinja2 <4.0.0,>=3.1.4
+    - jiter <0.15,>=0.6.1
+    - openai <3.0.0,>=2.0.0
+    - pydantic-core <3.0.0,>=2.18.0
+    - pydantic <3.0.0,>=2.8.0
+    - requests <3.0.0,>=2.32.3
+    - rich <15.0.0,>=13.7.0
+    - tenacity <10.0.0,>=8.2.3
+    - typer <1.0.0,>=0.9.0
 
 tests:
   - python:
       imports:
         - instructor
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: structured outputs for llm
+  homepage: https://pypi.org/project/instructor/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/jxnl/instructor
+  summary: structured outputs for llm
+  description: |
+    structured outputs for llm
 
 extra:
   recipe-maintainers:
     - moritzwilksch
     - philippjfr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: instructor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: instructor
+  cfe-purls:
+    - pkg:conda/instructor@${{ version }}?channel=conda-forge
+    - pkg:pypi/instructor@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/instructor/
+  cfe-import-names: [instructor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/instructor-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.15.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:45:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:45:15Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:45:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

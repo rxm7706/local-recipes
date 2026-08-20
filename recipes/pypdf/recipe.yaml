@@ -3,189 +3,79 @@ schema_version: 1
 
 context:
   version: "6.16.1"
-  python_check_max: "3.14"
-  summary: |-
-    A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
 
-recipe:
+package:
   name: pypdf
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/p/pypdf/pypdf-${{ version }}.tar.gz
-    sha256: c4d1b43ddae921387321cf63936cd16a7743b91d2da92f165c149a195c972ba9
-    target_directory: dist
-  - url: https://github.com/py-pdf/pypdf/archive/refs/tags/${{ version }}.tar.gz
-    sha256: 68daddaacea36ee53d0f94a6d220beb9e78fea3c6024a108916565bc4c2ae100
-    target_directory: src
+  url: https://pypi.org/packages/source/p/pypdf/pypdf-${{ version }}.tar.gz
+  sha256: c4d1b43ddae921387321cf63936cd16a7743b91d2da92f165c149a195c972ba9
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: pypdf
-    build:
-      noarch: python
-      script:
-        - cd dist
-        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-    requirements:
-      host:
-        - flit-core >=3.11,<4
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - python >=${{ python_min }}
-        - typing_extensions >=4.0
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.11,<5
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.0
 
-  - package:
-      name: pypdf-with-crypto
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("pypdf", exact=True) }}
-        - cryptography >3.0
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-    about:
-      summary: ${{ summary }} (with [crypto])
-
-  - package:
-      name: pypdf-with-fonts
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("pypdf", exact=True) }}
-        - fonttools
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-    about:
-      summary: ${{ summary }} (with [fonts])
-
-  - package:
-      name: pypdf-with-image
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("pypdf", exact=True) }}
-        - pillow >=8.0.0
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-    about:
-      summary: ${{ summary }} (with [image])
-
-  - package:
-      name: pypdf-with-rtl-text
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("pypdf", exact=True) }}
-        - arabic-reshaper
-        - python-bidi
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-    about:
-      summary: ${{ summary }} (with [rtl_text])
-
-  - package:
-      name: pypdf-with-full
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("pypdf-with-crypto", exact=True) }}
-        - ${{ pin_subpackage("pypdf-with-image", exact=True) }}
-        - ${{ pin_subpackage("pypdf-with-fonts", exact=True) }}
-        - ${{ pin_subpackage("pypdf-with-rtl-text", exact=True) }}
-        - ${{ pin_subpackage("pypdf", exact=True) }}
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-    about:
-      summary: ${{ summary }} (with [full])
-
-  - package:
-      name: _pypdf-with-full-tests
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("pypdf-with-full", exact=True) }}
-    tests:
-      - python:
-          imports: pypdf
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - files:
-          recipe:
-            - test_all.py
-          source:
-            - src/pyproject.toml
-            - src/tests/
-            - src/resources/
-        requirements:
-          run:
-            - fpdf
-            - pytest-cov
-            - pytest-socket
-            - pytest-timeout
-            - pyyaml
-            - types-pillow
-            - python ${{ python_min }}.*
-        script:
-          - python test_all.py
-    about:
-      summary: ${{ summary }} (with [full] and all tests)
+tests:
+  - python:
+      imports:
+        - pypdf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: ${{ summary }}
+  homepage: https://pypi.org/project/pypdf/
   license: BSD-3-Clause
-  license_file: dist/LICENSE
-  homepage: https://pypi.org/project/pypdf
+  license_file: LICENSE
+  summary: A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
+  description: |
+    A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
   repository: https://github.com/py-pdf/pypdf
-  documentation: https://pypdf.readthedocs.io
+  documentation: https://pypdf.readthedocs.io/en/latest/
 
 extra:
-  feedstock-name: pypdf
   recipe-maintainers:
     - MartinThoma
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pypdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pypdf
+  cfe-purls:
+    - pkg:conda/pypdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/pypdf@${{ version }}
+  cfe-upstream-repo: https://github.com/py-pdf/pypdf
+  cfe-upstream-homepage: https://pypi.org/project/pypdf/
+  cfe-import-names: [pypdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pypdf-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:58:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:58:03Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:58:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

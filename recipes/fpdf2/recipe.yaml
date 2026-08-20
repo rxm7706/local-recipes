@@ -2,34 +2,33 @@
 schema_version: 1
 
 context:
-  name: fpdf2
   version: "2.8.8"
 
 package:
-  name: ${{ name|lower }}
+  name: fpdf2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fpdf2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/fpdf2/fpdf2-${{ version }}.tar.gz
   sha256: 9e94e155e85e8053329a9a1fce8b566fd7a7c5bb79e98a1a3952d379b947c5b9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=61.0
     - wheel
     - fonttools
   run:
-    - defusedxml
-    - fonttools >=4.34.0
-    - pillow >=8.3.2,!=9.2.*
     - python >=${{ python_min }}
+    - defusedxml
+    - pillow !=9.2.*,>=8.3.2
+    - fonttools >=4.34.0
 
 tests:
   - python:
@@ -41,13 +40,46 @@ tests:
         - "*"
 
 about:
-  summary: Simple PDF generation for Python
-  license: LGPL-3.0-or-later
+  homepage: https://py-pdf.github.io/fpdf2/
+  license: LGPL-3.0-only
   license_file: LICENSE
-  homepage: https://pyfpdf.github.io/fpdf2/
-  repository: https://github.com/PyFPDF/fpdf2
+  summary: Simple & fast PDF generation for Python
+  description: |
+    Simple & fast PDF generation for Python
+  repository: https://github.com/py-pdf/fpdf2
+  documentation: https://py-pdf.github.io/fpdf2/
 
 extra:
   recipe-maintainers:
     - conda-forge/rpaframework-core
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fpdf2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fpdf2
+  cfe-purls:
+    - pkg:conda/fpdf2@${{ version }}?channel=conda-forge
+    - pkg:pypi/fpdf2@${{ version }}
+  cfe-upstream-repo: https://github.com/py-pdf/fpdf2
+  cfe-upstream-homepage: https://py-pdf.github.io/fpdf2/
+  cfe-import-names: [fpdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fpdf2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:36:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:36:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

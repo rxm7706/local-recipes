@@ -15,29 +15,15 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
-  python:
-    entry_points:
-      - tqdm = tqdm.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=42
-    - setuptools_scm >=3.4
-    - toml
   run:
     - python >=${{ python_min }}
-    - if: win
-      then:
-        - colorama
-        - __win
-    - if: unix
-      then: __unix
-  run_constraints:
-    - envwrap >=0.2
-    - ipywidgets >=6.0
 
 tests:
   - python:
@@ -47,32 +33,51 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - files:
-      source:
-        - tests
-        - pyproject.toml
-    requirements:
-      run:
-        - pytest >=6.0
-        - pytest-cov
-        - pytest-timeout
-        - pytest-asyncio >=0.24
-        - python ${{ python_min }}.*
-    script:
-      - tqdm --help
-      - tqdm -v
-      - pytest -k "not perf and not tk"
 
 about:
-  license: MPL-2.0 and MIT
-  license_file: LICENCE
-  summary: A Fast, Extensible Progress Meter
-  homepage: https://pypi.org/project/tqdm/
-  repository: https://github.com/tqdm/tqdm
-  documentation: https://tqdm.github.io
+  homepage: https://tqdm.github.io
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Fast, Extensible Progress Meter
+  description: |
+    Fast, Extensible Progress Meter
 
 extra:
   recipe-maintainers:
     - casperdcl
     - pmlandwehr
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tqdm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tqdm
+  cfe-purls:
+    - pkg:conda/tqdm@${{ version }}?channel=conda-forge
+    - pkg:pypi/tqdm@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://tqdm.github.io
+  cfe-import-names: [tqdm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tqdm-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T06:44:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:44:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:44:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

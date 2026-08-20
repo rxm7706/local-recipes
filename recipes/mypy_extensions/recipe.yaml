@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: mypy_extensions
   version: "1.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: mypy-extensions
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/mypy-extensions/mypy_extensions-${{ version }}.tar.gz
   sha256: 52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558
 
 build:
@@ -19,16 +18,10 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - if: build_platform != target_platform
-      then: python
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
   host:
-    - python ${{ python_min }}
-    - setuptools
-    - flit-core >=3.11,<4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.11,<4
   run:
     - python >=${{ python_min }}
 
@@ -37,20 +30,56 @@ tests:
       imports:
         - mypy_extensions
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
+  homepage: https://github.com/python/mypy_extensions
+  license: REPLACE_LICENSE
   license_file: LICENSE
-  summary: Experimental type system extensions for programs checked with the mypy typechecker.
+  summary: Type system extensions for programs checked with the mypy type checker.
   description: |
-    The 'mypy_extensions' module defines experimental extensions to the
-    standard 'typing' module that are supported by the mypy typechecker.
-  homepage: http://www.mypy-lang.org/
-  repository: https://github.com/python/mypy/blob/master/extensions
-  documentation: https://mypy.readthedocs.io
+    Type system extensions for programs checked with the mypy type checker.
 
 extra:
   recipe-maintainers:
     - nehaljwani
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mypy_extensions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mypy-extensions
+  cfe-purls:
+    - pkg:conda/mypy_extensions@${{ version }}?channel=conda-forge
+    - pkg:pypi/mypy-extensions@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/python/mypy_extensions
+  cfe-import-names: [mypy_extensions]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mypy_extensions-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T05:30:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:30:22Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:30:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

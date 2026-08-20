@@ -2,36 +2,29 @@
 schema_version: 1
 
 context:
-  name: git-fame
   version: "4.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: git-fame
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/git-fame/git_fame-${{ version }}.tar.gz
   sha256: 752d30e80eb452c6a3ef32b00a97e8da019706e6ae7a99436f24a7200707423b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - git-fame = gitfame:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm >=3.4
-    - toml
+    - setuptools >=42
   run:
     - python >=${{ python_min }}
     - argopt >=0.3.5
-    - pyyaml
     - shtab
     - tabulate
     - tqdm >=4.44.0
@@ -40,21 +33,59 @@ tests:
   - python:
       imports:
         - gitfame
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - git-fame -v
-      - git-fame -h
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/git-fame/
   license: MPL-2.0
-  license_file: LICENCE
-  summary: Pretty-print git repository collaborators sorted by contributions
-  homepage: https://github.com/casperdcl/git-fame
+  license_file: LICENSE
+  summary: Pretty-print `git` repository collaborators sorted by contributions
+  description: |
+    Pretty-print `git` repository collaborators sorted by contributions
 
 extra:
   recipe-maintainers:
     - casperdcl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: git-fame
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: git-fame
+  cfe-purls:
+    - pkg:conda/git-fame@${{ version }}?channel=conda-forge
+    - pkg:pypi/git-fame@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/git-fame/
+  cfe-import-names: [gitfame]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/git-fame-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:32:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:32:07Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T09:32:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -13,53 +13,75 @@ source:
   sha256: bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - futurize = libfuturize.main:main
-      - pasteurize = libpasteurize.main:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - future
-        - libfuturize
-        - libpasteurize
-        - past
+        - html
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - futurize --help
-      - pasteurize --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://python-future.org
   license: MIT
   license_file: LICENSE.txt
   summary: Clean single-source support for Python 3 and 2
   description: |
-    Python-future  is the missing compatibility layer between Python 2 and
-    Python 3. It allows you to use a single, clean Python 3.x-compatible
-    codebase to support both Python 2 and Python 3 with minimal overhead.
-  homepage: https://python-future.org
+    Clean single-source support for Python 3 and 2
   repository: https://github.com/PythonCharmers/python-future
-  documentation: https://python-future.org
 
 extra:
   recipe-maintainers:
     - jakirkham
     - mmysinger
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: future
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: future
+  cfe-purls:
+    - pkg:conda/future@${{ version }}?channel=conda-forge
+    - pkg:pypi/future@${{ version }}
+  cfe-upstream-repo: https://github.com/PythonCharmers/python-future
+  cfe-upstream-homepage: https://python-future.org
+  cfe-import-names: [html]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/future-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:38:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:38:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:38:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

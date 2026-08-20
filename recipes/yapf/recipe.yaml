@@ -2,54 +2,82 @@
 schema_version: 1
 
 context:
-  name: yapf
   version: "0.43.0"
-  sha256: 1d8ca9d7e1fc429c496e0a046e509e437d5ae766487b0394c45fc1fdf253b5d4
 
 package:
-  name: ${{ name }}
+  name: yapf
   version: ${{ version }}
 
 source:
-  url: https://github.com/google/${{ name }}/archive/v${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/y/yapf/yapf-${{ version }}.tar.gz
+  sha256: 00d3aa24bfedff9420b2e0d5d9f5ab6d9d4268e72afbf59bb3fa542781d5218e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - yapf = yapf:run_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=58.5.0
   run:
-    - importlib-metadata >=6.6.0
-    - platformdirs >=3.5.1
     - python >=${{ python_min }}
+    - platformdirs >=3.5.1
     - tomli >=2.0.1
 
 tests:
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - yapf --help
-      - yapf --version
-      - pip check
+  - python:
+      imports:
+        - yapf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/google/yapf
   license: Apache-2.0
   license_file: LICENSE
-  summary: A formatter for Python files
-  homepage: https://github.com/google/yapf
+  summary: A formatter for Python code
+  description: |
+    A formatter for Python code
+  documentation: https://github.com/google/yapf/blob/main/README.md#yapf
 
 extra:
   recipe-maintainers:
     - vamega
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: yapf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: yapf
+  cfe-purls:
+    - pkg:conda/yapf@${{ version }}?channel=conda-forge
+    - pkg:pypi/yapf@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/google/yapf
+  cfe-import-names: [yapf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/yapf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.43.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:28:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:28:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:28:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

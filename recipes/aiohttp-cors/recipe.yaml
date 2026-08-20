@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: aiohttp-cors
-  version: 0.8.1
+  version: "0.8.1"
 
 package:
-  name: ${{ name|lower }}
+  name: aiohttp-cors
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/aiohttp_cors/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/aiohttp-cors/aiohttp_cors-${{ version }}.tar.gz
   sha256: ccacf9cb84b64939ea15f859a146af1f662a6b1d68175754a07315e305fb1403
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -25,21 +24,55 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - aiohttp >=1.1
+    - aiohttp >=3.9
 
 tests:
   - python:
       imports:
         - aiohttp_cors
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
+  homepage: https://github.com/aio-libs/aiohttp-cors
   license: Apache-2.0
   license_file: LICENSE
   summary: CORS support for aiohttp
-  homepage: https://github.com/aio-libs/aiohttp-cors
-  repository: https://github.com/aio-libs/aiohttp-cors
-  documentation: https://github.com/aio-libs/aiohttp-cors
+  description: |
+    CORS support for aiohttp
 
 extra:
   recipe-maintainers:
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiohttp-cors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiohttp-cors
+  cfe-purls:
+    - pkg:conda/aiohttp-cors@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiohttp-cors@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/aio-libs/aiohttp-cors
+  cfe-import-names: [aiohttp_cors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/aiohttp-cors-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:42:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:42:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:42:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

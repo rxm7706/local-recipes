@@ -2,62 +2,84 @@
 schema_version: 1
 
 context:
-  name: appdynamics
-  version: "25.1.0.7425"
-  python_min: "3.8"
+  version: "26.7.1.9060"
 
 package:
-  name: ${{ name|lower }}
+  name: appdynamics
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py2.py3/a/appdynamics/appdynamics-${{ version }}-py2.py3-none-any.whl
-  sha256: 8c7ea0523ff5c36cd8634f709e710726d6da42d15827f236ab8d324046d81b77
+  url: https://pypi.org/packages/py2.py3/a/appdynamics/appdynamics-26.7.1.9060-py2.py3-none-any.whl
+  sha256: 5c3fbb32fa621ed85568f7ef0474060d2b000ba830b395c936411ed92b5f8d50
 
 build:
   number: 0
-  string: py2.py3
   noarch: python
-  script:
-    - ${{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics
-  dynamic_linking:
-    missing_dso_allowlist:
-      - "*/libjvm.so"
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - cmake
-    - ninja
   host:
-    - python 3.8.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools >=38.0
+    - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - appdynamics-proxysupport-linux-x64
-    - appdynamics-bindeps-linux-x64 >=24.12.0
-  ignore_run_exports:
-    from_package:
-      - ${{ stdlib('c') }}
-      - ${{ compiler('c') }}
+    - python >=${{ python_min }}
+    - if: linux
+      then:
+        - appdynamics-bindeps-linux-x64
+        - appdynamics-proxysupport-linux-x64
 
 tests:
   - python:
       imports:
         - appdynamics
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Agent for AppDynamics
-  license: Proprietary
-  license_file:
-    - LICENSE
   homepage: https://www.appdynamics.com/python
-  documentation: https://pypi.org/project/appdynamics/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python Agent for AppDynamics
+  description: |
+    Python Agent for AppDynamics
 
 extra:
-  copy_test_source_files: true
-  final: true
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: appdynamics
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: appdynamics
+  cfe-purls:
+    - pkg:conda/appdynamics@${{ version }}?channel=conda-forge
+    - pkg:pypi/appdynamics@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://www.appdynamics.com/python
+  cfe-import-names: [appdynamics]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T07:53:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:53:15Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T07:53:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

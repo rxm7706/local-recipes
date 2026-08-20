@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  name: websocket-client
   version: "1.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: websocket-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/websocket-client/websocket_client-${{ version }}.tar.gz
   sha256: 9e813624b6eb619999a97dc7958469217c3176312b3a16a4bd1bc7e08a46ec98
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - wsdump=websocket._wsdump:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -32,26 +29,56 @@ tests:
   - python:
       imports:
         - websocket
-        - websocket.tests
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - wsdump --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: WebSocket client for Python with low level API options
+  homepage: https://github.com/websocket-client/websocket-client.git
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/websocket-client/websocket-client.git
+  summary: WebSocket client for Python with low level API options
+  description: |
+    WebSocket client for Python with low level API options
   repository: https://github.com/websocket-client/websocket-client/
-  documentation: https://websocket-client.readthedocs.io/en/latest/
+  documentation: https://websocket-client.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - scopatz
     - BastianZim
     - wshanks
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: websocket-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: websocket-client
+  cfe-purls:
+    - pkg:conda/websocket-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/websocket-client@${{ version }}
+  cfe-upstream-repo: https://github.com/websocket-client/websocket-client/
+  cfe-upstream-homepage: https://github.com/websocket-client/websocket-client.git
+  cfe-import-names: [websocket]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/websocket-client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:15:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:15:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:15:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

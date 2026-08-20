@@ -2,50 +2,84 @@
 schema_version: 1
 
 context:
-  name: wikipedia
   version: "1.4.0"
-  sha256: db0fad1829fdd441b1852306e9856398204dc0786d2996dd2e0c8bb8e26133b2
 
 package:
-  name: ${{ name|lower }}
+  name: wikipedia
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/wikipedia/wikipedia-${{ version }}.tar.gz
+  sha256: db0fad1829fdd441b1852306e9856398204dc0786d2996dd2e0c8bb8e26133b2
 
 build:
-  number: 3
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
-    - beautifulsoup4
-    - requests >=2.0.0,<3.0.0
+    - bs4
+    - requests
 
 tests:
   - python:
       imports:
         - wikipedia
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/goldsmith/Wikipedia
   license: MIT
   license_file: LICENSE
-  summary: Wikipedia is a Python library that makes it easy to access and parse data from Wikipedia.
-  homepage: https://github.com/goldsmith/Wikipedia
-  repository: https://github.com/goldsmith/Wikipedia
-  documentation: https://wikipedia.readthedocs.io/en/latest/
+  summary: Wikipedia API for Python
+  description: |
+    Wikipedia API for Python
 
 extra:
   recipe-maintainers:
     - nikicc
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wikipedia
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wikipedia
+  cfe-purls:
+    - pkg:conda/wikipedia@${{ version }}?channel=conda-forge
+    - pkg:pypi/wikipedia@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/goldsmith/Wikipedia
+  cfe-import-names: [wikipedia]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wikipedia-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:38:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:38:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:38:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['requests']
+#    # added run deps from import test: ['bs4']
+####

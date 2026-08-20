@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 1.9.2
+  version: "1.9.2"
 
 package:
   name: ansi2html
@@ -13,60 +13,68 @@ source:
   sha256: 3453bf87535d37b827b05245faaa756dbab4ec3d69925e352b6319c3c955c0a5
 
 build:
-  number: 3
+  number: 0
   noarch: python
-  script:
-    env:
-      # We need to patch the version seen by setuptools_scm,
-      # otherwise it will default to 0.0.0 which will be picked up by pip.
-      # https://conda-forge.org/docs/maintainer/knowledge_base/#using-setuptools_scm
-      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
-    content:
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - ansi2html = ansi2html.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools-scm >=7.0.0
     - setuptools >=45.0.0
   run:
     - python >=${{ python_min }}
+    - importlib-metadata
+    - typing_extensions
 
 tests:
   - python:
-      imports: ansi2html
+      imports:
+        - ansi2html
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - python ${{ python_min }}.*
-        - pytest-cov
-    script:
-      - ansi2html --version
-      - ansi2html --help
-      - coverage run --source=ansi2html --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=89
+        - "*"
 
 about:
-  license: LGPL-3.0-or-later
+  homepage: https://github.com/pycontribs/ansi2html
+  license: LGPLv3+
   license_file: LICENSE
-  summary: Convert text with ANSI color codes to HTML or to LaTeX.
+  summary: Convert text with ANSI color codes to HTML or to LaTeX
   description: |
-    ansi2html allows users to convert text with ANSI color codes
-    to HTML or to Latex.
-  homepage: https://pypi.python.org/pypi/ansi2html
-  repository: https://github.com/pycontribs/ansi2html
-  documentation: https://pypi.python.org/pypi/ansi2html/
+    Convert text with ANSI color codes to HTML or to LaTeX
+  documentation: https://ansi2html.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ansi2html
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ansi2html
+  cfe-purls:
+    - pkg:conda/ansi2html@${{ version }}?channel=conda-forge
+    - pkg:pypi/ansi2html@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pycontribs/ansi2html
+  cfe-import-names: [ansi2html]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ansi2html-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:54:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:54:35Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:54:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

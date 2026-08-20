@@ -2,62 +2,84 @@
 schema_version: 1
 
 context:
-  name: pyperclip
   version: "1.11.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyperclip
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyperclip/pyperclip-${{ version }}.tar.gz
   sha256: 244035963e4428530d9e3a6101a1ef97209c6825edab1567beac148ccc1db1b6
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61
   run:
     - python >=${{ python_min }}
-    - if: linux
-      then: __linux
-    - if: osx
-      then: __osx
-    - if: win
-      then: __win
-    - if: linux
-      then: xclip
-    - if: linux
-      then: xsel
-    - if: osx
-      then: pyobjc-framework-cocoa
 
 tests:
   - python:
       imports:
         - pyperclip
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE.txt
-  license: BSD-3-Clause
-  summary: A cross-platform clipboard module for Python. (only handles plain text for now)
   homepage: https://github.com/asweigart/pyperclip
-  repository: https://github.com/asweigart/pyperclip
-  documentation: https://pyperclip.readthedocs.io
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A cross-platform clipboard module for Python. (Only handles plain text for now.)
+  description: |
+    A cross-platform clipboard module for Python. (Only handles plain text for now.)
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - ehfd
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyperclip
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyperclip
+  cfe-purls:
+    - pkg:conda/pyperclip@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyperclip@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/asweigart/pyperclip
+  cfe-import-names: [pyperclip]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyperclip-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.11.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:58:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:58:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:58:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,27 +2,24 @@
 schema_version: 1
 
 context:
-  name: ntplib
   version: "0.4.0"
-  sha256: 899d8fb5f8c2555213aea95efca02934c7343df6ace9d7628a5176b176906267
-  python_min: "3.6"
 
 package:
-  name: ${{ name|lower }}
+  name: ntplib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/n/ntplib/ntplib-${{ version }}.tar.gz
+  sha256: 899d8fb5f8c2555213aea95efca02934c7343df6ace9d7628a5176b176906267
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed  .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.6.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,22 +29,52 @@ tests:
   - python:
       imports:
         - ntplib
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/cf-natali/ntplib
   license: MIT
   license_file: LICENSE
-  summary: This module offers a simple interface to query NTP servers from Python.
+  summary: Python NTP library
   description: |
-    It also provides utility functions to translate NTP fields values to text (mode, leap indicator…). Since it’s pure Python, and only depends on core modules, it should work on any platform with a Python implementation.
-
-
-  homepage: https://pypi.org/project/ntplib/
+    Python NTP library
 
 extra:
   recipe-maintainers:
     - iparask
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ntplib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ntplib
+  cfe-purls:
+    - pkg:conda/ntplib@${{ version }}?channel=conda-forge
+    - pkg:pypi/ntplib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/cf-natali/ntplib
+  cfe-import-names: [ntplib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ntplib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:21:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:21:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:21:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

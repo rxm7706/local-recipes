@@ -2,49 +2,90 @@
 schema_version: 1
 
 context:
-  name: top2vec
-  version: "1.0.26"
+  version: "1.0.36"
 
 package:
-  name: ${{ name|lower }}
+  name: top2vec
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/top2vec-${{ version }}.tar.gz
-  sha256: cd6ffc093b6ac2e24140df91e68b7332be013a969815d75714ebd06b3a022de7
+  url: https://pypi.org/packages/source/t/top2vec/top2vec-${{ version }}.tar.gz
+  sha256: a187eff3f5a020bdea98a2717ed7f0602a5765cb4d024b05162e9bc45b791384
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - cython
-    - gensim <4.0.0
-    - fuzzytm
-    - hdbscan >=0.8.27
+    - python >=${{ python_min }}
+    - torch
     - numpy >=1.20.0
     - pandas
-    - python >=3.6
+    - scikit-learn >=1.2.0
+    - gensim >=4.0.0
     - umap-learn >=0.5.1
+    - hdbscan >=0.8.27
     - wordcloud
+    - transformers
+    - tqdm
 
 tests:
   - python:
       imports:
         - top2vec
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Top2Vec learns jointly embedded topic, document and word vectors.
+  homepage: https://github.com/ddangelov/Top2Vec
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/ddangelov/Top2Vec
+  summary: Top2Vec learns jointly embedded topic, document and word vectors.
+  description: |
+    Top2Vec learns jointly embedded topic, document and word vectors.
 
 extra:
   recipe-maintainers:
     - llperez
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: top2vec
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: top2vec
+  cfe-purls:
+    - pkg:conda/top2vec@${{ version }}?channel=conda-forge
+    - pkg:pypi/top2vec@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ddangelov/Top2Vec
+  cfe-import-names: [top2vec]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/top2vec-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.36
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:43:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:43:49Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T06:43:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['torch']
+####

@@ -2,59 +2,86 @@
 schema_version: 1
 
 context:
-  version: "0.5.4"
+  version: "0.5.2"
 
 package:
   name: datashape
   version: ${{ version }}
 
 source:
-  url: https://github.com/blaze/datashape/archive/${{ version }}.tar.gz
-  sha256: c266c5803dde48b9fa8d8ee51b5b5979ef77443060e32db2d225b72648c638a5
+  url: https://pypi.org/packages/source/d/DataShape/datashape-${{ version }}.tar.gz
+  sha256: 2356ea690c3cf003c1468a243a9063144235de45b080b3652de4f3d44e57d783
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
-    - numpy >=1.7
-    - multipledispatch >=0.4.7
-    - python-dateutil
+    - python >=${{ python_min }}
+    - dateutil
+    - multipledispatch
+    - numpy
 
 tests:
   - python:
       imports:
         - datashape
-        - datashape.tests
-        - datashape.util
-      pip_check: false
-  - requirements:
-      run:
-        - pytest 3.10.1
-        - mock
-        - numpy 1.11
-    script:
-      - pytest -vx --doctest-modules --pyargs datashape
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
+  homepage: http://datashape.readthedocs.org/en/latest/
+  license: BSD-3-Clause
   license_file: LICENSE
-  summary: A data description language
+  summary: A data description language.
   description: |
-    Datashape is a data layout language for array programming.
-    It is designed to describe in-situ structured data without requiring
-    transformation into a canonical form.
-  homepage: http://datashape.pydata.org
-  repository: https://github.com/blaze/datashape
-  documentation: http://datashape.readthedocs.org/en/latest
+    A data description language.
 
 extra:
   recipe-maintainers:
     - nehaljwani
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datashape
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datashape
+  cfe-purls:
+    - pkg:conda/datashape@${{ version }}?channel=conda-forge
+    - pkg:pypi/datashape@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://datashape.readthedocs.org/en/latest/
+  cfe-import-names: [datashape]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datashape-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:33:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:33:45Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T07:33:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['numpy']
+#    # added run deps from import test: ['multipledispatch']
+#    # added run deps from import test: ['dateutil']
+####

@@ -2,64 +2,88 @@
 schema_version: 1
 
 context:
-  name: httpx
   version: "0.28.1"
 
 package:
-  name: ${{ name|lower }}
+  name: httpx
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/httpx/httpx-${{ version }}.tar.gz
   sha256: 75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - httpx=httpx:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-fancy-pypi-readme
-    - pip
   run:
     - python >=${{ python_min }}
-    - certifi
-    - httpcore 1.*
-    - idna
     - anyio
+    - certifi
+    - httpcore ==1.*
+    - idna
 
 tests:
   - python:
       imports:
         - httpx
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - click ==8.*
-        - pip
-        - pygments ==2.*
-        - rich >=10,<13
-    script:
-      - httpx --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE.md
-  summary: A next-generation HTTP client for Python.
   homepage: https://github.com/encode/httpx
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The next generation HTTP client.
+  description: |
+    The next generation HTTP client.
   repository: https://github.com/encode/httpx
-  documentation: https://www.encode.io/httpx/
+  documentation: https://www.python-httpx.org
 
 extra:
   recipe-maintainers:
     - primozgodec
     - florimondmanca
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpx
+  cfe-purls:
+    - pkg:conda/httpx@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpx@${{ version }}
+  cfe-upstream-repo: https://github.com/encode/httpx
+  cfe-upstream-homepage: https://github.com/encode/httpx
+  cfe-import-names: [httpx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpx-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.28.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:39:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:39:48Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:39:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

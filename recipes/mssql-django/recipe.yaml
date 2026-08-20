@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: mssql-django
   version: "1.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: mssql-django
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mssql_django-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/mssql-django/mssql_django-${{ version }}.tar.gz
   sha256: 023a3d55a85d1d0d9f38d731182c35c2fecbf6bdc7b2464ed7ebf29c9e7bbdb2
 
 build:
@@ -20,12 +19,12 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - django >=3.2,<6.2
+    - django <6.2,>=3.2
     - pyodbc >=3.0
     - pytz
 
@@ -34,17 +33,56 @@ tests:
       imports:
         - mssql
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Django backend for Microsoft SQL Server
-  license: BSD-3-Clause
-  license_file:
-    - LICENSE.txt
-    - NOTICE.md
   homepage: https://github.com/microsoft/mssql-django
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Django backend for Microsoft SQL Server
+  description: |
+    Django backend for Microsoft SQL Server
 
 extra:
   recipe-maintainers:
     - rxm7706
     - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mssql-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mssql-django
+  cfe-purls:
+    - pkg:conda/mssql-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/mssql-django@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/microsoft/mssql-django
+  cfe-import-names: [mssql]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mssql-django-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.8.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T01:50:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:50:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T01:50:35Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

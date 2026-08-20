@@ -3,59 +3,81 @@ schema_version: 1
 
 context:
   version: "0.5.0"
-  sha256: f33298d235ff76def369cb9a3594d084d9badc70cebba1e8cb271fcd4fdc0183
 
 package:
   name: pipreqs
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/p/pipreqs/pipreqs-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/p/pipreqs/pipreqs-${{ version }}.tar.gz
+  sha256: f33298d235ff76def369cb9a3594d084d9badc70cebba1e8cb271fcd4fdc0183
 
 build:
   number: 0
   noarch: python
-  script:
-    # remove strict dependency pins
-    - sed -i -e '/tool\.poetry\.dependencies/,$s:"\([0-9]\):">=\1:' pyproject.toml
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pipreqs = pipreqs.pipreqs:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core
     - pip
+    - poetry-core
   run:
     - python >=${{ python_min }}
-    - yarg >=0.1.9
-    - docopt >=0.6.2
-    - nbconvert >=7.11.0,<8
-    - ipython >=8.12.3
+    - yarg
+    - docopt
+    - nbconvert
+    - ipython
 
 tests:
   - python:
       imports:
         - pipreqs
       pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - pipreqs --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pip requirements.txt generator based on imports in project
+  homepage: https://github.com/bndr/pipreqs
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/bndr/pipreqs
+  summary: Pip requirements.txt generator based on imports in project
+  description: |
+    Pip requirements.txt generator based on imports in project
+  repository: https://github.com/bndr/pipreqs
 
 extra:
   recipe-maintainers:
     - proinsias
     - ericmjl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pipreqs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pipreqs
+  cfe-purls:
+    - pkg:conda/pipreqs@${{ version }}?channel=conda-forge
+    - pkg:pypi/pipreqs@${{ version }}
+  cfe-upstream-repo: https://github.com/bndr/pipreqs
+  cfe-upstream-homepage: https://github.com/bndr/pipreqs
+  cfe-import-names: [pipreqs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pipreqs-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:10:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:10:36Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:10:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

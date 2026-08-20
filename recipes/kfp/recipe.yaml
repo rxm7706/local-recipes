@@ -2,76 +2,63 @@
 schema_version: 1
 
 context:
-  name: kfp
-  version: "2.13.0"
+  version: "2.17.0"
 
 package:
-  name: ${{ name|lower }}
+  name: kfp
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kfp-${{ version }}.tar.gz
-  sha256: bd3e820452157472614217849f7a1cfd9c5d0d3cc7473ace80b6494ca06e8886
+  url: https://pypi.org/packages/source/k/kfp/kfp-${{ version }}.tar.gz
+  sha256: 92dd2fc0cca5b073f14860253e936cc9e6901f871dfae355be6a9f8ea9d580c5
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - dsl-compile = kfp.cli.compile_:main
-      - kfp=kfp.cli.__main__:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - click >=8.0.0,<9
-    - docstring_parser >=0.7.3,<1
-    - google-api-core >=1.31.5,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0
-    - google-auth >=1.6.1,<3
-    - google-cloud-storage >=2.2.1,<4
-    - kfp-pipeline-spec ==0.6.0
-    - kfp-server-api >=2.1.0,<2.5.0
-    - python-kubernetes >=8.0.0,<31
-    - protobuf >=4.21.1,<5
-    - pyyaml >=5.3,<7
-    - requests-toolbelt >=0.8.0,<2
-    - tabulate >=0.8.6,<1
-    - urllib3 <2.0.0
-    - typing-extensions >=3.7.4,<5
+    - click >=8.1.8
+    - click-option-group ==0.5.7
+    - docstring_parser <1,>=0.7.3
+    - google-api-core !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0,<3.0.0dev,>=1.31.5
+    - google-auth <3,>=1.6.1
+    - google-cloud-storage <4,>=2.2.1
+    - kfp-pipeline-spec <3,>=2.17.0
+    - kfp-server-api <3,>=2.17.0
+    - kubernetes <31,>=8.0.0
+    - protobuf <7.0,>=6.31.1
+    - pyyaml <7,>=5.3
+    - requests ==2.32.5
+    - requests-toolbelt <2,>=0.8.0
+    - tabulate <1,>=0.8.6
+    - urllib3 ==2.6.3
+    - typing_extensions <5,>=3.7.4
 
 tests:
   - python:
       imports:
         - kfp
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - kfp dsl compile --help
-      - kfp --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/kubeflow/pipelines
   license: Apache-2.0
   license_file: LICENSE
-  summary: |
-    Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK.
+  summary: Kubeflow Pipelines SDK
   description: |
-    Kubeflow is a machine learning (ML) toolkit that is dedicated to making
-    deployments of ML workflows on Kubernetes simple, portable, and scalable.
-    Kubeflow pipelines are reusable end-to-end ML workflows built using the
-    Kubeflow Pipelines SDK.
-
-  homepage: https://github.com/kubeflow/pipelines
-  repository: https://github.com/kubeflow/pipelines/tree/master/sdk/python
-  documentation: https://www.kubeflow.org/docs/pipelines/
+    Kubeflow Pipelines SDK
+  repository: https://github.com/kubeflow/pipelines/tree/master/sdk
+  documentation: https://kubeflow-pipelines.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
@@ -84,3 +71,36 @@ extra:
     - manuelwalserqc
     - tarrade
     - alanhdu
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kfp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kfp
+  cfe-purls:
+    - pkg:conda/kfp@${{ version }}?channel=conda-forge
+    - pkg:pypi/kfp@${{ version }}
+  cfe-upstream-repo: https://github.com/kubeflow/pipelines/tree/master/sdk
+  cfe-upstream-homepage: https://github.com/kubeflow/pipelines
+  cfe-import-names: [kfp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kfp-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.17.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:57:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:57:50Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:57:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

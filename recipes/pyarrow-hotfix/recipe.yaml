@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: pyarrow-hotfix
   version: "0.7"
 
 package:
-  name: ${{ name|lower }}
+  name: pyarrow-hotfix
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyarrow_hotfix-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyarrow-hotfix/pyarrow_hotfix-${{ version }}.tar.gz
   sha256: 59399cd58bdd978b2e42816a4183a55c6472d4e33d183351b6069f11ed42661d
 
 build:
@@ -20,28 +19,69 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - pyarrow >=0.14
 
 tests:
   - python:
       imports:
         - pyarrow_hotfix
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Hotfix older pyarrow releases to avoid the CVE fixed in 14.0.1
+  homepage: https://pypi.org/project/pyarrow-hotfix/
   license: Apache-2.0
   license_file: LICENSE.txt
-  homepage: https://github.com/pitrou/pyarrow-hotfix
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
   repository: https://github.com/pitrou/pyarrow-hotfix
+  documentation: https://github.com/pitrou/pyarrow-hotfix#readme
 
 extra:
   recipe-maintainers:
     - xhochy
     - jorisvandenbossche
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyarrow-hotfix
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyarrow-hotfix
+  cfe-purls:
+    - pkg:conda/pyarrow-hotfix@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyarrow-hotfix@${{ version }}
+  cfe-upstream-repo: https://github.com/pitrou/pyarrow-hotfix
+  cfe-upstream-homepage: https://pypi.org/project/pyarrow-hotfix/
+  cfe-import-names: [pyarrow_hotfix]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyarrow-hotfix-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:24:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:24:09Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:24:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

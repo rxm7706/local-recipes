@@ -2,58 +2,58 @@
 schema_version: 1
 
 context:
-  name: langchain-community
   version: "0.4.2"
-  build: 0
-  python_max: '",<3.12a0" if python_min == "3.10" else ""'
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-community
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_community-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langchain-community/langchain_community-${{ version }}.tar.gz
   sha256: a99308160d53d7e9b5965ee665e5173709914338210089fd5788ad724432c21e
 
 build:
-  number: ${{ build }}
-  string: pymin${{ python_min|replace('.', '') }}_h${{ PKG_HASH }}_${{ build }}
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - langchain-classic >=1.0.7,<2.0.0
-    - python >=${{ python_min }}${{ python_max }}
-    - langchain-core >=1.4.0,<2.0.0
-    - sqlalchemy >=1.4.0,<3.0.0
-    - requests >=2.32.5,<3.0.0
-    - pyyaml >=5.3.0,<7.0.0
+    - python >=${{ python_min }}
+    - aiohttp <4.0.0,>=3.8.3
+    - httpx-sse <1.0.0,>=0.4.0
+    - langchain-classic <2.0.0,>=1.0.7
+    - langchain-core <2.0.0,>=1.4.0
+    - langsmith <1.0.0,>=0.1.125
     - numpy >=1.26.2
-    - aiohttp >=3.8.3,<4.0.0
-    - tenacity !=8.4.0,>=8.1.0,<10.0.0
-    - pydantic-settings >=2.10.1,<3.0.0
-    - langsmith >=0.1.125,<1.0.0
-    - httpx-sse >=0.4.0,<1.0.0
+    - pydantic-settings <3.0.0,>=2.10.1
+    - pyyaml <7.0.0,>=5.3.0
+    - requests <3.0.0,>=2.32.5
+    - sqlalchemy <3.0.0,>=1.4.0
+    - tenacity !=8.4.0,<10.0.0,>=8.1.0
 
 tests:
   - python:
       imports:
         - langchain_community
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Community contributed LangChain integrations.
+  homepage: https://docs.langchain.com/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/langchain-ai/langchain
-  repository: https://github.com/langchain-ai/langchain/tree/master/libs/community
-  documentation: https://api.python.langchain.com/en/stable/community_api_reference.html
+  summary: Community contributed LangChain integrations.
+  description: |
+    Community contributed LangChain integrations.
+  repository: https://github.com/langchain-ai/langchain-community/tree/main/libs/community
+  documentation: https://reference.langchain.com/python/langchain_community/
 
 extra:
   recipe-maintainers:
@@ -67,3 +67,43 @@ extra:
     - sydney-runkle
     - agola11
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-community
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-community
+  cfe-purls:
+    - pkg:conda/langchain-community@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-community@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain-community/tree/main/libs/community
+  cfe-upstream-homepage: https://docs.langchain.com/
+  cfe-import-names: [langchain_community]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-community-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T10:00:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:00:29Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:00:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

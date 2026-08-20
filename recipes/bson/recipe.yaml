@@ -2,50 +2,83 @@
 schema_version: 1
 
 context:
-  name: bson
   version: "0.5.10"
-  sha256: d6511b2ab051139a9123c184de1a04227262173ad593429d21e443d6462d6590
 
 package:
-  name: ${{ name|lower }}
+  name: bson
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/bson/bson-${{ version }}.tar.gz
+  sha256: d6511b2ab051139a9123c184de1a04227262173ad593429d21e443d6462d6590
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - six
-    - python-dateutil >=2.4.0
 
 tests:
   - python:
       imports:
         - bson
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Independent BSON codec for Python that doesn't depend on MongoDB.
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  homepage: https://github.com/py-bson/bson
+  homepage: http://github.com/py-bson/bson
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: BSON codec for Python
+  description: |
+    BSON codec for Python
 
 extra:
   recipe-maintainers:
     - ChrisBarker-NOAA
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bson
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bson
+  cfe-purls:
+    - pkg:conda/bson@${{ version }}?channel=conda-forge
+    - pkg:pypi/bson@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/py-bson/bson
+  cfe-import-names: [bson]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bson-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.10
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T08:22:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:22:43Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:22:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

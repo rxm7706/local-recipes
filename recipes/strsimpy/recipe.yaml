@@ -2,44 +2,79 @@
 schema_version: 1
 
 context:
-  name: strsimpy
-  version: "0.1.9"
+  version: "0.2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: strsimpy
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 23b4820fad5584ddf1b4701d2e9b82a06b5f4db009ee7f816fd5694901655259
+  url: https://pypi.org/packages/source/s/strsimpy/strsimpy-${{ version }}.tar.gz
+  sha256: 0842eb57f7af86c882a59a1bc8721ec2580a267e563fd0503ced2972040372c9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - strsimpy
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: LICENSE.txt
-  summary: Python3.x implementation of tdebatty/java-string-similarity
-  description: A library implementing different string similarity and distance measures.
   homepage: https://github.com/luozhouyang/python-string-similarity
-  repository: https://github.com/luozhouyang/python-string-similarity
-  documentation: https://github.com/luozhouyang/python-string-similarity
+  license: MIT
+  license_file: LICENSE
+  summary: A library implementing different string similarity and distance measures
+  description: |
+    A library implementing different string similarity and distance measures
 
 extra:
   recipe-maintainers:
     - aschonfeld
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: strsimpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: strsimpy
+  cfe-purls:
+    - pkg:conda/strsimpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/strsimpy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/luozhouyang/python-string-similarity
+  cfe-import-names: [strsimpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/strsimpy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:11:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:11:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:11:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

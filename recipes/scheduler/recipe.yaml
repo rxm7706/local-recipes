@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: scheduler
   version: "0.8.11"
 
 package:
-  name: ${{ name|lower }}
+  name: scheduler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/scheduler-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/scheduler/scheduler-${{ version }}.tar.gz
   sha256: b2234a069448a617abbc511b9e18f48c4deb3dcd9dcc51721d9c90ef2943b72a
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=61.0
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.0
   run:
     - python >=${{ python_min }}
     - typeguard >=3.0.0
@@ -32,15 +31,53 @@ tests:
       imports:
         - scheduler
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A simple in-process python scheduler library with asyncio, threading and timezone support.
+  homepage: https://pypi.org/project/scheduler/
   license: LGPL-3.0-only
   license_file: LICENSE
-  homepage: https://github.com/DigonIO/scheduler
-  documentation: https://digon.io/hyd/project/scheduler/t/master/
+  summary: A simple in-process python scheduler library with asyncio, threading and timezone support.
+  description: |
+    A simple in-process python scheduler library with asyncio, threading and timezone support.
+  repository: https://gitlab.com/DigonIO/scheduler
+  documentation: https://scheduler.digon.io
 
 extra:
   recipe-maintainers:
     - sanurielf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scheduler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scheduler
+  cfe-purls:
+    - pkg:conda/scheduler@${{ version }}?channel=conda-forge
+    - pkg:pypi/scheduler@${{ version }}
+  cfe-upstream-repo: https://gitlab.com/DigonIO/scheduler
+  cfe-upstream-homepage: https://pypi.org/project/scheduler/
+  cfe-import-names: [scheduler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/scheduler-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.11
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:10:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:10:37Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:10:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: channels
   version: "4.3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: channels
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/channels/channels-${{ version }}.tar.gz
   sha256: f2bb6bfb73ad7fb4705041d07613c7b4e69528f01ef8cb9fb6c21d9295f15667
 
 build:
@@ -20,38 +19,65 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - asgiref >=3.6.0,<4
     - django >=4.2
-  # daphne is [options.extras_require] and not install_requires Refer https://github.com/django/channels/blob/main/setup.cfg#L38
-  run_constraints:
-    - daphne >=4.0.0
+    - asgiref <4,>=3.9.0
 
 tests:
   - python:
       imports:
         - channels
-        - channels.generic
-        - channels.management
-        - channels.management.commands
-        - channels.security
-        - channels.testing
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/django/channels
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Brings async, event-driven capabilities to Django. Django 4.2 and up only.
-  homepage: http://github.com/django/channels
-  repository: http://github.com/django/channels
-  documentation: https://channels.readthedocs.io
+  summary: Brings async, event-driven capabilities to Django.
+  description: |
+    Brings async, event-driven capabilities to Django.
 
 extra:
   recipe-maintainers:
     - chrisbarber
     - swainn
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: channels
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: channels
+  cfe-purls:
+    - pkg:conda/channels@${{ version }}?channel=conda-forge
+    - pkg:pypi/channels@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/django/channels
+  cfe-import-names: [channels]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/channels-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.3.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:28:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:28:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:28:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

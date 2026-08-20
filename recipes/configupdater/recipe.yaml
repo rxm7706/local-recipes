@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: ConfigUpdater
   version: "3.2"
 
 package:
-  name: ${{ name|lower }}
+  name: configupdater
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/ConfigUpdater/ConfigUpdater-${{ version }}.tar.gz
   sha256: 9fdac53831c1b062929bf398b649b87ca30e7f1a735f3fbf482072804106306b
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools-scm
+    - setuptools >=46.1.0
   run:
     - python >=${{ python_min }}
     - importlib-metadata
@@ -33,32 +31,18 @@ tests:
       imports:
         - configupdater
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - pip
-        - pytest
-        - pytest-cov
-        - python ${{ python_min }}
-    script:
-      - pytest
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pyscaffold/configupdater
   license: MIT
   license_file: LICENSE.txt
   summary: Parser like ConfigParser but for updating configuration files
   description: |
-    The sole purpose of ConfigUpdater is to easily update an INI config file
-    with no changes to the original file except the intended ones. This means
-    comments, the ordering of sections and key/value-pairs as wells as their
-    cases are kept as in the original file. Thus ConfigUpdater provides
-    complementary functionality to Python's ConfigParser which is primarily
-    meant for reading config files and writing *new* ones.
-  homepage: https://github.com/pyscaffold/configupdater
-  repository: https://github.com/pyscaffold/configupdater
+    Parser like ConfigParser but for updating configuration files
+  repository: https://github.com/pyscaffold/configupdater/
   documentation: https://configupdater.readthedocs.io/
 
 extra:
@@ -66,3 +50,38 @@ extra:
     - maresb
     - FlorianWilhelm
     - abravalheri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: configupdater
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: configupdater
+  cfe-purls:
+    - pkg:conda/configupdater@${{ version }}?channel=conda-forge
+    - pkg:pypi/configupdater@${{ version }}
+  cfe-upstream-repo: https://github.com/pyscaffold/configupdater/
+  cfe-upstream-homepage: https://github.com/pyscaffold/configupdater
+  cfe-import-names: [configupdater]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/configupdater-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:14:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:14:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:14:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

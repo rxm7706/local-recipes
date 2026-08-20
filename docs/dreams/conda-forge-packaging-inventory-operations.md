@@ -312,14 +312,15 @@ columns **first**:
 24. `Conda-Forge_Metadata_URL`
 25. `Staged_Recipes_PR_URL`
 26. `Local_Recipes_URL`
-27. `Verification_Timestamp_UTC`
-28. `Priority_Bucket_Description`
-29. `Priority_Source`
-30. `Priority_Reason`
-31. `JFROG_risk_level`
-32. `JFROG_latest_vuln_count`
-33. `internal_component_count`
-34. `internal_lob_count`
+27. `Local_Build_Status` (`success` / `failed` / `build-clean-test-blocked` / `not-attempted`; blank if no CFE stamp)
+28. `Verification_Timestamp_UTC`
+29. `Priority_Bucket_Description`
+30. `Priority_Source`
+31. `Priority_Reason`
+32. `JFROG_risk_level`
+33. `JFROG_latest_vuln_count`
+34. `internal_component_count`
+35. `internal_lob_count`
 
 A full identity regen wipes ranking columns. After identity regen, re-run the
 priority pass, then publish the gist with **`--gist-only`** (reads the current
@@ -340,7 +341,7 @@ comes from `OPENTEAMS_IDENTITY_GIST_ID`,
 `conf/conda-forge-packaging-inventory-operations.local.env` (gitignored; copy
 the tracked `.example`), or `--gist-id`. Do not create a new gist. Do not
 commit the id. `--skip-gist` is offline tests, or when no id is configured.
-The gist carries the same 34 identity columns (ranking first).
+The gist carries the same 35 identity columns (ranking first), including live `Local_Recipes_URL` and `Local_Build_Status` overlaid from `recipes/` at publish time. Frontmatter also splits those stamps by priority (`local_build_by_p`), recipe type (`local_build_by_type`: `noarch-python` / `noarch-generic` / `compiled` / `arch` / `none`), and successful builds (`local_build_success_by_p_type`).
 
 **B. Markdown** `cdao_consolidated_inventory_verified_all_packages.md` — totals,
 status breakdown, per-tab and per-source inclusion matrices (100% where

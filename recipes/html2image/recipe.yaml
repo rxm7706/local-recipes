@@ -2,56 +2,82 @@
 schema_version: 1
 
 context:
-  name: html2image
   version: "2.0.7"
 
 package:
-  name: ${{ name|lower }}
+  name: html2image
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html2image-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/html2image/html2image-${{ version }}.tar.gz
   sha256: 8644fd424cff2805977f4583f965b0235733f9eb08569e4c02f6befe6e7fafcc
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - hti = html2image:main
-      - html2image = html2image:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0.0
-    - websocket-client >=1.0,<2.dev0
+    - python >=${{ python_min }}
     - requests
+    - websocket-client ~=1.0
 
 tests:
   - python:
       imports:
         - html2image
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - hti --help
-      - html2image --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Package acting as a wrapper around the headless mode of existing web browsers to generate images from URLs and from HTML+CSS strings or files.
+  homepage: https://github.com/vgalin/html2image
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/vgalin/html2image
+  summary: Package acting as a wrapper around the headless mode of existing web browsers to generate images from URLs and from HTML+CSS strings or files.
+  description: |
+    Package acting as a wrapper around the headless mode of existing web browsers to generate images from URLs and from HTML+CSS strings or files.
+  repository: https://github.com/vgalin/html2image
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: html2image
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: html2image
+  cfe-purls:
+    - pkg:conda/html2image@${{ version }}?channel=conda-forge
+    - pkg:pypi/html2image@${{ version }}
+  cfe-upstream-repo: https://github.com/vgalin/html2image
+  cfe-upstream-homepage: https://github.com/vgalin/html2image
+  cfe-import-names: [html2image]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/html2image-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:59:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:59:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:59:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

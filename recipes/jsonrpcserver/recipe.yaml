@@ -2,49 +2,83 @@
 schema_version: 1
 
 context:
-  name: jsonrpcserver
-  version: "5.0.7"
+  version: "5.0.9"
 
 package:
-  name: ${{ name|lower }}
+  name: jsonrpcserver
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: b15d3fd043ad0c40b2ff17f7df2ddaec2e880bb923b40d133939a107c97fde5c
+  url: https://pypi.org/packages/source/j/jsonrpcserver/jsonrpcserver-${{ version }}.tar.gz
+  sha256: a71fb2cfa18541c80935f60987f92755d94d74141248c7438847b96eee5c4482
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - oslash <1
-    - jsonschema <4
+    - jsonschema
+    - oslash
 
 tests:
   - python:
       imports:
         - jsonrpcserver
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/explodinglabs/jsonrpcserver
   license: MIT
   license_file: LICENSE
-  summary: Process JSON-RPC requests in Python.
-  homepage: https://github.com/explodinglabs/jsonrpcserver
-  repository: https://github.com/explodinglabs/jsonrpcserver
-  documentation: https://www.jsonrpcserver.com/
+  summary: Process JSON-RPC requests
+  description: |
+    Process JSON-RPC requests
 
 extra:
   recipe-maintainers:
     - bcb
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonrpcserver
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonrpcserver
+  cfe-purls:
+    - pkg:conda/jsonrpcserver@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonrpcserver@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/explodinglabs/jsonrpcserver
+  cfe-import-names: [jsonrpcserver]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonrpcserver-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.9
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:53:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:53:30Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T09:53:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['oslash']
+#    # added run deps from import test: ['jsonschema']
+####

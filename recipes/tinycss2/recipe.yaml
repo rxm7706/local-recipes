@@ -15,13 +15,13 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - flit-core >=3.2,<4
     - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.2,<4
   run:
     - python >=${{ python_min }}
     - webencodings >=0.4
@@ -31,21 +31,52 @@ tests:
       imports:
         - tinycss2
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://www.courtbouillon.org/tinycss2
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Low-level CSS parser for Python
+  summary: A tiny CSS parser
   description: |
-    tinycss2 is a rewrite of tinycss with a simpler API, based on the more recent
-    CSS Syntax Level 3 Specification.
-  homepage: https://github.com/Kozea/tinycss2
-  repository: https://github.com/Kozea/tinycss2
-  documentation: http://tinycss2.readthedocs.io
+    A tiny CSS parser
+  repository: https://github.com/Kozea/tinycss2/
+  documentation: https://doc.courtbouillon.org/tinycss2/
 
 extra:
   recipe-maintainers:
     - johanneskoester
     - mrandrewandrade
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tinycss2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tinycss2
+  cfe-purls:
+    - pkg:conda/tinycss2@${{ version }}?channel=conda-forge
+    - pkg:pypi/tinycss2@${{ version }}
+  cfe-upstream-repo: https://github.com/Kozea/tinycss2/
+  cfe-upstream-homepage: https://www.courtbouillon.org/tinycss2
+  cfe-import-names: [tinycss2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tinycss2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:38:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:38:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:38:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

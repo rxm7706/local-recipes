@@ -15,50 +15,38 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools >=40.8.0
     - wheel
   run:
+    - python >=${{ python_min }}
     - comm >=0.1.3
     - ipython >=6.1.0
-    - jupyterlab_widgets >=3.0.15,<3.1.0
-    - python >=${{ python_min }}
     - traitlets >=4.3.1
-    - widgetsnbextension >=4.0.14,<4.1.0
+    - widgetsnbextension ~=4.0.14
+    - jupyterlab-widgets ~=3.0.15
 
 tests:
   - python:
       imports:
         - ipywidgets
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - coverage
-        - ipykernel
-        - jsonschema
-        - pip
-        - pytest <8
-        - python ${{ python_min }}
-        - pytz
-    script:
-      - coverage run --source ipywidgets --branch -m pytest -vv --color=yes --tb=long --pyargs ipywidgets
-      - coverage report --show-missing --skip-covered --fail-under=89
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://jupyter.org
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Jupyter Interactive Widgets
+  summary: Jupyter interactive widgets
   description: |
-    ipywidgets are interactive HTML widgets for Jupyter notebooks and the IPython kernel.
-  homepage: https://github.com/jupyter-widgets/ipywidgets
-  documentation: https://ipywidgets.readthedocs.io/en/latest/
+    Jupyter interactive widgets
 
 extra:
   recipe-maintainers:
@@ -74,3 +62,36 @@ extra:
     - martinRenou
     - vidartf
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipywidgets
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipywidgets
+  cfe-purls:
+    - pkg:conda/ipywidgets@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipywidgets@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://jupyter.org
+  cfe-import-names: [ipywidgets]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipywidgets-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-8.1.8
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:04:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:04:46Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:04:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

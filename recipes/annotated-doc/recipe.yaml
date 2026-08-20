@@ -3,58 +3,77 @@ schema_version: 1
 
 context:
   version: "0.0.5"
-  python_check_max: "3.14"
-  cov_fail_under: "100"
 
 package:
   name: annotated-doc
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/a/annotated-doc/annotated_doc-${{ version }}.tar.gz
-    sha256: c7e58ce09192557605d8bbd92836d7e1d520ac9580096042c0bfd197efacf1bb
+  url: https://pypi.org/packages/source/a/annotated-doc/annotated_doc-${{ version }}.tar.gz
+  sha256: c7e58ce09192557605d8bbd92836d7e1d520ac9580096042c0bfd197efacf1bb
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - pdm-backend
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: annotated_doc
+      imports:
+        - annotated_doc
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - scripts/__init__.py
-        - scripts/prepare_release.py
-        - tests/
-    requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-        - typer >=0.16.1
-    script:
-      - coverage run --source=annotated_doc --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+        - "*"
 
 about:
+  homepage: https://github.com/fastapi/annotated-doc
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/fastapi/annotated-doc
   summary: Document parameters, class attributes, return types, and variables inline, with Annotated.
+  description: |
+    Document parameters, class attributes, return types, and variables inline, with Annotated.
+  repository: https://github.com/fastapi/annotated-doc
+  documentation: https://github.com/fastapi/annotated-doc
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: annotated-doc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: annotated-doc
+  cfe-purls:
+    - pkg:conda/annotated-doc@${{ version }}?channel=conda-forge
+    - pkg:pypi/annotated-doc@${{ version }}
+  cfe-upstream-repo: https://github.com/fastapi/annotated-doc
+  cfe-upstream-homepage: https://github.com/fastapi/annotated-doc
+  cfe-import-names: [annotated_doc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/annotated-doc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:53:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:53:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:53:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,29 +2,27 @@
 schema_version: 1
 
 context:
-  python_min: "3.11"
-  name: spopt
   version: "0.7.0"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: spopt
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/spopt/spopt-${{ version }}.tar.gz
   sha256: ed599b8c0e219682e48e85852b615dbc6f122ef2907d73c11894ad3ffdb39d47
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0
-    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
     - geopandas >=0.14.0
@@ -37,26 +35,27 @@ requirements:
     - pulp >=2.8
     - scikit-learn >=1.4.0
     - scipy >=1.12.0
-    - shapely >=2.1.1
+    - shapely >=2.1.0
     - spaghetti >=1.7.4
     - tqdm >=4.66.0
 
 tests:
   - python:
       imports:
-        - ${{ name }}
+        - spopt
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pysal.org/spopt/
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: "spopt: Spatial Optimization"
+  summary: Spatial Optimization in PySAL
   description: |
-    Spopt is an open-source Python library for solving optimization problems with spatial data. Originating from the `region` module in [PySAL](http://pysal.org) (Python Spatial Analysis Library), it is under active development for the inclusion of newly proposed models and methods for regionalization, facility location, and transportation-oriented solutions.
-  homepage: http://pysal.org/
-  repository: http://github.com/pysal/${{ name }}
-  documentation: https://pysal.org/${{ name }}/
+    Spatial Optimization in PySAL
+  repository: https://github.com/pysal/spopt
 
 extra:
   recipe-maintainers:
@@ -65,3 +64,40 @@ extra:
     - xf37
     - gegen07
     - martinfleis
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spopt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spopt
+  cfe-purls:
+    - pkg:conda/spopt@${{ version }}?channel=conda-forge
+    - pkg:pypi/spopt@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/spopt
+  cfe-upstream-homepage: https://pysal.org/spopt/
+  cfe-import-names: [spopt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spopt-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T05:53:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:53:20Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:53:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

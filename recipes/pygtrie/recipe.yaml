@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: pygtrie
   version: "2.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pygtrie
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pygtrie/pygtrie-${{ version }}.tar.gz
   sha256: 203514ad826eb403dab1d2e2ddd034e0d1534bbe4dbe0213bb0593f66beba4e2
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - packaging
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -30,21 +29,60 @@ tests:
   - python:
       imports:
         - pygtrie
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/mina86/pygtrie
   license: Apache-2.0
   license_file: LICENSE
-  summary: Python library implementing a trie data structure.
-  homepage: https://github.com/google/pygtrie
-  repository: https://github.com/google/pygtrie
-  documentation: https://pygtrie.readthedocs.io/en/latest/
+  summary: A pure Python trie data structure implementation.
+  description: |
+    A pure Python trie data structure implementation.
 
 extra:
   recipe-maintainers:
     - Suor
     - shcheklein
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pygtrie
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pygtrie
+  cfe-purls:
+    - pkg:conda/pygtrie@${{ version }}?channel=conda-forge
+    - pkg:pypi/pygtrie@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mina86/pygtrie
+  cfe-import-names: [pygtrie]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pygtrie-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.5.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T03:41:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:41:19Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:41:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

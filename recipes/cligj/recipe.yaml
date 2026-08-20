@@ -13,31 +13,73 @@ source:
   sha256: a4bc13d623356b373c2c27c53dbd9c68cae5d526270bfa71f6c6fa69669c6b27
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - click >=4.0
+    - python >=${{ python_min }}
+    - click
 
 tests:
   - python:
       imports:
         - cligj
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
+  homepage: https://github.com/mapbox/cligj
+  license: REPLACE_LICENSE
   license_file: LICENSE
   summary: Click params for commmand line interfaces to GeoJSON
-  homepage: https://github.com/mapbox/cligj
+  description: |
+    Click params for commmand line interfaces to GeoJSON
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cligj
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cligj
+  cfe-purls:
+    - pkg:conda/cligj@${{ version }}?channel=conda-forge
+    - pkg:pypi/cligj@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mapbox/cligj
+  cfe-import-names: [cligj]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cligj-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.2
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T07:02:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:02:14Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:02:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

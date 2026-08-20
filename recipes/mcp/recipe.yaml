@@ -2,77 +2,97 @@
 schema_version: 1
 
 context:
-  name: mcp
   version: "2.0.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: mcp
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mcp-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/mcp/mcp-${{ version }}.tar.gz
   sha256: 0f440e735c13ece8bb19bc62cf0b86f4313448432fbb77d35e14034f4e050728
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - mcp = mcp.cli:app
 
 requirements:
   host:
-    - python 3.10.*
-    - hatchling
-    - uv-dynamic-versioning =0.14.0
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - anyio >=4.5
-    - cryptography >=3.4.0
+    - anyio >=4.9
     - httpx2 >=2.5.0
     - jsonschema >=4.20.0
+    - mcp-types ==2.0.0
     - opentelemetry-api >=1.28.0
-    - pydantic >=2.12.0,<3.0.0
-    - pydantic-settings >=2.5.2
+    - pydantic >=2.12.0
     - pyjwt >=2.10.1
-    - python-dotenv >=1.0.0
     - python-multipart >=0.0.9
-    - pywin32-on-windows
-    - rich >=13.9.4
     - sse-starlette >=3.0.0
-    - starlette >=0.48
-    - typer >=0.16.0
-    - typing-extensions >=4.13.0
+    - starlette >=0.27
+    - typing_extensions >=4.13.0
     - typing-inspection >=0.4.1
-    - uvicorn >=0.31.1
-    - mcp-types =${{ version }}
-  run_constraints:
-    - pywin32 >=311
+    - if: win
+      then:
+        - pywin32
 
 tests:
   - python:
       imports:
         - mcp
-        - mcp.os.win32.utilities
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - mcp --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Model Context Protocol SDK
+  homepage: https://modelcontextprotocol.io
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/modelcontextprotocol/python-sdk
+  summary: Model Context Protocol SDK
+  description: |
+    Model Context Protocol SDK
+  repository: https://github.com/modelcontextprotocol/python-sdk
+  documentation: https://py.sdk.modelcontextprotocol.io/
 
 extra:
   recipe-maintainers:
     - dbast
     - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp
+  cfe-purls:
+    - pkg:conda/mcp@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp@${{ version }}
+  cfe-upstream-repo: https://github.com/modelcontextprotocol/python-sdk
+  cfe-upstream-homepage: https://modelcontextprotocol.io
+  cfe-import-names: [mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mcp-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:32:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:32:34Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:32:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

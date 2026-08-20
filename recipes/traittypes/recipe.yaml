@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "0.2.3"
-  sha256: 212feed38d566d772648768b78d3347c148ef23915b91c02078188e631316c86
 
 package:
   name: traittypes
@@ -11,34 +10,38 @@ package:
 
 source:
   url: https://pypi.org/packages/source/t/traittypes/traittypes-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: traittypes-${{ version }}.tar.gz
+  sha256: 212feed38d566d772648768b78d3347c148ef23915b91c02078188e631316c86
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - traitlets >=4.2.2,<6.0
+    - traitlets >=4.2.2
 
 tests:
   - python:
       imports:
         - traittypes
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://ipython.org
   license: BSD-3-Clause
-  summary: Trait types for NumPy, SciPy and friends
   license_file: LICENSE
-  homepage: https://github.com/jupyter-incubator/traittypes
+  summary: Scipy trait types
+  description: |
+    Scipy trait types
 
 extra:
   recipe-maintainers:
@@ -47,3 +50,36 @@ extra:
     - maartenbreddels
     - vidartf
     - martinRenou
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: traittypes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: traittypes
+  cfe-purls:
+    - pkg:conda/traittypes@${{ version }}?channel=conda-forge
+    - pkg:pypi/traittypes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://ipython.org
+  cfe-import-names: [traittypes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/traittypes-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:46:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:46:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:46:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

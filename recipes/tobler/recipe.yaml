@@ -2,29 +2,27 @@
 schema_version: 1
 
 context:
-  name: tobler
   version: "0.14.0"
   python_min: "3.12"
 
 package:
-  name: ${{ name|lower }}
+  name: tobler
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/tobler/tobler-${{ version }}.tar.gz
   sha256: 9d199bee5f14fed64ef392700e15ea72dfb68543f2293b505071ee6d2f62efe9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.12.*
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0
-    - setuptools-scm >=6.2
   run:
     - python >=${{ python_min }}
     - geopandas >=1.0
@@ -42,21 +40,19 @@ tests:
   - python:
       imports:
         - tobler
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pysal/tobler/
   license: BSD-3-Clause
-  license_file: LICENSE
-  summary: Tobler is a python package for areal interpolation, dasymetric mapping, and change of support.
+  license_file: LICENSE.txt
+  summary: Tobler is a Python library for areal interpolation.
   description: |
-    Tobler is a python package for areal interpolation, dasymetric mapping, and change of support.
-  homepage: https://github.com/pysal/tobler
-  repository: https://github.com/pysal/tobler/
-  documentation: https://pysal.org/tobler/
+    Tobler is a Python library for areal interpolation.
+  repository: https://github.com/pysal/tobler
 
 extra:
   recipe-maintainers:
@@ -64,3 +60,40 @@ extra:
     - sjsrey
     - martinfleis
     - jGaboardi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tobler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tobler
+  cfe-purls:
+    - pkg:conda/tobler@${{ version }}?channel=conda-forge
+    - pkg:pypi/tobler@${{ version }}
+  cfe-upstream-repo: https://github.com/pysal/tobler
+  cfe-upstream-homepage: https://github.com/pysal/tobler/
+  cfe-import-names: [tobler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tobler-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T06:40:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:40:13Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T06:40:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

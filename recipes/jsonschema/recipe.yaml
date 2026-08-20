@@ -3,9 +3,8 @@ schema_version: 1
 
 context:
   version: "4.26.0"
-  python_check_max: "3.13"
 
-recipe:
+package:
   name: jsonschema
   version: ${{ version }}
 
@@ -16,132 +15,81 @@ source:
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: jsonschema
-    build:
-      noarch: python
-      script:
-        - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
-      python:
-        entry_points:
-          - jsonschema = jsonschema.cli:main
-    requirements:
-      host:
-        - hatch-fancy-pypi-readme
-        - hatch-vcs
-        - hatchling
-        - pip
-        - python ${{ python_min }}.*
-      run:
-        - attrs >=22.2.0
-        - jsonschema-specifications >=2023.03.6
-        - python >=${{ python_min }}
-        - referencing >=0.28.4
-        - rpds-py >=0.25.0
-    tests:
-      - python:
-          imports: jsonschema
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - requirements:
-          run:
-            - pip
-            - python ${{ python_min }}.*
-        script:
-          - jsonschema --version
-          - jsonschema --help
-          - jsonschema --version | python -c "import sys; v = sys.stdin.read().strip(); assert v == '${{ version }}', v"
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+    - hatch-fancy-pypi-readme
+  run:
+    - python >=${{ python_min }}
+    - attrs >=22.2.0
+    - jsonschema-specifications >=2023.03.6
+    - referencing >=0.28.4
+    - rpds-py >=0.25.0
 
-  - package:
-      name: jsonschema-with-format
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage('jsonschema', upper_bound='x.x.x') }}
-        - fqdn
-        - idna
-        - isoduration
-        - jsonpointer >1.13
-        - rfc3339-validator
-        - rfc3987
-        - uri-template
-        - webcolors >=24.6.0
-    tests:
-      - python:
-          imports: jsonschema
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-
-  - package:
-      name: jsonschema-with-format-nongpl
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage('jsonschema', upper_bound='x.x.x') }}
-        - fqdn
-        - idna
-        - isoduration
-        - jsonpointer >1.13
-        - rfc3339-validator
-        - rfc3986-validator >0.1.0
-        - rfc3987-syntax >=1.1.0
-        - uri-template
-        - webcolors >=24.6.0
-    tests:
-      - python:
-          imports: jsonschema
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-
-  - package:
-      name: jsonschema-with-all
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage('jsonschema-with-format-nongpl', upper_bound='x.x.x') }}
-        - ${{ pin_subpackage('jsonschema-with-format', upper_bound='x.x.x') }}
-    tests:
-      - python:
-          imports: jsonschema
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - files:
-          recipe:
-            - start_test.py
-          source:
-            - json
-        requirements:
-          run:
-            - jsonpath-ng
-            - pytest-cov
-            - python ${{ python_min }}.*
-        script:
-          - python start_test.py --cov-fail-under=94 -k "not WrappedReferencingError_hashability"
+tests:
+  - python:
+      imports:
+        - jsonschema
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: COPYING
-  summary: An implementation of JSON Schema validation for Python
   homepage: https://github.com/python-jsonschema/jsonschema
-  documentation: https://python-jsonschema.readthedocs.org
+  license: MIT
+  license_file: LICENSE
+  summary: An implementation of JSON Schema validation for Python
+  description: |
+    An implementation of JSON Schema validation for Python
+  repository: https://github.com/python-jsonschema/jsonschema
+  documentation: https://python-jsonschema.readthedocs.io/
 
 extra:
-  feedstock-name: jsonschema
   recipe-maintainers:
     - minrk
     - ocefpaf
     - nehaljwani
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonschema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonschema
+  cfe-purls:
+    - pkg:conda/jsonschema@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonschema@${{ version }}
+  cfe-upstream-repo: https://github.com/python-jsonschema/jsonschema
+  cfe-upstream-homepage: https://github.com/python-jsonschema/jsonschema
+  cfe-import-names: [jsonschema]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jsonschema-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:22:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:22:58Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:22:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -1,56 +1,87 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-# There is no tag or source distribution but the wheel for 0.3.1 was build from this commit.
 schema_version: 1
 
 context:
-  name: pandas_read_xml
   version: "0.3.1"
-  commit: 64fabdb69b99b92c1e715755636295230c7c7900
 
 package:
-  name: ${{ name|lower }}
+  name: pandas-read-xml
   version: ${{ version }}
 
 source:
-  url: https://github.com/minchulkim87/pandas_read_xml/archive/${{ commit }}.tar.gz
-  sha256: 671267f6f83129d2a998cb7cac5bcb61ae13eb672373be4336da2e96940ed8b6
+  url: https://pypi.org/packages/py3/p/pandas-read-xml/pandas_read_xml-0.3.1-py3-none-any.whl
+  sha256: 76b0047e9c81c6ba47bc2e788b866280d862f0eea52f0aac0f1d65ba9ff72e3c
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    # - distlib
+    - pyarrow
     - pandas
-    # - pyarrow
-    - requests
-    # - urllib3 >=1.26.3
     - xmltodict
-    # - zipfile36
+    - requests
+    - zipfile36
+    - distlib
+    - urllib3
 
 tests:
   - python:
       imports:
         - pandas_read_xml
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A tool to read XML files as pandas dataframes.
+  homepage: https://github.com/minchulkim87/pandas_read_xml
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/minchulkim87/pandas_read_xml
+  summary: A tool to read XML files as pandas dataframes.
+  description: |
+    A tool to read XML files as pandas dataframes.
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pandas_read_xml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pandas-read-xml
+  cfe-purls:
+    - pkg:conda/pandas_read_xml@${{ version }}?channel=conda-forge
+    - pkg:pypi/pandas-read-xml@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/minchulkim87/pandas_read_xml
+  cfe-import-names: [pandas_read_xml]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pandas_read_xml-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:40:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:40:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:40:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

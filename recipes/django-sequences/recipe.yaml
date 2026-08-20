@@ -2,44 +2,81 @@
 schema_version: 1
 
 context:
-  name: django-sequences
-  version: "2.8"
+  version: "3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: django-sequences
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 91f4b222ac8fc102ae76abef76ff1291684b4dec0d38d97f189b64b26c2a1b56
+  url: https://pypi.org/packages/source/d/django-sequences/django_sequences-${{ version }}.tar.gz
+  sha256: e82bfee28d9eaee5b7d3be618eed989c7c5a117601b56142ee2435edb5a45456
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6.2
-    - poetry
+    - poetry-core >=1.0.0
   run:
-    - django >=3.2
-    - python >=3.6.2
+    - python >=${{ python_min }}
+    - django
 
 tests:
   - python:
       imports:
         - sequences
-        - sequences.migrations
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Generate gapless sequences of integer values.
+  homepage: https://github.com/aaugustin/django-sequences
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/aaugustin/django-sequences
+  summary: Generate gapless sequences of integer values.
+  description: |
+    Generate gapless sequences of integer values.
+  repository: https://github.com/aaugustin/django-sequences
 
 extra:
   recipe-maintainers:
     - MichelML
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-sequences
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-sequences
+  cfe-purls:
+    - pkg:conda/django-sequences@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-sequences@${{ version }}
+  cfe-upstream-repo: https://github.com/aaugustin/django-sequences
+  cfe-upstream-homepage: https://github.com/aaugustin/django-sequences
+  cfe-import-names: [sequences]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-sequences-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:57:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:57:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T08:57:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

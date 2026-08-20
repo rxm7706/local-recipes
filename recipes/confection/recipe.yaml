@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/explosion/confection/archive/refs/tags/release-v${{ version }}.tar.gz
-  sha256: c977841f277255b0b59acb5b4e8a2d7d266ee4369278308fc2b820ec314fc5d7
+  sha256: f0f6810d567ff73993fe74d218ca5e1ffb6a44fb03f391257fc5d033546cbfaa
   patches:
     - patches/0001-make-tests-importable-out-of-tree.patch
 
@@ -32,7 +32,9 @@ tests:
       imports:
         - confection
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - files:
       source:
         - tests/
@@ -64,3 +66,36 @@ extra:
   recipe-maintainers:
     - conda-forge/spacy
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: confection
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: confection
+  cfe-purls:
+    - pkg:conda/confection@${{ version }}?channel=conda-forge
+    - pkg:pypi/confection@${{ version }}
+  cfe-upstream-repo: https://github.com/explosion/confection
+  cfe-upstream-homepage: https://github.com/explosion/confection
+  cfe-import-names: [confection]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/confection-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:13:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:13:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:13:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

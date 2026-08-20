@@ -308,3 +308,36 @@ extra:
     - JohanMabille
     - wolfv
     - ericmjl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mamba
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libmambapy
+  cfe-purls:
+    - pkg:conda/mamba@${{ version }}?channel=conda-forge
+    - pkg:pypi/libmambapy@${{ version }}
+  cfe-upstream-repo: https://github.com/mamba-org/mamba
+  cfe-upstream-homepage: https://github.com/mamba-org/mamba
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mamba-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:23:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:23:58Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:23:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for libmambapy...
+Error: Failed to fetch PyPI metadata for 'libmambapy' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/libmambapy/json
+
+####

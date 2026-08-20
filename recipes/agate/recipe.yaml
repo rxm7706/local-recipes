@@ -2,45 +2,37 @@
 schema_version: 1
 
 context:
-  name: agate
   version: "1.14.2"
 
 package:
-  name: ${{ name|lower }}
+  name: agate
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/agate/agate-${{ version }}.tar.gz
   sha256: 7f29841c39d84b1de7fde762b8d792085371515324f3a01413b20f810398225b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61
   run:
     - python >=${{ python_min }}
-    - six >=1.9.0
-    - pytimeparse >=1.1.5
-    - parsedatetime !=2.5,!=2.6,>=2.1
     - babel >=2.0
     - isodate >=0.5.4
-    - python-slugify >=1.2.1
     - leather >=0.3.2
-    - future
-    - if: unix
-      then: pyicu
-    - if: win
-      then: python-tzdata
-    - if: win
-      then: __win
-    - if: unix
-      then: __unix
+    - parsedatetime !=2.5,>=2.1
+    - python-slugify >=1.2.1
+    - pytimeparse >=1.1.5
+    - if: linux
+      then:
+        - pyicu
 
 tests:
   - python:
@@ -52,16 +44,60 @@ tests:
         - agate.table
         - agate.tableset
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://agate.readthedocs.org/
   license: MIT
-  license_file: COPYING
+  license_file: LICENSE
   summary: A data analysis library that is optimized for humans instead of machines.
-  homepage: http://agate.readthedocs.org/
-  repository: http://agate.rtfd.org/
-  documentation: http://agate.rtfd.org/
+  description: |
+    A data analysis library that is optimized for humans instead of machines.
+  repository: https://github.com/wireservice/agate
+
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agate
+  cfe-purls:
+    - pkg:conda/agate@${{ version }}?channel=conda-forge
+    - pkg:pypi/agate@${{ version }}
+  cfe-upstream-repo: https://github.com/wireservice/agate
+  cfe-upstream-homepage: https://agate.readthedocs.org/
+  cfe-import-names: [agate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/agate-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.14.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T05:39:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:39:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T05:39:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-firestore
   version: "2.28.1"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-firestore
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-firestore/google_cloud_firestore-${{ version }}.tar.gz
   sha256: 833fefd9a8b9c68c750da1c0fdd93e4ca1a3ab728081c7d6c57c362e06accf8b
 
 build:
@@ -25,32 +24,61 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - google-api-core-grpc >=2.25.0,<3.0.0
-    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-    - google-cloud-core >=2.0.0,<3.0.0
-    # more restrictive constraint for python >=3.14
-    - grpcio >=1.75.1,<2.0.0
-    - proto-plus >=1.26.1,<2.0.0
-    - protobuf >=6.33.5,<8.0.0
+    - google-api-core <3.0.0,>=2.25.0
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - google-cloud-core <3.0.0,>=2.0.0
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
 
 tests:
   - python:
       imports:
         - google.cloud.firestore
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-firestore
   license: Apache-2.0
   license_file: LICENSE
-  summary: Python Client for Google Cloud Firestore
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-firestore
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-firestore
-  documentation: https://cloud.google.com/products/firestore
+  summary: Google Cloud Firestore API client library
+  description: |
+    Google Cloud Firestore API client library
 
 extra:
   recipe-maintainers:
     - xylar
     - mitchellsuter
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-firestore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-firestore
+  cfe-purls:
+    - pkg:conda/google-cloud-firestore@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-firestore@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-firestore
+  cfe-import-names: [google.cloud.firestore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-firestore-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:24:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:24:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:24:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

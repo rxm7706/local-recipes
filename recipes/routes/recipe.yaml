@@ -2,46 +2,86 @@
 schema_version: 1
 
 context:
-  name: routes
   version: "2.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: routes
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/Routes-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/Routes/Routes-${{ version }}.tar.gz
   sha256: b6346459a15f0cbab01a45a90c3d25caf980d4733d628b4cc1952b865125d053
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
-    - repoze.lru >=0.3
+    - python >=${{ python_min }}
     - six
+    - repoze.lru
 
 tests:
   - python:
       imports:
         - routes
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Routing Recognition and Generation Tools
+  homepage: https://routes.readthedocs.io/
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://pypi.org/project/Routes/
-  repository: https://github.com/bbangert/routes
-  documentation: https://routes.readthedocs.io/
+  summary: Routing Recognition and Generation Tools
+  description: |
+    Routing Recognition and Generation Tools
 
 extra:
   recipe-maintainers:
     - anthchirp
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: routes
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: routes
+  cfe-purls:
+    - pkg:conda/routes@${{ version }}?channel=conda-forge
+    - pkg:pypi/routes@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://routes.readthedocs.io/
+  cfe-import-names: [routes]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/routes-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.5.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T12:08:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:08:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:08:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

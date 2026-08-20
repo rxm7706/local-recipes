@@ -11,22 +11,17 @@ package:
 source:
   url: https://pypi.org/packages/source/i/invoke/invoke-${{ version }}.tar.gz
   sha256: 437b6a622223824380bfb4e64f612711a6b648c795f565efc8625af66fb57f0c
-  file_name: invoke-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - invoke = invoke.main:program.run
-      - inv = invoke.main:program.run
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=77
   run:
     - python >=${{ python_min }}
 
@@ -34,27 +29,55 @@ tests:
   - python:
       imports:
         - invoke
-        - invoke.parser
-        - invoke.vendor
-        - invoke.vendor.fluidity
-        - invoke.vendor.lexicon
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - invoke --help
-      - inv --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/invoke/
   license: BSD-2-Clause
   license_file: LICENSE
   summary: Pythonic task execution
-  homepage: http://docs.pyinvoke.org
+  description: |
+    Pythonic task execution
   repository: https://github.com/pyinvoke/invoke
+  documentation: https://docs.pyinvoke.org
 
 extra:
   recipe-maintainers:
     - nicoddemus
     - setu4993
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: invoke
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: invoke
+  cfe-purls:
+    - pkg:conda/invoke@${{ version }}?channel=conda-forge
+    - pkg:pypi/invoke@${{ version }}
+  cfe-upstream-repo: https://github.com/pyinvoke/invoke
+  cfe-upstream-homepage: https://pypi.org/project/invoke/
+  cfe-import-names: [invoke]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/invoke-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:45:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:45:27Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:45:27Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

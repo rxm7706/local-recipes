@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: astor
   version: "0.8.1"
 
 package:
-  name: ${{ name|lower }}
+  name: astor
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/astor/astor-${{ version }}.tar.gz
   sha256: 6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,19 +30,52 @@ tests:
       imports:
         - astor
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  summary: Read, rewrite, and write Python ASTs nicely
-  license_file: LICENSE
-  description: |
-    astor is designed to allow easy manipulation of Python source via the AST.
   homepage: https://github.com/berkerpeksag/astor
-  repository: https://github.com/berkerpeksag/astor
-  documentation: http://astor.readthedocs.io/en/latest/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Read/rewrite/write Python ASTs
+  description: |
+    Read/rewrite/write Python ASTs
 
 extra:
   recipe-maintainers:
     - drewokane
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: astor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: astor
+  cfe-purls:
+    - pkg:conda/astor@${{ version }}?channel=conda-forge
+    - pkg:pypi/astor@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/berkerpeksag/astor
+  cfe-import-names: [astor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/astor-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:20:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:20:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:20:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

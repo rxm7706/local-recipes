@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: timm
   version: "1.0.28"
 
 package:
-  name: ${{ name|lower }}
+  name: timm
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/timm/timm-${{ version }}.tar.gz
   sha256: 3789d313fdd5541a327b60180d70dbb4bdec73db8ff0655e413db3c3d134a9a4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -28,7 +27,7 @@ requirements:
     - pytorch
     - torchvision
     - pyyaml
-    - huggingface_hub
+    - huggingface-hub
     - safetensors
 
 tests:
@@ -41,12 +40,13 @@ tests:
         - "*"
 
 about:
+  homepage: https://github.com/huggingface/pytorch-image-models
   license: Apache-2.0
   license_file: LICENSE
-  summary: (Unofficial) PyTorch Image Models
-  homepage: https://github.com/rwightman/pytorch-image-models
-  repository: https://github.com/rwightman/pytorch-image-models
-  documentation: https://pypi.org/project/timm/
+  summary: PyTorch Image Models
+  description: |
+    PyTorch Image Models
+  documentation: https://huggingface.co/docs/timm/en/index
 
 extra:
   recipe-maintainers:
@@ -55,3 +55,33 @@ extra:
     - oblute
     - rluria14
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: timm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: timm
+  cfe-purls:
+    - pkg:conda/timm@${{ version }}?channel=conda-forge
+    - pkg:pypi/timm@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/huggingface/pytorch-image-models
+  cfe-import-names: [timm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/timm-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:37:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:37:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:37:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

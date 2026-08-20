@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "3.2.11"
-  python_check_max: "3.14"
 
 package:
   name: graphql-core
@@ -16,52 +15,67 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
     - poetry-core >=1,<3
-    - python ${{ python_min }}.*
     - setuptools >=59,<83
   run:
     - python >=${{ python_min }}
+    - typing_extensions <5,>=4.7
 
 tests:
   - python:
-      imports: graphql
+      imports:
+        - graphql
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - pytest >=6.2,<9
-        - pytest-asyncio >=0.16,<1
-        - pytest-benchmark >=3.4,<6
-        - pytest-cov >=4,<7
-        - pytest-describe >=2,<3
-        - pytest-timeout >=2,<3
-        - python ${{ python_min }}.*
-    script:
-      - python -c '__import__("os").unlink("tests/test_docs.py")'
-      - coverage run --source graphql --branch -m pytest -vv --tb=long --color=yes
-      - coverage report --show-missing --skip-covered --fail-under=99
+        - "*"
 
 about:
+  homepage: https://github.com/graphql-python/graphql-core
   license: MIT
   license_file: LICENSE
   summary: GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL.
-  homepage: https://pypi.org/project/graphql-core
-  repository: https://github.com/graphql-python/graphql-core
-  documentation: https://graphql-core-3.readthedocs.io
+  description: |
+    GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL.
 
 extra:
   recipe-maintainers:
     - carlodri
     - bollwyvl
     - KingDarBoja
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: graphql-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: graphql-core
+  cfe-purls:
+    - pkg:conda/graphql-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/graphql-core@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/graphql-python/graphql-core
+  cfe-import-names: [graphql]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/graphql-core-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:35:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:35:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:35:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

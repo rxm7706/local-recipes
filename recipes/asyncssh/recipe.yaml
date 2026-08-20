@@ -2,33 +2,29 @@
 schema_version: 1
 
 context:
-  name: asyncssh
-  version: "2.23.0"
-  sha256: 8c54760953c1f2cf282591bcba5c8c70efc48d645bbf26bd2307a9c66a0ed1a7
+  version: "2.24.0"
 
 package:
-  name: ${{ name }}
+  name: asyncssh
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  url: https://pypi.org/packages/source/a/asyncssh/asyncssh-${{ version }}.tar.gz
+  sha256: 4064c590e59ce2e8d82a2f66d35f3120d765828b4df5e3dbfb07b4a8c24686c9
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - cryptography >=39.0
-    - pyopenssl >=23.0.0
-    - python-gssapi >=1.2.0
+    - cryptography >=48.0.1
     - typing_extensions >=4.0.0
 
 tests:
@@ -36,14 +32,54 @@ tests:
       imports:
         - asyncssh
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: EPL-1.0
+  homepage: http://asyncssh.timeheart.net
+  license: EPL-2.0
+  license_file: LICENSE
   summary: "AsyncSSH: Asynchronous SSHv2 client and server library"
-  homepage: https://github.com/ronf/asyncssh
+  description: |
+    AsyncSSH: Asynchronous SSHv2 client and server library
+  repository: https://github.com/ronf/asyncssh
+  documentation: https://asyncssh.readthedocs.io
 
 extra:
   recipe-maintainers:
     - apmorton
     - vamega
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asyncssh
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asyncssh
+  cfe-purls:
+    - pkg:conda/asyncssh@${{ version }}?channel=conda-forge
+    - pkg:pypi/asyncssh@${{ version }}
+  cfe-upstream-repo: https://github.com/ronf/asyncssh
+  cfe-upstream-homepage: http://asyncssh.timeheart.net
+  cfe-import-names: [asyncssh]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asyncssh-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.24.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:26:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:26:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:26:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

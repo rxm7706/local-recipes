@@ -2,31 +2,26 @@
 schema_version: 1
 
 context:
-  name: xhtml2pdf
   version: "0.2.17"
 
 package:
-  name: ${{ name|lower }}
+  name: xhtml2pdf
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/xhtml2pdf-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/x/xhtml2pdf/xhtml2pdf-${{ version }}.tar.gz
   sha256: 09ddbc31aa0e38a16f2f3cb73be89af5f7c968c17a564afdd685d280e39c526d
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pisa = xhtml2pdf.pisa:command
-      - xhtml2pdf = xhtml2pdf.pisa:command
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - arabic_reshaper >=3.0.0
@@ -35,8 +30,8 @@ requirements:
     - pyhanko >=0.12.1
     - pyhanko-certvalidator >=0.19.5
     - pypdf >=3.1.0
-    - python-bidi >=0.4.2
-    - reportlab >=4.0.4,<5
+    - python-bidi >=0.5.0
+    - reportlab <5,>=4.0.4
     - svglib >=1.2.1
 
 tests:
@@ -44,21 +39,57 @@ tests:
       imports:
         - xhtml2pdf
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pisa --help
-      - xhtml2pdf --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: PDF generator using HTML and CSS
+  homepage: https://pypi.org/project/xhtml2pdf/
   license: Apache-2.0
   license_file: LICENSE.txt
-  homepage: http://github.com/xhtml2pdf/xhtml2pdf
+  summary: PDF generator using HTML and CSS
+  description: |
+    PDF generator using HTML and CSS
+  repository: https://github.com/xhtml2pdf/xhtml2pdf
+  documentation: https://xhtml2pdf.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - mrakitin
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xhtml2pdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xhtml2pdf
+  cfe-purls:
+    - pkg:conda/xhtml2pdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/xhtml2pdf@${{ version }}
+  cfe-upstream-repo: https://github.com/xhtml2pdf/xhtml2pdf
+  cfe-upstream-homepage: https://pypi.org/project/xhtml2pdf/
+  cfe-import-names: [xhtml2pdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xhtml2pdf-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.17
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T07:25:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:25:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T07:25:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

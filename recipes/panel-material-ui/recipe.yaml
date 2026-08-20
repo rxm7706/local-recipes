@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  name: panel-material-ui
-  version: "0.14.1"
-  python_min: "3.10"
+  version: "0.14.2"
 
 package:
-  name: ${{ name|lower }}
+  name: panel-material-ui
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/panel_material_ui-${{ version }}.tar.gz
-  sha256: 709827337c39eb6ebc40fbd0297ebb7c8e8e104be11defac5c22e4323d4ccefa
+  url: https://pypi.org/packages/source/p/panel-material-ui/panel_material_ui-${{ version }}.tar.gz
+  sha256: 4b4e9d6f771294d778b6c13ea77348a633d55e48264dfa803f4d8bbd9d5ebf6a
 
 build:
   number: 0
@@ -21,32 +19,34 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
-    - panel-core >=1.8.0
-    - nodejs >=22
-    - esbuild
+    - panel >=1.8.0
     - packaging
-    - pip
   run:
     - python >=${{ python_min }}
-    - panel-core >=1.8.0
     - bokeh >=3.8.0
     - packaging
+    - panel >=1.8.0
 
 tests:
   - python:
       imports:
         - panel_material_ui
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: An extension to bring MaterialUI components to Panel.
+  homepage: https://github.com/panel-extensions/panel-material-ui
   license: BSD-3-Clause
-  license_file: LICENSE.txt
-  homepage: panel-material-ui.holoviz.org
+  license_file: LICENSE
+  summary: An extension to bring MaterialUI components to Panel.
+  description: |
+    An extension to bring MaterialUI components to Panel.
   repository: https://github.com/panel-extensions/panel-material-ui
 
 extra:
@@ -54,3 +54,36 @@ extra:
     - maximlt
     - philippjfr
     - hoxbro
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: panel-material-ui
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: panel-material-ui
+  cfe-purls:
+    - pkg:conda/panel-material-ui@${{ version }}?channel=conda-forge
+    - pkg:pypi/panel-material-ui@${{ version }}
+  cfe-upstream-repo: https://github.com/panel-extensions/panel-material-ui
+  cfe-upstream-homepage: https://github.com/panel-extensions/panel-material-ui
+  cfe-import-names: [panel_material_ui]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/panel-material-ui-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:43:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:43:15Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:43:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

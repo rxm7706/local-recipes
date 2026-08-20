@@ -2,27 +2,27 @@
 schema_version: 1
 
 context:
-  name: portpicker
   version: "1.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: portpicker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/portpicker-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/portpicker/portpicker-${{ version }}.tar.gz
   sha256: bd507fd6f96f65ee02781f2e674e9dc6c99bbfa6e3c39992e3916204c9d431fa
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=40.9.0
+    - wheel
   run:
     - python >=${{ python_min }}
     - psutil
@@ -32,14 +32,51 @@ tests:
       imports:
         - portpicker
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A library to choose unique available network ports.
+  homepage: https://github.com/google/python_portpicker
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/google/python_portpicker
+  summary: A library to choose unique available network ports.
+  description: |
+    A library to choose unique available network ports.
 
 extra:
   recipe-maintainers:
     - jamesmyatt
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: portpicker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: portpicker
+  cfe-purls:
+    - pkg:conda/portpicker@${{ version }}?channel=conda-forge
+    - pkg:pypi/portpicker@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/google/python_portpicker
+  cfe-import-names: [portpicker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/portpicker-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:11:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:11:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:11:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

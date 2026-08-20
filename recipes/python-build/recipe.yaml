@@ -2,63 +2,79 @@
 schema_version: 1
 
 context:
-  name: python-build
-  version: "1.5.0"
-  python_min: "3.10"
+  version: "0.2.13"
 
 package:
-  name: ${{ name|lower }}
+  name: python-build
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/b/build/build-${{ version }}.tar.gz
-  sha256: 302c22c3ba2a0fd5f3911918651341ebb3896176cbdec15bd421f80b1afc7647
+  url: https://pypi.org/packages/source/p/python-build/python-build-${{ version }}.tar.gz
+  sha256: f22ed87d097adf9a9e498b11f354e4b4bc5d285fc254a5c2050fa26b4e415506
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - python-build = build.__main__:entrypoint
-      - pyproject-build = build.__main__:entrypoint
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - flit-core >=3.11
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - colorama
-    - importlib-metadata >=4.6
-    - packaging >=24.0
-    - pyproject_hooks
-    - tomli >=1.1.0
-  run_constraints:
-    - build <0
 
 tests:
   - python:
       imports:
-        - build
+        - python_build
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - python-build --help
-      - pyproject-build --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: UNKNOWN
   license: MIT
   license_file: LICENSE
-  summary: A simple, correct PEP 517 build frontend
-  homepage: https://github.com/pypa/build
-  documentation: https://pypa-build.readthedocs.io
+  summary: Tool to download and build python based upon pyenv.
+  description: |
+    Tool to download and build python based upon pyenv.
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - henryiii
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-build
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-build
+  cfe-purls:
+    - pkg:conda/python-build@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-build@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: UNKNOWN
+  cfe-import-names: [python_build]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-build-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-0.2.13
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:48:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:48:23Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:48:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -67,7 +67,9 @@ tests:
         - bokeh.themes
         - bokeh.util
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -98,3 +100,36 @@ extra:
     - mattpap
     - ocefpaf
     - philippjfr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bokeh
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bokeh
+  cfe-purls:
+    - pkg:conda/bokeh@${{ version }}?channel=conda-forge
+    - pkg:pypi/bokeh@${{ version }}
+  cfe-upstream-repo: https://github.com/bokeh/bokeh
+  cfe-upstream-homepage: https://bokeh.org
+  cfe-import-names: [bokeh, bokeh.application, bokeh.application.handlers, bokeh.client, bokeh.command, bokeh.command.subcommands, bokeh.core, bokeh.core.property, bokeh.core.validation, bokeh.models, bokeh.models.widgets, bokeh.plotting, bokeh.server, bokeh.protocol, bokeh.protocol.messages, bokeh.server.views, bokeh.sphinxext, bokeh.themes, bokeh.util]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bokeh-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.9.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:44:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:44:01Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:44:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: three-merge
   version: "0.1.1"
 
 package:
-  name: ${{ name|lower }}
+  name: three-merge
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/three-merge/three-merge-${{ version }}.tar.gz
   sha256: 60f6afe144595560d63ae32625351bcef3b94733b54eb97800a9feb0f3d9d970
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,25 +30,53 @@ tests:
   - python:
       imports:
         - three_merge
-        - three_merge.merge
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/spyder-ide/three-merge
   license: MIT
   license_file: LICENSE
-  summary: Simple Python library to perform a 3-way merge between strings
+  summary: Simple library for merging two strings with respect to a base one
   description: |
-    Simple Python library to perform a 3-way merge between strings,
-    based on diff-match-patch. This library performs merges at a character
-    level, as opposed to most VCS systems, which opt for a line-based approach.
-  homepage: https://github.com/spyder-ide/three-merge
-  repository: https://github.com/spyder-ide/three-merge
+    Simple library for merging two strings with respect to a base one
 
 extra:
   recipe-maintainers:
     - andfoy
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: three-merge
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: three-merge
+  cfe-purls:
+    - pkg:conda/three-merge@${{ version }}?channel=conda-forge
+    - pkg:pypi/three-merge@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/spyder-ide/three-merge
+  cfe-import-names: [three_merge]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/three-merge-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:33:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:33:58Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:33:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

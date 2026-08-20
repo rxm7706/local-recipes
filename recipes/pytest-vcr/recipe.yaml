@@ -2,30 +2,29 @@
 schema_version: 1
 
 context:
-  name: pytest-vcr
   version: "1.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-vcr
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-vcr-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-vcr/pytest-vcr-${{ version }}.tar.gz
   sha256: 23ee51b75abbcc43d926272773aae4f39f93aceb75ed56852d0bf618f92e1896
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - pytest >=3.6.0
+    - pytest
     - vcrpy
 
 tests:
@@ -33,14 +32,51 @@ tests:
       imports:
         - pytest_vcr
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Plugin for managing VCR.py cassettes
+  homepage: https://github.com/ktosiek/pytest-vcr
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/ktosiek/pytest-vcr
+  summary: Plugin for managing VCR.py cassettes
+  description: |
+    Plugin for managing VCR.py cassettes
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-vcr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-vcr
+  cfe-purls:
+    - pkg:conda/pytest-vcr@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-vcr@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ktosiek/pytest-vcr
+  cfe-import-names: [pytest_vcr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-vcr-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:46:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:46:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:46:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

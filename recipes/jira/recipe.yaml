@@ -2,11 +2,10 @@
 schema_version: 1
 
 context:
-  version: 3.10.5
-  python_check_max: 3.13
+  version: "3.10.5"
 
-recipe:
-  name: jira-split
+package:
+  name: jira
   version: ${{ version }}
 
 source:
@@ -16,107 +15,73 @@ source:
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: jira-base
-    build:
-      noarch: python
-      script:
-        - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
-      python:
-        entry_points:
-          - jirashell = jira.jirashell:main
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}.*
-        - setuptools >=60.0.0
-        - setuptools-scm >=7.0.0
-      run:
-        - defusedxml
-        - packaging
-        - pillow >=2.1.0
-        - python >=${{ python_min }}
-        - requests >=2.10.0
-        - requests-oauthlib >=1.1.0
-        - requests-toolbelt
-        - typing_extensions >=3.7.4.2
-      run_constraints:
-        - ipython >=4.0.0
-        - requests-futures >=0.9.7
-    tests:
-      - python:
-          imports: jira
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=60.0.0
+  run:
+    - python >=${{ python_min }}
+    - defusedxml
+    - packaging
+    - requests-oauthlib >=1.1.0
+    - requests >=2.10.0
+    - requests-toolbelt
+    - typing_extensions >=3.7.4.2
 
-  - package:
-      name: jira-with-cli
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("jira-base", exact=True) }}
-        - keyring
-        - ipython
-    tests:
-      - python:
-          imports: jira
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - script:
-          - jirashell --help
-
-  - package:
-      name: jira-with-async
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("jira-base", exact=True) }}
-        - requests-futures
-    tests:
-      - python:
-          imports: jira
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-
-  - package:
-      name: jira
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("jira-base", exact=True) }}
-        - ${{ pin_subpackage("jira-with-cli", exact=True) }}
-    tests:
-      - python:
-          imports: jira
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
+tests:
+  - python:
+      imports:
+        - jira
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
+  homepage: https://github.com/pycontribs/jira
+  license: BSD-3-Clause
   license_file: LICENSE
   summary: Python library for interacting with JIRA via REST APIs.
-  homepage: https://github.com/pycontribs/jira
+  description: |
+    Python library for interacting with JIRA via REST APIs.
+  repository: https://github.com/pycontribs/jira.git
   documentation: https://jira.readthedocs.io
-  description: |-
-    This library eases the use of the Jira REST API from Python and it has been
-    used in production for years.
 
 extra:
-  feedstock-name: jira
   recipe-maintainers:
     - ericdill
     - parente
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jira
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jira
+  cfe-purls:
+    - pkg:conda/jira@${{ version }}?channel=conda-forge
+    - pkg:pypi/jira@${{ version }}
+  cfe-upstream-repo: https://github.com/pycontribs/jira.git
+  cfe-upstream-homepage: https://github.com/pycontribs/jira
+  cfe-import-names: [jira]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jira-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:17:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:17:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T00:17:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

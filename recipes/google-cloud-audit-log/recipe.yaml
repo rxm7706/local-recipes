@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: google-cloud-audit-log
-  version: 0.6.1
+  version: "0.6.1"
 
 package:
-  name: ${{ name|lower }}
+  name: google-cloud-audit-log
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_audit_log-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-audit-log/google_cloud_audit_log-${{ version }}.tar.gz
   sha256: 4aba72b45dc15344da1b2d8981320050fe39cfe80432f38e7318aa2e477c5bf2
 
 build:
@@ -25,26 +24,56 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - protobuf >=6.33.5,<8.0.0
-    - googleapis-common-protos >=1.69.2,<2.0.0
+    - protobuf <8.0.0,>=6.33.5
+    - googleapis-common-protos <2.0.0,>=1.69.2
 
 tests:
   - python:
       imports:
-        - google.cloud.audit.audit_log_pb2
+        - google.cloud.audit
+      pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-      pip_check: true
 
 about:
-  summary: Google Cloud Audit Protos
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log
-  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log
-  documentation: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log
+  summary: Google Cloud Audit Protos
+  description: |
+    Google Cloud Audit Protos
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-audit-log
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-audit-log
+  cfe-purls:
+    - pkg:conda/google-cloud-audit-log@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-audit-log@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-audit-log
+  cfe-import-names: [google.cloud.audit]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-audit-log-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T10:06:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T10:06:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T10:06:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

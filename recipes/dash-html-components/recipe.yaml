@@ -2,53 +2,81 @@
 schema_version: 1
 
 context:
-  name: dash-html-components
-  filename: dash_html_components
   version: "2.0.0"
-  sha256: 8703a601080f02619a6390998e0b3da4a5daabe97a1fd7a9cebc09d015f26e50
 
 package:
-  name: ${{ name|lower }}
+  name: dash-html-components
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ filename }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ filename }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dash-html-components/dash_html_components-${{ version }}.tar.gz
+  sha256: 8703a601080f02619a6390998e0b3da4a5daabe97a1fd7a9cebc09d015f26e50
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - dash >=2.0.0  # not listed in the setup.py
+    - dash
 
 tests:
   - python:
       imports:
         - dash_html_components
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/plotly/dash-html-components
   license: MIT
-  # TODO : Update this once plotly packages it correctly:
-  # https://github.com/plotly/dash-html-components/pull/46
-  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE.txt
-  summary: Dash UI HTML component suite
-  homepage: https://plot.ly/dash
-  repository: https://github.com/plotly/dash-html-components
+  license_file: LICENSE
+  summary: Vanilla HTML components for Dash
+  description: |
+    Vanilla HTML components for Dash
 
 extra:
   recipe-maintainers:
     - moorepants
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dash-html-components
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dash-html-components
+  cfe-purls:
+    - pkg:conda/dash-html-components@${{ version }}?channel=conda-forge
+    - pkg:pypi/dash-html-components@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/plotly/dash-html-components
+  cfe-import-names: [dash_html_components]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dash-html-components-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:27:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:27:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:27:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['dash']
+####

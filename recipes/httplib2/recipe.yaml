@@ -20,11 +20,12 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=40.8.0
     - pip
+    - setuptools >=40.8.0
+    - wheel
   run:
     - python >=${{ python_min }}
-    - pyparsing >=3.1,<4
+    - pyparsing <4,>=3.1
 
 tests:
   - python:
@@ -36,12 +37,44 @@ tests:
         - "*"
 
 about:
-  summary: A comprehensive HTTP client library.
+  homepage: https://github.com/httplib2/httplib2
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/httplib2/httplib2
+  summary: A comprehensive HTTP client library.
+  description: |
+    A comprehensive HTTP client library.
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - sigmavirus24
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httplib2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httplib2
+  cfe-purls:
+    - pkg:conda/httplib2@${{ version }}?channel=conda-forge
+    - pkg:pypi/httplib2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/httplib2/httplib2
+  cfe-import-names: [httplib2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httplib2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:39:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:39:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:39:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

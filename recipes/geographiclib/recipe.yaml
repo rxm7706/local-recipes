@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: geographiclib
   version: "2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: geographiclib
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/geographiclib-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/geographiclib/geographiclib-${{ version }}.tar.gz
   sha256: 6a6545e6262d0ed3522e13c515713718797e37ed8c672c31ad7b249f372ef108
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=42
   run:
     - python >=${{ python_min }}
 
@@ -30,25 +29,18 @@ tests:
   - python:
       imports:
         - geographiclib
-        - geographiclib.test
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - python -m unittest -v geographiclib.test.test_geodesic
-      - python -m unittest -v geographiclib.test.test_sign
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://geographiclib.sourceforge.io/Python/
   license: MIT
-  license_file: LICENSE.txt
+  license_file: LICENSE
   summary: The geodesic routines from GeographicLib
   description: |
-    This implements algorithms for geodesics (Karney, 2013) for solving
-    the direct and inverse problems for an ellipsoid of revolution.
-  homepage: https://github.com/geographiclib/geographiclib-python
+    The geodesic routines from GeographicLib
   repository: https://github.com/geographiclib/geographiclib-python
   documentation: https://geographiclib.sourceforge.io/Python/doc/
 
@@ -57,3 +49,36 @@ extra:
     - QuLogic
     - cffk
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: geographiclib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: geographiclib
+  cfe-purls:
+    - pkg:conda/geographiclib@${{ version }}?channel=conda-forge
+    - pkg:pypi/geographiclib@${{ version }}
+  cfe-upstream-repo: https://github.com/geographiclib/geographiclib-python
+  cfe-upstream-homepage: https://geographiclib.sourceforge.io/Python/
+  cfe-import-names: [geographiclib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/geographiclib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:42:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:42:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:42:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

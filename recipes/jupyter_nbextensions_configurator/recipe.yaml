@@ -2,32 +2,31 @@
 schema_version: 1
 
 context:
-  version: "0.6.1"
+  version: "0.6.4"
 
 package:
-  name: jupyter_nbextensions_configurator
+  name: jupyter-nbextensions-configurator
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/j/jupyter_nbextensions_configurator/jupyter_nbextensions_configurator-${{ version }}.tar.gz
-  sha256: 4b9e1270ccc1f8e0a421efb8979a737f586813023a4855b9453f61c3ca599b82
+  url: https://github.com/jupyter-contrib/jupyter_nbextensions_configurator/archive/refs/tags/${{ version }}.tar.gz
+  sha256: f27c3904302adec913a3396b67401e4fd4ae6342e33505af9acc8e3fcf82dc30
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - jupyter-nbextensions_configurator = jupyter_nbextensions_configurator.application:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >=${{ python_min }}
     - jupyter_contrib_core >=0.3.3
-    - jupyter_core
+    - jupyter-core
+    - jupyter-server
     - notebook >=6.0
     - pyyaml
     - tornado
@@ -37,23 +36,57 @@ tests:
   - python:
       imports:
         - jupyter_nbextensions_configurator
-        - jupyter_nbextensions_configurator.application
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - jupyter nbextensions_configurator --help
-      - jupyter nbextensions_configurator enable --help
-      - jupyter nbextensions_configurator disable --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A server extension for jupyter notebook providing configuration interfaces for notebook extensions (nbextensions).
-  license_file: LICENSE.txt
-  license: BSD-3-Clause
   homepage: https://github.com/jupyter-contrib/jupyter_nbextensions_configurator
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: jupyter serverextension providing configuration interfaces for nbextensions.
+  description: |
+    jupyter serverextension providing configuration interfaces for nbextensions.
 
 extra:
   recipe-maintainers:
     - jcb91
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter_nbextensions_configurator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-nbextensions-configurator
+  cfe-purls:
+    - pkg:conda/jupyter_nbextensions_configurator@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-nbextensions-configurator@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jupyter-contrib/jupyter_nbextensions_configurator
+  cfe-import-names: [jupyter_nbextensions_configurator]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyter_nbextensions_configurator-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.4
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T00:32:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:32:59Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T00:32:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,58 +2,83 @@
 schema_version: 1
 
 context:
-  name: SQLAlchemy-Utc
   version: "0.14.0"
-  sha256: c4829530141a8da5936d45d37749d5c21b58517097b1d1bf6e311dfeadda3692
 
 package:
-  name: ${{ name|lower }}
+  name: sqlalchemy-utc
   version: ${{ version }}
 
 source:
-  url: https://github.com/spoqa/${{ name }}/archive/${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/SQLAlchemy-Utc/SQLAlchemy-Utc-${{ version }}.tar.gz
+  sha256: 8e041624595b66d7b1d5ea8b6de486df5c1b9352697f3b24f862f0ded56cd7aa
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - sqlalchemy >=0.9.0
+    - setuptools
+    - sqlalchemy
 
 tests:
   - python:
       imports:
         - sqlalchemy_utc
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/spoqa/sqlalchemy-utc
   license: MIT
   license_file: LICENSE
   summary: SQLAlchemy type to store aware datetime values
   description: |
-    This package provides a drop-in replacement of SQLAlchemy's built-in
-    DateTime type with timezone=True option enabled. Although SQLAlchemy's
-    built-in DateTime type provides timezone=True option, since some vendors
-    like SQLite and MySQL don't provide timestamptz data type, the option
-    doesn't make any effect on these vendors.
-
-
-  homepage: https://github.com/spoqa/${{ name }}
+    SQLAlchemy type to store aware datetime values
 
 extra:
   recipe-maintainers:
     - igortg
     - lvoliveira
     - lincrosenbach
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-utc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-utc
+  cfe-purls:
+    - pkg:conda/sqlalchemy-utc@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-utc@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/spoqa/sqlalchemy-utc
+  cfe-import-names: [sqlalchemy_utc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlalchemy-utc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:20:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:20:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:20:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

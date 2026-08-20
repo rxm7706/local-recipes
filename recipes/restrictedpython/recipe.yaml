@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/r/restrictedpython/restrictedpython-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/RestrictedPython/restrictedpython-${{ version }}.tar.gz
   sha256: 68e463c22396fd94606043795ac7dbee05072725f38d0db7e1748da3f54fb274
 
 build:
@@ -20,9 +20,9 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=78.1.1,<82
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
 
@@ -36,12 +36,12 @@ tests:
         - "*"
 
 about:
+  homepage: https://pypi.org/project/RestrictedPython/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
   summary: RestrictedPython is a defined subset of the Python language which allows to provide a program input into a trusted environment.
-  license: ZPL-2.1 AND BSD-3-Clause
-  license_file:
-    - COPYRIGHT.txt
-    - LICENSE.txt
-  homepage: https://github.com/zopefoundation/RestrictedPython
+  description: |
+    RestrictedPython is a defined subset of the Python language which allows to provide a program input into a trusted environment.
   repository: https://github.com/zopefoundation/RestrictedPython
   documentation: https://restrictedpython.readthedocs.io/
 
@@ -50,3 +50,37 @@ extra:
     - BubblyOrca
     - mxr-conda
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: restrictedpython
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: restrictedpython
+  cfe-purls:
+    - pkg:conda/restrictedpython@${{ version }}?channel=conda-forge
+    - pkg:pypi/restrictedpython@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/RestrictedPython
+  cfe-upstream-homepage: https://pypi.org/project/RestrictedPython/
+  cfe-import-names: [RestrictedPython]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/restrictedpython-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:57:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:57:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:57:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

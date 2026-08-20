@@ -2,30 +2,27 @@
 schema_version: 1
 
 context:
-  version: "2.37.0"
+  version: "2.37.4"
 
 package:
   name: imageio
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/imageio/imageio-${{ version }}.tar.gz
-  sha256: 71b57b3669666272c818497aebba2b4c5f20d5b37c81720e5e1a56d59c492996
+  url: https://pypi.org/packages/source/i/ImageIO/imageio-${{ version }}.tar.gz
+  sha256: e45cbc5e83502047fb138f7f585f7f105a136a57eea5f4b3cfc6ce1b52720bd3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
-  python:
-    entry_points:
-      - imageio_download_bin = imageio.__main__:download_bin_main
-      - imageio_remove_bin = imageio.__main__:remove_bin_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - python ${{ python_min }}
+    - setuptools >=61.0
+    - wheel
   run:
     - python >=${{ python_min }}
     - numpy
@@ -35,35 +32,18 @@ tests:
   - python:
       imports:
         - imageio
-      pip_check: false
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests/
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - git
-        - pytest
-        - psutil
-        - tifffile
-        - gdal
-        - astropy-base
-        - freeimage
-        - fsspec
-        - requests
-        - av
-        - imageio-ffmpeg
-    script:
-      - imageio_download_bin -h
-      - imageio_remove_bin -h
-      - pytest -sv tests/ -k "not  (${{ tests_to_skip }})"
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A Python library for reading and writing image data
+  homepage: https://github.com/imageio/imageio
   license: BSD-2-Clause
   license_file: LICENSE
-  homepage: https://imageio.github.io
+  summary: Read and write images and video across all major formats. Supports scientific and volumetric data.
+  description: |
+    Read and write images and video across all major formats. Supports scientific and volumetric data.
   repository: https://github.com/imageio/imageio
   documentation: https://imageio.readthedocs.io
 
@@ -73,3 +53,36 @@ extra:
     - almarklein
     - blink1073
     - jni
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: imageio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: imageio
+  cfe-purls:
+    - pkg:conda/imageio@${{ version }}?channel=conda-forge
+    - pkg:pypi/imageio@${{ version }}
+  cfe-upstream-repo: https://github.com/imageio/imageio
+  cfe-upstream-homepage: https://github.com/imageio/imageio
+  cfe-import-names: [imageio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/imageio-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.37.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:48:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:48:38Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:48:38Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -64,7 +64,6 @@ extra:
   recipe-maintainers:
     - mukhery
 
-
 #### CFE metadata AND comments
 # CFE metadata
   cfe-conda-name: dspy
@@ -83,15 +82,19 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dspy-ai-feedstock
   cfe-forge-recipe-updates-needed: 
     - version-update-to-3.3.0
-
-  cfe-forge-blocker-list:
     - license-unresolved:REPLACE_LICENSE
 
-  cfe-last-checked: 2026-08-17T01:18:48Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T04:23:11Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:18:48Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T01:18:48Z
+  cfe-generated-at-datetime: 2026-08-17T04:23:11Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T04:23:11Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
 ####

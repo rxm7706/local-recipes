@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: Flask-HTTPAuth
-  version: 4.8.1
+  version: "4.8.1"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-httpauth
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') | lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-HTTPAuth/flask_httpauth-${{ version }}.tar.gz
   sha256: 88499b22f1353893743c3cd68f2ca561c4ad9ef75cd6bcc7f621161cd0e80744
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vv --no-build-isolation --no-deps
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
     - flask
@@ -32,16 +31,48 @@ tests:
       imports:
         - flask_httpauth
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/miguelgrinberg/flask-httpauth
   license: MIT
   license_file: LICENSE
-  summary: Basic and Digest HTTP authentication for Flask routes
-  homepage: http://github.com/miguelgrinberg/flask-httpauth/
-  repository: http://github.com/miguelgrinberg/flask-httpauth/
-  documentation: http://flask-httpauth.readthedocs.io
+  summary: HTTP authentication for Flask routes
+  description: |
+    HTTP authentication for Flask routes
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-httpauth
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-httpauth
+  cfe-purls:
+    - pkg:conda/flask-httpauth@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-httpauth@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/miguelgrinberg/flask-httpauth
+  cfe-import-names: [flask_httpauth]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-httpauth-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:22:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:22:03Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:22:03Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

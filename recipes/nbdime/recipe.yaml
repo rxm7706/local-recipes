@@ -3,9 +3,6 @@ schema_version: 1
 
 context:
   version: "4.0.4"
-  python_check_max: "3.14"
-  jupyterlab_min: "4.0.0"
-  jupyterlab_max: "5"
 
 package:
   name: nbdime
@@ -13,72 +10,47 @@ package:
 
 source:
   url: https://pypi.org/packages/source/n/nbdime/nbdime-${{ version }}.tar.gz
-  sha256:  8cd25ecfeeb5105d563237d7f64eb4748058fba9bba9ab3892a1ff61e177ce16
+  sha256: 8cd25ecfeeb5105d563237d7f64eb4748058fba9bba9ab3892a1ff61e177ce16
 
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
-  python:
-    entry_points:
-      - git-nbdiffdriver = nbdime.vcs.git.diffdriver:main
-      - git-nbdifftool = nbdime.vcs.git.difftool:main
-      - git-nbmergedriver = nbdime.vcs.git.mergedriver:main
-      - git-nbmergetool = nbdime.vcs.git.mergetool:main
-      - hg-nbdiff = nbdime.vcs.hg.diff:main
-      - hg-nbdiffweb = nbdime.vcs.hg.diffweb:main
-      - hg-nbmerge = nbdime.vcs.hg.merge:main
-      - hg-nbmergeweb = nbdime.vcs.hg.mergeweb:main
-      - nbdiff = nbdime.nbdiffapp:main
-      - nbdiff-web = nbdime.webapp.nbdiffweb:main
-      - nbdime = nbdime.__main__:main_dispatch
-      - nbmerge = nbdime.nbmergeapp:main
-      - nbmerge-web = nbdime.webapp.nbmergeweb:main
-      - nbshow = nbdime.nbshowapp:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-jupyter-builder >=0.5
-    - hatchling >=1.5.0
-    - jupyterlab >=${{ jupyterlab_min }},<${{ jupyterlab_max }}
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
   run:
+    - python >=${{ python_min }}
     - colorama
     - gitpython !=2.1.4,!=2.1.5,!=2.1.6
     - jinja2 >=2.9
-    - jupyter_server
+    - jupyter-server
     - nbformat
     - pygments
-    - python >=${{ python_min }}
     - requests
     - tornado
-  run_constraints:
-    - jupyterlab >=${{ jupyterlab_min }},<${{ jupyterlab_max }}
 
 tests:
   - python:
-      imports: nbdime
+      imports:
+        - nbdime
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - jupyterlab
-        - python ${{ python_min }}.*
-    script:
-      file: run_test.py
+        - "*"
+
 about:
+  homepage: https://nbdime.readthedocs.io
   license: BSD-3-Clause
-  license_file:
-    - LICENSE.md
-    - nbdime/labextension/static/third-party-licenses.json
+  license_file: LICENSE
   summary: Diff and merge of Jupyter Notebooks
-  homepage: https://pypi.org/project/nbdime
+  description: |
+    Diff and merge of Jupyter Notebooks
   repository: https://github.com/jupyter/nbdime
-  documentation: https://nbdime.readthedocs.io
 
 extra:
   recipe-maintainers:
@@ -86,3 +58,33 @@ extra:
     - minrk
     - ocefpaf
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nbdime
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nbdime
+  cfe-purls:
+    - pkg:conda/nbdime@${{ version }}?channel=conda-forge
+    - pkg:pypi/nbdime@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyter/nbdime
+  cfe-upstream-homepage: https://nbdime.readthedocs.io
+  cfe-import-names: [nbdime]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/nbdime-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:59:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:59:08Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:59:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

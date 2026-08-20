@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: orderly-set
   version: "5.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: orderly-set
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/orderly_set-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/orderly-set/orderly_set-${{ version }}.tar.gz
   sha256: e87185c8e4d8afa64e7f8160ee2c542a475b738bc891dc3f58102e654125e6ce
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -29,14 +30,55 @@ tests:
       imports:
         - orderly_set
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Orderly set
-  license: MIT
-  license_file: MIT-LICENSE
   homepage: https://github.com/seperman/orderly-set
+  license: MIT
+  license_file: LICENSE
+  summary: Orderly set
+  description: |
+    Orderly set
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: orderly-set
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: orderly-set
+  cfe-purls:
+    - pkg:conda/orderly-set@${{ version }}?channel=conda-forge
+    - pkg:pypi/orderly-set@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/seperman/orderly-set
+  cfe-import-names: [orderly_set]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/orderly-set-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:31:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:31:42Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:31:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

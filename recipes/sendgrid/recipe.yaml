@@ -2,67 +2,84 @@
 schema_version: 1
 
 context:
-  name: sendgrid
   version: "6.12.5"
 
 package:
-  name: ${{ name|lower }}
+  name: sendgrid
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sendgrid/sendgrid-${{ version }}.tar.gz
   sha256: ea9aae30cd55c332e266bccd11185159482edfc07c149b6cd15cf08869fabdb7
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    # Note: the upstream requirements are a mess.  Some are in setup.py and some
-    #       in requirements.txt, but the latter has exact version pins that are
-    #       problematic for conda-forge and seem unnecessary.  They have other
-    #       bounds that are inaccurately loose.  Details below.
-    # consistent between setup.py and requirements.txt
-    - cryptography >=45.0.6
-    # need more recent version than in requirements.txt to support FullLoader
-    - pyyaml >=5.1
-    # consistent between setup.py and requirements.txt
     - python_http_client >=3.2.1
-    # missing from setup.py not usisng exact pin from requirements.txt but lowerbound is to support iteritems
-    - six >=1.10
-    # Using the most restrictive constraints for python >=3.12 here to stay noarch: python
-    - werkzeug >=2.3.5
-    # Note: flask is not needed as a runtime requirement and is only used for testing (but
-    #       not on conda-forge)
+    - cryptography >=45.0.6
+    - werkzeug <1.0.0,>=0.11.15
 
 tests:
   - python:
       imports:
         - sendgrid
-        - sendgrid.helpers
-        - sendgrid.helpers.inbound
-        - sendgrid.helpers.mail
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/sendgrid/sendgrid-python/
   license: MIT
   license_file: LICENSE
-  summary: SendGrid library for Python
-  description: SendGrid Python library. This library allows you to quickly and easily use the SendGrid Web API v3 via Python
-  homepage: https://github.com/sendgrid/sendgrid-python/
-  repository: https://github.com/sendgrid/sendgrid-python
-  documentation: https://github.com/sendgrid/sendgrid-python
+  summary: Twilio SendGrid library for Python
+  description: |
+    Twilio SendGrid library for Python
 
 extra:
   recipe-maintainers:
     - RohitK89
     - mariusvniekerk
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sendgrid
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sendgrid
+  cfe-purls:
+    - pkg:conda/sendgrid@${{ version }}?channel=conda-forge
+    - pkg:pypi/sendgrid@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/sendgrid/sendgrid-python/
+  cfe-import-names: [sendgrid]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sendgrid-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-6.12.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:22:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:22:53Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:22:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

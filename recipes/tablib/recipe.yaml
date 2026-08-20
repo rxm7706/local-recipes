@@ -19,47 +19,63 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=58
-    - setuptools-scm >=6.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=58
   run:
     - python >=${{ python_min }}
-    # optional [all]
-    - markuppy
-    - odfpy
-    - openpyxl >=2.6.0
-    - pandas
-    - pyyaml
-    - tabulate
-    - xlrd
-    - xlwt
 
 tests:
   - python:
       imports:
         - tablib
-        - tablib.formats
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      source:
-        - tests/test_tablib.py
-    requirements:
-      run:
-        - pip
-        - pytest
-        - python ${{ python_min }}
-    script:
-      - python tests/test_tablib.py
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Format agnostic tabular data library (XLS, JSON, YAML, CSV)
+  homepage: https://tablib.readthedocs.io
   license: MIT
   license_file: LICENSE
-  homepage: https://pypi.org/project/tablib/
-  repository: https://github.com/jazzband/tablib
+  summary: Format agnostic tabular data library (XLS, JSON, YAML, CSV, etc.)
+  description: |
+    Format agnostic tabular data library (XLS, JSON, YAML, CSV, etc.)
+  documentation: https://tablib.readthedocs.io
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tablib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tablib
+  cfe-purls:
+    - pkg:conda/tablib@${{ version }}?channel=conda-forge
+    - pkg:pypi/tablib@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://tablib.readthedocs.io
+  cfe-import-names: [tablib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tablib-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.10.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:19:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:19:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:19:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

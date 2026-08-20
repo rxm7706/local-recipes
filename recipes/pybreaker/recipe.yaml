@@ -1,26 +1,27 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
-  name: pybreaker
   version: "1.4.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pybreaker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pybreaker-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pybreaker/pybreaker-${{ version }}.tar.gz
   sha256: 8df2d245c73ba40c8242c56ffb4f12138fbadc23e296224740c2028ea9dc1178
 
 build:
-  noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.9
     - pip
+    - flit-core >=3.9
   run:
     - python >=${{ python_min }}
 
@@ -29,16 +30,49 @@ tests:
       imports:
         - pybreaker
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python implementation of the Circuit Breaker pattern
-  homepage: http://github.com/danielfm/pybreaker
+  homepage: https://pypi.org/project/pybreaker/
   license: BSD-3-Clause
   license_file: LICENSE
-  documentation: https://github.com/danielfm/pybreaker/blob/main/README.rst
+  summary: Python implementation of the Circuit Breaker pattern
+  description: |
+    Python implementation of the Circuit Breaker pattern
   repository: http://github.com/danielfm/pybreaker
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pybreaker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pybreaker
+  cfe-purls:
+    - pkg:conda/pybreaker@${{ version }}?channel=conda-forge
+    - pkg:pypi/pybreaker@${{ version }}
+  cfe-upstream-repo: http://github.com/danielfm/pybreaker
+  cfe-upstream-homepage: https://pypi.org/project/pybreaker/
+  cfe-import-names: [pybreaker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pybreaker-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:18:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:18:23Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:18:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

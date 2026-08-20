@@ -2,73 +2,47 @@
 schema_version: 1
 
 context:
-  name: opt_einsum
   version: "3.4.0"
 
-recipe:
-  name: ${{ name|lower }}
+package:
+  name: opt-einsum
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opt-einsum/opt_einsum-${{ version }}.tar.gz
   sha256: 96ca72f1b886d148241348783498194c577fa30a8faac108586b14f1ba4473ac
 
 build:
-  number: 1
+  number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: opt_einsum
-    build:
-      script:
-        file: build-base.sh
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - pip
-        - hatchling
-        - hatch-fancy-pypi-readme
-        - hatch-vcs
-      run:
-        - python >=${{ python_min }}
-    tests:
-      - python:
-          imports:
-            - opt_einsum
-          pip_check: true
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-            - pytest
-            - pip
-        script:
-          - pytest --pyargs opt_einsum
-  - package:
-      name: opt-einsum
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage('opt_einsum', upper_bound="x.x.x") }}
-    tests:
-      - python:
-          imports:
-            - opt_einsum
-          pip_check: false
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme >=22.5.0
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - opt_einsum
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/opt-einsum/
   license: MIT
   license_file: LICENSE
-  summary: Optimizing einsum functions in NumPy, Tensorflow, Dask, and more with contraction order optimization.
-  description: >
-    Einsum is a very powerful function for contracting tensors of arbitrary dimension and index. However, it is typically only optimized to contract two terms at a time resulting in non-optimal scaling. This package optimizes the contraction order for arbitrarily large speedups.
-
-    See the docs for more information: dgasmith.github.io/opt_einsum/
-
-  homepage: http://github.com/dgasmith/opt_einsum
-  repository: https://github.com/dgasmith/opt_einsum
+  summary: Path optimization of einsum functions.
+  description: |
+    Path optimization of einsum functions.
 
 extra:
   recipe-maintainers:
@@ -76,3 +50,36 @@ extra:
     - loriab
     - xhochy
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opt_einsum
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opt-einsum
+  cfe-purls:
+    - pkg:conda/opt_einsum@${{ version }}?channel=conda-forge
+    - pkg:pypi/opt-einsum@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/opt-einsum/
+  cfe-import-names: [opt_einsum]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opt_einsum-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:25:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:25:42Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:25:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

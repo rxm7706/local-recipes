@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: autocorrect
   version: "2.6.1"
 
 package:
-  name: ${{ name|lower }}
+  name: autocorrect
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/autocorrect-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/autocorrect/autocorrect-${{ version }}.tar.gz
   sha256: 2bc68192dc645b44bece2613caac338e93548c3dac9c563095b27224c7fd4391
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
@@ -31,15 +30,51 @@ tests:
       imports:
         - autocorrect
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Spelling Corrector
-  license: LGPL-3.0-or-later
-  license_file:
-    - LICENSE
   homepage: https://github.com/fsondej/autocorrect
+  license: https://opensource.org/licenses/LGPL-3.0
+  license_file: LICENSE
+  summary: Spelling Corrector
+  description: |
+    Spelling Corrector
 
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: autocorrect
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: autocorrect
+  cfe-purls:
+    - pkg:conda/autocorrect@${{ version }}?channel=conda-forge
+    - pkg:pypi/autocorrect@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/fsondej/autocorrect
+  cfe-import-names: [autocorrect]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/autocorrect-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.6.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:30:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:30:09Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:30:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

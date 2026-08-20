@@ -2,16 +2,14 @@
 schema_version: 1
 
 context:
-  name: panel-graphic-walker
   version: "0.6.5"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: panel-graphic-walker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/panel_graphic_walker/panel_graphic_walker-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/panel-graphic-walker/panel_graphic_walker-${{ version }}.tar.gz
   sha256: ae89a4a22f2db53b0bc48a2c86b95813277e3209b73b39edd306a0c8d2dc9cb7
 
 build:
@@ -21,33 +19,72 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
+    - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-vcs
     - panel >=1.6.1
     - packaging
     - narwhals
-    - pip
-    - nodejs >=18
-    - esbuild
   run:
     - python >=${{ python_min }}
-    - panel >=1.6.1
     - narwhals
+    - panel >=1.6.1
+    - if: linux
+      then:
+        - jedi-language-server
 
 tests:
   - python:
       imports:
         - panel_gwalker
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A project providing a Graphic Walker Pane for use with HoloViz Panel.
-  license: MIT
-  license_file: LICENSE.md
   homepage: https://github.com/panel-extensions/panel-graphic-walker
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A project providing a Graphic Walker Pane for use with HoloViz Panel.
+  description: |
+    A project providing a Graphic Walker Pane for use with HoloViz Panel.
+  repository: https://github.com/panel-extensions/panel-graphic-walker
 
 extra:
   recipe-maintainers:
     - philippjfr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: panel-graphic-walker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: panel-graphic-walker
+  cfe-purls:
+    - pkg:conda/panel-graphic-walker@${{ version }}?channel=conda-forge
+    - pkg:pypi/panel-graphic-walker@${{ version }}
+  cfe-upstream-repo: https://github.com/panel-extensions/panel-graphic-walker
+  cfe-upstream-homepage: https://github.com/panel-extensions/panel-graphic-walker
+  cfe-import-names: [panel_gwalker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/panel-graphic-walker-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.5
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:01:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:01:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:01:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

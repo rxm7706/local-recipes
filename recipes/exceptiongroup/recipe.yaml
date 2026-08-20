@@ -2,31 +2,28 @@
 schema_version: 1
 
 context:
-  name: exceptiongroup
   version: "1.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: exceptiongroup
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/exceptiongroup-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/exceptiongroup/exceptiongroup-${{ version }}.tar.gz
   sha256: 8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - flit-core
     - flit-scm
   run:
     - python >=${{ python_min }}
-    # for py <3.13 but let's stay noarch: python
     - typing_extensions >=4.6.0
 
 tests:
@@ -34,16 +31,51 @@ tests:
       imports:
         - exceptiongroup
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Backport of PEP 654 (exception groups)
-  license: MIT and PSF-2.0
-  license_file: LICENSE
   homepage: https://pypi.org/project/exceptiongroup/
-  repository: https://github.com/agronholm/exceptiongroup
-  documentation: https://docs.python.org/3/library/exceptions.html
+  license: MIT
+  license_file: LICENSE
+  summary: Backport of PEP 654 (exception groups)
+  description: |
+    Backport of PEP 654 (exception groups)
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: exceptiongroup
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: exceptiongroup
+  cfe-purls:
+    - pkg:conda/exceptiongroup@${{ version }}?channel=conda-forge
+    - pkg:pypi/exceptiongroup@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/exceptiongroup/
+  cfe-import-names: [exceptiongroup]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/exceptiongroup-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.3.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:06:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:06:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:06:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

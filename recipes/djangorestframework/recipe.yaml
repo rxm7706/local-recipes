@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: djangorestframework
   version: "3.18.0"
 
 package:
-  name: ${{ name|lower }}
+  name: djangorestframework
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangorestframework-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/djangorestframework/djangorestframework-${{ version }}.tar.gz
   sha256: 2323a5111837e0b784dcb8323abc78ecc54fa2a5af7aff2677cf50cdd849477f
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
     - django >=5.2
@@ -31,21 +30,61 @@ tests:
   - python:
       imports:
         - rest_framework
-        - rest_framework.authtoken
-        - rest_framework.authtoken.migrations
-        - rest_framework.templatetags
-        - rest_framework.utils
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Web APIs for Django, made easy.
+  homepage: https://www.django-rest-framework.org
   license: BSD-3-Clause
-  license_file: LICENSE.md
-  homepage: https://www.django-rest-framework.org/
+  license_file: LICENSE
+  summary: Web APIs for Django, made easy.
+  description: |
+    Web APIs for Django, made easy.
   repository: https://github.com/encode/django-rest-framework
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - kwilcox
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: djangorestframework
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djangorestframework
+  cfe-purls:
+    - pkg:conda/djangorestframework@${{ version }}?channel=conda-forge
+    - pkg:pypi/djangorestframework@${{ version }}
+  cfe-upstream-repo: https://github.com/encode/django-rest-framework
+  cfe-upstream-homepage: https://www.django-rest-framework.org
+  cfe-import-names: [rest_framework]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangorestframework-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.18.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:51:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:51:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:51:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

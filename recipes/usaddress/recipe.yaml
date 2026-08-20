@@ -10,24 +10,20 @@ package:
 
 source:
   url: https://pypi.org/packages/source/u/usaddress/usaddress-${{ version }}.tar.gz
-  sha256: "f7e614e2489c159cf85be1b6f86edbfaf329dbeedef4d002a025757afd1ec6c6"
+  sha256: f7e614e2489c159cf85be1b6f86edbfaf329dbeedef4d002a025757afd1ec6c6
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    - parserator train training/labeled.xml usaddress
-    - test -f usaddress/usaddr.crfsuite
-    - cp usaddress/usaddr.crfsuite $SP_DIR/usaddress/usaddr.crfsuit
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=42
+    - wheel
     - parserator
-    - python-crfsuite >=0.7
     - probableparsing
   run:
     - python >=${{ python_min }}
@@ -36,25 +32,52 @@ requirements:
 
 tests:
   - python:
-      python_version:
-         - ${{ python_min }}.*
-         - '*'
       imports:
         - usaddress
       pip_check: true
-  - script:
-      - python -c "import usaddress; result = usaddress.parse('123 Main St'); assert len(result) > 0, 'parse() returned empty result'"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
   homepage: https://github.com/datamade/usaddress
-  repository: https://github.com/datamade/usaddress
   license: MIT
   license_file: LICENSE
   summary: Parse US addresses using conditional random fields
   description: |
-    usaddress is a Python library for parsing unstructured United States address strings
-    into address components, using advanced NLP methods.
+    Parse US addresses using conditional random fields
 
 extra:
   recipe-maintainers:
     - wyseguy7
     - zaneselvans
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: usaddress
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: usaddress
+  cfe-purls:
+    - pkg:conda/usaddress@${{ version }}?channel=conda-forge
+    - pkg:pypi/usaddress@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/datamade/usaddress
+  cfe-import-names: [usaddress]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/usaddress-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:04:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:04:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:04:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

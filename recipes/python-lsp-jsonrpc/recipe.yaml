@@ -2,30 +2,26 @@
 schema_version: 1
 
 context:
-  name: python-lsp-jsonrpc
   version: "1.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: python-lsp-jsonrpc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-lsp-jsonrpc/python-lsp-jsonrpc-${{ version }}.tar.gz
   sha256: 4688e453eef55cd952bff762c705cedefa12055c0aec17a06f595bcc002cc912
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: python -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools >=61.2.0
-    # Needed at build time to produce a package with the correct version for pip
-    # See https://github.com/pypa/setuptools_scm/issues/636#issuecomment-1026435048
-    - setuptools_scm >=3.4.3
   run:
     - python >=${{ python_min }}
     - ujson >=3.0.0
@@ -34,22 +30,18 @@ tests:
   - python:
       imports:
         - pylsp_jsonrpc
-        - pylsp_jsonrpc.dispatchers
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pip list | grep -i ${{ name }} | grep ${{ version }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/python-lsp/python-lsp-jsonrpc
   license: MIT
   license_file: LICENSE
-  summary: A Python 3.8+ server implementation of the JSON RPC 2.0 protocol.
-  homepage: https://github.com/python-lsp/python-lsp-jsonrpc
-  repository: https://github.com/python-lsp/python-lsp-jsonrpc
+  summary: JSON RPC 2.0 server library
+  description: |
+    JSON RPC 2.0 server library
 
 extra:
   recipe-maintainers:
@@ -57,3 +49,36 @@ extra:
     - dalthviz
     - andfoy
     - steff456
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-lsp-jsonrpc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-lsp-jsonrpc
+  cfe-purls:
+    - pkg:conda/python-lsp-jsonrpc@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-lsp-jsonrpc@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/python-lsp/python-lsp-jsonrpc
+  cfe-import-names: [pylsp_jsonrpc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-lsp-jsonrpc-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:27:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:27:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:27:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

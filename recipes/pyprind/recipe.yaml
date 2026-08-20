@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
 context:
   version: "2.11.3"
 
@@ -7,13 +9,13 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/P/PyPrind/PyPrind-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyPrind/PyPrind-${{ version }}.tar.gz
   sha256: e37dcab6e1a9c8e0a7f0fce65fde7a79e2deda1c75aa015910a49e2137b54cbf
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -22,27 +24,54 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - psutil >=3.2.0
 
 tests:
   - python:
       imports:
         - pyprind
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/rasbt/pyprind
-  summary: A progress bar and a percentage indicator object that let you track the progress of an iterative computation
-  description: |
-    The PyPrind (Python Progress Indicator) module provides a progress bar
-    and a percentage indicator object that let you track the progress of a
-    loop structure or other iterative computation.
   license: BSD-3-Clause
   license_file: LICENSE
-  documentation: http://pythonhosted.org/PyPrind/
-  repository: https://github.com/rasbt/pyprind
+  summary: Python Progress Bar and Percent Indicator Utility
+  description: |
+    Python Progress Bar and Percent Indicator Utility
 
 extra:
   recipe-maintainers:
     - cmutel
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyprind
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyprind
+  cfe-purls:
+    - pkg:conda/pyprind@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyprind@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/rasbt/pyprind
+  cfe-import-names: [pyprind]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyprind-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:25:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:25:07Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:25:07Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -20,8 +20,8 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
 
@@ -30,16 +30,49 @@ tests:
       imports:
         - xmltodict
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/martinblech/xmltodict
   license: MIT
   license_file: LICENSE
   summary: Makes working with XML feel like you are working with JSON
-  homepage: https://github.com/martinblech/xmltodict
-  repository: https://github.com/martinblech/xmltodict
+  description: |
+    Makes working with XML feel like you are working with JSON
 
 extra:
   recipe-maintainers:
     - synapticarbors
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xmltodict
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xmltodict
+  cfe-purls:
+    - pkg:conda/xmltodict@${{ version }}?channel=conda-forge
+    - pkg:pypi/xmltodict@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/martinblech/xmltodict
+  cfe-import-names: [xmltodict]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/xmltodict-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:26:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:26:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:26:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

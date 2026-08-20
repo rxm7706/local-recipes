@@ -15,22 +15,7 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    # PYTHONHASHSEED=0: Windows CI runners with restricted APIs fail at
-    # Python startup (_Py_HashRandomization_Init) when the OS RNG is unavailable.
-    # Setting PYTHONHASHSEED=0 disables hash randomisation, avoiding that call.
-    #
-    # --use-deprecated=legacy-certs: pip >= 24.2 eagerly constructs a
-    # truststore-backed SSLContext during session init (before any network call
-    # is made), which also hits the OS crypto stack and fails on the same
-    # restricted runners. The legacy-certs flag skips that construction
-    # entirely, which is safe here since this is a fully local install
-    # (--no-deps --no-build-isolation).
-    # See: https://pip.pypa.io/en/stable/topics/https-certificates/
-    content:
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --use-deprecated=legacy-certs
-    env:
-      PYTHONHASHSEED: "0"
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -51,18 +36,46 @@ tests:
         - "*"
 
 about:
-  homepage: https://github.com/btr1975/zapish-logger
-  summary: A simple logger that logs in a JSON format inspired by go zap
-  description: |
-    zapish-logger is a simple Python logger that emits log records in
-    JSON format, inspired by the Go logging library zap. It is useful
-    for applications that need structured, machine-parsable logs.
+  homepage: https://pypi.org/project/zapish-logger/
   license: MIT
   license_file: LICENSE
-  documentation: https://zapish-logger.readthedocs.io/en/latest/
+  summary: A simple logger that logs in a JSON format inspired by go zap
+  description: |
+    A simple logger that logs in a JSON format inspired by go zap
   repository: https://github.com/btr1975/zapish-logger
+  documentation: https://zapish-logger.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - pb01ka
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zapish-logger
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zapish-logger
+  cfe-purls:
+    - pkg:conda/zapish-logger@${{ version }}?channel=conda-forge
+    - pkg:pypi/zapish-logger@${{ version }}
+  cfe-upstream-repo: https://github.com/btr1975/zapish-logger
+  cfe-upstream-homepage: https://pypi.org/project/zapish-logger/
+  cfe-import-names: [zapish_logger]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zapish-logger-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:41:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:41:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T12:41:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,83 +2,78 @@
 schema_version: 1
 
 context:
-  version: "1.2.2"
-  python_check_max: "3.14"
+  version: "1.2.3"
 
-recipe:
+package:
   name: python-dotenv
   version: ${{ version }}
 
 source:
   url: https://pypi.org/packages/source/p/python-dotenv/python_dotenv-${{ version }}.tar.gz
-  sha256: 2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3
+  sha256: a20a594dabeaa385725aa239d5244871c143ecb356add8a20fcf23773a6c3a35
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: python-dotenv
-    build:
-      noarch: python
-      script:
-        - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
-      python:
-        entry_points:
-          # the entry point is created here, but needs `click`
-          - dotenv = dotenv.__main__:cli
-    requirements:
-      host:
-        - pip
-        - python ${{ python_min }}.*
-        - setuptools >=77.0
-      run:
-        - python >=${{ python_min }}
-    tests:
-      - python:
-          imports: dotenv
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-        script:
-          - pip check
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0
+  run:
+    - python >=${{ python_min }}
 
-  - package:
-      name: python-dotenv-with-cli
-    build:
-      noarch: generic
-    requirements:
-      run:
-        - ${{ pin_subpackage("python-dotenv", exact=True) }}
-        - click >=5.0
-    tests:
-      - python:
-          imports: dotenv
-          pip_check: true
-          python_version:
-            - ${{ python_min }}.*
-            - ${{ python_check_max }}.*
-      - requirements:
-          run:
-            - python ${{ python_min }}.*
-        script:
-          - dotenv --help
+tests:
+  - python:
+      imports:
+        - dotenv
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/python-dotenv/
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Read key-value pairs from a .env file and set them as environment variables
-  homepage: https://pypi.org/project/python-dotenv
+  description: |
+    Read key-value pairs from a .env file and set them as environment variables
   repository: https://github.com/theskumar/python-dotenv
-  documentation: https://saurabh-kumar.com/python-dotenv
 
 extra:
-  feedstock-name: python-dotenv
   recipe-maintainers:
     - proinsias
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-dotenv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-dotenv
+  cfe-purls:
+    - pkg:conda/python-dotenv@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-dotenv@${{ version }}
+  cfe-upstream-repo: https://github.com/theskumar/python-dotenv
+  cfe-upstream-homepage: https://pypi.org/project/python-dotenv/
+  cfe-import-names: [dotenv]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-dotenv-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:20:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:20:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:20:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

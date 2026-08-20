@@ -2,42 +2,82 @@
 schema_version: 1
 
 context:
-  version: "0.6.11"
+  version: "0.7.2"
 
 package:
   name: wand
   version: ${{ version }}
 
 source:
-  url: https://github.com/emcconville/wand/releases/download/${{ version }}/Wand-${{ version }}.tar.gz
-  sha256: b661700da9f8f1e931e52726e4fc643a565b9514f5883d41b773e3c37c9fa995
+  url: https://pypi.org/packages/source/w/Wand/wand-${{ version }}.tar.gz
+  sha256: 0387fd08848d00cadd1d885fcb19a17dd4250df2029e5338b6b668b7fed64b5b
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.3|>=2.7
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=77.0
   run:
-    - python >=3.3|>=2.7
-    - imagemagick
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - wand.image
-      pip_check: false
+        - wand
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://docs.wand-py.org
   license: MIT
-  summary: Wand is a ctypes-based simple ImageMagick binding for Python, supporting 2.7, 3.6+, and PyPy
   license_file: LICENSE
-  homepage: https://github.com/emcconville/wand
+  summary: Ctypes-based simple MagickWand API binding for Python
+  description: |
+    Ctypes-based simple MagickWand API binding for Python
+  repository: https://github.com/emcconville/wand
+  documentation: https://docs.wand-py.org/en/latest/index.html
 
 extra:
   recipe-maintainers:
     - kellend-git
     - r78v10a07
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wand
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wand
+  cfe-purls:
+    - pkg:conda/wand@${{ version }}?channel=conda-forge
+    - pkg:pypi/wand@${{ version }}
+  cfe-upstream-repo: https://github.com/emcconville/wand
+  cfe-upstream-homepage: https://docs.wand-py.org
+  cfe-import-names: [wand]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wand-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.7.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T07:09:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T07:09:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T07:09:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

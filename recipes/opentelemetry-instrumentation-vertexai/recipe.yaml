@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-vertexai
   version: "0.62.3"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-vertexai
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_vertexai-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-vertexai/opentelemetry_instrumentation_vertexai-${{ version }}.tar.gz
   sha256: 586586bf18407c6bcdd33a7bc471f08f4f276d9d27de3d858c47291b6cce9903
 
 build:
@@ -20,32 +19,74 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-api <2,>=1.38.0
     - opentelemetry-instrumentation >=0.59b0
-    - opentelemetry-semantic-conventions >=0.59b0
-    - opentelemetry-semantic-conventions-ai >=0.5.1,<0.6.0
-    - google-cloud-aiplatform
+    - opentelemetry-semantic-conventions-ai <0.6.0,>=0.5.1
+    - opentelemetry-semantic-conventions >=0.63b1
 
 tests:
   - python:
       imports:
         - opentelemetry.instrumentation.vertexai
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Vertex AI instrumentation
+  homepage: https://pypi.org/project/opentelemetry-instrumentation-vertexai/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://www.traceloop.com/openllmetry
-  repository: https://github.com/traceloop/openllmetry
-  documentation: https://www.traceloop.com/docs/openllmetry/introduction
+  summary: OpenTelemetry Vertex AI instrumentation
+  description: |
+    OpenTelemetry Vertex AI instrumentation
+  repository: https://github.com/traceloop/openllmetry/tree/main/packages/opentelemetry-instrumentation-vertexai
 
 extra:
   recipe-maintainers:
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-vertexai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-vertexai
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-vertexai@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-vertexai@${{ version }}
+  cfe-upstream-repo: https://github.com/traceloop/openllmetry/tree/main/packages/opentelemetry-instrumentation-vertexai
+  cfe-upstream-homepage: https://pypi.org/project/opentelemetry-instrumentation-vertexai/
+  cfe-import-names: [opentelemetry.instrumentation.vertexai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-vertexai-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.62.3
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T10:53:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:53:21Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:53:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,32 +2,27 @@
 schema_version: 1
 
 context:
-  name: py-cpuinfo
   version: "9.0.0"
-  sha256: 3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690
 
 package:
-  name: ${{ name|lower }}
+  name: py-cpuinfo
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/py-cpuinfo/py-cpuinfo-${{ version }}.tar.gz
+  sha256: 3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - cpuinfo = cpuinfo:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -35,21 +30,52 @@ tests:
   - python:
       imports:
         - cpuinfo
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - cpuinfo
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/workhorsy/py-cpuinfo
   license: MIT
   license_file: LICENSE
-  summary: A module for getting CPU info with pure Python
-  homepage: https://github.com/workhorsy/py-cpuinfo
-  repository: https://github.com/workhorsy/py-cpuinfo
+  summary: Get CPU info with pure Python
+  description: |
+    Get CPU info with pure Python
 
 extra:
   recipe-maintainers:
     - mstimberg
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py-cpuinfo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py-cpuinfo
+  cfe-purls:
+    - pkg:conda/py-cpuinfo@${{ version }}?channel=conda-forge
+    - pkg:pypi/py-cpuinfo@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/workhorsy/py-cpuinfo
+  cfe-import-names: [cpuinfo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py-cpuinfo-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-9.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:22:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:22:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:22:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

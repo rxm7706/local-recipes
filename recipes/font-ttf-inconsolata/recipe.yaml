@@ -35,3 +35,37 @@ about:
 extra:
   recipe-maintainers:
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: font-ttf-inconsolata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: font-ttf-inconsolata
+  cfe-purls:
+    - pkg:conda/font-ttf-inconsolata@${{ version }}?channel=conda-forge
+    - pkg:pypi/font-ttf-inconsolata@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://fonts.google.com/specimen/Inconsolata
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/font-ttf-inconsolata-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:33:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:33:26Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T08:33:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # generate failed rc=1: Fetching info for font-ttf-inconsolata...
+Error: Failed to fetch PyPI metadata for 'font-ttf-inconsolata' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/font-ttf-inconsolata/json
+####

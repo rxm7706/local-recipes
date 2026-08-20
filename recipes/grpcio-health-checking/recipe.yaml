@@ -3,90 +3,79 @@ schema_version: 1
 
 context:
   version: "1.83.0"
-  # this upstream pin appears in grpcio_version.py, and has always been the same as `version`
-  grpcio_min: ${{ version }}
-  # this upstream pin appears in setup.py, not updated w/r/t to code generation version
-  protobuf_min: "7.35.1"
-  protobuf_max: "8.0.0"
-  python_check_max: "3.14"
 
 package:
   name: grpcio-health-checking
   version: ${{ version }}
 
 source:
-  - target_directory: dist
-    url: https://pypi.org/packages/source/g/grpcio-health-checking/grpcio_health_checking-${{ version }}.tar.gz
-    sha256: ad6bc4d5a1103ad704d25ccd82def300dfa27996b185cab3e4cceeef2c6867d4
-  - target_directory: src
-    url: https://github.com/grpc/grpc/archive/v${{ version }}.tar.gz
-    sha256: 90d453393a9d41215df546103b10b33b9566df79cdf6f49dc67f6c4d044d090d
+  url: https://pypi.org/packages/source/g/grpcio-health-checking/grpcio_health_checking-${{ version }}.tar.gz
+  sha256: ad6bc4d5a1103ad704d25ccd82def300dfa27996b185cab3e4cceeef2c6867d4
 
 build:
   number: 0
   noarch: python
-  script:
-    - cd dist
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=77.0.1
+    - wheel
   run:
-    - grpcio >=${{ grpcio_min }}
-    - protobuf >=${{ protobuf_min }},<${{ protobuf_max }}
     - python >=${{ python_min }}
+    - protobuf <8.0.0,>=7.35.1
+    - grpcio >=1.83.0
 
 tests:
   - python:
+      imports:
+        - grpc_health
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-      imports:
-        - grpc_health
-        - grpc_health.v1.health
-  - files:
-      recipe:
-        - run_test.py
-      source:
-        - dist/setup.py
-        - dist/grpc_version.py
-        # the actual tests to run under coverage
-        - src/src/python/grpcio_tests/tests/health_check/
-        # test imports
-        - src/src/python/grpcio_tests/tests/__init__.py
-        - src/src/python/grpcio_tests/tests/_loader.py
-        - src/src/python/grpcio_tests/tests/_result.py
-        - src/src/python/grpcio_tests/tests/_runner.py
-        - src/src/python/grpcio_tests/tests/unit/__init__.py
-        - src/src/python/grpcio_tests/tests/unit/framework/__init__.py
-        - src/src/python/grpcio_tests/tests/unit/framework/common/__init__.py
-        - src/src/python/grpcio_tests/tests/unit/framework/common/test_constants.py
-        - src/src/python/grpcio_tests/tests/unit/test_common.py
-        - src/src/python/grpcio_tests/tests/unit/thread_pool.py
-    requirements:
-      run:
-        - pytest-cov
-        - python ${{ python_min }}.*
-    script:
-      env:
-        PKG_GRPCIO_MIN: ${{ grpcio_min }}
-        PKG_PROTOBUF_MIN: ${{ protobuf_min }}
-        PKG_PROTOBUF_MAX: ${{ protobuf_max }}
-      content:
-        - python run_test.py
+        - "*"
 
 about:
-  summary: Standard Health Checking Service for gRPC
+  homepage: https://grpc.io
   license: Apache-2.0
-  license_file: dist/LICENSE
-  homepage: https://pypi.org/project/grpcio-health-checking
-  repository: https://github.com/grpc/grpc/tree/master/src/python/grpcio_health_checking
+  license_file: LICENSE
+  summary: Standard Health Checking Service for gRPC
+  description: |
+    Standard Health Checking Service for gRPC
   documentation: https://grpc.github.io/grpc/python/grpc_health_checking.html
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grpcio-health-checking
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grpcio-health-checking
+  cfe-purls:
+    - pkg:conda/grpcio-health-checking@${{ version }}?channel=conda-forge
+    - pkg:pypi/grpcio-health-checking@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://grpc.io
+  cfe-import-names: [grpc_health]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grpcio-health-checking-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T09:37:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:37:21Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:37:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

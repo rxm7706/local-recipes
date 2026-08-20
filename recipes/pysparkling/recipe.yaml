@@ -2,47 +2,86 @@
 schema_version: 1
 
 context:
-  name: pysparkling
-  version: "0.6.1"
+  version: "0.6.2"
 
 package:
-  name: ${{ name|lower }}
+  name: pysparkling
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pysparkling-${{ version }}.tar.gz
-  sha256: 361ca9a11273b6be2dc5d1aff5a9ef228388ca1768244caff02b132a7102a538
+  url: https://pypi.org/packages/source/p/pysparkling/pysparkling-${{ version }}.tar.gz
+  sha256: 74056d975fa06bb9c4a73c91e8f7e7115089249a8cdeb7692f9a7c7ec0dc0a44
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - boto >=2.36.0
-    - future >=0.15
-    - python >=3.6
-    - python-dateutil >=2.8.0
-    - pytz >=2019.3
-    - requests >=2.6.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pysparkling
-        - pysparkling.fileio
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pure Python implementation of the Spark RDD interface.
-  license: Apache-2.0
-  license_file: LICENSE
   homepage: https://github.com/svenkreiss/pysparkling
+  license: MIT
+  license_file: LICENSE
+  summary: Pure Python implementation of the Spark RDD interface.
+  description: |
+    Pure Python implementation of the Spark RDD interface.
 
 extra:
   recipe-maintainers:
     - cdesouza21
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysparkling
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysparkling
+  cfe-purls:
+    - pkg:conda/pysparkling@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysparkling@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/svenkreiss/pysparkling
+  cfe-import-names: [pysparkling]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pysparkling-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.2
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:26:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:26:15Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:26:15Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

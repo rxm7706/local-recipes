@@ -2,46 +2,45 @@
 schema_version: 1
 
 context:
-  name: chevron
   version: "0.14.0"
 
 package:
-  name: ${{ name|lower }}
+  name: chevron
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/chevron/chevron-${{ version }}.tar.gz
   sha256: 87613aafdf6d77b6a90ff073165a61ae5086e21ad49057aa0e53681601800ebf
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - chevron=chevron:cli_main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - chevron
-      pip_check: false
-  - script:
-      - chevron --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/noahmorrison/chevron
   license: MIT
   license_file: LICENSE
   summary: Mustache templating language renderer
-  homepage: https://github.com/noahmorrison/chevron
-  repository: https://github.com/noahmorrison/chevron
+  description: |
+    Mustache templating language renderer
 
 extra:
   recipe-maintainers:
@@ -49,3 +48,43 @@ extra:
     - rluria14
     - oblute
     - ndmaxar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chevron
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chevron
+  cfe-purls:
+    - pkg:conda/chevron@${{ version }}?channel=conda-forge
+    - pkg:pypi/chevron@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/noahmorrison/chevron
+  cfe-import-names: [chevron]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/chevron-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.14.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T08:29:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:29:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:29:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

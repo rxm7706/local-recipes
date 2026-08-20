@@ -2,64 +2,85 @@
 schema_version: 1
 
 context:
-  name: PyDrive2
   version: "1.21.3"
 
 package:
-  name: ${{ name|lower }}
+  name: pydrive2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyDrive2/pydrive2-${{ version }}.tar.gz
   sha256: 649b84d60c637bc7146485039535aa8f1254ad156423739f07e5d32507447c13
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm >=6.3.1
+    - setuptools >=45
   run:
     - python >=${{ python_min }}
     - google-api-python-client >=1.12.5
-    - six >=1.13.0
     - oauth2client >=4.0.0
     - pyyaml >=3.0
-    # https://github.com/iterative/PyDrive2/issues/361
-    - pyOpenSSL >=19.1.0, <=24.2.1
-    - fsspec >=2021.7.0
-    - tqdm >=4.0.0  # for fsspec
-    - funcy <2  # for fsspec
-    - appdirs >=1.4.3  # for fsspec
+    - cryptography <44
+    - pyopenssl <=24.2.1,>=19.1.0
 
 tests:
   - python:
       imports:
         - pydrive2
-        - pydrive2.auth
-        - pydrive2.drive
-        - pydrive2.files
-        - pydrive2.settings
-        - pydrive2.fs
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/iterative/PyDrive2
   license: Apache-2.0
   license_file: LICENSE
-  summary: >
-    Google Drive API Python wrapper library. Actively maintained fork of PyDrive.
-  homepage: https://github.com/iterative/PyDrive2
-  repository: https://github.com/iterative/PyDrive2
-  documentation: https://gsuitedevs.github.io/PyDrive/docs/build/html/index.html
+  summary: Google Drive API made easy. Maintained fork of PyDrive.
+  description: |
+    Google Drive API made easy. Maintained fork of PyDrive.
+  documentation: https://docs.iterative.ai/PyDrive2
 
 extra:
   recipe-maintainers:
     - shcheklein
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydrive2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydrive2
+  cfe-purls:
+    - pkg:conda/pydrive2@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydrive2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/iterative/PyDrive2
+  cfe-import-names: [pydrive2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydrive2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.21.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:37:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:37:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:37:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

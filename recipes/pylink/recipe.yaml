@@ -2,42 +2,81 @@
 schema_version: 1
 
 context:
-  name: pylink
   version: "0.3.3"
 
 package:
-  name: ${{ name|lower }}
+  name: pylink
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/PyLink-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyLink/PyLink-${{ version }}.tar.gz
   sha256: c15fc96875297e97a8ffe83c8400d639f7b8713515a0a8d12899259a40bf536c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=2.7
+    - setuptools
   run:
-    - pyserial
-    - python >=2.7
+    - python >=${{ python_min }}
+    - serial
 
 tests:
   - python:
       imports:
         - pylink
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Universal communication interface using File-Like API
+  homepage: https://github.com/SalemHarrache/PyLink
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/SalemHarrache/PyLink
+  summary: Universal communication interface using File-Like API
+  description: |
+    Universal communication interface using File-Like API
 
 extra:
   recipe-maintainers:
     - rudispr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylink
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylink
+  cfe-purls:
+    - pkg:conda/pylink@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylink@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/SalemHarrache/PyLink
+  cfe-import-names: [pylink]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pylink-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.3.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:22:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:22:46Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:22:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['serial']
+####

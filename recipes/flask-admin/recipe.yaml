@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: Flask-Admin
   version: "2.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-admin
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') | lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Flask-Admin/flask_admin-${{ version }}.tar.gz
   sha256: 4a5b844789c10076da89320563600a7addf781e73ab315ae800521b3ec018509
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -30,30 +29,58 @@ requirements:
     - markupsafe >=2.0
     - werkzeug >=2.0
     - wtforms >=2.3
-    # for all python to stay noarch:python
     - typing_extensions
 
 tests:
   - python:
       imports:
         - flask_admin
-        - flask_admin.contrib
-        - flask_admin.contrib.fileadmin
-        - flask_admin.form
-        - flask_admin.model
-        - flask_admin.translations
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/Flask-Admin/
   license: BSD-3-Clause
   license_file: LICENSE
   summary: Simple and extensible admin interface framework for Flask
-  homepage: https://github.com/flask-admin/flask-admin/
-  repository: https://github.com/flask-admin/flask-admin/
-  documentation: https://flask-admin.readthedocs.io/en/latest/
+  description: |
+    Simple and extensible admin interface framework for Flask
+  repository: https://github.com/pallets-eco/flask-admin/
+  documentation: https://flask-admin.readthedocs.io
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-admin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-admin
+  cfe-purls:
+    - pkg:conda/flask-admin@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-admin@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets-eco/flask-admin/
+  cfe-upstream-homepage: https://pypi.org/project/Flask-Admin/
+  cfe-import-names: [flask_admin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-admin-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:17:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:17:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:17:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

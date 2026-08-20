@@ -2,27 +2,24 @@
 schema_version: 1
 
 context:
-  name: textdistance
   version: "4.6.3"
-  sha256: d6dabc50b4ea832cdcf0e1e6021bd0c7fcd9ade155888d79bb6a3c31fce2dc6f
 
 package:
-  name: ${{ name|lower }}
+  name: textdistance
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/textdistance/textdistance-${{ version }}.tar.gz
+  sha256: d6dabc50b4ea832cdcf0e1e6021bd0c7fcd9ade155888d79bb6a3c31fce2dc6f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,24 +29,54 @@ tests:
   - python:
       imports:
         - textdistance
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/orsinium/textdistance
   license: MIT
   license_file: LICENSE
-  summary: TextDistance – python library for comparing distance between two or more sequences by many algorithms.
+  summary: Compute distance between the two texts.
   description: |
-    TextDistance – python library for comparing distance between two or more sequences by many algorithms.
-  homepage: https://github.com/orsinium/textdistance
-  repository: https://github.com/orsinium/textdistance
-  documentation: https://pypi.org/project/textdistance/#description
+    Compute distance between the two texts.
 
 extra:
   recipe-maintainers:
     - cu8blank
     - andfoy
     - ccordoba12
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: textdistance
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: textdistance
+  cfe-purls:
+    - pkg:conda/textdistance@${{ version }}?channel=conda-forge
+    - pkg:pypi/textdistance@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/orsinium/textdistance
+  cfe-import-names: [textdistance]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/textdistance-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.6.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:29:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:29:20Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:29:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

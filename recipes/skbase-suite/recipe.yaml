@@ -2,80 +2,49 @@
 schema_version: 1
 
 context:
-  name: scikit-base
   version: "1.1.0"
 
-recipe:
-  name: ${{ name|lower }}-suite
+package:
+  name: scikit-base
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/scikit-base/scikit_base-${{ version }}.tar.gz
   sha256: 568195e85a695762ca522e477971f86c835760335b959b1c22d958d1d5277de6
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >61
+    - wheel
+    - toml
+    - python-build
   run:
     - python >=${{ python_min }}
 
-outputs:
-  - package:
-      name: ${{ name|lower }}
-    build:
-      noarch: python
-      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --no-index --no-compile
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - pip
-        - setuptools
-      run:
-        - python >=${{ python_min }},<3.15
-    tests:
-      - python:
-          imports:
-            - skbase
-            - skbase.base
-            - skbase.lookup
-            - skbase.testing
-            - skbase.validate
-          pip_check: true
-          python_version: ${{ python_min }}
-  - package:
-      name: ${{ name|lower }}-all-extras
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }},<3.15
-        - ${{ pin_subpackage("scikit-base", exact=True) }}
-        - pandas
-        - numpy
-    tests:
-      - python:
-          imports:
-            - skbase
-            - skbase.base
-            - skbase.lookup
-            - skbase.testing
-            - skbase.validate
-          pip_check: true
-          python_version: ${{ python_min }}
+tests:
+  - python:
+      imports:
+        - skbase
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Base classes for sklearn-like parametric objects
+  homepage: https://github.com/sktime/skbase
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/sktime/skbase
-  repository: https://github.com/sktime/skbase
-  documentation: https://skbase.readthedocs.io/en/latest/
+  summary: Base classes for sklearn-like parametric objects
+  description: |
+    Base classes for sklearn-like parametric objects
+  documentation: https://github.com/sktime/skbase
 
 extra:
   recipe-maintainers:
@@ -83,3 +52,36 @@ extra:
     - dhirschfeld
     - yarnabrina
     - fkiraly
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: skbase-suite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scikit-base
+  cfe-purls:
+    - pkg:conda/skbase-suite@${{ version }}?channel=conda-forge
+    - pkg:pypi/scikit-base@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/sktime/skbase
+  cfe-import-names: [skbase]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/skbase-suite-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:30:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:30:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:30:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

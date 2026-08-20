@@ -2,45 +2,87 @@
 schema_version: 1
 
 context:
-  name: python-memcached
   version: "1.62"
 
 package:
-  name: ${{ name|lower }}
+  name: python-memcached
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python-memcached-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-memcached/python-memcached-${{ version }}.tar.gz
   sha256: 0285470599b7f593fbf3bec084daa1f483221e68c1db2cf1d846a9f7c2655103
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - memcache
+        - python_memcached
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: PSF.LICENSE
+  homepage: https://github.com/linsomniac/python-memcached
   license: PSF-2.0
+  license_file: LICENSE
   summary: Pure python memcached client
-  homepage: http://www.tummy.com/Community/software/python-memcached/
-  repository: https://github.com/linsomniac/python-memcached
+  description: |
+    Pure python memcached client
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-memcached
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-memcached
+  cfe-purls:
+    - pkg:conda/python-memcached@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-memcached@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/linsomniac/python-memcached
+  cfe-import-names: [python_memcached]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-memcached-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.62
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T11:52:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:52:54Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T11:52:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

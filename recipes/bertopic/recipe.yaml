@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: bertopic
   version: "0.17.4"
 
 package:
-  name: ${{ name|lower }}
+  name: bertopic
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bertopic-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/bertopic/bertopic-${{ version }}.tar.gz
   sha256: f92aa560cdf2bcbf9e22c8ee83dd3bfb225b8dc29381dec7327cc0b21bd852ad
 
 build:
@@ -21,18 +20,18 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - hdbscan >=0.8.29
+    - umap-learn >=0.5.0
     - numpy >=1.20.0
     - pandas >=1.1.5
     - plotly >=4.7.0
     - scikit-learn >=1.0
     - sentence-transformers >=0.4.1
     - tqdm >=4.41.1
-    - umap-learn >=0.5.0
     - llvmlite >0.36.0
 
 tests:
@@ -40,16 +39,52 @@ tests:
       imports:
         - bertopic
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/MaartenGr/BERTopic
-  summary: BERTopic performs topic Modeling with state-of-the-art transformer models.
   license: MIT
   license_file: LICENSE
+  summary: BERTopic performs topic Modeling with state-of-the-art transformer models.
+  description: |
+    BERTopic performs topic Modeling with state-of-the-art transformer models.
+  repository: https://github.com/MaartenGr/BERTopic.git
+  documentation: https://maartengr.github.io/BERTopic/
 
 extra:
   recipe-maintainers:
     - thewchan
     - mimshiran
     - MaartenGr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bertopic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bertopic
+  cfe-purls:
+    - pkg:conda/bertopic@${{ version }}?channel=conda-forge
+    - pkg:pypi/bertopic@${{ version }}
+  cfe-upstream-repo: https://github.com/MaartenGr/BERTopic.git
+  cfe-upstream-homepage: https://github.com/MaartenGr/BERTopic
+  cfe-import-names: [bertopic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bertopic-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:38:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:38:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:38:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

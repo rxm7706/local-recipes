@@ -2,29 +2,29 @@
 schema_version: 1
 
 context:
-  name: apswutils
   version: "0.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: apswutils
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apswutils-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/apswutils/apswutils-${{ version }}.tar.gz
   sha256: 7992828cc4f7261925685e9e40ab189728050bdee049648481ce6a52ddb5d5dd
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=64.0
     - pip
+    - setuptools >=64.0
   run:
     - python >=${{ python_min }}
+    - pkg-resources
     - fastcore
     - apsw
 
@@ -33,14 +33,49 @@ tests:
       imports:
         - apswutils
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A fork of sqlite-minutils for apsw
+  homepage: https://github.com/AnswerDotAI/apswutils
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/AnswerDotAI/apswutils
+  summary: A fork of sqlite-minutils for apsw
+  description: |
+    A fork of sqlite-minutils for apsw
 
 extra:
   recipe-maintainers:
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apswutils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apswutils
+  cfe-purls:
+    - pkg:conda/apswutils@${{ version }}?channel=conda-forge
+    - pkg:pypi/apswutils@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/AnswerDotAI/apswutils
+  cfe-import-names: [apswutils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apswutils-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:16:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:16:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T06:16:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['pkg-resources']
+####

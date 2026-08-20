@@ -2,21 +2,20 @@
 schema_version: 1
 
 context:
-  name: asgiref
-  version: "3.11.1"
+  version: "3.12.1"
 
 package:
-  name: ${{ name|lower }}
+  name: asgiref
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 5f184dc43b7e763efe848065441eac62229c9f7b0475f41f80e207a114eda4ce
+  url: https://pypi.org/packages/source/a/asgiref/asgiref-${{ version }}.tar.gz
+  sha256: 59dcb51c272ad209d59bed5708a64a333083e86017d7fcdd67498eeab7784340
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -31,15 +30,53 @@ tests:
   - python:
       imports:
         - asgiref
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
+  homepage: https://github.com/django/asgiref/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: ASGI in-memory channel layer
-  homepage: https://github.com/django/asgiref
-  documentation: https://asgi.readthedocs.io/en/latest/
+  summary: ASGI specs, helper code, and adapters
+  description: |
+    ASGI specs, helper code, and adapters
+  documentation: https://asgi.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - dhirschfeld
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asgiref
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asgiref
+  cfe-purls:
+    - pkg:conda/asgiref@${{ version }}?channel=conda-forge
+    - pkg:pypi/asgiref@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/django/asgiref/
+  cfe-import-names: [asgiref]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/asgiref-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-3.12.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:20:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:20:10Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:20:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

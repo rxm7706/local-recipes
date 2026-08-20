@@ -2,57 +2,86 @@
 schema_version: 1
 
 context:
-  name: faker
   version: "40.36.0"
 
 package:
-  name: ${{ name|lower }}
+  name: faker
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/Faker/faker-${{ version }}.tar.gz
   sha256: 754048c76c03afa7de83eee8f4bcee3cf668cbb7d995f54a4e9678db7f110308
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - faker=faker.cli:execute_from_command_line
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - tzdata
     - python >=${{ python_min }}
-    - python-tzdata
 
 tests:
   - python:
       imports:
         - faker
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
-    script:
-      - faker --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/joke2k/faker
   license: MIT
   license_file: LICENSE.txt
-  summary: Faker is a Python package that generates fake data for you
-  homepage: https://faker.readthedocs.io
+  summary: Faker is a Python package that generates fake data for you.
+  description: |
+    Faker is a Python package that generates fake data for you.
   repository: https://github.com/joke2k/faker
-  documentation: https://faker.readthedocs.io
+  documentation: http://faker.rtfd.org/
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: faker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: faker
+  cfe-purls:
+    - pkg:conda/faker@${{ version }}?channel=conda-forge
+    - pkg:pypi/faker@${{ version }}
+  cfe-upstream-repo: https://github.com/joke2k/faker
+  cfe-upstream-homepage: https://github.com/joke2k/faker
+  cfe-import-names: [faker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/faker-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-40.36.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T08:07:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:07:31Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:07:31Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

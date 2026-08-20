@@ -2,48 +2,88 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-semantic-conventions-ai
-  version: "0.5.2"
-  upstream_version: "0.62.1"
+  version: "0.5.1"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-semantic-conventions-ai
   version: ${{ version }}
 
 source:
-  url: https://github.com/traceloop/openllmetry/archive/refs/tags/v${{ upstream_version }}.tar.gz
-  sha256: dee2e822666df74e84b9e41080b0e9f6702b892a8723d6ae981a22bc4ef8b271
+  url: https://pypi.org/packages/source/o/opentelemetry-semantic-conventions-ai/opentelemetry_semantic_conventions_ai-${{ version }}.tar.gz
+  sha256: 153906200d8c1d2f8e09bd78dbef526916023de85ac3dab35912bfafb69ff04c
 
 build:
   number: 0
   noarch: python
-  script: cd packages/opentelemetry-semantic-conventions-ai && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-sdk >=1.42.0,<2
-    - opentelemetry-semantic-conventions >=0.63b1
+    - opentelemetry-sdk <2,>=1.38.0
+    - opentelemetry-semantic-conventions >=0.59b0
 
 tests:
   - python:
       imports:
         - opentelemetry.semconv_ai
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Semantic Conventions Extension for Large Language Models
+  homepage: https://pypi.org/project/opentelemetry-semantic-conventions-ai/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://www.traceloop.com/openllmetry
-  repository: https://github.com/traceloop/openllmetry
-  documentation: https://www.traceloop.com/docs/openllmetry/introduction
+  summary: OpenTelemetry Semantic Conventions Extension for Large Language Models
+  description: |
+    OpenTelemetry Semantic Conventions Extension for Large Language Models
 
 extra:
   recipe-maintainers:
     - timkpaine
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-semantic-conventions-ai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-semantic-conventions-ai
+  cfe-purls:
+    - pkg:conda/opentelemetry-semantic-conventions-ai@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-semantic-conventions-ai@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/opentelemetry-semantic-conventions-ai/
+  cfe-import-names: [opentelemetry.semconv_ai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-semantic-conventions-ai-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.5.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T10:56:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:56:28Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T10:56:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

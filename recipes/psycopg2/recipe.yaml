@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: psycopg
-  version: "3.3.4"
+  version: "2.9.12"
 
 recipe:
   name: psycopg-split
@@ -48,7 +48,7 @@ outputs:
         - pip
         - libpq
         # conda-forge didn't build 80.3.1, so pin the lowest available higher version
-        - setuptools ==80.8.0
+        - setuptools
       run:
         - libpq
         - python
@@ -106,3 +106,36 @@ extra:
     - msarahan
     - ocefpaf
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: psycopg2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: psycopg2
+  cfe-purls:
+    - pkg:conda/psycopg2@${{ version }}?channel=conda-forge
+    - pkg:pypi/psycopg2@${{ version }}
+  cfe-upstream-repo: https://github.com/psycopg/psycopg/
+  cfe-upstream-homepage: https://psycopg.org/psycopg3/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/psycopg2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.9.12
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:20:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:20:21Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:20:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

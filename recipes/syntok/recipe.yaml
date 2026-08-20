@@ -2,52 +2,80 @@
 schema_version: 1
 
 context:
-  name: syntok
-  version: "1.4.2"
+  version: "1.4.4"
 
 package:
-  name: ${{ name|lower }}
+  name: syntok
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 7ee9016139f04c7424e6c5771a46fd5622991cff54c781e9e31270214d3276fe
+  url: https://pypi.org/packages/py3/s/syntok/syntok-1.4.4-py3-none-any.whl
+  sha256: 263546bea559cb693bc23dc436307a44e17a242bb9f2a8c5e39eb86906aaf831
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - poetry-core >=1.0.0
-    - python ${{ python_min }}
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - regex >2016
+    - regex
 
 tests:
   - python:
       imports:
         - syntok
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: sentence segmentation and word tokenization toolkit
-  description: |
-    Syntok is the successor of an earlier, very similar tool, segtok, but has evolved
-    significantly in terms of providing better segmentation and tokenization performance
-    and throughput (syntok can segment documents at a rate of about 100k tokens per
-    second without problems). For example, if a sentence terminal marker is not
-    followed by a spacing character, segtok is unable to detect that as a terminal
-    marker, while syntok has no problem segmenting that case (as it uses tokenization
-    first, and does segmentation afterwards).
+  homepage: https://pypi.org/project/syntok/
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/fnl/syntok
+  summary: Text tokenization and sentence segmentation (segtok v2).
+  description: |
+    Text tokenization and sentence segmentation (segtok v2).
 
 extra:
   recipe-maintainers:
     - BastianZim
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: syntok
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: syntok
+  cfe-purls:
+    - pkg:conda/syntok@${{ version }}?channel=conda-forge
+    - pkg:pypi/syntok@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/syntok/
+  cfe-import-names: [syntok]
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/syntok-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.4.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:18:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:18:32Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T06:18:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

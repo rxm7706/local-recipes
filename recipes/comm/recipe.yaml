@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 0.2.3
+  version: "0.2.3"
 
 package:
   name: comm
@@ -15,14 +15,13 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling
-    - pip
     - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.10
   run:
     - python >=${{ python_min }}
 
@@ -30,21 +29,51 @@ tests:
   - python:
       imports:
         - comm
-        - comm.base_comm
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - 3.13.*
+        - "*"
 
 about:
-  summary: Python Comm implementation for the Jupyter kernel protocol
-  description: Python Comm implementation for the Jupyter kernel protocol
+  homepage: https://github.com/ipython/comm
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/ipython/comm
+  summary: Jupyter Python Comm implementation, for usage in ipykernel, xeus-python etc.
+  description: |
+    Jupyter Python Comm implementation, for usage in ipykernel, xeus-python etc.
 
 extra:
   recipe-maintainers:
     - apmorton
     - martinRenou
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: comm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: comm
+  cfe-purls:
+    - pkg:conda/comm@${{ version }}?channel=conda-forge
+    - pkg:pypi/comm@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/ipython/comm
+  cfe-import-names: [comm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/comm-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:09:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:09:25Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:09:25Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

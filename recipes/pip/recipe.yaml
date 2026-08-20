@@ -15,52 +15,34 @@ source:
 build:
   number: 0
   noarch: python
-  python:
-    entry_points:
-      - pip = pip._internal.cli.main:main
-      - pip3 = pip._internal.cli.main:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - if: not with_setuptools_wheel
-      then: python >=3.13.0a0
-    - if: with_setuptools_wheel
-      then: python >=${{ python_min }},<3.13.0a0
-    - flit-core
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
-    - wheel
   run:
-    - if: not with_setuptools_wheel
-      then: python >=3.13.0a0
-    - if: with_setuptools_wheel
-      then: python >=${{ python_min }},<3.13.0a0
-    - if: with_setuptools_wheel
-      then: setuptools
-    - if: with_setuptools_wheel
-      then: wheel
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pip
-      pip_check: false
-  - requirements:
-      run:
-        - if: with_setuptools_wheel
-          then: python ${{ python_min }}
-        - if: not with_setuptools_wheel
-          then: python 3.13.0
-    script:
-      - pip -h
-      - pip list
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pip.pypa.io/
   license: MIT
-  license_file: LICENSE.txt
-  summary: PyPA recommended tool for installing Python packages
-  homepage: https://pip.pypa.io/en/stable/
+  license_file: LICENSE
+  summary: The PyPA recommended tool for installing Python packages.
+  description: |
+    The PyPA recommended tool for installing Python packages.
   repository: https://github.com/pypa/pip
-  documentation: https://pip.pypa.io/en/stable/
+  documentation: https://pip.pypa.io
 
 extra:
   recipe-maintainers:
@@ -69,3 +51,36 @@ extra:
     - pelson
     - ocefpaf
     - mingwandroid
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pip
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pip
+  cfe-purls:
+    - pkg:conda/pip@${{ version }}?channel=conda-forge
+    - pkg:pypi/pip@${{ version }}
+  cfe-upstream-repo: https://github.com/pypa/pip
+  cfe-upstream-homepage: https://pip.pypa.io/
+  cfe-import-names: [pip]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pip-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-26.2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:00:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:00:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T03:00:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

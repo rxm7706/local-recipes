@@ -9,22 +9,19 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/streamlit_js_eval/streamlit_js_eval-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/streamlit-js-eval/streamlit_js_eval-${{ version }}.tar.gz
   sha256: 9e2b2005e3e8a4971d222488a02c880b7b93c8951393ff7f97419ded914498e4
 
 build:
   number: 0
   noarch: python
-  script:
-    content:
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools >=67.6.0
-    - wheel >=0.40.0
+    - setuptools
   run:
     - python >=${{ python_min }}
     - streamlit >=1.0.0
@@ -40,18 +37,47 @@ tests:
 
 about:
   homepage: https://github.com/aghasemi/streamlit_js_eval
-  summary: A custom Streamlit component to evaluate arbitrary Javascript expressions
-  description: |
-    streamlit-js-eval enables evaluating JavaScript expressions from within
-    Streamlit applications and returning the results to Python. It facilitates
-    functionality that is straightforward in JavaScript but challenging in
-    Streamlit, such as cookie management, clipboard operations, device width
-    detection, browser language retrieval, and Android share features.
-  license: MIT
+  license: REPLACE_LICENSE
   license_file: LICENSE
-  repository: https://github.com/aghasemi/streamlit_js_eval
+  summary: A custom Streamlit component to evaluate arbitrary Javascript expressions.
+  description: |
+    A custom Streamlit component to evaluate arbitrary Javascript expressions.
 
 extra:
   recipe-maintainers:
     - pb01ka
     - mgorny
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-js-eval
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-js-eval
+  cfe-purls:
+    - pkg:conda/streamlit-js-eval@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-js-eval@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/aghasemi/streamlit_js_eval
+  cfe-import-names: [streamlit_js_eval]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/streamlit-js-eval-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T12:23:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:23:59Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T12:23:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

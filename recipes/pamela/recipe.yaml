@@ -10,17 +10,16 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pamela/pamela-${{ version }}.tar.gz
-  md5: 37d71159f1bc17009ff568fd919c2a4d
-  file_name: pamela-${{ version }}.tar.gz
+  sha256: 0ea6e2a99dded8c7783a4a06f2d31f5bdcad894d79101e8f09322e387a34aacf
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: pip install --no-deps .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -31,14 +30,58 @@ tests:
       imports:
         - pamela
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: COPYING
-  summary: PAM interface using ctypes
   homepage: https://github.com/minrk/pamela
+  license: MIT
+  license_file: LICENSE
+  summary: PAM interface using ctypes
+  description: |
+    PAM interface using ctypes
 
 extra:
   recipe-maintainers:
     - minrk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pamela
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pamela
+  cfe-purls:
+    - pkg:conda/pamela@${{ version }}?channel=conda-forge
+    - pkg:pypi/pamela@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/minrk/pamela
+  cfe-import-names: [pamela]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pamela-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T02:35:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:35:54Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T02:35:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

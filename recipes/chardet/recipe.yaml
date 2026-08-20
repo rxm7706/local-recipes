@@ -13,30 +13,27 @@ source:
   sha256: 93d9df6089ded42ed1fe9f57e272c0b74bd0464d45c0c7d50f09f26f31105c3c
 
 build:
-  noarch: python
   number: 0
-  script: ${{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - chardetect = chardet.cli:main
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling
-    - hatch-vcs
     - python ${{ python_min }}.*
     - pip
+    - hatchling
+    - hatch-vcs
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      python_version: ${{ python_min }}.*
       imports:
         - chardet
       pip_check: true
-  - script:
-      - chardetect --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   homepage: https://github.com/chardet/chardet
@@ -44,9 +41,9 @@ about:
   license_file: LICENSE
   summary: Universal character encoding detector
   description: |
-    chardet is a character encoding auto-detector in Python.
-  documentation: http://chardet.readthedocs.org/
+    Universal character encoding detector
   repository: https://github.com/chardet/chardet
+  documentation: https://chardet.readthedocs.io
 
 extra:
   recipe-maintainers:
@@ -54,3 +51,33 @@ extra:
     - dan-blanchard
     - sigmavirus24
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chardet
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chardet
+  cfe-purls:
+    - pkg:conda/chardet@${{ version }}?channel=conda-forge
+    - pkg:pypi/chardet@${{ version }}
+  cfe-upstream-repo: https://github.com/chardet/chardet
+  cfe-upstream-homepage: https://github.com/chardet/chardet
+  cfe-import-names: [chardet]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/chardet-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:57:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:57:46Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:57:46Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

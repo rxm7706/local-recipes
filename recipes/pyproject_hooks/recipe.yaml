@@ -2,46 +2,81 @@
 schema_version: 1
 
 context:
-  name: pyproject_hooks
   version: "1.2.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyproject-hooks
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyproject_hooks-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pyproject-hooks/pyproject_hooks-${{ version }}.tar.gz
   sha256: 1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - flit-core >=3.2, <4
+    - flit-core >=3.2,<4
   run:
     - python >=${{ python_min }}
-    - tomli >=1.1.0
 
 tests:
   - python:
       imports:
         - pyproject_hooks
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Wrappers to call pyproject.toml-based build backend hooks.
+  homepage: https://pypi.org/project/pyproject-hooks/
   license: MIT
-  license_file:
-    - LICENSE
-  homepage: https://pypi.org/project/pyproject_hooks/
+  license_file: LICENSE
+  summary: Wrappers to call pyproject.toml-based build backend hooks.
+  description: |
+    Wrappers to call pyproject.toml-based build backend hooks.
   repository: https://github.com/pypa/pyproject-hooks
+  documentation: https://pyproject-hooks.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - theAeon
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyproject_hooks
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyproject-hooks
+  cfe-purls:
+    - pkg:conda/pyproject_hooks@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyproject-hooks@${{ version }}
+  cfe-upstream-repo: https://github.com/pypa/pyproject-hooks
+  cfe-upstream-homepage: https://pypi.org/project/pyproject-hooks/
+  cfe-import-names: [pyproject_hooks]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyproject_hooks-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.2.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:59:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:59:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:59:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

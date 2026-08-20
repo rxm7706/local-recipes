@@ -2,46 +2,83 @@
 schema_version: 1
 
 context:
-  name: rule-engine
   version: "5.0.2"
 
 package:
-  name: ${{ name|lower }}
+  name: rule-engine
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/rule-engine/rule_engine-${{ version }}.tar.gz
   sha256: dd871030a2eee062f3869fa952c3b93dbf56b21c8c01b73ca71e4c3ac8c5a4ea
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
-    - setuptools
+    - setuptools >=77
   run:
-    - ply >=3.9
     - python >=${{ python_min }}
-    - python-dateutil >=2.7,<3
+    - lib
+    - python-dateutil ~=2.7
 
 tests:
   - python:
       imports:
-        - rule_engine
+        - lib.rule_engine
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A lightweight, optionally typed expression language with a custom grammar for matching arbitrary Python objects.
+  homepage: https://github.com/zeroSteiner/rule-engine
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/zeroSteiner/rule-engine
+  summary: A lightweight, optionally typed expression language with a custom grammar for matching arbitrary Python objects.
+  description: |
+    A lightweight, optionally typed expression language with a custom grammar for matching arbitrary Python objects.
 
 extra:
   recipe-maintainers:
     - drbixx
     - teake
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rule-engine
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rule-engine
+  cfe-purls:
+    - pkg:conda/rule-engine@${{ version }}?channel=conda-forge
+    - pkg:pypi/rule-engine@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/zeroSteiner/rule-engine
+  cfe-import-names: [lib.rule_engine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rule-engine-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.0.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T12:08:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T12:08:55Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T12:08:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['lib']
+####

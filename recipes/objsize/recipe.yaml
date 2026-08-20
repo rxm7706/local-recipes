@@ -2,42 +2,77 @@
 schema_version: 1
 
 context:
-  name: objsize
-  version: 0.8.0
+  version: "0.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: objsize
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/objsize-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/objsize/objsize-${{ version }}.tar.gz
   sha256: df17998cf6ef4b24d52abee5020484491230e3f4af71a8ff0098c7455ad4d91c
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=61.0.0
+    - wheel
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
-      imports: objsize
+      imports:
+        - objsize
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
+  homepage: https://github.com/liran-funaro/objsize
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/liran-funaro/objsize
+  summary: Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
+  description: |
+    Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: objsize
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: objsize
+  cfe-purls:
+    - pkg:conda/objsize@${{ version }}?channel=conda-forge
+    - pkg:pypi/objsize@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/liran-funaro/objsize
+  cfe-import-names: [objsize]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/objsize-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:08:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:08:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:08:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

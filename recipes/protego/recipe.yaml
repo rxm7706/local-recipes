@@ -2,52 +2,78 @@
 schema_version: 1
 
 context:
-  name: Protego
   version: "0.6.2"
 
 package:
-  name: ${{ name|lower }}
+  name: protego
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/Protego/protego-${{ version }}.tar.gz
   sha256: 88ff004544ce44e61269cc6f8735f7837d12e09bb77619fc94fbb26b72e5d137
 
 build:
   number: 0
   noarch: python
-  script:
-    # Avoid packaging thousands of files purely for test, reduces package size from 2MB+ to ~20KB
-    # Test data is discovered dynamically so harmless to just remove
-    - rm -rf tests/top-10000-websites.txt tests/test_data/* && touch tests/test_data/.keep tests/top-10000-websites.txt
-    - ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - hatchling
+    - hatchling >=1.27.0
   run:
     - python >=${{ python_min }}
 
 tests:
-  - files:
-      source:
-        - tests
-    requirements:
-      run:
-        - pytest
-        - python ${{ python_min }}.*
-    script:
-      - pytest tests
+  - python:
+      imports:
+        - protego
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause-Clear
-  license_file: LICENSE
-  summary: A pure-Python robots.txt parser with support for modern conventions
   homepage: https://github.com/scrapy/protego
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Pure-Python robots.txt parser with support for modern conventions
+  description: |
+    Pure-Python robots.txt parser with support for modern conventions
+  repository: https://github.com/scrapy/protego
 
 extra:
   recipe-maintainers:
     - AdrianAtZyte
     - Gallaecio
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: protego
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: protego
+  cfe-purls:
+    - pkg:conda/protego@${{ version }}?channel=conda-forge
+    - pkg:pypi/protego@${{ version }}
+  cfe-upstream-repo: https://github.com/scrapy/protego
+  cfe-upstream-homepage: https://github.com/scrapy/protego
+  cfe-import-names: [protego]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/protego-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T03:18:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T03:18:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T03:18:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

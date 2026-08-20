@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: cssselect2
   version: "0.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: cssselect2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cssselect2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/c/cssselect2/cssselect2-${{ version }}.tar.gz
   sha256: 759aa22c216326356f65e62e791d66160a0f9c91d1424e8d8adc5e74dddfc6fb
 
 build:
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - flit-core >=3.2,<4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.2,<4
   run:
     - python >=${{ python_min }}
     - tinycss2
@@ -33,19 +32,54 @@ tests:
       imports:
         - cssselect2
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://doc.courtbouillon.org/cssselect2/
   license: BSD-3-Clause
   license_file: LICENSE
   summary: CSS selectors for Python ElementTree
   description: |
-    cssselect2 is a straightforward implementation of CSS3 Selectors for markup documents.
-  homepage: https://github.com/Kozea/cssselect2
-  repository: https://github.com/Kozea/cssselect2
-  documentation: http://cssselect2.readthedocs.io
+    CSS selectors for Python ElementTree
+  repository: https://github.com/Kozea/cssselect2/
+  documentation: https://doc.courtbouillon.org/cssselect2/
 
 extra:
   recipe-maintainers:
     - johanneskoester
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cssselect2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cssselect2
+  cfe-purls:
+    - pkg:conda/cssselect2@${{ version }}?channel=conda-forge
+    - pkg:pypi/cssselect2@${{ version }}
+  cfe-upstream-repo: https://github.com/Kozea/cssselect2/
+  cfe-upstream-homepage: https://doc.courtbouillon.org/cssselect2/
+  cfe-import-names: [cssselect2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cssselect2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:21:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:21:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:21:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

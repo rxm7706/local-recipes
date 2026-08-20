@@ -2,48 +2,83 @@
 schema_version: 1
 
 context:
-  name: python-hcl2
   version: "8.1.2"
 
 package:
-  name: ${{ name|lower }}
+  name: python-hcl2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_hcl2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-hcl2/python_hcl2-${{ version }}.tar.gz
   sha256: ae809c7e6e39e8c3c3555e7b7f389082207929591fcba062c9f76afb1abe972d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools >=61.2.0
-    - setuptools-scm
     - wheel
   run:
-    - lark >=1.1.5,<2.0
-    - regex >=2024.4.16
     - python >=${{ python_min }}
+    - lark <2.0,>=1.1.5
+    - regex >=2024.4.16
 
 tests:
   - python:
       imports:
-        - hcl2
+        - cli
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A parser for HCL2
-  license: MIT
-  license_file: LICENSE.txt
   homepage: https://github.com/amplify-education/python-hcl2
+  license: MIT
+  license_file: LICENSE
+  summary: A parser for HCL2
+  description: |
+    A parser for HCL2
 
 extra:
   recipe-maintainers:
     - RohitK89
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-hcl2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-hcl2
+  cfe-purls:
+    - pkg:conda/python-hcl2@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-hcl2@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/amplify-education/python-hcl2
+  cfe-import-names: [cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-hcl2-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-8.1.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:51:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:51:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T11:51:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -16,25 +16,12 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - docutils = docutils.__main__:main
-      - rst2html = docutils.core:rst2html
-      - rst2html4 = docutils.core:rst2html4
-      - rst2html5 = docutils.core:rst2html5
-      - rst2latex = docutils.core:rst2latex
-      - rst2man = docutils.core:rst2man
-      - rst2odt = docutils.core:rst2odt
-      - rst2pseudoxml = docutils.core:rst2pseudoxml
-      - rst2s5 = docutils.core:rst2s5
-      - rst2xetex = docutils.core:rst2xetex
-      - rst2xml = docutils.core:rst2xml
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.11,<4
     - pip
+    - flit-core >=3.11,<4
   run:
     - python >=${{ python_min }}
 
@@ -46,28 +33,15 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - docutils --help
-      - rst2html --help
-      - rst2html4 --help
-      - rst2html5 --help
-      - rst2latex --help
-      - rst2man --help
-      - rst2odt --help
-      - rst2pseudoxml --help
-      - rst2s5 --help
-      - rst2xetex --help
-      - rst2xml --help
 
 about:
-  summary: Docutils -- Python Documentation Utilities
-  license: LGPL-3.0-only
-  license_file: COPYING.rst
   homepage: https://docutils.sourceforge.io
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Docutils -- Python Documentation Utilities
+  description: |
+    Docutils -- Python Documentation Utilities
+  repository: https://sourceforge.net/p/docutils/code/
   documentation: https://docutils.sourceforge.io/docs/
 
 extra:
@@ -75,3 +49,40 @@ extra:
     - AA-Turner
     - nehaljwani
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: docutils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: docutils
+  cfe-purls:
+    - pkg:conda/docutils@${{ version }}?channel=conda-forge
+    - pkg:pypi/docutils@${{ version }}
+  cfe-upstream-repo: https://sourceforge.net/p/docutils/code/
+  cfe-upstream-homepage: https://docutils.sourceforge.io
+  cfe-import-names: [docutils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/docutils-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T07:54:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:54:06Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T07:54:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

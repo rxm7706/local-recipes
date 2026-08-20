@@ -13,38 +13,68 @@ source:
   sha256: 99763da81bfea8daf6b3d22d11aaccb01a8d0f52ea521daab37e758a4ca7d128
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
 
 tests:
-  - requirements:
-      run:
-        - nose2
-        - python ${{ python_min }}
-        - mock
-        - pip
-    script:
-      - pip check
-      - nose2 statsd
+  - python:
+      imports:
+        - statsd
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  summary: A Python client for statsd
-  license_file: LICENSE
   homepage: https://github.com/jsocol/pystatsd
-  repository: https://github.com/jsocol/pystatsd
-  documentation: https://statsd.readthedocs.io
+  license: MIT
+  license_file: LICENSE
+  summary: A simple statsd client.
+  description: |
+    A simple statsd client.
 
 extra:
   recipe-maintainers:
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: statsd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: statsd
+  cfe-purls:
+    - pkg:conda/statsd@${{ version }}?channel=conda-forge
+    - pkg:pypi/statsd@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jsocol/pystatsd
+  cfe-import-names: [statsd]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/statsd-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:08:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:08:08Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:08:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

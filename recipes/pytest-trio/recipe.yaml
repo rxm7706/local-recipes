@@ -2,52 +2,83 @@
 schema_version: 1
 
 context:
-  name: pytest-trio
   version: "0.8.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-trio
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-trio/pytest-trio-${{ version }}.tar.gz
   sha256: 8363db6336a79e6c53375a2123a41ddbeccc4aa93f93788651641789a56fb52e
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - pytest >=7.2.0
-    - trio >=0.25.1
-    - outcome >=1.1.0
+    - trio
+    - outcome
+    - pytest
 
 tests:
   - python:
       imports:
         - pytest_trio
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: LICENSE.MIT
-  summary: This is a pytest plugin to help you test projects that use Trio, a friendly library for concurrency and async I/O in Python
   homepage: https://github.com/python-trio/pytest-trio
-  repository: https://github.com/python-trio/pytest-trio
-  documentation: https://pytest-trio.readthedocs.io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Pytest plugin for trio
+  description: |
+    Pytest plugin for trio
 
 extra:
   recipe-maintainers:
     - krisevans
     - dhirschfeld
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-trio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-trio
+  cfe-purls:
+    - pkg:conda/pytest-trio@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-trio@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/python-trio/pytest-trio
+  cfe-import-names: [pytest_trio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-trio-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.8.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:45:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:45:10Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:45:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

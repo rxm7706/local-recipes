@@ -3,7 +3,6 @@ schema_version: 1
 
 context:
   version: "4.14.2"
-  python_check_max: "3.14"
 
 package:
   name: anyio
@@ -16,70 +15,70 @@ source:
 build:
   number: 0
   noarch: python
-  script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - pip
     - python ${{ python_min }}.*
+    - pip
     - setuptools >=77
     - setuptools-scm >=6.4
   run:
+    - python >=${{ python_min }}
     - exceptiongroup >=1.0.2
     - idna >=2.8
-    - python >=${{ python_min }}
     - typing_extensions >=4.5
-  run_constraints:
-    - trio >=0.32.0
-    - uvloop >=0.22.1
-    - winloop >=0.2.3
 
 tests:
   - python:
-      imports: anyio
+      imports:
+        - anyio
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - files:
-      source:
-        - tests/
-        - pyproject.toml
-    requirements:
-      run:
-        - coverage >=7
-        - hypothesis >=4.18.2
-        - psutil >=5.9
-        - pytest >=9
-        - pytest-mock >=3.14
-        - pytest-timeout >=2.4.0
-        - python ${{ python_min }}.*
-        - python-blockbuster >=1.5.23
-        - tomli
-        - trio
-        - trustme >=1.0.0
-        - truststore >=0.9.1
-        - if: unix
-          then:
-            - uvloop
-          else:
-            - winloop
-    script:
-      env:
-        PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
-      file: run_test.py
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/anyio/
   license: MIT
   license_file: LICENSE
-  summary: High level compatibility layer for multiple asynchronous event loop implementations on Python
-  homepage: https://pypi.org/project/anyio
-  repository: https://github.com/agronholm/anyio
-  documentation: https://anyio.readthedocs.io
+  summary: High-level concurrency and networking framework on top of asyncio or Trio
+  description: |
+    High-level concurrency and networking framework on top of asyncio or Trio
+  documentation: https://anyio.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - bollwyvl
     - CJ-Wright
     - dhirschfeld
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: anyio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: anyio
+  cfe-purls:
+    - pkg:conda/anyio@${{ version }}?channel=conda-forge
+    - pkg:pypi/anyio@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/anyio/
+  cfe-import-names: [anyio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/anyio-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:56:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:56:28Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:56:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

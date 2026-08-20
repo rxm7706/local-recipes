@@ -13,34 +13,71 @@ source:
   sha256: b4b2cfa1b65d98307ca24361f5b30fe785b53c3fd07b7a47e89acb5e6ac638cb
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatchling >=1.0
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
+    - hatchling >=1.0
   run:
-    - jupyter_server >=1.8,<3
     - python >=${{ python_min }}
+    - jupyter-server <3,>=1.8
 
 tests:
   - python:
       imports:
         - notebook_shim
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: A shim layer for notebook traits and config
+  homepage: https://pypi.org/project/notebook-shim/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/jupyterlab/notebook_shim
+  summary: A shim layer for notebook traits and config
+  description: |
+    A shim layer for notebook traits and config
 
 extra:
   recipe-maintainers:
     - bollwyvl
     - jtpio
     - Zsailer
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: notebook-shim
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: notebook-shim
+  cfe-purls:
+    - pkg:conda/notebook-shim@${{ version }}?channel=conda-forge
+    - pkg:pypi/notebook-shim@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/notebook-shim/
+  cfe-import-names: [notebook_shim]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/notebook-shim-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:05:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:05:04Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T02:05:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

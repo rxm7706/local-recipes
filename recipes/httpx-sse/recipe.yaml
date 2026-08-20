@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: httpx-sse
   version: "0.4.3"
 
 package:
-  name: ${{ name|lower }}
+  name: httpx-sse
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/httpx-sse/httpx_sse-${{ version }}.tar.gz
   sha256: 9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d
 
 build:
@@ -20,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools
     - setuptools-scm
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
     - httpx
@@ -34,14 +33,52 @@ tests:
       imports:
         - httpx_sse
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Consume Server-Sent Event (SSE) messages with HTTPX.
+  homepage: https://github.com/florimondmanca/httpx-sse
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/florimondmanca/httpx-sse
+  summary: Consume Server-Sent Event (SSE) messages with HTTPX.
+  description: |
+    Consume Server-Sent Event (SSE) messages with HTTPX.
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpx-sse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpx-sse
+  cfe-purls:
+    - pkg:conda/httpx-sse@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpx-sse@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/florimondmanca/httpx-sse
+  cfe-import-names: [httpx_sse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpx-sse-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:40:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:40:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:40:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['httpx']
+####

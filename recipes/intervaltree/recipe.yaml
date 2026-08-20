@@ -2,43 +2,86 @@
 schema_version: 1
 
 context:
-  version: "3.1.0"
+  version: "3.2.1"
 
 package:
   name: intervaltree
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/i/intervaltree/intervaltree-${{ version }}.tar.gz
-  sha256: 902b1b88936918f9b2a19e0e5eb7ccb430ae45cde4f39ea4b36932920d33952d
-  file_name: intervaltree-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/intervaltree/intervaltree-${{ version }}.tar.gz
+  sha256: f3f7e8baeb7dd75b9f7a6d33cf3ec10025984a8e66e3016d537e52130c73cfe2
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=2.7
+    - hatchling
+    - uv-dynamic-versioning
   run:
-    - python >=2.7
+    - python >=${{ python_min }}
     - sortedcontainers
 
 tests:
   - python:
       imports:
         - intervaltree
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/chaimleib/intervaltree
   license: Apache-2.0
   license_file: LICENSE.txt
   summary: Editable interval tree data structure for Python 2 and 3
-  homepage: https://github.com/chaimleib/intervaltree
+  description: |
+    Editable interval tree data structure for Python 2 and 3
 
 extra:
   recipe-maintainers:
     - johanneskoester
     - bgruening
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: intervaltree
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: intervaltree
+  cfe-purls:
+    - pkg:conda/intervaltree@${{ version }}?channel=conda-forge
+    - pkg:pypi/intervaltree@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/chaimleib/intervaltree
+  cfe-import-names: [intervaltree]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/intervaltree-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T23:57:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:57:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T23:57:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

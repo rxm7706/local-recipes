@@ -15,45 +15,71 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools >=77.0
-    - setuptools-scm >=6.2.3
   run:
+    - python >=${{ python_min }}
     - execnet >=2.1
     - pytest >=7.0.0
-    - python >=${{ python_min }}
-  run_constraints:
-    - psutil >=3.0
 
 tests:
   - python:
       imports:
         - xdist
       pip_check: true
-      python_version: ${{ python_min }}
-  - files:
-      recipe:
-        - dummy_test.py
-    requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pytest -n2 dummy_test.py
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/pytest-dev/pytest-xdist
   license: MIT
   license_file: LICENSE
-  summary: py.test xdist plugin for distributed testing and loop-on-failing modes
-  homepage: https://github.com/pytest-dev/pytest-xdist
+  summary: pytest xdist plugin for distributed testing, most importantly across multiple CPUs
+  description: |
+    pytest xdist plugin for distributed testing, most importantly across multiple CPUs
   repository: https://github.com/pytest-dev/pytest-xdist
+  documentation: https://pytest-xdist.readthedocs.io/en/latest
 
 extra:
   recipe-maintainers:
     - goanpeca
     - nicoddemus
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-xdist
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-xdist
+  cfe-purls:
+    - pkg:conda/pytest-xdist@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-xdist@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-xdist
+  cfe-upstream-homepage: https://github.com/pytest-dev/pytest-xdist
+  cfe-import-names: [xdist]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-xdist-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.8.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:47:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:47:34Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:47:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

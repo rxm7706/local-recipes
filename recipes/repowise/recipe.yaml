@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
+  version: "0.43.0"
   python_min: "3.11"
-  version: "0.8.0"
 
 package:
   name: repowise
@@ -11,89 +11,117 @@ package:
 
 source:
   url: https://pypi.org/packages/source/r/repowise/repowise-${{ version }}.tar.gz
-  sha256: 0c75fbe4841de7c5767567516c488a9039ef523c6266851d8b9f0ded0c6e3925
+  sha256: 9e4b90b0dbe955fc5080531c10efe9fa76ab14b12a3eec2343ac369ebb073da8
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - repowise = repowise.cli.main:cli
-      - repowise-augment = repowise.cli.augment_hook:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=75
     - pip
+    - setuptools >=75
   run:
     - python >=${{ python_min }}
-    - httpx >=0.27,<1
-    - tree_sitter >=0.23,<1
-    - tree-sitter-python >=0.23,<1
-    - tree-sitter-typescript >=0.23,<1
-    - tree-sitter-javascript >=0.23,<1
-    - tree-sitter-go >=0.23,<1
-    - tree-sitter-rust >=0.23,<1
-    - tree-sitter-java >=0.23,<1
-    - tree-sitter-cpp >=0.23,<1
-    - tree-sitter-kotlin >=1,<2
-    - tree-sitter-ruby >=0.23,<1
-    - tree-sitter-c-sharp >=0.23,<1
+    - httpx <1,>=0.27
+    - tree-sitter <1,>=0.23
+    - tree-sitter-python <1,>=0.23
+    - tree-sitter-typescript <1,>=0.23
+    - tree-sitter-javascript <1,>=0.23
+    - tree-sitter-go <1,>=0.23
+    - tree-sitter-rust <1,>=0.23
+    - tree-sitter-java <1,>=0.23
+    - tree-sitter-cpp <1,>=0.23
+    - tree-sitter-dart <1,>=0.1
+    - tree-sitter-kotlin <2,>=1
+    - tree-sitter-ruby <1,>=0.23
+    - tree-sitter-c-sharp <1,>=0.23
     - tree-sitter-swift >=0.0.1
-    - tree-sitter-scala >=0.23,<1
-    - tree-sitter-php >=0.23,<1
-    - tree-sitter-luau
-    - networkx >=3.3,<4
-    - scipy >=1.11,<2
-    - jinja2 >=3.1,<4
-    - pathspec >=0.12,<1
-    - structlog >=24,<25
-    - sqlalchemy >=2.0,<3
-    - aiosqlite >=0.20,<1
-    - alembic >=1.13,<2
-    - pydantic >=2.8,<3
-    - tenacity >=9,<10
-    - gitpython >=3.1,<4
-    - pyyaml >=6.0,<7
-    - lancedb >=0.12,<1
-    - click >=8.1,<9
-    - rich >=13,<14
-    - watchdog >=4.0,<5
-    - fastapi >=0.115,<1
-    - uvicorn >=0.32
-    - mcp >=1.0,<2.0
-    - apscheduler >=3.10,<4
-    - cryptography >=43,<47
-    - anthropic >=0.40,<1
-    - openai >=1.50,<3
-    - google-genai >=1.0,<2
-    - litellm
+    - tree-sitter-scala <1,>=0.23
+    - tree-sitter-php <1,>=0.23
+    - tree-sitter-pascal <1,>=0.11
+    - tree-sitter-luau <2,>=1.2
+    - tree-sitter-bash <1,>=0.23
+    - tree-sitter-svelte <2,>=1
+    - tree-sitter-html <1,>=0.23
+    - sqlglot <28,>=26
+    - networkx <4,>=3.3
+    - scipy <2,>=1.11
+    - jinja2 <4,>=3.1
+    - pathspec <1,>=0.12
+    - structlog <25,>=24
+    - sqlalchemy <3,>=2.0
+    - aiosqlite <1,>=0.20
+    - alembic <2,>=1.13
+    - pydantic <3,>=2.8
+    - tenacity <10,>=9
+    - gitpython <4,>=3.1
+    - pyyaml <7,>=6.0
+    - lancedb <1,>=0.12
+    - click <9,>=8.1
+    - rich <14,>=13
+    - watchdog <5,>=4
+    - fastapi <1,>=0.115
+    - uvicorn <1,>=0.32
+    - mcp <2,>=1.0
+    - apscheduler <4,>=3.10
+    - cryptography <51,>=50.0.0
+    - anthropic <1,>=0.40
+    - openai <3,>=1.50
+    - google-genai <2,>=1.0
+    - litellm <2,>=1.84.0
 
 tests:
   - python:
       imports:
-        - repowise
-      pip_check: false
+        - packages.cli.src.repowise.cli
+      pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - repowise --help
-      - repowise-augment --help
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Codebase intelligence for developers and AI — generates and maintains a structured wiki for any codebase
-  license: AGPL-3.0-only
-  license_file: LICENSE
   homepage: https://github.com/repowise-dev/repowise
-  documentation: https://github.com/repowise-dev/repowise/blob/main/docs/USER_GUIDE.md
+  license: AGPL-3.0-or-later
+  license_file: LICENSE
+  summary: The codebase intelligence layer for your AI coding agent — dependency graph, git history, dead code, decisions, and code health, exposed over MCP
+  description: |
+    The codebase intelligence layer for your AI coding agent — dependency graph, git history, dead code, decisions, and code health, exposed over MCP
+  repository: https://github.com/repowise-dev/repowise
+  documentation: https://github.com/repowise-dev/repowise/blob/main/docs/start/USER_GUIDE.md
 
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: repowise
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: repowise
+  cfe-purls:
+    - pkg:conda/repowise@${{ version }}?channel=conda-forge
+    - pkg:pypi/repowise@${{ version }}
+  cfe-upstream-repo: https://github.com/repowise-dev/repowise
+  cfe-upstream-homepage: https://github.com/repowise-dev/repowise
+  cfe-import-names: [packages.cli.src.repowise.cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:21:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:21:42Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T05:21:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

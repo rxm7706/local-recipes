@@ -2,7 +2,6 @@
 schema_version: 1
 
 context:
-  name: 
   version: "2.0.0"
 
 package:
@@ -16,11 +15,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - cull_idle_servers.py = jupyterhub_idle_culler:main
-      - jupyterhub-idle-culler = jupyterhub_idle_culler:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -30,8 +25,8 @@ requirements:
   run:
     - python >=${{ python_min }}
     - packaging
-    - tornado
     - python-dateutil
+    - tornado
     - traitlets
 
 tests:
@@ -41,23 +36,54 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - "3.14"
-  - script:
-      - cull_idle_servers.py --help
-      - jupyterhub-idle-culler --help
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: COPYING.md
-  summary: JupyterHub service to cull idle servers and users
+  homepage: https://pypi.org/project/jupyterhub-idle-culler/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: JupyterHub Python repository template
   description: |
-    jupyterhub-idle-culler provides a JupyterHub service to cull and shut down
-    idle notebook servers and users on a JupyterHub deployment.
-  homepage: https://github.com/jupyterhub/jupyterhub-idle-culler
+    JupyterHub Python repository template
   repository: https://github.com/jupyterhub/jupyterhub-idle-culler
+  documentation: https://github.com/jupyterhub/jupyterhub-idle-culler#readme
 
 extra:
   recipe-maintainers:
     - ktaletsk
     - minrk
     - consideRatio
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterhub-idle-culler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterhub-idle-culler
+  cfe-purls:
+    - pkg:conda/jupyterhub-idle-culler@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterhub-idle-culler@${{ version }}
+  cfe-upstream-repo: https://github.com/jupyterhub/jupyterhub-idle-culler
+  cfe-upstream-homepage: https://pypi.org/project/jupyterhub-idle-culler/
+  cfe-import-names: [jupyterhub_idle_culler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterhub-idle-culler-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T00:37:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:37:11Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:37:11Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

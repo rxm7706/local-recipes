@@ -2,44 +2,48 @@
 schema_version: 1
 
 context:
-  name: pexpect
   version: "4.9.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pexpect
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pexpect-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pexpect/pexpect-${{ version }}.tar.gz
   sha256: ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - ptyprocess >=0.5
+    - ptyprocess
 
 tests:
   - python:
       imports:
         - pexpect
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Pexpect allows easy control of interactive console applications.
+  homepage: https://pexpect.readthedocs.io/
   license: ISC
   license_file: LICENSE
-  homepage: https://pexpect.readthedocs.io/
+  summary: Pexpect allows easy control of interactive console applications.
+  description: |
+    Pexpect allows easy control of interactive console applications.
   repository: https://github.com/pexpect/pexpect
+  documentation: https://pexpect.readthedocs.io/
 
 extra:
   recipe-maintainers:
@@ -47,3 +51,36 @@ extra:
     - pelson
     - takluyver
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pexpect
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pexpect
+  cfe-purls:
+    - pkg:conda/pexpect@${{ version }}?channel=conda-forge
+    - pkg:pypi/pexpect@${{ version }}
+  cfe-upstream-repo: https://github.com/pexpect/pexpect
+  cfe-upstream-homepage: https://pexpect.readthedocs.io/
+  cfe-import-names: [pexpect]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pexpect-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:59:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:59:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:59:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

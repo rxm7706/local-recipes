@@ -2,117 +2,87 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-instrumentation-starlette
-  version: 0.65b0
+  version: "0.65b0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-instrumentation-starlette
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_starlette-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-starlette/opentelemetry_instrumentation_starlette-${{ version }}.tar.gz
   sha256: 2ec3269c684617bdaaba06ec90fc3f3bfd5e90f51dae3f62f014fd15e488a81a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
+    - starlette
     - opentelemetry-api ~=1.12
     - opentelemetry-instrumentation-asgi ==0.65b0
     - opentelemetry-instrumentation ==0.65b0
     - opentelemetry-semantic-conventions ==0.65b0
     - opentelemetry-util-http ==0.65b0
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.37b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.38b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.39b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.40b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.41b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.42b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.43b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - requests ~=2.23
-    # - opentelemetry-test-utils ==0.44b0
-    # - opentelemetry-instrumentation-starlette
-    # - httpx ~=0.22
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette ~=0.13.0
-    # - starlette <0.15,>=0.13
-    # - starlette <0.15,>=0.13
-    # - starlette <0.15,>=0.13
-    # - starlette <0.15,>=0.13
-    # - starlette <0.15,>=0.13
-    # - starlette <0.15,>=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
-    # - starlette >=0.13
 
 tests:
   - python:
       imports:
-        - opentelemetry
-        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.starlette
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Starlette Instrumentation
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-starlette
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-starlette
+  summary: OpenTelemetry Starlette Instrumentation
+  description: |
+    OpenTelemetry Starlette Instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-starlette
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-starlette
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-starlette@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-starlette@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-starlette
+  cfe-import-names: [opentelemetry.instrumentation.starlette]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-starlette-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T10:48:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T10:48:29Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T10:48:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # added run deps from import test: ['starlette']
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: dash-bootstrap-components
   version: "2.0.4"
 
 package:
-  name: ${{ name|lower }}
+  name: dash-bootstrap-components
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dash_bootstrap_components-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dash-bootstrap-components/dash_bootstrap_components-${{ version }}.tar.gz
   sha256: c3206c0923774bbc6a6ddaa7822b8d9aa5326b0d3c1e7cd795cc975025fe2484
 
 build:
@@ -21,10 +20,10 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - dash >=3.0.4
 
 tests:
@@ -32,22 +31,50 @@ tests:
       imports:
         - dash_bootstrap_components
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Bootstrap components for Plotly Dash
-  homepage: https://dash-bootstrap-components.opensource.faculty.ai/
-  description: |
-    dash-bootstrap-components is a library of Bootstrap components for use with Plotly Dash,
-    that makes it easier to build consistently styled Dash apps with complex, responsive layouts.
-  documentation: https://www.dash-bootstrap-components.com/
-  repository: https://github.com/dbc-team/dash-bootstrap-components/
+  homepage: https://www.dash-bootstrap-components.com/
   license: Apache-2.0
-  license_file:
-    - NOTICE.txt
-    - LICENSE
+  license_file: LICENSE
+  summary: Bootstrap themed components for use in Plotly Dash
+  description: |
+    Bootstrap themed components for use in Plotly Dash
+  repository: https://github.com/dbc-team/dash-bootstrap-components/
 
 extra:
   recipe-maintainers:
     - holtgrewe
     - tcbegley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dash-bootstrap-components
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dash-bootstrap-components
+  cfe-purls:
+    - pkg:conda/dash-bootstrap-components@${{ version }}?channel=conda-forge
+    - pkg:pypi/dash-bootstrap-components@${{ version }}
+  cfe-upstream-repo: https://github.com/dbc-team/dash-bootstrap-components/
+  cfe-upstream-homepage: https://www.dash-bootstrap-components.com/
+  cfe-import-names: [dash_bootstrap_components]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dash-bootstrap-components-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:26:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:26:53Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:26:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

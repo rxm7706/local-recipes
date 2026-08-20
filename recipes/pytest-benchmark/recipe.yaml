@@ -2,31 +2,26 @@
 schema_version: 1
 
 context:
-  name: pytest-benchmark
   version: "5.2.3"
 
 package:
-  name: ${{ name|lower }}
+  name: pytest-benchmark
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pytest-benchmark/pytest_benchmark-${{ version }}.tar.gz
   sha256: deb7317998a23c650fd4ff76e1230066a76cb45dcece0aca5607143c619e7779
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - py.test-benchmark = pytest_benchmark.cli:main
-      - pytest-benchmark = pytest_benchmark.cli:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=80
   run:
     - python >=${{ python_min }}
     - pytest >=8.1
@@ -36,23 +31,54 @@ tests:
   - python:
       imports:
         - pytest_benchmark
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - py.test --traceconfig | grep pytest-benchmark-${{ version }}
-      - pytest-benchmark --help
-      - py.test-benchmark --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/pytest-benchmark/
   license: BSD-2-Clause
   license_file: LICENSE
-  summary: A py.test fixture for benchmarking code
-  homepage: https://github.com/ionelmc/pytest-benchmark
+  summary: A ``pytest`` fixture for benchmarking code. It will group the tests into rounds that are calibrated to the chosen timer.
+  description: |
+    A ``pytest`` fixture for benchmarking code. It will group the tests into rounds that are calibrated to the chosen timer.
+  documentation: https://pytest-benchmark.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - astrojuanlu
     - esloch
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-benchmark
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-benchmark
+  cfe-purls:
+    - pkg:conda/pytest-benchmark@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-benchmark@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/pytest-benchmark/
+  cfe-import-names: [pytest_benchmark]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytest-benchmark-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.2.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T11:30:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T11:30:48Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T11:30:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

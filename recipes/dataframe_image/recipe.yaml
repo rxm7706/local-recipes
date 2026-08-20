@@ -2,56 +2,91 @@
 schema_version: 1
 
 context:
-  name: dataframe_image
-  version: "0.1.1"
+  version: "0.2.7"
 
 package:
-  name: ${{ name|lower }}
+  name: dataframe-image
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 8d6739da53c66bd557f217237bab45943a452760b808bb7a3e635a939eed0bb5
+  url: https://github.com/dexplo/dataframe_image/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 6d96368cbf64e8291587242bd6442ed2961cc021a06d2ccf1d309fe460e77831
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
-  python:
-    entry_points:
-      - dataframe_image=dataframe_image._command_line:main
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - aiohttp
-    - beautifulsoup4
-    - matplotlib-base >=3.1
-    - nbconvert >=5
+    - python >=${{ python_min }}
     - pandas >=0.24
-    - python >=3.6
+    - nbconvert >=5
+    - aiohttp >=3.10.2
     - requests
+    - pillow
+    - packaging
+    - mistune
+    - lxml
+    - beautifulsoup4
+    - cssutils
+    - playwright
+    - cssselect
 
 tests:
   - python:
       imports:
         - dataframe_image
-        - tests
       pip_check: true
-  - requirements:
-      run:
-        - pip
-    script:
-      - dataframe_image --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Embed pandas DataFrames as images in pdf and markdown files when converting from Jupyter Notebooks
+  homepage: https://github.com/dexplo/dataframe_image
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/dexplo/dataframe_image
+  summary: Embed pandas DataFrames as images in pdf and markdown files when converting from Jupyter Notebooks
+  description: |
+    Embed pandas DataFrames as images in pdf and markdown files when converting from Jupyter Notebooks
 
 extra:
   recipe-maintainers:
     - tdpetrou
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dataframe_image
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dataframe-image
+  cfe-purls:
+    - pkg:conda/dataframe_image@${{ version }}?channel=conda-forge
+    - pkg:pypi/dataframe-image@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/dexplo/dataframe_image
+  cfe-import-names: [dataframe_image]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dataframe_image-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.7
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:31:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:31:12Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T07:31:12Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

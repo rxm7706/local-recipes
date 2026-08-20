@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: requests-file
   version: "3.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: requests-file
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/requests-file/requests_file-${{ version }}.tar.gz
   sha256: f14243d7796c588f3521bd423c5dea2ee4cc730e54a3cac9574d78aca1272576
 
 build:
@@ -20,10 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=61.2
-    - setuptools-scm >=3.4.3
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=61.2
   run:
     - python >=${{ python_min }}
     - requests >=1.0.0
@@ -33,14 +31,51 @@ tests:
       imports:
         - requests_file
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://codeberg.org/dashea/requests-file
   license: Apache-2.0
   license_file: LICENSE
   summary: File transport adapter for Requests
-  homepage: http://github.com/dashea/requests-file
+  description: |
+    File transport adapter for Requests
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: requests-file
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: requests-file
+  cfe-purls:
+    - pkg:conda/requests-file@${{ version }}?channel=conda-forge
+    - pkg:pypi/requests-file@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://codeberg.org/dashea/requests-file
+  cfe-import-names: [requests_file]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/requests-file-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.0.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:53:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:53:04Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:53:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

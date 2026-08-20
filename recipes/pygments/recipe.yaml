@@ -2,57 +2,47 @@
 schema_version: 1
 
 context:
-  name: pygments
   version: "2.20.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pygments
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/Pygments/pygments-${{ version }}.tar.gz
   sha256: 6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - pygmentize = pygments.cmdline:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=61
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling >=1.27
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - pygments.styles
         - pygments
-        - pygments.lexers
-        - pygments.filters
-        - pygments.formatters
-        - pygments.plugin
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - pygmentize -h
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pygments.org
   license: BSD-2-Clause
   license_file: LICENSE
-  summary: Pygments is a generic syntax highlighter suitable for use in code hosting, forums, wikis or other applications that need to prettify source code.
-  homepage: http://pygments.org/
+  summary: Pygments is a syntax highlighting package written in Python.
+  description: |
+    Pygments is a syntax highlighting package written in Python.
+  repository: https://github.com/pygments/pygments
+  documentation: https://pygments.org/docs
 
 extra:
   recipe-maintainers:
@@ -60,3 +50,36 @@ extra:
     - pelson
     - ocefpaf
     - scopatz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pygments
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pygments
+  cfe-purls:
+    - pkg:conda/pygments@${{ version }}?channel=conda-forge
+    - pkg:pypi/pygments@${{ version }}
+  cfe-upstream-repo: https://github.com/pygments/pygments
+  cfe-upstream-homepage: https://pygments.org
+  cfe-import-names: [pygments]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pygments-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.20.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T05:31:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T05:31:40Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T05:31:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,59 +2,82 @@
 schema_version: 1
 
 context:
-  name: stevedore
   version: "5.9.0"
-  bundle: tar.gz
-  hash: abbd0af7a38a8bbb1d6adea2e35b17609cf004eaac323e88a8d8963640dd2b3c
   python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: stevedore
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
+  url: https://pypi.org/packages/source/s/stevedore/stevedore-${{ version }}.tar.gz
+  sha256: abbd0af7a38a8bbb1d6adea2e35b17609cf004eaac323e88a8d8963640dd2b3c
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python 3.11.*
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - pbr !=2.1.0,>=2.0.0
+    - pbr >=6.1.1
   run:
     - python >=${{ python_min }}
-    - pbr !=2.1.0,>=2.0.0
 
 tests:
   - python:
       imports:
         - stevedore
-        - stevedore.named
-        - stevedore.driver
-        - stevedore.hook
-        - stevedore.extension
-        - stevedore.enabled
-        - stevedore.dispatch
-        - stevedore.tests
-        - stevedore._cache
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
+  homepage: https://docs.openstack.org/stevedore
   license: Apache-2.0
+  license_file: LICENSE
   summary: Manage dynamic plugins for Python applications
-  homepage: http://docs.openstack.org/developer/stevedore/
-  repository: https://git.openstack.org/cgit/openstack/stevedore
-  documentation: http://docs.openstack.org/developer/stevedore/
+  description: |
+    Manage dynamic plugins for Python applications
+  repository: https://opendev.org/openstack/stevedore
 
 extra:
   recipe-maintainers:
     - anguslees
     - tschoonj
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: stevedore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: stevedore
+  cfe-purls:
+    - pkg:conda/stevedore@${{ version }}?channel=conda-forge
+    - pkg:pypi/stevedore@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/stevedore
+  cfe-upstream-homepage: https://docs.openstack.org/stevedore
+  cfe-import-names: [stevedore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/stevedore-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-5.9.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:08:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:08:54Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:08:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

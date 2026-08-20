@@ -2,26 +2,25 @@
 schema_version: 1
 
 context:
-  name: python-utils
   version: "4.0.0"
 
 package:
-  name: ${{ name|lower }}
+  name: python-utils
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-utils/python_utils-${{ version }}.tar.gz
   sha256: 51d84b297d9877205a76e65f970e3275d1aa9c1cf3d508af2c459247eb4fe701
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - uv-build >=0.11,<0.12
   run:
     - python >=${{ python_min }}
@@ -31,28 +30,18 @@ tests:
   - python:
       imports:
         - python_utils
-        - python_utils.aio
-        - python_utils.containers
-        - python_utils.converters
-        - python_utils.decorators
-        - python_utils.formatters
-        - python_utils.generators
-        - python_utils.import_
-        - python_utils.logger
-        - python_utils.time
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/WoLpH/python-utils
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Python Utils is a collection of small Python functions and classes which make common patterns shorter and easier.
+  summary: Python Utils is a module with some convenient utilities not included with the standard Python install
   description: |
-    Python Utils is a collection of small Python functions and classes which
-    make common patterns shorter and easier. It is by no means a complete
-    collection but it has served me quite a bit in the past and I will keep
-    extending it.  One of the libraries using Python Utils is Django Utils.
-  homepage: https://github.com/WoLpH/python-utils
+    Python Utils is a module with some convenient utilities not included with the standard Python install
   repository: https://github.com/WoLpH/python-utils
   documentation: https://python-utils.readthedocs.io/
 
@@ -61,3 +50,36 @@ extra:
     - maartenbreddels
     - WoLpH
     - stuertz
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-utils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-utils
+  cfe-purls:
+    - pkg:conda/python-utils@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-utils@${{ version }}
+  cfe-upstream-repo: https://github.com/WoLpH/python-utils
+  cfe-upstream-homepage: https://github.com/WoLpH/python-utils
+  cfe-import-names: [python_utils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-utils-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.0.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T04:32:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:32:32Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T04:32:32Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

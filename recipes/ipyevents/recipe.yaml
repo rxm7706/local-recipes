@@ -2,56 +2,82 @@
 schema_version: 1
 
 context:
-  name: ipyevents
   version: "2.0.4"
 
 package:
-  name: ${{ name|lower }}
+  name: ipyevents
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/ipyevents/ipyevents-${{ version }}.tar.gz
   sha256: bd8c66a9ff26f481494cda1ec1d979722ca9eba19f8ef52538c7cc2db2a1a139
-  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - jupyterlab ==4
     - hatchling
-    - hatch-jupyter-builder >=0.8.3
-    - nodejs
+    - jupyterlab ==4.*
   run:
     - python >=${{ python_min }}
-    - ipywidgets >=7.6
+    - ipywidgets >=7.6.0
 
 tests:
   - python:
       imports:
         - ipyevents
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - jupyter
-        - notebook
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause
-  license_file: LICENSE.md
-  summary: A custom widget for returning mouse and keyboard events to Python
-  description: A custom widget for returning mouse and keyboard events to Python
   homepage: https://github.com/mwcraig/ipyevents
-  repository: https://github/com/mwcraig/ipyevents
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A custom widget for returning mouse and keyboard events to Python
+  description: |
+    A custom widget for returning mouse and keyboard events to Python
 
 extra:
   recipe-maintainers:
     - mwcraig
     - astrofrog
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ipyevents
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ipyevents
+  cfe-purls:
+    - pkg:conda/ipyevents@${{ version }}?channel=conda-forge
+    - pkg:pypi/ipyevents@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/mwcraig/ipyevents
+  cfe-import-names: [ipyevents]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ipyevents-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T23:58:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T23:58:26Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T23:58:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

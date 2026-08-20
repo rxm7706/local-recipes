@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: rtfde
   version: "0.1.2.2"
 
 package:
-  name: ${{ name|lower }}
+  name: rtfde
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/RTFDE/rtfde-${{ version }}.tar.gz
   sha256: 2f0cd6ecd644071e39452e6fc4f4a1435453af0ec7c90ea86fb4fc96010c7f1b
 
 build:
@@ -20,12 +19,12 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - lark >=1.3.0,<1.4.dev0
+    - lark ~=1.3.0
     - oletools >=0.56
 
 tests:
@@ -33,20 +32,51 @@ tests:
       imports:
         - RTFDE
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: GPL-3.0-or-later
-  license_file: LICENSE
-  summary: A python3 library for extracting encapsulated HTML & plain text content from the RTF bodies of .msg files.
-  description: |
-    RTFDE: RTF De-Encapsulator - A python3 library for extracting
-    encapsulated `HTML` & `plain text` content from the `RTF` bodies of
-    .msg files.
   homepage: https://github.com/seamustuohy/RTFDE
-  repository: https://github.com/seamustuohy/RTFDE
-  documentation: https://github.com/seamustuohy/RTFDE
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: A library for extracting HTML content from RTF encapsulated HTML as commonly found in the exchange MSG email format.
+  description: |
+    A library for extracting HTML content from RTF encapsulated HTML as commonly found in the exchange MSG email format.
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rtfde
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rtfde
+  cfe-purls:
+    - pkg:conda/rtfde@${{ version }}?channel=conda-forge
+    - pkg:pypi/rtfde@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/seamustuohy/RTFDE
+  cfe-import-names: [RTFDE]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/rtfde-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.2.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:07:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:07:19Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-18T05:07:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

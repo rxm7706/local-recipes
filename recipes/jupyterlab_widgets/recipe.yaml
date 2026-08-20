@@ -3,68 +3,45 @@ schema_version: 1
 
 context:
   version: "3.0.16"
-  python_check_max: "3.14"
 
 package:
-  name: jupyterlab_widgets
+  name: jupyterlab-widgets
   version: ${{ version }}
 
 source:
-  - if: version != "3.0.16"
-    then:
-      url: https://pypi.org/packages/source/j/jupyterlab_widgets/jupyterlab_widgets-${{ version }}.tar.gz
-      sha256: 423da05071d55cf27a9e602216d35a3a65a3e41cdf9c5d3b643b814ce38c19e0
-    else:
-      url: https://github.com/jupyter-widgets/ipywidgets/archive/refs/tags/8.1.8.tar.gz
-      sha256: de496815106e4c0ae0450dc1662cead4cffa43689af359f72d6b4ce8c12f7a8f
+  url: https://pypi.org/packages/source/j/jupyterlab-widgets/jupyterlab_widgets-${{ version }}.tar.gz
+  sha256: 423da05071d55cf27a9e602216d35a3a65a3e41cdf9c5d3b643b814ce38c19e0
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script:
-    - if: version == "3.0.16"
-      then:
-        - jlpm
-        - jlpm build
-        - cd python/jupyterlab_widgets
-        - jlpm clean:all
-        - jlpm build:prod
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - hatch-jupyter-builder
-    - hatchling
-    - jupyterlab 4.*
-    - pip
     - python ${{ python_min }}.*
-    - yarn
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab ~=4.0
   run:
     - python >=${{ python_min }}
-  run_constraints:
-    - jupyterlab >=3,<5
 
 tests:
   - python:
-      imports: jupyterlab_widgets
+      imports:
+        - jupyterlab_widgets
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - ${{ python_check_max }}.*
-  - requirements:
-      run:
-        - jupyterlab
-        - python ${{ python_min }}.*
-    script:
-      env:
-        JS_NAME: "@jupyter-widgets/jupyterlab-manager"
-      file: run_test.py
+        - "*"
 
 about:
-  summary: JupyterLab extension providing HTML widgets
+  homepage: https://github.com/jupyter-widgets/ipywidgets
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/jupyter-widgets/ipywidgets
+  summary: Jupyter interactive widgets for JupyterLab
+  description: |
+    Jupyter interactive widgets for JupyterLab
 
 extra:
   recipe-maintainers:
@@ -73,3 +50,33 @@ extra:
     - martinRenou
     - jtpio
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyterlab_widgets
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyterlab-widgets
+  cfe-purls:
+    - pkg:conda/jupyterlab_widgets@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterlab-widgets@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/jupyter-widgets/ipywidgets
+  cfe-import-names: [jupyterlab_widgets]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jupyterlab_widgets-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T00:44:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T00:44:45Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T00:44:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

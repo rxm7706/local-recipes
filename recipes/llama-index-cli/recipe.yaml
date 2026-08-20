@@ -68,8 +68,8 @@ extra:
   cfe-purls:
     - pkg:conda/llama-index-cli@${{ version }}?channel=conda-forge
     - pkg:pypi/llama-index-cli@${{ version }}
-  cfe-upstream-repo: none
-  cfe-upstream-homepage: https://pypi.org/project/llama-index-cli/
+  cfe-upstream-repo: https://github.com/run-llama/llama_index/tree/main/llama-index-cli
+  cfe-upstream-homepage: https://docs.llamaindex.ai/en/stable/getting_started/starter_tools/rag_cli/
   cfe-import-names: [llama_index.cli]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
@@ -81,11 +81,11 @@ extra:
     - version-update-to-0.5.7
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T01:37:43Z
+  cfe-last-checked: 2026-08-17T04:24:57Z
   cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T01:37:43Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T01:37:43Z
+  cfe-generated-at-datetime: 2026-08-17T04:24:57Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T04:24:57Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

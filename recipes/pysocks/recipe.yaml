@@ -9,43 +9,77 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/P/PySocks/PySocks-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PySocks/PySocks-${{ version }}.tar.gz
   sha256: 3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0
 
 build:
-  number: 7
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - ${{ virtual_pkg|default("__unix") }}
-    - win_inet_pton
 
 tests:
   - python:
       imports:
-        - socks
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+        - pysocks
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license_file: LICENSE
-  license: BSD-3-Clause
-  summary: A Python SOCKS client module. See https://github.com/Anorov/PySocks for more information.
   homepage: https://github.com/Anorov/PySocks
-  repository: https://github.com/Anorov/PySocks
-  documentation: https://github.com/Anorov/PySocks/blob/master/README.md
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: "A Python SOCKS client module. See https://github.com/Anorov/PySocks for more information."
+  description: |
+    A Python SOCKS client module. See https://github.com/Anorov/PySocks for more information.
 
 extra:
   recipe-maintainers:
     - pmlandwehr
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysocks
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysocks
+  cfe-purls:
+    - pkg:conda/pysocks@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysocks@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/Anorov/PySocks
+  cfe-import-names: [pysocks]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pysocks-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.7.1
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-18T04:03:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:03:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:03:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license:REPLACE_LICENSE
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

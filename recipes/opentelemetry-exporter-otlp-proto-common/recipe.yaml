@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-exporter-otlp-proto-common
   version: "1.44.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-exporter-otlp-proto-common
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_otlp_proto_common-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-otlp-proto-common/opentelemetry_exporter_otlp_proto_common-${{ version }}.tar.gz
   sha256: dc87a5a5bc58f149a56d1547e4691588fa12994cdc3bc039a694ccb3375862ac
 
 build:
@@ -20,28 +19,30 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-proto ==${{ version }}
-    # NOTE backoff only required for py<37 but pip checks fails without it
-    - backoff >=1.10.0,<3.0.0
+    - opentelemetry-proto ==1.44.0
 
 tests:
   - python:
       imports:
-        - opentelemetry
         - opentelemetry.exporter.otlp.proto.common
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: OpenTelemetry Protobuf encoding
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-common
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://opentelemetry.io/
+  summary: OpenTelemetry Protobuf encoding
+  description: |
+    OpenTelemetry Protobuf encoding
+  repository: https://github.com/open-telemetry/opentelemetry-python
 
 extra:
   recipe-maintainers:
@@ -49,3 +50,36 @@ extra:
     - rxm7706
     - mariusvniekerk
     - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-otlp-proto-common
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-otlp-proto-common
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-otlp-proto-common@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-exporter-otlp-proto-common@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp-proto-common
+  cfe-import-names: [opentelemetry.exporter.otlp.proto.common]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-otlp-proto-common-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.44.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T02:20:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T02:20:51Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T02:20:51Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

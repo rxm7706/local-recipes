@@ -163,3 +163,33 @@ extra:
     - aldanor
     - xhochy
     - jameslamb
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lightgbm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lightgbm
+  cfe-purls:
+    - pkg:conda/lightgbm@${{ version }}?channel=conda-forge
+    - pkg:pypi/lightgbm@${{ version }}
+  cfe-upstream-repo: https://github.com/lightgbm-org/LightGBM
+  cfe-upstream-homepage: https://github.com/lightgbm-org/LightGBM
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lightgbm-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T01:16:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T01:16:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T01:16:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

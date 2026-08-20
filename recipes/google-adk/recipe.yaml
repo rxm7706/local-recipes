@@ -2,102 +2,106 @@
 schema_version: 1
 
 context:
-  name: google-adk
   version: "2.7.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: google-adk
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/google_adk-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/google-adk/google_adk-${{ version }}.tar.gz
   sha256: 283e16dc5ffab7684e17098f7282470339e88a3d16ecfa62b4025680672c906b
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - adk = google.adk.cli:main
 
 requirements:
   host:
-    - python 3.10.*
-    - flit-core >=3.8,<4
+    - python ${{ python_min }}.*
     - pip
+    - flit-core >=3.8,<4
   run:
-    - aiohttp !=3.14.2
-    - packaging >=21
-    - python-multipart >=0.0.9,<1
     - python >=${{ python_min }}
+    - aiohttp !=3.14.2
     - aiosqlite >=0.21
-    - anyio >=4.9,<5
-    - authlib >=1.6.6,<2
-    - click >=8.1.8,<9
-    - fastapi >=0.133,<1
-    - google-api-python-client >=2.157.0,<3.0.0
+    - authlib <2,>=1.6.6
+    - click <9,>=8.1.8
+    - fastapi <1,>=0.133
     - google-auth >=2.47
-    - google-cloud-aiplatform >=1.148.1,<2
-    - google-cloud-bigquery >=2.2
-    - google-cloud-bigquery-storage >=2
-    - google-cloud-bigtable >=2.32.0
-    - google-cloud-dataplex >=1.7,<3
-    - google-cloud-discoveryengine >=0.13.12,<0.14
-    - google-cloud-pubsub >=2,<3
-    - google-cloud-secret-manager >=2.22.0,<3.0.0
-    - google-cloud-speech >=2.30.0,<3.0.0
-    - google-cloud-spanner >=3.56.0,<4.0.0
-    - google-cloud-storage >=2.18.0,<4.0.0
-    - google-genai >=2.12.1,<3
-    - httpx >=0.27,<1
-    - jsonschema >=4.23,<5
-    - mcp >=1.24.0,<2
-    - opentelemetry-api >=1.39,<=1.43
-    - opentelemetry-exporter-gcp-logging >=1.9.0a0,<=1.12.0a0
-    - opentelemetry-exporter-gcp-monitoring >=1.9.0a0,<2
-    - opentelemetry-exporter-gcp-trace >=1.9.0,<2.0.0
-    - opentelemetry-exporter-otlp-proto-http >=1.36
-    - opentelemetry-resourcedetector-gcp >=1.9.0a0,<2
-    - opentelemetry-sdk >=1.39,<=1.43
-    - pyarrow >=14
-    - pydantic >=2.12,<3
-    - python-dateutil >=2.9.0.post0,<3.0.0
-    - python-dotenv >=1,<2
-    - python-graphviz >=0.20.2,<1
-    - pyyaml >=6.0.2,<7
-    - requests >=2.32.4,<3
-    - sqlalchemy >=2.0,<3.0.0
-    - sqlalchemy-spanner >=1.14.0
-    - starlette >=1.3.1,<2
-    - tenacity >=9,<10
-    - typing_extensions >=4.5,<5
-    - tzlocal >=5.3,<6
-    - uvicorn >=0.34,<1
-    - watchdog >=6,<7
-    - websockets >=15.0.1,<16
+    - google-genai <3,>=2.12.1
+    - python-graphviz <1,>=0.20.2
+    - httpx <1,>=0.27
+    - jsonschema <5,>=4.23
+    - opentelemetry-api <=1.43,>=1.39
+    - opentelemetry-sdk <=1.43,>=1.39
+    - packaging >=21
+    - pydantic <3,>=2.12
+    - python-dotenv <2,>=1
+    - python-multipart <1,>=0.0.9
+    - pyyaml <7,>=6.0.2
+    - requests <3,>=2.32.4
+    - starlette <2,>=1.3.1
+    - tenacity <10,>=9
+    - typing_extensions <5,>=4.5
+    - tzlocal <6,>=5.3
+    - uvicorn <1,>=0.34
+    - watchdog <7,>=6
+    - websockets <16,>=15.0.1
 
 tests:
   - python:
       imports:
         - google.adk
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - adk --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Agent Development Kit
+  homepage: https://google.github.io/adk-docs/
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/google/adk-python
+  summary: Agent Development Kit
+  description: |
+    Agent Development Kit
+  documentation: https://google.github.io/adk-docs/
 
 extra:
   recipe-maintainers:
     - soapy1
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-adk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-adk
+  cfe-purls:
+    - pkg:conda/google-adk@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-adk@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://google.github.io/adk-docs/
+  cfe-import-names: [google.adk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-adk-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.7.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:46:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:46:47Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T08:46:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

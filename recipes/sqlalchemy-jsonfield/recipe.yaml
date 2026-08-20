@@ -2,28 +2,26 @@
 schema_version: 1
 
 context:
-  name: sqlalchemy-jsonfield
-  version: 1.0.1.post0
+  version: "1.0.3"
 
 package:
-  name: ${{ name|lower }}
+  name: sqlalchemy-jsonfield
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/SQLAlchemy-JSONField-${{ version }}.tar.gz
-  sha256: 72a5e714fe0493d2660abd7484a9fd9f492f493a0856288dd22a5decb29f5dc4
+  url: https://pypi.org/packages/source/s/SQLAlchemy-JSONField/sqlalchemy_jsonfield-${{ version }}.tar.gz
+  sha256: 162099ff6b6f475105afff90b15da114cbd87fd18df94e7d091df9f9d0e4f69f
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=80.3.0
   run:
     - python >=${{ python_min }}
     - sqlalchemy
@@ -33,31 +31,52 @@ tests:
       imports:
         - sqlalchemy_jsonfield
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: SQLALchemy JSONField implementation for storing dicts at SQL
+  homepage: https://pypi.org/project/SQLAlchemy-JSONField/
   license: Apache-2.0
   license_file: LICENSE
-  summary: |
-    SQLALchemy JSONField implementation for storing dicts at SQL independently
-    from JSON type support.
-
+  summary: SQLALchemy JSONField implementation for storing dicts at SQL
   description: |
-    SqlAlchemy provides JSON field support for several database types
-    (PostgreSQL and MySQL for now) and semi-working dict <-> JSON <-> VARCHAR
-    example, but... In real scenarios we have tests on sqlite, production on
-    MySQL/MariaDB/Percona/PostgreSQL and some of them (modern Oracle MySQL &
-    PostgreSQL) support JSON, some of them (SQLite, Percona & MariaDB) requires
-    data conversion to Text (not VARCHAR).
-
-    As addition, we have different levels of Unicode support on database and
-    connector side, so we may be interested to switch JSON encoding between d
-    eployments.
-  homepage: https://github.com/penguinolog/sqlalchemy_jsonfield
+    SQLALchemy JSONField implementation for storing dicts at SQL
   repository: https://github.com/penguinolog/sqlalchemy_jsonfield
-  documentation: https://github.com/penguinolog/sqlalchemy_jsonfield
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-jsonfield
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-jsonfield
+  cfe-purls:
+    - pkg:conda/sqlalchemy-jsonfield@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-jsonfield@${{ version }}
+  cfe-upstream-repo: https://github.com/penguinolog/sqlalchemy_jsonfield
+  cfe-upstream-homepage: https://pypi.org/project/SQLAlchemy-JSONField/
+  cfe-import-names: [sqlalchemy_jsonfield]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlalchemy-jsonfield-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T06:00:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T06:00:22Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T06:00:22Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: django-import-export
   version: "4.4.1"
 
 package:
-  name: ${{ name|lower }}
+  name: django-import-export
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_import_export-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-import-export/django_import_export-${{ version }}.tar.gz
   sha256: 165dc7fdcd56a6356342eef3f88f3f3682b64b6f67e9a259a137e8b57aeff10c
 
 build:
@@ -20,10 +19,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - setuptools >=60
     - setuptools-scm >=7.1.0
-    - pip
   run:
     - python >=${{ python_min }}
     - diff-match-patch ==20241021
@@ -34,17 +33,54 @@ tests:
   - python:
       imports:
         - import_export
-        - import_export.formats
-        - import_export.templatetags
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-2-Clause
+  homepage: https://pypi.org/project/django-import-export/
+  license: BSD-3-Clause
   license_file: LICENSE
-  summary: Django application and library for importing and exporting data with included admin integration
-  homepage: https://github.com/bmihelac/django-import-export
+  summary: Django application and library for importing and exporting data with included admin integration.
+  description: |
+    Django application and library for importing and exporting data with included admin integration.
+  repository: https://github.com/django-import-export/django-import-export
+  documentation: https://django-import-export.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-import-export
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-import-export
+  cfe-purls:
+    - pkg:conda/django-import-export@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-import-export@${{ version }}
+  cfe-upstream-repo: https://github.com/django-import-export/django-import-export
+  cfe-upstream-homepage: https://pypi.org/project/django-import-export/
+  cfe-import-names: [import_export]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-import-export-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-4.4.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T07:49:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T07:49:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T07:49:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

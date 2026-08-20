@@ -2,28 +2,27 @@
 schema_version: 1
 
 context:
-  name: executing
   version: "2.2.1"
 
 package:
-  name: ${{ name|lower }}
+  name: executing
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/executing/executing-${{ version }}.tar.gz
   sha256: 3632cc370565f6648cc328b32435bd120a1e4ebb20c77e3fdde9a13cd1e533c4
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
-    - setuptools_scm
+    - wheel
   run:
     - python >=${{ python_min }}
 
@@ -32,16 +31,56 @@ tests:
       imports:
         - executing
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Get the currently executing AST node of a frame, and other information
+  homepage: https://github.com/alexmojaki/executing
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://pypi.org/project/executing
-  repository: https://github.com/alexmojaki/executing
+  summary: Get the currently executing AST node of a frame, and other information
+  description: |
+    Get the currently executing AST node of a frame, and other information
 
 extra:
   recipe-maintainers:
     - alexmojaki
     - anthchirp
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: executing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: executing
+  cfe-purls:
+    - pkg:conda/executing@${{ version }}?channel=conda-forge
+    - pkg:pypi/executing@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/alexmojaki/executing
+  cfe-import-names: [executing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/executing-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.2.1
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T09:09:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T09:09:49Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T09:09:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

@@ -2,56 +2,82 @@
 schema_version: 1
 
 context:
-  name: flask-swagger
   version: "0.2.14"
 
 package:
-  name: ${{ name|lower }}
+  name: flask-swagger
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/f/flask-swagger/flask-swagger-${{ version }}.tar.gz
   sha256: b4085f5bc36df4c20b6548cd1413adc9cf35719b0f0695367cd542065145294d
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
-  python:
-    entry_points:
-      - flaskswagger=build_swagger_spec:run
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
     - python >=${{ python_min }}
-    - flask >=0.10
-    - pyyaml >=5.1
-    - setuptools
+    - flask
+    - pyyaml
 
 tests:
   - python:
       imports:
         - flask_swagger
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
-    script:
-      - flaskswagger --help
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/gangverk/flask-swagger
   license: MIT
   license_file: LICENSE
   summary: Extract swagger specs from your flask project
-  homepage: http://github.com/gangverk/flask-swagger
-  repository: https://github.com/gangverk/flask-swagger
+  description: |
+    Extract swagger specs from your flask project
 
 extra:
   recipe-maintainers:
     - sodre
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-swagger
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flask-swagger
+  cfe-purls:
+    - pkg:conda/flask-swagger@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-swagger@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gangverk/flask-swagger
+  cfe-import-names: [flask_swagger]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/flask-swagger-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.14
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:30:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:30:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:30:30Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

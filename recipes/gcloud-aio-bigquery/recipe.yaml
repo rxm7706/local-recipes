@@ -2,44 +2,78 @@
 schema_version: 1
 
 context:
-  name: gcloud-aio-bigquery
-  version: 7.1.0
+  version: "7.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: gcloud-aio-bigquery
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gcloud_aio_bigquery-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gcloud-aio-bigquery/gcloud_aio_bigquery-${{ version }}.tar.gz
   sha256: 4a3c775c2677c0588e9caeb2df40d81a54b31c174e562a527cb08e023c4408a3
 
 build:
-  number: 2
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core >=1.0.0
     - pip
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<4.0
-    - gcloud-aio-auth >=3.1.0,<6.0.0
+    - python >=${{ python_min }}
+    - gcloud-aio-auth
 
 tests:
   - python:
       imports:
         - gcloud.aio.bigquery
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python Client for Google Cloud BigQuery
-  license: MIT
-  license_file: LICENSE.txt
   homepage: https://github.com/talkiq/gcloud-aio
+  license: MIT
+  license_file: LICENSE
+  summary: Python Client for Google Cloud BigQuery
+  description: |
+    Python Client for Google Cloud BigQuery
+  repository: https://github.com/talkiq/gcloud-aio
 
 extra:
   recipe-maintainers:
     - xylar
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gcloud-aio-bigquery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gcloud-aio-bigquery
+  cfe-purls:
+    - pkg:conda/gcloud-aio-bigquery@${{ version }}?channel=conda-forge
+    - pkg:pypi/gcloud-aio-bigquery@${{ version }}
+  cfe-upstream-repo: https://github.com/talkiq/gcloud-aio
+  cfe-upstream-homepage: https://github.com/talkiq/gcloud-aio
+  cfe-import-names: [gcloud.aio.bigquery]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gcloud-aio-bigquery-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T08:39:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T08:39:43Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T08:39:43Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

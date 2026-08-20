@@ -2,44 +2,79 @@
 schema_version: 1
 
 context:
-  name: backports.weakref
-  version: 1.0.post1
+  version: "1.0.post1"
 
 package:
-  name: ${{ name|lower }}
+  name: backports.weakref
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/backports.weakref-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/backports.weakref/backports.weakref-${{ version }}.tar.gz
   sha256: bc4170a29915f8b22c9e7c4939701859650f2eb84184aee80da329ac0b9825c2
 
 build:
-  number: 1003
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
-    - setuptools_scm
-    - backports
+    - setuptools
   run:
-    - python >=3.6
-    - backports
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
-        - backports.weakref
-      pip_check: false
+        - backports
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: Python-2.0
-  summary: Backport of new features in Python's weakref module
   homepage: https://github.com/pjdelport/backports.weakref
-  repository: https://github.com/pjdelport/backports.weakref
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Backport of new features in Python's weakref module
+  description: |
+    Backport of new features in Python's weakref module
 
 extra:
   recipe-maintainers:
     - adrianchia
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: backports.weakref
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: backports-weakref
+  cfe-purls:
+    - pkg:conda/backports.weakref@${{ version }}?channel=conda-forge
+    - pkg:pypi/backports-weakref@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/pjdelport/backports.weakref
+  cfe-import-names: [backports]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/backports.weakref-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.0.post1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T06:35:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T06:35:13Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T06:35:13Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

@@ -2,27 +2,24 @@
 schema_version: 1
 
 context:
-  name: sortedcontainers
   version: "2.4.0"
-  sha256: 25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88
 
 package:
-  name: ${{ name }}
+  name: sortedcontainers
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sortedcontainers/sortedcontainers-${{ version }}.tar.gz
+  sha256: 25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -32,22 +29,18 @@ tests:
   - python:
       imports:
         - sortedcontainers
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://www.grantjenks.com/docs/sortedcontainers/
   license: Apache-2.0
   license_file: LICENSE
-  summary: "Python Sorted Container Types: SortedList, SortedDict, and SortedSet"
+  summary: Sorted Containers -- Sorted List, Sorted Dict, Sorted Set
   description: |
-    SortedContainers is a sorted collections library, written in pure-Python
-    and fast as C-extensions.
-  homepage: http://www.grantjenks.com/docs/sortedcontainers/
-  repository: https://github.com/grantjenks/python-sortedcontainers
-  documentation: http://www.grantjenks.com/docs/sortedcontainers/
+    Sorted Containers -- Sorted List, Sorted Dict, Sorted Set
 
 extra:
   recipe-maintainers:
@@ -55,3 +48,36 @@ extra:
     - msarahan
     - richafrank
     - nehaljwani
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sortedcontainers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sortedcontainers
+  cfe-purls:
+    - pkg:conda/sortedcontainers@${{ version }}?channel=conda-forge
+    - pkg:pypi/sortedcontainers@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://www.grantjenks.com/docs/sortedcontainers/
+  cfe-import-names: [sortedcontainers]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sortedcontainers-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T05:39:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T05:39:14Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-18T05:39:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

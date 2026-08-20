@@ -2,69 +2,86 @@
 schema_version: 1
 
 context:
-  name: bandit
   version: "1.9.4"
 
 package:
-  name: ${{ name|lower }}
+  name: bandit
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/b/bandit/bandit-${{ version }}.tar.gz
   sha256: b589e5de2afe70bd4d53fa0c1da6199f4085af666fde00e8a034f152a52cd628
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - bandit=bandit.cli.main:main
-      - bandit-config-generator=bandit.cli.config_generator:main
-      - bandit-baseline=bandit.cli.baseline:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pbr >=2.0.0
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
-    - pyyaml >=5.3.1
     - python >=${{ python_min }}
-    - colorama >=0.3.9
-    - GitPython >=3.1.30
-    - PyYAML >=5.3.1
-    - rich
+    - pyyaml >=5.3.1
     - stevedore >=1.20.0
+    - rich
 
 tests:
   - python:
       imports:
         - bandit
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - bandit --help
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://bandit.readthedocs.io/
   license: Apache-2.0
   license_file: LICENSE
-  summary: |
-    Bandit is a tool designed to find common security issues in Python code.
-    To do this Bandit processes each file, builds an AST from it, and runs
-    appropriate plugins against the AST nodes. Once Bandit has finished
-    scanning all the files it generates a report.
-  homepage: https://bandit.readthedocs.io/en/latest/
+  summary: Security oriented static analyser for python code.
+  description: |
+    Security oriented static analyser for python code.
   repository: https://github.com/PyCQA/bandit
-  documentation: https://bandit.readthedocs.io/en/latest/
+  documentation: https://bandit.readthedocs.io/
 
 extra:
   recipe-maintainers:
     - jkornblum
     - dbast
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bandit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bandit
+  cfe-purls:
+    - pkg:conda/bandit@${{ version }}?channel=conda-forge
+    - pkg:pypi/bandit@${{ version }}
+  cfe-upstream-repo: https://github.com/PyCQA/bandit
+  cfe-upstream-homepage: https://bandit.readthedocs.io/
+  cfe-import-names: [bandit]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bandit-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.9.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-18T08:18:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T08:18:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T08:18:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

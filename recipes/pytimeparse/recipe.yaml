@@ -2,46 +2,86 @@
 schema_version: 1
 
 context:
-  name: pytimeparse
   version: "1.1.8"
-  bundle: tar.gz
-  hash: e86136477be924d7e670646a98561957e8ca7308d44841e21f5ddea757556a0a
 
 package:
-  name: ${{ name|lower }}
+  name: pytimeparse
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
-  sha256: ${{ hash }}
-  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+  url: https://pypi.org/packages/source/p/pytimeparse/pytimeparse-${{ version }}.tar.gz
+  sha256: e86136477be924d7e670646a98561957e8ca7308d44841e21f5ddea757556a0a
 
 build:
   number: 0
   noarch: python
-  script: python -m pip install --no-deps --ignore-installed .
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
-  build:
-    - python
+  host:
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - pytimeparse
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: MIT
-  license_file: LICENSE.rst
-  summary: A small Python library to parse various kinds of time expressions
   homepage: https://github.com/wroberts/pytimeparse
-  repository: https://github.com/wroberts/pytimeparse
-  documentation: https://github.com/wroberts/pytimeparse
+  license: MIT
+  license_file: LICENSE
+  summary: Time expression parser
+  description: |
+    Time expression parser
 
 extra:
   recipe-maintainers:
     - pmlandwehr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytimeparse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytimeparse
+  cfe-purls:
+    - pkg:conda/pytimeparse@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytimeparse@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/wroberts/pytimeparse
+  cfe-import-names: [pytimeparse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pytimeparse-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-1.1.8
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-18T04:33:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-18T04:33:47Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-18T04:33:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####
