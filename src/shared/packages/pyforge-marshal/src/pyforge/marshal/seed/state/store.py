@@ -67,6 +67,27 @@ architecture's no-upward-imports rule). That is also why
 contract, and ``tests/unit/test_seed_state_store.py`` asserts the enum and
 the schema agree so the deliberate duplication cannot drift.
 
+**The opt-out API is four pure functions over an already-shipped key**
+(Story 8.5, FR-112/AD-58). ``opted_out`` shipped with S-10.2 and nothing
+consumed it: a maintainer who DELETED a managed region's markers was
+indistinguishable from one who never had the region, so the tool re-inserted
+it on the next run. ``opt_out_key`` / ``is_opted_out`` / ``record_opt_out`` /
+``clear_opt_out`` close that -- without a twelfth key, without a
+``schema.json`` edit, and without a state-schema migration. Both mutators are
+PURE (``dataclasses.replace``, never in-place), idempotent, and keep
+``opted_out`` sorted, so two runs recording the same pairs in different
+orders write byte-identical state. ``opt_out_key`` validates against the
+packaged schema's OWN ``properties.opted_out.items.pattern`` rather than a
+hand-copied regex and rather than importing
+``regions.markers.REGION_NAME_PATTERN`` -- the first would be a second
+spelling free to drift from the wire contract, and the second is not on this
+module's import surface at all (see above). ``record_opt_out`` also drops the
+artifact's ``managed[]`` claim for that region: with the claim retained, a
+"was installed once, markers now gone" derivation re-derives the opt-out on
+every later run, so ``clear_opt_out`` -- and the ``--reinstate`` path built on
+it -- could never take effect. Nothing here WRITES: a mutator returns a new
+``SeedState`` for a verb to persist through the existing ``write_state``.
+
 **Genesis never reads the Copier answers file.** FR-105/AD-52: state is the
 single source of truth for the answers, re-supplied to Copier via ``data=``
 on every render -- ``copier_data(state)`` is that projection. This module
@@ -87,7 +108,9 @@ that tolerance.
 
 from __future__ import annotations
 
+import dataclasses
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -709,6 +732,157 @@ def state_path(repo_root: Path) -> Path:
     by the packaged ``.gitignore`` region: FR-107 keeps state git-tracked,
     because it is how a fresh clone learns what the tool already owns."""
     return repo_root / ".marshal" / "seed-state.yml"
+
+
+@lru_cache(maxsize=1)
+def _opt_out_pattern() -> re.Pattern[str]:
+    """The packaged schema's OWN ``opted_out`` item pattern, compiled once
+    per process.
+
+    Read through ``_load_schema()`` (defined below; resolved at call time)
+    rather than transcribed here, so the runtime check and the wire contract
+    are one rule: a key this function accepts is a key ``write_state``'s own
+    validation accepts, permanently, without a second spelling free to drift.
+    Not an import of ``regions.markers.REGION_NAME_PATTERN`` either -- that
+    module is not on this one's import surface (module docstring), and it
+    covers only the region HALF of the key.
+
+    ``lru_cache`` here does NOT reintroduce the shared-mutable-object hazard
+    ``_load_schema`` documents: a compiled ``re.Pattern`` is immutable, so
+    every caller holding the same object can corrupt nothing for anyone else.
+    Only the pattern is cached; ``_load_schema`` itself still re-parses.
+
+    Matched with ``re.match``, not ``.fullmatch()``: the schema pattern is
+    already anchored at BOTH ends (``^`` ... ``(?![\\s\\S])``) -- see the
+    schema's own ``timestamp`` note on why the terminator is not a bare
+    ``$`` -- so re-anchoring it would state the same rule twice."""
+    return re.compile(_load_schema()["properties"]["opted_out"]["items"]["pattern"])
+
+
+def _opt_out_key_or_none(artifact_id: str, region: str) -> str | None:
+    """``f"{artifact_id}#{region}"`` if the schema's ``opted_out`` grammar
+    admits it, else ``None`` -- the one place the key is spelled.
+
+    Split out from ``opt_out_key`` because the two callers need OPPOSITE
+    handling of an inadmissible pair. Recording one is a caller-contract
+    violation and must raise; ASKING whether one is recorded has a
+    well-defined answer without raising -- no, because a key this grammar
+    rejects can never appear in a schema-valid ``opted_out`` list at all."""
+    key = f"{artifact_id}#{region}"
+    return key if _opt_out_pattern().match(key) is not None else None
+
+
+def opt_out_key(artifact_id: str, region: str) -> str:
+    """The wire spelling of one opt-out: ``<artifact-id>#<region>``.
+
+    Raises ``ValueError`` naming the offending pair when the rendered key
+    does not match the packaged schema's own ``opted_out`` item pattern --
+    a plain ``ValueError``, not a ``SeedError`` leaf, matching this module's
+    other caller-contract checks (``RegionSpanRecord.__post_init__``,
+    ``utc_timestamp``) and ``plan/build.py``'s own mismatched-argument
+    raise. Raising HERE rather than at ``write_state`` is the point: a
+    caller that mints an unrepresentable key learns it at the call that
+    minted it, not three layers later as an anonymous schema violation
+    against a document it can no longer explain.
+
+    The two halves fail for different reasons, both named by the message:
+    the artifact half must carry no whitespace and no ``#`` (the separator
+    itself), while the region half is ``regions.markers``'s marker-safe
+    token -- lowercase alnum, then alnum or hyphen -- so an opted-out region
+    name can always be rendered back into a real marker."""
+    key = _opt_out_key_or_none(artifact_id, region)
+    if key is None:
+        raise ValueError(
+            f"opt_out_key({_abbreviate(artifact_id)}, {_abbreviate(region)}): the"
+            " rendered key does not match the seed-state schema's opted_out pattern"
+            f" {_opt_out_pattern().pattern!r} -- the artifact half must carry no"
+            " whitespace and no '#', and the region half must be a marker-safe"
+            " token (lowercase alnum, then alnum or hyphen)"
+        )
+    return key
+
+
+def is_opted_out(state: SeedState | None, artifact_id: str, region: str) -> bool:
+    """Whether ``state`` records an opt-out for this artifact/region pair.
+
+    Takes ``SeedState | None``, unlike the two mutators below, because that
+    is the type ``read_state`` actually returns: a never-adopted repo has
+    recorded no opt-out for anything, which is a true and useful answer
+    (``False``), not a caller error every consumer would have to guard
+    around. The mutators cannot be tolerant the same way -- there is no
+    ``SeedState`` to derive a new one FROM.
+
+    An inadmissible pair answers ``False`` rather than raising, for the
+    reason ``_opt_out_key_or_none`` documents: such a key cannot appear in a
+    schema-valid ``opted_out`` at all, so "is it recorded?" is answerable
+    without minting it."""
+    if state is None:
+        return False
+    key = _opt_out_key_or_none(artifact_id, region)
+    return key is not None and key in state.opted_out
+
+
+def record_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState:
+    """Record an opt-out for one artifact/region pair, returning a NEW
+    ``SeedState`` -- ``dataclasses.replace``, never an in-place mutation of
+    a frozen value object (and never a write: persisting is the calling
+    verb's job, through the existing ``write_state``).
+
+    Two edits, not one. ``opted_out`` gains the key, DEDUPED and SORTED, so
+    recording the same pairs in two different orders writes byte-identical
+    state -- and so calling this twice is a no-op the second time.
+
+    ``managed`` LOSES the artifact's claim on that region: the entry whose
+    ``id`` is ``artifact_id`` AND whose ``inserted_region_span.name`` is
+    ``region``, both conditions, never either alone (a whole-file claim on
+    the same id, or a region claim on a DIFFERENT region of it, is
+    untouched). Relinquishing the claim is what makes ``clear_opt_out``
+    real: were it retained, the "installed once, markers now deleted"
+    derivation would re-derive this opt-out on every later run, so a
+    reinstate could never take effect and ``--reinstate`` would be inert.
+    Dropping the whole entry -- rather than nulling its span -- is forced by
+    ``ManagedArtifact``'s span-present-iff-hybrid invariant, which forbids a
+    hybrid claim with no span. AD-58 reads the same way: ``managed[]`` is
+    Genesis's claim on an artifact, and an opt-out withdraws it; the next
+    apply's insertion re-establishes it."""
+    key = opt_out_key(artifact_id, region)
+    return dataclasses.replace(
+        state,
+        managed=tuple(
+            artifact
+            for artifact in state.managed
+            if not (
+                artifact.id == artifact_id
+                and artifact.inserted_region_span is not None
+                and artifact.inserted_region_span.name == region
+            )
+        ),
+        opted_out=tuple(sorted(set(state.opted_out) | {key})),
+    )
+
+
+def clear_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState:
+    """Withdraw one recorded opt-out, returning a NEW ``SeedState`` -- the
+    mechanism S-10.6's ``adopt --reinstate`` calls, so a region the operator
+    opted out of is planned for insertion again on the next run.
+
+    Removes ONLY the ``opted_out`` key; the ``managed[]`` claim
+    ``record_opt_out`` dropped is deliberately NOT reconstructed here. A
+    claim records what the tool actually installed (``body_sha``, the
+    inserted span's real byte offsets) -- facts a reinstate does not yet
+    have, because nothing has been inserted. The next apply re-establishes
+    the claim from the write it actually performs.
+
+    Idempotent: clearing a pair that is not recorded returns an equal
+    ``SeedState``. Keeps ``opted_out`` sorted for the same byte-identity
+    reason ``record_opt_out`` does. Raises the same ``ValueError`` as
+    ``opt_out_key`` for an inadmissible pair -- a caller asking to clear a
+    key that could never have been stored is stating a contract violation,
+    not observing an empty result."""
+    key = opt_out_key(artifact_id, region)
+    return dataclasses.replace(
+        state, opted_out=tuple(sorted(entry for entry in state.opted_out if entry != key))
+    )
 
 
 @lru_cache(maxsize=1)

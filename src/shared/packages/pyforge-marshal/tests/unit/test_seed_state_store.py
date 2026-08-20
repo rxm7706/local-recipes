@@ -1,6 +1,6 @@
-"""Unit tests for ``pyforge.marshal.seed.state.store`` (Story 10.2) --
-covers every row of the spec's I/O & Edge-Case Matrix (round-trip, never
-adopted, schema violation, malformed input, invalid state written,
+"""Unit tests for ``pyforge.marshal.seed.state.store`` (Stories 10.2 and
+8.5) -- covers every row of the spec's I/O & Edge-Case Matrix (round-trip,
+never adopted, schema violation, malformed input, invalid state written,
 mid-apply failure, guarded path) plus the five acceptance criteria:
 FR-103's do-not-hand-edit header, ``StateInvalid``-and-only-``StateInvalid``
 on the read path with ``SeedError`` still closed at six leaves, AD-58's
@@ -19,6 +19,14 @@ temp file and then raises) rather than replacing the write wholesale, so a
 temp file genuinely exists when the fault fires and "no ``.tmp`` residue"
 is a fact about ``atomic_write``'s cleanup rather than true by
 construction.
+
+Story 8.5 appends the opt-out section at the end of this file, covering
+that story's own store rows: the malformed pair (both halves), idempotence
+of both mutators, ``opted_out`` kept sorted and deduped so two recording
+orders write byte-identical state, the ``managed[]`` claim drop and its
+two near-misses, the reinstate round trip, and the eleven-key round trip
+after a recording. It imports the ``state`` PACKAGE as well, so the
+re-export list can be asserted rather than assumed.
 """
 
 from __future__ import annotations
@@ -31,6 +39,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+import pyforge.marshal.seed.state as state_package
 import pytest
 import yaml
 from jsonschema import Draft202012Validator
@@ -46,8 +55,12 @@ from pyforge.marshal.seed.state.store import (
     ManagedArtifact,
     RegionSpanRecord,
     SeedState,
+    clear_opt_out,
     copier_data,
+    is_opted_out,
+    opt_out_key,
     read_state,
+    record_opt_out,
     seed_model_version,
     state_path,
     utc_timestamp,
@@ -1319,3 +1332,313 @@ def test_state_file_is_not_git_ignored_by_the_packaged_template():
     assert ".marshal/plan.json" in rules
     assert not [rule for rule in rules if "seed-state" in rule]
     assert not [rule for rule in rules if rule.rstrip("/") == ".marshal"]
+
+
+# --- Story 8.5: the opt-out API ---------------------------------------------
+#
+# `_sample_state()` already ships an `agents-md` hybrid claim whose recorded
+# span is named "tiers", plus `opted_out=("agents-md#tiers",)` -- so the
+# fixture below deliberately clears `opted_out` whenever a test needs to
+# RECORD something that is not already recorded.
+
+
+def _clean_state(**overrides: Any) -> SeedState:
+    """``_sample_state()`` with nothing opted out yet -- the state a repo is
+    in before a maintainer deletes any markers. ``setdefault``, so a caller
+    may still supply its own ``opted_out``."""
+    overrides.setdefault("opted_out", ())
+    return _sample_state(**overrides)
+
+
+# --- opt_out_key: the wire spelling and its one validation ------------------
+
+
+def test_opt_out_key_renders_the_artifact_and_region_halves_around_a_hash():
+    assert opt_out_key("agents-md", "tiers") == "agents-md#tiers"
+
+
+@pytest.mark.parametrize(
+    "artifact_id",
+    ["bmad.method", "AGENTS.md", "a_b", "10.2"],
+)
+def test_opt_out_key_is_as_permissive_as_a_managed_id_on_the_artifact_half(artifact_id):
+    """``managed[].id`` is a ``nonBlankString`` (``model/manifest.py``
+    imposes no kebab rule on entry ids), so a legally-named entry must never
+    have an UNREPRESENTABLE opt-out -- the one thing this key must not do."""
+    assert opt_out_key(artifact_id, "tiers") == f"{artifact_id}#tiers"
+
+
+@pytest.mark.parametrize(
+    ("artifact_id", "region"),
+    [
+        pytest.param("a b", "tiers", id="artifact-half-carries-whitespace"),
+        pytest.param("a\tb", "tiers", id="artifact-half-carries-a-tab"),
+        pytest.param("a#b", "tiers", id="artifact-half-carries-the-separator"),
+        pytest.param("", "tiers", id="artifact-half-empty"),
+        pytest.param("agents-md", "Tiers", id="region-half-not-lowercase"),
+        pytest.param("agents-md", "-tiers", id="region-half-starts-with-a-hyphen"),
+        pytest.param("agents-md", "two words", id="region-half-carries-whitespace"),
+        pytest.param("agents-md", "", id="region-half-empty"),
+        pytest.param("agents-md", "tiers\n", id="region-half-carries-a-trailing-newline"),
+    ],
+)
+def test_opt_out_key_raises_value_error_naming_the_offending_pair(artifact_id, region):
+    with pytest.raises(ValueError, match="opt_out_key") as excinfo:
+        opt_out_key(artifact_id, region)
+    message = str(excinfo.value)
+    assert repr(artifact_id) in message
+    assert repr(region) in message
+
+
+def test_opt_out_key_validates_against_the_packaged_schemas_own_pattern():
+    """Not a second hand-copied regex: the message quotes the pattern the
+    schema itself carries, so the runtime check and the wire contract cannot
+    drift into two different grammars for one key."""
+    pattern = store._load_schema()["properties"]["opted_out"]["items"]["pattern"]
+    with pytest.raises(ValueError, match=re.escape(repr(pattern))):
+        opt_out_key("a b", "tiers")
+
+
+def test_every_key_opt_out_key_accepts_is_a_key_write_state_accepts(tmp_path):
+    """The pairing stated end to end: a key minted here always survives
+    ``write_state``'s own schema validation and reads back identically."""
+    keys = tuple(
+        sorted(
+            opt_out_key(artifact_id, region)
+            for artifact_id, region in (
+                ("agents-md", "tiers"),
+                ("bmad.method", "model-badge"),
+                ("AGENTS.md", "r1"),
+            )
+        )
+    )
+    state = _clean_state(opted_out=keys)
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert read_state(tmp_path) == state
+
+
+def test_the_compiled_pattern_is_cached_without_sharing_a_mutable_object():
+    """``_load_schema`` hands out a fresh dict per call precisely so no
+    caller can poison another's validation; caching the COMPILED pattern
+    does not reopen that, because a ``re.Pattern`` is immutable."""
+    first = store._opt_out_pattern()
+    assert first is store._opt_out_pattern()
+    assert first.pattern == store._load_schema()["properties"]["opted_out"]["items"]["pattern"]
+
+
+# --- is_opted_out: a read, never a raise ------------------------------------
+
+
+def test_is_opted_out_is_true_for_a_recorded_pair():
+    assert is_opted_out(_sample_state(), "agents-md", "tiers") is True
+
+
+def test_is_opted_out_is_false_for_an_unrecorded_pair():
+    assert is_opted_out(_sample_state(), "agents-md", "model-badge") is False
+
+
+def test_is_opted_out_is_false_for_a_never_adopted_repo():
+    """``read_state`` returns ``None`` for a repo that was never adopted,
+    which has recorded no opt-out for anything -- a true answer, not a
+    caller error every consumer would have to guard around."""
+    assert is_opted_out(None, "agents-md", "tiers") is False
+
+
+def test_is_opted_out_is_false_rather_than_raising_for_an_unspellable_pair():
+    """A key the schema's grammar rejects can never appear in a
+    schema-valid ``opted_out`` at all, so "is it recorded?" is answerable
+    without minting it -- unlike ``record``/``clear``, which must raise."""
+    assert is_opted_out(_sample_state(), "a b", "tiers") is False
+
+
+# --- record_opt_out: sorted, deduped, and the managed[] claim drop ----------
+
+
+def test_record_opt_out_adds_the_key():
+    state = record_opt_out(_clean_state(), "dream-template", "tiers")
+    assert state.opted_out == ("dream-template#tiers",)
+
+
+def test_record_opt_out_keeps_opted_out_sorted():
+    state = _clean_state()
+    for region in ("zulu", "alpha", "mike"):
+        state = record_opt_out(state, "dream-template", region)
+    assert state.opted_out == (
+        "dream-template#alpha",
+        "dream-template#mike",
+        "dream-template#zulu",
+    )
+
+
+def test_two_recording_orders_write_byte_identical_state(tmp_path):
+    """The reason ``opted_out`` is sorted rather than appended: two runs
+    recording the same pairs in different orders must produce the same
+    file, byte for byte, or every state diff carries meaningless churn."""
+    forward = _clean_state()
+    for region in ("alpha", "mike", "zulu"):
+        forward = record_opt_out(forward, "dream-template", region)
+    backward = _clean_state()
+    for region in ("zulu", "mike", "alpha"):
+        backward = record_opt_out(backward, "dream-template", region)
+
+    one = tmp_path / "one"
+    two = tmp_path / "two"
+    one.mkdir()
+    two.mkdir()
+    write_state(forward, repo_root=one, never_write=_NO_PATTERNS)
+    write_state(backward, repo_root=two, never_write=_NO_PATTERNS)
+
+    assert state_path(one).read_bytes() == state_path(two).read_bytes()
+
+
+def test_record_opt_out_is_idempotent():
+    once = record_opt_out(_clean_state(), "dream-template", "tiers")
+    assert record_opt_out(once, "dream-template", "tiers") == once
+
+
+def test_record_opt_out_does_not_mutate_the_state_it_was_given():
+    """Pure, via ``dataclasses.replace`` -- never an in-place edit of a
+    frozen value object a caller may still be holding."""
+    original = _clean_state()
+    snapshot = dataclasses.replace(original)
+    record_opt_out(original, "dream-template", "tiers")
+    assert original == snapshot
+    assert original.opted_out == ()
+
+
+def test_record_opt_out_drops_the_managed_claim_for_that_region():
+    """The AC's real mechanism: with the claim retained, "installed once,
+    markers now gone" re-derives the opt-out on every later run, so
+    ``clear_opt_out`` -- and ``--reinstate`` -- could never take effect."""
+    before = _clean_state()
+    assert [artifact.id for artifact in before.managed] == ["agents-md", "dream-template"]
+
+    after = record_opt_out(before, "agents-md", "tiers")
+
+    assert [artifact.id for artifact in after.managed] == ["dream-template"]
+    assert after.opted_out == ("agents-md#tiers",)
+
+
+def test_record_opt_out_leaves_a_whole_file_claim_on_a_different_id_untouched():
+    after = record_opt_out(_clean_state(), "agents-md", "tiers")
+    (survivor,) = after.managed
+    assert survivor.id == "dream-template"
+    assert survivor.inserted_region_span is None
+
+
+def test_record_opt_out_leaves_a_claim_on_a_different_region_of_the_same_id():
+    """Both halves of the match are required -- the id AND the recorded
+    span's name. A claim on ANOTHER region of the same artifact says nothing
+    about this one."""
+    before = _clean_state()
+    after = record_opt_out(before, "agents-md", "model-badge")
+    assert [artifact.id for artifact in after.managed] == ["agents-md", "dream-template"]
+    assert after.opted_out == ("agents-md#model-badge",)
+
+
+def test_record_opt_out_leaves_a_whole_file_claim_on_the_same_id_untouched():
+    """A ``managed[]`` entry with no recorded span is a whole-file claim,
+    never a region one -- dropping it on a region opt-out would silently
+    withdraw Genesis's claim on a whole artifact."""
+    whole_file_claim = ManagedArtifact(
+        id="agents-md",
+        path="AGENTS.md",
+        artifact_class="copied-managed",
+        body_sha="0123abcd",
+        inserted_region_span=None,
+    )
+    before = _clean_state(managed=(whole_file_claim,))
+    after = record_opt_out(before, "agents-md", "tiers")
+    assert after.managed == (whole_file_claim,)
+
+
+def test_record_opt_out_raises_for_a_malformed_pair():
+    with pytest.raises(ValueError, match="opt_out_key"):
+        record_opt_out(_clean_state(), "a b", "tiers")
+
+
+# --- clear_opt_out: the reinstate mechanism S-10.6 calls --------------------
+
+
+def test_clear_opt_out_removes_the_pair():
+    recorded = record_opt_out(_clean_state(), "dream-template", "tiers")
+    assert clear_opt_out(recorded, "dream-template", "tiers").opted_out == ()
+
+
+def test_clear_opt_out_is_idempotent_on_a_pair_that_was_never_recorded():
+    state = _clean_state()
+    assert clear_opt_out(state, "dream-template", "tiers") == state
+
+
+def test_clear_opt_out_leaves_every_other_recorded_pair_alone():
+    state = _clean_state()
+    for region in ("alpha", "mike", "zulu"):
+        state = record_opt_out(state, "dream-template", region)
+    cleared = clear_opt_out(state, "dream-template", "mike")
+    assert cleared.opted_out == ("dream-template#alpha", "dream-template#zulu")
+
+
+def test_clear_opt_out_does_not_reconstruct_the_dropped_managed_claim():
+    """A claim records what the tool actually INSTALLED (a real body_sha, a
+    real span); a reinstate has none of those facts yet. The next apply
+    re-establishes the claim from the write it performs."""
+    recorded = record_opt_out(_clean_state(), "agents-md", "tiers")
+    cleared = clear_opt_out(recorded, "agents-md", "tiers")
+    assert [artifact.id for artifact in cleared.managed] == ["dream-template"]
+
+
+def test_record_then_clear_returns_the_original_minus_the_dropped_claim():
+    """The reinstate round trip, stated as an equality against a state built
+    without the claim at all."""
+    before = _clean_state()
+    expected = dataclasses.replace(
+        before, managed=tuple(a for a in before.managed if a.id != "agents-md")
+    )
+    round_tripped = clear_opt_out(record_opt_out(before, "agents-md", "tiers"), "agents-md", "tiers")
+    assert round_tripped == expected
+
+
+def test_clear_opt_out_does_not_mutate_the_state_it_was_given():
+    original = _sample_state()
+    snapshot = dataclasses.replace(original)
+    clear_opt_out(original, "agents-md", "tiers")
+    assert original == snapshot
+    assert original.opted_out == ("agents-md#tiers",)
+
+
+def test_clear_opt_out_raises_for_a_malformed_pair():
+    with pytest.raises(ValueError, match="opt_out_key"):
+        clear_opt_out(_sample_state(), "agents-md", "Tiers")
+
+
+# --- AC: a recording still round-trips through the eleven-key schema --------
+
+
+def test_state_written_after_record_opt_out_round_trips_with_eleven_keys(tmp_path):
+    state = record_opt_out(_clean_state(), "agents-md", "tiers")
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+
+    assert read_state(tmp_path) == state
+    document = yaml.safe_load(state_path(tmp_path).read_text(encoding="utf-8"))
+    assert tuple(document) == STATE_KEYS
+    assert len(document) == 11
+    assert document["opted_out"] == ["agents-md#tiers"]
+
+
+def test_no_opt_out_helper_added_a_twelfth_state_key():
+    """The story's own Never bullet, asserted rather than trusted: four pure
+    functions over an ALREADY-shipped key, no schema edit, no migration."""
+    state = record_opt_out(_clean_state(), "agents-md", "tiers")
+    assert tuple(state.to_json_dict()) == STATE_KEYS
+    assert tuple(clear_opt_out(state, "agents-md", "tiers").to_json_dict()) == STATE_KEYS
+
+
+def test_the_four_opt_out_helpers_are_re_exported_from_the_state_package():
+    for name in ("opt_out_key", "is_opted_out", "record_opt_out", "clear_opt_out"):
+        assert name in state_package.__all__
+        assert getattr(state_package, name) is getattr(store, name)
+    assert len(set(state_package.__all__)) == len(state_package.__all__)
+    # ``__all__``'s established convention here is type names first, then
+    # the function names in sorted order -- the group the four join.
+    functions = [name for name in state_package.__all__ if name[0].islower()]
+    assert functions == sorted(functions)
