@@ -96,6 +96,7 @@ story).
 from __future__ import annotations
 
 import json
+from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -241,11 +242,26 @@ class _Pendency:
     makes the rule say what it means: suppress only when the emptiness was
     CAUSED by opt-outs.
 
+    `retained` is the third fact, and it is what stops the suppression rule
+    from firing on a file the tool STILL OWNS CONTENT IN (review finding,
+    confirmed by execution). `not_present`/`pending` describe only the
+    regions a run OWES; a hybrid entry declaring `tiers` (present, inserted
+    by Genesis, not opted out) and `model-badge` (absent, opted out) owes
+    nothing after opt-outs -- `not_present == (model-badge,)`, `pending ==
+    ()` -- and so satisfied both earlier conditions and vanished from
+    `actions` AND `artifact_hashes`, taking `CLAUDE.md` out of the
+    `RepoFingerprint` while a live managed region sat inside it. Hand-
+    editing that region's body afterwards produced no `fingerprint_drift`
+    at all. `_is_fully_opted_out`'s consent argument ("no managed content
+    left in it to drift") is only true when NOTHING is retained, which is
+    exactly what this field measures.
+
     Frozen, like every other value object in this package (`Plan`,
     `Action`, `RepoFingerprint`, `fs.NeverWrite`)."""
 
     not_present: tuple[Region, ...]
     pending: tuple[Region, ...]
+    retained: tuple[Region, ...]
 
 
 def _pendency(
@@ -279,7 +295,9 @@ def _pendency(
     `parse_regions` does not find (present but structurally non-conformant,
     so some -- not necessarily all -- declared regions are missing, and
     possibly none of them). `pending` is `not_present` minus the opted-out
-    ones."""
+    ones, and `retained` is the complement of `not_present` minus the
+    opted-out ones -- the regions that ARE in the file and that no opt-out
+    has released, i.e. the managed content this entry still holds."""
     if entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
         return None
     # ManifestEntry.__post_init__ guarantees a hybrid-managed-region entry
@@ -297,12 +315,19 @@ def _pendency(
             )
     except (RegionParseError, MarkerError, NotImplementedError):
         return None
+    not_present_names = {region.name for region in not_present}
     return _Pendency(
         not_present=not_present,
         pending=tuple(
             region
             for region in not_present
             if not _is_opted_out(entry.id, region.name, opted_out)
+        ),
+        retained=tuple(
+            region
+            for region in entry.regions
+            if region.name not in not_present_names
+            and not _is_opted_out(entry.id, region.name, opted_out)
         ),
     )
 
@@ -313,8 +338,9 @@ def _is_fully_opted_out(pendency: _Pendency | None) -> bool:
 
     Requires a real verdict (`None` is never suppressed -- a whole-file
     entry declares no regions, and an unparseable file must not be guessed
-    at), a NON-EMPTY `not_present` (something actually had to be owed), and
-    an empty `pending` (all of it opted out). An entry with nothing owed
+    at), a NON-EMPTY `not_present` (something actually had to be owed), an
+    empty `pending` (all of it opted out), and an empty `retained` (nothing
+    the tool still owns is left in the file). An entry with nothing owed
     keeps the `Action` it produced before Story 8.5, `chosen_anchor == ()`
     and all -- see `_Pendency` for what suppressing it would have cost.
 
@@ -325,10 +351,19 @@ def _is_fully_opted_out(pendency: _Pendency | None) -> bool:
     `_Pendency` describes: a maintainer who opted every declared region out
     has taken the file out of the tool's supervision by their own
     deliberate act (FR-112), so there is no managed content left in it to
-    drift. The difference from the nothing-owed case is exactly consent.
-    The absence itself going unrecorded in `plan.json` is the separate,
-    real gap tracked as `DW-FU-8-5`."""
-    return pendency is not None and bool(pendency.not_present) and not pendency.pending
+    drift. The difference from the nothing-owed case is exactly consent --
+    and the `retained` clause is what makes that sentence TRUE rather than
+    merely intended: without it a PARTIALLY opted-out entry, still holding
+    a live managed region, satisfied the other three conditions and paid
+    the same cost without having consented to it (review finding,
+    `_Pendency`). The absence itself going unrecorded in `plan.json` is the
+    separate, real gap tracked as `DW-FU-8-5`."""
+    return (
+        pendency is not None
+        and bool(pendency.not_present)
+        and not pendency.pending
+        and not pendency.retained
+    )
 
 
 def _chosen_anchor(
@@ -452,19 +487,43 @@ def build_plan(
     unnamed `KeyError` instead of the named, context-carrying `ValueError`
     every other caller-contract violation in this package reports).
 
-    Raises `ValueError` for an `opted_out` that is not a set, for the same
-    reason `opt_out_key_or_none` re-checks its own two halves: a type hint
-    is not runtime enforcement, and the failure here is SILENT rather than
-    loud. `in` against a bare `str` is substring containment, so passing
-    one key as a string instead of a one-element set makes every key that
-    happens to be a substring of it -- and, for a single-region entry, the
-    key itself -- read as opted out, dropping entries from `actions` AND
-    from `artifact_hashes` with no error at any layer."""
-    if not isinstance(opted_out, (set, frozenset)):
+    Raises `ValueError` for an `opted_out` that cannot answer `in` the way
+    a key set does, for the same reason `opt_out_key_or_none` re-checks its
+    own two halves: a type hint is not runtime enforcement, and the failure
+    here is SILENT rather than loud.
+
+    The guard tests the two things that actually go wrong, not the declared
+    type (review finding, confirmed by execution). A bare `str` (or
+    `bytes`) is the silent hazard: `in` against one is SUBSTRING
+    containment, so passing one key as a string instead of a one-element
+    set makes every key that happens to be a substring of it -- and, for a
+    single-region entry, the key itself -- read as opted out, dropping
+    entries from `actions` AND from `artifact_hashes` with no error at any
+    layer. Non-`str` ELEMENTS are the other one: a `frozenset` of
+    `(id, region)` PAIRS is the right container holding the wrong thing,
+    matches no key, and silently suppresses nothing.
+
+    Any other `Collection` of `str` is accepted, `frozenset` or not. The
+    earlier revision demanded `set`/`frozenset` and rejected `tuple`,
+    `list` and `dict.keys()` -- including `state.opted_out`'s OWN declared
+    type, so `build_plan(m, i, opted_out=state.opted_out)` hard-failed --
+    citing substring containment as the reason, which is false for every
+    one of them: `in` is exact membership there. Rejecting a correct
+    argument with an incorrect diagnosis is worse than accepting it."""
+    if isinstance(opted_out, (str, bytes)) or not isinstance(opted_out, Collection):
         raise ValueError(
-            "build_plan(opted_out=...) must be a set of opt_out_key strings, not "
+            "build_plan(opted_out=...) must be a collection of opt_out_key strings, not "
             f"{type(opted_out).__name__} -- `in` against a bare str is substring "
             "containment and would silently suppress entries"
+        )
+    non_strings = sorted(
+        {type(key).__name__ for key in opted_out if not isinstance(key, str)}
+    )
+    if non_strings:
+        raise ValueError(
+            "build_plan(opted_out=...) must hold rendered opt_out_key strings; got "
+            f"element type(s) {non_strings!r} -- a non-str element matches no key "
+            "and would silently suppress nothing"
         )
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     unknown_ids = sorted(

@@ -131,9 +131,9 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType({
         "successor by hand when ready."
     ),
     FindingType.OPTED_OUT: (
-        "Informational -- the tool will not re-insert this region. To bring "
-        "it back under management, run `marshal seed adopt --reinstate "
-        "<artifact>#<region>`."
+        "Informational -- while this opt-out stands the tool will not "
+        "re-insert this region. To bring it back under management, run "
+        "`marshal seed adopt --reinstate <artifact>#<region>`."
     ),
 })
 

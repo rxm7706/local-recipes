@@ -50,6 +50,7 @@ from pyforge.marshal.seed.regions.markers import (
     render_begin,
     render_end,
 )
+from pyforge.marshal.seed.regions.parse import parse_regions
 from pyforge.marshal.seed.state import (
     ManagedArtifact,
     RegionSpanRecord,
@@ -193,13 +194,24 @@ def test_a_never_adopted_repo_classifies_every_declared_region_missing():
 def test_a_recorded_opt_out_is_sticky_once_the_managed_claim_is_gone():
     """``record_opt_out`` drops the ``managed[]`` claim, so rung 3 can no
     longer fire -- rung 2 (the recorded key) is what keeps the opt-out
-    permanent, which is the whole reason the ladder has both."""
+    permanent, which is the whole reason the ladder has both.
+
+    Driven through the REAL ``record_opt_out`` (review finding): this used
+    to build the post-record state by hand as
+    ``_state(opted_out=("agents-md#tiers",))``, whose ``managed`` defaults
+    to ``()``, so ``assert state.managed == ()`` asserted the fixture's own
+    default and would have kept passing if the mutator stopped dropping
+    claims altogether -- the very vacuity this file removed elsewhere."""
     entry = _hybrid("agents-md", "AGENTS.md", "tiers")
-    state = _state(opted_out=("agents-md#tiers",))
+    installed = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    state = record_opt_out(installed, "agents-md", "tiers")
+
+    assert state.opted_out == ("agents-md#tiers",)
+    assert state.managed == ()
 
     (status,) = classify_regions(entry, _doc("intro"), state)
 
-    assert state.managed == ()
     assert status.disposition is RegionDisposition.OPTED_OUT
 
 
@@ -395,6 +407,108 @@ def test_a_whitespace_only_text_never_derives_an_opt_out_either(text):
     (status,) = classify_regions(entry, text, state)
 
     assert status.disposition is RegionDisposition.MISSING
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("\ufeff", id="utf-8-bom-only"),
+        pytest.param("\u200b", id="zero-width-space-only"),
+        pytest.param("\x00", id="nul-only"),
+        pytest.param("\ufeff\n \t", id="bom-plus-whitespace"),
+    ],
+)
+def test_an_invisible_only_text_never_derives_an_opt_out_either(text):
+    """Review finding, confirmed by execution: ``str.strip()`` removes
+    whitespace and NOTHING else, so the previous ``bool(text.strip())``
+    guard was bypassed by three bytes. ``Path.write_text("",
+    encoding="utf-8-sig")`` -- an "empty" file by every ordinary reckoning
+    -- reads back as ``"\\ufeff"`` and retired every claimed region of it
+    PERMANENTLY, which is precisely the failure the guard had just been
+    widened from ``bool(text)`` to prevent. ``_has_content`` asks the
+    question by Unicode category (``Cc``/``Cf``) instead, so the whole
+    class is covered rather than the members that happened to be tested."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.MISSING
+
+
+def test_a_region_whose_markers_survive_inside_a_fence_is_never_derived_opted_out():
+    """Review finding, confirmed by execution: rung 3's premise is "the
+    markers are GONE", but it was testing ``parse_regions``'s narrower "no
+    span was FOUND".
+
+    ``parse_regions`` skips fenced lines BY DESIGN -- a managed region's own
+    body may document the marker grammar, and honoring such a line is the
+    AR-1 corruption fence-awareness exists to prevent -- so a real region a
+    maintainer later wrapped in a closed ``` fence is invisible to it while
+    sitting, markers and all, in the file. Rung 3 read that as a deletion
+    and handed the pair to ``opt_outs_to_record``, permanently retiring a
+    LIVE region. The surviving marker line is now consulted directly,
+    through ``markers.parse_marker_line``'s own grammar."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    text = _doc("intro", "```", *_rendered_region("tiers"), "```", "outro")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    # The premise of the test: the parser does not see it, the file has it.
+    assert parse_regions(text, RegionFormat.HTML) == ()
+    assert "marshal-seed:begin" in text
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.MISSING
+    assert opt_outs_to_record((status,)) == ()
+
+
+def test_a_fenced_marker_for_a_DIFFERENT_region_does_not_block_this_one():
+    """The surviving-marker gate is per region NAME, not per file: a file
+    whose fenced code block documents ``model-badge``'s markers still lets
+    a genuinely deleted ``tiers`` derive its opt-out."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    text = _doc("intro", "```", *_rendered_region("model-badge"), "```", "outro")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.OPTED_OUT
+
+
+def test_a_malformed_marker_line_is_skipped_rather_than_degrading_the_entry():
+    """``_marker_region_names`` swallows ``MarkerError`` per line for the
+    same reason ``parse_regions`` skips the line: a fenced block documenting
+    a MALFORMED marker is legitimate content, and letting it degrade the
+    whole entry to ``()`` would silence every legitimate finding the file
+    should produce."""
+    entry = _hybrid("agents-md", "AGENTS.md", "tiers")
+    text = _doc("intro", "```", "<!-- marshal-seed:begin nonsense -->", "```", "outro")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    (status,) = classify_regions(entry, text, state)
+
+    assert status.disposition is RegionDisposition.OPTED_OUT
+
+
+def test_a_claim_recorded_against_a_different_path_is_never_derived_from():
+    """Review finding, confirmed by execution. AD-55 makes ``id``, not
+    ``path``, the stable address, so a manifest entry's ``path`` can move
+    while its ``id`` does not and state's claim still names the OLD path.
+    Matching on ``id`` alone derived an opt-out for a path that never
+    carried the region, and ``record_opt_out`` would then have dropped the
+    claim describing the region still installed at the old path."""
+    moved = _hybrid("agents-md", "docs/AGENTS.md", "tiers")
+    state = _state(managed=(_region_claim("agents-md", "AGENTS.md", "tiers"),))
+
+    (status,) = classify_regions(moved, _doc("intro"), state)
+
+    assert status.disposition is RegionDisposition.MISSING
+
+    # ...and the unmoved entry, same state, still derives normally.
+    unmoved = _hybrid("agents-md", "AGENTS.md", "tiers")
+    (same_path,) = classify_regions(unmoved, _doc("intro"), state)
+    assert same_path.disposition is RegionDisposition.OPTED_OUT
 
 
 def test_a_pair_the_opt_out_grammar_cannot_spell_is_never_derived_opted_out():

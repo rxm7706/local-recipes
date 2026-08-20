@@ -983,8 +983,104 @@ def test_a_bare_str_opted_out_is_refused_rather_than_read_as_substrings(tmp_path
     manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
     inventory = classify(manifest, tmp_path)
 
-    with pytest.raises(ValueError, match="must be a set of opt_out_key strings"):
+    with pytest.raises(ValueError, match="must be a collection of opt_out_key strings"):
         build_plan(manifest, inventory, opted_out="h#tiers")  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="must be a collection of opt_out_key strings"):
+        build_plan(manifest, inventory, opted_out=b"h#tiers")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "container",
+    [
+        pytest.param(("h#tiers",), id="tuple-state-opted-outs-own-type"),
+        pytest.param(["h#tiers"], id="list"),
+        pytest.param({"h#tiers": None}.keys(), id="dict-keys"),
+    ],
+)
+def test_any_collection_of_key_strings_suppresses_the_same_way(tmp_path, container):
+    """Review finding, confirmed by execution: the guard used to demand
+    `set`/`frozenset` and rejected `tuple`, `list` and `dict.keys()` --
+    including `SeedState.opted_out`'s OWN declared type, so the natural
+    `build_plan(m, i, opted_out=state.opted_out)` hard-failed -- citing
+    substring containment as the reason, which is false for all three:
+    `in` is exact membership there. Only `str`/`bytes` have the substring
+    hazard, and only they are refused."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=container)  # type: ignore[arg-type]
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
+
+
+def test_a_non_str_element_is_refused_rather_than_silently_matching_nothing(tmp_path):
+    """The other half of the same review finding: the right container
+    holding the wrong thing. A `frozenset` of `(id, region)` PAIRS passed
+    the old container check, matched no rendered key, and silently
+    suppressed nothing -- exactly the silent failure the guard exists to
+    turn loud."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    with pytest.raises(ValueError, match="must hold rendered opt_out_key strings"):
+        build_plan(
+            manifest,
+            inventory,
+            opted_out=frozenset({("h", "tiers")}),  # type: ignore[arg-type]
+        )
+
+
+def test_a_partially_opted_out_hybrid_keeps_its_action_and_its_fingerprint(tmp_path):
+    """Review finding, confirmed by execution and by reverting the guard.
+
+    `_is_fully_opted_out` fired on "every region a run OWES is opted out",
+    not "every region is opted out". A `CLAUDE.md` declaring `tiers`
+    (present, conformant, tool-installed) and `model-badge` (absent, opted
+    out) owed nothing after opt-outs, so it vanished from `actions` AND
+    `artifact_hashes` -- taking the file out of the `RepoFingerprint` while
+    a LIVE managed region sat inside it, and leaving `fingerprint_drift`
+    blind to every later change to it. The consent argument
+    `_is_fully_opted_out`'s docstring makes ("no managed content left in it
+    to drift") was simply untrue on that path."""
+    (tmp_path / "CLAUDE.md").write_text(
+        _hybrid_text("tiers"), encoding="utf-8", newline=""
+    )
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "model-badge")}))
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    # The opted-out region is not proposed for insertion...
+    assert action.chosen_anchor == ()
+    # ...but the file keeps its fingerprint pair, so the live `tiers`
+    # region stays under `fingerprint_drift`'s eye.
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+    (tmp_path / "CLAUDE.md").write_text(
+        _hybrid_text("tiers").replace("line1", "TAMPERED"), encoding="utf-8", newline=""
+    )
+    assert fingerprint_drift(plan, tmp_path) != ()
+
+
+def test_an_entry_whose_every_declared_region_is_opted_out_is_still_suppressed(tmp_path):
+    """The `retained` guard above narrows suppression; it must not abolish
+    it. Both declared regions opted out, neither in the file: nothing is
+    owed and nothing is retained, so FR-112's suppression still fires."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(
+        manifest,
+        inventory,
+        opted_out=frozenset({opt_out_key("h", "tiers"), opt_out_key("h", "model-badge")}),
+    )
+
+    assert plan.actions == ()
+    assert plan.repo_fingerprint.artifact_hashes == ()
 
 
 @pytest.mark.parametrize(

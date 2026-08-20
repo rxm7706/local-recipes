@@ -108,6 +108,20 @@ def test_the_opted_out_remedy_names_the_real_reinstate_mechanism():
     assert "skip glob" not in remedy
 
 
+def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
+    """Review finding: the remedy and the message it prints beside are one
+    report, and they disagreed. ``detect/optout.py::region_findings``
+    deliberately hedges its message to "while this opt-out stands ... will
+    not re-insert" -- because a DERIVED opt-out under a read-only ``check``
+    is not durable until a mutating verb records it (FR-88) -- and
+    ``test_the_opted_out_message_does_not_promise_a_durability_it_cannot_know``
+    pins that. The remedy went on making the flat unconditional promise
+    directly underneath it."""
+    remedy = REMEDIES[FindingType.OPTED_OUT]
+    assert "while this opt-out stands" in remedy
+    assert "Informational -- the tool will not re-insert" not in remedy
+
+
 def test_finding_type_is_exactly_the_12_members_the_epics_ac_names():
     # A count-only check would still pass a typo'd/renamed member -- pin the
     # exact kebab-case value set the epics AC names.

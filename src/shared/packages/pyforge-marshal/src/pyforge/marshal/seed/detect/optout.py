@@ -14,10 +14,13 @@ three things is true.
 
 **Why the join lives in ``detect/`` and not in ``regions/parse.py``.** Its
 two inputs sit in peer modules that must not import each other --
-``regions/`` is deliberately dependency-light (and an import-linter contract
-already forbids one direction of that edge), while ``state/store.py``'s
+``regions/`` is deliberately dependency-light, and ``state/store.py``'s
 import surface is AST-guarded and admits no ``detect``/``regions`` name at
-all. ``detect/`` is the first layer above both in the architecture's chain
+all. (Only the second of those two has mechanical enforcement. An earlier
+revision claimed "an import-linter contract already forbids one direction
+of that edge"; the sole ``regions`` contract in ``pyproject.toml`` forbids
+``seed.regions -> seed.model.manifest``, Story 8.4's package-cycle guard,
+and says nothing about ``regions``/``state`` -- review finding.) ``detect/`` is the first layer above both in the architecture's chain
 (``cli -> verbs -> detect|plan -> model|state|regions``), and the vocabulary
 the answer is reported in -- ``opted-out`` versus ``managed-region-missing``
 -- is ``detect/findings.py``'s, which ``regions/parse.py`` cannot import
@@ -34,19 +37,25 @@ design; each rung is a different fact about the same name.
    opt-out is sticky: it survives the ``managed[]`` claim being gone, which
    is precisely the state ``record_opt_out`` leaves behind, and it is what
    makes the opt-out permanent rather than re-derived.
-3. State carries a ``managed[]`` entry for ``entry.id`` whose
-   ``inserted_region_span.name`` is this name, AND ``text`` has
-   non-whitespace content, AND the opt-out grammar can spell the pair ->
+3. State carries a ``managed[]`` entry for ``entry.id`` AND ``entry.path``
+   whose ``inserted_region_span.name`` is this name, AND ``text`` has real
+   content, AND no ``marshal-seed`` marker line for this name survives
+   anywhere in ``text``, AND the opt-out grammar can spell the pair ->
    ``OPTED_OUT``. Genesis installed this region once and the markers are
    gone now; the maintainer deleted them, and FR-112 says that deletion is
-   the opt-out. This is the rung the AC's first test exercises.
+   the opt-out. This is the rung the AC's first test exercises. Every one
+   of those four conjuncts is a guard against deriving a PERMANENT opt-out
+   from something that is not a deletion -- see ``_has_content``,
+   ``_marker_region_names`` and ``_claims_region`` for the case each one
+   closes.
 4. Otherwise ``MISSING`` -- declared, never installed, nothing recorded.
 
 **Why rung 3 requires a ``text`` with real content, and rungs 1-2 do not.**
 FR-112 sanctions deleting the MARKERS, not deleting the FILE. An absent,
 empty, or unreadable artifact reaches this module as ``text=""`` -- and a
-file a botched script truncated to a newline is the same fact with one more
-byte, which is why the gate tests ``text.strip()`` rather than ``text`` --
+file a botched script truncated to a newline, or to a BOM, is the same fact
+with one or two more bytes, which is why the gate is ``_has_content``
+rather than ``text`` or ``text.strip()`` --
 the same ``""``
 ``plan/build.py::_current_text`` hands back for ``ArtifactState.ABSENT``, and
 the same one ``detect/inventory.py::_classify_hybrid`` degrades to for a
@@ -120,14 +129,21 @@ granularity lives beside them rather than inside them.
 
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass
 from enum import StrEnum
 
 from ..model.manifest import ArtifactClass, ManifestEntry
-from ..regions.markers import MarkerError
+from ..regions.markers import MarkerError, parse_marker_line
 from ..regions.parse import RegionParseError, parse_regions
 from ..state import SeedState, is_opted_out, opt_out_key_or_none
 from .findings import Finding, FindingType, Severity
+
+# Unicode general categories that carry no visible content: `Cc` (control
+# characters, e.g. NUL) and `Cf` (format characters, e.g. U+FEFF BOM and
+# U+200B ZERO WIDTH SPACE). `str.strip()` removes neither -- see
+# `_has_content`.
+_EMPTY_CATEGORIES = frozenset({"Cc", "Cf"})
 
 
 class RegionDisposition(StrEnum):
@@ -167,10 +183,71 @@ class RegionStatus:
     disposition: RegionDisposition
 
 
+def _has_content(text: str) -> bool:
+    """Whether ``text`` carries at least one character that is neither
+    whitespace nor an invisible control/format character -- rung 3's "is
+    there a FILE here to have deleted markers from" test.
+
+    Not ``bool(text.strip())`` (review finding, confirmed by execution).
+    ``str.strip()`` removes whitespace and nothing else, so a file holding
+    only a UTF-8 BOM (``"\\ufeff"`` -- what ``Path.write_text(``''``,
+    encoding="utf-8-sig")`` leaves behind), a zero-width space, or a NUL
+    byte read back as non-empty and re-opened the exact hole widening
+    ``bool(text)`` to ``bool(text.strip())`` had closed one byte earlier:
+    every claimed region of an effectively empty file retired PERMANENTLY.
+    Categories rather than a hand-listed character set, so the rule covers
+    the whole class instead of the three members that happened to be
+    tested."""
+    return any(
+        not char.isspace() and unicodedata.category(char) not in _EMPTY_CATEGORIES
+        for char in text
+    )
+
+
+def _marker_region_names(text: str, entry: ManifestEntry) -> frozenset[str]:
+    """Every region name that appears in a ``marshal-seed`` BEGIN or END
+    marker line anywhere in ``text`` -- including lines ``parse_regions``
+    deliberately skips.
+
+    Rung 3's premise is "the markers are GONE", and ``parse_regions``
+    answers the narrower "no well-formed span was FOUND". Those diverge
+    (review finding, confirmed by execution): ``parse_regions`` is
+    fence-aware by design -- a managed region's own body may DOCUMENT the
+    marker grammar inside a fenced code block, and honoring such a line
+    would be the AR-1 corruption ``regions/parse.py`` exists to prevent --
+    so a real region a maintainer later wrapped in a closed ``` fence is
+    invisible to it while sitting, markers and all, in the file. Rung 3
+    read that as a deletion and derived a PERMANENT opt-out for a live
+    region.
+
+    Asked through ``markers.parse_marker_line``, never a hand-written
+    substring or regex: that function owns the line-level grammar, and a
+    second spelling of it here is exactly what this story's Always bullets
+    forbid. A ``MarkerError`` line is SKIPPED rather than raised, because a
+    fenced block documenting a malformed marker is legitimate content and
+    must not degrade the whole entry to ``()`` -- ``parse_regions`` skips
+    the same line for the same reason.
+
+    Both marker halves count, not only BEGIN: either one surviving means
+    the markers were not cleanly deleted, and re-offering the region is the
+    conservative direction this module takes everywhere else."""
+    assert entry.format is not None
+    names: set[str] = set()
+    for line in text.splitlines():
+        try:
+            marker = parse_marker_line(entry.format, line)
+        except MarkerError:
+            continue
+        if marker is not None:
+            names.add(marker.region)
+    return frozenset(names)
+
+
 def _disposition(
     entry: ManifestEntry,
     region_name: str,
     present_names: frozenset[str],
+    marker_names: frozenset[str],
     state: SeedState | None,
     *,
     derive_from_claim: bool,
@@ -207,26 +284,47 @@ def _disposition(
         return RegionDisposition.OPTED_OUT
     if (
         derive_from_claim
+        and region_name not in marker_names
         and state is not None
         and opt_out_key_or_none(entry.id, region_name) is not None
-        and _claims_region(state, entry.id, region_name)
+        and _claims_region(state, entry, region_name)
     ):
         return RegionDisposition.OPTED_OUT
     return RegionDisposition.MISSING
 
 
-def _claims_region(state: SeedState, artifact_id: str, region_name: str) -> bool:
+def _claims_region(state: SeedState, entry: ManifestEntry, region_name: str) -> bool:
     """Whether ``state.managed`` still records Genesis having installed this
-    exact region of this exact artifact.
+    exact region of this exact artifact, at the path the manifest declares
+    for it today.
 
-    Both halves of the match are required -- the ``id`` AND the recorded
-    span's ``name`` -- never either alone: an artifact's whole-file claim, or
-    its claim on a DIFFERENT region, says nothing about this region. The
-    span-present-iff-hybrid invariant ``ManagedArtifact.__post_init__``
-    enforces means the ``is not None`` guard below is also the class
-    check."""
+    All three halves of the match are required -- the ``id``, the recorded
+    span's ``name``, AND the recorded ``path`` -- never a subset: an
+    artifact's whole-file claim, or its claim on a DIFFERENT region, says
+    nothing about this region. The span-present-iff-hybrid invariant
+    ``ManagedArtifact.__post_init__`` enforces means the ``is not None``
+    guard below is also the class check.
+
+    **Why the path is compared too** (review finding, confirmed by
+    execution). AD-55 makes ``id``, not ``path``, the stable address, so a
+    manifest entry's ``path`` can move while its ``id`` does not, and
+    state's claim still records the OLD path. Matching on ``id`` alone then
+    derived an opt-out for a path that had never carried the region at all,
+    and ``record_opt_out`` would have dropped the claim describing the
+    region still installed at the old path -- leaving that one with no
+    ``body_sha`` and no way to rebuild it. A moved path falls through to
+    ``MISSING`` instead, which re-offers the region: the same conservative,
+    non-destructive direction the empty-``text`` and surviving-marker gates
+    above take.
+
+    ``state/store.py::_without_region_claim`` matches on ``id`` and span
+    name only, because ``record_opt_out``/``clear_opt_out`` are handed no
+    path to compare -- a divergence between the two spellings of this
+    predicate that is latent today (nothing derives an opt-out across a
+    moved path any more) and tracked as `DW-FU-8-5-9`."""
     return any(
-        artifact.id == artifact_id
+        artifact.id == entry.id
+        and artifact.path == entry.path
         and artifact.inserted_region_span is not None
         and artifact.inserted_region_span.name == region_name
         for artifact in state.managed
@@ -247,12 +345,14 @@ def classify_regions(
     ``read_state`` returns there): every region then falls through to
     ``MISSING`` unless the file itself carries it.
 
-    A ``text`` with no non-whitespace content -- an absent, empty, or
-    unreadable artifact, all three of which the callers spell ``""``, and
-    equally a file truncated to a newline -- still produces one status per
-    declared region, but never a DERIVED ``OPTED_OUT``: rung 3 is switched
-    off, so a deleted file re-offers its regions rather than retiring them
-    permanently (module docstring).
+    A ``text`` with no real content -- an absent, empty, or unreadable
+    artifact, all three of which the callers spell ``""``, and equally a
+    file truncated to a newline or to a byte-order mark -- still produces
+    one status per declared region, but never a DERIVED ``OPTED_OUT``: rung
+    3 is switched off, so a deleted file re-offers its regions rather than
+    retiring them permanently (module docstring, ``_has_content``). Nor is
+    a region whose marker lines are still in the file derived from, however
+    they got out of ``parse_regions``'s sight (``_marker_region_names``).
 
     Pure: ``text`` is passed in already read, nothing is written, and
     ``state`` is only ever queried."""
@@ -267,6 +367,10 @@ def classify_regions(
     except (RegionParseError, MarkerError, NotImplementedError):
         return ()
     present_names = frozenset(span.name for span in spans)
+    # Every region name whose marker line survives ANYWHERE in the raw
+    # text, fenced or not -- so rung 3 tests its own premise ("the markers
+    # are gone") rather than the parser's narrower one ("no span found").
+    marker_names = _marker_region_names(text, entry)
     return tuple(
         RegionStatus(
             artifact_id=entry.id,
@@ -276,14 +380,15 @@ def classify_regions(
                 entry,
                 region.name,
                 present_names,
+                marker_names,
                 state,
-                # `.strip()`, not a bare truthiness test: the guard's whole
-                # point is "is there a FILE here to have deleted markers
-                # from", and a file truncated to a single newline answers
-                # that no just as much as a zero-byte one does. `bool(text)`
-                # split those two apart on one byte and let `"\n"` retire
-                # every claimed region permanently.
-                derive_from_claim=bool(text.strip()),
+                # Not a bare truthiness test, and not `.strip()` either:
+                # the guard's whole point is "is there a FILE here to have
+                # deleted markers from", and a file truncated to a single
+                # newline -- or to a BOM, or to a NUL -- answers that no
+                # just as much as a zero-byte one does. See `_has_content`
+                # for the two revisions this test has already outlived.
+                derive_from_claim=_has_content(text),
             ),
         )
         for region in entry.regions

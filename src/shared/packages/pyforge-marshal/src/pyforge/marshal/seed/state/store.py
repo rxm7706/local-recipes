@@ -965,6 +965,21 @@ def record_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState
     half of the filter is defence in depth against a future schema that
     allows several, not a selective match it can exercise today.
 
+    **PRECONDITION, and it is the caller's to check: the region must not be
+    PRESENT in the file.** Identical to ``clear_opt_out``'s, for the
+    identical reason -- both mutators drop the claim through the same
+    unconditional ``_without_region_claim``, and neither is given the file
+    that alone distinguishes "markers deleted" from "markers still there"
+    (review finding: this obligation was stated on one of the two and not
+    the other). Called on a region still present, this discards a live
+    claim and its recorded ``body_sha``, after which
+    ``detect/hashes.py::check_managed_region`` has nothing to compare
+    against and ``build_plan`` plans no insertion to rebuild it. See
+    ``clear_opt_out`` for the full walk-through and for ``DW-FU-8-5-4``,
+    the verb-side guard both mutators are waiting on: record only a pair
+    ``detect/optout.py`` classifies ``OPTED_OUT`` -- which, by rung 1, a
+    present region never is.
+
     Does NOT refresh ``last_update``. Stamping the write time belongs to the
     verb that PERSISTS the state -- ``write_state`` does not stamp it either
     -- so a verb must refresh it (``utc_timestamp()``) alongside this
