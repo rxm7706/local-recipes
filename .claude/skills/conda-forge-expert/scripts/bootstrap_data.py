@@ -127,11 +127,12 @@ import sys
 import time
 from pathlib import Path
 
-DATA_DIR = (
-    Path(__file__).resolve().parent.parent.parent.parent
-    / "data" / "conda-forge-expert"
-)
-REPO_ROOT = Path(__file__).resolve().parents[5]
+# Sibling helper — canonical path resolution shared across scripts/*.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _paths import get_data_dir, get_repo_root  # noqa: E402
+
+DATA_DIR = get_data_dir()
+REPO_ROOT = get_repo_root()
 
 
 # Per-step timeouts (seconds). Defaults sized for cold `--fresh --profile admin`
