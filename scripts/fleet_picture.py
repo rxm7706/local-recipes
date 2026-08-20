@@ -81,6 +81,10 @@ def loop_home_staleness(
 
 def bmad_core_drift_findings(
     repo: pathlib.Path = REPO, timeout: int = 15
+    # 15s, not 5s: the subprocess bounds only its own HTTP call at
+    # `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0` -- this timeout must also
+    # cover interpreter startup and package import before that call even
+    # starts, so it carries a margin rather than matching the inner bound.
 ) -> list[dict]:
     """WARN-status Findings from ``pyforge.doctor``'s bmad-method-version-
     drift source (Story 10.1/10.2's CAP-1/CAP-2 -- installed BMAD-METHOD

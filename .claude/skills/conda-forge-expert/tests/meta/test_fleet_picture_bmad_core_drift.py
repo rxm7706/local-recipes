@@ -79,6 +79,37 @@ def test_a_real_warn_finding_is_returned(monkeypatch):
     assert result[0]["status"] == "warn"
 
 
+def test_both_cap1_and_cap2_warn_simultaneously(monkeypatch):
+    """CAP-1 (declared-vs-installed) and CAP-2 (installed-vs-upstream) are
+    two independent Findings from the same `gather()` call and can both
+    warn at once -- the live case in this repo today. Each must survive
+    the `status == "warn"` filter with its own distinct `check` tag."""
+    mod = _load_fleet_picture()
+    monkeypatch.setattr(
+        mod.subprocess, "run",
+        _fake_run([
+            {"source": "bmad-method-version-drift", "check": "bmad-method-version-drift",
+             "status": "warn",
+             "message": "installed bmad-method 6.10.0 is behind pixi.toml's "
+                        "declared floor >=6.11.0",
+             "evidence": {}},
+            {"source": "bmad-method-version-drift", "check": "bmad-method-upstream-drift",
+             "status": "warn",
+             "message": "installed bmad-method 6.10.0 is behind the latest "
+                        "upstream release 6.11.0",
+             "evidence": {}},
+        ]),
+    )
+
+    result = mod.bmad_core_drift_findings()
+
+    assert len(result) == 2
+    assert {f["check"] for f in result} == {
+        "bmad-method-version-drift", "bmad-method-upstream-drift",
+    }
+    assert all(f["status"] == "warn" for f in result)
+
+
 def test_no_drift_all_ok_returns_empty(monkeypatch):
     mod = _load_fleet_picture()
     monkeypatch.setattr(

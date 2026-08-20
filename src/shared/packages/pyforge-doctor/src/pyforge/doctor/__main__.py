@@ -153,12 +153,11 @@ def _build_parser() -> tuple[
             "release actually published upstream) -- whole category only, "
             "no NAME (see _gather_bmad_core); OPT-IN ONLY, NEVER part of "
             "the zero-flag default run -- this source's upstream half makes "
-            "a real, un-mockable npm-registry HTTP call (up to 5.0s) that "
-            "would put NFR-4's hard 5-second pre-flight budget at risk; "
-            "registered scope='repo' despite that live call -- unlike every "
-            "other 'repo'-scoped category, --scope repo does not guarantee "
-            "no network I/O for this one (review finding, pre-existing "
-            "tension named in sources/__init__.py's own REGISTRY comment)"
+            "a real, un-mockable npm-registry HTTP call (up to 5.0s), which "
+            "would risk the default run's speed budget; registered "
+            "scope='repo' despite that live call -- unlike every other "
+            "'repo'-scoped category, --scope repo does not guarantee no "
+            "network I/O for this one"
         ),
     )
     check.add_argument(
