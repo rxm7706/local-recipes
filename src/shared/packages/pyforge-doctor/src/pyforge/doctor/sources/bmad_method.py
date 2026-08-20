@@ -159,8 +159,9 @@ _NPM_LATEST_URL = "https://registry.npmjs.org/bmad-method/latest"
 
 #: Deliberately shorter than ``pypi_index.py``'s own 30s: that precedent is
 #: for ``ship_pypi``'s one-shot, human-triggered publish flow, while this
-#: source runs ambiently and repeatedly (every ``doctor check``/``monitor``
-#: invocation, once Story 10.3 wires it in) -- a short timeout keeps a
+#: source runs ambiently and repeatedly (every opt-in ``doctor check
+#: --bmad-core`` invocation, and every ``fleet_picture.py`` ATTENTION-block
+#: probe -- Story 10.3 wired both) -- a short timeout keeps a
 #: slow/unreachable registry from stalling an otherwise-fast local check for
 #: long. Both numbers are metadata-GET-tier per the fleet's own convention
 #: (``engines.gh._GH_PR_LIST_TIMEOUT_SECONDS``); this value is this story's
