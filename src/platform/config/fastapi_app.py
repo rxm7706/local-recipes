@@ -1,15 +1,19 @@
 """FastAPI sub-app mounted at ``/api/`` by :mod:`config.asgi`.
 
 Story 10.1 scope: only the seam itself, exposing a bare ``GET /api/health``
-probe. :mod:`config.asgi` routes every ``/api/*`` HTTP path here (websocket
-connections are not path-routed at all yet -- every one reaches the stock
-``websocket_application`` stub regardless of path, since nothing under this
-seam handles websockets today); Epic 11 attaches the real Langflow
-(``/api/v1/``) and DB-GPT (``/api/dbgpt/``) mounts under this same namespace
-(spec-python-agent-platform CAP-2/CAP-3) -- this module intentionally builds
-neither. Langflow's non-``/api/`` route (``/langflow/``) falls outside this
-seam's namespace and will need its own dispatch rule in :mod:`config.asgi`
-when Epic 11 adds it -- not assumed here.
+probe. :mod:`config.asgi` routes every ``/api/*`` HTTP path here EXCEPT
+``/api/v1/*`` (websocket connections are not path-routed at all yet -- every
+one reaches the stock ``websocket_application`` stub regardless of path,
+since nothing under this seam handles websockets today).
+
+Story 11.1 attached the real Langflow mount (``/api/v1/``, bare ``/health``/
+``/health_check``, and prefix-stripped ``/langflow/*``) directly in
+:mod:`config.asgi` -- ahead of this seam in the dispatch order (AD-4) --
+rather than through this module, since Langflow builds and owns its own
+FastAPI app (:mod:`langflow_integration.asgi`). This seam's own
+``/api/health`` is unaffected: it doesn't start with ``/api/v1/``, so it still
+falls through here. DB-GPT's ``/api/dbgpt/`` mount (spec-python-agent-platform
+CAP-3, Story 11.2) is not yet attached -- not assumed here.
 
 Routes here declare their own full ``/api/...`` path (see ``/api/health``
 below): the composed dispatcher forwards the whole, unmodified ASGI scope

@@ -98,10 +98,13 @@ pixi.lock                # lockfile (derived from pixi.toml)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
 conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage as above)
 # data for the packaging-inventory operations scripts above — same Dream
-# (docs/dreams/conda-forge-packaging-inventory-operations.md), same NOT-ownership
-# exemption, same delete-the-line-when-that-Spec-declares-the-surface rule.
-# The four scripts were pushed straight to main (0f0b75232e, 9de01865ce, 4397583a76)
-# and doctor Story 10.2's verify step flagged the same set independently; they are
-# already listed per-file above, so only their data files are added here.
+# (docs/dreams/conda-forge-packaging-inventory-operations.md, status: dreamt, no Spec
+# yet), same NOT-ownership exemption, same delete-the-line-when-that-Spec-declares-the-
+# surface rule. The prototype pre-dates all of it: pushed straight to main on 2026-08-16
+# (0f0b75232e, 9de01865ce, 4397583a76), before story 10.4's baseline commit. Three
+# stations then flagged the same set independently while landing unrelated stories —
+# doctor 10.2, marshal 8.5, steward 10.4 — which is what an ungoverned surface looks
+# like from the inside. The four scripts are already listed per-file above, so only
+# their data files are added here.
 conf/conda-forge-packaging-inventory-operations.local.env.example    # template for the gitignored .local.env carrying OPENTEAMS_IDENTITY_GIST_ID — the secret-gist id must never be committed; read by ..._openteams_identity.py
 conf/conda-forge-packaging-inventory-operations_curated_groups.json  # curated-group sample fallback (per-vendor package lists, not membership truth) — ..._metrics.py's --curated-config default
