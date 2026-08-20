@@ -2,9 +2,10 @@
 
 The `skip_auth` kwarg is the v8.14.0 call-site opt-out for known-public
 endpoints (e.g. dev.azure.com's public conda-forge feedstock-builds
-project). With JFROG_API_KEY set in env, the auth chain would otherwise
-unconditionally inject `X-JFrog-Art-Api` cross-host — `skip_auth=True`
-short-circuits the chain and returns empty headers.
+project). As of the Rule-2 retro (Story 5.5), the JFrog credential branches
+are additionally host-gated against `_configured_enterprise_hosts()` — see
+`test_http_jfrog_host_gate.py` — so `skip_auth=True` is now defense in
+depth for a configured host rather than the only way to avoid the leak.
 """
 from __future__ import annotations
 
@@ -29,13 +30,25 @@ class TestSkipAuth:
         self, monkeypatch
     ):
         monkeypatch.setenv("JFROG_API_KEY", "dummy-key-12345")
-        # Without skip_auth → JFrog header is injected (sanity check).
-        baseline = _http.auth_headers_for("https://dev.azure.com/conda-forge/foo")
-        assert baseline.get("X-JFrog-Art-Api") == "dummy-key-12345"
-        # With skip_auth=True → empty.
-        skipped = _http.auth_headers_for(
-            "https://dev.azure.com/conda-forge/foo", skip_auth=True
+        # The host must be a *configured* one for the baseline (no skip_auth)
+        # injection to fire post-retro — see test_http_jfrog_host_gate.py for
+        # the un-configured-host case.
+        #
+        # It must also be a genuinely ENTERPRISE host. This example was
+        # `anaconda.org` until the third review pass, which encoded "the JFrog
+        # credential IS sent to a public host" as expected behaviour in the
+        # very file pair meant to pin that leak closed; it was repointed at
+        # `dev.azure.com`, which is public too, so the fourth pass's public-host
+        # floor correctly stopped the baseline firing. Use a host that could
+        # only ever be an operator's own mirror.
+        monkeypatch.setenv(
+            "CONDA_FORGE_BASE_URL", "https://mycorp.jfrog.io/artifactory/conda-forge"
         )
+        url = "https://mycorp.jfrog.io/artifactory/conda-forge/noarch/repodata.json"
+        baseline = _http.auth_headers_for(url)
+        assert baseline.get("X-JFrog-Art-Api") == "dummy-key-12345"
+        # With skip_auth=True → empty, even though the host is configured.
+        skipped = _http.auth_headers_for(url, skip_auth=True)
         assert skipped == {}
 
     def test_auth_headers_for_skip_auth_returns_empty_even_with_github_token(
@@ -66,10 +79,19 @@ class TestSkipAuth:
         assert "authorization" not in keys_lower
         assert any(k.lower() == "user-agent" for k in headers)
 
-    def test_make_request_default_still_injects_auth(self, monkeypatch):
-        """Regression guard: skip_auth defaults to False; existing behaviour preserved."""
+    def test_make_request_default_injects_auth_for_configured_host(self, monkeypatch):
+        """Regression guard: skip_auth defaults to False; injection still fires
+        for a host the operator actually configured a mirror at.
+
+        The mirror host must be a genuinely enterprise one. Using a public
+        default here (this test named `anaconda.org`) asserts that the JFrog
+        credential IS sent to a public host — a green test pinning the very
+        leak the surrounding suite exists to close."""
         monkeypatch.setenv("JFROG_API_KEY", "dummy-key-12345")
-        req = _http.make_request("https://anaconda.org/conda-forge/repodata.json")
+        monkeypatch.setenv(
+            "CONDA_FORGE_BASE_URL", "https://mycompany.jfrog.io/artifactory/conda-forge"
+        )
+        req = _http.make_request("https://mycompany.jfrog.io/artifactory/conda-forge/repodata.json")
         headers = dict(req.headers)
         keys_lower = {k.lower(): v for k, v in headers.items()}
         assert keys_lower.get("x-jfrog-art-api") == "dummy-key-12345"

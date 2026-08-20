@@ -46,6 +46,15 @@ import sys
 from pathlib import Path
 from typing import Dict, List, NamedTuple
 
+# Sibling helper — canonical path resolution shared across scripts/*.py.
+# Guarded: an unconditional insert appends a duplicate every time the module is
+# (re-)imported in a long-lived process, front-loading this directory ahead of
+# site-packages once per import. Same fix as dependency-checker.py's.
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from _paths import get_repo_root  # noqa: E402
+
 try:
     from ruamel.yaml import YAML
     RUAMEL_AVAILABLE = True
@@ -230,9 +239,8 @@ def _read_conda_forge_python_floor() -> str:
     the optimizer path. The floor moves over time; the fallback is a
     snapshot, not a contract.
     """
-    try:
-        repo_root = Path(__file__).resolve().parents[3]
-    except (IndexError, OSError):
+    repo_root = get_repo_root()
+    if repo_root is None:
         return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
     pinning = repo_root / ".pixi/envs/local-recipes/conda_build_config.yaml"
     try:

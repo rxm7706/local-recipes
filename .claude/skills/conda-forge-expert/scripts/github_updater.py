@@ -241,7 +241,7 @@ def update_recipe(
         }
 
     # 6. Apply via recipe_editor.py
-    python = os.environ.get("CONDA_PYTHON_EXE") or sys.executable
+    python = sys.executable or os.environ.get("CONDA_PYTHON_EXE") or "python"
     cmd = [python, str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
