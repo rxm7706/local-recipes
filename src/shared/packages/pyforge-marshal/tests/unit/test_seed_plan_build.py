@@ -1066,6 +1066,74 @@ def test_a_partially_opted_out_hybrid_keeps_its_action_and_its_fingerprint(tmp_p
     assert fingerprint_drift(plan, tmp_path) != ()
 
 
+def test_a_present_region_is_retained_even_when_a_recorded_key_opts_it_out(tmp_path):
+    """Review finding, confirmed by execution and by reverting the clause.
+
+    `retained` was computed as "declared, present, AND not opted out", which
+    defeated the field on the very case it had just been added for: with
+    `tiers` present, conformant and ALSO carrying a recorded opt-out, and
+    `model-badge` absent and opted out, `retained` came back `()`, the entry
+    was suppressed, and the live `tiers` body left the `RepoFingerprint` --
+    `fingerprint_drift` then reported nothing after that body was tampered
+    with. Reachable by opting out and then `git checkout`-ing the file back.
+
+    It also put the two layers in flat contradiction about one input:
+    `detect/optout.py` rung 1 answers `PRESENT` for that same region ("what
+    is actually in the file wins over anything state believes"). Physical
+    presence is the fact; consent is measured against what is really there.
+    """
+    (tmp_path / "CLAUDE.md").write_text(_hybrid_text("tiers"), encoding="utf-8", newline="")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", "model-badge"))
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(
+        manifest,
+        inventory,
+        opted_out=frozenset({opt_out_key("h", "tiers"), opt_out_key("h", "model-badge")}),
+    )
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    # Nothing is proposed for insertion -- both regions are opted out...
+    assert action.chosen_anchor == ()
+    # ...but `tiers` is physically in the file, so the entry keeps its
+    # fingerprint pair and stays under `fingerprint_drift`'s eye.
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+    (tmp_path / "CLAUDE.md").write_text(
+        _hybrid_text("tiers").replace("line1", "TAMPERED"), encoding="utf-8", newline=""
+    )
+    assert fingerprint_drift(plan, tmp_path) != ()
+
+
+def test_a_present_but_unreadable_hybrid_is_never_suppressed_by_opt_outs(tmp_path):
+    """Review finding, confirmed by execution. `_current_text` degrades a
+    present-but-unreadable / non-UTF-8 target to `''`, and `''` parses as
+    "no region found" -- so every declared region landed in `not_present`
+    and `retained` came back `()`, not because the file holds no managed
+    content but because nothing could be MEASURED about it. The entry was
+    suppressed on that reasoning and left `artifact_hashes` while its
+    markers, for all this module knows, sat right there in it.
+
+    Consent is something the file has to be able to demonstrate. An
+    unreadable one keeps its `Action` -- the same "cannot safely re-parse,
+    degrade rather than guess" direction taken for a file `parse_regions`
+    refuses. `ABSENT` is not this case (its `''` is `classify()`'s own
+    reported truth) and stays suppressible, as the test above pins."""
+    (tmp_path / "CLAUDE.md").write_bytes(b"\xff\xfe not utf-8 at all \xe9\n")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    # The premise: present (so not the contract-sanctioned ABSENT case), and
+    # unreadable.
+    assert inventory.classifications[0].state is ArtifactState.PRESENT_DIVERGENT
+
+    plan = build_plan(manifest, inventory, opted_out=frozenset({opt_out_key("h", "tiers")}))
+
+    (action,) = plan.actions
+    assert action.artifact_id == "h"
+    assert [artifact_id for artifact_id, _ in plan.repo_fingerprint.artifact_hashes] == ["h"]
+
+
 def test_an_entry_whose_every_declared_region_is_opted_out_is_still_suppressed(tmp_path):
     """The `retained` guard above narrows suppression; it must not abolish
     it. Both declared regions opted out, neither in the file: nothing is

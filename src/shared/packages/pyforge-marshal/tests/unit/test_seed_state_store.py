@@ -1718,6 +1718,24 @@ def test_clear_opt_out_leaves_every_other_recorded_pair_alone():
     assert cleared.opted_out == ("dream-template#alpha", "dream-template#zulu")
 
 
+def test_clear_opt_out_dedupes_what_it_keeps_exactly_as_record_opt_out_does():
+    """Review finding, confirmed by execution. ``SeedState.__post_init__``
+    runs ``_reject_duplicates`` on ``managed[].id`` but NOT on
+    ``opted_out``, so a hand-built state can carry a repeated key. The two
+    mutators disagreed about it -- ``record_opt_out`` normalized through a
+    ``set``, ``clear_opt_out`` filtered a tuple -- so clearing an UNRELATED
+    pair returned a state whose surviving duplicates then failed
+    ``write_state``'s schema ``uniqueItems`` check: a reinstate that could
+    not be persisted, reported against a key the caller never touched."""
+    state = _sample_state(opted_out=["a#b", "a#b", "c#d"])
+
+    cleared = clear_opt_out(state, "c", "d")
+
+    assert cleared.opted_out == ("a#b",)
+    # The same normalization `record_opt_out` performs on the same input.
+    assert record_opt_out(state, "e", "f").opted_out == ("a#b", "c#d", "e#f")
+
+
 def test_clear_opt_out_does_not_reconstruct_the_dropped_managed_claim():
     """A claim records what the tool actually INSTALLED (a real body_sha, a
     real span); a reinstate has none of those facts yet. The next apply

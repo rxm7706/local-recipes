@@ -20,7 +20,8 @@ all. (Only the second of those two has mechanical enforcement. An earlier
 revision claimed "an import-linter contract already forbids one direction
 of that edge"; the sole ``regions`` contract in ``pyproject.toml`` forbids
 ``seed.regions -> seed.model.manifest``, Story 8.4's package-cycle guard,
-and says nothing about ``regions``/``state`` -- review finding.) ``detect/`` is the first layer above both in the architecture's chain
+and says nothing about ``regions``/``state`` -- review finding.)
+``detect/`` is the first layer above both in the architecture's chain
 (``cli -> verbs -> detect|plan -> model|state|regions``), and the vocabulary
 the answer is reported in -- ``opted-out`` versus ``managed-region-missing``
 -- is ``detect/findings.py``'s, which ``regions/parse.py`` cannot import
@@ -43,11 +44,14 @@ design; each rung is a different fact about the same name.
    anywhere in ``text``, AND the opt-out grammar can spell the pair ->
    ``OPTED_OUT``. Genesis installed this region once and the markers are
    gone now; the maintainer deleted them, and FR-112 says that deletion is
-   the opt-out. This is the rung the AC's first test exercises. Every one
-   of those four conjuncts is a guard against deriving a PERMANENT opt-out
-   from something that is not a deletion -- see ``_has_content``,
-   ``_marker_region_names`` and ``_claims_region`` for the case each one
-   closes.
+   the opt-out. This is the rung the AC's first test exercises. The claim
+   (``_claims_region``) is the rung's PREMISE; the other three conjuncts
+   are each a guard against deriving a PERMANENT opt-out from something
+   that is not a deletion, and each names the case it closes:
+   ``_has_content`` (there is no file here to have deleted markers from),
+   ``_marker_region_names`` (a marker for this region is still sitting in
+   the text), and ``opt_out_key_or_none`` (the pair is unspellable, so a
+   derived opt-out could never be recorded -- see ``_disposition``).
 4. Otherwise ``MISSING`` -- declared, never installed, nothing recorded.
 
 **Why rung 3 requires a ``text`` with real content, and rungs 1-2 do not.**
@@ -116,6 +120,17 @@ same three types. A structural defect must never retire a region: a file
 with an unterminated fence would otherwise read as "every region is gone",
 which rung 3 would then convert into permanent opt-outs for all of them.
 
+That degrade rule covers *input* defects, and one class of failure is
+deliberately NOT swallowed by it (review finding): rung 3 reaches
+``opt_out_key_or_none``, which reads the PACKAGED state schema, and a
+corrupt or unreadable install raises ``InternalError`` (exit 10) straight
+out of ``classify_regions``. That is not a degrade case -- a broken
+install is not a repo whose regions should be guessed at -- and it matches
+what ``plan/build.py`` already documents for its own consumer of the same
+function. So "degrades rather than crashes" is true of every fact this
+module reads about the REPO, and false of the one thing it reads about
+itself.
+
 Never in this module: it never WRITES and never persists anything --
 recording is ``state.record_opt_out`` returning a new ``SeedState`` for a
 future verb to write through the existing ``write_state``. It performs no
@@ -139,11 +154,27 @@ from ..regions.parse import RegionParseError, parse_regions
 from ..state import SeedState, is_opted_out, opt_out_key_or_none
 from .findings import Finding, FindingType, Severity
 
-# Unicode general categories that carry no visible content: `Cc` (control
-# characters, e.g. NUL) and `Cf` (format characters, e.g. U+FEFF BOM and
-# U+200B ZERO WIDTH SPACE). `str.strip()` removes neither -- see
-# `_has_content`.
-_EMPTY_CATEGORIES = frozenset({"Cc", "Cf"})
+# Unicode general categories that carry no visible content -- the WHOLE
+# `C` (Other) class, not a subset of it: `Cc` (control characters, e.g.
+# NUL), `Cf` (format characters, e.g. U+FEFF BOM and U+200B ZERO WIDTH
+# SPACE), `Cs` (surrogates, which cannot appear in well-formed text at
+# all), `Co` (private use) and `Cn` (unassigned). `str.strip()` removes
+# none of them -- see `_has_content`.
+#
+# `Cs`/`Co`/`Cn` were missing (review finding, confirmed by execution:
+# `_has_content("\U000f0000")` returned `True`), so a file holding only
+# private-use or unassigned code points still read as real content and
+# rung 3 retired every claimed region of it PERMANENTLY -- the third route
+# to the outcome `bool(text)` and then `bool(text.strip())` had each been
+# widened to close. Naming the class rather than the members that happened
+# to be tried is the point; over-classifying a file as empty only ever
+# re-offers its regions, which is the non-destructive direction.
+#
+# `Cs` is named for completeness of the class rather than for reach: a
+# lone surrogate cannot come off the strict-UTF-8 read path callers use,
+# and `regions/parse.py::_iter_lines` raises `UnicodeEncodeError` on such
+# a text before `_has_content` is ever consulted.
+_EMPTY_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Cn"})
 
 
 class RegionDisposition(StrEnum):
@@ -230,16 +261,41 @@ def _marker_region_names(text: str, entry: ManifestEntry) -> frozenset[str]:
 
     Both marker halves count, not only BEGIN: either one surviving means
     the markers were not cleanly deleted, and re-offering the region is the
-    conservative direction this module takes everywhere else."""
+    conservative direction this module takes everywhere else.
+
+    **Each line is asked twice, raw and whitespace-stripped** (review
+    finding, confirmed by execution). ``parse_marker_line`` GUARANTEES
+    recognition of the exact canonical single-space grammar and nothing
+    else -- its own docstring says a line whose delimiter spacing varies is
+    unspecified, and in fact ``_strip_delimiters`` returns ``None`` for it,
+    i.e. "ordinary content". So an intact, plainly-visible region whose
+    marker line had merely picked up a trailing space or an indent was
+    invisible to ``parse_regions`` AND to this scan, and rung 3 read it as
+    a deletion: a live region retired permanently, its ``body_sha`` dropped
+    with the claim, on a whitespace change. Re-asking the SAME grammar
+    after ``str.strip()`` is normalization, not a second spelling of it --
+    it is exactly what ``markers.py`` says S-8.2 will do wholesale ("re-
+    normalizes a file before consulting this grammar"). Over-detection here
+    is free: a name found only stands rung 3 down, which re-offers the
+    region.
+
+    This closes the leading/trailing-whitespace variants and no others. A
+    marker whose INNER spacing moved (``<!--marshal-seed:begin ...-->``) or
+    which acquired a non-whitespace line prefix (a ``>`` blockquote, a list
+    bullet) is still unrecognized, still reads as a deletion, and still
+    derives a permanent opt-out. Closing that needs the looser grammar
+    S-8.2 owns; hand-writing one here is what this module's Always bullets
+    forbid. Tracked as ``DW-FU-8-5-10``."""
     assert entry.format is not None
     names: set[str] = set()
-    for line in text.splitlines():
-        try:
-            marker = parse_marker_line(entry.format, line)
-        except MarkerError:
-            continue
-        if marker is not None:
-            names.add(marker.region)
+    for raw_line in text.splitlines():
+        for line in {raw_line, raw_line.strip()}:
+            try:
+                marker = parse_marker_line(entry.format, line)
+            except MarkerError:
+                continue
+            if marker is not None:
+                names.add(marker.region)
     return frozenset(names)
 
 
@@ -435,6 +491,20 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
     findings: list[Finding] = []
     for status in statuses:
         if status.disposition is RegionDisposition.OPTED_OUT:
+            # Asked of `opt_out_key_or_none`, never interpolated here
+            # (review finding): the wire spelling of the key lives once for
+            # the whole package, in `state/store.py` against the packaged
+            # schema's own pattern, and this module's docstrings argue at
+            # length that a second spelling is the defect. Hand-rendering
+            # `f"{id}#{region}"` printed a token no `--reinstate` would
+            # accept the moment that grammar moved, and the assertion
+            # pinning the message tests a literal, so nothing would fail.
+            # Never `None` in practice -- both rungs that can produce
+            # `OPTED_OUT` already gate on this same function -- so the tail
+            # is simply omitted rather than guessed at if that ever
+            # changes.
+            key = opt_out_key_or_none(status.artifact_id, status.region)
+            key_tail = "" if key is None else f" (opt-out key {key})"
             findings.append(
                 Finding.new(
                     Severity.INFO,
@@ -442,7 +512,7 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
                     status.path,
                     f"{status.path}#{status.region}: opted out; while this"
                     " opt-out stands the tool will not re-insert the region"
-                    f" (opt-out key {status.artifact_id}#{status.region})",
+                    f"{key_tail}",
                 )
             )
         elif status.disposition is RegionDisposition.MISSING:
