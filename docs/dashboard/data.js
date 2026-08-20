@@ -2886,7 +2886,7 @@ window.DASHBOARD_DATA = {
         "median": 64,
         "lo": 14,
         "hi": 435,
-        "phaseAsOf": "2026-08-20 23:14 UTC"
+        "phaseAsOf": "2026-08-20 23:46 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3521,17 +3521,7 @@ window.DASHBOARD_DATA = {
         "E3",
         "E4"
       ],
-      "inflight": {
-        "key": "11.1",
-        "title": "Langflow joins as a pluggable app",
-        "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1787258248,
-        "median": 122,
-        "lo": 27,
-        "hi": 468,
-        "phaseAsOf": "2026-08-20 23:14 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 55 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -3610,7 +3600,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "11.1",
-            150
+            184
           ]
         ],
         "foot": [
@@ -3625,12 +3615,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "46/55",
+            "47/55",
             "stories complete",
             "var(--done)"
           ],
           [
-            "9",
+            "8",
             "remaining",
             ""
           ]
@@ -3639,8 +3629,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2953,
-        "totalLabel": "~49.2 h active compute",
+        "total": 2987,
+        "totalLabel": "~49.8 h active compute",
         "note": "Derived from 19 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "8.1": 182,
@@ -3661,18 +3651,18 @@ window.DASHBOARD_DATA = {
           "10.2": 84,
           "10.3": 280,
           "10.4": 91,
-          "11.1": 150
+          "11.1": 184
         },
         "epicMin": {
           "E8": 584,
           "E9": 1642,
           "E10": 577,
-          "E11": 150
+          "E11": 184
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "11.1"
+        "state": "paused",
+        "at": "11.2"
       },
       "epics": [
         {
@@ -3971,7 +3961,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "11.1",
-              "active",
+              "done",
               "Langflow joins as a pluggable app"
             ],
             [
@@ -4635,7 +4625,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-20 23:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-20 23:46 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6275,7 +6265,7 @@ window.DASHBOARD_DATA = {
       "title": "The Django accelerator is a contract today; the engine waits for a third surface",
       "caps": 2,
       "companions": 0,
-      "updated": "2026-08-15",
+      "updated": "2026-08-20",
       "dream": "django-accelerator-framework",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework"
     },
@@ -7202,7 +7192,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "in-progress",
           "note": "next free slot",
-          "done": 46,
+          "done": 47,
           "total": 55,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
@@ -8211,7 +8201,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "46/55",
+        "progress": "47/55",
         "complete": 14,
         "of": 14
       },
@@ -15603,7 +15593,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-14",
           "deck": "",
-          "spec": "2026-08-15",
+          "spec": "2026-08-20",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -18968,7 +18958,7 @@ window.DASHBOARD_DATA = {
     ],
     "baseline": {
       "skill": "8.81.0",
-      "head": "4febffd7bf",
+      "head": "1dc1ca68be",
       "deltas": [],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
@@ -19930,7 +19920,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "in flight 11.1",
+        "line": "paused 11.2",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -23434,24 +23424,18 @@ window.DASHBOARD_DATA = {
         "story": "5.5",
         "phase": "review",
         "startEpoch": 1787252734
-      },
-      {
-        "station": "Steward",
-        "story": "11.1",
-        "phase": "dev",
-        "startEpoch": 1787258248
       }
     ],
     "lastShipped": {
-      "station": "marshal",
-      "story": "8.5",
-      "epoch": 1787265538,
-      "sha": "b3d56fa8a",
-      "subject": "Merge bmad-loop/20260820-140537-4cd4/8-5-marker-deletion-as-a-sanctioned-opt-out into loop/pyforge-marshal (bmad-loop)"
+      "station": "steward",
+      "story": "11.1",
+      "epoch": 1787269332,
+      "sha": "5c3ce2d57",
+      "subject": "Merge bmad-loop/20260820-140536-988f/11-1-langflow-joins-as-a-pluggable-app into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-20 23:14 UTC",
-    "generatedEpoch": 1787267695
+    "generatedAt": "2026-08-20 23:46 UTC",
+    "generatedEpoch": 1787269568
   },
   "storySpecs": [
     {
@@ -23492,9 +23476,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 46,
+      "done": 47,
       "tracked": 20,
-      "gap": 26
+      "gap": 27
     },
     {
       "station": "pyforge-warden",
@@ -23655,21 +23639,21 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 46,
-        "backlog": 9,
+        "done": 47,
+        "backlog": 8,
         "blocked": 0,
         "total": 55,
-        "next": "11-1-langflow-joins-as-a-pluggable-app",
+        "next": "11-2-db-gpt-joins-as-a-pluggable-app",
         "blockedKeys": [],
         "backlogKeys": [
-          "11-1-langflow-joins-as-a-pluggable-app",
           "11-2-db-gpt-joins-as-a-pluggable-app",
           "11-3-async-work-never-blocks-django",
           "11-4-isolation-and-statelessness-proven",
           "12-1-the-vanilla-chart-with-an-ocp-overlay",
           "12-2-gke-as-a-portability-profile",
           "12-3-air-gap-parity-is-a-failing-check",
-          "13-1-workspace-verbs-over-git-worktree"
+          "13-1-workspace-verbs-over-git-worktree",
+          "13-2-status-and-the-feed-mirror-decision"
         ],
         "state": "ready"
       },
@@ -23800,8 +23784,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 382,
-      "backlog": 64,
+      "done": 383,
+      "backlog": 63,
       "blocked": 1,
       "total": 447
     }
@@ -23877,13 +23861,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 55,
-        "done": 46,
+        "done": 47,
         "blocked": 0,
         "epics": 13,
         "epicsDone": 10,
         "complete": false,
         "running": false,
-        "projected": 46
+        "projected": 47
       },
       {
         "key": "warden",
@@ -23899,7 +23883,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 447,
-      "done": 382,
+      "done": 383,
       "blocked": 1,
       "epics": 89,
       "epicsDone": 73
@@ -23909,7 +23893,7 @@ window.DASHBOARD_DATA = {
       "running": [
         "mason"
       ],
-      "projected": 386
+      "projected": 387
     }
   }
 };
