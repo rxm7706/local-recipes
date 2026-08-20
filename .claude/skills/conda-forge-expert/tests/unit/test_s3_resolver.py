@@ -64,6 +64,13 @@ class TestJFrogHeaderInjection:
 
     def test_jfrog_api_key_injected(self, monkeypatch):
         _clean_env(monkeypatch)
+        # Rule-2 retro: JFrog credentials are host-gated against configured
+        # *_BASE_URL vars — S3_PARQUET_BASE_URL is how an operator actually
+        # points this resolver at their mirror.
+        monkeypatch.setenv(
+            "S3_PARQUET_BASE_URL",
+            "https://jfrog.example.com/anaconda-package-data",
+        )
         monkeypatch.setenv("JFROG_API_KEY", "test-token-xyz")
         url = "https://jfrog.example.com/anaconda-package-data/conda/monthly/2026/2026-04.parquet"
         req = _http.make_request(url)
@@ -71,11 +78,21 @@ class TestJFrogHeaderInjection:
 
     def test_basic_auth_when_user_pass_set(self, monkeypatch):
         _clean_env(monkeypatch)
+        monkeypatch.setenv("S3_PARQUET_BASE_URL", "https://jfrog.example.com/mirror")
         monkeypatch.setenv("JFROG_USERNAME", "alice")
         monkeypatch.setenv("JFROG_PASSWORD", "secret")
         url = "https://jfrog.example.com/mirror/conda/monthly/2026/2026-04.parquet"
         req = _http.make_request(url)
         assert req.headers.get("Authorization", "").startswith("Basic ")
+
+    def test_jfrog_api_key_not_sent_to_unconfigured_host(self, monkeypatch):
+        """Rule-2 retro regression guard: no S3_PARQUET_BASE_URL configured
+        means no credential leak to whatever host the URL happens to be."""
+        _clean_env(monkeypatch)
+        monkeypatch.setenv("JFROG_API_KEY", "test-token-xyz")
+        url = "https://jfrog.example.com/anaconda-package-data/conda/monthly/2026/2026-04.parquet"
+        req = _http.make_request(url)
+        assert req.headers.get("X-jfrog-art-api") is None
 
 
 # ── _parse_s3_list_objects_v2 + list_s3_parquet_months ─────────────────────

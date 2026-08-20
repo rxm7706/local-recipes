@@ -194,9 +194,39 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
 
 # ── Auth + SSL ─────────────────────────────────────────────────────────────────
 
+def _is_configured_enterprise_host(url: str) -> bool:
+    """Host-gate for `_auth_headers` below (Rule-2 retro, Story 5.5): is
+    `url`'s host one the operator actually pointed a `*_BASE_URL` env var or
+    pixi mirror config at? Reuses `_http._configured_enterprise_hosts()`
+    (shared source of truth with `auth_headers_for`'s own gate) when `_http`
+    is importable; degrades to "yes, unconditionally" when it is not — same
+    fallback shape `get_configured_channels()` above already uses for
+    `_http.resolve_conda_forge_urls`, and no worse than this function's
+    pre-fix behavior in that (rare, `_http`-unavailable) case."""
+    try:
+        import sys as _sys
+        from pathlib import Path as _P
+        _sys.path.insert(0, str(_P(__file__).parent))
+        from _http import _configured_enterprise_hosts, _host_of  # type: ignore[import-not-found]
+    except ImportError:
+        return True
+    return _host_of(url) in _configured_enterprise_hosts()
+
+
 def _auth_headers(url: str) -> Dict[str, str]:
-    """Build authorization headers for the URL from environment variables."""
-    _ = url  # reserved for future per-domain auth routing
+    """Build authorization headers for the URL from environment variables.
+
+    Host-gated (Rule-2 retro, Story 5.5): a credential is attached only when
+    `url`'s host is one the operator actually configured an enterprise
+    mirror for — mirrors `_http.auth_headers_for`'s own JFrog gate, applied
+    here to this function's broader `ARTIFACTORY_*`/`JFROG_TOKEN`/`JFROG_USER`
+    alias vocabulary, which `_http.py` does not cover. Previously attached
+    unconditionally to every channel URL whenever the env var was merely
+    set — the identical cross-resolver leak class `_http.py` closed, present
+    here too because this function never delegated to `_http.py`.
+    """
+    if not _is_configured_enterprise_host(url):
+        return {}
 
     # JFrog native API key (preferred over Bearer on Artifactory)
     api_key = os.environ.get("JFROG_API_KEY") or os.environ.get("ARTIFACTORY_API_KEY")
