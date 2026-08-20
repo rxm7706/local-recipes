@@ -540,7 +540,7 @@ description = "Batches every tracked planning-artifacts/deferred-work-ledger.md 
 cmd = "python -m pyforge.doctor.sources due-for-verification"
 
 [feature.local-recipes.tasks.bmad-method-version-drift-check]
-description = "Compares this pixi.toml's own declared bmad-method floor (max across every dependencies/feature.*.dependencies/target-scoped table) against _bmad/_config/manifest.yaml's installed version — informs only, always WARN, never gates. Reconcile by running the BMAD-METHOD installer to bring the installed core up to the declared floor, or by lowering the floor if the upgrade is not yet intended. Contract: spec-10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported."
+description = "Compares this pixi.toml's own declared bmad-method floor (max across every dependencies/feature.*.dependencies/target-scoped table) against _bmad/_config/manifest.yaml's installed version, and separately against the latest bmad-method release actually published on npm (a live, fail-open registry query) — informs only, always WARN or OK, never gates. Reconcile by running the BMAD-METHOD installer to bring the installed core up to date, or by lowering the declared floor if an upgrade is not yet intended. Contract: spec-10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported, spec-10-2-the-installed-core-is-compared-against-the-latest-upstream-release."
 cmd = "python -m pyforge.doctor.sources bmad-method-version-drift"
 
 [feature.local-recipes.tasks.story-status-check]

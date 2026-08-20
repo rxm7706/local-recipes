@@ -320,7 +320,17 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # framework version against pixi.toml's own declared floor; mirrors
     # BMAD_DRIFT/DREAM_CHAIN/SPEC_SURFACE/FORWARD_DEPENDENCY's own "factory
     # apparatus" precedent -- Marshal owns the repo's tooling-installation
-    # surface even though applying a fix is steward's territory.
+    # surface even though applying a fix is steward's territory. Story 10.2
+    # (Epic 10/CAP-2) extends the same bmad_method.py gather() to also
+    # compare that installed version against the latest release actually
+    # published upstream (npm), still this one Source -- CAP-2 issues one
+    # live, unauthenticated npm-registry GET (fails open, never raises),
+    # which is not what this field's "runs anywhere" gloss implies either,
+    # same tension CHECK_LAYOUT's own comment above already names for its
+    # loopback-socket/chromium case. Nothing dispatches this Source into
+    # `doctor check`/`monitor` yet (Story 10.3's job); the NFR-4 5s budget
+    # has to be revisited against CAP-2's own network round-trip when it is
+    # (review finding, Story 10.2).
 )
 
 
