@@ -247,6 +247,42 @@ jobs:
             sleep 2
           done
 
+      # The image's own ENTRYPOINT/CMD deliberately does NOT migrate -- on
+      # Kubernetes/OCP that belongs to a separate Job, not to every pod's
+      # boot (concurrent replicas would race the same migration). So CI has
+      # to do it explicitly, exactly as `compose/compose.yml` does for the
+      # local stack, and for the same reason: without it every assertion
+      # below runs against a database with ZERO TABLES and still passes.
+      # That is not hypothetical -- this story shipped exactly that state in
+      # compose and only caught it because someone requested `/admin/login/`
+      # by hand. `/ht/`'s Database check is a bare connectivity probe and
+      # `/` renders with no query at all, so neither notices.
+      #
+      # Story 11.1 moved this step AHEAD of "Run platform container" (it used
+      # to run after, via `exec` against the already-started app container):
+      # Langflow's own ASGI lifespan startup now runs `langflow_schema`'s
+      # Alembic bootstrap the moment the app process boots (config/asgi.py's
+      # dual-lifespan dispatch), and that fails loudly if `langflow_schema`
+      # doesn't exist yet -- which it doesn't until THIS migration
+      # (`langflow_integration`'s `RunSQL`) has run. A one-off `run --rm`
+      # against the same image/network stands in for the container that
+      # doesn't exist yet; `exec` only works against an already-running one.
+      - name: Migrate the database (the image's CMD deliberately doesn't)
+        run: |
+          ${{ matrix.engine }} run --rm \
+            --network platform-ci-net-${{ matrix.engine }} \
+            --user 12345:0 \
+            --entrypoint /app/entrypoint.sh \
+            -e DATABASE_URL=postgres://platform:platform@platform-ci-postgres-${{ matrix.engine }}:5432/platform \
+            -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
+            -e DJANGO_SECRET_KEY=ci-placeholder-not-a-real-secret \
+            -e DJANGO_ADMIN_URL=admin/ \
+            platform-ci-${{ matrix.engine }} \
+            python manage.py migrate --noinput || {
+            echo "::error::migrate failed (${{ matrix.engine }})"
+            exit 1
+          }
+
       # `--user 12345:0` proves the image runs under an arbitrary uid that
       # was never baked into the Containerfile anywhere (the spec's own
       # I/O & Edge-Case Matrix row for this).
@@ -263,30 +299,6 @@ jobs:
             -e DATABASE_URL=postgres://platform:platform@platform-ci-postgres-${{ matrix.engine }}:5432/platform \
             -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
             platform-ci-${{ matrix.engine }}
-
-      # The image's own ENTRYPOINT/CMD deliberately does NOT migrate -- on
-      # Kubernetes/OCP that belongs to a separate Job, not to every pod's
-      # boot (concurrent replicas would race the same migration). So CI has
-      # to do it explicitly, exactly as `compose/compose.yml` does for the
-      # local stack, and for the same reason: without it every assertion
-      # below runs against a database with ZERO TABLES and still passes.
-      # That is not hypothetical -- this story shipped exactly that state in
-      # compose and only caught it because someone requested `/admin/login/`
-      # by hand. `/ht/`'s Database check is a bare connectivity probe and
-      # `/` renders with no query at all, so neither notices.
-      # Dumps the app log on failure like every other step here. This one
-      # needs it MOST, not least: it is the first thing to touch the
-      # container, so if the app died during boot (the `uvicorn-worker`
-      # `setup_event_loop` break and the root-owned `$HOME` both did exactly
-      # that, in this story) `exec` fails with a bare "container is not
-      # running" and Teardown then `rm -f`s the only copy of the traceback.
-      - name: Migrate the database (the image's CMD deliberately doesn't)
-        run: |
-          ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py migrate --noinput || {
-            echo "::error::migrate failed (${{ matrix.engine }})"
-            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
-            exit 1
-          }
 
       # 120s, not 60: a cold runner has already spent its budget on the
       # build, and a slow-but-correct gunicorn/uvicorn boot that trips a
@@ -380,6 +392,28 @@ jobs:
           code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/health || true)"
           if [ "$code" != "200" ]; then
             echo "::error::GET /api/health returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+
+      # Story 11.1: proves the Langflow mount is live in the BUILT image, not
+      # just under local dev/pytest (neither of which drives a real ASGI
+      # lifespan -- see tests/test_langflow_mount.py's module docstring).
+      # `/health` (not `/api/v1/...`) is the smoke target because it is
+      # Langflow's own unconditional liveness ping (`{"status": "ok"}`, no
+      # DB/service dependency) -- the "or Langflow's /health" alternative the
+      # spec names, and the one least coupled to Langflow's internal route
+      # names. By the time this runs, "Poll /ht/ for 200" has already proven
+      # the app process survived Langflow's own Alembic-bootstrap lifespan
+      # startup (which now runs against the pre-migrated `langflow_schema`
+      # from the "Migrate the database" step above) -- this step proves that
+      # startup specifically wired the Langflow ASGI app into the dispatcher,
+      # not just that Django came up.
+      - name: Smoke-test the Langflow mount (bare /health, unchanged forward per AD-4)
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/health || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET /health returned $code, expected 200 (${{ matrix.engine }})"
             ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
             exit 1
           fi
