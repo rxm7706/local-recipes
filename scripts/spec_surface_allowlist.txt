@@ -49,7 +49,7 @@ scripts/load-env.sh                   # shell env bootstrap
 scripts/offline-build.sh              # air-gapped build entry
 scripts/submit_pr.sh                  # staged-recipes submission helper
 scripts/sync-upstream-conda-forge.sh  # upstream sync helper
-# --- conda-forge packaging-inventory operations quartet --------------------------
+# --- conda-forge packaging-inventory operations ----------------------------------
 # Operator/reporting tooling for docs/dreams/conda-forge-packaging-inventory-operations.md
 # (status: dreamt, owner: atlas): source workbook -> identity rows -> priority ->
 # published GFM dashboards. None is a detector (no DETECTOR marker, no pixi task, never
@@ -97,7 +97,7 @@ pixi.lock                # lockfile (derived from pixi.toml)
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
 conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage as above)
-# data for the packaging-inventory operations quartet in scripts/ above — same Dream
+# data for the packaging-inventory operations scripts above — same Dream
 # (docs/dreams/conda-forge-packaging-inventory-operations.md), same NOT-ownership
 # exemption, same delete-the-line-when-that-Spec-declares-the-surface rule.
 conf/conda-forge-packaging-inventory-operations.local.env.example    # template for the gitignored .local.env carrying OPENTEAMS_IDENTITY_GIST_ID — the secret-gist id must never be committed; read by ..._openteams_identity.py

@@ -35,15 +35,19 @@ design; each rung is a different fact about the same name.
    is precisely the state ``record_opt_out`` leaves behind, and it is what
    makes the opt-out permanent rather than re-derived.
 3. State carries a ``managed[]`` entry for ``entry.id`` whose
-   ``inserted_region_span.name`` is this name, AND ``text`` is non-empty ->
+   ``inserted_region_span.name`` is this name, AND ``text`` has
+   non-whitespace content, AND the opt-out grammar can spell the pair ->
    ``OPTED_OUT``. Genesis installed this region once and the markers are
    gone now; the maintainer deleted them, and FR-112 says that deletion is
    the opt-out. This is the rung the AC's first test exercises.
 4. Otherwise ``MISSING`` -- declared, never installed, nothing recorded.
 
-**Why rung 3 requires a non-empty ``text``, and rungs 1-2 do not.** FR-112
-sanctions deleting the MARKERS, not deleting the FILE. An absent, empty, or
-unreadable artifact reaches this module as ``text=""`` -- the same ``""``
+**Why rung 3 requires a ``text`` with real content, and rungs 1-2 do not.**
+FR-112 sanctions deleting the MARKERS, not deleting the FILE. An absent,
+empty, or unreadable artifact reaches this module as ``text=""`` -- and a
+file a botched script truncated to a newline is the same fact with one more
+byte, which is why the gate tests ``text.strip()`` rather than ``text`` --
+the same ``""``
 ``plan/build.py::_current_text`` hands back for ``ArtifactState.ABSENT``, and
 the same one ``detect/inventory.py::_classify_hybrid`` degrades to for a
 target it cannot read -- and ``parse_regions("")`` then finds nothing, so
@@ -122,7 +126,7 @@ from enum import StrEnum
 from ..model.manifest import ArtifactClass, ManifestEntry
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, parse_regions
-from ..state import SeedState, is_opted_out
+from ..state import SeedState, is_opted_out, opt_out_key_or_none
 from .findings import Finding, FindingType, Severity
 
 
@@ -177,15 +181,36 @@ def _disposition(
     ``present_names`` is passed in already computed so a multi-region entry
     parses its file exactly once, never once per declared region.
 
-    ``derive_from_claim`` is rung 3's gate: ``False`` for an empty ``text``,
-    where "no region found" means "no file to find one in" rather than "the
-    markers were deleted" (module docstring). Rungs 1 and 2 are untouched by
-    it."""
+    ``derive_from_claim`` is rung 3's gate: ``False`` for a ``text`` with no
+    non-whitespace content, where "no region found" means "no file to find
+    one in" rather than "the markers were deleted" (module docstring).
+    Rungs 1 and 2 are untouched by it.
+
+    **Rung 3 also requires a pair the opt-out grammar can spell.** Rung 2
+    already has that property for free -- ``is_opted_out`` answers through
+    ``opt_out_key_or_none``, so an inadmissible pair can never match a
+    schema-valid ``opted_out`` entry. Rung 3 derived from the raw
+    ``managed[].id``, which is the LOOSER grammar (``SeedState`` accepts an
+    id the ``opted_out`` item pattern rejects -- e.g. one carrying a space),
+    so a derived ``OPTED_OUT`` could name a pair ``record_opt_out`` refuses.
+    That broke the sanctioned verb sequence at its own seam:
+    ``opt_outs_to_record`` handed the caller a pair, and feeding it straight
+    to ``record_opt_out`` -- the exact loop this module documents -- raised
+    ``ValueError``. It also disagreed three ways with ``plan/build.py``,
+    which degrades the same pair to "not opted out" and re-inserts the
+    region regardless. Gating here makes all three layers apply the ONE
+    grammar, and an unspellable pair falls through to ``MISSING`` -- the
+    non-destructive direction, matching the empty-``text`` rule above."""
     if region_name in present_names:
         return RegionDisposition.PRESENT
     if is_opted_out(state, entry.id, region_name):
         return RegionDisposition.OPTED_OUT
-    if derive_from_claim and state is not None and _claims_region(state, entry.id, region_name):
+    if (
+        derive_from_claim
+        and state is not None
+        and opt_out_key_or_none(entry.id, region_name) is not None
+        and _claims_region(state, entry.id, region_name)
+    ):
         return RegionDisposition.OPTED_OUT
     return RegionDisposition.MISSING
 
@@ -222,8 +247,9 @@ def classify_regions(
     ``read_state`` returns there): every region then falls through to
     ``MISSING`` unless the file itself carries it.
 
-    An EMPTY ``text`` -- an absent, empty, or unreadable artifact, all three
-    of which the callers spell ``""`` -- still produces one status per
+    A ``text`` with no non-whitespace content -- an absent, empty, or
+    unreadable artifact, all three of which the callers spell ``""``, and
+    equally a file truncated to a newline -- still produces one status per
     declared region, but never a DERIVED ``OPTED_OUT``: rung 3 is switched
     off, so a deleted file re-offers its regions rather than retiring them
     permanently (module docstring).
@@ -247,7 +273,17 @@ def classify_regions(
             path=entry.path,
             region=region.name,
             disposition=_disposition(
-                entry, region.name, present_names, state, derive_from_claim=bool(text)
+                entry,
+                region.name,
+                present_names,
+                state,
+                # `.strip()`, not a bare truthiness test: the guard's whole
+                # point is "is there a FILE here to have deleted markers
+                # from", and a file truncated to a single newline answers
+                # that no just as much as a zero-byte one does. `bool(text)`
+                # split those two apart on one byte and let `"\n"` retire
+                # every claimed region permanently.
+                derive_from_claim=bool(text.strip()),
             ),
         )
         for region in entry.regions
@@ -266,7 +302,31 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
     the same way in every report. Built with ``Finding.new`` (never bare
     ``Finding(...)``), matching every real call site in ``detect/``, so
     ``remedy`` always resolves from ``REMEDIES`` rather than being
-    hand-typed here."""
+    hand-typed here.
+
+    **The ``opted-out`` message names the opt-out KEY as well as the path,
+    because its remedy asks for the key and only the path was reachable.**
+    A region has two addresses -- ``AGENTS.md#tiers`` (path) and
+    ``agents-md#tiers`` (``opt_out_key``) -- and ``RegionStatus`` carries
+    both precisely because they answer different questions. ``Finding``
+    carries only ``path``, so before this the report showed one address
+    while ``REMEDIES[FindingType.OPTED_OUT]`` told the operator to run
+    ``--reinstate <artifact>#<region>`` with the OTHER, and the obvious
+    copy-paste was the wrong token. The message keeps the
+    ``f"{path}#{region}: ..."`` prefix ``check_managed_region`` shares -- so
+    the two region-level producers still address a region identically -- and
+    spells the key in the tail, where the remedy can be acted on. The
+    ``managed-region-missing`` message needs no such tail: its remedy
+    (``marshal seed update``) takes no region argument.
+
+    **What the ``opted-out`` message does NOT promise.** It says the tool
+    will not re-insert the region *while the opt-out stands*, never that the
+    opt-out is already durable. For a DERIVED opt-out (rung 3 -- claim
+    present, nothing recorded) durability depends on the caller having
+    recorded ``opt_outs_to_record``'s pairs before the plan is built; a
+    read-only ``check`` deliberately does not (FR-88), so an unconditional
+    "will not re-insert" would be exactly the unprovable claim the
+    ``managed-region-missing`` message below had removed from it."""
     findings: list[Finding] = []
     for status in statuses:
         if status.disposition is RegionDisposition.OPTED_OUT:
@@ -275,8 +335,9 @@ def region_findings(statuses: tuple[RegionStatus, ...]) -> tuple[Finding, ...]:
                     Severity.INFO,
                     FindingType.OPTED_OUT,
                     status.path,
-                    f"{status.path}#{status.region}: opted out; the tool will not"
-                    " re-insert this region",
+                    f"{status.path}#{status.region}: opted out; while this"
+                    " opt-out stands the tool will not re-insert the region"
+                    f" (opt-out key {status.artifact_id}#{status.region})",
                 )
             )
         elif status.disposition is RegionDisposition.MISSING:
