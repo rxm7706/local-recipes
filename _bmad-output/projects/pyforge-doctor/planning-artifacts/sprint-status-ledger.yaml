@@ -20,12 +20,12 @@ development_status:
   1-4-credential-environment-hygiene-check: done
   1-5-doctor-check-cli-wiring-json-and-the-speed-budget: done
   10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported: done
-  10-2-the-installed-core-is-compared-against-the-latest-upstream-release: backlog
-  10-3-the-drift-surfaces-ambiently-never-gates: backlog
+  10-2-the-installed-core-is-compared-against-the-latest-upstream-release: done
+  10-3-the-drift-surfaces-ambiently-never-gates: done
   11-1-due-for-verification-entries-are-selected-per-project: done
   11-2-churn-based-cost-filtering-skips-entries-whose-code-has-not-moved: done
   11-3-mechanically-checkable-claims-are-verified-without-an-agent: done
-  11-4-judgment-requiring-entries-get-an-evidence-grounded-verdict: backlog
+  11-4-judgment-requiring-entries-get-an-evidence-grounded-verdict: done
   11-5-verification-reaches-across-project-boundaries: backlog
   11-6-near-duplicate-entries-surface-as-one-defect-class: backlog
   11-7-verification-staleness-surfaces-in-the-ambient-fleet-report: backlog
