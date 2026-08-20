@@ -53,8 +53,12 @@ FR-112).** `build_plan` takes a keyword-only `opted_out` frozenset of
 already-read `state.opted_out` keys, and a hybrid entry that is owed
 insertions but whose owed regions are ALL opted out produces no `Action` at
 all, so an opted-out region is never re-inserted. Keeping the read out of
-this module preserves S-9.6's purity property and its
-byte-identical-output determinism.
+this module preserves S-9.6's no-state-I/O property and its
+byte-identical-output determinism. Precisely: no STATE read. The key
+spelling arrives via `opt_out_key_or_none`, which consults the packaged
+schema, so this module does touch packaged data -- read once per process
+and identical for every caller, so determinism is untouched, but "pure" in
+the strict sense would be a claim too strong to make.
 
 That read is an OBLIGATION on the caller, not a service already rendered:
 no verb calls `build_plan` today (`cli/seed.py` is still six unimplemented
@@ -254,7 +258,9 @@ def _pendency(
     THE one place pendency is computed. `build_plan`'s suppression rule and
     `_chosen_anchor` both consume this single result, so the two can never
     disagree about which regions a run still owes, and the entry's file is
-    parsed exactly once per `build_plan` call rather than once per consumer.
+    parsed once per entry for BOTH of them rather than once per consumer --
+    which is what the pre-story single-consumer shape already cost, and what
+    adding a second consumer would otherwise have doubled.
 
     `None` means "no verdict", and it covers exactly two cases that must
     behave identically downstream: a non-`hybrid-managed-region` entry
@@ -310,7 +316,18 @@ def _is_fully_opted_out(pendency: _Pendency | None) -> bool:
     at), a NON-EMPTY `not_present` (something actually had to be owed), and
     an empty `pending` (all of it opted out). An entry with nothing owed
     keeps the `Action` it produced before Story 8.5, `chosen_anchor == ()`
-    and all -- see `_Pendency` for what suppressing it would have cost."""
+    and all -- see `_Pendency` for what suppressing it would have cost.
+
+    **The case this DOES suppress pays that same cost knowingly.** A
+    fully-opted-out entry leaves `artifact_hashes` too, so it drops out of
+    the `RepoFingerprint` and `fingerprint_drift` stops seeing later changes
+    to that file. That is not an oversight carried over from the defect
+    `_Pendency` describes: a maintainer who opted every declared region out
+    has taken the file out of the tool's supervision by their own
+    deliberate act (FR-112), so there is no managed content left in it to
+    drift. The difference from the nothing-owed case is exactly consent.
+    The absence itself going unrecorded in `plan.json` is the separate,
+    real gap tracked as `DW-FU-8-5`."""
     return pendency is not None and bool(pendency.not_present) and not pendency.pending
 
 
@@ -433,7 +450,22 @@ def build_plan(
     `manifest.entries` means the two arguments are a mismatched pair --
     review finding: without this check, the lookup below raised a bare,
     unnamed `KeyError` instead of the named, context-carrying `ValueError`
-    every other caller-contract violation in this package reports)."""
+    every other caller-contract violation in this package reports).
+
+    Raises `ValueError` for an `opted_out` that is not a set, for the same
+    reason `opt_out_key_or_none` re-checks its own two halves: a type hint
+    is not runtime enforcement, and the failure here is SILENT rather than
+    loud. `in` against a bare `str` is substring containment, so passing
+    one key as a string instead of a one-element set makes every key that
+    happens to be a substring of it -- and, for a single-region entry, the
+    key itself -- read as opted out, dropping entries from `actions` AND
+    from `artifact_hashes` with no error at any layer."""
+    if not isinstance(opted_out, (set, frozenset)):
+        raise ValueError(
+            "build_plan(opted_out=...) must be a set of opt_out_key strings, not "
+            f"{type(opted_out).__name__} -- `in` against a bare str is substring "
+            "containment and would silently suppress entries"
+        )
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     unknown_ids = sorted(
         {

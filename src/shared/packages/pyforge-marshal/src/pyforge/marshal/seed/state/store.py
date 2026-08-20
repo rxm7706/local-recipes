@@ -766,8 +766,29 @@ def _opt_out_pattern() -> re.Pattern[str]:
     Matched with ``re.match``, not ``.fullmatch()``: the schema pattern is
     already anchored at BOTH ends (``^`` ... ``(?![\\s\\S])``) -- see the
     schema's own ``timestamp`` note on why the terminator is not a bare
-    ``$`` -- so re-anchoring it would state the same rule twice."""
-    return re.compile(_load_schema()["properties"]["opted_out"]["items"]["pattern"])
+    ``$`` -- so re-anchoring it would state the same rule twice.
+
+    A packaged schema that parses but has lost this key (or carries a
+    pattern ``re`` will not compile) is an ``InternalError`` (exit 10) with
+    the same reinstall remedy ``_schema_text``/``_load_schema`` already give
+    their own two failure modes -- not the bare ``KeyError``/``re.error``
+    the raw subscript chain used to raise. Same corruption, same broken
+    install, so the same loud, actionable exit; and the chain is reachable
+    from ``build_plan`` via ``opt_out_key_or_none``, which is documented as
+    degrading rather than crashing on a bad pair. ``opted_out.items`` is
+    also one of only two INLINE patterns in a schema whose dominant
+    convention is ``$ref: #/$defs/...``, so a future refactor toward that
+    convention lands here first."""
+    schema = _load_schema()
+    try:
+        pattern = schema["properties"]["opted_out"]["items"]["pattern"]
+        return re.compile(pattern)
+    except (KeyError, TypeError, re.error) as exc:
+        raise InternalError(
+            "the packaged seed-state schema has no usable "
+            "properties.opted_out.items.pattern",
+            remedy="reinstall pyforge-marshal; the packaged schema.json is corrupt",
+        ) from exc
 
 
 def opt_out_key_or_none(artifact_id: str, region: str) -> str | None:
@@ -984,6 +1005,24 @@ def clear_opt_out(state: SeedState, artifact_id: str, region: str) -> SeedState:
     span's real byte offsets), facts a reinstate does not yet have because
     nothing has been inserted. The next apply re-establishes the claim from
     the write it actually performs.
+
+    **PRECONDITION, and it is the caller's to check: the region must not be
+    PRESENT in the file.** The claim drop above is unconditional, because
+    state alone cannot tell the two claim-bearing cases apart -- "markers
+    deleted, claim survives" (a derived opt-out, which must lose the claim)
+    and "markers present, claim survives" (an ordinary managed region, which
+    must keep it) differ only in the FILE, which this pure function never
+    sees. Called on the second, it discards a live claim and with it the
+    recorded ``body_sha``: ``detect/hashes.py::check_managed_region`` then
+    reads the region as adopted out-of-band and reports a HARD
+    ``managed-region-modified`` on every later run, while ``build_plan``
+    plans no insertion (the region IS present), so nothing re-establishes
+    the claim. Gating this inside the function is not possible without
+    giving it the file, which the frozen ``(state, artifact_id, region)``
+    signature forbids; the check therefore belongs to the verb that calls
+    it, which already has the classification in hand -- clear only a pair
+    ``detect/optout.py`` classifies ``OPTED_OUT``. Recorded as
+    ``DW-FU-8-5-4`` until S-10.6's ``adopt --reinstate`` exists to carry it.
 
     Idempotent: clearing a pair that is not recorded and not claimed returns
     an equal ``SeedState``. Keeps ``opted_out`` sorted for the same
