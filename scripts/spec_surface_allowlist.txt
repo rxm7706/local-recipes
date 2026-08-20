@@ -82,3 +82,12 @@ pixi.lock                # lockfile (derived from pixi.toml)
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
 conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage as above)
+# --- 2026-08-20: pushed directly to main (commits 0f0b75232e, 9de01865ce, 4397583a76), --------
+# no owning BMAD spec — found ungoverned by doctor Story 10.2's own verify step, unrelated to
+# that story's own change. Interim exemption pending a spec claim, not a governance decision.
+conf/conda-forge-packaging-inventory-operations.local.env.example  # inventory-ops local env template, no owning spec
+conf/conda-forge-packaging-inventory-operations_curated_groups.json  # inventory-ops config data, no owning spec
+scripts/conda-forge-packaging-inventory-operations_metrics.py  # inventory-ops helper script, no owning spec
+scripts/conda-forge-packaging-inventory-operations_openteams_identity.py  # inventory-ops helper script, no owning spec
+scripts/conda-forge-packaging-inventory-operations_priority.py  # inventory-ops helper script, no owning spec
+scripts/openteams_identity_dashboards.py  # dashboard helper script, no owning spec
