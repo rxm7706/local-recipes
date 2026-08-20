@@ -715,6 +715,20 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No live La Suite/Wagtail server, credential or httpx opener was stood up; `factory/__init__.py:11` still lists the CMS sync as H3's future scope. Carried as PRD § 6.4 DC-4.
+
+  annotation: 2026-08-15 (Story 16.2,
+    `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-httpx-opener-and-rehearsal.md`)
+    — a real httpx-backed `Opener` builder + CLI entrypoint
+    (`src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py`) now exists, plus an offline
+    rehearsal (`tests/factory/test_lasuite_live_rehearsal.py`) proving that SAME opener drives the
+    mock-proven create/update/idempotent-skip/resume sequence over a loopback HTTP stub. The
+    script refuses to report success unless it genuinely reached the CMS (it probes
+    `list_documents()` before exiting 0), so the attended run cannot close this entry on a
+    hollow pass. The attended DW-H3 bring-up checklist — which will run this exact script against
+    a real Wagtail/La Suite server — is documented in that spec's Design Notes. Still ATTENDED,
+    still not executed: `status` stays `open`; DW-H3 closes only when the real bring-up runs and
+    passes.
+
 ## DW-H4 — the live factory-crew daemon bring-up (sensor RUNNING + weekly lint + live wiki store) (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H4, § 7.2, FR-22(d)/FR-6)

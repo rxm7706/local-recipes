@@ -6,12 +6,18 @@ surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py
   - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
+  - src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py
+  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py
 sources:
   - ../../../../../../docs/dreams/wagtail-corporate-brain.md
+# Verification-home question RESOLVED 2026-08-15 (Story 16.2): the rehearsal lives in the
+# DEFAULT `kedro-test` gate, not a network-marked pytest outside it — a real httpx opener
+# (`tools/lasuite_bringup.py`) driven over a loopback-only stdlib `http.server` stub stays fully
+# offline, so no new pytest marker was needed. See
+# `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-httpx-opener-and-rehearsal.md`.
 open_questions:
   - deployment substrate — conda-forge Wagtail + django-lasuite (DW-H3's own text) vs a container
   - is DW-H1's PostgreSQL/MinIO required, or does a SQLite-backed minimal instance satisfy the contract?
-  - home of the live verification — attended checklist only, or also a network-marked pytest outside the default gate?
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -113,5 +119,23 @@ later runs and passes, DW-H3 closes citing this SPEC; until then the SPEC holds 
   the minimal instance is that stack or a container is Steward's mechanism call at bring-up.
 - **DW-H1 dependency:** does the minimal instance need DW-H1's PostgreSQL/MinIO, or does a
   SQLite-backed Wagtail satisfy the four-route contract for a first bring-up?
-- **Verification home:** attended checklist only, or also a network-marked pytest kept out of the
-  default offline gate.
+
+**Resolved:**
+
+- **Verification home** (Story 16.2, 2026-08-15): the rehearsal lives in the DEFAULT `kedro-test`
+  gate — a real httpx-backed opener (`src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py`)
+  driven over a loopback-only stdlib `http.server` stub
+  (`src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py`) reproduces the
+  mock-proven create / no-op re-push / single-update / mapping-resume sequence over REAL HTTP while
+  staying fully offline (127.0.0.1 ephemeral port, started and torn down inside the test, no
+  external network, no credentials), so no network-marked pytest outside the default gate was
+  needed. DW-H3's own "Do NOT weaken the gate to import httpx into package code or bind a socket
+  (AC-2 / NFR-12)" clause is not contradicted by this: it bars making the offline gate depend on a
+  real network or a live CMS, `httpx` still enters no package file (the import lives under
+  `tools/`, outside the no-inline-IO scan root), and this repo already binds loopback stub servers
+  inside the same default gate (`tests/publish/test_emit_range.py`, `tests/wasm/test_wasm_smoke.py`)
+  — recorded here so a future reader does not re-litigate the apparent contradiction. The attended
+  DW-H3 checklist (Design Notes of
+  `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-httpx-opener-and-rehearsal.md`)
+  is additional, not a substitute — it still runs the same script against a real Wagtail/La Suite
+  instance.
