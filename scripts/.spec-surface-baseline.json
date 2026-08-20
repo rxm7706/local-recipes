@@ -3789,10 +3789,10 @@
  },
  "pyforge-steward/spec-enterprise-airgap": {
   "files": {
-   ".claude/skills/conda-forge-expert/scripts/_http.py": "5e9d9f37b5c5099073aad081be500b5a6627194c",
+   ".claude/skills/conda-forge-expert/scripts/_http.py": "6348e198ff7f51afe9d6073efd2751c8f4abbb71",
    "docs/reference/pixi-config-jfrog.example.toml": "d3d4af5b71406572d164c8ecddb27ab7fd0cc2a6"
   },
-  "memlog": "0d96523e2b4106b6eb54c45d7677ce537f286ce5"
+  "memlog": "fd596be527cf41639ddeb10854be25dbfd84faea"
  },
  "pyforge-steward/spec-jira-github-projects-sync": {
   "files": {},

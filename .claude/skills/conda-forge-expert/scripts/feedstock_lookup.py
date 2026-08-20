@@ -24,8 +24,12 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional
 
+# Sibling helper — canonical path resolution shared across scripts/*.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _paths import get_data_dir  # noqa: E402
+
 # Local data directory (per CLAUDE.md three-tier layout)
-_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "conda-forge-expert"
+_DATA_DIR = get_data_dir()
 _CACHE_DIR = _DATA_DIR / "feedstock_cache"
 _CACHE_TTL_SECONDS = 3600  # 1 hour
 

@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.81.0
+version: 8.82.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -197,6 +197,57 @@ Two properties worth preserving if you touch the helper:
 
 `tests/unit/test_path_guard.py` covers the escapes; add a case there rather than
 re-deriving the rules at a new call site.
+
+### New Scripts Resolve the Data Dir / Repo Root Through `_paths`, Never a Hand-Rolled Walk
+
+Any **new** script needing the skill-scoped data directory (`.claude/data/conda-forge-expert/`)
+or the monorepo root must import `scripts/_paths.py`:
+
+```python
+from _paths import get_data_dir, get_repo_root
+```
+
+A Rule-2 retro (Story 5.5) found ~30 hand-rolled copies of a 1-line `_get_data_dir()`
+across `scripts/*.py`, in three subtly different shapes — with and without
+`.resolve()` on `__file__`, and two files (`feedstock_context.py`,
+`feedstock_lookup.py`) at the **wrong depth entirely**, resolving
+`.claude/skills/data/conda-forge-expert` instead of `.claude/data/conda-forge-expert`.
+That divergence was live, not theoretical: the wrong directory had actually been
+created on disk and `.gitignore`'d rather than root-caused. A second, independent
+divergence hit `REPO_ROOT` the same way — `bootstrap_data.py` walked one level too
+far (`parents[5]`, landing above the real repo root) and `recipe_optimizer.py`'s
+`_read_conda_forge_python_floor()` walked one level too shallow (`parents[3]`,
+landing on `.claude/` itself), which meant it could never find the real
+`.pixi/envs/local-recipes/conda_build_config.yaml` pinning file and silently
+fell back to its hardcoded default on every call since SEL-004 shipped.
+
+All four confirmed-wrong call sites now import `_paths`; the other ~26
+correct-but-duplicated copies were **not** mass-migrated in that pass (disproportionate
+blast radius for a closing-retrospective commit against code that wasn't actually
+broken) — migrate them opportunistically when you're already touching that file.
+`.resolve()` matters even when the depth is right: without it, a parent-walk over a
+symlinked invocation path can land one directory off from the real location.
+
+### Every Outbound Request's JFrog Credential Is Host-Gated, Not Global
+
+`_http.auth_headers_for` used to attach `JFROG_API_KEY` / `JFROG_USERNAME`+`PASSWORD`
+to **every** outbound request whenever the env var was set, regardless of the target
+host — a cross-resolver credential leak (surfaced 2026-05-10, partially mitigated by
+the v8.14.0 `skip_auth` call-site opt-out). A Rule-2 retro (Story 5.5) landed the
+durable fix: the JFrog branches are gated on `_configured_enterprise_hosts()`, a set
+**derived** (never hardcoded) from every currently-set `*_BASE_URL` env var's host.
+The gate is host-level, not repo-scoped or resolver-scoped — a JFrog instance fronting
+several ecosystems under one credential is expected to receive that credential for all
+of them — but it closes the leak that mattered: a public fallback host the operator
+never configured anything for used to receive the header whenever the key was merely
+set. Closing that without an SSRF-style private-IP denylist matters because a denylist
+would wrongly block the very enterprise mirrors this routing exists to reach.
+`skip_auth=True` still short-circuits everything and remains the right call for a
+known-public endpoint regardless of configuration; the host gate is defense in depth
+for every other call site, not a replacement for it. A malformed `*_BASE_URL` value
+(e.g. an unclosed IPv6-bracket literal) contributes no host rather than crashing the
+whole allowlist derivation — `urlparse()` raises `ValueError` on those, and the
+derivation catches it per-entry.
 
 ### Every v1 Recipe Must Declare the Schema Header
 
@@ -3836,6 +3887,25 @@ until an import says otherwise.
 
 ---
 
+### G108. Autotick's internal `recipe_editor.py` subprocess call must resolve the interpreter the same way as its sibling — a bare `"python"` argv0 breaks on any environment without a `python` alias
+
+**Symptom**: `recipe_updater.py`'s (the PyPI autotick bot) real-write path — the branch that actually applies a version bump, not the `--dry-run` preview — fails with `FileNotFoundError` / a non-zero `recipe_editor.py failed` result on an environment whose interpreter is only reachable as `python3`, never `python`.
+
+**Why**: the subprocess call hardcoded `cmd = ["python", str(RECIPE_EDITOR_SCRIPT), ...]` — a bare PATH lookup. Its sibling, `github_updater.py` (the GitHub-Releases autotick bot), makes the identical internal call to `recipe_editor.py` but resolves the interpreter first: `python = os.environ.get("CONDA_PYTHON_EXE") or sys.executable`. `CONDA_PYTHON_EXE` is the conda-activated environment's own interpreter path (set by conda's activation scripts); `sys.executable` is the interpreter currently running the calling script — either is guaranteed to exist and be executable, unlike a bare `"python"` which depends on the host's PATH having that exact alias.
+
+**Fix**: mirror `github_updater.py`'s resolution in every internal subprocess call to a sibling CFE script:
+
+```python
+python = os.environ.get("CONDA_PYTHON_EXE") or sys.executable
+cmd = [python, str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
+```
+
+Never hardcode a bare `"python"` (or `"python3"`) for an internal script-to-script call — the calling script's own interpreter (or the active conda env's) is always the correct one to reuse, and is always resolvable without a PATH lookup.
+
+**Case study**: discovered during the pyforge-mason effort's Story 2.10 (`mason recipe update`) by adversarial review of the Mason↔CFE delegation boundary, 2026-08-12 — Mason's own fixture stubs short-circuit before this real subprocess chain is reached, so the divergence carried zero test coverage on either side until the review inspected both scripts directly. Flagged for this Rule-2 retrospective (`DW-2-10-2`) since the fix belongs in the wrapped tool, not in the wrapper.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -3871,6 +3941,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.82.0** (Aug 20, 2026) — **pyforge-mason Epic-5 closing retrospective (Rule 2): 1 new gotcha G108 + 2 new operating constraints (MINOR).** The mandatory closing retrospective for the `pyforge-mason` BMAD effort (Story 5.5) — the effort's one commit sanctioned to touch the CFE surface (AD-15; proven exactly-once by Story 5.2's `mason_cfe_surface_check.py`). Triaged the four CFE upstream defects `epic-5-context.md` flagged during planning. **New Critical Constraint (path resolution)** — ~30 scripts hand-rolled a 1-line `_get_data_dir()` in three subtly different shapes; two (`feedstock_context.py`, `feedstock_lookup.py`) resolved the WRONG directory entirely (`.claude/skills/data/...` instead of `.claude/data/...` — a live divergence, proven by a stray `.gitignore` entry for the wrong path). `bootstrap_data.py`'s `REPO_ROOT` walked one level too far; `recipe_optimizer.py`'s `_read_conda_forge_python_floor()` (SEL-004) walked one level too shallow, so it could never find the real pinning file and silently always used its hardcoded default. New shared `scripts/_paths.py` (`get_data_dir()`/`get_repo_root()`) fixes all four confirmed-wrong sites; the ~26 other correct-but-duplicated copies are left alone (disproportionate churn for a closing-retro commit). **New Critical Constraint (JFrog credential host-gating)** — `_http.py`'s unconditional `JFROG_API_KEY` injection (the cross-resolver leak documented since v8.14.0's `skip_auth` partial mitigation) is now gated on `_configured_enterprise_hosts()`, derived from every currently-set `*_BASE_URL` env var — closes the leak without an SSRF-style private-IP denylist (which would break the enterprise-mirror routing AUD-CFE-004 already flagged as undoable that way). **G108 (new)** — `recipe_updater.py`'s autotick bot hardcoded a bare `"python"` for its internal `recipe_editor.py` subprocess call, unlike sibling `github_updater.py`'s `CONDA_PYTHON_EXE`-or-`sys.executable` resolution (`DW-2-10-2`, found by Story 2.10 adversarial review). Full CFE suite verified against a `git stash` baseline — zero regressions; 38 pre-existing failures confirmed unchanged. **Files**: `SKILL.md`, `scripts/_paths.py` (new), `scripts/{feedstock_context,feedstock_lookup,bootstrap_data,recipe_optimizer,recipe_updater,_http}.py`, 5 new `tests/unit/*.py`, 3 updated `tests/unit/*.py`, `.gitignore`, `config/skill-config.yaml` (8.81.0 → 8.82.0), `MANIFEST.yaml`, `CHANGELOG.md`.
 
 - **v8.81.0** (Jul 29, 2026) — **Round-4 code-audit remediation retro (Rule 2 — the AUD-CFE-\* + AUD-REPO-001 findings; 1 new operating constraint; MINOR).** Closes the `AUD-CFE-*` half of `spec-code-audit-remediation-2026-07-26`, which the 2026-07-27 incorporation record left with **no disposition** ("pyforge-atlas only"). PR #131 is abandoned, so every finding was re-verified **OPEN against `main`** rather than trusted from the branch's `Status:` lines. No recipes authored; no `recipes/**` touched. **New Critical Constraint** — *Every Recipe-Facing Path Argument Confines Through `_path_guard`*: `submit_pr.prepare_branch` (slug → `recipes/` → `copytree` into a **public fork**), `recipe_editor.execute_actions` (suffix-only check, so any repo YAML was writable) and `trigger_build` (any recipe path on disk) all skipped confinement; they now share one helper, whose root is read **per call** so the test override cannot be silently defeated. **Root cause found:** `/.claude/skills` sat in `.git/info/exclude` — 919 files there are tracked, so it hid only **new** ones, which is why `_path_guard.py` and `tests/meta/test_dashboard_renders.py` were written and never committed (**PR #131 imports a module it does not ship**). Guarded by `tests/meta/test_skill_files_tracked.py`, which walks the filesystem instead of asking `git status` (that honours the exclude and reports clean). **Refinements:** a keyword *substring* scan false-positives on identifiers (`updated_at` contains `UPDATE`) → word-boundary matching; `query_atlas`'s `order_by` was interpolated with **no** validation → allowlists on `select`/`order_by`, `where` keeps its documented subqueries, connection read-only, `limit` clamped at both ends (`limit=-1` = *no limit* in SQLite, verified to dump a table); the atlas N+1 fix applied to **both** readers via a shared chunked helper, not just the one the finding named (`with sqlite3.connect(...)` manages the transaction, **not** the connection). **AUD-REPO-001** dependency-completeness gate restored (`pyforge-deps-test`, pure stdlib so it runs in the lean env) — it found AUD-WARDEN-010 still open on `main` on its first run. Also: Gemini key → `x-goog-api-key`; provenance-hook return/argparse/exit fixes; `.secrets` into the tracked `.gitignore`; `--force-with-lease` on the fork sync; `wiki-test` wired for a suite that collected nowhere; **stale `7.0.0` in `SKILL.md`/`MANIFEST.yaml` corrected**. AUD-CFE-003/004 stay deferred (004 cannot be a private-IP denylist — internal hosts are what `<HOST>_BASE_URL` routing targets). **Files**: `SKILL.md`, `MANIFEST.yaml`, `config/skill-config.yaml`, `reference/mcp-tools.md`, `scripts/{_path_guard,submit_pr,recipe_editor,scan_project}.py`, `.claude/tools/{conda_forge_server,gemini_server,mcp_call}.py`, `.claude/hooks/post-tool-call.py`, `tests/{meta,unit}/…` (+134 tests), `tests/packaging/`, `pixi.toml`, `.gitignore`, `CHANGELOG.md`.
 
