@@ -946,6 +946,10 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/langchain-text-splitters.iml" filepath="$PROJECT_DIR$/.idea/langchain-text-splitters.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langcodes.iml" filepath="$PROJECT_DIR$/.idea/langcodes.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langcodes@1.iml" filepath="$PROJECT_DIR$/.idea/langcodes@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow.iml" filepath="$PROJECT_DIR$/.idea/langflow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-base.iml" filepath="$PROJECT_DIR$/.idea/langflow-base.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-sdk.iml" filepath="$PROJECT_DIR$/.idea/langflow-sdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/langflow-stepflow.iml" filepath="$PROJECT_DIR$/.idea/langflow-stepflow.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph.iml" filepath="$PROJECT_DIR$/.idea/langgraph.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-agui-dojo.iml" filepath="$PROJECT_DIR$/.idea/langgraph-agui-dojo.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/langgraph-checkpoint.iml" filepath="$PROJECT_DIR$/.idea/langgraph-checkpoint.iml" />
@@ -960,6 +964,11 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/lazy-loader@3.iml" filepath="$PROJECT_DIR$/.idea/lazy-loader@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lazy-loader@4.iml" filepath="$PROJECT_DIR$/.idea/lazy-loader@4.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lesscpy.iml" filepath="$PROJECT_DIR$/.idea/lesscpy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx.iml" filepath="$PROJECT_DIR$/.idea/lfx.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-arxiv.iml" filepath="$PROJECT_DIR$/.idea/lfx-arxiv.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-docling.iml" filepath="$PROJECT_DIR$/.idea/lfx-docling.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-duckduckgo.iml" filepath="$PROJECT_DIR$/.idea/lfx-duckduckgo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lfx-ibm.iml" filepath="$PROJECT_DIR$/.idea/lfx-ibm.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lia-web.iml" filepath="$PROJECT_DIR$/.idea/lia-web.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lia-web@1.iml" filepath="$PROJECT_DIR$/.idea/lia-web@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/lia-web@2.iml" filepath="$PROJECT_DIR$/.idea/lia-web@2.iml" />
