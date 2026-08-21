@@ -3155,6 +3155,96 @@ def _correlate_due_for_verification(target: Path, items: list[dict]) -> list[dic
         return []
 
 
+# --- Story 11.7: aggregate coverage, not just per-entry WARNs ------------------
+#
+# Stories 11.1-11.6 already know, per project, which INDIVIDUAL tracked entries
+# are due for re-verification -- but nothing before this story batched that
+# into the AGGREGATE picture ("38% of doctor's 42 tracked entries verified
+# within 30 days") that would have made the real six-week fleet-wide
+# staleness gap (this whole epic's own motivation) visible ambiently, instead
+# of only via a pointed, manual campaign. This section adds ONE small,
+# read-only, per-project coverage computation, reusing Story 11.1's own
+# `_verification`/`_parse_verified_date` primitives UNMODIFIED (Boundaries:
+# "no new ledger reads beyond what Story 11.1 already parses" -- meaning no
+# new PARSING SHAPE: every byte this pass reads is already read by
+# `_check_project_due_for_verification`'s own `_verification()` call earlier
+# in the same `gather_due_for_verification` chain. Review finding, patch:
+# this IS a second physical read of each project's tracked ledger, not a
+# reuse of the first one's result -- correcting the earlier docstring's
+# overclaim. Left unmerged deliberately (Design Notes below), since the
+# extra cost is one small markdown-file read + regex pass per project (no
+# `git` subprocess involved), negligible next to the churn/mechanical-verdict
+# git work Stories 11.2/11.3 already do per entry).
+
+
+def _verification_coverage(target: Path, *, today: date | None = None) -> list[dict]:
+    """One ``verification-coverage`` item per project with at least one
+    tracked ledger entry -- ``{project, total, verified_within_window,
+    window_days, pct}`` (``pct`` rounded to the nearest whole percent).
+
+    ``today`` is the injectable "as of" date, matching every other selector
+    in this module's own convention (``_due_for_verification_findings``) --
+    ``None`` resolves to ``date.today()`` here, at this function's own call
+    boundary.
+
+    Each project is evaluated inside its own try/except: one project's
+    unreadable tracked ledger must not discard another, ALREADY-COMPUTED
+    project's coverage item (Tasks & Acceptance: "per-project try/except
+    isolation").
+
+    A project with ZERO tracked entries is silently skipped -- no item is
+    emitted for it (Boundaries: "a '0% of 0' line is noise, not signal").
+
+    An entry counts as "verified within the window" only when it carries a
+    ``verified:`` line that PARSES to a real date (``_parse_verified_date``)
+    AND that date is no more than ``DUE_FOR_VERIFICATION_STALENESS_DAYS``
+    days before ``today`` -- the exact same "fresh" boundary
+    ``_check_project_due_for_verification``'s own ``days_stale >
+    DUE_FOR_VERIFICATION_STALENESS_DAYS`` test uses, just read the other way
+    round, so a project's coverage percentage and its own per-entry due
+    findings always agree about which entries are "due" versus "fresh"."""
+    as_of = today if today is not None else date.today()  # noqa: DTZ011 --
+    # mirrors `_due_for_verification_findings`'s own identical, deliberately
+    # unfixed `today is not None else date.today()` call boundary below.
+    items: list[dict] = []
+    projects_dir = target / "_bmad-output" / "projects"
+    if not _is_dir(projects_dir):
+        return items
+    for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
+        try:
+            entries = _verification(proj / TRACKED_REL)
+            total = len(entries)
+            if total == 0:
+                continue
+            verified_within_window = 0
+            for _entry_id, raw_verified in entries:
+                if not raw_verified:
+                    continue
+                parsed = _parse_verified_date(raw_verified)
+                if (
+                    parsed is not None
+                    and (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS
+                ):
+                    verified_within_window += 1
+            items.append({
+                "kind": "verification-coverage",
+                "project": proj.name,
+                "total": total,
+                "verified_within_window": verified_within_window,
+                "window_days": DUE_FOR_VERIFICATION_STALENESS_DAYS,
+                "pct": round(100 * verified_within_window / total),
+            })
+        except Exception:  # noqa: BLE001, S110 -- one project's unreadable
+            # ledger must not discard another, already-computed project's
+            # coverage item (Tasks & Acceptance: "per-project try/except
+            # isolation"); nothing to log here that the finding itself
+            # (this project's simple absence from `items`) doesn't already
+            # say, mirroring `_known_project_code_roots`'s own identical
+            # per-sibling isolation shape above.
+            pass
+    return items
+
+
 def _due_for_verification_findings(
     target: Path, *, today: date | None = None,
 ) -> list[dict]:
@@ -3283,6 +3373,11 @@ def _due_for_verification_message(item: dict) -> str:
             f"shared defect surfacing independently, not {len(members)} "
             f"separate ones: {member_names}."
         )
+    if kind == "verification-coverage":
+        return (
+            f"{item['project']}: {item['pct']}% of {item['total']} tracked "
+            f"entries verified within {item['window_days']} days."
+        )
     return item.get("detail", f"{item['project']}: {kind}")
 
 
@@ -3298,6 +3393,26 @@ def gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
     return degrade_on_exception(
         Source.DUE_FOR_VERIFICATION, "due-for-verification",
         lambda: _gather_due_for_verification(target),
+    )
+
+
+def _wrap_as_findings(items: list[dict]) -> tuple[Finding, ...]:
+    """Every ``item`` dict's own ``Finding`` wrap -- the SAME shape both
+    ``_gather_due_for_verification``'s per-entry branch and its Story 11.7
+    coverage branch need (review finding, patch: these two call sites
+    previously duplicated this comprehension almost verbatim, one of them
+    with a needlessly hardcoded ``check`` literal instead of the item's own
+    ``kind``, which already carries the correct value for every item either
+    call site ever produces)."""
+    return tuple(
+        Finding(
+            source=Source.DUE_FOR_VERIFICATION,
+            check=item["kind"],
+            status=DoctorStatus.WARN,
+            message=_due_for_verification_message(item),
+            evidence={k: v for k, v in item.items() if k not in ("kind", "warn")},
+        )
+        for item in items
     )
 
 
@@ -3325,7 +3440,7 @@ def _gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
             p.name for p in projects_dir.iterdir()
             if p.is_dir() and (p / TRACKED_REL).is_file()
         ]
-        return (
+        base: tuple[Finding, ...] = (
             Finding(
                 source=Source.DUE_FOR_VERIFICATION,
                 check="due-for-verification",
@@ -3334,16 +3449,16 @@ def _gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
                 evidence={"projects_scanned": len(scanned)},
             ),
         )
-    return tuple(
-        Finding(
-            source=Source.DUE_FOR_VERIFICATION,
-            check=item["kind"],
-            status=DoctorStatus.WARN,
-            message=_due_for_verification_message(item),
-            evidence={
-                k: v for k, v in item.items()
-                if k not in ("kind", "warn")
-            },
-        )
-        for item in raw
-    )
+    else:
+        base = _wrap_as_findings(raw)
+    # Story 11.7: the aggregate coverage picture is appended HERE, at the
+    # outer gather boundary -- not mixed into `raw`/`_due_for_verification_
+    # findings`'s own return above -- so every one of Stories 11.1-11.6's
+    # existing tests that call `_due_for_verification_findings` directly (the
+    # per-entry raw list) keeps seeing EXACTLY the same, unchanged result
+    # (Boundaries: "no regression in Stories 11.1-11.6's existing tests").
+    # `gather_due_for_verification` (this function's own public wrapper)
+    # still additively carries a `verification-coverage` item per project
+    # with tracked entries, satisfying the Intent unconditionally.
+    coverage = _wrap_as_findings(_verification_coverage(target))
+    return base + coverage

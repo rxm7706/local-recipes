@@ -114,6 +114,45 @@ def bmad_core_drift_findings(
     return [f for f in findings if f.get("status") == "warn"]
 
 
+def verification_staleness_findings(
+    repo: pathlib.Path = REPO, timeout: int = 90
+    # 90s, not `bmad_core_drift_findings`'s 15s: measured live against this
+    # repo's own real fleet (`time python -m pyforge.doctor.sources
+    # due-for-verification --json`) at ~48s -- the due-for-verification
+    # source, unlike the cheap bmad-method-version-drift check, does real
+    # per-entry `git log`/`git grep` churn and mechanical-verdict work
+    # (Stories 11.2/11.3) across the fleet's 400+ tracked entries, so a 15s
+    # bound would degrade EVERY real invocation, defeating this story's own
+    # "ambient, always-visible" Intent. 90s carries a ~2x margin over the
+    # measured cost, the same proportional margin `bmad_core_drift_findings`
+    # itself carries over its own inner HTTP bound.
+) -> list[dict]:
+    """``verification-coverage`` items from ``pyforge.doctor``'s due-for-
+    verification source (Story 11.7/CAP-7 -- the AGGREGATE picture, "N% of a
+    project's tracked entries verified within the staleness window", that
+    Story 11.1's own per-entry WARN findings never surface ambiently on
+    their own).
+
+    Shells out via ``sys.executable -m pyforge.doctor.sources
+    due-for-verification --json`` -- the same subprocess discipline
+    ``bmad_core_drift_findings`` above already establishes; this script
+    never imports ``pyforge.doctor`` directly.
+
+    Like ``bmad_core_drift_findings`` (and UNLIKE ``loop_home_staleness``/
+    ``running_stations``), this function does NOT catch its own failures --
+    it raises on any (subprocess error, non-zero exit, malformed JSON, ...).
+    Degrading to one "could not check" line is the CALLER's job (``main()``'s
+    own ``try/except Exception: watch.append(...)`` idiom), not this
+    function's."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources",
+         "due-for-verification", "--json"],
+        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("check") == "verification-coverage"]
+
+
 def running_stations() -> tuple[set[str], dict[str, dict]]:
     """(slugs running, slug -> live row) from marshal status.
 
@@ -282,6 +321,26 @@ def main() -> int:
             watch.append(f"{check}: {message}")
     except Exception:
         watch.append("could not check bmad-method core version drift")
+
+    try:
+        for finding in verification_staleness_findings():
+            # Review finding, patch: use the already-formatted `message`
+            # DIRECTLY, exactly like the `bmad_core_drift_findings` consumer
+            # immediately above -- a hand-reassembled string from `evidence`
+            # fields had already drifted from `_due_for_verification_message`'s
+            # own coverage-branch text (missing its trailing period), and a
+            # second string-building copy of the same format is one more
+            # place for the two to silently diverge again later. Same
+            # split/truncate discipline as the bmad-core-drift case, for the
+            # same reason (an externally-sourced message must never inject
+            # extra, indistinguishable bullet lines).
+            message = finding.get("message", "verification staleness detected")
+            watch.append(message.split(chr(10))[0][:110])
+    except Exception:  # noqa: BLE001 -- matches every other ATTENTION probe
+        # in this file (loop_home_staleness/bmad_core_drift_findings/PR
+        # query/baseline-drift-check above): degrade to one "could not
+        # check" line rather than crash the whole report.
+        watch.append("could not check verification staleness")
 
     print("\nATTENTION:")
     if needs:
