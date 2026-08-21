@@ -1,0 +1,118 @@
+# CFE Rebuild campaign state (Epic 6, pyforge-mason).
+#
+# PURPOSE: a fresh session with zero prior context should be able to read this ONE file and
+# know (1) what slices exist, (2) each slice's current status, and (3) what the next action
+# is — enough to resume the campaign without hunting for that information elsewhere. This is
+# a resumable POINTER, not a hermetic full-detail record: a `next_action` may cite a
+# slice-map.md section or a gotcha ID for the FULL derivation detail (per-file coverage,
+# knowledge sections, caller inventory) behind its one-line summary — `slice_map` / `spec`
+# below are exactly those pointers, followed only when the summary here isn't enough.
+#
+# HOW TO RESUME: read `campaign.current_focus`, find that slice under `slices:`, read its
+# `next_action`. That is the whole resume protocol.
+
+schema_version: 1
+last_updated: "2026-08-21"
+
+spec:
+  path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
+  capabilities_tracked: ["CAP-1", "CAP-2", "CAP-3", "CAP-4"]
+
+slice_map:
+  path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md"
+  derived_at: "2026-08-21"
+  derived_by: "story 6.1, direct live-tree derivation (skf-analyze-source's stages are scoped to onboarding a fresh external repo into new skill-brief.yaml recommendations, not to re-seaming an existing in-repo BMAD skill for a rebuild campaign — see slice-map.md § Method for the full reasoning)"
+  cfe_skill_version_at_derivation: "8.82.3"
+  live_tree_totals:
+    canonical_scripts: 68
+    cli_wrappers: 57
+    mcp_tools: 46
+
+# Status vocabulary (CAP-4, reconciled against CAP-3's explicit "any slice marked `parallel`"
+# language — SPEC.md's own CAP-4 bullet prose omits `parallel` from its listed chain and
+# orders cut-over before audited; CAP-3's parallel-run-detector capability presupposes a
+# `parallel` state exists, so this file follows the fuller, CAP-3-consistent ordering below,
+# not CAP-4's literal prose list). This story (6.1) only requires the vocabulary to exist and
+# the first slice initialized at `mapped` — no slice reaches `parallel`/`audited`/`cut-over`/
+# `retired` in this story.
+status_vocabulary:
+  - mapped     # slice boundary + total file/tool coverage derived and documented in slice-map.md
+  - briefed    # skf-brief-skill has produced the slice's brief (Story 6.2 targets this for slice 1)
+  - compiled   # skf-create-skill has produced a replacement; not yet running against live traffic
+  - parallel   # replacement runs alongside the live original; equivalence-harness-gated (CAP-3)
+  - audited    # skf-audit-skill reports zero drift between original and replacement
+  - cut-over   # campaign-end state: callers flip to the replacement (CAP-2's "caller flip... at the campaign's end cutover")
+  - retired    # campaign-end state: legacy code removed
+  - skipped    # re-scope-gate (CAP-4/Story 6.4) decided "adjust" (drop/reorder) or "stop" for this slice -- the decision space CAP-4 names is explicitly go/adjust/stop, and no other state here can represent a slice the gate declines to continue
+
+campaign:
+  # The one slice actively being worked. A fresh session should start here.
+  current_focus: "slice-1-recipe-generation"
+  # Not restated here -- see slices[current_focus].next_action, the single source of truth
+  # for "what's next" (avoids two independently-editable descriptions of the same fact).
+  next_story: "6.2 — see slices[current_focus].next_action below"
+  re_scope_gate:
+    # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
+    # records the measured cost and the go/adjust/stop decision for the remaining slices
+    # before any second brief is written." Not yet reached — slice 1 has not completed
+    # briefing, let alone compiling/parallel-run/audit.
+    reached: false
+    note: null
+
+slices:
+  - id: "slice-1-recipe-generation"
+    order: 1
+    name: "Recipe Generation"
+    status: "mapped"
+    coverage:
+      scripts: 3
+      wrappers: 3
+      mcp_tools: 3
+    mason_caller: true
+    mason_caller_count: 2   # of 10 _CFE_SCRIPTS adapters (generate_recipe, update_recipe_from_github) -- structured, not just a comment
+    next_action: "Story 6.2: run skf-brief-skill against slice-map.md's Slice 1 section (recipe-generator.py + name_resolver.py + github_updater.py; G54/G91/G94's case-variant sub-item/G98)."
+
+  - id: "slice-2-recipe-lifecycle"
+    order: 2
+    name: "Recipe Lifecycle"
+    status: "mapped"
+    coverage:
+      scripts: 22
+      wrappers: 17
+      mcp_tools: 19
+    mason_caller: true
+    mason_caller_count: 8   # of 10 _CFE_SCRIPTS adapters
+    next_action: "Not yet scheduled. Briefing starts only after slice 1's re-scope gate (see campaign.re_scope_gate) records a go decision."
+
+  - id: "slice-3-atlas-intelligence"
+    order: 3
+    name: "Atlas Intelligence"
+    status: "mapped"
+    coverage:
+      scripts: 37
+      wrappers: 35
+      mcp_tools: 22
+    mason_caller: false
+    next_action: "Not yet scheduled. Largest remaining domain slice; briefing not started."
+
+  - id: "slice-4-project-scanning-security"
+    order: 4
+    name: "Project Scanning & Security"
+    status: "mapped"
+    coverage:
+      scripts: 2
+      wrappers: 2
+      mcp_tools: 2
+    mason_caller: false
+    next_action: "Not yet scheduled. Smallest remaining domain slice; briefing not started."
+
+  - id: "slice-5-shared-infrastructure"
+    order: 5
+    name: "Shared Infrastructure"
+    status: "mapped"
+    coverage:
+      scripts: 4
+      wrappers: 0
+      mcp_tools: 0
+    mason_caller: false
+    next_action: "Not an independent rebuild unit (no MCP/wrapper surface of its own — see slice-map.md § Slice Ordering). Its 4 modules are expected to be ported opportunistically alongside whichever domain slice first needs them, starting with slice 1 (_cfy_template.py) and slice 2 (_paths.py, _http.py)."
