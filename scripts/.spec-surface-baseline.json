@@ -340,8 +340,8 @@
    "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "de24cc5db2edc43ff3105ee48acfa2e33c9ec146",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py": "020e93975a82306e91f16a767cb4543ca23aa2b7",
    "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py": "2ab990d7940f234a0c47c2731e33118f7d5e410a",
-   "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py": "b4f848bc74ecd51cdaabae237fbc98e5e5c56570",
-   "src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py": "e385e3afe6918c1c152d1baf39bd2a514f6911a1"
+   "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py": "7fc4fa91f32c890e54ad9664b92876d2d15868ee",
+   "src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py": "6ec4e32e04a5774c48afb6a985d086f87e2c1dff"
   },
   "memlog": "6ac317d5cba83b4d1c7cabdbe79664d9dea29bd6"
  },

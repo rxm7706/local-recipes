@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from pyforge.atlas.factory.lasuite import (
     LaSuiteClient,
     LaSuiteConfig,
@@ -85,7 +84,7 @@ def _make_handler(state: _WagtailState) -> type[BaseHTTPRequestHandler]:
     class _WagtailHandler(BaseHTTPRequestHandler):
         _state = state
 
-        def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
+        def log_message(self, format: str, *args: Any) -> None:
             pass  # silence stdlib's default per-request stderr logging in test output
 
         def _authorized(self) -> bool:
@@ -142,28 +141,28 @@ def _make_handler(state: _WagtailState) -> type[BaseHTTPRequestHandler]:
                 return
             self._respond(400, {"detail": f"unrouted {method} {path}"})
 
-        def do_POST(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_POST(self) -> None:
             self._route("POST")
 
-        def do_GET(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_GET(self) -> None:
             self._route("GET")
 
-        def do_PATCH(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_PATCH(self) -> None:
             self._route("PATCH")
 
         # Every remaining verb routes too, so a stray-verb call is COUNTED by `state.requests`
         # and answered by the stub's own oracle (400 unrouted) rather than short-circuited by
         # stdlib's 501 before the stub ever sees it.
-        def do_PUT(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_PUT(self) -> None:
             self._route("PUT")
 
-        def do_DELETE(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_DELETE(self) -> None:
             self._route("DELETE")
 
-        def do_HEAD(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_HEAD(self) -> None:
             self._route("HEAD")
 
-        def do_OPTIONS(self) -> None:  # noqa: N802 - stdlib-mandated name
+        def do_OPTIONS(self) -> None:
             self._route("OPTIONS")
 
     return _WagtailHandler
