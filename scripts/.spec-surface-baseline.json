@@ -337,11 +337,13 @@
  },
  "pyforge-atlas/spec-wagtail-corporate-brain": {
   "files": {
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "8b3736a3bc15a813de887dc89c2dbd60a8024d5e",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "de24cc5db2edc43ff3105ee48acfa2e33c9ec146",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py": "020e93975a82306e91f16a767cb4543ca23aa2b7",
-   "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py": "2ab990d7940f234a0c47c2731e33118f7d5e410a"
+   "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py": "2ab990d7940f234a0c47c2731e33118f7d5e410a",
+   "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py": "b4f848bc74ecd51cdaabae237fbc98e5e5c56570",
+   "src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py": "e385e3afe6918c1c152d1baf39bd2a514f6911a1"
   },
-  "memlog": "6fe5b20c27af21822a0ea54411eb274a30ea93a4"
+  "memlog": "6ac317d5cba83b4d1c7cabdbe79664d9dea29bd6"
  },
  "pyforge-atlas/spec-wasm-analytics-stack": {
   "files": {},
@@ -3896,7 +3898,7 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "08a93945f746f4590b9b500f32c62837cfbcfe50",
+   "pixi.toml": "4800371b1d597b7a6c5b944a946e3f2a3020f9d7",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
@@ -4015,7 +4017,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "2dcdf871af934b2cb88f1a9a1be7cb60684e8d27"
+  "memlog": "9d11504d7c4522654bfd294a524543352d373060"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
