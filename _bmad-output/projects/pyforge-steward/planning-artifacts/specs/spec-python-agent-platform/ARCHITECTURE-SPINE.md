@@ -55,6 +55,24 @@ or Redis; every engine local-disk state path is forced off (`DBGPT_SESSION_STORA
 no Langflow local-disk state survives); replicas = capacity. Kill-and-replace losing any
 flow, session, or state is a failing test, not a bug report.
 
+**Bounded exception, 2026-08-21: DB-GPT's own metadata store stays on a dedicated volume,
+permanently, not in PostgreSQL.** `dbgpt-app` 0.8.1 structurally cannot use PostgreSQL for its
+`service.web.database` metadata store — `dbgpt_app/base.py::_initialize_db_storage` accepts
+only SQLite/MySQL/OceanBase, its migration path (`_cli.py::_get_migration_config`) is
+SQLite-only outright, and its SQLAlchemy models declare MySQL-only `TEXT(length)` columns that
+do not parse as PostgreSQL DDL. That store holds real state (chat history, knowledge
+documents, RAG chunks, flow/plugin configs) — not disposable cache — so it cannot simply be
+dropped. AD-9 forbids forking `dbgpt-app` to add Postgres dialect support; the operator files
+that gap upstream with `eosphoros-ai/DB-GPT` directly, not gated on it landing. The exception
+is narrow: a Kubernetes-native `PersistentVolumeClaim` mounted on the `dbgpt` sidecar
+container's real resolved SQLite path (confirmed live, not the misleadingly-configured one),
+verified to survive a kill-and-restart (Story 10.5's two-boot persistence test). This still
+satisfies AD-6's actual guarantee — state is never silently lost on redeploy — through a PVC
+instead of PostgreSQL; the one real cost is that the `dbgpt` container cannot be horizontally
+replicated the way a genuinely stateless component could (SQLite has no safe concurrent-writer
+story), so it stays a singleton. No other engine or platform component is exempted by this;
+it is scoped to `dbgpt-app`'s own metadata store alone.
+
 **AD-7 — Celery over Redis is the only async path.** LLM/AWEL and other long-running work
 dispatches to Celery workers; workers call the engines in-process or over the internal
 network — never through the public edge. Each async task's failure mode (timeout / partial
