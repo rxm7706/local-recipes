@@ -72,7 +72,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.76.2
+          pixi-version: v0.77.0
           environments: pyforge-herald
           locked: true
           cache: true
@@ -252,7 +252,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.76.2
+          pixi-version: v0.77.0
           environments: pyforge-herald
           locked: true
           cache: true
@@ -369,7 +369,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.76.2
+          pixi-version: v0.77.0
           environments: pyforge-herald
           locked: true
           cache: true
