@@ -40,6 +40,7 @@ redesign"); each stays exactly as strict or as lenient as its own original.
 
 from __future__ import annotations
 
+import bisect
 import functools
 import http.server
 import importlib.util
@@ -98,6 +99,166 @@ _CHAIN_DATA_JS_PREFIX = "window.DASHBOARD_DATA = "
 #: A ledger story key's leading id, in either shape -- verbatim from the original.
 _LEDGER_ID = re.compile(r"^(\d+-\d+|[a-z]+\d+)-")
 
+#: A top-level (column-0) ``## `` heading -- used two ways: (1) at PROSE-BUILD
+#: TIME, to find each source file's own first heading so everything before it
+#: (its preamble) can be stripped before concatenation (Round 4's fix); (2)
+#: inside ``_cited_cap_ids_by_spec``, to find every heading position in the
+#: already-stripped ``prose`` for the "cap a citation window at the second
+#: heading past its anchor" rule. Three ``#``s (``### Story ...``) does NOT
+#: match -- the third character must be a space, not another ``#``.
+_HEADING_RE = re.compile(r"^## ", re.MULTILINE)
+
+#: The ``## Capabilities`` section heading a SPEC.md declares its own CAP ids
+#: under -- exact-string, case-sensitive, no trailing text. A SPEC.md using a
+#: different heading convention (e.g. ``## Scope (capabilities)``) falls back
+#: to zero declared ids, a real, KNOWN, deliberately-deferred gap (this
+#: story's own Review Triage Log, review pass 1).
+_CAP_SECTION_HEADING_RE = re.compile(r"^## Capabilities\s*$", re.MULTILINE)
+
+#: One declared capability bullet: ``- **CAP-<N> — <title>.**``. Anchored at
+#: column 0 so an indented sub-bullet (``  - **intent:** ...``) never matches.
+_CAP_DECL_LINE_RE = re.compile(r"^-\s*\*\*CAP-(\d+)\b")
+
+#: One CITED CAP-id token in project prose, in any of the four live shapes:
+#: bare ``CAP-5``, inclusive range ``CAP-4..10``, prefixed range
+#: ``CAP-4..CAP-10``, or slash-grouped ``CAP-1/2/3``. The leading AND
+#: trailing ``\b`` (the trailing one added by review pass 1's hardening) keep
+#: ``CAP-10x`` from being mistaken for a citation of CAP-10.
+_CAP_CITATION_RE = re.compile(r"\bCAP-(\d+)(?:\.\.(?:CAP-)?(\d+)|((?:/\d+)+))?\b")
+
+#: A range wider than this is treated as malformed (contributes no ids) --
+#: no legitimate citation in this fleet has ever come close.
+_CAP_MAX_RANGE_SPAN = 500
+
+
+def _parse_declared_cap_ids(spec_md_text: str) -> set[int]:
+    """The Spec's own declared ``CAP-N`` ids, scanned from its ``##
+    Capabilities`` section. Returns an empty set when the heading is absent,
+    present but empty, or present but carries no line matching the declared-
+    bullet shape -- all three degrade identically to "this Spec declares no
+    CAP ids", which is INV-A's own signal to fall back to the original
+    bare-substring check (a Spec with nothing to check coverage against).
+    Never raises: an unparseable line under the heading is silently skipped.
+    """
+    m = _CAP_SECTION_HEADING_RE.search(spec_md_text)
+    if not m:
+        return set()
+    nxt = _HEADING_RE.search(spec_md_text, m.end())
+    body = spec_md_text[m.end():nxt.start() if nxt else len(spec_md_text)]
+    ids: set[int] = set()
+    for line in body.splitlines():
+        dm = _CAP_DECL_LINE_RE.match(line)
+        if dm:
+            ids.add(int(dm.group(1)))
+    return ids
+
+
+def _format_cap_ids(ids: set[int] | list[int]) -> str:
+    """Collapse a set/sequence of CAP ids into compact range notation, e.g.
+    ``{4, 6, 7, 8, 9, 10}`` -> ``"CAP-4, CAP-6..10"``. The sole real call site
+    always passes a sorted, duplicate-free sequence (``sorted(declared -
+    cited)``), so no internal sort/dedupe guard is added (this story's own
+    Review Triage Log, pass 1: rejected as hardening against a caller that
+    does not exist)."""
+    ordered = sorted(ids)
+    if not ordered:
+        return ""
+    chunks: list[str] = []
+    start = prev = ordered[0]
+    for n in ordered[1:]:
+        if n == prev + 1:
+            prev = n
+            continue
+        chunks.append(f"CAP-{start}" if start == prev else f"CAP-{start}..{prev}")
+        start = prev = n
+    chunks.append(f"CAP-{start}" if start == prev else f"CAP-{start}..{prev}")
+    return ", ".join(chunks)
+
+
+def _expand_cap_token(m: re.Match) -> set[int]:
+    """The ids one ``_CAP_CITATION_RE`` match cites: bare ``CAP-N``, inclusive
+    range ``CAP-N..M``/``CAP-N..CAP-M``, or slash-grouped ``CAP-N/M/O``. A
+    REVERSED range (``CAP-10..4``) or one wider than ``_CAP_MAX_RANGE_SPAN``
+    contributes NO ids at all -- not even its own start id -- rather than
+    silently inverting it or raising."""
+    start = int(m.group(1))
+    range_end, slash_group = m.group(2), m.group(3)
+    if range_end is not None:
+        end = int(range_end)
+        if end < start or end - start > _CAP_MAX_RANGE_SPAN:
+            return set()
+        return set(range(start, end + 1))
+    if slash_group:
+        return {start, *(int(tok) for tok in slash_group.split("/") if tok)}
+    return {start}
+
+
+def _spec_slug_anchor_pattern(slugs: list[str]) -> re.Pattern | None:
+    """One alternation regex matching ANY of a project's own Spec slugs,
+    longest-first so a shorter slug that is a literal prefix of a longer one
+    (e.g. ``spec-foo`` inside ``spec-foo-bar``) can never steal the match
+    position out from under the longer, more specific slug it is a prefix
+    of. ``None`` when the project has no Specs to anchor on at all."""
+    if not slugs:
+        return None
+    ordered = sorted(set(slugs), key=len, reverse=True)
+    return re.compile("|".join(re.escape(s) for s in ordered))
+
+
+def _cited_cap_ids_by_spec(prose: str, slugs: list[str]) -> dict[str, set[int]]:
+    """Every CAP-id citation in ``prose``, scoped to the Spec it actually
+    belongs to -- never pooled flat across the whole project (Round 2's
+    rejection: two Specs in the same project nearly always both number their
+    own capabilities starting at CAP-1, so a flat pooled set silently
+    "covers" one Spec's genuinely-undecomposed ids with a citation that
+    belongs to a completely different Spec).
+
+    THE WINDOW, per Spec occurrence (any-slug-occurrence anchoring, Round 2's
+    design, unchanged since): each literal occurrence of a Spec's own slug
+    text in ``prose`` opens one citation window. The window runs from that
+    occurrence up to the NEARER of (a) the next occurrence of ANY Spec's own
+    slug (this Spec's or a different one's -- the next anchor always ends the
+    current window, so one Spec's citations can never bleed into the next
+    Spec's section) or (b) the SECOND ``## `` heading position following the
+    anchor (allowing a Spec's own citations to legitimately continue across
+    exactly ONE un-anchored heading -- the real ``spec-deferred-work-
+    visibility`` Epic 8 -> Epic 9 shape, where Epic 9's own blockquote cites
+    further CAP ids without repeating the Spec's slug -- while still capping
+    a runaway window two-plus headings later, the real Epic-14-to-Epic-16
+    marshal shape that motivated the cap). The heading-cap lookup uses
+    ``bisect`` over a sorted heading-position list rather than filtering the
+    full list per anchor (an O(anchors x headings) scan Round 3 regressed to;
+    fixed here while this code is already being rewritten).
+
+    ROUND 4: this function used to ALSO exclude an anchor sitting before
+    ``prose``'s own first heading (Round 3's narrow fix for a header-less-
+    preamble anchor sweeping in an unrelated CAP id). That check is DELETED
+    here, not extended -- Round 4 replaced it with per-FILE preamble
+    stripping at prose-build time, in the caller
+    (``_check_project_chain_completeness``), so no preamble text ever reaches
+    this function's ``prose`` argument in the first place. This function goes
+    back to reasoning about one already-clean string, exactly like Round 2's
+    original design.
+    """
+    pattern = _spec_slug_anchor_pattern(slugs)
+    if pattern is None:
+        return {}
+    anchors = [(m.start(), m.group(0)) for m in pattern.finditer(prose)]
+    if not anchors:
+        return {}
+    headings = [m.start() for m in _HEADING_RE.finditer(prose)]
+    end = len(prose)
+    out: dict[str, set[int]] = {}
+    for i, (pos, slug) in enumerate(anchors):
+        next_anchor = anchors[i + 1][0] if i + 1 < len(anchors) else end
+        h_idx = bisect.bisect_right(headings, pos)
+        second_heading = headings[h_idx + 1] if h_idx + 1 < len(headings) else end
+        window_end = min(next_anchor, second_heading)
+        cited = out.setdefault(slug, set())
+        for cm in _CAP_CITATION_RE.finditer(prose, pos, window_end):
+            cited.update(_expand_cap_token(cm))
+    return out
+
 
 def _frontmatter(path: Path) -> dict[str, str]:
     """The frontmatter block's top-level ``key: value`` pairs, as raw strings.
@@ -122,7 +283,11 @@ def _frontmatter(path: Path) -> dict[str, str]:
 
     Never raises: a missing file, an unreadable one, or a file with no
     frontmatter fence all degrade to ``{}``, mirroring the original script's
-    own broad try/except.
+    own broad try/except. A thin file-reading wrapper around
+    ``_frontmatter_from_text`` -- split out so a caller that has ALREADY read
+    a SPEC.md's text for another purpose (INV-A's own CAP-id parsing) can
+    reuse that one read instead of this function reading the same file a
+    second time (Round 3 hardening, kept).
     """
     try:
         text = path.read_text(encoding="utf-8")
@@ -130,6 +295,12 @@ def _frontmatter(path: Path) -> dict[str, str]:
         # `except Exception: return {}` (scripts/chain_completeness_check.py's
         # frontmatter()), so a non-UTF-8 SPEC.md degrades the same way here.
         return {}
+    return _frontmatter_from_text(text)
+
+
+def _frontmatter_from_text(text: str) -> dict[str, str]:
+    """``_frontmatter``'s actual parsing logic, taking already-read text --
+    see ``_frontmatter`` for the full behavioral contract and rationale."""
     if not text.startswith("---"):
         return {}
     out: dict[str, str] = {}
@@ -452,28 +623,90 @@ def _check_project_chain_completeness(
     pa = project_dir / "planning-artifacts"
 
     # ---- INV-A: every open Spec is decomposed ---------------------------------
-    prose = ""
+    #
+    # TWO prose strings, deliberately different, each required by a KEEP
+    # instruction that survived every round:
+    #
+    #  * `raw_prose` -- the exact ORIGINAL concatenation (glob order as-is, no
+    #    separator). Only the zero-declared-CAP-ids fallback below reads this
+    #    one, and it must match the pre-this-story behavior byte-for-byte
+    #    (Round 1: a Spec with nothing to check coverage against has the
+    #    bare-substring test as its only signal, unchanged).
+    #  * `prose` -- the SAME files, glob-sorted (Round 3, kept, for
+    #    deterministic anchor/window positions) and, per file, sliced to
+    #    start at THAT FILE'S OWN first `## ` heading -- discarding
+    #    everything before it (Round 4's fix, replacing Round 3's whole-blob,
+    #    first-file-only exclusion, which only ever protected whichever file
+    #    happened to sort first). A file with no `## ` heading anywhere is
+    #    kept whole, unchanged -- there is no signal to slice against. The
+    #    pieces are then `"\n\n"`-joined so no token can span a file
+    #    boundary. Only the CAP-id coverage path below reads this one.
+    raw_prose = ""
     for doc in list(pa.glob("prds/*/prd.md")) + list(pa.glob("epics*.md")):
         try:
-            prose += doc.read_text(encoding="utf-8")
+            raw_prose += doc.read_text(encoding="utf-8")
         except Exception:  # noqa: BLE001, S112 -- a non-UTF-8/unreadable
             # prose doc must not abort this project's whole INV-A/B/C/D
             # evaluation; nothing here needs a log line, only degradation.
             continue
-    for spec_md in sorted(pa.glob("specs/spec-*/SPEC.md")):
+
+    stripped_parts: list[str] = []
+    for doc in sorted(pa.glob("prds/*/prd.md")) + sorted(pa.glob("epics*.md")):
+        try:
+            text = doc.read_text(encoding="utf-8")
+        except Exception:  # noqa: BLE001, S112 -- see raw_prose's own loop.
+            continue
+        heading = _HEADING_RE.search(text)
+        stripped_parts.append(text[heading.start():] if heading else text)
+    prose = "\n\n".join(stripped_parts)
+
+    spec_paths = sorted(pa.glob("specs/spec-*/SPEC.md"))
+    all_slugs = [p.parent.name for p in spec_paths]
+    cited_by_spec = _cited_cap_ids_by_spec(prose, all_slugs)
+
+    for spec_md in spec_paths:
         slug = spec_md.parent.name
-        status = str(_frontmatter(spec_md).get("status", "")).strip()
+        try:
+            spec_text = spec_md.read_text(encoding="utf-8")
+        except Exception:  # noqa: BLE001 -- an unreadable/non-UTF-8 SPEC.md
+            # degrades to "no frontmatter, no declared CAP ids" here rather
+            # than aborting this project's whole INV-A/B/C/D pass.
+            spec_text = ""
+        status = str(_frontmatter_from_text(spec_text).get("status", "")).strip()
         if status not in OPEN_SPEC_STATUSES or slug in DEFERRED_SPECS:
             continue
-        bare = slug.removeprefix("spec-")
-        if bare not in prose and slug not in prose:
+
+        declared = _parse_declared_cap_ids(spec_text)
+        if not declared:
+            # Zero-CAP fallback: BYTE-IDENTICAL to the pre-this-story check,
+            # against the FULL, unstripped `raw_prose` (Round 1's own
+            # requirement -- see the block comment above).
+            bare = slug.removeprefix("spec-")
+            if bare not in raw_prose and slug not in raw_prose:
+                findings.append({
+                    "inv": "INV-A", "kind": "spec-not-decomposed",
+                    "project": project, "subject": slug, "status": status,
+                    "detail": (f"{station} owns an open Spec ({status}) that no FR or "
+                               f"epic references — the station can render 100% while "
+                               f"owing it"),
+                    "remedy": (f"decompose {slug} into {project}'s PRD + epics, or add "
+                               f"it to DEFERRED_SPECS with the reason"),
+                })
+            continue
+
+        uncovered = sorted(declared - cited_by_spec.get(slug, set()))
+        if uncovered:
+            missing = _format_cap_ids(uncovered)
             findings.append({
                 "inv": "INV-A", "kind": "spec-not-decomposed",
                 "project": project, "subject": slug, "status": status,
-                "detail": (f"{station} owns an open Spec ({status}) that no FR or epic "
-                           f"references — the station can render 100% while owing it"),
-                "remedy": (f"decompose {slug} into {project}'s PRD + epics, or add it "
-                           f"to DEFERRED_SPECS with the reason"),
+                "detail": (f"{station} owns an open Spec ({status}) with {missing} "
+                           f"uncovered by any epic or FR — the station can render "
+                           f"100% while owing them"),
+                "remedy": (f"decompose {missing} of {slug} into {project}'s PRD + "
+                           f"epics, or add {slug} to DEFERRED_SPECS with the reason "
+                           f"(DEFERRED_SPECS remains available as a whole-Spec escape "
+                           f"hatch)"),
             })
 
     # ---- INV-B: epics.md set == ledger set ------------------------------------
