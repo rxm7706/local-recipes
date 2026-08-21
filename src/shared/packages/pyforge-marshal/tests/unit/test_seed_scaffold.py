@@ -5,12 +5,12 @@ still-stub verbs reports not-yet-implemented and exits clean. Mirrors
 detect/plan/apply/Copier logic exists yet to exercise (Epics 8, 10.6, 10.7,
 11, 12).
 
-``check`` (Story 10.5) is no longer a stub -- it is excluded from the
-parametrized stub-verb test below (unlike its five siblings, it never
-prints "not yet implemented") and gets its own smoke test proving the full
-``main()`` dispatch path reaches the real verb; ``tests/unit/
-test_seed_cli_seed_check.py`` covers its exit-code/rendering behavior in
-full.
+``check`` (Story 10.5) and ``adopt`` (Story 10.6) are no longer stubs -- each
+is excluded from the parametrized stub-verb test below (unlike its four
+remaining siblings, neither ever prints "not yet implemented") and gets its
+own smoke test proving the full ``main()`` dispatch path reaches the real
+verb; ``tests/unit/test_seed_cli_seed_check.py``/``test_seed_cli_seed_adopt.py``
+cover their exit-code/rendering behavior in full.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from __future__ import annotations
 import pytest
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.core.verdict import EXIT_USAGE
-from pyforge.marshal.seed.errors import ConformanceFailure
+from pyforge.marshal.seed.errors import ConformanceFailure, PreconditionFailure
 
 
 def test_seed_package_imports_with_no_side_effects():
@@ -50,7 +50,7 @@ def test_each_architecture_subpackage_imports(subpackage):
     importlib.import_module(f"pyforge.marshal.seed.{subpackage}")
 
 
-@pytest.mark.parametrize("verb", ["init", "adopt", "update", "explain", "version"])
+@pytest.mark.parametrize("verb", ["init", "update", "explain", "version"])
 def test_seed_verb_stub_exits_zero_and_names_itself(verb, capsys):
     exit_code = main(["seed", verb])
     assert exit_code == 0
@@ -82,6 +82,25 @@ def test_seed_check_is_no_longer_a_stub(tmp_path, capsys):
     # unnoticed, even though this story's whole point is wiring the
     # six-leaf exit-code taxonomy correctly.
     assert exit_code == ConformanceFailure.exit_code
+
+
+def test_seed_adopt_is_no_longer_a_stub(tmp_path, capsys):
+    """The second verb this test file's own stub loop no longer covers
+    (Story 10.6): dispatched through the real ``main()`` against an
+    explicit ``--repo-root`` (mirroring ``test_seed_check_is_no_longer_a_
+    stub``'s own convention exactly, and for the identical reason -- a bare
+    ``main(["seed", "adopt"])`` would default ``--repo-root`` to wherever
+    pytest happens to be invoked from). ``tmp_path`` is not a git repo at
+    all, so ``adopt`` -- a MUTATING verb, unlike ``check`` -- reaches
+    ``verbs.preconditions.check_preconditions``'s rung 1 and refuses before
+    writing anything: exit code 3 (``PreconditionFailure``), never 0."""
+    exit_code = main(["seed", "adopt", "--repo-root", str(tmp_path)])
+
+    captured = capsys.readouterr()
+    assert "not yet implemented" not in captured.out
+    assert "not-a-git-repo" in captured.out
+    assert exit_code == PreconditionFailure.exit_code
+    assert not (tmp_path / ".marshal").exists()
 
 
 def test_bare_seed_is_a_usage_error(capsys):

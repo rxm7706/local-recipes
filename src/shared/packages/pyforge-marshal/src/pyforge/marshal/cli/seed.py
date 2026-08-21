@@ -10,7 +10,7 @@ required=True)``, one ``add_parser`` per verb. ``required=True`` means a
 bare ``marshal seed`` with no verb is a clean argparse usage error, not a
 silent no-op -- same convention as ``gate``'s own ``gate_command``.
 
-Five of the six verbs here are still STUBs (Story 7.1's own scope -- naming
+Four of the six verbs here are still STUBs (Story 7.1's own scope -- naming
 was contested until the 2026-08-10 correct-course settled it: the installer
 lives *inside* ``pyforge-marshal``, no new package, no second binary, no
 binding revival of the retired ``genesis`` name): each prints a one-line
@@ -19,23 +19,30 @@ imported from ``core/verdict.py`` (AD-7's sole-ownership rule -- never a new
 exit-code literal here; used ONLY for the literal ``0`` success value, per
 this story's own Boundaries bullet -- ``core/verdict.py``'s MRS lattice
 itself is never reused for anything else). ``run_check`` (Story 10.5,
-FR-88..93) is the first real one: it loads the packaged model manifest,
-resolves ``--repo-root`` (a plain ``argparse`` validation, not a
-``seed/verbs/preconditions.py`` rung -- ``check`` never calls that
-mutating-verb gate), and delegates every real decision to
-``seed.verbs.check.run_check``, which is pure and read-only (see that
-module's own docstring). This module's own job is thin CLI plumbing: parse
-args, load the manifest, call the verb, render its ``CheckReport`` as text
-or ``--json``, and map ``seed/errors.py``'s six-leaf taxonomy to a process
-exit code -- it contains no detect/plan/hash/region logic of its own. No
-Copier import, no state/apply/engine/derive/migrate logic lands here --
-those belong to Epics 8, 10.6, 10.7, 11, 12.
+FR-88..93) and ``run_adopt`` (Story 10.6, FR-79..87) are the two real ones.
+``run_check`` loads the packaged model manifest, resolves ``--repo-root`` (a
+plain ``argparse`` validation, not a ``seed/verbs/preconditions.py`` rung --
+``check`` never calls that mutating-verb gate), and delegates every real
+decision to ``seed.verbs.check.run_check``, which is pure and read-only (see
+that module's own docstring). ``run_adopt`` does the same for
+``seed.verbs.adopt.run_adopt``, the first MUTATING verb this module wires: it
+additionally resolves ``--agents``/``--skip`` into typed sequences and
+supplies the confirmation seam (a real ``input()``-based prompt by default,
+overridable for tests) that verb's own ``confirm`` parameter requires (see
+``seed/verbs/adopt.py``'s module docstring). This module's own job is thin
+CLI plumbing: parse args, load the manifest, call the verb, render its
+result as text, and map ``seed/errors.py``'s six-leaf taxonomy to a process
+exit code -- it contains no detect/plan/hash/region/apply/materialize logic
+of its own. No Copier import here (``seed.verbs.adopt``/``seed.engine`` own
+that, per P-02) -- state/derive/migrate logic beyond what ``adopt`` already
+wires belongs to Epics 10.7, 11, 12.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
 
@@ -43,6 +50,9 @@ from ..core.verdict import EXIT_OK
 from ..seed.detect.findings import Severity
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
 from ..seed.model.manifest import Manifest, ManifestError, load_manifest
+from ..seed.plan.types import Plan
+from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
+from ..seed.verbs.adopt import run_adopt as _run_adopt_verb
 from ..seed.verbs.check import CheckReport
 from ..seed.verbs.check import run_check as _run_check_verb
 
@@ -55,11 +65,6 @@ _TEXT_REPORT_SEVERITY_ORDER: tuple[Severity, ...] = (Severity.HARD, Severity.DRI
 
 def run_init(args: argparse.Namespace) -> int:
     print("marshal seed init: not yet implemented")
-    return EXIT_OK
-
-
-def run_adopt(args: argparse.Namespace) -> int:
-    print("marshal seed adopt: not yet implemented")
     return EXIT_OK
 
 
@@ -223,6 +228,146 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> 
     return ConformanceFailure.exit_code if report.failing else EXIT_OK
 
 
+def _real_confirm() -> bool:
+    """``run_adopt``'s (verb-layer) required ``confirm`` seam, defaulted
+    HERE rather than inside ``seed.verbs.adopt`` (that module's own
+    docstring: "the REAL ``input()``-based implementation is ``cli/seed.py``'s
+    to construct and supply") -- this is this package's first interactive
+    prompt, so there is no prior precedent to mirror beyond the seam shape
+    itself. A closed/EOF stdin (``EOFError``) OR an operator-issued
+    interrupt (``KeyboardInterrupt``, review finding -- Ctrl-C during the
+    prompt previously propagated as a raw ``BaseException`` instead of the
+    documented graceful decline) is treated as "no", never a hang or a
+    crash -- the epics AC's own explicit requirement, since a ``--apply``
+    invoked from a non-interactive context (a CI job with stdin redirected
+    from ``/dev/null``) must refuse to apply rather than block forever
+    waiting for input nobody can supply."""
+    try:
+        response = input("Apply this plan? [y/N] ")
+    except (EOFError, KeyboardInterrupt):
+        return False
+    return response.strip().lower() in {"y", "yes"}
+
+
+def _parse_agents(raw: str | None) -> tuple[str, ...]:
+    """``--agents``'s one comma-separated value (``--agents claude,cursor``,
+    matching the epics AC's own singular-flag syntax) split into a tuple of
+    non-blank, stripped names -- ``()`` when the flag was not given at all."""
+    if raw is None:
+        return ()
+    return tuple(item.strip() for item in raw.split(",") if item.strip())
+
+
+def _render_plan_text(plan: Plan) -> str:
+    """The human-reviewable rendering of a ``marshal seed adopt`` plan --
+    one line per ``Action`` (its id, target path, and rationale) and one per
+    skipped artifact, or an explicit "nothing to do" line for an empty plan
+    (FR-84/AD-60's own idempotence case). ``adopt`` carries no ``--json``
+    flag (this story's own Never bullet: "a written plan.json already IS
+    the machine-readable artifact FR-82 asks for"), so this is the ONLY
+    rendering this command ever prints.
+
+    A first-claim (FR-83) action is prefixed ``[OVERWRITES EXISTING FILE]``
+    (review finding): this feature's whole safety model is "a human reviews
+    the plan before anything destructive happens," and burying "this
+    overwrites a pre-existing, unrelated file" in prose indistinguishable
+    at a glance from an ordinary "create" action undercuts that model.
+    Detected via ``seed.verbs.adopt.FIRST_CLAIM_MARKER``, the same shared
+    constant that module's own rationale text embeds -- never a
+    independently-typed duplicate of that string here."""
+    if not plan.actions:
+        lines = ["marshal seed adopt -- plan is empty; nothing to do"]
+    else:
+        lines = [f"marshal seed adopt -- plan ({len(plan.actions)} action(s)):"]
+        for action in plan.actions:
+            marker = "[OVERWRITES EXISTING FILE] " if FIRST_CLAIM_MARKER in action.rationale else ""
+            lines.append(f"  {marker}{action.artifact_id} ({action.target_path}): {action.rationale}")
+    if plan.skipped:
+        lines.append(f"skipped ({len(plan.skipped)}):")
+        for skipped in plan.skipped:
+            lines.append(
+                f"  {skipped.artifact_id} ({skipped.target_path}):"
+                f" matched --skip {skipped.pattern!r}"
+            )
+    return "\n".join(lines)
+
+
+def run_adopt(
+    args: argparse.Namespace,
+    *,
+    manifest: Manifest | None = None,
+    confirm: Callable[[], bool] | None = None,
+) -> int:
+    """``marshal seed adopt`` (Story 10.6): thin CLI plumbing over
+    ``seed.verbs.adopt.run_adopt`` -- this function performs no detect/
+    plan/apply/materialize logic of its own; every real decision is that
+    module's (see its own docstring for the full orchestration and the
+    FR-83/FR-84 resolution it implements).
+
+    ``manifest``/``confirm`` are both keyword-only test-injection seams,
+    mirroring ``run_check``'s own ``manifest=`` convention one level
+    further: a production caller (``main.py``'s dispatch) never supplies
+    either, so ``manifest`` defaults to the packaged one and ``confirm`` to
+    ``_real_confirm`` (this module's real, ``input()``-based prompt) --
+    production behavior is unchanged either way.
+
+    The verb call is INSIDE the ``try``, and a bare ``Exception`` is wrapped
+    as ``InternalError`` rather than left to escape as a traceback -- the
+    identical widened try/except shape ``run_check`` above already
+    establishes (10.5's own review finding), extended to this command."""
+    try:
+        repo_root = _resolve_repo_root(args.repo_root)
+        if manifest is None:
+            manifest = _load_packaged_manifest()
+        result: AdoptResult = _run_adopt_verb(
+            repo_root,
+            manifest,
+            apply=args.apply,
+            yes=args.yes,
+            agents=_parse_agents(args.agents),
+            skip=tuple(args.skip) if args.skip else (),
+            force=args.force,
+            confirm=confirm if confirm is not None else _real_confirm,
+        )
+    except ManifestError as exc:
+        wrapped = InternalError(
+            f"the packaged seed manifest could not be loaded: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the packaged manifest.yaml ships inside"
+                " the distribution and its absence or corruption is a broken"
+                " installation, not a problem with the repository being adopted"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=False)
+        return wrapped.exit_code
+    except SeedError as exc:
+        _print_seed_error(exc, as_json=False)
+        return exc.exit_code
+    except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
+        wrapped = InternalError(
+            f"an unanticipated internal failure occurred: {exc}",
+            remedy=(
+                "this is unexpected -- please file a bug report against"
+                " pyforge-marshal with the full command and output"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=False)
+        return wrapped.exit_code
+
+    print(_render_plan_text(result.plan))
+    if result.declined:
+        print("adopt: apply declined; nothing was applied.")
+    elif result.applied is not None:
+        if result.applied:
+            print(f"adopt: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
+        else:
+            print("adopt: plan was empty; nothing to apply.")
+    else:
+        print("adopt: dry-run; re-run with --apply to execute this plan.")
+
+    return EXIT_OK
+
+
 def run_update(args: argparse.Namespace) -> int:
     print("marshal seed update: not yet implemented")
     return EXIT_OK
@@ -247,9 +392,10 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         "seed",
         help="Scaffold/adopt/check/update a project from Marshal's seed templates (AD-70).",
         description=(
-            "The seed-installer noun group. `check` (Story 10.5) is real; the "
-            "other five verbs are still stubs from Story 7.1 -- their real "
-            "detect/plan/apply/Copier logic lands in Epics 8, 10.6, 10.7, 11, 12."
+            "The seed-installer noun group. `check` (Story 10.5) and `adopt` "
+            "(Story 10.6) are real; the other four verbs are still stubs from "
+            "Story 7.1 -- their real detect/plan/apply/Copier logic lands in "
+            "Epics 10.7, 11, 12."
         ),
     )
     seed_subparsers = parser.add_subparsers(dest="seed_command", required=True)
@@ -264,7 +410,51 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
     adopt_parser = seed_subparsers.add_parser(
         "adopt",
         help="Adopt an existing project onto Marshal's seed templates.",
-        description="Stub (Story 7.1) -- brownfield adoption lands in a later story.",
+        description=(
+            "Story 10.6: detect -> plan -> confirm -> apply -> state-write. Dry-run"
+            " by default -- writes only .marshal/plan.json and prints it; --apply"
+            " executes the plan (prompting for confirmation unless --yes is given)."
+        ),
+    )
+    adopt_parser.add_argument(
+        "--repo-root",
+        dest="repo_root",
+        default=None,
+        metavar="PATH",
+        help="The target repo to adopt (default: the current working directory).",
+    )
+    adopt_parser.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Execute the plan (default: dry-run -- compute and print the plan only).",
+    )
+    adopt_parser.add_argument(
+        "--yes",
+        action="store_true",
+        default=False,
+        help="Skip the confirmation prompt when applying (unattended/CI use).",
+    )
+    adopt_parser.add_argument(
+        "--agents",
+        dest="agents",
+        default=None,
+        metavar="LIST",
+        help="Comma-separated agent adapters to record, e.g. claude,cursor.",
+    )
+    adopt_parser.add_argument(
+        "--skip",
+        dest="skip",
+        action="append",
+        default=None,
+        metavar="GLOB",
+        help="Glob naming an artifact path to leave untouched (repeatable).",
+    )
+    adopt_parser.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help="Bypass the hand-edited-managed-content precondition (rung 6 only).",
     )
     adopt_parser.set_defaults(handler=run_adopt)
 
