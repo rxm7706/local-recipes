@@ -26,10 +26,13 @@ from pyforge.doctor.verdict import exit_code_for
 # --- fixture helpers ---------------------------------------------------------
 
 
-def _write_spec(path: Path, status: str) -> None:
+def _write_spec(path: Path, status: str, capabilities: list[int] | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(f"---\nstatus: {status}\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
-                     encoding="utf-8")
+    text = f"---\nstatus: {status}\nowner-dream: docs/dreams/x.md\n---\n\nbody\n"
+    if capabilities:
+        cap_lines = "\n".join(f"- **CAP-{n} — title.**" for n in capabilities)
+        text += f"\n## Capabilities\n\n{cap_lines}\n"
+    path.write_text(text, encoding="utf-8")
 
 
 def _write_epics_md(path: Path, story_ids: list[str], *, canonical: bool = True) -> None:
@@ -116,6 +119,213 @@ def test_shipped_spec_is_not_open_and_reports_no_finding(tmp_path: Path) -> None
 
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
+
+
+# --- INV-A, CAP-id coverage (Story 12.3, Round 3 re-derive) ------------------
+#
+# The DW-CHAIN-COMPLETENESS-1 repro and its follow-on scoping/preamble fixes.
+# See board.py's own "INV-A CAP-id coverage" module comment for the full
+# Round 1/2/3 rationale each test below pins.
+
+
+def test_multi_cap_spec_partial_coverage_reports_uncovered_ids(tmp_path: Path) -> None:
+    """The DW-CHAIN-COMPLETENESS-1 repro, shrunk to a fixture: a Spec grows
+    capabilities faster than its epics decompose them, and the check must
+    name the specific gap instead of reading `ok` forever."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=list(range(1, 11)))
+    prd = pa / "prds" / "prd-x" / "prd.md"
+    prd.parent.mkdir(parents=True, exist_ok=True)
+    prd.write_text(
+        "## 1. Heading\n\nDecomposes `spec-foo` CAP-1..3.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "spec-not-decomposed"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-A"
+    assert finding.evidence["subject"] == "spec-foo"
+    assert "CAP-4..10" in finding.evidence["status"]
+    assert "CAP-4..10" in finding.message
+    # Reworded from the zero-CAP branch: never suggests deferring the WHOLE
+    # Spec via DEFERRED_SPECS when only some of its capabilities are uncovered.
+    assert "DEFERRED_SPECS" not in finding.evidence["remedy"]
+
+
+def test_multi_cap_spec_full_coverage_via_mixed_citation_shapes_reports_no_finding(
+    tmp_path: Path,
+) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3, 4, 5])
+    prd = pa / "prds" / "prd-x" / "prd.md"
+    prd.parent.mkdir(parents=True, exist_ok=True)
+    prd.write_text(
+        "## 1. Heading\n\nDecomposes `spec-foo` CAP-1, CAP-2/3, CAP-4..5.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_malformed_capabilities_section_falls_back_to_zero_cap_behavior(tmp_path: Path) -> None:
+    """A `## Capabilities` heading whose body matches nothing (free-form
+    prose, not the `- **CAP-<N>` shape) parses to zero declared ids, which
+    falls back to the pre-existing bare-substring check -- not a crash, not
+    an automatic pass or fail."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    spec = pa / "specs" / "spec-foo" / "SPEC.md"
+    spec.parent.mkdir(parents=True, exist_ok=True)
+    spec.write_text(
+        "---\nstatus: draft\n---\n\n## Capabilities\n\nSome free-form prose, no bullets here.\n",
+        encoding="utf-8",
+    )
+    prd = pa / "prds" / "prd-x" / "prd.md"
+    prd.parent.mkdir(parents=True, exist_ok=True)
+    prd.write_text("This PRD decomposes spec-foo into FR-1.\n", encoding="utf-8")
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK  # slug IS in prose -- fallback passes
+
+
+def test_two_open_specs_same_project_only_one_cited_the_other_still_fails(
+    tmp_path: Path,
+) -> None:
+    """The Round 2 repro: two open Specs in the SAME project declare
+    overlapping CAP ids. Only one is actually cited -- the uncited one must
+    still report a finding, never be "covered" by the other's citations."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-alpha" / "SPEC.md", "draft", capabilities=[1, 2, 3])
+    _write_spec(pa / "specs" / "spec-beta" / "SPEC.md", "draft", capabilities=[1, 2, 3])
+    epics = pa / "epics.md"
+    epics.write_text(
+        "## Epic 1: Alpha\n\nDecomposes `spec-alpha` CAP-1..3.\n\n"
+        "## Epic 2: Unrelated\n\nSome other content entirely.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.evidence["subject"] == "spec-beta"
+    assert finding.status is DoctorStatus.FAIL
+    assert "CAP-1..3" in finding.evidence["status"]
+
+
+def test_prefixed_range_citation_shape_is_parsed(tmp_path: Path) -> None:
+    """`CAP-N..CAP-M` (the prefixed-range shape, 5 live fleet occurrences)
+    must not be silently dropped."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3])
+    epics = pa / "epics.md"
+    epics.write_text(
+        "## Epic 1: X\n\nDecomposes `spec-foo` CAP-1..CAP-3.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_malformed_reversed_cap_range_citation_contributes_no_ids() -> None:
+    """`CAP-10..4` (end < start) never raises and never silently inverts --
+    it simply cites nothing."""
+    cited = board._cited_cap_ids_by_spec(
+        "## 1. Heading\n\nDecomposes `spec-foo` CAP-10..4.\n", ["spec-foo"]
+    )
+    assert cited.get("spec-foo", set()) == set()
+
+
+def test_preamble_anchor_does_not_open_a_citation_window() -> None:
+    """The Round 3 repro, in miniature: an anchor sitting before the
+    document's own first `## ` heading (a changelog/preamble mention) must
+    not open a citation window and sweep in an unrelated CAP id from the
+    same header-less block."""
+    prose = (
+        "changelog note: mentions spec-foo and, nearby, CAP-9, long before any heading.\n\n"
+        "## Epic 1: Something\n\nDecomposes `spec-bar` CAP-1.\n"
+    )
+
+    cited = board._cited_cap_ids_by_spec(prose, ["spec-foo", "spec-bar"])
+
+    assert cited.get("spec-foo", set()) == set()
+
+
+def test_citation_coasts_across_exactly_one_unanchored_heading() -> None:
+    """The real Epic-8-to-Epic-9 `spec-deferred-work-visibility` shape: an
+    Epic anchors the Spec once, and the VERY NEXT Epic -- one un-anchored
+    heading later -- cites more of its CAP ids with no fresh anchor of its
+    own. Those citations must still count."""
+    prose = (
+        "## Epic 8: Owns it\n\nDecomposes `spec-foo` CAP-1..7.\n\n"
+        "## Epic 9: Continues it, unanchored\n\nDecomposes CAP-8..10.\n\n"
+        "## Epic 10: Something else entirely\n\nNo relation.\n"
+    )
+
+    cited = board._cited_cap_ids_by_spec(prose, ["spec-foo"])
+
+    assert cited["spec-foo"] == set(range(1, 11))
+
+
+def test_citation_does_not_leak_past_two_headings() -> None:
+    """Mutation-tested by review: disabling the second-heading cap left all
+    49 pre-existing tests green, because nothing pinned this branch
+    specifically. A CAP id appearing two-or-more headings past a Spec's own
+    anchor, with no fresh anchor renewing the window, must NOT be credited
+    to that Spec (the real Epic-14-to-Epic-16 marshal shape that motivated
+    the cap)."""
+    prose = (
+        "## Epic 14: Owns it\n\nDecomposes `spec-foo` CAP-1.\n\n"
+        "## Epic 15: One heading later, unanchored, still coasting\n\nSome text, no CAP here.\n\n"
+        "## Epic 16: Two headings later, unrelated\n\nMentions CAP-9 with no fresh anchor.\n"
+    )
+
+    cited = board._cited_cap_ids_by_spec(prose, ["spec-foo"])
+
+    assert cited["spec-foo"] == {1}
+    assert 9 not in cited["spec-foo"]
+
+
+def test_parse_declared_cap_ids_skips_unparseable_lines_and_never_raises() -> None:
+    text = (
+        "## Capabilities\n\n"
+        "- **CAP-1 — a real one.**\n"
+        "- free-form prose that does not match at all\n"
+        "  - **intent:** a sub-bullet, not a top-level CAP declaration\n"
+        "- **CAP-3 — another real one.**\n"
+        "\n## Next section\n\n- **CAP-99 — outside the section, must not count.**\n"
+    )
+    assert board._parse_declared_cap_ids(text) == {1, 3}
+    assert board._parse_declared_cap_ids("no capabilities heading at all") == set()
+
+
+def test_format_cap_ids_collapses_consecutive_runs() -> None:
+    assert board._format_cap_ids([4, 6, 7, 8, 9, 10]) == "CAP-4, CAP-6..10"
+    assert board._format_cap_ids([1]) == "CAP-1"
+    assert board._format_cap_ids([]) == ""
+
+
+def test_spec_slug_anchor_pattern_does_not_short_match_a_prefix_slug() -> None:
+    """`spec-foo` is a literal prefix of `spec-foo-bar` -- the longest-first,
+    bounded alternation must anchor on the longer slug, not the shorter one
+    hiding inside it."""
+    cited = board._cited_cap_ids_by_spec(
+        "## 1. Heading\n\nDecomposes `spec-foo-bar` CAP-1.\n",
+        ["spec-foo", "spec-foo-bar"],
+    )
+    assert cited.get("spec-foo", set()) == set()
+    assert cited.get("spec-foo-bar", set()) == {1}
 
 
 # --- INV-B: epics.md set == ledger set ---------------------------------------
