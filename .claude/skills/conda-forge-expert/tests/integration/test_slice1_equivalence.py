@@ -20,25 +20,27 @@ separate, sometimes-gitignored artifact chain; see skill-brief.yaml's
 location under `forge-data/`, which IS gitignored, vs. the compiled package
 under `.claude/skills/`, which is tracked).
 
-Known, load-bearing finding from this equivalence run (recorded here, not
-swept under a passing assertion): `github_updater.py`'s `update_recipe()`
-imports a sibling module, `github_version_checker.py`, which slice-map.md
-classifies as a **Slice 2** ("Recipe Lifecycle") canonical script -- outside
-Slice 1's brief scope (`_bmad-output/projects/pyforge-mason/planning-
-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md` § "Slice 1:
-Recipe Generation" lists the cross-slice dependency on Slice 5's
-`_cfy_template.py` explicitly, but not this one). The compiled replacement
-therefore cannot exercise `update_recipe()`'s functional path at all --
-`test_github_updater_known_cross_slice_gap` below asserts that gap
-explicitly rather than silently omitting github_updater.py from this suite's
-functional coverage. This is the one pre-existing regression test
-(`test_dry_run_live_against_actionlint`) that does not pass unmodified
-against the compiled replacement -- see the story's own campaign-state.yaml
-note for the full CAP-2 clause 3 accounting.
+Story 6.3 (initial pass) found one load-bearing gap: `github_updater.py`'s
+`update_recipe()` imports a sibling module, `github_version_checker.py`,
+which slice-map.md classifies as a **Slice 2** ("Recipe Lifecycle") canonical
+script -- outside Slice 1's original brief scope. That gap is now closed:
+`github_version_checker.py` was ported byte-for-byte into the compiled
+package as a sanctioned cross-slice runtime dependency (same shape as the
+already-sanctioned `_cfy_template.py`), without reclassifying it out of
+Slice 2's canonical-scripts inventory (`_bmad-output/projects/pyforge-mason/
+planning-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md` §
+"Slice 1: Recipe Generation" and § "Slice 5: Shared Infrastructure" cross-
+slice-shared-imports table both document it). `test_github_updater_gap_closed`
+below asserts the import now succeeds on both sides. This was the one
+pre-existing regression test (`test_dry_run_live_against_actionlint`) that
+previously did not pass unmodified against the compiled replacement -- it
+now passes on both sides; see the story's own campaign-state.yaml note for
+the full CAP-2 clause 3 accounting.
 """
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -145,18 +147,31 @@ def test_name_resolver_error_shape_identical():
 
 
 @pytest.mark.slow
-def test_github_updater_known_cross_slice_gap(tmp_path):
-    """Documents (rather than silently omits) the one known functional
-    divergence this equivalence pass found: `github_updater.py` imports
-    Slice 2's `github_version_checker.py`, which Slice 1's brief scope
-    correctly does not bundle. The original resolves the import; the
-    compiled replacement does not -- both sides are exercised so a future
-    fix (either porting the dependency or re-scoping) is visible as a test
-    change, not a silent gap.
+def test_github_updater_gap_closed(tmp_path):
+    """Story 6.3 gap-closure: `github_updater.py` imports Slice 2's
+    `github_version_checker.py`, which was previously absent from the
+    compiled Slice-1 package (Slice 1's original brief scope did not bundle
+    it). It has since been ported into the compiled package byte-for-byte as
+    a sanctioned cross-slice runtime dependency (same shape as the already-
+    sanctioned `_cfy_template.py`) without reclassifying it out of Slice 2's
+    canonical-scripts inventory -- see slice-map.md § "Slice 1: Recipe
+    Generation" and § "Slice 5: Shared Infrastructure". Both sides now
+    resolve the import identically; this test proves that rather than
+    silently dropping the old cross-slice-gap assertion.
 
-    No network call is made by either side: `update_recipe()` checks
-    `_CHECKER_AVAILABLE` before any GitHub API access, so this is fully
-    offline and deterministic.
+    `update_recipe()` checks `_CHECKER_AVAILABLE` before anything else and
+    returns immediately (no network access) if the import failed -- that
+    early-return path is what this test targets. Once the import succeeds
+    (both sides, post gap-closure), `update_recipe()` proceeds to a real
+    GitHub API lookup for this fixture's deliberately bogus `example/
+    equiv-test` repo, which 404s -- so this test does make a live network
+    call on both sides now (it did not, pre-fix, on the compiled side,
+    which returned before reaching network code). The assertions below are
+    deterministic regardless of that network outcome: they parse the
+    printed result as JSON and check the specific `error` field, so a 404,
+    a rate-limit response, or a transient network failure all still produce
+    a clean (non-import-failure) `error` string via `update_recipe()`'s own
+    exception handling, never an uncaught traceback.
     """
     recipe_dir = tmp_path / "equiv-test"
     recipe_dir.mkdir()
@@ -174,13 +189,24 @@ def test_github_updater_known_cross_slice_gap(tmp_path):
     original = _run(_ORIGINAL_SCRIPTS_DIR, "github_updater.py", "--dry-run", str(recipe_dir))
     compiled = _run(_COMPILED_SCRIPTS_DIR, "github_updater.py", "--dry-run", str(recipe_dir))
 
+    # Parse each side's printed result as JSON -- proves the process ran to
+    # completion and printed update_recipe()'s result dict (rules out an
+    # early crash producing empty/garbled stdout that would also happen not
+    # to contain the substring below), then check the specific `error`
+    # field rather than a raw stdout substring match. main() may print a
+    # "Checking GitHub releases for..." progress line before the JSON dict
+    # (once the import succeeds and repo resolution proceeds), so parse
+    # from the first '{' rather than the whole stdout.
+    original_result = json.loads(original.stdout[original.stdout.index("{"):])
+    compiled_result = json.loads(compiled.stdout[compiled.stdout.index("{"):])
+
     # Original: github_version_checker.py is present alongside it in the
     # live skill tree, so the import succeeds (the dry-run may still fail
     # for other reasons -- e.g. no real GitHub repo at this bogus URL -- but
     # NOT with the "could not be imported" error).
-    assert "github_version_checker.py could not be imported" not in original.stdout
+    assert "could not be imported" not in original_result.get("error", "")
 
-    # Compiled replacement: the sibling module is genuinely absent (Slice 2
-    # scope, not copied) -- this is the documented gap, asserted explicitly
-    # so a future fix shows up as a test change rather than newly-silent.
-    assert "github_version_checker.py could not be imported" in compiled.stdout
+    # Compiled replacement: github_version_checker.py was ported alongside
+    # github_updater.py, so the import now succeeds here too -- the gap is
+    # closed, not just documented.
+    assert "could not be imported" not in compiled_result.get("error", "")
