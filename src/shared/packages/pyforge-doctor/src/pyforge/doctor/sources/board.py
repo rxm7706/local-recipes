@@ -282,6 +282,97 @@ def _canonical_epics(project_dir: Path) -> Path | None:
     return fallback if fallback.is_file() else None
 
 
+# --- INV-A capability-id parsing (Story 12.3 / DW-CHAIN-COMPLETENESS-1) -----
+#
+# The declared-capability bullet shape inside a SPEC.md's own ``##
+# Capabilities`` section -- verbatim across every SPEC.md `bmad-spec` has
+# produced since the convention started: ``- **CAP-<N> — <title>.**``.
+_CAP_DECLARED = re.compile(r"^-\s+\*\*CAP-(\d+)\b")
+
+#: A ``## Capabilities`` heading, and any level-2 heading that ends it --
+#: scopes `_CAP_DECLARED` to the section it belongs to, not any other bullet
+#: elsewhere in the file that happens to start the same way.
+_CAP_SECTION_HEADING = re.compile(r"^##\s+Capabilities\s*$")
+_LEVEL2_HEADING = re.compile(r"^##\s+\S")
+
+#: The three live citation shapes a project's PRD/epics prose cites a Spec's
+#: capabilities in -- grepped fleet-wide across every tracked epics.md: a
+#: bare ``CAP-N``, an inclusive range ``CAP-N..M``, and a slash-grouped list
+#: ``CAP-N/M/O...``.
+_CAP_CITATION = re.compile(r"\bCAP-(\d+)((?:\.\.\d+)|(?:/\d+)+)?")
+
+
+def _parse_declared_cap_ids(spec_md_text: str) -> set[int]:
+    """The integer CAP ids a SPEC.md declares in its own ``## Capabilities``
+    section, or an empty set when that section is absent or has no matching
+    line -- the INV-A call site's own signal to fall back to the
+    pre-existing bare-substring behavior (see that block's docstring for the
+    fallback rationale). A line under the heading that does not match the
+    declared shape (free-form prose, a different bullet style) is silently
+    skipped, not a parse error; this never raises.
+    """
+    declared: set[int] = set()
+    in_section = False
+    for line in spec_md_text.splitlines():
+        if _CAP_SECTION_HEADING.match(line):
+            in_section = True
+            continue
+        if in_section and _LEVEL2_HEADING.match(line):
+            break  # the next level-2 section ends `## Capabilities`
+        if not in_section:
+            continue
+        m = _CAP_DECLARED.match(line)
+        if m:
+            declared.add(int(m.group(1)))
+    return declared
+
+
+def _parse_cited_cap_ids(prose: str) -> set[int]:
+    """Every CAP id actually cited in ``prose`` (a project's concatenated
+    PRD + epics text), expanding all three live citation shapes: a bare
+    ``CAP-N``, an inclusive range ``CAP-N..M``, and a slash-grouped list
+    ``CAP-N/M/O...``.
+
+    A malformed/reversed range (``CAP-10..4``) contributes no ids rather
+    than raising or silently inverting it -- the Design Notes' explicit edge
+    case. Never raises.
+    """
+    cited: set[int] = set()
+    for m in _CAP_CITATION.finditer(prose):
+        head = int(m.group(1))
+        rest = m.group(2)
+        if not rest:
+            cited.add(head)
+        elif rest.startswith(".."):
+            tail = int(rest[2:])
+            if tail >= head:
+                cited.update(range(head, tail + 1))
+            # else: a reversed range names nothing -- never inverted, never raised
+        else:  # a slash-grouped list, e.g. "/9/10"
+            cited.add(head)
+            cited.update(int(n) for n in rest.split("/") if n)
+    return cited
+
+
+def _format_cap_ids(ids: list[int]) -> str:
+    """A sorted id list as ``CAP-4, CAP-6..10`` -- consecutive runs collapsed
+    into the same inclusive-range shape `_parse_cited_cap_ids` understands,
+    so a finding's own remedy text is itself a valid citation to paste back
+    into the epics doc it names."""
+    if not ids:
+        return ""
+    parts: list[str] = []
+    start = prev = ids[0]
+    for n in ids[1:]:
+        if n == prev + 1:
+            prev = n
+            continue
+        parts.append(f"CAP-{start}" if start == prev else f"CAP-{start}..{prev}")
+        start = prev = n
+    parts.append(f"CAP-{start}" if start == prev else f"CAP-{start}..{prev}")
+    return ", ".join(parts)
+
+
 def _board_lines(data_js: Path) -> dict[str, tuple[int, int]] | None:
     """``{station: (done, total)}`` from ``data.js``, or ``None`` when it
     cannot be read -- verbatim from the original (a fixed-prefix strip, not
@@ -465,15 +556,44 @@ def _check_project_chain_completeness(
         status = str(_frontmatter(spec_md).get("status", "")).strip()
         if status not in OPEN_SPEC_STATUSES or slug in DEFERRED_SPECS:
             continue
+        try:
+            spec_text = spec_md.read_text(encoding="utf-8")
+        except Exception:  # noqa: BLE001 -- degrades to the zero-CAP fallback
+            # below, same as `_frontmatter`'s own read of this file. In
+            # practice unreachable here (a read failure already made `status`
+            # "" above and `continue`d) -- kept so this line itself never
+            # raises regardless.
+            spec_text = ""
+        declared = _parse_declared_cap_ids(spec_text)
         bare = slug.removeprefix("spec-")
-        if bare not in prose and slug not in prose:
+        if not declared:
+            # Zero-CAP fallback: a Spec authored before the `## Capabilities`
+            # convention, or with none, has nothing for a coverage test to
+            # compare against -- EXACT pre-existing bare-substring behavior,
+            # unchanged (see this module's Design Notes for the rationale).
+            if bare not in prose and slug not in prose:
+                findings.append({
+                    "inv": "INV-A", "kind": "spec-not-decomposed",
+                    "project": project, "subject": slug, "status": status,
+                    "detail": (f"{station} owns an open Spec ({status}) that no FR or "
+                               f"epic references — the station can render 100% while "
+                               f"owing it"),
+                    "remedy": (f"decompose {slug} into {project}'s PRD + epics, or add "
+                               f"it to DEFERRED_SPECS with the reason"),
+                })
+            continue
+        cited = _parse_cited_cap_ids(prose)
+        uncovered = sorted(declared - cited)
+        if uncovered:
+            ids = _format_cap_ids(uncovered)
             findings.append({
                 "inv": "INV-A", "kind": "spec-not-decomposed",
                 "project": project, "subject": slug, "status": status,
-                "detail": (f"{station} owns an open Spec ({status}) that no FR or epic "
-                           f"references — the station can render 100% while owing it"),
-                "remedy": (f"decompose {slug} into {project}'s PRD + epics, or add it "
-                           f"to DEFERRED_SPECS with the reason"),
+                "detail": (f"{station} owns an open Spec ({status}) whose declared "
+                           f"capabilities {ids} are cited by no FR or epic — the "
+                           f"station can render 100% while owing them"),
+                "remedy": (f"decompose {ids} of {slug} into {project}'s PRD + epics, "
+                           f"or add it to DEFERRED_SPECS with the reason"),
             })
 
     # ---- INV-B: epics.md set == ledger set ------------------------------------
