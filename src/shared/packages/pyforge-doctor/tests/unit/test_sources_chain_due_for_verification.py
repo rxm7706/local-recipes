@@ -16,8 +16,10 @@ negative for as long as this suite exists).
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import subprocess
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -1173,3 +1175,259 @@ def test_recursive_one_liner_self_call_is_counted(tmp_path: Path) -> None:
     item = findings[0]
     assert item["mechanical_verdict"] == "escalate"
     assert item["mechanical_call_sites"] == 1
+
+
+# --- Story 11.5: cross-project code-root discoverability -----------------------
+#
+# Covers the spec's own I/O & Edge-Case Matrix: (a) `_known_project_code_roots`
+# itself -- multi-project discovery, a project deliberately missing its code
+# root; (b) a `due-for-verification` Finding's evidence carrying
+# `other_project_roots` excluding its own project, including the single-
+# project-fleet (empty dict) and never-on-unevaluable edge cases; (c) an
+# integration-style test reproducing the real `atlas DW-I5-1` shape end to
+# end via `apply_verification_verdicts.py`'s own `_apply_project`.
+
+
+def _make_project(target: Path, project: str) -> Path:
+    """A bare, empty ``_bmad-output/projects/<project>/`` directory -- enough
+    for ``_known_project_code_roots`` to consider it a known project (mirrors
+    ``test_project_with_no_tracked_ledger_contributes_zero_findings``'s own
+    bare-directory fixture); no tracked ledger required."""
+    d = _project_dir(target, project)
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _write_code_root_file(target: Path, project: str, rel_path: str, content: str) -> Path:
+    """A real file under ``src/shared/packages/<project>/<rel_path>`` --
+    also ensures ``project``'s own ``_bmad-output/projects/<project>/``
+    directory exists via ``_make_project`` (ALWAYS required for
+    ``_known_project_code_roots`` to enumerate the project at all, regardless
+    of whether it also turns out to have a real code root)."""
+    _make_project(target, project)
+    path = target / "src" / "shared" / "packages" / project / rel_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
+# --- (a) _known_project_code_roots itself ---------------------------------------
+
+
+def test_known_project_code_roots_maps_only_projects_with_a_real_code_root(
+    tmp_path: Path,
+) -> None:
+    """Multi-project fixture: ``alpha`` has a matching
+    ``src/shared/packages/alpha/`` code root, ``beta`` is a real, known
+    project directory with NO matching code root (a doc-only or partially-
+    external station) -- ``beta`` must be SILENTLY OMITTED from the map,
+    never included with a guessed or empty path (I/O matrix: "Project with
+    no code root")."""
+    _write_code_root_file(tmp_path, "alpha", "src/pyforge/alpha/__init__.py", "")
+    _make_project(tmp_path, "beta")
+
+    roots = chain._known_project_code_roots(tmp_path)
+
+    assert roots == {"alpha": "src/shared/packages/alpha"}
+    assert "beta" not in roots
+
+
+def test_known_project_code_roots_single_project_fleet(tmp_path: Path) -> None:
+    """A lone known project with a real code root still maps to itself --
+    whether it gets EXCLUDED from its own findings is
+    ``_check_project_due_for_verification``'s own job, covered below."""
+    _write_code_root_file(tmp_path, "solo", "README.md", "")
+
+    roots = chain._known_project_code_roots(tmp_path)
+
+    assert roots == {"solo": "src/shared/packages/solo"}
+
+
+def test_known_project_code_roots_no_projects_tree_degrades_to_empty_dict(
+    tmp_path: Path,
+) -> None:
+    """``target`` is not a monorepo root at all -- degrades to ``{}``, the
+    same vacuous-degrade shape ``_due_for_verification_findings``'s own guard
+    already uses one layer up (I/O matrix: "Unreadable/missing
+    `_bmad-output/projects/`")."""
+    assert chain._known_project_code_roots(tmp_path) == {}
+
+
+# --- (b) other_project_roots attached to due-for-verification items ------------
+
+
+def test_due_for_verification_item_carries_other_project_roots_excluding_own(
+    tmp_path: Path,
+) -> None:
+    """A due entry in project ``alpha`` names every OTHER known project's
+    code root under ``other_project_roots`` -- excluding ``alpha``'s own,
+    even though ``alpha`` also has a real code root; ``gamma`` (a known
+    project with no code root) is silently omitted too."""
+    _write_tracked(tmp_path, "alpha", "## DW-1\nstatus: open\n")  # never-verified, due
+    _write_code_root_file(tmp_path, "alpha", "README.md", "")
+    _write_code_root_file(tmp_path, "beta", "README.md", "")
+    _make_project(tmp_path, "gamma")  # known, but no code root
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    assert findings[0]["other_project_roots"] == {"beta": "src/shared/packages/beta"}
+
+
+def test_multiple_due_entries_in_one_project_each_get_their_own_equal_copy(
+    tmp_path: Path,
+) -> None:
+    """A project with TWO due entries: both findings carry an EQUAL
+    ``other_project_roots`` (the recompute-once-per-project map, unchanged
+    across entries) but NOT the same object -- mutating one finding's dict
+    in place must never leak into the other's (review finding, patch:
+    verifies the per-item ``dict(other_roots)`` copy directly, not just
+    indirectly via a single-entry fixture)."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\n\n## DW-2\nstatus: open\n",
+    )
+    _write_code_root_file(tmp_path, "beta", "README.md", "")
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    assert len(findings) == 2
+    first, second = findings[0]["other_project_roots"], findings[1]["other_project_roots"]
+    assert first == second == {"beta": "src/shared/packages/beta"}
+    assert first is not second
+
+    first["beta"] = "tampered"
+    assert second == {"beta": "src/shared/packages/beta"}
+
+
+def test_single_project_fleet_other_project_roots_is_empty_dict(tmp_path: Path) -> None:
+    """Single-project fleet (I/O matrix): no siblings to list, so
+    ``other_project_roots`` is an empty dict on that project's own findings,
+    never absent and never omitted."""
+    _write_tracked(tmp_path, "solo", "## DW-1\nstatus: open\n")
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    assert findings[0]["other_project_roots"] == {}
+
+
+def test_other_project_roots_survives_the_public_api_finding_wrap(tmp_path: Path) -> None:
+    """The evidence key survives the ``Finding`` wrap through the public
+    ``gather_due_for_verification`` API."""
+    _write_tracked(tmp_path, "alpha", "## DW-1\nstatus: open\n")
+    _write_code_root_file(tmp_path, "beta", "README.md", "")
+
+    findings = chain.gather_due_for_verification(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "due-for-verification"
+    assert finding.evidence["other_project_roots"] == {"beta": "src/shared/packages/beta"}
+
+
+def test_due_for_verification_unevaluable_item_has_no_other_project_roots_key(
+    tmp_path: Path,
+) -> None:
+    """A ``due-for-verification-unevaluable`` item (one project's own tracked-
+    ledger directory is unreadable) never carries ``other_project_roots`` --
+    that key is exclusively a ``due-for-verification`` item's own (Boundaries:
+    "never on due-for-verification-unevaluable"), mirroring
+    ``test_unreadable_tracked_ledger_directory_is_isolated_as_warn``'s own
+    chmod fixture."""
+    _write_tracked(tmp_path, "zbroken", "## DW-1\nstatus: open\n")
+    _write_code_root_file(tmp_path, "beta", "README.md", "")
+
+    pa_dir = _project_dir(tmp_path, "zbroken") / "planning-artifacts"
+    pa_dir.chmod(0o000)
+    try:
+        findings = chain.gather_due_for_verification(tmp_path)
+    finally:
+        pa_dir.chmod(0o755)
+
+    assert [f.check for f in findings] == ["due-for-verification-unevaluable"]
+    assert "other_project_roots" not in findings[0].evidence
+
+
+# --- (c) integration: a cross-project close via apply_verification_verdicts.py --
+
+
+def _load_apply_verdicts_module():
+    """Dynamically loads the real ``scripts/apply_verification_verdicts.py``
+    as a fresh module object, via ``importlib.util.spec_from_file_location``
+    -- never ``sys.path`` manipulation, and never a subprocess (unlike
+    ``tests/scripts/test_apply_verification_verdicts.py``'s own precedent,
+    which needs a subprocess specifically to patch the script's hard-coded
+    ``REPO_ROOT`` line before it runs as ``__main__``): this test calls
+    ``_apply_project`` directly, so patching the loaded module OBJECT's own
+    ``REPO_ROOT`` attribute after import is enough, and a fresh module object
+    per call means that patch can never leak into a sibling test. Registered
+    in `sys.modules` only for the DURATION of `exec_module` below, then
+    popped back out (review finding, patch): the caller keeps its own
+    reference to the returned `module` object regardless, so nothing needs
+    the registry entry to persist afterward, and leaving a fixed key
+    resident in `sys.modules` for the rest of the test session would risk a
+    stale entry (e.g. a since-deleted `tmp_path` still referenced by its
+    `REPO_ROOT`) colliding with any future test that loads under the same
+    name."""
+    script_path = (
+        Path(__file__).resolve().parents[6] / "scripts" / "apply_verification_verdicts.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "apply_verification_verdicts_under_test", script_path,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    # Registered in `sys.modules` BEFORE `exec_module` -- the script's own
+    # `from __future__ import annotations` makes every annotation a string,
+    # and `@dataclass` (`_Outcome`) resolves a string annotation by looking
+    # up `cls.__module__` in `sys.modules`; skipping this step raises
+    # `AttributeError: 'NoneType' object has no attribute '__dict__'` at
+    # import time, verified empirically.
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        del sys.modules[spec.name]
+    return module
+
+
+def test_cross_project_evidence_closes_the_entry_via_apply_verification_verdicts(
+    tmp_path: Path,
+) -> None:
+    """Reproduces the real ``atlas DW-I5-1`` shape end to end (Intent): a due
+    entry lives in project ``alpha``, the real fix is committed under project
+    ``beta``'s own code root, ``alpha``'s Finding evidence names ``beta``'s
+    code root under ``other_project_roots`` (the discoverability half this
+    story adds), and a verifying agent citing ``beta``'s ``file:line`` as
+    evidence is accepted UNMODIFIED by ``apply_verification_verdicts.py``'s
+    own ``_apply_project`` -- proving CAP-5's own claim that "nothing
+    structurally blocks a cross-project close" (Intent)."""
+    _write_tracked(tmp_path, "alpha", "## DW-1\nstatus: open\n")
+    _write_code_root_file(
+        tmp_path, "beta", "src/pyforge/beta/core/policy.py", "def fixed(): ...\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+    assert len(findings) == 1
+    beta_root = findings[0]["other_project_roots"]["beta"]
+    assert beta_root == "src/shared/packages/beta"
+
+    verdicts_module = _load_apply_verdicts_module()
+    verdicts_module.REPO_ROOT = tmp_path
+
+    outcome = verdicts_module._apply_project(
+        "alpha",
+        [{
+            "id": "DW-1",
+            "verdict": "resolved",
+            "evidence": f"Fixed in {beta_root}/src/pyforge/beta/core/policy.py:1",
+        }],
+        date(2026, 8, 21),
+    )
+
+    assert outcome.status == "applied"
+    tracked_text = (
+        tmp_path / "_bmad-output" / "projects" / "alpha" / verdicts_module.TRACKED_REL
+    ).read_text(encoding="utf-8")
+    assert "verified: 2026-08-21 — resolved — Fixed in src/shared/packages/beta" in tracked_text

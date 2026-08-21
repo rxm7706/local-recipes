@@ -2786,6 +2786,75 @@ def _attach_mechanical_verdict(
     item["mechanical_call_sites"] = count
 
 
+# --- Story 11.5: verification reaches across project boundaries ---------------
+#
+# A due entry in project A can genuinely be fixed by a commit in project B
+# (the real `atlas DW-I5-1` case: an atlas ledger entry resolved in marshal's
+# `core/policy.py`) -- nothing before this story told a verifying agent to
+# look beyond the owning project's own tree, and there was no discoverable,
+# machine-readable map of sibling project code roots, only tribal knowledge
+# (`_bmad-output/projects/<slug>/` <-> `src/shared/packages/<slug>/` by
+# directory-name convention). This section adds ONE small, pure, read-only
+# helper that resolves that map, and surfaces it as a new, ADDITIVE
+# `other_project_roots` evidence key on every `due-for-verification` item --
+# never a new finding, never a changed message/shape for any case that
+# doesn't touch this key (Boundaries).
+
+
+def _known_project_code_roots(target: Path) -> dict[str, str]:
+    """``{slug: relative_code_root}`` for every project directory under
+    ``target/_bmad-output/projects/`` that has a matching
+    ``target/src/shared/packages/<slug>/`` directory -- mirrors
+    ``apply_verification_verdicts.py``'s own ``_known_projects()`` precedent
+    of discovering the real project set from the filesystem, extended here to
+    additionally resolve each project's own CODE root by the same
+    directory-name convention every fleet project already follows.
+
+    A project slug with no matching code-root directory is SILENTLY OMITTED
+    from the returned map -- never guessed, never included with an empty or
+    fabricated path (Boundaries: "degrade to omitting it, never guess or
+    hallucinate a path"; I/O matrix: "Project with no code root"). ``target``
+    not being a monorepo root at all (no ``_bmad-output/projects/``) degrades
+    to ``{}`` -- the same vacuous-degrade shape
+    ``_due_for_verification_findings``'s own guard already uses one layer up
+    (I/O matrix: "Unreadable/missing `_bmad-output/projects/`").
+
+    A single project isolated in a per-project ``try/except`` (review
+    finding, patch): this function recomputes the WHOLE map fresh on every
+    project's own turn through ``_check_project_due_for_verification`` (see
+    that function's own docstring for why), so an unguarded probe that
+    raised on ONE broken sibling -- a permission-denied
+    ``src/shared/packages/<slug>/`` ancestor, or a ``_bmad-output/projects/``
+    entry that is a symlink resolving outside ``target`` (``relative_to``
+    raises ``ValueError`` for that case) -- would abort evaluation of EVERY
+    project's own turn, not just the broken one, because the caller's own
+    per-project isolation ``try/except`` (``_due_for_verification_findings``)
+    has no way to tell "this project's own ledger is fine, a SIBLING's
+    directory is broken" apart from "this project's own ledger is broken".
+    Mirrors ``_collect_dreams``'s own per-unit ``try/except OSError`` shape
+    (this module's established convention for exactly this class of
+    problem), extended to ``ValueError`` for the symlink-escape case.
+
+    Filesystem reads only -- no ``git`` call, and no import of any station
+    package -- pure and read-only by construction, mirroring this module's
+    own independence rationale in its header docstring (Boundaries)."""
+    projects_dir = target / "_bmad-output" / "projects"
+    if not _is_dir(projects_dir):
+        return {}
+    roots: dict[str, str] = {}
+    for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
+        code_root = target / "src" / "shared" / "packages" / proj.name
+        try:
+            if _is_dir(code_root):
+                roots[proj.name] = str(code_root.relative_to(target))
+        except (OSError, ValueError):
+            # Per-sibling isolation is the point (docstring above); one
+            # broken sibling must never poison every other project's own
+            # turn.
+            continue
+    return roots
+
+
 def _check_project_due_for_verification(
     target: Path, proj: Path, findings: list[dict], today: date,
 ) -> None:
@@ -2807,6 +2876,29 @@ def _check_project_due_for_verification(
     result -- a churn-skipped entry is never evaluated (Boundaries: "same
     cost-bound purpose CAP-2 established").
 
+    Story 11.5: every ``due-for-verification`` item this appends additionally
+    carries ``other_project_roots`` -- ``_known_project_code_roots(target)``'s
+    map minus this project's own ``proj.name`` entry. Computed via ``target``
+    (already a parameter here) rather than accepted as a NEW parameter of its
+    own: this function's call signature is exercised by a monkeypatch in
+    ``test_one_unevaluable_project_does_not_hide_another_projects_real_finding``
+    that replaces it with a fixed-arity stand-in -- adding a parameter at the
+    call site in ``_due_for_verification_findings`` would break that ALREADY-
+    PASSING isolation test even with a keyword-optional default, since the
+    stand-in accepts no extra argument at all (Boundaries: "no regression in
+    ... existing ~48 tests"). Recomputing per project is a handful of cheap
+    directory stats, not a per-entry cost, so nothing here pays per-entry for
+    it (Design Notes).
+
+    Each item gets its OWN ``dict(other_roots)`` copy below, not the shared
+    ``other_roots`` reference (review finding, patch): ``Finding``'s own
+    ``__post_init__`` shallow-copies ``evidence``, which protects the TOP
+    level dict but not a nested mutable value inside it -- without this
+    per-item copy, every finding this project produces (and the caller's own
+    ``raw`` list) would alias the SAME ``other_project_roots`` dict object,
+    so an in-place edit of one finding's evidence would silently corrupt
+    every sibling finding's evidence too.
+
     Paired with ``zip``, POSITIONALLY, not via an id-keyed dict: ``_verification()``,
     ``_entry_named_paths()``, and ``_entry_unused_symbol_claims()`` all walk the
     SAME ``_ENTRY_RE`` marks over the SAME file text, so they produce entries in
@@ -2816,6 +2908,11 @@ def _check_project_due_for_verification(
     (review finding, patch). Positional pairing is correct regardless of
     whether ids repeat."""
     tracked_path = proj / TRACKED_REL
+    other_roots = {
+        slug: root
+        for slug, root in _known_project_code_roots(target).items()
+        if slug != proj.name
+    }
     paths_by_entry = _entry_named_paths(tracked_path)
     claims_by_entry = _entry_unused_symbol_claims(tracked_path)
     for (entry_id, raw_verified), (_, paths), (_, symbol) in zip(
@@ -2827,6 +2924,7 @@ def _check_project_due_for_verification(
                 "kind": "due-for-verification", "reason": "never-verified",
                 "project": proj.name, "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
+                "other_project_roots": dict(other_roots),
             }
             since = _authored_date(target, tracked_path, entry_id) if paths else None
             _attach_churn_skip(target, item, paths, since)
@@ -2841,6 +2939,7 @@ def _check_project_due_for_verification(
                 "project": proj.name, "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
                 "days_stale": days_stale,
+                "other_project_roots": other_roots,
             }
             _attach_churn_skip(target, item, paths, parsed)
             if item.get("skip_reason") != "no-churn":
@@ -2860,7 +2959,15 @@ def _due_for_verification_findings(
     ``today`` is the injectable "as of" date (Boundaries) -- ``None``
     resolves to ``date.today()`` HERE, at the one call boundary, so every
     inner helper stays deterministic and every test can pass a fixed date
-    rather than depending on wall-clock time."""
+    rather than depending on wall-clock time.
+
+    Story 11.5: every per-project ``due-for-verification`` item this produces
+    (via ``_check_project_due_for_verification``, below) additionally carries
+    an ``other_project_roots`` evidence key naming every OTHER known
+    project's code root (``_known_project_code_roots``) -- never on a
+    ``due-for-verification-unevaluable`` item, which is built entirely in
+    THIS function's own except-branch, below, and never reaches that helper
+    at all."""
     as_of = today if today is not None else date.today()
     findings: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"

@@ -22,6 +22,9 @@ prose, the id actually exists -- and, only on a clean batch, appends one new
 in its project's tracked ledger. It never judges truth itself: a human or an
 agent reading the code still decides the verdict and writes the evidence
 text; this script is the safe, disciplined write path for that decision.
+`evidence` may legitimately cite a `file:line` under ANOTHER project's own
+code root (Story 11.5, CAP-5) -- nothing here restricts which project's tree
+a cited path belongs to.
 
 **Why this lives here, not in `pyforge.doctor`.** Same reasoning
 `deferred_work_promote.py`'s own docstring already states: Doctor's
