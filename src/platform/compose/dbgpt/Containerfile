@@ -1,0 +1,525 @@
+# Story 10.5 (AD-14 Pattern B deviation): standalone Containerfile for the
+# DB-GPT sidecar -- DB-GPT's own model-worker + FastAPI webserver process,
+# run as its own container rather than mounted in-process into the Django
+# host. Contrast `src/platform/Containerfile` (Story 10.3): that image
+# materializes the shared `python-agent-platform` env, where Langflow still
+# runs in-process (Pattern A, unaffected by this deviation). This file
+# mirrors that Containerfile's own PIXI MATERIALIZATION PATTERN -- a pixi
+# builder stage -> a minimal, non-root, arbitrary-UID-compatible runtime
+# stage -- but sources from the ISOLATED `dbgpt-sidecar` pixi
+# feature/environment (pixi.toml) instead. That isolation is the entire
+# reason this file (and Pattern B) exists: `dbgpt-app` transitively requires
+# `dbgpt-client`, which pins `fastapi >=0.100.0,<0.113.0`; the shared
+# `python-agent-platform` env already carries `langflow-base`'s
+# `fastapi >=0.135.0,<1.0.0` floor (Story 11.1). The two ranges are
+# disjoint -- confirmed live by attempting to add `dbgpt-app` to
+# `python-agent-platform` and watching the solve fail with exactly this
+# conflict -- which is the demonstrated pluggability failure
+# `docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry records.
+# See `pixi.toml`'s own `[feature.dbgpt-sidecar]` comment for the full
+# citation; not re-derived here.
+#
+# BUILD CONTEXT IS THE REPO ROOT, not this directory -- exactly like
+# `src/platform/Containerfile`, and for the identical reason: the builder
+# stage's `pixi install --frozen -e dbgpt-sidecar` needs the workspace-root
+# `pixi.toml`/`pixi.lock`, which do not exist under
+# `src/platform/compose/dbgpt/`. The working invocation is:
+#   docker build -f src/platform/compose/dbgpt/Containerfile -t dbgpt-sidecar-test .
+# `src/platform/compose/` is entirely `.dockerignore`d (Story 10.3's own
+# addition -- that image has no use for the local compose stack), which is
+# why this Containerfile never `COPY`s anything from its own directory: every
+# file it needs either lives at the repo root (`pixi.toml`/`pixi.lock`,
+# reached through the builder stage's full `COPY . /app`) or is generated
+# in-place by a `RUN printf` (this file's own config + entrypoint, mirroring
+# how `src/platform/Containerfile` generates ITS `entrypoint.sh` -- fixed
+# literals reach a build no `COPY` from the ignored tree ever could).
+#
+# --platform=linux/amd64 pinned on every stage for the same reason as both
+# existing Containerfiles in this repo (Story 7.1, Story 10.3): the
+# `dbgpt-sidecar` feature's own `platforms = ["linux-64"]` (pixi.toml) has no
+# osx-arm64/linux-aarch64 entry -- this env is container-build-only, never a
+# native local-dev target, so it was never given one.
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.2 AS builder
+
+# WORKDIR /app -- same short, fixed path as both existing Containerfiles in
+# this repo (worktree tooling has a documented path-length panic in
+# pixi-build-backends past a ~173-byte workspace root; see the root
+# Containerfile's own comment for the full citation).
+WORKDIR /app
+
+# Full repo checkout, not a cherry-picked subset -- same rationale as
+# `src/platform/Containerfile`'s own `COPY . /app`: this builder stage needs
+# (a) the `dbgpt-sidecar` env itself and (b) a SECOND, build-time-only env
+# (`pyforge-steward`) for the secrets-scan gate below. Both are discarded
+# from the final image -- see the runtime stage's narrow `COPY --from=builder`.
+COPY . /app
+
+# --frozen: install EXACTLY what pixi.lock says (same convention as both
+# existing Containerfiles).
+RUN pixi install --frozen -e dbgpt-sidecar
+
+# Activation script for `dbgpt-sidecar` -- sourced by the runtime
+# entrypoint below so the `dbgpt` CLI lands on PATH without shipping the
+# pixi binary itself into the runtime stage.
+RUN pixi shell-hook -e dbgpt-sidecar -s bash > /app/shell-hook.sh
+
+# Story 7.3 ("Credentials never enter image layers") gate, reused verbatim
+# (AD-2 -- no second scanner). Same deviation as `src/platform/Containerfile`
+# from the spec's literal "final stage" wording, for the identical reason
+# that file's own comment documents in full (not re-derived here): `steward`
+# must never become a dependency of the shipped env, so it is materialized
+# as a separate, build-time-only env in THIS stage and never copied forward.
+# SCOPE is narrower here than the main image's: this Containerfile never
+# `COPY`s any human-authored tree into the runtime stage (no
+# `src/platform/`-style app code -- see the top-of-file comment on why this
+# file has nothing under its own directory to ship), so the pixi-generated
+# `shell-hook.sh` is the entire scan surface. The runtime stage's own
+# generated `entrypoint.sh` and sidecar config are FIXED printf literals
+# with no build-time interpolation (same category `src/platform/Containerfile`
+# already excludes its own `entrypoint.sh` from scanning for) and so are not
+# re-scanned here either.
+RUN pixi install --frozen -e pyforge-steward
+RUN pixi shell-hook -e pyforge-steward -s bash > /app/steward-shell-hook.sh
+RUN bash -c "source /app/steward-shell-hook.sh \
+    && python3 /app/scripts/container-gates secrets-scan /app/shell-hook.sh"
+
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime
+
+# WORKDIR /app -- same absolute path as the builder stage, required because
+# `pixi shell-hook`'s output bakes ABSOLUTE paths into
+# `/app/.pixi/envs/dbgpt-sidecar/...` (same reason `src/platform/Containerfile`
+# gives for its own identical WORKDIR).
+WORKDIR /app
+
+# `util-linux` (NOT `util-linux-core` -- confirmed live: the `-core` subset
+# omits `lscpu`) -- UBI9-minimal ships neither. `dbgpt.util.system_utils.
+# get_cpu_avx_support()` unconditionally `subprocess.run(["lscpu"], ...)` on
+# any Linux host, no try/except, no fallback -- this runs on every webserver
+# boot (startup banner's system-info collection), so without it the
+# container crashes immediately with `FileNotFoundError: [Errno 2] No such
+# file or directory: 'lscpu'` (reproduced live). This is `dbgpt` itself, not
+# `dbgpt-app`'s own packaging -- unrelated to the `pilot_template` gap
+# documented below.
+RUN microdnf install -y util-linux && microdnf clean all
+
+# Only the materialized env + its activation hook -- not the whole checkout
+# the builder stage happens to contain.
+COPY --from=builder /app/.pixi/envs/dbgpt-sidecar /app/.pixi/envs/dbgpt-sidecar
+COPY --from=builder /app/shell-hook.sh /app/shell-hook.sh
+
+# Same `exec -- "$@"` pattern (and the same reason) as both existing
+# Containerfiles' entrypoints: without the `--` terminator, a leading-dash
+# CMD override would be parsed as bash's OWN option instead of being handed
+# to `exec`.
+RUN printf '#!/bin/bash\nset -e\nsource /app/shell-hook.sh\nexec -- "$@"\n' > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
+
+# $HOME is a DEDICATED SUBDIRECTORY, same pattern (and the same POSIX-unlink
+# reasoning) as `src/platform/Containerfile`'s own `$HOME` block -- see that
+# file's comment for the full argument (not re-derived here): a
+# group-writable `/app` would let the runtime user replace `/app/entrypoint.sh`
+# itself, since unlink/rename permission comes from the DIRECTORY, not the
+# file. DB-GPT writes its own state under `$DBGPT_HOME` (default
+# `~/.dbgpt/workspace` -- `dbgpt/configs/model_config.py::_detect_root_path`,
+# confirmed live) whenever `DBGPT_HOME` is unset, so pointing `$HOME` at a
+# writable subdirectory is sufficient without a separate `DBGPT_HOME` env --
+# the sqlite metadata db, generated `pilot/` scaffold, and logs all land
+# under `$HOME/.dbgpt/workspace` for free.
+RUN mkdir -p /app/.home
+ENV HOME=/app/.home
+
+# RUNTIME CWD IS ALSO /app/.home, NOT /app -- a THIRD hard requirement,
+# distinct from the two the config block below documents:
+# `dbgpt_serve.evaluate`'s `BenchmarkDataManager` (registered unconditionally
+# during `initialize_components`, not gated by any feature flag) defaults
+# `cache_dir` to the bare relative string `"cache"`
+# (`dbgpt_serve/evaluate/service/fetchdata/benchmark_data_manager.py`) and
+# `os.makedirs()`s it eagerly in `__init__` -- resolved against the
+# PROCESS'S CWD, not `$HOME`/`$DBGPT_HOME`. With the default `WORKDIR /app`
+# (root:root 0755, deliberately not group-writable -- see the `$HOME`
+# comment above) this crashes with `PermissionError: [Errno 13] Permission
+# denied: 'cache'` on every boot (reproduced live). Re-pointing the runtime
+# WORKDIR at the one directory this image already makes group-writable
+# fixes it without loosening `/app` itself, and covers any other
+# undocumented relative-path assumption the same way. Every earlier `COPY`/
+# `RUN` above already ran against `/app` before this reassignment, so
+# nothing upstream of this line is affected.
+WORKDIR /app/.home
+
+# MISSING `pilot_template/` ALEMBIC SCAFFOLD -- the `dbgpt-app` 0.8.1
+# conda-forge package (recipes/db-gpt/recipe.yaml, delivered upstream via PR
+# #33883) does not ship the `dbgpt_app/pilot_template/` directory its own
+# `dbgpt_app/initialization/workspace_provisioning.py` expects to find and
+# copy into `$HOME/.dbgpt/workspace/pilot/` on first run (both the webserver
+# boot path AND `dbgpt db migration init` go through this -- confirmed live,
+# there is no non-interactive startup path that avoids it). Root cause,
+# traced into the installed package: upstream DB-GPT's own
+# `packages/dbgpt-app/hatch_build.py` only populates that directory when
+# hatchling builds a wheel FROM AN ALREADY-EXTRACTED SDIST (it
+# force-includes `pilot/*` into the sdist as `pilot_tpl/*` via
+# `pyproject.toml`, then this build hook remaps `pilot_tpl/*` ->
+# `dbgpt_app/pilot_template/*` for the wheel) -- but this recipe's build
+# script runs `pip install ./packages/dbgpt-app --no-deps
+# --no-build-isolation`, which builds the wheel DIRECTLY from the source
+# checkout, skipping the sdist step entirely, so `pilot_tpl/` never exists
+# and the hook's own `os.path.exists()` guard silently no-ops. Without this
+# directory the server crashes on first boot with `ImportError: Can't find
+# Python file .../pilot/meta_data/alembic/env.py` (reproduced live). This is
+# an upstream/recipe packaging gap, not a design choice -- carried as
+# deferred work (a fix belongs in `recipes/db-gpt/recipe.yaml`, e.g.
+# building via `python -m build --sdist` first, and is
+# conda-forge-expert-skill territory, out of this story's scope).
+#
+# THE FIX HERE RESTORES EXACTLY WHAT UPSTREAM'S OWN PACKAGING INTENDED TO
+# SHIP, rather than working around the crash by disabling alembic (which was
+# tried first and rejected: `disable_alembic_upgrade = true` skips
+# `_ddl_init_and_upgrade` but ALSO skips DB-GPT's own `db.create_all()` --
+# both are gated behind the SAME flag in `dbgpt_app/base.py::
+# _migration_db_storage` -- which left the metadata store with zero tables
+# and moved the crash one step later, to `no such table: dbgpt_serve_flow`
+# during the flow-DAG preload at startup; reproduced live). The four files
+# below are copied VERBATIM from DB-GPT v0.8.1's own
+# `pilot/meta_data/{alembic.ini,alembic/{README,env.py,script.py.mako}}`
+# (MIT-licensed, same source this recipe already builds from) into the
+# exact `dbgpt_app/pilot_template/meta_data/...` layout
+# `workspace_provisioning.py` expects -- generic Alembic `env.py`/
+# `script.py.mako`/`alembic.ini` boilerplate (`env.py`'s only
+# DB-GPT-specific content is wiring `target_metadata`/`engine` to DB-GPT's
+# own `dbgpt.storage.metadata.db_manager.db` object, load-bearing for
+# `autogenerate` to see DB-GPT's real models -- the generic
+# `alembic init`-shipped template alone resolves `target_metadata = None`
+# and silently generates an EMPTY migration, verified by diffing against
+# alembic's own `templates/generic/env.py`). With this directory present,
+# DB-GPT's OWN unmodified alembic pipeline runs end-to-end on first boot --
+# `_ensure_pilot_workspace` provisions the workspace, `create_migration_
+# script` autogenerates a real revision, `upgrade_database` applies it --
+# and every table (including `dbgpt_serve_flow`) exists before the flow-DAG
+# preload runs. Reproduced live end-to-end: default `disable_alembic_upgrade
+# = false` (i.e. omitted from the config below), clean boot, `/api/health`
+# returns 200, `sqlite3 .../dbgpt.db .tables` lists `dbgpt_serve_flow` among
+# 18 real tables.
+#
+# "VERBATIM" IS NOW ACTUALLY VERIFIED, not just asserted: all four printf
+# blocks below are byte-for-byte diffed (2026-08-21) against
+# https://raw.githubusercontent.com/eosphoros-ai/DB-GPT/v0.8.1/pilot/meta_data/
+# {alembic.ini,alembic/{README,env.py,script.py.mako}} -- an earlier revision
+# of this RUN step only `touch`ed an empty README and hand-typed abbreviated
+# versions of the other three (comments/docstrings stripped), which
+# contradicted this comment's own "copied VERBATIM" claim; caught in review.
+# `env.py`'s `run_migrations_online()` SQLite branch opens a second
+# connection (`context.configure(connection=engine.connect(), ...)`) instead
+# of reusing the already-open `connection` variable from the `with
+# engine.connect() as connection:` above it -- that is exactly what upstream
+# ships, confirmed by this same byte-for-byte diff, not a bug this file's own
+# generation introduced.
+# Single shell-form RUN (one `/bin/sh -c` layer -- no nested `bash -c "..."`
+# wrapper, deliberately: that pattern needs double-escaping `$`/`"` through
+# two shell layers to land literally in the generated files, which is
+# exactly the kind of thing that reads clean and is wrong in a way `docker
+# build` won't catch. Calling the pixi env's `python` by its full path below
+# needs no activation, so there is nothing here that actually requires
+# `source`/`bash`.
+RUN DBGPT_APP_DIR=$(/app/.pixi/envs/dbgpt-sidecar/bin/python -c "import dbgpt_app, os; print(os.path.dirname(dbgpt_app.__file__))") \
+    && mkdir -p "$DBGPT_APP_DIR/pilot_template/meta_data/alembic" \
+    && printf '%s\n' \
+        'Generic single-database configuration.' \
+        > "$DBGPT_APP_DIR/pilot_template/meta_data/alembic/README" \
+    && printf '%s\n' \
+        '# A generic, single database configuration.' \
+        '' \
+        '[alembic]' \
+        '# path to migration scripts' \
+        'script_location = alembic' \
+        '' \
+        '# template used to generate migration file names; The default value is %%(rev)s_%%(slug)s' \
+        '# Uncomment the line below if you want the files to be prepended with date and time' \
+        '# see https://alembic.sqlalchemy.org/en/latest/tutorial.html#editing-the-ini-file' \
+        '# for all available tokens' \
+        '# file_template = %%(year)d_%%(month).2d_%%(day).2d_%%(hour).2d%%(minute).2d-%%(rev)s_%%(slug)s' \
+        '' \
+        '# sys.path path, will be prepended to sys.path if present.' \
+        '# defaults to the current working directory.' \
+        'prepend_sys_path = .' \
+        '' \
+        '# timezone to use when rendering the date within the migration file' \
+        '# as well as the filename.' \
+        '# If specified, requires the python-dateutil library that can be' \
+        '# installed by adding `alembic[tz]` to the pip requirements' \
+        '# string value is passed to dateutil.tz.gettz()' \
+        '# leave blank for localtime' \
+        '# timezone =' \
+        '' \
+        '# max length of characters to apply to the' \
+        '# "slug" field' \
+        '# truncate_slug_length = 40' \
+        '' \
+        '# set to '\''true'\'' to run the environment during' \
+        '# the '\''revision'\'' command, regardless of autogenerate' \
+        '# revision_environment = false' \
+        '' \
+        '# set to '\''true'\'' to allow .pyc and .pyo files without' \
+        '# a source .py file to be detected as revisions in the' \
+        '# versions/ directory' \
+        '# sourceless = false' \
+        '' \
+        '# version location specification; This defaults' \
+        '# to alembic/versions.  When using multiple version' \
+        '# directories, initial revisions must be specified with --version-path.' \
+        '# The path separator used here should be the separator specified by "version_path_separator" below.' \
+        '# version_locations = %(here)s/bar:%(here)s/bat:alembic/versions' \
+        '' \
+        '# version path separator; As mentioned above, this is the character used to split' \
+        '# version_locations. The default within new alembic.ini files is "os", which uses os.pathsep.' \
+        '# If this key is omitted entirely, it falls back to the legacy behavior of splitting on spaces and/or commas.' \
+        '# Valid values for version_path_separator are:' \
+        '#' \
+        '# version_path_separator = :' \
+        '# version_path_separator = ;' \
+        '# version_path_separator = space' \
+        'version_path_separator = os  # Use os.pathsep. Default configuration used for new projects.' \
+        '' \
+        '# set to '\''true'\'' to search source files recursively' \
+        '# in each "version_locations" directory' \
+        '# new in Alembic version 1.10' \
+        '# recursive_version_locations = false' \
+        '' \
+        '# the output encoding used when revision files' \
+        '# are written from script.py.mako' \
+        '# output_encoding = utf-8' \
+        '' \
+        '#sqlalchemy.url = driver://user:pass@localhost/dbname' \
+        '' \
+        '' \
+        '[post_write_hooks]' \
+        '# post_write_hooks defines scripts or Python functions that are run' \
+        '# on newly generated revision scripts.  See the documentation for further' \
+        '# detail and examples' \
+        '' \
+        '# format using "black" - use the console_scripts runner, against the "black" entrypoint' \
+        '# hooks = black' \
+        '# black.type = console_scripts' \
+        '# black.entrypoint = black' \
+        '# black.options = -l 79 REVISION_SCRIPT_FILENAME' \
+        '' \
+        '# lint with attempts to fix using "ruff" - use the exec runner, execute a binary' \
+        '# hooks = ruff' \
+        '# ruff.type = exec' \
+        '# ruff.executable = %(here)s/.venv/bin/ruff' \
+        '# ruff.options = --fix REVISION_SCRIPT_FILENAME' \
+        > "$DBGPT_APP_DIR/pilot_template/meta_data/alembic.ini" \
+    && printf '%s\n' \
+        'from alembic import context' \
+        'from sqlalchemy import engine_from_config, pool' \
+        '' \
+        'from dbgpt.storage.metadata.db_manager import db' \
+        '' \
+        '# this is the Alembic Config object, which provides' \
+        '# access to the values within the .ini file in use.' \
+        'config = context.config' \
+        '' \
+        '' \
+        '# add your model'\''s MetaData object here' \
+        '# for '\''autogenerate'\'' support' \
+        '# from myapp import mymodel' \
+        '' \
+        '' \
+        '# other values from the config, defined by the needs of env.py,' \
+        '# can be acquired:' \
+        '# my_important_option = config.get_main_option("my_important_option")' \
+        '# ... etc.' \
+        '' \
+        '' \
+        'def run_migrations_offline() -> None:' \
+        '    """Run migrations in '\''offline'\'' mode.' \
+        '' \
+        '    This configures the context with just a URL' \
+        '    and not an Engine, though an Engine is acceptable' \
+        '    here as well.  By skipping the Engine creation' \
+        '    we don'\''t even need a DBAPI to be available.' \
+        '' \
+        '    Calls to context.execute() here emit the given string to the' \
+        '    script output.' \
+        '' \
+        '    """' \
+        '    target_metadata = db.metadata' \
+        '    url = config.get_main_option("sqlalchemy.url")' \
+        '    assert target_metadata is not None' \
+        '    assert url is not None' \
+        '    context.configure(' \
+        '        url=url,' \
+        '        target_metadata=target_metadata,' \
+        '        literal_binds=True,' \
+        '        dialect_opts={"paramstyle": "named"},' \
+        '    )' \
+        '' \
+        '    with context.begin_transaction():' \
+        '        context.run_migrations()' \
+        '' \
+        '' \
+        'def run_migrations_online() -> None:' \
+        '    """Run migrations in '\''online'\'' mode.' \
+        '' \
+        '    In this scenario we need to create an Engine' \
+        '    and associate a connection with the context.' \
+        '' \
+        '    """' \
+        '    engine = db.engine' \
+        '    target_metadata = db.metadata' \
+        '    with engine.connect() as connection:' \
+        '        if engine.dialect.name == "sqlite":' \
+        '            context.configure(' \
+        '                connection=engine.connect(),' \
+        '                target_metadata=target_metadata,' \
+        '                render_as_batch=True,' \
+        '            )' \
+        '        else:' \
+        '            context.configure(connection=connection, target_metadata=target_metadata)' \
+        '' \
+        '        with context.begin_transaction():' \
+        '            context.run_migrations()' \
+        '' \
+        '' \
+        'if context.is_offline_mode():' \
+        '    run_migrations_offline()' \
+        'else:' \
+        '    run_migrations_online()' \
+        > "$DBGPT_APP_DIR/pilot_template/meta_data/alembic/env.py" \
+    && printf '%s\n' \
+        '"""${message}' \
+        '' \
+        'Revision ID: ${up_revision}' \
+        'Revises: ${down_revision | comma,n}' \
+        'Create Date: ${create_date}' \
+        '' \
+        '"""' \
+        'from typing import Sequence, Union' \
+        '' \
+        'from alembic import op' \
+        'import sqlalchemy as sa' \
+        '${imports if imports else ""}' \
+        '' \
+        '# revision identifiers, used by Alembic.' \
+        'revision: str = ${repr(up_revision)}' \
+        'down_revision: Union[str, None] = ${repr(down_revision)}' \
+        'branch_labels: Union[str, Sequence[str], None] = ${repr(branch_labels)}' \
+        'depends_on: Union[str, Sequence[str], None] = ${repr(depends_on)}' \
+        '' \
+        '' \
+        'def upgrade() -> None:' \
+        '    ${upgrades if upgrades else "pass"}' \
+        '' \
+        '' \
+        'def downgrade() -> None:' \
+        '    ${downgrades if downgrades else "pass"}' \
+        > "$DBGPT_APP_DIR/pilot_template/meta_data/alembic/script.py.mako"
+
+# NON-INTERACTIVE STARTUP CONFIG -- baked in as a KNOWN-SAFE DEFAULT, not a
+# real deployment config (Story 11.2/11.3 owns wiring this sidecar to real
+# credentials and the shared Postgres/Celery surface; this story only has to
+# make the container build, boot, and reach a healthy state on its own).
+# `disable_alembic_upgrade` is deliberately OMITTED (DB-GPT's own default is
+# `false`) now that the `pilot_template/` fix above makes the real migration
+# path work -- see that RUN step's own comment.
+#
+# The one remaining hard requirement to boot at all, confirmed live
+# investigating this story (reproduced with `pixi run -e dbgpt-sidecar dbgpt
+# start webserver -y`): at least one `[[models.llms]]` entry. With zero
+# configured, `dbgpt.model.cluster.worker.manager.
+# initialize_worker_manager_in_client`'s local-mode branch never calls
+# `_start_local_worker`, leaving the global worker-manager wrapper's inner
+# `.worker_manager` `None`, and the very next line (`worker_manager.
+# after_start(...)`) crashes with `AttributeError: 'NoneType' object has no
+# attribute 'after_start'` (reproduced live). A `proxy/*` provider entry
+# satisfies this at BOOT time without ever making a network call -- proxy
+# adapters only reach out on an actual chat request, never during startup.
+#
+# Every `models.llms` value below is overridable at `docker run`/compose
+# time via the `${env:VAR:-default}` interpolation DB-GPT's own TOML loader
+# supports natively (the same mechanism its own
+# `configs/dbgpt-proxy-openai.toml` example uses) -- an operator wires a
+# real provider by setting `DBGPT_LLM_*`, no rebuild needed. This is DB-GPT's
+# OWN runtime interpolation, evaluated when the app reads the file, not
+# build-time shell/Docker substitution -- so, like `entrypoint.sh` above,
+# this is a fixed literal with no build-time secret to leak.
+# `sidecar-placeholder-not-a-real-key` is exactly that: a LOCAL DEV/TEST
+# PLACEHOLDER (matching `compose.yml`'s own convention for
+# `DJANGO_SECRET_KEY`/`POSTGRES_PASSWORD`), never a real credential, and
+# never invoked by anything this story's own build/health verification does.
+#
+# `[service.web.database].path` BELOW ("pilot/meta_data/dbgpt.db") IS A BARE
+# RELATIVE STRING, but -- UNLIKE the `BenchmarkDataManager` `cache_dir` fix
+# the `WORKDIR /app/.home` line above this exists for -- it is NOT resolved
+# against the process's CWD. Traced into the installed package
+# (`dbgpt/configs/model_config.py::_detect_root_path`/`resolve_root_path`):
+# for a pip/conda install (no `pyproject.toml` at the detected repo-root
+# candidate), `ROOT_PATH` resolves to `$DBGPT_HOME/workspace` if
+# `DBGPT_HOME` is set, else `os.path.expanduser("~/.dbgpt")/workspace` --
+# i.e. it depends on `$HOME` (this image never sets `DBGPT_HOME`), not on
+# WORKDIR. `resolve_root_path()` then joins this relative `path` onto that
+# `ROOT_PATH`, so the file actually opens at
+# `$HOME/.dbgpt/workspace/pilot/meta_data/dbgpt.db` -- confirmed live via
+# `docker exec ... os.walk('/app/.home')`, which found the real file at
+# exactly `/app/.home/.dbgpt/workspace/pilot/meta_data/dbgpt.db`, not
+# `/app/.home/pilot/meta_data/dbgpt.db` as this relative string alone would
+# suggest. A future change to `$HOME` (or setting `$DBGPT_HOME`) silently
+# relocates this file; a WORKDIR-only change would NOT (they are only the
+# same value here by coincidence). `compose.yml`'s `dbgpt` service volume
+# mount targets this real, confirmed path.
+RUN printf '%s\n' \
+    '[system]' \
+    'language = "en"' \
+    '' \
+    '[service.web]' \
+    'host = "0.0.0.0"' \
+    'port = 5670' \
+    '' \
+    '[service.web.database]' \
+    'type = "sqlite"' \
+    'path = "pilot/meta_data/dbgpt.db"' \
+    '' \
+    '[[models.llms]]' \
+    'name = "${env:DBGPT_LLM_MODEL_NAME:-gpt-4o}"' \
+    'provider = "${env:DBGPT_LLM_MODEL_PROVIDER:-proxy/openai}"' \
+    'api_base = "${env:DBGPT_LLM_API_BASE:-https://api.openai.com/v1}"' \
+    'api_key = "${env:DBGPT_LLM_API_KEY:-sidecar-placeholder-not-a-real-key}"' \
+    > /app/dbgpt-sidecar-config.toml
+
+# Pre-create the sqlite state directory (`[service.web.database].path` above
+# actually resolves to `/app/.home/.dbgpt/workspace/pilot/meta_data/dbgpt.db`
+# -- see that config line's own comment for why it is NOT the
+# `/app/.home/pilot/meta_data/...` the bare relative string would suggest)
+# BEFORE the group-write fixup below, not left for the app to create on
+# first boot: `compose.yml`'s `dbgpt` service mounts a named volume at this
+# exact path for durability across `docker compose down && up` (interim
+# measure, pending Story 11.2's real Postgres/`dbgpt_schema` wiring -- see
+# that file's own comment). Docker initializes a fresh named volume from
+# whatever already exists at the image mount point, INCLUDING permissions --
+# so this directory has to already carry the same group-0-writable posture
+# as the rest of `/app/.home`, or the volume-backed mount would come up
+# root-owned and unwritable by the arbitrary runtime uid.
+RUN mkdir -p /app/.home/.dbgpt/workspace/pilot/meta_data
+
+# Arbitrary-UID / rootless setup -- same posture as `src/platform/Containerfile`
+# (GID 0, `chgrp 0`/`chmod g+rwX` on exactly the one path written at
+# runtime). No `STATIC_ROOT`-equivalent here: this image ships no
+# generated visitor-facing assets to protect the way the main image's
+# `staticfiles/` does -- DB-GPT's own frontend bundle is read-only, baked
+# into the pixi-materialized `dbgpt_app` package under `.pixi/envs/`, same
+# as every other conda-sourced file in this image. `/app` itself is
+# deliberately NOT group-writable, for the same POSIX-unlink reason as the
+# main image (see its own comment).
+RUN chgrp -R 0 /app/.home \
+    && chmod -R g+rwX /app/.home
+
+# USER 1001:0 -- an arbitrary example non-root uid paired with GID 0, same
+# convention (and the same "1001 itself carries no significance" caveat) as
+# `src/platform/Containerfile`.
+USER 1001:0
+
+# Declares the port `CMD`'s webserver actually binds (`service.web.port`
+# above) -- pure metadata, matches `src/platform/Containerfile`'s own EXPOSE
+# rationale.
+EXPOSE 5670
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["dbgpt", "start", "webserver", "-y", "-c", "/app/dbgpt-sidecar-config.toml"]
