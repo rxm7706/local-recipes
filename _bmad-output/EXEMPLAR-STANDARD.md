@@ -534,15 +534,96 @@ pace with — arguably outpacing — the fleet's own Dream production rate. Both
 targets than re-chasing the DW-ledger or 6.10-shape columns, which this pass shows are now
 solid.
 
+**The table above is dated 2026-08-15 and is now stale — kept verbatim above per this
+document's own Provenance rule 4 (corrections stay on the record), superseded by the refresh
+below.**
+
+### Conformance status — 2026-08-21 refresh
+
+Same 8-column mechanical count as the 2026-08-15 pass, re-run today against the live
+`_bmad-output/projects/*/planning-artifacts/` trees (still the same 8 projects — no project
+was added, removed, or renamed since 08-15), with one methodology fix: the delivery-records
+grep now unions in a third pattern, `## Auto Run Result` — `bmad-dev-auto`'s own HALT-protocol
+section name — alongside `Delivery Record` and `Dev Agent Record`. That third pattern answers
+the 08-15 section's own stated caveat ("do not treat the 0s as confirmed debt without
+re-checking headings directly"): all five of that table's 0/N rows — herald, marshal, mason,
+steward, and warden — were a heading-convention false negative, not a real "zero stations
+record delivery" finding.
+
+| Project | 6.10 shape | Spec kernels | Story specs | Companions (exhaustive count) | Delivery records (exhaustive grep, heading-level) | DW ledger | README | epics.md |
+|---|---|---|---|---|---|---|---|---|
+| pyforge-atlas | ✅ sharded | 8 | 48 | 9 | 43/48 | ✅ 138 | ✅ | ✅ |
+| pyforge-doctor | ✅ sharded | 8 | 36 | 3 | 23/36 | ✅ 29 | ✅ | ✅ |
+| pyforge-herald | ✅ sharded | 4 | 48 | 6 | 5/48 | ✅ 58 | ✅ | ✅ |
+| pyforge-marshal | ✅ sharded | 38 | 58 | 14 | 28/58 | ✅ 169 | ✅ | ✅ |
+| pyforge-mason | ✅ sharded | 8 | 11 | 3 | 9/11 | ✅ 54 | ✅ | ✅ |
+| pyforge-scribe | ✅ sharded | 4 | 9 | 0 | 3/9 | ✅ 7 | ✅ | ✅ |
+| pyforge-steward | ✅ sharded | 9 | 20 | 1 | 4/20 | ✅ 124 | ✅ | ✅ |
+| pyforge-warden | ✅ sharded | 2 | 31 | 3 | 16/31 | ✅ 46 | ✅ | ✅ |
+
+Every column above is reproduced by one of these commands, per project (`<pa>` =
+`_bmad-output/projects/<slug>/planning-artifacts`):
+
+```bash
+test -d <pa>/prds && test -d <pa>/architecture && test -d <pa>/specs            # 6.10 shape
+find <pa>/specs -maxdepth 2 -iname SPEC.md | wc -l                              # spec kernels
+find <pa>/specs -maxdepth 1 -iname 'spec-*.md' | wc -l                          # story specs
+find <pa>/specs -mindepth 2 -maxdepth 2 -type f \
+  ! -iname SPEC.md ! -iname .memlog.md | wc -l                                  # companions
+grep -rlE '^## (Delivery Record|Dev Agent Record|Auto Run Result)' \
+  <pa>/specs --include='spec-*.md' | wc -l                                      # delivery records
+grep -ohE '\bDW-[A-Za-z0-9][A-Za-z0-9-]*' <pa>/deferred-work-ledger.md \
+  | sed 's/-$//' | sort -u | wc -l                                              # DW ledger
+test -f <pa>/README.md                                                          # README
+test -f <pa>/epics.md                                                           # epics.md
+```
+
+Method and honest caveats:
+- **6.10 shape / spec kernels / story specs / companions / README / epics.md**: the commands
+  above, run 2026-08-21 — each is an exhaustive walk of the project's tree, not a sample,
+  despite the "spot count" wording the 08-15 table used for the same columns. All eight remain
+  fully sharded. Every count moved: story specs (atlas 47→48, doctor 28→36, marshal 56→58,
+  mason 10→11; herald/scribe/steward/warden unchanged), spec kernels (doctor 4→8, marshal
+  36→38, others unchanged), and companions (doctor 0→3, mason 1→3, others unchanged) — six
+  days of organic growth, not a methodology change.
+- **Delivery records — the 08-15 false negative is resolved; verification scope stated
+  honestly**: re-running the *old* two-pattern grep (`Delivery Record`/`Dev Agent Record` only)
+  today, in isolation, reproduces the 08-15 numbers exactly for every project (atlas 32, doctor
+  5, scribe 2, and 0 for herald/marshal/mason/steward/warden) — the old pattern's zero rows
+  stayed zero even where story-spec counts grew, consistent with (though not itself proof of)
+  every new story using a different heading. Adding the third pattern lifts every project's
+  count: atlas +11 (32→43), doctor +18 (5→23), herald +5 (0→5), marshal +28 (0→28), mason +9
+  (0→9), scribe +1 (2→3), steward +4 (0→4), warden +16 (0→16). Content-verified for two of the
+  eight — herald and marshal, opened file-by-file for this refresh — where every newly-matched
+  file does carry `## Auto Run Result` and nothing else; the remaining six projects' matches
+  rest on the heading-level grep only, not a per-file read. The false negative on the *zero*
+  rows is resolved, but coverage is still well below the story-spec total for several projects
+  (herald 5/48, marshal 28/58, mason 9/11, scribe 3/9, steward 4/20) — that gap is not claimed
+  to be fully explained here; it plausibly includes in-progress stories with no delivery
+  section yet, and possibly a fourth convention this pass did not check for.
+- **DW ledger — no first-time fix needed this pass**: the 08-15 refresh already corrected the
+  07-28 table's stale all-❌ column; this pass's numbers are six more days of ledger growth on
+  the same counting method (unchanged since 08-15): atlas 122→138, doctor 20→29, herald
+  45→58, marshal 109→169, mason 48→54, scribe 7→7 (flat), steward 74→124, warden 43→46. Caveat
+  inherited from the method's own shape, not new to this pass: the count is distinct `DW-*`
+  tokens found anywhere in the file — including an id one entry cites in another's `evidence:`
+  prose (e.g. "supersedes DW-X") — the same file-wide harvest `pyforge.doctor.sources.chain`
+  uses when minting new ids, so it stays consistent with the fleet's own tooling, but it means
+  the number is "distinct ids mentioned," not strictly "open items."
+- **Not re-measured this pass**: INV-2 station-ownership migration progress, INV-4/INV-5
+  enforcement status, and the Dream-count/dream-chain gap — the 08-15 section's figures and
+  caveats on these stand un-superseded; this refresh covers only the same 8 columns the 08-15
+  pass covered and adds no new information about them.
+
 ## Verifying conformance
 
 **`scripts/dream_chain_check.py` was retired 2026-08-10** (`c698d4b1ad`, superseded by Doctor
 sources per the same pattern `bmad_drift_check.py` followed for its own verdict — CLAUDE.md
 § "Keeping BMAD artifacts in sync"). Its INV-0/INV-1 half (Spec linkage) now lives at
 `python -m pyforge.doctor.sources dream-chain`; INV-2/INV-3 (station ownership, build-tree
-shape) are **not yet ported** — the 2026-08-15 refresh table above measured those columns by
-hand-run `find`/`grep`, the same un-mechanized method the original 2026-07-28 table used
-before this detector existed. Its findings **are** the migration backlog for INV-0/1 —
+shape) are **not yet ported** — the 2026-08-15 and 2026-08-21 refresh tables above measured
+those columns by hand-run `find`/`grep`, the same un-mechanized method the original 2026-07-28
+table used before this detector existed. Its findings **are** the migration backlog for INV-0/1 —
 derived, never hand-listed — but the rest of the table is still exactly the kind of
 hand-derived snapshot this document warns goes stale the moment it's written, until INV-2/3
 land in `pyforge.doctor.sources` too.

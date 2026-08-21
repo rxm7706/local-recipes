@@ -39,7 +39,7 @@ Whenever an item's real-world state changes (a Spec gets written for it, a story
 - GuildHall Fleet Status Dashboard as the human-facing mirror — which new signals belong there too is an open question, not scoped here. (Status: cataloged — open, unscoped; verified 2026-08-21)
 
 ## Category 5 — Exemplar / golden-standard references
-`EXEMPLAR-STANDARD.md` is the primary, structured answer to "what does done-and-clean mean" — five binding invariants (INV-0..INV-5), a conformance table, its own detector (`dream_chain_check.py`). **Its conformance table is stale on exactly the row this session's work touched** (DW-ledger column shows only atlas ✅; 7 other projects now have real ledgers) — **this Spec's CAP-2**, flagged in the source Dream as the most concrete, ready-now item in the whole catalog. (Status: specced — doctor Epic 12 Story 12.2, backlog, not yet landed; verified 2026-08-21)
+`EXEMPLAR-STANDARD.md` is the primary, structured answer to "what does done-and-clean mean" — five binding invariants (INV-0..INV-5), a conformance table, its own detector (`dream_chain_check.py`). **Its conformance table is stale on exactly the row this session's work touched** (DW-ledger column shows only atlas ✅; 7 other projects now have real ledgers) — **this Spec's CAP-2**, flagged in the source Dream as the most concrete, ready-now item in the whole catalog. (Status: shipped — doctor Epic 12 Story 12.2, done; verified 2026-08-21)
 
 Narrower, purely-manual exemplars with no mechanical backing (not scoped by this Spec — see Open Questions):
 - Six-act deck framework (canonical template for all 21 station decks). (Status: cataloged — open, unscoped; verified 2026-08-21)
