@@ -2,7 +2,7 @@
 title: Nobody has to hand-parse engine.pid to answer "is this run alive?"
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # Nobody has to hand-parse engine.pid to answer "is this run alive?"
