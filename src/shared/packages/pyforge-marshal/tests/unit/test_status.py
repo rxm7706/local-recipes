@@ -702,6 +702,86 @@ class TestDeriveHomeState:
         )
         assert state == "running"
 
+    # --- Story 5.8 (FR-36/AD-5): `engine_alive` is a one-directional
+    # softening signal over the dead-supervisor branch -- covers every
+    # `engine_alive`-related row of the spec's own I/O & Edge-Case Matrix.
+
+    def test_engine_alive_softens_dead_supervisor_with_task_in_flight(self):
+        """Matrix row: dead supervisor, engine alive, task in flight ->
+        `running` -- the 2026-08-11 incident's own shape at the pure
+        derivation level."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage=None,
+            tasks=(_task(phase="dev-running"),),
+            supervisor_alive=False,
+            engine_alive=True,
+        )
+        assert state == "running"
+
+    def test_engine_alive_softens_dead_supervisor_with_no_task(self):
+        """Matrix row: dead supervisor, engine alive, no in-flight task ->
+        `idle`."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage=None,
+            tasks=(),
+            supervisor_alive=False,
+            engine_alive=True,
+        )
+        assert state == "idle"
+
+    def test_engine_alive_softens_dead_supervisor_paused_on_escalation(self):
+        """Matrix row: dead supervisor, engine alive, paused on escalation
+        -> `paused-on-escalation`."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage="escalation",
+            tasks=(),
+            supervisor_alive=False,
+            engine_alive=True,
+        )
+        assert state == "paused-on-escalation"
+
+    def test_engine_alive_false_still_reports_unsupervised(self):
+        """Matrix row: dead supervisor, engine also dead -> `unsupervised`
+        (unchanged) -- only `engine_alive is True` may soften the branch,
+        never `False`."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage=None,
+            tasks=(_task(phase="dev-running"),),
+            supervisor_alive=False,
+            engine_alive=False,
+        )
+        assert state == "unsupervised"
+
+    def test_engine_alive_none_still_reports_unsupervised(self):
+        """Matrix row: dead supervisor, engine liveness unprobed ->
+        `unsupervised` (unchanged, the safe default) -- an unprobed engine
+        is never treated as confirmed alive."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage=None,
+            tasks=(_task(phase="dev-running"),),
+            supervisor_alive=False,
+            engine_alive=None,
+        )
+        assert state == "unsupervised"
+
+    def test_engine_alive_never_consulted_once_finished(self):
+        """Matrix row: finished run, supervisor already exited -> `stopped`;
+        `engine_alive` never consulted -- a confirmed-alive engine must not
+        turn an already-finished run into anything but `stopped`."""
+        state = status.derive_home_state(
+            finished=True,
+            paused_stage=None,
+            tasks=(),
+            supervisor_alive=False,
+            engine_alive=True,
+        )
+        assert state == "stopped"
+
 
 class TestIsRunLive:
     """Story 4.11's own pure predicate: the full boolean matrix over
@@ -961,6 +1041,24 @@ class TestBuildFleetRow:
         assert row["state"] == "stopped"
         assert row["escalation_reason"] is None
         assert row["escalation_artifact"] is None
+
+    def test_dead_supervisor_alive_engine_reports_running_not_unsupervised(self):
+        """Story 5.8: `build_fleet_row` threads `facts.engine_alive` through
+        to `derive_home_state` -- a dead supervisor sidecar behind a
+        confirmed-alive engine with an in-flight task must report
+        `"running"`, never `"unsupervised"`."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            tasks=(_task(story_key="1.1", phase="dev-running"),),
+            supervisor_alive=False,
+            engine_alive=True,
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "running"
+        assert row["current_story"] == "1.1"
 
 
 class TestSortFleetRows:
@@ -1478,6 +1576,32 @@ def _outcome_line(
     return prepare_for_write(entry).line
 
 
+def _resume_outcome_line(
+    run_id: str,
+    *,
+    pid: int | None,
+    harness_run_id: str | None,
+    ts: str = "2026-08-06T00:10:00.000Z",
+) -> str:
+    """A minimal, valid ``phase: outcome`` ``run-resume`` journal line --
+    the SAME shape as ``_outcome_line`` but ``kind="run-resume"``, the
+    kind a `bmad-loop resume` journals for a run that already has an
+    earlier ``run-launch`` entry. Story 5.8 (code review, 2026-08-12,
+    Blind Hunter): exercises the resume branch of
+    ``_gather_run_journal_facts``'s launch-pid resolution, which a dead
+    engine-liveness regression could silently never reach again."""
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 2),
+        ts=ts,
+        run_id=run_id,
+        kind="run-resume",
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("spin-1", 0),
+        payload={"pid": pid, "harness_run_id": harness_run_id},
+    )
+    return prepare_for_write(entry).line
+
+
 def _supervisor_attach_line(
     run_id: str, *, pid: int, ts: str = "2026-08-06T00:00:30.000Z"
 ) -> str:
@@ -1868,14 +1992,18 @@ class TestRunStatus:
         assert payload["data"]["homes"][0]["state"] == "stopped"
         assert exit_code == 0
 
-    def test_home_with_dead_supervisor_is_unsupervised(
+    def test_home_with_dead_supervisor_but_alive_engine_is_not_unsupervised(
         self, tmp_path, capsys, monkeypatch
     ):
-        """The supervisor pid (5252) is journaled and dead while the
-        DIFFERENT harness/launch pid (4242) is alive -- code review,
-        2026-08-07, Blind Hunter's own worked scenario for the bug this
-        test now actually exercises: a crashed supervisor with the watched
-        harness process still running must still report `unsupervised`."""
+        """Story 5.8 (2026-08-11 incident): the supervisor pid (5252) is
+        journaled and dead while the DIFFERENT harness/launch pid (4242,
+        the engine) is alive -- this test used to assert `unsupervised`
+        for exactly this scenario (code review, 2026-08-07, Blind Hunter's
+        own worked case for a DIFFERENT bug: probing the wrong pid for
+        supervisor liveness). Now that `_gather_home_facts` also probes
+        the launch pid as `engine_alive`, a crashed supervisor with the
+        watched harness process still running must report the run's real
+        state (`running`, from the in-flight task), never `unsupervised`."""
         run_dir = _seed_run_journal(
             tmp_path,
             run_id="acme-run1",
@@ -1894,8 +2022,50 @@ class TestRunStatus:
                 )
             }
         )
-        # 4242 (the harness) is alive; 5252 (the supervisor) is NOT.
+        # 4242 (the harness/engine) is alive; 5252 (the supervisor) is NOT.
         process = _FakeProcess(alive_pids=frozenset({4242}))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["homes"][0]["state"] == "running"
+        assert exit_code == 0
+
+    def test_home_with_supervisor_and_engine_both_dead_is_unsupervised(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """The genuinely-stalled case this story must NOT soften: both the
+        supervisor pid (5252) and the harness/engine pid (4242) are dead
+        -- `engine_alive` reads `False`, which never softens the branch,
+        so the row still reports `unsupervised` exactly as before this
+        story."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        # Neither 4242 (the engine) nor 5252 (the supervisor) is alive.
+        process = _FakeProcess(alive_pids=frozenset())
 
         exit_code = status_cli.run_status(
             _args(),
@@ -1909,6 +2079,191 @@ class TestRunStatus:
         payload = _payload(capsys)
         assert payload["data"]["homes"][0]["state"] == "unsupervised"
         assert exit_code == 0
+
+    def test_home_with_supervisor_never_attached_and_engine_alive_reproduces_2026_08_11(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """The exact 2026-08-11 reproduction (spec's own I/O matrix row):
+        a run resumed via a bare `bmad-loop resume` that never re-spawns a
+        supervisor sidecar at all -- no `supervisor-attach`/`supervisor-
+        heartbeat` entry is ever journaled, so `supervisor_pid` is `None`
+        and `supervisor_alive` degrades to `False` (`_gather_home_facts`'s
+        own "never attached is treated identically to confirmed-dead"
+        rule) -- while the engine's own launch pid is alive and a story is
+        in flight. The row must derive its real state, never
+        `unsupervised`."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[_outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1")],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        # Only 4242 (the engine) is alive -- no supervisor pid was ever
+        # journaled at all.
+        process = _FakeProcess(alive_pids=frozenset({4242}))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        state = payload["data"]["homes"][0]["state"]
+        assert state != "unsupervised"
+        assert state == "running"
+        assert exit_code == 0
+
+    def test_home_with_supervisor_never_attached_and_engine_dead_is_unsupervised(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Acceptance criterion: the IDENTICAL scenario to the 2026-08-11
+        reproduction above (no supervisor pid ever journaled) except the
+        engine process has ALSO exited -- the row must still report
+        `unsupervised`, since `engine_alive` reads `False`, which never
+        softens the branch."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[_outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1")],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        # Neither pid is alive: no supervisor pid was ever journaled, and
+        # the engine's own launch pid (4242) has also exited.
+        process = _FakeProcess(alive_pids=frozenset())
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["homes"][0]["state"] == "unsupervised"
+        assert exit_code == 0
+
+    def test_engine_alive_reflects_the_resumed_pid_not_the_original_launch_pid(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Code review (2026-08-12, Blind Hunter, Story 5.8): a run that
+        was launched, then resumed under a NEW pid (the original launch
+        process exited, `bmad-loop resume` spawned a different one) --
+        `journal_facts.launch_pid` must reflect the RESUME entry's pid,
+        not stay pinned to the original launch entry's now-dead one, or
+        `engine_alive` silently reads `False` for every resumed run and
+        this story's own fix never actually fires for the scenario it
+        exists to fix."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _resume_outcome_line("acme-run1", pid=7777, harness_run_id="hrid-1"),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        # 4242 (the ORIGINAL launch pid) is dead; 7777 (the resumed pid)
+        # is alive; no supervisor pid was ever journaled.
+        process = _FakeProcess(alive_pids=frozenset({7777}))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"]["homes"][0]["state"] == "running"
+        assert exit_code == 0
+
+    def test_dead_supervisor_alive_engine_state_matches_across_text_and_json(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """Acceptance criterion (AD-14 parity): a dead-supervisor-alive-
+        engine row must carry the SAME derived state under both
+        `--format text` and `--format json` -- the text view is a pure
+        projection of the same envelope, never a second, independently
+        derived rendering."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False, tasks=(_task(story_key="1.1", phase="dev-running"),)
+                )
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({4242}))
+
+        exit_code = status_cli.run_status(
+            _args(format="json"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        json_state = _payload(capsys)["data"]["homes"][0]["state"]
+        assert exit_code == 0
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        text_out = capsys.readouterr().out
+        assert exit_code == 0
+
+        assert json_state == "running"
+        assert f": {json_state} " in text_out
 
     def test_missing_journal_reports_unknown_and_warns(
         self, tmp_path, capsys, monkeypatch
