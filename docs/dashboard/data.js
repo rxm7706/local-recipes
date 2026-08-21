@@ -1688,7 +1688,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 143 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 155 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1935,12 +1935,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "107/143",
+            "107/155",
             "stories complete",
             "var(--done)"
           ],
           [
-            "36",
+            "48",
             "remaining",
             ""
           ]
@@ -2869,6 +2869,84 @@ window.DASHBOARD_DATA = {
               "21.5",
               "pending",
               "Configurable per-project invocation"
+            ]
+          ]
+        },
+        {
+          "badge": "E22",
+          "title": "Single-story dispatch is a marshal verb, not a session's discipline",
+          "stories": [
+            [
+              "22.1",
+              "pending",
+              "The dispatch verb launches one governed, isolated story session"
+            ],
+            [
+              "22.2",
+              "pending",
+              "Completion is judged from git and process facts, and a zombie is never redispatched"
+            ],
+            [
+              "22.3",
+              "pending",
+              "Verification is the product — no landing on a self-report"
+            ],
+            [
+              "22.4",
+              "pending",
+              "A verified story lands through the existing machinery, classified marshal-native"
+            ],
+            [
+              "22.5",
+              "pending",
+              "One story in flight per station; stations in parallel; overlap is loud"
+            ],
+            [
+              "22.6",
+              "pending",
+              "The dispatched run survives its operator, and its journal carries the timing signal"
+            ]
+          ]
+        },
+        {
+          "badge": "E23",
+          "title": "Velocity captures hand-driven work",
+          "stories": [
+            [
+              "23.1",
+              "pending",
+              "Wall-clock fallback derivation from promoted-spec revision fields"
+            ],
+            [
+              "23.2",
+              "pending",
+              "Wall-clock is never blended with active-compute"
+            ],
+            [
+              "23.3",
+              "pending",
+              "The coverage caption partitions by true reason"
+            ]
+          ]
+        },
+        {
+          "badge": "E24",
+          "title": "Liveness is one command",
+          "stories": [
+            [
+              "24.1",
+              "pending",
+              "Marshal gains the missing liveness primitive"
+            ],
+            [
+              "24.2",
+              "pending",
+              "The operator answer is one documented command"
+            ],
+            [
+              "24.3",
+              "pending",
+              "An UNSUPERVISED row has a cheap, documented double-check"
             ]
           ]
         }
@@ -4631,7 +4709,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-21 23:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-21 23:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4668,7 +4746,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "agentic-sdlc-autonomy",
       "title": "The Agentic SDLC — four views of autonomy, one governed factory",
-      "status": "pitched",
+      "status": "specified",
       "owner": "marshal",
       "type": "practice",
       "chain": {
@@ -4768,10 +4846,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "bmad-loop-liveness-footgun",
       "title": "Nobody has to hand-parse engine.pid to answer \"is this run alive?\"",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun"
+      }
     },
     {
       "slug": "bmad-method-core-upgrade",
@@ -4863,10 +4943,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "dashboard-velocity-captures-hand-driven-work",
       "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-velocity-captures-hand-driven-work"
+      }
     },
     {
       "slug": "db-gpt-django-plugin",
@@ -5163,7 +5245,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "marshal-land-cross-project-story-key-collision",
       "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -5181,9 +5263,19 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "marshal-single-story-dispatch",
+      "title": "Single-story dispatch is a marshal verb, not a session's discipline",
+      "status": "specified",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch"
+      }
+    },
+    {
       "slug": "marshal-status-harness-run-id-poisoning",
       "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -5966,6 +6058,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation"
     },
     {
+      "slug": "bmad-loop-liveness-footgun",
+      "project": "pyforge-marshal",
+      "title": "Nobody has to hand-parse engine.pid to answer \"is this run alive?\"",
+      "caps": 3,
+      "companions": 1,
+      "updated": "2026-08-21",
+      "dream": "bmad-loop-liveness-footgun",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun"
+    },
+    {
       "slug": "bmad-output-hygiene",
       "project": "pyforge-marshal",
       "title": "bmad-output-hygiene",
@@ -5994,6 +6096,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-15",
       "dream": "dashboard-project-path-derivation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
+    },
+    {
+      "slug": "dashboard-velocity-captures-hand-driven-work",
+      "project": "pyforge-marshal",
+      "title": "Every done story leaves a timing mark — \"unmeasured\" stops meaning \"not loop-driven\"",
+      "caps": 3,
+      "companions": 1,
+      "updated": "2026-08-21",
+      "dream": "dashboard-velocity-captures-hand-driven-work",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-velocity-captures-hand-driven-work"
     },
     {
       "slug": "dream-to-code-model-self-verification",
@@ -6114,6 +6226,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-14",
       "dream": "marshal-land-merge-subject",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-merge-subject"
+    },
+    {
+      "slug": "marshal-single-story-dispatch",
+      "project": "pyforge-marshal",
+      "title": "Single-story dispatch is a marshal verb, not a session's discipline",
+      "caps": 6,
+      "companions": 0,
+      "updated": "2026-08-21",
+      "dream": "marshal-single-story-dispatch",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch"
     },
     {
       "slug": "marshal-status-harness-run-id-poisoning",
@@ -7242,7 +7364,7 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 107,
-          "total": 143,
+          "total": 155,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -7310,9 +7432,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 72,
+    "live": 73,
     "reached": 8,
-    "gaps": 88,
+    "gaps": 87,
     "findings": 24,
     "rows": [
       {
@@ -7823,7 +7945,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "107/143",
+        "progress": "107/155",
         "complete": 13,
         "of": 13
       },
@@ -11448,7 +11570,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-29",
+          "dream": "2026-08-21",
           "deck": "",
           "spec": "2026-07-29",
           "research": "2026-08-08",
@@ -11499,7 +11621,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "pitched",
+        "dreamStatus": "specified",
         "ownerDream": "agentic-sdlc-autonomy",
         "noDream": false,
         "unowned": false,
@@ -12174,7 +12296,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-14",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-21",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -12190,9 +12312,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-14",
+          "dream": "2026-08-21",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-21T18:37",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12241,25 +12363,24 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "dreamStatus": "specified",
+        "ownerDream": "bmad-loop-liveness-footgun",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -12270,7 +12391,7 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 3
       },
       {
         "label": "bmad-output-hygiene",
@@ -12599,7 +12720,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-21",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -12615,9 +12736,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-15",
+          "dream": "2026-08-21",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-21T18:36",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12666,25 +12787,24 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "dreamStatus": "specified",
+        "ownerDream": "dashboard-velocity-captures-hand-driven-work",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 4,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -12695,7 +12815,7 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 3
       },
       {
         "label": "dream-to-code-model-self-verification",
@@ -13889,7 +14009,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-15",
+          "dream": "2026-08-21",
           "deck": "",
           "spec": "2026-08-15T14:05",
           "research": "2026-08-08",
@@ -13940,7 +14060,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
+        "dreamStatus": "specified",
         "ownerDream": "marshal-land-cross-project-story-key-collision",
         "noDream": false,
         "unowned": false,
@@ -14077,6 +14197,112 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "marshal-single-story-dispatch",
+        "slug": "marshal-single-story-dispatch",
+        "project": "pyforge-marshal",
+        "dream": "marshal-single-story-dispatch",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-21",
+          "deck": "",
+          "spec": "2026-08-21",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-21",
+          "deck": "",
+          "spec": "2026-08-21T18:36",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "marshal-single-story-dispatch",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 5,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-21",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
         "label": "marshal-status-harness-run-id-poisoning",
         "slug": "marshal-status-harness-run-id-poisoning",
         "project": "pyforge-marshal",
@@ -14101,7 +14327,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-15",
+          "dream": "2026-08-21",
           "deck": "",
           "spec": "2026-08-15T09:34",
           "research": "2026-08-08",
@@ -14152,7 +14378,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
+        "dreamStatus": "specified",
         "ownerDream": "marshal-status-harness-run-id-poisoning",
         "noDream": false,
         "unowned": false,
@@ -19107,14 +19333,6 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
-        "slug": "bmad-loop-liveness-footgun",
-        "title": "Nobody has to hand-parse engine.pid to answer \"is this run alive?\"",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
         "slug": "bmad-method-core-upgrade",
         "title": "BMAD-METHOD's own core stays current, not stuck at whatever version got installed",
         "status": "dreamt",
@@ -19127,14 +19345,6 @@ window.DASHBOARD_DATA = {
         "title": "Build a conda-forge packaging inventory from scratch as a continuous intake engine",
         "status": "dreamt",
         "owner": "atlas",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "dashboard-velocity-captures-hand-driven-work",
-        "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
-        "status": "dreamt",
-        "owner": "marshal",
         "blockedOn": "",
         "chain": {}
       },
@@ -19153,26 +19363,6 @@ window.DASHBOARD_DATA = {
         "owner": "steward",
         "blockedOn": "",
         "chain": {}
-      },
-      {
-        "slug": "marshal-land-cross-project-story-key-collision",
-        "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-cross-project-story-key-collision"
-        }
-      },
-      {
-        "slug": "marshal-status-harness-run-id-poisoning",
-        "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-status-harness-run-id-poisoning"
-        }
       },
       {
         "slug": "miniforge-installer",
@@ -19237,18 +19427,38 @@ window.DASHBOARD_DATA = {
         "owner": "doctor",
         "blockedOn": "",
         "chain": {}
+      },
+      {
+        "slug": "marshal-land-cross-project-story-key-collision",
+        "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
+        "status": "specified",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-cross-project-story-key-collision"
+        }
+      },
+      {
+        "slug": "marshal-status-harness-run-id-poisoning",
+        "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
+        "status": "specified",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-status-harness-run-id-poisoning"
+        }
       }
     ],
     "blocked": 0,
     "byOwner": {
       "steward": 3,
-      "marshal": 4,
       "atlas": 2,
       "mason": 3,
       "warden": 1,
       "herald": 2,
       "scribe": 1,
-      "doctor": 1
+      "doctor": 1,
+      "marshal": 2
     },
     "practices": [
       {
@@ -19267,7 +19477,7 @@ window.DASHBOARD_DATA = {
         "slug": "agentic-sdlc-autonomy",
         "title": "The Agentic SDLC — four views of autonomy, one governed factory",
         "owner": "marshal",
-        "status": "pitched"
+        "status": "specified"
       },
       {
         "slug": "developer-machine-bootstrap",
@@ -19389,17 +19599,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 39,
+        "total": 40,
         "counts": {
-          "dreamt": 4,
+          "dreamt": 0,
           "pitched": 0,
-          "specified": 4,
+          "specified": 9,
           "realized": 12,
           "archived": 15,
           "practice": 4
         },
         "line": "paused 11.4",
-        "load": 4,
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -19515,41 +19725,6 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "bmad-loop-liveness-footgun",
-            "title": "Nobody has to hand-parse engine.pid to answer \"is this run alive?\"",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "dashboard-velocity-captures-hand-driven-work",
-            "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "marshal-land-cross-project-story-key-collision",
-            "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "marshal-status-harness-run-id-poisoning",
-            "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "agentic-sdlc-autonomy",
-            "title": "The Agentic SDLC — four views of autonomy, one governed factory",
-            "status": "pitched",
-            "type": "practice",
-            "blockedOn": ""
-          },
-          {
             "slug": "adaptive-model-tiering",
             "title": "FR-51's model tiering is fully wired and never turned on",
             "status": "realized",
@@ -19648,6 +19823,13 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "agentic-sdlc-autonomy",
+            "title": "The Agentic SDLC — four views of autonomy, one governed factory",
+            "status": "specified",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
             "slug": "bmad-loop-baseline-drift",
             "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
             "status": "specified",
@@ -19662,6 +19844,13 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "bmad-loop-liveness-footgun",
+            "title": "Nobody has to hand-parse engine.pid to answer \"is this run alive?\"",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "bmad-switch-scope-enforcement",
             "title": "A BMAD write can never land in the wrong project's artifacts, mechanically",
             "status": "specified",
@@ -19669,8 +19858,36 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "dashboard-velocity-captures-hand-driven-work",
+            "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "landing-evidence-grammar",
             "title": "A legitimate landing is recognizable no matter which of the three-plus paths landed it",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "marshal-land-cross-project-story-key-collision",
+            "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "marshal-single-story-dispatch",
+            "title": "Single-story dispatch is a marshal verb, not a session's discipline",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "marshal-status-harness-run-id-poisoning",
+            "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
             "status": "specified",
             "type": "dream",
             "blockedOn": ""
@@ -23623,15 +23840,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "marshal",
-      "story": "11.3",
-      "epoch": 1787347695,
-      "sha": "9758f27ef",
-      "subject": "marshal: mark Story 11.3 done, promote its spec"
+      "station": "mason",
+      "story": "5.4",
+      "epoch": 1787354163,
+      "sha": "7a05d2003",
+      "subject": "mason: Story 5.4 free-inheritance verification — SM-4 recorded, Epic 5 closed"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-21 23:15 UTC",
-    "generatedEpoch": 1787354154
+    "generatedAt": "2026-08-21 23:48 UTC",
+    "generatedEpoch": 1787356115
   },
   "storySpecs": [
     {
@@ -23708,6 +23925,11 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation/SPEC.md"
           },
           {
+            "slug": "spec-bmad-loop-liveness-footgun",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun/SPEC.md"
+          },
+          {
             "slug": "spec-bmad-switch-scope-enforcement",
             "status": "ready",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md"
@@ -23716,6 +23938,11 @@ window.DASHBOARD_DATA = {
             "slug": "spec-dashboard-project-path-derivation",
             "status": "draft",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md"
+          },
+          {
+            "slug": "spec-dashboard-velocity-captures-hand-driven-work",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-velocity-captures-hand-driven-work/SPEC.md"
           },
           {
             "slug": "spec-dream-to-code-model-self-verification",
@@ -23736,6 +23963,11 @@ window.DASHBOARD_DATA = {
             "slug": "spec-loop-home-fleet-refresh",
             "status": "draft",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/SPEC.md"
+          },
+          {
+            "slug": "spec-marshal-single-story-dispatch",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md"
           },
           {
             "slug": "spec-pyforge-core",
@@ -23759,9 +23991,9 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 107,
-        "backlog": 36,
+        "backlog": 48,
         "blocked": 0,
-        "total": 143,
+        "total": 155,
         "next": "11-4-marshal-seed-update-two-phase",
         "blockedKeys": [],
         "backlogKeys": [
@@ -23966,9 +24198,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 405,
-      "backlog": 44,
+      "backlog": 56,
       "blocked": 0,
-      "total": 449
+      "total": 461
     }
   },
   "fleetProgress": {
@@ -24008,10 +24240,10 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "marshal",
-        "stories": 143,
+        "stories": 155,
         "done": 107,
         "blocked": 0,
-        "epics": 21,
+        "epics": 24,
         "epicsDone": 13,
         "complete": false,
         "running": false,
@@ -24063,10 +24295,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 449,
+      "stories": 461,
       "done": 405,
       "blocked": 0,
-      "epics": 90,
+      "epics": 93,
       "epicsDone": 78
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",

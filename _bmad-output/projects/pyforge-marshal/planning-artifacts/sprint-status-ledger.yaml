@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 185
+# stories: 203
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -93,6 +93,18 @@ development_status:
   21-3-code-status-preservation: backlog
   21-4-orphan-detection-with-review-gated-cleanup: backlog
   21-5-configurable-per-project-invocation: backlog
+  22-1-the-dispatch-verb-launches-one-governed-isolated-story-session: backlog
+  22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: backlog
+  22-3-verification-is-the-product-no-landing-on-a-self-report: backlog
+  22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: backlog
+  22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: backlog
+  22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal: backlog
+  23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: backlog
+  23-2-wall-clock-is-never-blended-with-active-compute: backlog
+  23-3-the-coverage-caption-partitions-by-true-reason: backlog
+  24-1-marshal-gains-the-missing-liveness-primitive: backlog
+  24-2-the-operator-answer-is-one-documented-command: backlog
+  24-3-an-unsupervised-row-has-a-cheap-documented-double-check: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
@@ -185,6 +197,12 @@ development_status:
   epic-20-retrospective: optional
   epic-21: backlog
   epic-21-retrospective: optional
+  epic-22: backlog
+  epic-22-retrospective: optional
+  epic-23: backlog
+  epic-23-retrospective: optional
+  epic-24: backlog
+  epic-24-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done

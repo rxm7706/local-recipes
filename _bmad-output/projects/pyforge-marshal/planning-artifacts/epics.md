@@ -107,7 +107,11 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E18** | The governed tool surface | Marshal's capabilities as typed tools; parity/coverage gated | 2 | (new 2026-08-10) |
 | **E19** | The testing charter, enforced | One TEA generator, shared kit, coverage gates | 3 | (new 2026-08-10) |
 | **E20** | The loop cannot lose work, and a landing is always recognizable | The operator can trust that a stranded attempt is preserved and loud, a scope drift refuses instead of passing, and every classifier agrees a landed story landed | 10 | (new 2026-08-14) |
-| **Total** | | | **136** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
+| **E21** | The planning chain regenerates itself, and audits whether it's coherent | Chain regeneration becomes one invocation; a coherence verdict reaches the fleet board | 5 | (new 2026-08-15; row added 2026-08-21 — it was missing from this table) |
+| **E22** | Single-story dispatch is a marshal verb | The 22-story hand ritual replays as governed machinery: one isolated session per story, judged from git facts, independently verified, landed with the full paper trail | 6 | (new 2026-08-21) |
+| **E23** | Velocity captures hand-driven work | Every done story with real signal shows a timing mark; wall-clock never masquerades as active-compute | 3 | (new 2026-08-21) |
+| **E24** | Liveness is one command | "Is this run alive?" answered by the supported CLI — never by hand-parsing engine.pid | 3 | (new 2026-08-21) |
+| **Total** | | | **155** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
 *Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
 `sprint-status-ledger.yaml` story keys agree at **119** (E1-E6 = 60, E7-E12 = 36, E13 = 7,
@@ -133,7 +137,15 @@ re-agree on its next sync. **Epic 20 (Stories 20.1-20.10) added 2026-08-14** (FR
 decomposing `spec-bmad-loop-baseline-drift`, `spec-bmad-loop-intent-gap-work-preservation`,
 `spec-bmad-switch-scope-enforcement`, and `spec-landing-evidence-grammar` — same Dream/Spec-chain
 convention, same deliberate exclusion from `sprint-status-ledger.yaml` pending its next sync)
-brings the total to **136**.*
+brings the total to **136**. **Epics 22–24 (Stories 22.1–22.6, 23.1–23.3, 24.1–24.3) added
+2026-08-21** (FR-193/FR-194/FR-195, decomposing `spec-marshal-single-story-dispatch`,
+`spec-dashboard-velocity-captures-hand-driven-work`, and `spec-bmad-loop-liveness-footgun` —
+same Dream/Spec-chain convention). Unlike earlier additions, the Tier-3 feed and tracked
+ledger were synced in the SAME pass, and this table's Total is re-verified against the
+ledger's post-sync story-key count (**155**) rather than the running arithmetic above —
+which had drifted twice more since 2026-08-14 (the E21 row was missing from this table
+entirely, and post-2026-08-14 story additions such as 10.8 were never folded into the
+Total). The numeral rots; the ledger's key count is the enumeration.*
 
 **Epics 7-12 were a separate document until 2026-08-08** (`epics-genesis-installer.md`, now
 archived). They were always Marshal's own — the installer's buildable half moved here on
@@ -3368,6 +3380,187 @@ literal `_bmad-output/projects/<slug>/planning-artifacts/...` paths with
 — Stories 21.2/21.3/21.4/21.5 stay blocked pending the operator decisions on Q1/Q2/Q3/Q4
 above, the same treatment Epic 10's Story 10.2 and Epic 11's Story 11.8 already established
 this session.
+
+## Epic 22: Single-story dispatch is a marshal verb, not a session's discipline
+
+**Goal:** FR-193: decomposes `spec-marshal-single-story-dispatch`'s CAP-1..6 (Spec landed
+2026-08-21 from `docs/dreams/marshal-single-story-dispatch.md`). The fastest story-landing
+pattern the factory has run — one story per fresh worktree-isolated `bmad-dev-auto` session,
+real-completion await, independent verification, PR landing; validated at N=22 on 2026-08-21
+— exists only as an interactive session's hand ritual. This epic makes it a governed marshal
+launch mode. **HARD boundary carried from the Spec:** PRD Q-1 (§5.3 wrap-and-supervise) is
+not revised — dispatch is a sibling mode beside `factory spin`/`resume`, never a bmad-loop
+replacement, and the dispatched engine (`bmad-dev-auto`) stays external and unmodified.
+Composition, not reimplementation: Epic 1 provisioning, Epic 2 gates, Epic 4 landing +
+FR-187 subject, Story 4.1/Epic 15 promotion are reused as shipped. Verb naming stays
+provisional (`marshal factory dispatch`) pending PRD Q-15 — the Spec binds behavior, not the
+name.
+
+### Story 22.1: The dispatch verb launches one governed, isolated story session
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-1)
+**Surface:** `cli/factory.py` (new subcommand), `core/`, the FR-52 adapter seam
+**Note:** the Spec's open question on the concrete headless launch mechanism is a
+story-level design decision bounded by two Spec assumptions: the harness is the
+agent-CLI pattern validated at N=22 (a plain background agent — never a fork-style
+subagent, whose nested subagents break `bmad-dev-auto`), and every harness call goes
+through one adapter seam (FR-52 extended to the second engine), never scattered
+subprocess calls.
+**Given** a station with a backlog story **When** the operator dispatches it **Then** a
+fresh isolated worktree is provisioned, exactly one `bmad-dev-auto` session launches
+detached with `BMAD_ACTIVE_PROJECT` passed per-invocation and physical artifact paths
+(never `scripts/bmad-switch`), the launch is journaled with intent/outcome discipline
+(AD-25/AD-28/AD-30), the session demonstrably receives the policy-resolved model/budget
+parameters, and the run appears in `marshal status` / `fleet-picture`.
+
+### Story 22.2: Completion is judged from git and process facts, and a zombie is never redispatched
+**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-2)
+**Surface:** the detached supervisor (Story 3.4 shape), `core/status.py`
+**Given** a dispatched session **Then** its completion or failure is judged from git facts
+(AD-33: commits on the story branch, merge refs) plus running-process facts — never from
+harness notifications, self-reports, or busy-wait polling — with both motivating traps
+regression-pinned: (a) no foreground path busy-waits (awaiting is a detached supervisor's
+job, so the ~600 s watchdog kill of a busy-waiting parent cannot recur), and (b) a session
+that emitted a killed/failed notification while git facts show live progress is treated as
+live — a redispatch of the same story is refused naming the evidence (the observed
+"dead" agent that landed two stories after its failure notification cannot be duplicated).
+
+### Story 22.3: Verification is the product — no landing on a self-report
+**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-3)
+**Surface:** composition over Epic 2's standalone gate objects; the story's frozen-surface diff read
+**Given** a session that reports itself complete **Then** before any landing the driver
+itself runs the story's real verify commands via Epic 2's gate objects and reads the diff
+against the story's frozen surface — the self-report is input, never the verdict
+(never-false-green; unevaluable ≠ pass). A story that self-reports shipped with failing
+gates or an out-of-surface diff ends in a loud non-landing verdict naming the failed gate:
+the doctor-12.3 shape (self-marked shipped, two live-reproducible leaks) is the canonical
+refusal fixture.
+
+### Story 22.4: A verified story lands through the existing machinery, classified marshal-native
+**Type:** feature • **Effort:** M • **Deps:** S-22.2, S-22.3 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-4)
+**Surface:** composition over `cli/land.py`/`deploy`, FR-187 merge subject, Story 4.1 promotion, Epic 15 ledger machinery
+**Given** a verified dispatched story **Then** it lands via the existing Epic 4 semantics
+with FR-187's detectable merge subject, its spec is durably promoted (Story 4.1), and its
+ledger key advances (Epic 15) — with zero new landing or promotion code paths, and the
+landing classified marshal-native by `marshal_native_merged_keys` (never FR-186's
+`not-loop-native` bucket).
+
+### Story 22.5: One story in flight per station; stations in parallel; overlap is loud
+**Type:** feature • **Effort:** S • **Deps:** S-22.1, S-22.2 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-5)
+**Given** dispatch requests **Then** a second dispatch onto a station whose in-flight story
+(judged by S-22.2's facts) has not completed is refused naming that story; dispatches onto
+different stations proceed concurrently (the cross-project plane
+`spec-horizontal-run-concurrency` explicitly excludes from FR-184's in-loop clamp — the
+clamp is untouched); and a detectable overlap between in-flight stories' declared frozen
+surfaces produces a loud advisory while trusting the operator to proceed.
+
+### Story 22.6: The dispatched run survives its operator, and its journal carries the timing signal
+**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-6)
+**Surface:** journal + attach/resume (AD-22/AD-25/AD-30 precedents), Epic 1's work-preservation discipline
+**Given** a dispatched run **Then** killing the terminal that issued it leaves the session
+running; a fresh `marshal status` reports it from journal + process facts alone;
+attach/resume recovers supervision; a story completed while unsupervised is reconciled from
+git facts rather than lost; a failed or abandoned session's worktree and diff survive for
+recovery (the `changes.patch` analog); and the journal records per-story start/end and
+baseline→final revisions — making dispatch the at-source producer of the effort signal
+Epic 23 renders (E23 consumes; neither depends on the other landing first).
+
+**Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
+22.4 needs both; 22.5/22.6 need only their named deps. The Spec's remaining open questions
+(enforceable budget signal; advisory's comparison basis; dedicated sidecar vs generalized
+supervisor) are story-level design decisions inside 22.1/22.5/22.2 respectively, not
+operator blockers.
+
+## Epic 23: Velocity captures hand-driven work
+
+**Goal:** FR-194: decomposes `spec-dashboard-velocity-captures-hand-driven-work`'s CAP-1..3
+(Spec landed 2026-08-21 from `docs/dreams/dashboard-velocity-captures-hand-driven-work.md`;
+`signal-inventory.md` is part of the contract). The console's velocity chart derives
+active agent-compute exclusively from bmad-loop run journals, so a hand-driven story —
+doctor 8.1–8.4, the 22-story dispatch session — shows nothing and the caption's "predates
+loop instrumentation" is false for part of that bucket. The honest signal census: retroactive
+active-compute is unobtainable; the implementable basis is wall-clock from the promoted
+spec's `baseline_revision`/`final_revision` frontmatter (written by `bmad-dev-auto`,
+preserved verbatim through promotion, reachable on main because landings use `--merge`).
+Constraint carriers from the Spec bind every story: never fabricate (no-signal stories stay
+absent), curated values byte-identical, per-story precedence (journal floor wins), the
+all-or-nothing renderer contract, offline derivation, honest bound captions.
+
+### Story 23.1: Wall-clock fallback derivation from promoted-spec revision fields
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-194 (spec-dashboard-velocity-captures-hand-driven-work, CAP-1)
+**Surface:** `docs/dashboard/generate.py` (`scan_timing`)
+**Note:** the Spec's open question on the wall-clock bound (final−baseline overstates by
+the idle gap; first-commit-in-range understates) is resolved in-story; whichever bound is
+chosen, the caption states what is measured — never an unqualified "duration".
+**Given** a `done` story whose tracked/promoted spec carries resolvable
+`baseline_revision`/`final_revision` and zero closed journal sessions **When** the local
+generate runs **Then** a wall-clock duration is derived offline from local git commit
+timestamps only; doctor's 8.1–8.4 carry timing marks; a re-run refreshes (never freezes)
+derived values per the existing `derived: true` discipline; and a story with no resolvable
+signal stays absent.
+
+### Story 23.2: Wall-clock is never blended with active-compute
+**Type:** feature • **Effort:** S • **Deps:** S-23.1 • **FR/AD:** FR-194 (spec-dashboard-velocity-captures-hand-driven-work, CAP-2)
+**Surface:** `docs/dashboard/generate.py`, `docs/dashboard/index.html`
+**Given** a line mixing both metric classes **Then** a reader can tell each story's class
+from the rendered chart/caption alone — no wall-clock number appears as if it were active
+agent-compute (the atlas precedent `scan_timing`'s own comments already mandate), and
+warden's/atlas's curated numbers are byte-identical before and after.
+
+### Story 23.3: The coverage caption partitions by true reason
+**Type:** feature • **Effort:** S • **Deps:** S-23.1 • **FR/AD:** FR-194 (spec-dashboard-velocity-captures-hand-driven-work, CAP-3)
+**Given** a line containing hand-driven stories **Then** the rendered caption names the real
+absence classes — journal-measured / wall-clock-derived / spec-without-revision-fields /
+no-spec-at-all — and no caption claims "predates instrumentation" for a story whose spec
+carries revision fields.
+
+**Epic 23 clears to dispatch sequentially from Story 23.1.** Convergence with Epic 22, not
+dependence: 22.6's journal becomes the at-source producer for future stories; 23.1's
+derivation covers already-landed work either way.
+
+## Epic 24: Liveness is one command
+
+**Goal:** FR-195: decomposes `spec-bmad-loop-liveness-footgun`'s CAP-1..3 (Spec landed
+2026-08-21 from `docs/dreams/bmad-loop-liveness-footgun.md`; `convergence.md` is part of the
+contract — it catalogs what adjacent shipped machinery already covers, so nothing here
+re-mints Story 5.8's fallback, `loop_stall_check`, or supervised-run detection). The
+`engine.pid` two-token format silently breaks the habitual `ps -p $(cat engine.pid)` check;
+the correct answer already ships as `bmad-loop status <run_id> --json` and nothing in this
+repo points at it — spec-3-7's deferred double-drive fix names the missing Marshal-side
+primitive as its verbatim blocker. **HARD boundaries carried from the Spec:** no in-place
+`bmad_loop` edits, no private-API imports, on-demand only (never a per-home probe in
+`marshal status`'s fleet sweep — NFR-14 stands), and `unknown` stays `unknown`.
+
+### Story 24.1: Marshal gains the missing liveness primitive
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-195 (spec-bmad-loop-liveness-footgun, CAP-1)
+**Surface:** primitive home is the story's own design decision (the Spec's open question):
+`ports/harness.py` (the seam spec-3-7 names as missing) vs a `scripts/*.py` helper vs a
+`pyforge.doctor` source
+**Given** a live run, a stopped run, and an absent/unreadable run directory **Then** a
+Marshal-side primitive consuming `bmad-loop status <run_id> --json` returns `alive`,
+`dead`, and `unknown` respectively — with zero reads of `engine.pid` and zero `bmad_loop`
+imports, both assertable in its tests — and spec-3-7's deferred-work entry is updated to
+name the primitive as existing.
+
+### Story 24.2: The operator answer is one documented command
+**Type:** docs+feature • **Effort:** S • **Deps:** S-24.1 • **FR/AD:** FR-195 (spec-bmad-loop-liveness-footgun, CAP-2)
+**Given** the tracked operator instructions (the fleet landing-pass liveness step and its
+team/auto-memory carriers) **Then** the supported one-command check is the primary
+prescribed answer; no tracked instruction prescribes `cat engine.pid` /
+`ps -p $(cat engine.pid)` or a bare `grep 'bmad-loop run'`; any surviving corroboration
+grep matches all three engine argv forms `bmad-loop (run|resume|resolve)`; and the
+2026-08-14 mason scenario (engine live under `bmad-loop resume`) answers correctly by the
+documented steps alone.
+
+### Story 24.3: An UNSUPERVISED row has a cheap, documented double-check
+**Type:** docs+feature • **Effort:** XS • **Deps:** S-24.1 • **FR/AD:** FR-195 (spec-bmad-loop-liveness-footgun, CAP-3)
+**Given** a run Marshal did not spawn (correctly reported `UNSUPERVISED`) **Then** the
+documented follow-up for "is the engine actually alive?" is the S-24.1 primitive / S-24.2
+command — resolving the Dream's 2026-08-15 scenario in one command — named wherever
+UNSUPERVISED is explained, with `derive_home_state`'s row derivation untouched (Story 5.8's
+territory per `convergence.md`).
+
+**Epic 24 clears to dispatch sequentially from Story 24.1.** The unknown-verdict-at-resume
+policy stays with spec-3-7's own deferred fix (this epic's Non-goal), matching the Spec.
 
 ## Story DAG (critical path and key dependencies)
 
