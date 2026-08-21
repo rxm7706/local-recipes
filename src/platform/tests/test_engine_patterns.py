@@ -38,10 +38,11 @@ def test_get_sidecar_base_url_rejects_an_unknown_engine():
 
 def test_asgi_module_import_does_not_trip_the_dbgpt_pattern_a_assertion():
     """`config/asgi.py`'s own registry-consult touchpoint: importing it
-    asserts `ENGINE_PATTERNS["dbgpt"] != "A"`. Since the registry hardcodes
-    `dbgpt: B`, that assertion always passes today -- this just proves the
-    import path itself is wired up (an `AssertionError` here would mean the
-    touchpoint and the registry disagree).
+    raises `RuntimeError` if `ENGINE_PATTERNS["dbgpt"] == "A"` (a plain
+    `if`/`raise`, not `assert`, so the check survives `python -O`). Since
+    the registry hardcodes `dbgpt: B`, that check always passes today --
+    this just proves the import path itself is wired up (a `RuntimeError`
+    here would mean the touchpoint and the registry disagree).
     """
     pytest.importorskip("langflow")
 

@@ -53,11 +53,16 @@ from langflow_integration.asgi import langflow_application  # noqa: E402
 # revert lands here without also adding the ASGI sub-app Pattern A would
 # need (mirroring `langflow_integration/asgi.py`'s own `create_app()` +
 # `_LifespanManager` shape), rather than silently mounting nothing.
-assert ENGINE_PATTERNS["dbgpt"] != "A", (
-    "dbgpt is configured as Pattern A (config/engine_patterns.py) but "
-    "config/asgi.py builds no DB-GPT ASGI sub-app -- add one (mirroring "
-    "langflow_integration/asgi.py) before flipping ENGINE_PATTERNS['dbgpt']"
-)
+if ENGINE_PATTERNS["dbgpt"] == "A":
+    # A plain `if`/`raise`, not `assert` -- this check must survive
+    # `python -O`/`PYTHONOPTIMIZE`, which strips `assert` statements, and
+    # this IS the touchpoint AD-17 requires (see the comment above).
+    msg = (
+        "dbgpt is configured as Pattern A (config/engine_patterns.py) but "
+        "config/asgi.py builds no DB-GPT ASGI sub-app -- add one (mirroring "
+        "langflow_integration/asgi.py) before flipping ENGINE_PATTERNS['dbgpt']"
+    )
+    raise RuntimeError(msg)
 
 # I/O & Edge-Case Matrix (spec-11-1): these three routes match Langflow's own
 # native route prefixes, so they forward with the ASGI scope UNCHANGED --

@@ -53,7 +53,6 @@ logger = logging.getLogger(__name__)
 _CHART_VIEW_CONTENT_RE = re.compile(r'<chart-view content="(?P<content>[^"]*)"\s*/?>')
 
 _DEFAULT_MODEL_NAME = "gpt-4o"
-_HTTP_STATUS_SUCCESS_CLASS = 2  # `status_code // 100` for any 2xx response
 
 
 class DbgptRequestError(RuntimeError):
@@ -64,6 +63,18 @@ class DbgptRequestError(RuntimeError):
     Story 11.3's own scope (CAP-4), not this one's (CAP-3) -- this is a bare,
     working call, per spec-11-2's Boundaries & Constraints.
     """
+
+
+def _json_or_raise(text: str, *, context: str) -> Any:
+    """`json.loads`, with a malformed body surfaced as `DbgptRequestError`
+    (this module's own documented contract) instead of a raw
+    `json.JSONDecodeError` escaping to the Celery task's caller.
+    """
+    try:
+        return json.loads(text)
+    except ValueError as exc:
+        msg = f"malformed JSON from sidecar ({context}): {text!r}"
+        raise DbgptRequestError(msg) from exc
 
 
 def _register_datasource(client: httpx.Client, db_name: str) -> None:
@@ -86,15 +97,14 @@ def _register_datasource(client: httpx.Client, db_name: str) -> None:
         ),
     }
     response = client.post("/api/v1/chat/db/add", json=payload)
-    if (
-        response.status_code // 100 != _HTTP_STATUS_SUCCESS_CLASS
-        or not response.json().get("success")
-    ):
-        msg = (
-            f"failed to register datasource {db_name!r}: "
-            f"{response.status_code} {response.text}"
-        )
+    body = (
+        _json_or_raise(response.text, context="db/add") if response.is_success else {}
+    )
+    if not response.is_success or not body.get("success"):
+        msg = f"failed to register datasource {db_name!r}: {response.status_code}"
+        logger.error(msg)
         raise DbgptRequestError(msg)
+    logger.info("registered dbgpt datasource %r", db_name)
 
 
 def _last_sse_data_line(body: str) -> str:
@@ -114,7 +124,7 @@ def _extract_chart_view(content: str) -> dict[str, Any]:
     if not match:
         msg = f"no <chart-view> payload in sidecar answer: {content!r}"
         raise DbgptRequestError(msg)
-    return json.loads(unescape(match.group("content")))
+    return _json_or_raise(unescape(match.group("content")), context="chart-view")
 
 
 @shared_task()
@@ -148,6 +158,7 @@ def text_to_sql(
     """
     base_url = get_sidecar_base_url("dbgpt")
     conv_uid = conv_uid or f"dbgpt-integration-{uuid.uuid4()}"
+    logger.info("text_to_sql starting: db_name=%r conv_uid=%s", db_name, conv_uid)
 
     # 120s, not 60s: verified live (Story 11.2) that a real chat_with_db_execute
     # round trip -- schema-linking + an actual LLM generation -- took ~27s
@@ -169,12 +180,20 @@ def text_to_sql(
             },
         )
 
-    if response.status_code // 100 != _HTTP_STATUS_SUCCESS_CLASS:
-        msg = f"sidecar returned {response.status_code}: {response.text}"
+    if not response.is_success:
+        msg = f"sidecar returned {response.status_code}"
+        logger.error(msg)
         raise DbgptRequestError(msg)
 
-    final_chunk = json.loads(_last_sse_data_line(response.text))
-    content = final_chunk["choices"][0]["message"]["content"]
-    chart_view = _extract_chart_view(content)
+    final_chunk = _json_or_raise(
+        _last_sse_data_line(response.text),
+        context="chat/completions",
+    )
+    choices = final_chunk.get("choices") or []
+    if not choices or "content" not in choices[0].get("message", {}):
+        msg = f"no choices/message/content in sidecar answer: {final_chunk!r}"
+        raise DbgptRequestError(msg)
+    chart_view = _extract_chart_view(choices[0]["message"]["content"])
 
+    logger.info("text_to_sql round trip complete for conv_uid=%s", conv_uid)
     return {"sql": chart_view.get("sql", ""), "data": chart_view.get("data", [])}

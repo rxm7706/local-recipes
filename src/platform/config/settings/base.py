@@ -469,10 +469,14 @@ if _dbgpt_db.get("USER"):
 DBGPT_DATABASE_URL = (
     f"postgresql://{_dbgpt_db_auth}"
     f"{quote(_dbgpt_db.get('HOST') or 'localhost', safe='')}:{_dbgpt_db.get('PORT') or 5432}"
-    f"/{quote(_dbgpt_db['NAME'], safe='')}"
+    f"/{quote(_dbgpt_db.get('NAME', ''), safe='')}"
     "?options=-c%20search_path=dbgpt_schema"
 )
-os.environ["DBGPT_DATABASE_URL"] = DBGPT_DATABASE_URL
+# Deliberately NOT mirrored into `os.environ` the way `LANGFLOW_CONFIG_DIR`
+# is above: DB-GPT is Pattern B, a separate sidecar container, so nothing in
+# THIS process could ever read this process's `os.environ` -- unlike
+# Langflow (Pattern A, in-process), an env-var mutation here would be inert
+# by construction. The Django setting above is the real, consumable form.
 
 # Your stuff...
 # ------------------------------------------------------------------------------
