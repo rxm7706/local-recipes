@@ -32,7 +32,7 @@
     "exports_total": 62,
     "public_api_coverage": 3.2632,
     "total_coverage": 1.0,
-    "scripts_count": 4,
+    "scripts_count": 5,
     "assets_count": 7
   },
   "scripts": [
@@ -58,6 +58,12 @@
       "file": "scripts/_cfy_template.py",
       "purpose": "Render conda-forge.yml (Story 6.3 addition -- real runtime dependency of recipe-generator.py, not part of the original brief's scripts_inventory)",
       "source_file": ".claude/skills/conda-forge-expert/scripts/_cfy_template.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/github_version_checker.py",
+      "purpose": "GitHub release version checker, imported by github_updater.py's update_recipe() (Story 6.3 gap-closure addition -- sanctioned cross-slice runtime dependency, same shape as _cfy_template.py; stays Slice 2 canonical, ported here per slice-map.md's cross-slice-shared-imports table)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/github_version_checker.py",
       "confidence": "T1-low"
     }
   ],

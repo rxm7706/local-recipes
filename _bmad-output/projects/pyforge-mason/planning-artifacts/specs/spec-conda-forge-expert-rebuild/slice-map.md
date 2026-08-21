@@ -145,7 +145,7 @@ see "Recipe Generation vs. Recipe Lifecycle boundary" below for what was deliber
 |---|---|---|---|
 | `recipe-generator.py` | The generator itself (PyPI/npm/CRAN/CPAN/LuaRocks; `main()` dispatches by ecosystem) | `generate-recipe` (+ `generate-cran`/`generate-cpan`/`generate-luarocks`/`generate-npm`, all `recipe-generator.py <ecosystem>`) | 2332 lines; largest single script in the skill |
 | `name_resolver.py` | PyPI→conda name resolution (cache-first); imported directly by `recipe-generator.py` | `resolve-name` | Also backs `get_conda_name` MCP tool directly (see below) — confirmed by reading `conda_forge_server.py::get_conda_name`, which calls `NAME_RESOLVER_SCRIPT` |
-| `github_updater.py` | GitHub-release-based recipe version/SHA update | `autotick-github` | No sibling imports; included here (not Slice 2) because the Spec's intent-contract explicitly names `update_recipe_from_github` as a Slice-1 MCP tool |
+| `github_updater.py` | GitHub-release-based recipe version/SHA update | `autotick-github` | Imports Slice 2's `github_version_checker.py` (sibling import, sanctioned cross-slice dependency -- see "Cross-slice dependencies" below and Slice 5's cross-slice-shared-imports table); included here (not Slice 2) because the Spec's intent-contract explicitly names `update_recipe_from_github` as a Slice-1 MCP tool |
 
 **MCP tools (3):** `generate_recipe_from_pypi`, `update_recipe_from_github`, `get_conda_name`
 (the third one is a derived addition, not guessed — see the `name_resolver.py` row above; it
@@ -186,7 +186,11 @@ entries, and `npm_updater.py` is classified under Slice 2, not here (see that sl
 
 **Cross-slice dependencies:** none inbound. Slice 1 itself depends on Slice 5's
 `_cfy_template.py` (imported directly by `recipe-generator.py` for `conda-forge.yml`
-rendering).
+rendering) and on Slice 2's `github_version_checker.py` (imported directly by
+`github_updater.py`'s `update_recipe()` for GitHub release/tag lookups; ported into the
+compiled Slice-1 package as a sanctioned cross-slice runtime dependency, same shape as
+`_cfy_template.py` -- see the cross-slice-shared-imports table under Slice 5 below;
+`github_version_checker.py` itself stays Slice 2 canonical, not reclassified).
 
 ---
 
@@ -382,17 +386,30 @@ been a guess, not a derivation (see Confirmation vs. Correction section above).
 
 **Canonical scripts (4):**
 
+The table below also carries one cross-slice-shared-import row for a script that is **not**
+one of Slice 5's own 4 canonical scripts: `github_version_checker.py` is, and stays, Slice 2
+canonical (own wrapper + MCP tool -- see Slice 2's inventory above) but is imported directly
+by Slice 1's `github_updater.py`, and was ported into Slice 1's compiled package as a
+sanctioned cross-slice runtime dependency (same shape as `_cfy_template.py`). It is recorded
+here because this table is the campaign's canonical place for cross-slice import edges, not
+because it changes Slice 5's own scope or script count.
+
 | Script | Imported by (confirmed via `grep -rl`) | Slices spanned |
 |---|---|---|
 | `_http.py` | `recipe-generator.py` (S1); `mapping_manager.py`, `dependency-checker.py`, `recipe_updater.py`, `npm_updater.py`, `pr_artifacts.py`, `github_version_checker.py` (S2); `conda_forge_atlas.py`, `detail_cf_atlas.py`, `cve_manager.py`, `cisa_kev_fetcher.py`, `cwe_catalog_fetcher.py`, `epss_fetcher.py`, `lts_registry_gap.py`, `spdx_schema_gap.py`, `inventory_match.py`, `inventory_channel.py`, `library_futures.py`, `_parquet_cache.py` (S3); `env_inspect.py` (S4) | 1, 2, 3, 4 |
 | `_paths.py` | `recipe_optimizer.py`, `feedstock_lookup.py`, `feedstock_context.py` (S2); `bootstrap_data.py` (S3) | 2, 3 |
 | `_cfy_template.py` | `recipe-generator.py` (S1); `submit_pr.py` (S2) | 1, 2 |
 | `_sbom.py` | `inventory_channel.py`, `spdx_schema_gap.py`, `library_futures.py`, `add_handoff.py`, `recommend_2027.py`, `universe_sbom.py`, `license_map_gap.py`, `inventory_match.py`, `conda_forge_atlas.py` (S3); `env_inspect.py`, `scan_project.py` (S4) | 3, 4 |
+| `github_version_checker.py` *(Slice 2 canonical, not Slice 5 -- see note above)* | `github_updater.py` (S1) | 1, 2 |
 
-**Wrappers:** none (0) — none of these four have a same-named file under
-`.claude/scripts/conda-forge-expert/`; they are never invoked as a standalone CLI.
+**Wrappers:** none (0) for the four Slice-5 canonical scripts above — none of them have a
+same-named file under `.claude/scripts/conda-forge-expert/`; they are never invoked as a
+standalone CLI. (`github_version_checker.py`'s row is the one exception in the table, by
+design: it already has its own wrapper and MCP tool under Slice 2 -- see that slice's own
+Wrappers/MCP-tools inventory above; it does not gain a second, Slice-5-owned wrapper.)
 
-**MCP tools:** none (0).
+**MCP tools:** none (0) for the four Slice-5 canonical scripts above; `github_version_checker.py`'s
+own `check_github_version` MCP tool is Slice 2's, unchanged (see note above).
 
 **Narrow-use helpers deliberately NOT placed here:** `_path_guard.py` (imported only by
 `recipe_editor.py` + `submit_pr.py`, both Slice 2 → assigned to Slice 2), `_parquet_cache.py`
