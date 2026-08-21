@@ -46,9 +46,9 @@ A tracked deferred-work ledger entry is a claim about code truth *at authoring t
   - **intent:** `fleet_picture.py`'s ATTENTION block surfaces "% of tracked entries verified within N days, per project" as an ongoing signal.
   - **success:** After the sweep has run at least once, fleet-picture's ATTENTION block includes a per-project staleness percentage line, sourced from each project's tracked ledger's `verified:` dates.
 
-- **CAP-8 — backlog-intake check (scope boundary open, see Open Questions).**
-  - **intent:** When a new story/spec is drafted for an epic, tracked deferred-work entries whose `owner:`/prose names that same epic or story are surfaced as candidate acceptance criteria.
-  - **success:** Given a story/spec draft naming epic E, tracked entries whose `owner:`/prose names epic E (or a story within it) are surfaced in the drafting flow as candidates.
+- **CAP-8 — backlog-intake check. SPLIT OUT 2026-08-21 — no longer part of this Spec.**
+  - Was: when a new story/spec is drafted for an epic, tracked deferred-work entries whose `owner:`/prose names that same epic or story are surfaced as candidate acceptance criteria.
+  - Its scope-boundary Open Question (below) resolved to "own follow-on Spec," decided once this Spec's CAP-1..7 shipped cleanly as Epic 11 (pyforge-doctor), Stories 11.1–11.7 — a self-contained read-only sweep pipeline that a write-adjacent capability like CAP-8 would have muddied. No follow-on Spec/Dream exists yet; tracked in pyforge-doctor's `deferred-work-ledger.md` (`DW-11-8-1`) rather than silently dropped. This Spec now covers CAP-1..7 only.
 
 ## Constraints
 
@@ -72,5 +72,5 @@ Running the sweep against the fleet's current ~400+ tracked entries reduces the 
 
 ## Open Questions
 
-- **CAP-8's scope boundary.** Should it ship in the same story wave as CAP-1..7, or as its own follow-on Spec, since it is write-adjacent to story-drafting (a different subsystem) rather than read-only sweep verification like the rest of this Spec?
+- ~~**CAP-8's scope boundary.**~~ **Resolved 2026-08-21: own follow-on Spec**, not the same wave as CAP-1..7 — see CAP-8's entry above.
 - **CAP-1's staleness threshold.** How many days before a `verified:` date counts as stale enough to re-select is undecided — the source Dream does not name a number.
