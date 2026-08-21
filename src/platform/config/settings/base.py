@@ -110,6 +110,12 @@ LOCAL_APPS = [
     # Story 11.1: migration-only app provisioning `langflow_schema` (AD-5).
     # No models -- see langflow_integration/apps.py.
     "langflow_integration",
+    # Story 11.2: migration-only app provisioning `dbgpt_schema` (AD-5). No
+    # models -- see dbgpt_integration/apps.py. Registered so `manage.py
+    # migrate` creates the schema; CAP-3's ASGI mount itself is BLOCKED (see
+    # this settings module's "DB-GPT integration" block below and the
+    # spec's Design Notes).
+    "dbgpt_integration",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -417,6 +423,66 @@ LANGFLOW_KNOWLEDGE_BASES_DIR = env(
 )
 os.environ["LANGFLOW_CONFIG_DIR"] = LANGFLOW_CONFIG_DIR
 os.environ["LANGFLOW_KNOWLEDGE_BASES_DIR"] = LANGFLOW_KNOWLEDGE_BASES_DIR
+
+# DB-GPT integration (Story 11.2, spec-python-agent-platform CAP-3)
+# ------------------------------------------------------------------------------
+# PARTIAL, by design -- CAP-3's ASGI mount is BLOCKED (see this story's Design
+# Notes / Verification): `dbgpt_app.dbgpt_server:app` (the FastAPI object
+# `dbgpt_integration/asgi.py` would build, mirroring `langflow_integration/
+# asgi.py`) is only obtainable via the `dbgpt-app` conda package, whose own
+# upstream pyproject.toml hard-requires `dbgpt-client`, whose `dbgpt[client]`
+# extra pins `fastapi>=0.100.0,<0.113.0` -- a range disjoint from
+# `langflow-base`'s own hard floor `fastapi>=0.135.0,<1.0.0`, already sharing
+# this same one-conda-environment (CAP-5) since Story 11.1. Verified live:
+# `pixi install -e platform-dev` with `dbgpt-app` added to
+# `[feature.python-agent-platform.dependencies]` fails to solve
+# ("dbgpt-client 0.8.1 would require fastapi >=0.100.0,<0.113.0, for which no
+# candidates were found") -- confirmed unconditional in DB-GPT's own upstream
+# source (`packages/dbgpt-app/pyproject.toml`, `packages/dbgpt-core/
+# pyproject.toml`'s `client` extra), unchanged on `main` as of this story.
+# `dbgpt_integration/asgi.py` therefore does NOT exist -- there is nothing to
+# import `dbgpt_app` from without either forking DB-GPT (AD-9 forbids it) or
+# dropping Langflow from this environment (Story 11.1 already shipped it
+# here). Only the piece of this settings block that is genuinely independent
+# of that blocker is kept:
+#
+# AD-5: `DBGPT_DATABASE_URL` is derived from this platform's OWN
+# `DATABASES["default"]` -- the SAME PostgreSQL instance, never a second
+# hand-maintained credential -- with a `search_path` suffix pointing at
+# `dbgpt_schema` (provisioned by `dbgpt_integration`'s `RunSQL` migration),
+# mirroring `LANGFLOW_DATABASE_URL`'s shape exactly (Boundaries & Constraints,
+# spec-11-2, "Always"). Unlike Langflow, DB-GPT's own `ApplicationConfig` /
+# `ServiceWebParameters` (`dbgpt_app.config`) are plain dataclasses populated
+# from a TOML file + `ConfigurationManager` -- NOT pydantic-settings reading
+# `os.environ` the way Langflow's settings service does (verified against
+# `dbgpt_app/config.py` upstream) -- so exporting this into `os.environ` here
+# does NOT get auto-consumed by DB-GPT the way `LANGFLOW_DATABASE_URL` does;
+# it is the value a future `dbgpt_integration/asgi.py` would read explicitly
+# and hand to a programmatically-constructed `ApplicationConfig.service.web.
+# database` once CAP-3's mount is unblocked (Design Notes: "constructing a
+# minimal instance programmatically ... is the Pattern-A approach").
+#
+# The Dream's own `DBGPT_SESSION_STORAGE_TYPE=db` (and "force off every
+# local-disk-path option") is deliberately NOT implemented here: that literal
+# env var does not exist anywhere in DB-GPT's source (verified: `gh search
+# code "DBGPT_SESSION_STORAGE_TYPE" --repo eosphoros-ai/DB-GPT` returns no
+# hits) -- it was the owning Dream's own unverified architecture-brief
+# naming, not a real DB-GPT config key, and setting it would fabricate an
+# integration surface that does not exist rather than deliver one.
+_dbgpt_db = DATABASES["default"]
+_dbgpt_db_auth = ""
+if _dbgpt_db.get("USER"):
+    _dbgpt_db_auth = quote(_dbgpt_db["USER"], safe="")
+    if _dbgpt_db.get("PASSWORD"):
+        _dbgpt_db_auth += f":{quote(_dbgpt_db['PASSWORD'], safe='')}"
+    _dbgpt_db_auth += "@"
+DBGPT_DATABASE_URL = (
+    f"postgresql://{_dbgpt_db_auth}"
+    f"{quote(_dbgpt_db.get('HOST') or 'localhost', safe='')}:{_dbgpt_db.get('PORT') or 5432}"
+    f"/{quote(_dbgpt_db['NAME'], safe='')}"
+    "?options=-c%20search_path=dbgpt_schema"
+)
+os.environ["DBGPT_DATABASE_URL"] = DBGPT_DATABASE_URL
 
 # Your stuff...
 # ------------------------------------------------------------------------------
