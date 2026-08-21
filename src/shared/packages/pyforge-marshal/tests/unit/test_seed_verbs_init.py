@@ -30,19 +30,48 @@ majority of these tests so they never depend on ``engine.copier.
 materialize()``'s own manifest-boundary reconciliation, which is ALWAYS
 checked against the REAL packaged ``templates/manifest.yaml`` regardless of
 what synthetic manifest a test supplies to ``run_init`` (confirmed by
-execution while developing this story -- see ``verbs/init.py``'s own module
-docstring for the specific, out-of-scope ``docs/dreams/*.md`` never-write
-interaction this uncovered). A small, dedicated handful of tests near the
+execution while developing this story -- the packaged template tree ships
+no whole-file content yet for any ``copied-managed``/``copied-seeded``/
+``generated-derived`` entry, a SEPARATE, pre-existing, already-deferred gap
+(``DW-FU-10-8``) unrelated to the never-write collision below, out of this
+story's own scope; see ``verbs/adopt.py``'s own module docstring, "known,
+inherited limitations" (1)). A small, dedicated handful of tests near the
 end exercise the REAL ``_default_commit`` default path instead, mirroring
-``test_seed_verbs_adopt.py``'s own identical split."""
+``test_seed_verbs_adopt.py``'s own identical split. A dedicated block of
+real-packaged-manifest regression tests near the end of this file (mirroring
+``test_seed_verbs_adopt.py``'s own Story 10.8 tests) proves what this story
+itself was blocked on and now fixes: the REAL manifest's own
+``dreams-readme`` (``docs/dreams/README.md``, ``copied-managed``,
+``applies_to: both``) and ``specs-readme`` (``.../planning-artifacts/specs/
+README.md``, ``copied-seeded``, ``applies_to: init``-only) entries no longer
+refuse against the manifest's own ``docs/dreams/*.md``/``**/planning-
+artifacts/**`` never-write globs, now that ``run_init``'s ``never_write =
+fs.NeverWrite(...)`` construction consumes Story 10.8's
+``exempt=writable_exemptions(...)`` fix -- see ``verbs/init.py``'s own
+module docstring for the full account. Two layers of proof: a parametrized
+test calling ``check_preconditions``/``fs.write`` directly (isolating this
+story's own regression target -- both never-write enforcement points --
+from the SEPARATE, pre-existing ``DW-FU-10-8`` materialize() gap), and a
+second test calling ``run_init`` itself end-to-end (with the ``_fake_commit``
+double) against the REAL, unmodified, full packaged manifest -- so an
+accidental revert of ``run_init``'s own one-line ``exempt=`` wiring is
+caught by a test that actually calls it, not only by tests exercising the
+same primitives by hand."""
 
 from __future__ import annotations
 
 import subprocess
 import tempfile
+from importlib import resources
 from pathlib import Path
 
 import pytest
+from pyforge.marshal.seed import fs
+from pyforge.marshal.seed.detect.inventory import (
+    classify,
+    effective_never_write,
+    writable_exemptions,
+)
 from pyforge.marshal.seed.errors import UsageError
 from pyforge.marshal.seed.fs import NeverWrite
 from pyforge.marshal.seed.model.manifest import (
@@ -51,9 +80,11 @@ from pyforge.marshal.seed.model.manifest import (
     Manifest,
     ManifestEntry,
     Region,
+    load_manifest,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.build import _GIT_TIMEOUT_S as _BUILD_GIT_TIMEOUT_S
+from pyforge.marshal.seed.plan.build import build_plan
 from pyforge.marshal.seed.plan.types import Action
 from pyforge.marshal.seed.regions.apply import insert_region
 from pyforge.marshal.seed.regions.markers import RegionFormat
@@ -65,6 +96,7 @@ from pyforge.marshal.seed.state import (
 )
 from pyforge.marshal.seed.verbs.check import run_check
 from pyforge.marshal.seed.verbs.init import _GIT_TIMEOUT_S, _manifest_for_init, run_init
+from pyforge.marshal.seed.verbs.preconditions import check_preconditions
 
 _VERSION = ModelVersion.parse("1.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
@@ -774,3 +806,157 @@ def test_prd_j1_init_into_a_directory_that_is_not_yet_a_git_repo_at_all(fresh_ta
     report = run_check(fresh_target, check_manifest)
     assert report.findings == ()
     assert report.failing is False
+
+
+# --- real-manifest regression: dreams-readme's own never-write collision ---
+# (Story 10.8, wired into `init` by this story -- see the module docstring's
+# own closing paragraph, and `verbs/init.py`'s own module docstring.)
+
+
+@pytest.fixture(scope="module")
+def real_manifest() -> Manifest:
+    """The REAL packaged manifest (``seed/templates/manifest.yaml``), loaded
+    through ``importlib.resources`` -- mirrors ``test_seed_verbs_adopt.py``'s
+    own identical ``real_manifest`` fixture (Story 10.8), itself mirroring
+    ``test_seed_verbs_check.py``'s (Story 10.5's NFR-P1 test)."""
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        return load_manifest(manifest_path)
+
+
+def _entry_by_id(manifest: Manifest, entry_id: str) -> ManifestEntry:
+    """``manifest.entries`` looked up by id, or a clear, named assertion
+    failure -- never a bare ``StopIteration`` (review finding) -- if the
+    packaged manifest ever renames or removes the entry these regression
+    tests pin."""
+    for entry in manifest.entries:
+        if entry.id == entry_id:
+            return entry
+    raise AssertionError(
+        f"{entry_id!r} not found in the real packaged manifest -- has it been renamed or"
+        " removed? These regression tests pin its exact id."
+    )
+
+
+# (entry_id, real repo-relative path once `{{ slug }}` is resolved to "test") --
+# both of the manifest's own writable-artifact/never-write collisions this
+# story's own fix resolves: `dreams-readme` (`copied-managed`, `applies_to:
+# both`, collides with `docs/dreams/*.md`) and `specs-readme` (`copied-seeded`,
+# `applies_to: init`-only -- `adopt`'s own equivalent test never exercises it,
+# since `_manifest_for_adopt` filters it out before `classify` ever sees it --
+# collides with `**/planning-artifacts/**`).
+_WRITABLE_EXEMPTION_REGRESSION_CASES = (
+    ("dreams-readme", "docs/dreams/README.md"),
+    ("specs-readme", "_bmad-output/projects/test/planning-artifacts/specs/README.md"),
+)
+
+
+@pytest.mark.parametrize(("entry_id", "expected_path"), _WRITABLE_EXEMPTION_REGRESSION_CASES)
+def test_writable_exemption_no_longer_refuses_against_the_real_packaged_manifest(
+    tmp_path, real_manifest, entry_id: str, expected_path: str
+):
+    """The literal, confirmed-live regression this story fixes, for BOTH
+    manifest entries it applies to: before ``run_init``'s own ``never_write
+    = fs.NeverWrite(...)`` construction gained ``exempt=writable_
+    exemptions(...)`` (Story 10.8's fix, wired in here), each of these REAL
+    manifest entries matched a broader ``never_write`` glob, so
+    ``check_preconditions``'s rung 4 refused it UNCONDITIONALLY -- the
+    spec's own Problem statement, verbatim.
+
+    Mirrors ``test_seed_verbs_adopt.py``'s own Story 10.8 real-manifest
+    regression test technique, adapted for ``run_init``'s lack of a
+    ``--skip`` flag (this story's own Never bullet, module docstring): rather
+    than skipping every OTHER manifest entry down to one action, this test
+    narrows the MANIFEST itself to the one entry under test (via
+    ``_manifest_for_init``, the SAME filter/resolve step ``run_init`` itself
+    applies, then a further id-filter -- keeping the real, unmodified
+    ``never_write`` glob list intact), then calls ``classify``/``build_plan``/
+    ``check_preconditions``/``fs.write`` DIRECTLY, exactly the sequence
+    ``run_init`` itself runs up to (and including) the never-write guard,
+    bypassing only its apply/commit/state-write machinery -- the spec's own
+    Boundaries option (a): a ``template_path=``-based whole-file materialize
+    would instead trip the SEPARATE, pre-existing, already-deferred
+    ``engine/copier.py::_check_manifest_boundary`` gap (``DW-FU-10-8``), out
+    of this story's own scope. See the sibling
+    ``test_run_init_end_to_end_against_the_real_packaged_manifest`` below for
+    a second proof that calls ``run_init`` itself, not just these two
+    primitives by hand."""
+    _init_git_repo(tmp_path)
+    filtered = _manifest_for_init(real_manifest, "test")
+    entry = _entry_by_id(filtered, entry_id)
+    narrowed = Manifest(
+        model_version=filtered.model_version,
+        never_write=filtered.never_write,
+        entries=(entry,),
+    )
+
+    inventory = classify(narrowed, tmp_path)
+    plan = build_plan(narrowed, inventory, opted_out=frozenset())
+    never_write = fs.NeverWrite(
+        patterns=tuple(sorted(effective_never_write(narrowed, inventory))),
+        exempt=writable_exemptions(narrowed, inventory),
+    )
+
+    assert [action.artifact_id for action in plan.actions] == [entry_id]
+    assert plan.actions[0].target_path == expected_path
+
+    # Previously: raised `PreconditionFailure` (`never-write-target`)
+    # unconditionally here -- the spec's own confirmed-live regression.
+    check_preconditions(
+        plan, repo_root=tmp_path, never_write=never_write, managed=(), force=False, dry_run=False
+    )
+
+    action = plan.actions[0]
+    target = tmp_path / action.target_path
+    fs.write(target, b"verification content\n", repo_root=tmp_path, never_write=never_write)
+
+    assert target.read_text(encoding="utf-8") == "verification content\n"
+
+
+def test_run_init_end_to_end_against_the_real_packaged_manifest(tmp_path, real_manifest):
+    """Calls ``run_init`` ITSELF -- not just the primitives it composes --
+    against the REAL, mostly-unmodified, full packaged manifest, so an
+    accidental revert of ``run_init``'s own one-line
+    ``exempt=writable_exemptions(...)`` wiring (the literal payload of this
+    story's follow-up fix) is caught by a test that actually exercises that
+    line (review finding: the sibling parametrized test above proves the
+    underlying mechanism works, but never calls ``run_init`` itself, so it
+    cannot catch a regression in the one line THIS story adds to it).
+    ``commit=_fake_commit(...)`` bypasses ``engine.copier.materialize()``
+    (the SEPARATE, pre-existing ``DW-FU-10-8`` gap), matching every other
+    whole-file test in this file except the small, dedicated handful
+    exercising the real default commit path -- this test is about
+    ``check_preconditions``'s rung 4 running UNCONDITIONALLY before any
+    commit call, not about materialize().
+
+    Excludes the manifest's own DIRECTORY-shaped entries (``dreams-dir``,
+    ``deck-scaffolding``, ``project-subtree`` -- paths ending in ``/``)
+    before calling ``run_init``: ``_fake_commit``'s whole-file branch
+    (``target.write_text(...)``, shared with every other ``_fake_commit``
+    test in this file) materializes a directory-shaped entry as a REGULAR
+    FILE, which then collides with ``target.parent.mkdir(...)`` for any
+    REAL file nested under it -- confirmed by execution (``dreams-dir``
+    materializing ``docs/dreams`` as a file broke ``dreams-readme``'s own
+    ``docs/dreams/README.md`` write moments later). This is a test-double
+    limitation, not a `run_init`/never-write concern (`_fake_commit` is
+    unmodified, shared production-test infrastructure this story does not
+    own) -- ``never_write`` itself stays the REAL, untouched list, and every
+    entry that matters to this story's own fix (`dreams-readme`,
+    `specs-readme`) stays in scope."""
+    filtered_manifest = Manifest(
+        model_version=real_manifest.model_version,
+        never_write=real_manifest.never_write,
+        entries=tuple(entry for entry in real_manifest.entries if not entry.path.endswith("/")),
+    )
+
+    result = run_init(
+        tmp_path, filtered_manifest, slug="test", commit=_fake_commit(filtered_manifest, tmp_path)
+    )
+
+    applied_ids = set(result.applied)
+    assert "dreams-readme" in applied_ids
+    assert "specs-readme" in applied_ids
+    assert (tmp_path / "docs" / "dreams" / "README.md").is_file()
+    assert (
+        tmp_path / "_bmad-output" / "projects" / "test" / "planning-artifacts" / "specs" / "README.md"
+    ).is_file()

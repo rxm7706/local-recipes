@@ -171,8 +171,28 @@ entries, and separately assert (by reading the filesystem directly) that
 `init` materialized them correctly -- see ``tests/unit/test_seed_verbs_
 init.py``'s own PRD-J1 test for the concrete shape of that split.
 
+**Consuming Story 10.8's ``exempt=`` fix (this story's own follow-up work,
+resolving the collision this story itself was originally blocked on).**
+Verified live while this story was still in flight: the REAL packaged
+manifest's own ``dreams-readme`` entry (``docs/dreams/README.md``,
+``copied-managed``) matches the manifest's own ``docs/dreams/*.md``
+never-write glob, so ``run_init`` refused it UNCONDITIONALLY at
+``check_preconditions``'s rung 4 -- the same collision Story 10.8 found and
+fixed for ``adopt`` (``NeverWrite.exempt`` -- an exact-path allow-list
+checked BEFORE glob matching -- plus ``detect.inventory.writable_
+exemptions``, which computes it). This story's own ``never_write =
+fs.NeverWrite(...)`` construction, above, now consumes that fix identically
+to ``verbs/adopt.py::run_adopt``'s own: ``exempt=writable_exemptions(
+filtered_manifest, inventory)``. ``specs-readme`` (``_bmad-output/projects/
+{{ slug }}/planning-artifacts/specs/README.md``, ``copied-seeded``,
+``applies_to: init``) collides the identical way against the manifest's own
+``**/planning-artifacts/**`` glob, and is resolved by the same fix -- it is
+an ``init``-only entry ``adopt``'s own equivalent test never had reason to
+exercise, since ``_manifest_for_adopt`` filters it out before ``classify``/
+``build_plan`` ever see it.
+
 **Import surface.** ``detect.inventory`` (``classify``, ``effective_never_
-write``), ``plan.build`` (``build_plan``, ``write_plan``,
+write``, ``writable_exemptions``), ``plan.build`` (``build_plan``, ``write_plan``,
 ``default_plan_path`` -- never modifies ``build_plan`` itself), ``plan.types``
 (``Plan``), ``apply.run`` (``run_apply``, ``ApplyResult``, ``CommitAction``),
 ``verbs.preconditions`` (``check_preconditions``), ``state`` (``SeedState``,
@@ -196,7 +216,12 @@ from pyforge.core.process import PosixProcess, ProcessError
 
 from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
-from ..detect.inventory import Inventory, classify, effective_never_write
+from ..detect.inventory import (
+    Inventory,
+    classify,
+    effective_never_write,
+    writable_exemptions,
+)
 from ..errors import PreconditionFailure, UsageError
 from ..model.manifest import AppliesTo, Manifest, ManifestEntry
 from ..plan.build import build_plan, default_plan_path, write_plan
@@ -459,7 +484,8 @@ def run_init(
     plan = build_plan(filtered_manifest, inventory, opted_out=frozenset())
 
     never_write = fs.NeverWrite(
-        patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory)))
+        patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
+        exempt=writable_exemptions(filtered_manifest, inventory),
     )
     # `force=False` UNCONDITIONALLY -- the CLI `--force` bypasses ONLY
     # `_refuse_if_unsuitable`'s FR-78 refusal above, never rung 6's own
