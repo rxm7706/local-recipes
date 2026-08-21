@@ -9,7 +9,14 @@
 # file is judged against.
 #
 # 43 entries: 16 referenced, 5 copied-managed, 5 copied-seeded,
-# 10 generated-derived, 4 hybrid-managed-region, 3 unclassified-deferred.
+# 9 generated-derived, 5 hybrid-managed-region, 3 unclassified-deferred.
+#
+# Story 11.2 reclassifies `projects-index` from generated-derived to
+# hybrid-managed-region: `_bmad-output/PROJECTS.md`'s Projects table is a
+# derived FRAGMENT inside a hand-authored file (the config-layering table,
+# "Adding a new project" section, and everything else in that file is
+# repo-owned prose that must survive byte-identical), not a whole file --
+# exactly the shape hybrid-managed-region already exists to describe.
 #
 # Two deliberate dedups (see the companion doc's own Design Notes): the
 # `.gitignore` model block and `CLAUDE.md`'s tier head-matter are each ONE
@@ -250,13 +257,6 @@ artifacts:
     path: ".github/copilot-instructions.md"
     applies_to: both
     rationale: same projection as cursor-rules, for GitHub Copilot
-  - id: projects-index
-    class: generated-derived
-    path: "_bmad-output/PROJECTS.md"
-    applies_to: both
-    rationale: >-
-      computed from the set of _bmad-output/projects/*/.bmad-config.toml
-      files present.
   - id: planning-artifacts-symlink
     class: generated-derived
     path: "_bmad-output/planning-artifacts"
@@ -290,7 +290,20 @@ artifacts:
     applies_to: both
     rationale: directory skeleton computed from the manifest and the project slug
 
-  # --- HYBRID-MANAGED-REGION (4): repo-owned file, tool-owned span inside.
+  # --- HYBRID-MANAGED-REGION (5): repo-owned file, tool-owned span inside.
+  - id: projects-index
+    class: hybrid-managed-region
+    path: "_bmad-output/PROJECTS.md"
+    applies_to: both
+    rationale: >-
+      the Projects table is computed from the set of
+      _bmad-output/projects/*/.bmad-config.toml files present; everything
+      else in this file (the config-layering table, "Adding a new project"
+      section, etc.) is repo-owned prose that must survive untouched.
+    format: html
+    regions:
+      - name: projects-table
+        anchor: ["## Projects"]
   - id: agents-md
     class: hybrid-managed-region
     path: "AGENTS.md"

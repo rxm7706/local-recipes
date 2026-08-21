@@ -130,7 +130,29 @@ job. ``_default_commit`` below is that callback, and it dispatches on
   pending region, re-reading the target's text fresh between successive
   regions in the SAME action (``regions/apply.py``'s own documented safe
   pattern: "detect -> apply ONE region -> re-detect -> apply the next",
-  never parse-once-apply-many).
+  never parse-once-apply-many). Story 11.2 adds ONE exception to "every
+  hybrid region reads its static fragment": the ``projects-table`` region
+  (``projects-index``'s only region, ``_bmad-output/PROJECTS.md``) is
+  repo-computed, not packaged-static -- its body comes from ``derive.
+  projects_index.derive_projects_table(repo_root / "_bmad-output" /
+  "projects")`` instead, a data-driven check on ``region_name`` (not on
+  ``entry.id``, since a region name is what identifies the fragment/body a
+  hybrid entry needs) reached BEFORE ``_region_body_from_template`` is ever
+  called for that one region. This is the SAME class of gap Story 11.1
+  closed for the three whole-file agent-adapter ids, one region later: the
+  packaged template tree ships no static fragment for ``projects-table``
+  at all (there is none to ship -- its content depends on the ADOPTING
+  repo's own live project set, not on shipped prose), and a prior
+  implementation attempt at this story shipped a static placeholder
+  fragment purely to satisfy an unrelated conformance test, which would
+  have shipped as PROJECTS.md's real, WRONG content on every real
+  ``adopt``/``update`` run against a repo with actual projects -- caught
+  before landing, and why this dispatch exists here rather than as a
+  static fragment under ``templates/files/``. Every OTHER hybrid region
+  (``tiers``, ``portability-contract``, ``dream-first-workflow``,
+  ``bmad-multiproject``, ``model-ignores``, ``model-badge``) is untouched
+  and still reads its packaged fragment via ``_region_body_from_template``
+  exactly as before.
 
 **Known, inherited limitations this story does not close** (named rather
 than silently worked around, per this package's convention): (1) [Story
@@ -211,7 +233,10 @@ no-op" contract (10.3's AC) one layer up.
 
 **Import surface.** ``derive.adapters`` (the MODULE, imported as
 ``derive_adapters`` -- Story 11.1's ``ADAPTER_COMPOSITION``/``render_adapter``
-for the three whole-file agent-adapter ids), ``detect.inventory``
+for the three whole-file agent-adapter ids), ``derive.projects_index`` (the
+MODULE, imported as ``derive_projects_index`` -- Story 11.2's
+``derive_projects_table`` for the ``projects-table`` hybrid region),
+``detect.inventory``
 (``classify``, ``ArtifactState``, ``Inventory``, ``effective_never_write``,
 ``writable_exemptions``), ``plan.build`` (``build_plan``,
 ``write_plan``, ``default_plan_path`` -- never modifies ``build_plan``
@@ -251,6 +276,7 @@ from pyforge.core.process import PosixProcess, ProcessError
 from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
 from ..derive import adapters as derive_adapters
+from ..derive import projects_index as derive_projects_index
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
@@ -767,7 +793,31 @@ def _default_commit(
                             " not a problem with the repository being adopted"
                         ),
                     )
-                body = _region_body_from_template(template_path, region_name)
+                if region_name == "projects-table" and entry.id == "projects-index":
+                    # Story 11.2: `projects-table`'s body is repo-computed
+                    # (the set of `_bmad-output/projects/*/.bmad-config.toml`
+                    # files actually present in THIS repo), never a static
+                    # packaged fragment -- `_region_body_from_template` reads
+                    # a `files/<region-name>.*.j2` fragment off the template
+                    # tree, which is the WRONG source for a region whose
+                    # whole point is to reflect the adopting repo's own live
+                    # state. Every OTHER hybrid region still reads its static
+                    # fragment via `_region_body_from_template` unchanged.
+                    # The `entry.id` guard (review finding, pass 2) matters
+                    # because region NAMES are a namespace shared across
+                    # manifest entries by this package's own design (unlike
+                    # `ADAPTER_COMPOSITION`'s membership check just below,
+                    # which keys on the genuinely-unique `entry.id` alone) --
+                    # without it, a future manifest entry that happened to
+                    # reuse "projects-table" as a region name for an
+                    # unrelated purpose would be silently hijacked into
+                    # rendering the live project index instead of its own
+                    # intended content.
+                    body = derive_projects_index.derive_projects_table(
+                        repo_root / "_bmad-output" / "projects"
+                    )
+                else:
+                    body = _region_body_from_template(template_path, region_name)
                 text = target.read_text(encoding="utf-8") if target.is_file() else None
                 insert_region(
                     text,

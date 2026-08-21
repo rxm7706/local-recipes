@@ -27,17 +27,18 @@ from pyforge.marshal.seed.detect.inventory import coverage_counts, coverage_find
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, load_manifest
 
 # The spec's Boundaries section, as corrected by review: 16 referenced,
-# 5 copied-managed, 5 copied-seeded, 10 generated-derived (review moved
+# 5 copied-managed, 5 copied-seeded, 9 generated-derived (review moved
 # `.bmad-loop/policy.toml` here from copied-seeded -- it is rendered whole
 # on every `marshal config --write-harness-policy` run, Story 1.10/AD-12/
-# AD-35, not a repo-owned seed), 4 hybrid-managed-region,
+# AD-35, not a repo-owned seed; Story 11.2 later moves `projects-index` OUT
+# to hybrid-managed-region -- see below), 5 hybrid-managed-region,
 # 3 unclassified-deferred -- 43 entries total.
 EXPECTED_CLASS_COUNTS = {
     ArtifactClass.REFERENCED: 16,
     ArtifactClass.COPIED_MANAGED: 5,
     ArtifactClass.COPIED_SEEDED: 5,
-    ArtifactClass.GENERATED_DERIVED: 10,
-    ArtifactClass.HYBRID_MANAGED_REGION: 4,
+    ArtifactClass.GENERATED_DERIVED: 9,
+    ArtifactClass.HYBRID_MANAGED_REGION: 5,
     ArtifactClass.UNCLASSIFIED_DEFERRED: 3,
 }
 
@@ -77,6 +78,7 @@ _UNRENDERED_PATH = "n/a"
 # typo'd or stale anchor relocates a managed region to EOF with nothing
 # failing. Pinned exactly, per (entry id, region name, anchor).
 EXPECTED_REGION_ANCHORS = {
+    ("projects-index", "projects-table", ("## Projects",)),
     ("agents-md", "tiers", ("## The tiers",)),
     ("agents-md", "portability-contract", ("## Portability contract",)),
     ("agents-md", "dream-first-workflow", ("## Dream-first workflow",)),
@@ -94,6 +96,16 @@ EXPECTED_REGION_ANCHORS = {
 # `both` silently removes that signal, so the sets are pinned by id.
 EXPECTED_INIT_ONLY_ENTRY_IDS = {"starter-dream", "specs-readme"}
 EXPECTED_ADOPT_ONLY_ENTRY_IDS = {"specs-dir-legacy"}
+
+# Story 11.2: `projects-table` (projects-index's only region) is
+# REPO-COMPUTED (`derive.projects_index.derive_projects_table`), never a
+# packaged-static `files/<name>.*.j2` fragment -- there is no fragment to
+# ship for it (its content depends on the ADOPTING repo's own live project
+# set, not shipped prose), so it is deliberately exempt from both
+# region-body-file conformance checks below, the same way Story 11.1
+# exempted its three wrapper-template filenames from the sibling "every
+# `.j2` file is claimed" check.
+_REPO_COMPUTED_REGIONS = frozenset({"projects-table"})
 
 
 @pytest.fixture(scope="module")
@@ -191,7 +203,15 @@ def test_every_hybrid_region_has_a_matching_non_empty_body_file(manifest):
     """Region-body convention (this story, new): one file per region NAME
     at `seed/templates/files/<name>.md.j2` (`.gitignore.j2` for
     `model-ignores`). A test failure here names the missing file, matching
-    the I/O matrix's own error-handling column."""
+    the I/O matrix's own error-handling column.
+
+    Story 11.2's `projects-table` region is deliberately EXEMPT
+    (`_REPO_COMPUTED_REGIONS`): its body is repo-computed
+    (`derive.projects_index.derive_projects_table`), never a packaged
+    static fragment, so there is no `files/projects-table.*.j2` to ship or
+    to check for here -- a static one would be exactly the defect a prior
+    implementation attempt at this story shipped and a review pass caught
+    (see `verbs/adopt.py`'s own module docstring)."""
     files_root = resources.files("pyforge.marshal.seed.templates") / "files"
     hybrid_entries = [
         entry
@@ -202,6 +222,8 @@ def test_every_hybrid_region_has_a_matching_non_empty_body_file(manifest):
 
     for entry in hybrid_entries:
         for region in entry.regions:
+            if region.name in _REPO_COMPUTED_REGIONS:
+                continue
             candidates = [
                 files_root / f"{region.name}.md.j2",
                 files_root / f"{region.name}.gitignore.j2",
@@ -235,6 +257,12 @@ def test_every_body_file_is_claimed_by_a_declared_region(manifest):
     dedicated suite (`test_seed_derive_adapters.py`). Excluded here by exact
     filename so this test's "every `.j2` file must be a claimed region body"
     claim stays precise about which files it is actually claiming that for.
+
+    Story 11.2 excludes `projects-table` from `declared_names` on the SAME
+    principle, mirrored on the opposite side of the mapping: it is a real,
+    declared hybrid region with no `files/*.j2` counterpart AT ALL (by
+    design -- see the sibling check above), so counting it here would make
+    this test fail for having correctly shipped no orphaned file.
     """
     files_root = resources.files("pyforge.marshal.seed.templates") / "files"
     declared_names = {
@@ -242,6 +270,7 @@ def test_every_body_file_is_claimed_by_a_declared_region(manifest):
         for entry in manifest.entries
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
         for region in entry.regions
+        if region.name not in _REPO_COMPUTED_REGIONS
     }
     wrapper_filenames = {spec.wrapper for spec in ADAPTER_COMPOSITION.values()}
     shipped_names = {

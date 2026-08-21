@@ -6,6 +6,13 @@ prefix/suffix preservation, ``replace_span``'s guard-before-any-read
 ordering, ``NeverWrite``'s immutability (both reassignment and element
 mutation), and ``remove`` refusing a never-write target.
 
+Story 11.2 adds ``symlink()`` coverage: the guard trips on a never-write
+``link_path`` (guards FIRST, before ``mkdir``), idempotence, an atomically
+-proven stale-symlink replacement (no absence window), a named error on a
+regular-file/directory collision, ``mkdir(parents=True)`` bootstrapping a
+missing parent, and a proof that the guard checks ``link_path``'s own
+location rather than a pre-existing symlink's current, resolved target.
+
 Imports the module itself (``fs``), not its individual functions, so the
 interrupted-write test can monkeypatch ``fs.atomic_write_bytes`` -- the
 exact name ``write``/``replace_span`` reference in their own module
@@ -15,6 +22,7 @@ namespace, regardless of how a caller imports them.
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 
 import pytest
 from pyforge.marshal.seed import fs
@@ -597,3 +605,152 @@ def test_write_with_the_real_shipped_manifest_still_allows_an_ordinary_target(tm
     target = tmp_path / "CLAUDE.md"
     fs.write(target, b"hi", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
     assert target.read_bytes() == b"hi"
+
+
+# --- symlink: guard, idempotence, atomic replace, collision (Story 11.2) ---
+
+
+def test_symlink_guard_trips_on_a_never_write_link_path(tmp_path):
+    """Guards FIRST, like ``write``/``replace_span``/``remove`` -- a
+    matching ``link_path`` is refused before ``link_path.parent`` is even
+    created."""
+    link_path = tmp_path / "docs" / "dreams" / "x"
+    never_write = NeverWrite(("docs/dreams/*",))
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+
+    with pytest.raises(NeverWriteViolation):
+        fs.symlink(link_path, target_dir, repo_root=tmp_path, never_write=never_write)
+
+    assert not link_path.parent.exists()
+
+
+def test_symlink_is_idempotent_when_already_pointing_at_the_correct_target(tmp_path, monkeypatch):
+    link_path = tmp_path / "alias"
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    link_path.symlink_to(Path("target"))
+
+    def boom(*args, **kwargs):
+        raise AssertionError("os.replace must not be called for an idempotent no-op")
+
+    monkeypatch.setattr(fs.os, "replace", boom)
+
+    fs.symlink(link_path, Path("target"), repo_root=tmp_path, never_write=NeverWrite(()))
+
+    assert link_path.readlink() == Path("target")
+
+
+def test_symlink_idempotent_no_op_tolerates_an_absolute_vs_relative_spelling_difference(
+    tmp_path, monkeypatch
+):
+    """Design Notes' own claim: idempotence compares the RESOLVED target,
+    not the raw string -- an existing absolute-spelled symlink already
+    pointing at the same real location as a newly-requested RELATIVE
+    target must also be recognized as already correct."""
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+    link_path = tmp_path / "alias"
+    link_path.symlink_to(target_dir)  # absolute spelling
+
+    def boom(*args, **kwargs):
+        raise AssertionError("os.replace must not be called for an idempotent no-op")
+
+    monkeypatch.setattr(fs.os, "replace", boom)
+
+    fs.symlink(link_path, Path("target"), repo_root=tmp_path, never_write=NeverWrite(()))
+
+    assert Path(link_path.readlink()) == target_dir  # unchanged -- still absolute-spelled
+
+
+def test_symlink_atomically_replaces_a_stale_symlink_with_no_absence_window(tmp_path, monkeypatch):
+    """The atomic-replace claim, proven via an instrumented ``os.replace``
+    call rather than only the end state (Task list's own wording): the OLD
+    symlink must still be PRESENT at ``link_path`` the instant ``os.replace``
+    is invoked -- proving no separate ``unlink()`` ran first and left a real
+    absence window (the exact hazard CLAUDE.md's own marker/symlink desync
+    incident documents)."""
+    old_target = tmp_path / "old-target"
+    old_target.mkdir()
+    new_target = tmp_path / "new-target"
+    new_target.mkdir()
+    link_path = tmp_path / "alias"
+    link_path.symlink_to(old_target)
+
+    real_replace = fs.os.replace
+    observed_present_before_replace = []
+
+    def instrumented_replace(src, dst):
+        observed_present_before_replace.append(Path(dst).is_symlink())
+        real_replace(src, dst)
+
+    monkeypatch.setattr(fs.os, "replace", instrumented_replace)
+
+    fs.symlink(link_path, new_target, repo_root=tmp_path, never_write=NeverWrite(()))
+
+    assert observed_present_before_replace == [True]
+    assert Path(link_path.readlink()) == new_target
+
+
+def test_symlink_raises_a_named_error_when_a_regular_file_occupies_link_path(tmp_path):
+    link_path = tmp_path / "alias"
+    link_path.write_text("real file, not a symlink", encoding="utf-8")
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+
+    with pytest.raises(fs.SymlinkTargetOccupiedError):
+        fs.symlink(link_path, target_dir, repo_root=tmp_path, never_write=NeverWrite(()))
+
+    assert link_path.read_text(encoding="utf-8") == "real file, not a symlink"
+
+
+def test_symlink_raises_a_named_error_when_a_real_directory_occupies_link_path(tmp_path):
+    link_path = tmp_path / "alias"
+    link_path.mkdir()
+    (link_path / "keep.txt").write_text("real content", encoding="utf-8")
+    target_dir = tmp_path / "target"
+    target_dir.mkdir()
+
+    with pytest.raises(fs.SymlinkTargetOccupiedError):
+        fs.symlink(link_path, target_dir, repo_root=tmp_path, never_write=NeverWrite(()))
+
+    assert (link_path / "keep.txt").read_text(encoding="utf-8") == "real content"
+
+
+def test_symlink_creates_a_missing_parent_directory(tmp_path):
+    """``mkdir(parents=True, exist_ok=True)`` bootstraps a brand-new
+    ``_bmad-output/`` that has no parent directory yet."""
+    link_path = tmp_path / "_bmad-output" / "planning-artifacts"
+    assert not link_path.parent.exists()
+
+    fs.symlink(
+        link_path,
+        Path("projects/acme/planning-artifacts"),
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert link_path.parent.is_dir()
+    assert link_path.readlink() == Path("projects/acme/planning-artifacts")
+
+
+def test_symlink_guard_checks_the_links_own_path_not_a_preexisting_symlinks_current_target(
+    tmp_path,
+):
+    """``resolve_leaf=False`` (see ``_guard``'s own docstring): the guard
+    must evaluate ``link_path``'s own location, never dereference it if
+    ``link_path`` already happens to be a symlink -- otherwise re-pointing a
+    symlink that CURRENTLY points inside the never-write set would be
+    refused even though ``link_path``'s own location never matched
+    anything. If the guard instead resolved the leaf (following the
+    pre-existing symlink to its current, protected target), this call would
+    incorrectly raise ``NeverWriteViolation``."""
+    protected = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    protected.mkdir(parents=True)
+    link_path = tmp_path / "alias"
+    link_path.symlink_to(protected / "nested")  # current target sits inside the protected set
+    never_write = NeverWrite(("**/planning-artifacts/**",))
+
+    fs.symlink(link_path, tmp_path / "somewhere-else", repo_root=tmp_path, never_write=never_write)
+
+    assert Path(link_path.readlink()) == tmp_path / "somewhere-else"

@@ -890,6 +890,99 @@ def test_default_commit_materializes_a_hybrid_region_via_the_real_packaged_fragm
     assert "Build More Architect Dreams" in content  # real fragment content, not a fake body
 
 
+def test_projects_table_region_is_derived_from_real_bmad_config_toml_files_via_run_adopt(
+    clean_repo, real_manifest
+):
+    """The bad_spec loopback's own root-cause regression (spec's own Spec
+    Change Log): the prior implementation pass shipped a static
+    ``templates/files/projects-table.md.j2`` placeholder that would have
+    shipped, silently and unconditionally, as ``PROJECTS.md``'s real table
+    content through this exact, pre-existing, unmodified
+    ``_default_commit``/``HYBRID_MANAGED_REGION`` dispatch --
+    ``derive.projects_index.derive_projects_table`` was fully implemented
+    and unit-tested but completely UNREACHABLE from any real code path.
+    This test proves the wiring end to end, against the REAL packaged
+    manifest (mirroring ``test_dreams_readme_materializes_against_the_real_
+    manifest_previously_refused_unconditionally``'s own skip-everything-
+    except-one-entry pattern): a real ``run_adopt`` call derives
+    ``projects-table``'s body from real ``.bmad-config.toml`` fixture
+    files -- not a static fragment -- while the hand-written prose
+    elsewhere in ``PROJECTS.md`` survives untouched."""
+    (clean_repo / "_bmad-output").mkdir()
+    (clean_repo / "_bmad-output" / "PROJECTS.md").write_text(
+        "# BMAD Projects in this Repository\n\n"
+        "Some hand-written prose that must survive untouched.\n\n"
+        "## Projects\n",
+        encoding="utf-8",
+    )
+    for slug, description in (
+        ("pyforge-atlas", "Atlas project description."),
+        ("pyforge-marshal", "Marshal project description."),
+    ):
+        config = clean_repo / "_bmad-output" / "projects" / slug / ".bmad-config.toml"
+        config.parent.mkdir(parents=True, exist_ok=True)
+        config.write_text(
+            f'output_folder = "_bmad-output/projects/{slug}"\n\n'
+            "[project]\n"
+            f'slug = "{slug}"\n'
+            f'description = "{description}"\n'
+            'status = "active"\n',
+            encoding="utf-8",
+        )
+    _commit_all(clean_repo)
+
+    skip = tuple(entry.path for entry in real_manifest.entries if entry.id != "projects-index")
+
+    result = run_adopt(
+        clean_repo,
+        real_manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        skip=skip,
+    )
+
+    assert result.applied == ("projects-index",)
+    content = (clean_repo / "_bmad-output" / "PROJECTS.md").read_text(encoding="utf-8")
+    assert "Some hand-written prose that must survive untouched." in content
+    assert "marshal-seed:begin region=projects-table" in content
+    assert "pyforge-atlas" in content
+    assert "Atlas project description." in content
+    assert "pyforge-marshal" in content
+    assert "Marshal project description." in content
+
+
+def test_a_region_named_projects_table_on_a_different_entry_id_is_not_hijacked(clean_repo):
+    """Review finding, pass 2: the ``projects-table`` dispatch keys on
+    BOTH ``region_name == "projects-table"`` AND ``entry.id ==
+    "projects-index"`` -- region names are a namespace shared across
+    manifest entries by this package's own design, so a DIFFERENT entry
+    that happens to reuse "projects-table" as one of its own region names
+    must still read its own static fragment, never the live project
+    index."""
+    template_root = Path(tempfile.mkdtemp())
+    (template_root / "files").mkdir(parents=True)
+    (template_root / "files" / "projects-table.md.j2").write_text(
+        "STATIC-FRAGMENT-NOT-DERIVED\n", encoding="utf-8"
+    )
+    (clean_repo / "OTHER.md").write_text("# anchor\n\nExisting prose.\n", encoding="utf-8")
+    _commit_all(clean_repo)
+    manifest = _manifest(_hybrid("other-entry", "OTHER.md", "projects-table"))
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        template_path=template_root,
+    )
+
+    assert result.applied == ("other-entry",)
+    content = (clean_repo / "OTHER.md").read_text(encoding="utf-8")
+    assert "STATIC-FRAGMENT-NOT-DERIVED" in content
+
+
 def test_default_commit_calls_materialize_once_for_two_whole_file_actions(clean_repo, monkeypatch):
     """The lazy-materialize-once-per-run design (module docstring): two
     whole-file actions in one plan must trigger exactly one ``engine.
