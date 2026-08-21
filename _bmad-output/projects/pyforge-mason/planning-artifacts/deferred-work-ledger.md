@@ -407,3 +407,11 @@ status: open
   promoted: 2026-08-20 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-6` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-6`.
   severity: low
   status: open
+
+### DW-5-4-1: SM-4 (free inheritance) recorded provisionally against v8.82.0 — re-confirm at the next organic CFE MINOR
+
+- source_spec: `epics.md` § Story 5.4 (SM-4 satisfaction record, 2026-08-21)
+  summary: Story 5.4 closed using CFE v8.82.0 (2026-08-20) as the "MINOR landing after Mason ships" — but that MINOR was produced by Mason's own closing retrospective (Story 5.5), not an unrelated effort, and the live python_min floor (3.10) currently coincides with the pre-fix hardcoded fallback, so the verb-level output delta is not yet observable. The resolution-layer A/B (old parents[3] never finds the pinning file; new get_repo_root() does) plus a green verb re-run are the recorded evidence.
+  evidence: Recorded 2026-08-21 under the operator-chosen hybrid close (record now, re-verify later). Re-confirm when the next CFE MINOR lands from an effort outside Mason's own chain (cadence: v8.79 Jul 18 → v8.80/8.81 Jul 29 → v8.82 Aug 20; the in-flight langflow closure's Rule-2 retro is the likely producer) OR when conda-forge bumps python_min past 3.10, whichever first — re-run `mason recipe optimize` and append the observed verb-level delta to the SM-4 record in epics.md, then close this entry.
+  severity: low
+  status: open

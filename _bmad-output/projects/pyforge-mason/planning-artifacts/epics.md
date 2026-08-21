@@ -1341,6 +1341,25 @@ So that **the core argument for wrapping is demonstrated on real data**.
 
 *Effort: XS. Realizes SM-4. Depends on an external event; may complete after v1 ships.*
 
+**SM-4 SATISFIED — CFE v8.82.0, 2026-08-21** (provisional; re-verify tracked as `DW-5-4-1`).
+The external event occurred 2026-08-20: CFE MINOR v8.82.0 landed (merge `604549100a`, followed
+same-day by PATCH passes v8.82.1–v8.82.3). Verified three ways on 2026-08-21:
+(1) **Zero Mason change** — `git diff --name-only 604549100a~1 604549100a -- src/shared/packages/pyforge-mason`
+is empty; only CFE surface files moved. (2) **The improvement reaches a Mason verb** — the
+`optimize_recipe` adapter wraps `recipe_optimizer.py` (`cfe.py` `_CFE_SCRIPTS`), whose
+`_read_conda_forge_python_floor()` v8.82.0 repaired: executed A/B shows the pre-8.82.0
+`parents[3]` walk resolves `.claude/` as repo root (pinning file unreachable — the hardcoded
+`3.10` fallback fired on every call since it shipped), while the new `_paths.get_repo_root()`
+resolves the real root and finds `.pixi/envs/local-recipes/conda_build_config.yaml`. Every
+network-touching verb likewise inherits `_http.py`'s v8.82.x JFrog host-gating. (3) **The
+affected verb re-runs green through the inherited code** — `mason recipe optimize
+recipes/channels --format json` → `status: ok`, real STD-002 suggestion returned.
+**Provenance note, recorded honestly:** v8.82.0 was produced by this effort's own closing
+retrospective (Story 5.5, Rule 2), not by an unrelated effort. The live `python_min` floor
+(`3.10`) currently coincides with the old fallback, so the verb-level output delta materializes
+only when conda-forge bumps the floor. Both caveats are why this record is provisional:
+`DW-5-4-1` re-confirms at the next organic CFE MINOR (one produced outside Mason's own chain).
+
 ### Story 5.5: Rule-2 conda-forge-expert retrospective
 
 As the **repository owner**,

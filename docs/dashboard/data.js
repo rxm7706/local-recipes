@@ -3054,12 +3054,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "41/42",
+            "42/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "0",
             "remaining",
             ""
           ]
@@ -3119,8 +3119,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "5.4"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -3333,7 +3333,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "5.4",
-              "pending",
+              "done",
               "Free-inheritance verification"
             ],
             [
@@ -4631,7 +4631,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-21 22:26 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-21 23:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7217,9 +7217,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-mason",
           "pkey": null,
           "stories": 38,
-          "state": "in-progress",
+          "state": "done",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 41,
+          "done": 42,
           "total": 42,
           "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
           "redirect": null
@@ -7957,7 +7957,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "41/42",
+        "progress": "42/42",
         "complete": 13,
         "of": 13
       },
@@ -18962,7 +18962,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "4 complete (atlas, herald, scribe, warden); 4 building (doctor, marshal, mason, steward)",
+        "gate": "5 complete (atlas, herald, mason, scribe, warden); 3 building (doctor, marshal, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -19827,7 +19827,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "paused 5.4",
+        "line": "complete",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -20174,14 +20174,14 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 453,
+    "open": 454,
     "done": 26,
     "triaged": 145,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 15,
-      "low": 47,
+      "low": 48,
       "unspecified": 390
     },
     "projects": [
@@ -22371,7 +22371,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-mason",
         "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 49,
+        "open": 50,
         "done": 1,
         "triaged": 0,
         "entries": [
@@ -22721,6 +22721,13 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-FU-5-5",
             "title": "Follow-up review still recommended for 5-5-rule-2-conda-forge-expert-retrospective after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-4-1",
+            "title": "SM-4 (free inheritance) recorded provisionally against v8.82.0 — re-confirm at the next organic CFE MINOR",
             "status": "open",
             "severity": "low",
             "triaged": false
@@ -23623,8 +23630,8 @@ window.DASHBOARD_DATA = {
       "subject": "marshal: mark Story 11.3 done, promote its spec"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-21 22:26 UTC",
-    "generatedEpoch": 1787351218
+    "generatedAt": "2026-08-21 23:15 UTC",
+    "generatedEpoch": 1787354154
   },
   "storySpecs": [
     {
@@ -23653,9 +23660,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 41,
+      "done": 42,
       "tracked": 13,
-      "gap": 28
+      "gap": 29
     },
     {
       "station": "pyforge-scribe",
@@ -23915,16 +23922,14 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework/SPEC.md"
           }
         ],
-        "done": 41,
+        "done": 42,
         "backlog": 0,
-        "blocked": 1,
+        "blocked": 0,
         "total": 42,
         "next": "",
-        "blockedKeys": [
-          "5-4-free-inheritance-verification"
-        ],
+        "blockedKeys": [],
         "backlogKeys": [],
-        "state": "blocked"
+        "state": "complete"
       },
       {
         "station": "scribe",
@@ -23960,9 +23965,9 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 404,
+      "done": 405,
       "backlog": 44,
-      "blocked": 1,
+      "blocked": 0,
       "total": 449
     }
   },
@@ -24015,13 +24020,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 42,
-        "done": 41,
-        "blocked": 1,
+        "done": 42,
+        "blocked": 0,
         "epics": 6,
-        "epicsDone": 5,
-        "complete": false,
+        "epicsDone": 6,
+        "complete": true,
         "running": false,
-        "projected": 41
+        "projected": 42
       },
       {
         "key": "scribe",
@@ -24059,15 +24064,15 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 449,
-      "done": 404,
-      "blocked": 1,
+      "done": 405,
+      "blocked": 0,
       "epics": 90,
-      "epicsDone": 77
+      "epicsDone": 78
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 404
+      "projected": 405
     }
   }
 };
