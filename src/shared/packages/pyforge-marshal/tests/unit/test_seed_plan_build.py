@@ -480,6 +480,7 @@ def test_load_plan_raises_value_error_for_a_bad_enum_value_inside_an_action(tmp_
 # test_seed_templates_manifest.py's own EXPECTED_* constants.
 EXPECTED_NON_REFERENCED_ENTRY_COUNT = 27
 EXPECTED_HYBRID_REGION_COUNTS = {
+    "projects-index": 1,
     "agents-md": 3,
     "claude-md": 2,
     "gitignore": 1,

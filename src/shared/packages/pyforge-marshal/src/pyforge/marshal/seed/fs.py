@@ -64,6 +64,28 @@ own. ``replace_span`` reads with ``path.read_bytes()`` -- never
 corrupting the byte offsets ``RegionSpan.body_span`` promises (S-8.2's own
 byte-not-character discipline, mirrored here).
 
+**``symlink()`` (Story 11.2): the exception to "no real V1 target artifact
+is itself expected to be a symlink."** The two BMAD artifact symlinks
+(``_bmad-output/planning-artifacts``/``implementation-artifacts``) are
+exactly that exception, so this module gains a fourth guarded primitive,
+sibling to ``write``/``replace_span``/``remove``, rather than special-casing
+symlink creation inline at some future call site. Guards FIRST, like every
+other primitive here -- but against ``link_path`` alone, never ``target``:
+see ``symlink()``'s own docstring for why guarding ``target`` would make the
+feature impossible to build (this story's real callers point a symlink AT a
+never-write path by design). The guard itself gained one new capability to
+make this possible: ``_guard`` grows a ``resolve_leaf: bool = True``
+parameter (default preserves ``write``/``replace_span``/``remove``'s
+existing behavior unchanged) so ``symlink()`` -- its only caller passing
+``resolve_leaf=False`` -- can check ``link_path``'s own location without
+following it, even when ``link_path`` already exists as a symlink pointing
+somewhere the never-write set WOULD otherwise catch (necessary for
+``symlink()`` to be able to re-point such a link at all; see ``_guard``'s
+own docstring). ``symlink()``'s atomic re-point (a temp symlink then
+``os.replace()``) mirrors ``scripts/bmad-switch::repoint_links``'s own,
+already-incident-tested precedent exactly, rather than the
+unlink-then-recreate pattern that incident exists to warn against.
+
 This module imports ``pyforge.core.atomic_write.atomic_write_bytes`` and
 ``pyforge.marshal.seed.errors.NeverWriteViolation`` and nothing else from
 either ``pyforge.core`` or ``pyforge.marshal`` -- the architecture's "``fs``
@@ -80,12 +102,30 @@ contract.
 from __future__ import annotations
 
 import fnmatch
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.atomic_write import atomic_write_bytes
 
 from .errors import NeverWriteViolation
+
+
+class SymlinkTargetOccupiedError(FileExistsError):
+    """Raised by ``symlink()`` when ``link_path`` already exists as a
+    REGULAR file or directory -- never a symlink -- so there is nothing to
+    atomically re-point, and silently overwriting it would destroy real,
+    unrelated content. A named subclass of the builtin ``FileExistsError``
+    (never a bare instance of it, matching ``replace_span``'s own named-
+    upfront-``ValueError``/``TypeError`` convention) so a caller can catch
+    this specific refusal without also swallowing an unrelated
+    ``FileExistsError`` raised by something else in the same ``try`` block.
+    This originates a new, more specific error for a condition this module
+    itself detects -- it does not WRAP a generic ``OSError`` the way the
+    module docstring's "no wrapping" contract forbids (that contract covers
+    an I/O failure the delegate raises, not a pre-existing-state conflict
+    this module checks for itself, exactly like ``_guard``'s own
+    ``ValueError`` for a bad ``repo_root``)."""
 
 
 @dataclass(frozen=True)
@@ -206,7 +246,9 @@ def _matches(never_write: NeverWrite, relative_posix_str: str) -> str | None:
     return None
 
 
-def _guard(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
+def _guard(
+    path: Path, *, repo_root: Path, never_write: NeverWrite, resolve_leaf: bool = True
+) -> None:
     """The one check ``write``, ``replace_span``, and ``remove`` all share,
     run before any of them touches the filesystem.
 
@@ -225,6 +267,22 @@ def _guard(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
     resolved location actually matched); returns ``None`` silently
     otherwise.
 
+    ``resolve_leaf`` -- ``True`` (default; ``write``/``replace_span``/
+    ``remove``'s unchanged behavior) resolves ``path`` in full via
+    ``path.resolve()``, following every symlink in its chain INCLUDING the
+    leaf itself if ``path`` is currently a symlink -- this is what makes the
+    symlink-indirect never-write hit this module's own test suite proves
+    (a write THROUGH an alias that currently points into the never-write
+    set is caught). ``False`` (``symlink()``'s own sole caller, Story 11.2)
+    resolves only ``path``'s PARENT directory and re-appends the leaf's own
+    name UNRESOLVED, so a pre-existing symlink AT ``path`` is never followed
+    to evaluate wherever it CURRENTLY happens to point -- only ``path``'s
+    own location is checked. ``symlink()`` needs this to be able to
+    atomically re-point an existing symlink that currently points INSIDE
+    the never-write set (its own idempotence/replace logic): resolving the
+    leaf would incorrectly refuse that re-point even though ``path``'s own
+    location never matched anything.
+
     Raises ``ValueError`` upfront if ``repo_root`` does not resolve to an
     existing directory (review finding): without this, a caller passing a
     wrong or misspelled ``repo_root`` silently degrades every repo-relative
@@ -242,7 +300,7 @@ def _guard(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
             " wrong, since every repo-relative never-write pattern would silently stop"
             " matching"
         )
-    resolved_path = path.resolve()
+    resolved_path = path.resolve() if resolve_leaf else (path.parent.resolve() / path.name)
     try:
         relative_posix_str = resolved_path.relative_to(resolved_root).as_posix()
     except ValueError:
@@ -340,3 +398,90 @@ def remove(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
     `Path.unlink()` failure here."""
     _guard(path, repo_root=repo_root, never_write=never_write)
     path.unlink()
+
+
+def _resolved_symlink_target(link_path: Path, raw_target: str) -> Path:
+    """``raw_target`` (a symlink's literal on-disk value, relative or
+    absolute) resolved to an absolute, symlink-followed form exactly the
+    way the OS itself interprets it when read through ``link_path`` -- a
+    relative target is resolved against ``link_path``'s own PARENT
+    directory (POSIX symlink semantics), never the caller's current working
+    directory. Used only for ``symlink()``'s own idempotence comparison
+    (its own docstring's 'Ensuring a symlink means...' clause) -- never for
+    the never-write guard, which deliberately does not resolve through
+    ``target`` at all (see ``symlink()``'s own docstring)."""
+    candidate = Path(raw_target)
+    if not candidate.is_absolute():
+        candidate = link_path.parent / candidate
+    return candidate.resolve()
+
+
+def symlink(link_path: Path, target: Path | str, *, repo_root: Path, never_write: NeverWrite) -> None:
+    """Ensure a symlink exists at ``link_path`` pointing at ``target``,
+    creating or atomically re-pointing it as needed (Story 11.2).
+
+    Guards FIRST, like every other primitive here -- but against
+    ``link_path`` alone, via ``_guard(..., resolve_leaf=False)`` (see that
+    parameter's own docstring for why the leaf must not be followed): a
+    matching ``link_path`` is refused before ``link_path.parent`` is even
+    created. ``target`` is deliberately NEVER checked against
+    ``never_write`` -- not an oversight (two independent review passes on
+    this story flagged it as looking like one, so this reasoning is spelled
+    out here to make it impossible to miss on a future read): this
+    function's real callers (``derive.projects_index.ensure_symlinks``)
+    pass a ``target`` that IS itself a never-write path BY DESIGN -- the
+    whole purpose of the two BMAD artifact symlinks is to point AT the
+    protected ``_bmad-output/projects/<slug>/planning-artifacts``/
+    ``implementation-artifacts`` directories (``**/planning-artifacts/**``/
+    ``**/implementation-artifacts/**``, the manifest's own never-write
+    patterns). Guarding ``target`` the same way ``link_path`` is guarded
+    would make the one thing this primitive exists to do impossible.
+    ``link_path``'s own guard is what still matters: nothing may WRITE (i.e.
+    create or re-point a symlink) INSIDE the protected tree itself, which
+    the ``link_path``-only check already enforces.
+
+    On a clear guard: creates ``link_path.parent`` (``mkdir(parents=True,
+    exist_ok=True)``) -- a brand-new ``_bmad-output/`` has no parent
+    directory yet. Then:
+
+    * If ``link_path`` is already a symlink whose RESOLVED target (via
+      ``_resolved_symlink_target``, tolerating ``../``-vs-absolute spelling
+      differences) already equals ``target``'s own resolved form: a no-op,
+      idempotent -- "ensuring" a symlink that is already correct changes
+      nothing on disk.
+    * If ``link_path`` is already a symlink pointing elsewhere, or does not
+      exist at all: atomically re-points/creates it via a temp symlink then
+      ``os.replace()`` -- mirroring ``scripts/bmad-switch::repoint_links``'s
+      own, already-incident-tested precedent exactly (this repo's own
+      CLAUDE.md documents the marker/symlink desync incident a bare
+      ``unlink()``-then-``symlink_to()`` would reopen: an interruption
+      between the two steps leaves ``link_path`` genuinely ABSENT, not
+      merely stale). Never a bare ``unlink()`` then ``symlink_to()``.
+    * If ``link_path`` already exists as a REGULAR file or directory (never
+      a symlink): raises ``SymlinkTargetOccupiedError`` (a named error, not
+      a bare ``FileExistsError``) -- there is nothing to atomically
+      re-point, and silently overwriting real, unrelated content would be
+      exactly the kind of surprise ``write``'s own refusal posture for
+      unexpected pre-existing state already avoids elsewhere in this
+      module."""
+    _guard(link_path, repo_root=repo_root, never_write=never_write, resolve_leaf=False)
+    link_path.parent.mkdir(parents=True, exist_ok=True)
+
+    target_str = str(target)
+    if link_path.is_symlink():
+        current_target = os.readlink(link_path)
+        if _resolved_symlink_target(link_path, current_target) == _resolved_symlink_target(
+            link_path, target_str
+        ):
+            return
+    elif link_path.exists():
+        raise SymlinkTargetOccupiedError(
+            f"{link_path} already exists and is not a symlink -- refusing to replace it"
+            " with a symlink and destroy whatever real content is there"
+        )
+
+    tmp_path = link_path.with_name(f".{link_path.name}.tmp-{os.getpid()}")
+    if tmp_path.is_symlink() or tmp_path.exists():
+        tmp_path.unlink()
+    os.symlink(target_str, tmp_path)
+    os.replace(tmp_path, link_path)
