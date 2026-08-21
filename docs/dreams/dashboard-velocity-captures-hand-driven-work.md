@@ -2,7 +2,7 @@
 title: Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones
