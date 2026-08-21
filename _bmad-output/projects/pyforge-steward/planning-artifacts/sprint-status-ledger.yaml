@@ -27,7 +27,7 @@ development_status:
   10-4-the-bcrypt-pin-stops-blocking-3-14: done
   10-5-the-db-gpt-sidecar-image-docker-compose-wiring: done
   11-1-langflow-joins-as-a-pluggable-app: done
-  11-2-db-gpt-joins-as-a-pluggable-app: backlog
+  11-2-db-gpt-joins-as-a-pluggable-app: blocked
   11-3-async-work-never-blocks-django: backlog
   11-4-isolation-and-statelessness-proven: backlog
   12-1-the-vanilla-chart-with-an-ocp-overlay: backlog
