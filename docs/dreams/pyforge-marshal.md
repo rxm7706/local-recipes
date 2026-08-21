@@ -262,3 +262,19 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   feed the pre-existing Open Question 17 (installer verb mapping, still
   undecided). The four original standalone documents survive at
   `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/`.
+- **2026-08-21** — **AD-61 corrected: a real, live defect in the never-write
+  guard.** Story 10.7's own implementation work found that `docs/dreams/*.md`
+  and `**/planning-artifacts/**` are `never_write` patterns while the
+  extraction manifest also declares `dreams-readme`/`specs-readme` as
+  artifacts `init`/`adopt` must write to those same locations — an exception
+  `extraction-manifest.md`'s own rationale table always named, but AD-61's
+  binding text never carried a mechanism to express. Confirmed live:
+  `marshal seed init` refuses unconditionally on its first write (100%
+  reproduction), and the already-merged `marshal seed adopt --apply` (Story
+  10.6) fails identically against any target repo missing either file — a
+  shipped defect, not just a blocker on unmerged work. AD-61 corrected to
+  require subtracting manifest-declared writable paths (filtered by
+  `applies_to`) from the guard set at construction, legacy paths still
+  winning per AD-59. Fix scoped as its own story, 10.8 — not folded into
+  10.7, since it touches already-merged code. 10.7's preserved
+  implementation resumes unchanged once 10.8 lands.

@@ -1072,7 +1072,7 @@ yields a plan with zero actions. Every integration test asserts this. It also ma
 (the `local-recipes` oracle) and SC-03 (adopt twice) the *same assertion* applied to
 different repos — one mechanism, two proofs.
 
-#### AD-61 — The never-write guard is a **path-set matcher inside `fs`**, evaluated per write
+#### AD-61 — The never-write guard is a **path-set matcher inside `fs`**, evaluated per write, with manifest-declared exceptions subtracted at construction
 
 **Binds:** `fs`. **Prevents:** any path bypassing FR-71.
 **Rule:** `fs` holds an immutable `NeverWrite` set (loaded from the manifest at
@@ -1082,6 +1082,19 @@ raises `NeverWriteViolation` (a hard error, distinct exit code). A meta-test enu
 package's AST for write calls outside `fs` (P-01) so the guard cannot be routed around.
 Symlink resolution matters concretely here: `_bmad-output/planning-artifacts` is a symlink
 into `projects/<slug>/planning-artifacts`, so an unresolved match would miss it.
+
+**Corrected 2026-08-21 (real defect, found live by Story 10.7's own implementation work):**
+the extraction manifest's own `never_write` rationale (`extraction-manifest.md`) always named
+specific per-artifact exceptions — `docs/dreams/*.md` *except the one seed at `init`*
+(`starter-dream`/`dreams-readme`), `**/planning-artifacts/**` *except the seeded
+`specs/README.md` at `init`* (`specs-readme`) — but this rule as originally written carried no
+mechanism to express them, so the guard's own set construction must additionally SUBTRACT the
+resolved path of every manifest entry whose `class` is `copied-managed`/`copied-seeded` and
+whose `applies_to` matches the running verb, before freezing the set — legacy paths (AD-59)
+still win over a manifest exception if both apply to the same path. Without this, `marshal
+seed init` refuses unconditionally on its very first write (100% reproduction, since neither
+exception artifact exists yet in a fresh target), and `marshal seed adopt --apply` refuses
+identically against any target repo missing either file. Fix: Story 10.8.
 
 #### AD-62 — Migrations are **plan-producing pure functions**, ordered by model semver
 
