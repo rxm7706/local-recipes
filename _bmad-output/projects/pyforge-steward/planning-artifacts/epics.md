@@ -919,7 +919,7 @@ guaranteed baseline with no managed services and no containers; its pixi.toml ed
 the standard env-count reconcile ripple.
 
 ### Story 11.2: DB-GPT joins via its configured integration pattern
-**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2, S-10.5 • **FR/AD:** spec-python-agent-platform CAP-3, AD-17
+**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2, S-10.5 • **FR/AD:** spec-python-agent-platform CAP-3, AD-6 (bounded exception, 2026-08-21), AD-17
 **Surface:** `src/platform/dbgpt_integration/`
 **Given** the `dbgpt_integration` app configured for Pattern B (AD-17 — `dbgpt: B` in the
 pattern registry, per the 2026-08-21 deviation dated in `db-gpt-django-plugin.md`) **Then** a
@@ -927,11 +927,15 @@ Django data migration provisions `dbgpt_schema` exactly as Pattern A would (Djan
 crosses in; DB-GPT's Alembic never touches `public`); the sidecar built by Story 10.5
 (`docker-compose`-managed, its own FastAPI/AWEL process) is registered in the AD-17 pattern
 registry; requests route to it via the Celery/Redis path (11.3) rather than an in-process
-ASGI mount; `DBGPT_SESSION_STORAGE_TYPE=db` plus disabled local paths still apply inside the
-sidecar; pgvector lives in the SAME PostgreSQL if a vector store is needed; a text-to-SQL
-round-trip succeeds end-to-end through the sidecar. Rationale: `dbgpt-app` cannot co-install
-with `langflow-base` in the shared environment (`fastapi` ceiling conflict) — Pattern B
-avoids it entirely since `dbgpt-app` never enters the shared environment.
+ASGI mount; pgvector lives in the SAME PostgreSQL if a vector store is needed; a text-to-SQL
+round-trip succeeds end-to-end through the sidecar. **DB-GPT's own `service.web.database`
+metadata store is the bounded AD-6 exception dated 2026-08-21, not `dbgpt_schema`**:
+`dbgpt-app` structurally cannot use PostgreSQL for it (confirmed live — connector-type
+rejection, SQLite-only migration path, MySQL-only column DDL), so it persists via the
+dedicated `PersistentVolumeClaim` Story 10.5 already built and verified (two-boot persistence
+test), never on ephemeral local disk. Rationale: `dbgpt-app` cannot co-install with
+`langflow-base` in the shared environment (`fastapi` ceiling conflict) — Pattern B avoids it
+entirely since `dbgpt-app` never enters the shared environment.
 
 ### Story 11.3: Async work never blocks Django
 **Type:** feature • **Effort:** M • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-4, AD-17

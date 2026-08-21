@@ -605,13 +605,15 @@ status: open
   `dbgpt_integration/`, `config/engine_patterns.py`, `dbgpt_integration/tasks.py`), the spec's
   own Spec Change Log and Design Notes (full citation of both upstream errors), and
   `sprint-status-ledger.yaml`'s `11-2-db-gpt-joins-as-a-pluggable-app: blocked` entry.
-  status: open — needs an operator decision (matching how DW-11-2-1's own Pattern-A blocker was
-  resolved, via an approved correct-course pass) on how to proceed: (a) accept the sidecar's
-  metadata store staying on SQLite permanently and narrow CAP-3's AC accordingly, (b) pursue an
-  upstream fix/PR against `eosphoros-ai/DB-GPT` for real Postgres `TEXT` column support, or (c)
-  some other resolution. The rest of this story's work (registry, schema migration, ASGI
-  non-mount, the real Celery round trip) is real, live-verified, and ready to land once this
-  decision is made — recover from `backup/steward-11-2-blocked-847ed9ec24` wholesale (unlike
-  DW-11-2-1's backup branch, this one has nothing Pattern-A-specific to discard).
+  status: resolved 2026-08-21 (operator decision) — option (a): the sidecar's metadata store
+  stays on SQLite+PVC permanently, recorded as a bounded, dated exception to AD-6
+  (`ARCHITECTURE-SPINE.md`), with CAP-3's AC corrected to match (`SPEC.md`, `epics.md` Story
+  11.2). The operator files the Postgres-support gap upstream with `eosphoros-ai/DB-GPT`
+  directly (AD-9), not gated on it landing — real SQLAlchemy dialect-portability work, not a
+  quick ask, so treated as independent of unblocking this story. `sprint-status-ledger.yaml`'s
+  `11-2` reopened from `blocked` to `backlog`. The story's real, live-verified work (registry,
+  schema migration, ASGI non-mount, the real Celery round trip) recovers wholesale from
+  `backup/steward-11-2-blocked-847ed9ec24` — nothing in it needs to change for this decision.
   promoted: 2026-08-21 — added directly by the bmad-dev-auto implementation/orchestration pass
-  that hit this blocker (not yet run through a formal correct-course pass).
+  that hit this blocker; resolved the same day via an approved correct-course pass, matching
+  how DW-11-2-1's own Pattern-A blocker was resolved.

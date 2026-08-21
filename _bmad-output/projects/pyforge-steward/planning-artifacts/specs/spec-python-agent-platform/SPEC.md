@@ -62,15 +62,22 @@ thing. The operator named it: **python-agent-platform**.
     Pattern B (Celery-dispatched sidecar, `docker-compose.yml`-managed) where Pattern A is
     demonstrably not pluggable (AD-14). As of 2026-08-21, DB-GPT is configured to Pattern B —
     `dbgpt-app`'s `fastapi<0.113.0` ceiling is disjoint from `langflow-base`'s
-    `fastapi>=0.135.0` floor in the shared environment, confirmed live. Regardless of pattern:
-    `dbgpt_schema` provisioned by Django data migration (Django ORM never crosses in; DB-GPT's
-    Alembic never touches `public`), `DBGPT_SESSION_STORAGE_TYPE=db` + every local state path
-    forced off, pgvector inside the same PostgreSQL if a vector store is needed — the storage
-    rule holds regardless of which pattern is configured.
+    `fastapi>=0.135.0` floor in the shared environment, confirmed live. `dbgpt_schema` in the
+    shared PostgreSQL is provisioned by Django data migration (Django ORM never crosses in;
+    DB-GPT's Alembic never touches `public`) and pgvector lives there if a vector store is
+    needed — that part of the storage rule holds regardless of pattern. **DB-GPT's own
+    `service.web.database` metadata store (chat history, knowledge/RAG, flow/plugin configs)
+    is the bounded AD-6 exception**, dated 2026-08-21: `dbgpt-app` structurally cannot use
+    PostgreSQL for it (confirmed live: connector-type rejection, SQLite-only migration path,
+    MySQL-only column DDL), so it stays on SQLite behind a dedicated Kubernetes
+    `PersistentVolumeClaim` instead — never in `dbgpt_schema`, never on ephemeral local disk.
   - **success:** Text-to-SQL / data-chat round-trips succeed end-to-end through whichever
-    pattern is configured, with all DB-GPT state in `dbgpt_schema`, and pod/container
-    replacement loses no session. Switching DB-GPT's configured pattern later requires no code
-    change, only a registry update (AD-17).
+    pattern is configured; `dbgpt_schema` state (Django-provisioned, pgvector) loses nothing on
+    pod/container replacement; DB-GPT's own metadata store survives a kill-and-restart via its
+    PVC (Story 10.5's two-boot persistence test), not via PostgreSQL. Switching DB-GPT's
+    configured pattern later requires no code change, only a registry update (AD-17); the AD-6
+    exception is independent of that switch and stays scoped to `dbgpt-app`'s own metadata
+    store regardless of pattern.
 - **CAP-4 — Async work never blocks Django.**
   - **intent:** Celery over Redis carries LLM/AWEL work (the plugin dreams' Pattern B/D
     element); workers call the engines in-process or over the internal network, never through
