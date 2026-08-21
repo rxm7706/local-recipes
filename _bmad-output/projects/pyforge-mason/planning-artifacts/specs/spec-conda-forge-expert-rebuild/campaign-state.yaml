@@ -45,6 +45,25 @@ status_vocabulary:
   - retired    # campaign-end state: legacy code removed
   - skipped    # re-scope-gate (CAP-4/Story 6.4) decided "adjust" (drop/reorder) or "stop" for this slice -- the decision space CAP-4 names is explicitly go/adjust/stop, and no other state here can represent a slice the gate declines to continue
 
+# Divergence-and-endgame guard hooks (Story 6.2, scripts/cfe_rebuild_guard_check.py).
+# Per-slice fields (declared-state only -- populating them accurately is later work, not
+# this detector's job):
+#   equivalence               null | "green" | "red" | "stale". Required to read "green" once
+#                              status is parallel/audited/cut-over (clause a) -- written by the
+#                              equivalence harness (CAP-3/Story 6.3), never computed here from
+#                              timestamps.
+#   brief_path                null until skf-brief-skill has produced this slice's brief. Once
+#                              set, the slice is checked by clause (b) below.
+#   brief_mirrored_through    null | a commit SHA. The newest landed CFE Rule-2 retro (a commit
+#                              touching both the CFE surface and CHANGELOG.md) that has been
+#                              mirrored into this slice's brief. Stale relative to the newest
+#                              qualifying retro in range -> `unmirrored-retro` finding.
+# Campaign-level fields (under `campaign:` below):
+#   endgame_declared           false throughout Epic 6. Once true, clause (c) requires every
+#                              `campaign.callers` entry to have flipped off `resolves_to: "legacy"`.
+#   callers                    [] until the end-cutover effort populates real caller-resolution
+#                              entries (each an object with at least `resolves_to`).
+
 campaign:
   # The one slice actively being worked. A fresh session should start here.
   current_focus: "slice-1-recipe-generation"
@@ -58,12 +77,19 @@ campaign:
     # briefing, let alone compiling/parallel-run/audit.
     reached: false
     note: null
+  # Story 6.2 guard hooks -- see the "Divergence-and-endgame guard hooks" comment above
+  # status_vocabulary for the full field descriptions.
+  endgame_declared: false
+  callers: []
 
 slices:
   - id: "slice-1-recipe-generation"
     order: 1
     name: "Recipe Generation"
     status: "mapped"
+    equivalence: null
+    brief_path: null
+    brief_mirrored_through: null
     coverage:
       scripts: 3
       wrappers: 3
@@ -76,6 +102,9 @@ slices:
     order: 2
     name: "Recipe Lifecycle"
     status: "mapped"
+    equivalence: null
+    brief_path: null
+    brief_mirrored_through: null
     coverage:
       scripts: 22
       wrappers: 17
@@ -88,6 +117,9 @@ slices:
     order: 3
     name: "Atlas Intelligence"
     status: "mapped"
+    equivalence: null
+    brief_path: null
+    brief_mirrored_through: null
     coverage:
       scripts: 37
       wrappers: 35
@@ -99,6 +131,9 @@ slices:
     order: 4
     name: "Project Scanning & Security"
     status: "mapped"
+    equivalence: null
+    brief_path: null
+    brief_mirrored_through: null
     coverage:
       scripts: 2
       wrappers: 2
@@ -110,6 +145,9 @@ slices:
     order: 5
     name: "Shared Infrastructure"
     status: "mapped"
+    equivalence: null
+    brief_path: null
+    brief_mirrored_through: null
     coverage:
       scripts: 4
       wrappers: 0
