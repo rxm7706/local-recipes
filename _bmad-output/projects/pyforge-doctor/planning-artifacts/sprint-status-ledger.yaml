@@ -30,7 +30,7 @@ development_status:
   11-6-near-duplicate-entries-surface-as-one-defect-class: done
   11-7-verification-staleness-surfaces-in-the-ambient-fleet-report: done
   12-1-the-hygiene-verification-catalog-stays-a-maintained-current-artifact: done
-  12-2-the-exemplar-standard-conformance-table-is-refreshed-and-re-verified: backlog
+  12-2-the-exemplar-standard-conformance-table-is-refreshed-and-re-verified: done
   12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match: backlog
   12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: backlog
   12-5-the-spec-surface-baseline-write-race-is-closed: backlog
