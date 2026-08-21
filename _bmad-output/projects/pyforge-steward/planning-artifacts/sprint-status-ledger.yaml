@@ -29,7 +29,7 @@ development_status:
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-as-a-pluggable-app: done
   11-3-async-work-never-blocks-django: backlog
-  11-4-isolation-and-statelessness-proven: backlog
+  11-4-isolation-and-statelessness-proven: done
   12-1-the-vanilla-chart-with-an-ocp-overlay: backlog
   12-2-gke-as-a-portability-profile: backlog
   12-3-air-gap-parity-is-a-failing-check: backlog
