@@ -118,6 +118,10 @@ The station that owns the sprint ledger stops being the station that grades it. 
 Epic 5 applied §6 to one artifact. An ownership audit found the clause violated fleet-wide: 10 of 13 repo-level detectors judge an artifact another station produces, and none belongs to Doctor. This epic re-homes those 10 as Doctor sources, each structurally barred from importing the station it judges — and does it behind a profile, because the verb they land on is already over its budget.
 **FRs covered:** FR-15, FR-16 (added 2026-08-11, queued via the Dream/Spec chain — Story 6.11)
 
+### Epic 13: Backlog-intake surfaces deferred entries during story drafting (added 2026-08-21)
+Decomposes `spec-backlog-intake-check`, split from spec-deferred-work-resolution-sweep's former CAP-8 once Epic 11 shipped cleanly as its own self-contained pipeline. A tracked deferred-work entry naming an epic/story in its `owner:`/prose is surfaced as a candidate acceptance criterion when that epic/story is drafted, instead of staying inert prose only a human happens to notice by re-reading the ledger.
+**CAP covered:** spec-backlog-intake-check CAP-1
+
 ---
 
 ## Epic 1: Pre-flight Check (walking skeleton)
@@ -1185,3 +1189,23 @@ atomic, or serialized) such that neither write is silently lost — reproduces a
 `DW-13-5-2` (CAP-5). **Deps:** —
 
 **Epic 12 clears to dispatch in full** — all 5 stories are independent and concrete.
+
+## Epic 13: Backlog-intake surfaces deferred entries during story drafting
+
+**Spec binding.** Decomposes `spec-backlog-intake-check` (this station's `specs/` dir; split
+2026-08-21 from `spec-deferred-work-resolution-sweep`'s former CAP-8, owner-dream
+`docs/dreams/deferred-work-resolution-sweep.md`). Trigger mechanism resolved in that Spec's
+Assumptions (not left as an Open Question): a `pyforge.doctor.sources` detector / `doctor` CLI
+verb, invoked manually by a drafting session — matching every other Doctor capability's shape,
+not a hook into `bmad-create-story`/`bmad-create-epics-and-stories`'s own prompt instructions.
+
+### Story 13.1: A drafting session surfaces matching deferred-work entries for an epic
+**Given** an epic or story identifier named at invocation **When** the new detector/verb runs
+**Then** it scans tracked `deferred-work-ledger.md` files fleet-wide for entries whose
+`owner:`/prose precisely names that epic or story id — a parsed id token, never a bare
+string-contains check, per the Spec's own constraint (avoids repeating `DW-CHAIN-COMPLETENESS-1`'s
+substring-membership bug, Story 12.3's own fix target) — and surfaces each match as a candidate
+acceptance criterion with its source ledger, entry id, and summary, for the drafting session to
+accept, reject, or reword. Nothing is auto-written into the story/spec (CAP-1). **Deps:** —
+
+**Epic 13 clears to dispatch** — one story, no dependencies, concrete.
