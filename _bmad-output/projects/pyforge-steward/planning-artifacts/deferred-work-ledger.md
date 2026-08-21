@@ -578,3 +578,40 @@ status: open
   backup branch represents live work to recover. It does not; recover pattern-agnostic pieces
   selectively, do not merge the branch wholesale.
   promoted: 2026-08-21 — added directly during the sprint-change-proposal correct-course pass.
+
+### DW-11-2-2: DB-GPT's own metadata store cannot be wired to real PostgreSQL — verified upstream limitation, AD-9-blocked
+- source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-11-2-db-gpt-joins-as-a-pluggable-app.md`
+  summary: a second attempt at Story 11-2 (this one AD-17/Pattern-B-correct, not the reverted
+  Pattern-A attempt DW-11-2-1 describes) built and live-verified the whole registry-driven
+  integration — `dbgpt_schema` migration, `config/engine_patterns.py` AD-17 registry, a
+  registry-consult touchpoint in `config/asgi.py` proving no ASGI mount is built for `dbgpt`,
+  and a real Celery `text_to_sql` task round-tripping through the Story 10.5 sidecar
+  (Gemini-backed, live SQL result returned) — but hit a genuine, dual-confirmed upstream wall
+  wiring the SIDECAR's OWN metadata store (chat history, gpts apps, flow definitions) to real
+  PostgreSQL: DB-GPT's own `dbgpt_app` package hardcodes SQLite/MySQL/OceanBase for
+  `[service.web.database]` (`dbgpt_app/base.py`, `dbgpt_app/_cli.py::_get_migration_config`'s
+  own `raise ValueError("Only SQLite is supported for migration now.")`), and working around
+  that app-layer gate via DB-GPT's own public `db.create_all()` API (not a fork) fails with a
+  real PostgreSQL DDL syntax error (`type modifier is not allowed for type "text"`) because
+  DB-GPT's own SQLAlchemy models declare MySQL-only `TEXT(length)` columns (69 occurrences
+  across the installed package set). AD-9 forbids forking DB-GPT's model classes to fix this.
+  The sidecar's metadata store stays on Story 10.5's SQLite volume, now documented as permanent
+  rather than interim. This does NOT block CAP-3's actual user-value goal (the text-to-SQL
+  round trip, verified working): DB-GPT's metadata store and a queryable "datasource" (what the
+  round trip actually uses, pointing at real PostgreSQL) are separate connections in DB-GPT's
+  own architecture — only the former is blocked.
+  evidence: `backup/steward-11-2-blocked-847ed9ec24` branch (the full registry-driven
+  implementation, committed and pushed as an insurance copy, never merged — 14 files, incl.
+  `dbgpt_integration/`, `config/engine_patterns.py`, `dbgpt_integration/tasks.py`), the spec's
+  own Spec Change Log and Design Notes (full citation of both upstream errors), and
+  `sprint-status-ledger.yaml`'s `11-2-db-gpt-joins-as-a-pluggable-app: blocked` entry.
+  status: open — needs an operator decision (matching how DW-11-2-1's own Pattern-A blocker was
+  resolved, via an approved correct-course pass) on how to proceed: (a) accept the sidecar's
+  metadata store staying on SQLite permanently and narrow CAP-3's AC accordingly, (b) pursue an
+  upstream fix/PR against `eosphoros-ai/DB-GPT` for real Postgres `TEXT` column support, or (c)
+  some other resolution. The rest of this story's work (registry, schema migration, ASGI
+  non-mount, the real Celery round trip) is real, live-verified, and ready to land once this
+  decision is made — recover from `backup/steward-11-2-blocked-847ed9ec24` wholesale (unlike
+  DW-11-2-1's backup branch, this one has nothing Pattern-A-specific to discard).
+  promoted: 2026-08-21 — added directly by the bmad-dev-auto implementation/orchestration pass
+  that hit this blocker (not yet run through a formal correct-course pass).
