@@ -41,6 +41,18 @@ name: Platform CI
 # builder stage with `this project requires pixi '>=0.76.2', but you have
 # pixi 0.76.1`. Without these entries such a change lands on main with this
 # workflow never having run.
+#
+# Story 10.5 added `src/platform/compose/dbgpt/**` (the DB-GPT sidecar's own
+# Containerfile) and the `container-dbgpt` job below, which builds it.
+# That path entry is technically REDUNDANT with `src/platform/**` already
+# above it (GitHub's `**` matches any depth, so it already covers
+# `src/platform/compose/dbgpt/*`) -- kept anyway, explicit and
+# self-documenting, per this story's own spec wording. `container-dbgpt`'s
+# OTHER real inputs (`pixi.toml`/`pixi.lock`/`.pixi/config.toml`/
+# `.dockerignore`/`scripts/container-gates`/`src/shared/packages/pyforge-
+# {steward,core}/**` -- its build context is the repo root too, for the
+# identical reason the `container` job's is) are already covered by the
+# entries above; no separate ones were needed for it.
 
 # The two lists below are duplicated verbatim rather than shared via a YAML
 # anchor: GitHub Actions does not support YAML anchors/aliases in workflow
@@ -56,6 +68,7 @@ on:
       - 'scripts/container-gates'
       - 'src/shared/packages/pyforge-steward/**'
       - 'src/shared/packages/pyforge-core/**'
+      - 'src/platform/compose/dbgpt/**'
       - '.github/workflows/platform-ci.yml'
   push:
     branches: [main]
@@ -68,6 +81,7 @@ on:
       - 'scripts/container-gates'
       - 'src/shared/packages/pyforge-steward/**'
       - 'src/shared/packages/pyforge-core/**'
+      - 'src/platform/compose/dbgpt/**'
       - '.github/workflows/platform-ci.yml'
   workflow_dispatch:
 
@@ -516,3 +530,140 @@ jobs:
             platform-ci-redis-${{ matrix.engine }} || true
           ${{ matrix.engine }} network rm platform-ci-net-${{ matrix.engine }} || true
           ${{ matrix.engine }} rmi platform-ci-${{ matrix.engine }} || true
+
+  # Story 10.5 (AD-14 Pattern B): the DB-GPT sidecar's own docker/podman
+  # build + health + rootless-UID job, sibling to `container` above and
+  # reusing its exact `matrix.engine: [docker, podman]` pattern (the spec's
+  # own wording: "asserting the same rootless / non-root / arbitrary-UID
+  # contract Story 10.3 already proves for the main image"). Deliberately a
+  # SEPARATE job rather than folded into `container`: this sidecar has no
+  # postgres/redis dependency, no migrate step, no Django static-asset
+  # surface -- the main job's own steps for those don't apply, and bolting
+  # DB-GPT-only steps onto an already-long Django-image job would make
+  # neither easier to read. See `src/platform/compose/dbgpt/Containerfile`'s
+  # own top-of-file comment for why this image is built from a separate,
+  # isolated `dbgpt-sidecar` pixi env in the first place.
+  container-dbgpt:
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker, podman]
+    runs-on: ubuntu-latest
+    # 30, not 45 (the `container` job's own budget): the `dbgpt-sidecar` env
+    # is a much smaller solve than `python-agent-platform`'s 395 packages
+    # (confirmed live locally: `dbgpt-app` + its dozen `pin_subpackage`'d
+    # siblings, no Django/Langflow/Postgres/Redis client deps) plus the same
+    # build-time-only `pyforge-steward` secrets-scan env `container` also
+    # pays for -- still generous over a cold runner's pixi-cache-miss cost.
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform/compose/dbgpt exists on this ref
+        run: test -d src/platform/compose/dbgpt || { echo "::error::src/platform/compose/dbgpt does not exist on this ref"; exit 1; }
+
+      # Same rootless-podman rationale as `container`'s own step -- not
+      # re-derived here.
+      - name: Ensure podman is available (rootless)
+        if: matrix.engine == 'podman'
+        run: |
+          if ! command -v podman >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+          podman --version
+          id -u
+
+      - name: Build image (${{ matrix.engine }})
+        run: ${{ matrix.engine }} build -f src/platform/compose/dbgpt/Containerfile -t dbgpt-sidecar-ci-${{ matrix.engine }} .
+
+      # No postgres/redis to start first, and no separate migrate step --
+      # unlike `platform`, this image's own ENTRYPOINT/CMD (`dbgpt start
+      # webserver -y -c /app/dbgpt-sidecar-config.toml`) runs DB-GPT's own
+      # alembic migration against its baked-in SQLite metadata store as part
+      # of that one boot sequence (see the Containerfile's `pilot_template/`
+      # comment) -- there is no concurrent-replica migration race to avoid
+      # sequencing separately, because this job runs exactly one container.
+      - name: Run dbgpt-sidecar container (${{ matrix.engine }})
+        run: |
+          ${{ matrix.engine }} rm -f dbgpt-sidecar-ci-app-${{ matrix.engine }} || true
+          ${{ matrix.engine }} run -d --name dbgpt-sidecar-ci-app-${{ matrix.engine }} \
+            -p 5670:5670 \
+            dbgpt-sidecar-ci-${{ matrix.engine }}
+
+      # 90s budget (vs. `container`'s 120s over its own, heavier boot): a
+      # `docker run` of this same image locally reached `/api/health` in
+      # ~20-25s (alembic autogenerate-and-upgrade, then component
+      # registration); this is a generous margin for a cold, uncached
+      # runner, not a value tuned to an observed failure.
+      - name: Poll /api/health for 200
+        run: |
+          for i in $(seq 1 45); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5670/api/health || true)"
+            if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::/api/health never returned 200 (${{ matrix.engine }})"
+          ${{ matrix.engine }} logs dbgpt-sidecar-ci-app-${{ matrix.engine }}
+          exit 1
+
+      # Same TWO-assertion split as `container`'s own arbitrary-UID checks,
+      # and the same reason: the running-container uid only proves the
+      # ENGINE honored `--user`, while the image's OWN default (no
+      # `--user` override) is what an operator actually gets and the only
+      # thing that catches a `USER` directive regression.
+      - name: Confirm non-root UID (running container, arbitrary uid honored)
+        run: |
+          ${{ matrix.engine }} rm -f dbgpt-sidecar-ci-arbuid-${{ matrix.engine }} || true
+          ${{ matrix.engine }} run -d --name dbgpt-sidecar-ci-arbuid-${{ matrix.engine }} \
+            --user 12345:0 \
+            dbgpt-sidecar-ci-${{ matrix.engine }}
+          sleep 3
+          uid="$(${{ matrix.engine }} exec dbgpt-sidecar-ci-arbuid-${{ matrix.engine }} id -u)"
+          echo "running container uid: $uid"
+          if [ "$uid" != "12345" ]; then
+            echo "::error::--user 12345:0 was not honored (got uid $uid)"
+            exit 1
+          fi
+
+      - name: Confirm the image itself declares a non-root USER in group 0
+        run: |
+          uid="$(${{ matrix.engine }} run --rm --entrypoint id dbgpt-sidecar-ci-${{ matrix.engine }} -u)"
+          gid="$(${{ matrix.engine }} run --rm --entrypoint id dbgpt-sidecar-ci-${{ matrix.engine }} -g)"
+          echo "image default uid:gid = $uid:$gid"
+          if [ "$uid" = "0" ]; then
+            echo "::error::image defaults to root (uid 0); Containerfile USER directive regressed"
+            exit 1
+          fi
+          if [ "$gid" != "0" ]; then
+            echo "::error::image default gid is $gid, expected 0; the arbitrary-UID write contract depends on group 0"
+            exit 1
+          fi
+
+      # Same shape as `container`'s own filesystem-contract probe: `$HOME`
+      # must be writable by an arbitrary uid (DB-GPT's own sqlite metadata
+      # store + generated `pilot/` scaffold + logs all land there), and
+      # `/app` itself must stay non-writable (POSIX unlink/rename permission
+      # comes from the DIRECTORY, not the file -- a writable `/app` would let
+      # the runtime user replace `/app/entrypoint.sh`).
+      - name: Confirm the arbitrary UID can write $HOME but not /app
+        run: |
+          ${{ matrix.engine }} exec dbgpt-sidecar-ci-arbuid-${{ matrix.engine }} sh -c '
+            set -e
+            test -d "$HOME" || { echo "HOME_MISSING: $HOME"; exit 1; }
+            touch "$HOME/.ci-probe" && rm "$HOME/.ci-probe"
+            if touch /app/.ci-probe 2>/dev/null; then
+              rm -f /app/.ci-probe
+              echo "APP_DIR_WRITABLE: the runtime user can replace /app/entrypoint.sh"
+              exit 1
+            fi
+          ' || { echo "::error::arbitrary-UID filesystem contract regressed (${{ matrix.engine }})"; exit 1; }
+
+      - name: Teardown
+        if: always()
+        run: |
+          ${{ matrix.engine }} rm -f \
+            dbgpt-sidecar-ci-app-${{ matrix.engine }} \
+            dbgpt-sidecar-ci-arbuid-${{ matrix.engine }} || true
+          ${{ matrix.engine }} rmi dbgpt-sidecar-ci-${{ matrix.engine }} || true

@@ -226,6 +226,31 @@ redis-server = ">=8.0"        # per-user local Redis server process -- cache + C
 kubernetes-helm = ">=3.16"    # chart work (Epic 12) -- pixi-provisioned per AD-16, not a system-level install
 kubernetes-client = ">=1.31"  # kubectl, for the same chart/deploy work
 
+[feature.dbgpt-sidecar]
+# --- dbgpt-sidecar (Story 10.5, AD-14 Pattern B deviation) ---
+# Isolated pixi feature/environment for the DB-GPT sidecar CONTAINER ONLY --
+# deliberately never composed onto `python-agent-platform`/`platform-dev`.
+# `dbgpt-app` (recipes/db-gpt/recipe.yaml, delivered upstream via PR #33883,
+# live on conda-forge at 0.8.1 -- verified live 2026-08-21) transitively
+# requires `dbgpt-client`, which pins `fastapi >=0.100.0,<0.113.0`; the
+# shared `python-agent-platform` env already carries `langflow-base`'s
+# `fastapi >=0.135.0,<1.0.0` floor (Story 11.1). The two ranges are disjoint
+# -- no `fastapi` version satisfies both, confirmed live by attempting to
+# add `dbgpt-app` to `python-agent-platform` and watching the solve fail
+# with exactly this conflict -- which is the demonstrated pluggability
+# failure `docs/dreams/db-gpt-django-plugin.md`'s 2026-08-21 AD-14 entry
+# records: DB-GPT moves from Pattern A (in-process Django mount, still how
+# Langflow runs) to Pattern B (its own container). This feature/environment
+# exists SOLELY so `src/platform/compose/dbgpt/Containerfile`'s builder
+# stage can materialize it -- it is not installed for local dev the way
+# `platform-dev` is, so it stays off the workspace's default macOS/Windows
+# platform list.
+platforms = ["linux-64"]  # container-only: the Containerfile pins --platform=linux/amd64, same reason as python-agent-platform's own linux-64 entry
+
+[feature.dbgpt-sidecar.dependencies]
+python = "3.12.*"      # matches python-agent-platform's env-scoped floor -- no reason to diverge, this env never coexists with it
+dbgpt-app = ">=0.8.1"  # the FastAPI server app (webserver CLI + AgenticData text-to-SQL router); pulls its dozen pin_subpackage'd dbgpt-* siblings transitively
+
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
 # [package] table, no [workspace]). One hatchling pyproject is the single Python
@@ -541,6 +566,13 @@ python-agent-platform = { features = ["python-agent-platform"], no-default-featu
 # `pixi install -e platform-dev` alone provisions everything Epic 11's schema-
 # isolation work needs, no containers or managed services.
 platform-dev = { features = ["python-agent-platform", "platform-dev"], no-default-feature = true }
+# dbgpt-sidecar (Story 10.5, AD-14 Pattern B): no-default-feature keeps the
+# fat default [dependencies] out, so this env carries ONLY `dbgpt-app` + its
+# pin_subpackage'd siblings -- deliberately NOT composed onto
+# python-agent-platform/platform-dev (see the feature's own comment: disjoint
+# fastapi ranges). Materialized exclusively inside the sidecar Containerfile's
+# builder stage; not part of any developer's local dev baseline.
+dbgpt-sidecar = { features = ["dbgpt-sidecar"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]

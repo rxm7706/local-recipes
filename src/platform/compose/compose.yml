@@ -1,10 +1,18 @@
 # Story 10.3 ("One image, both engines"): local dev/test stack for
-# src/platform/ -- platform + postgres:17 + redis:7 ONLY (spec-python-agent-
-# platform's own Boundaries & Constraints: "infrastructure is exactly
-# PostgreSQL + Redis + Kubernetes"; this story's own Constraints repeat it
-# for the compose file specifically -- no Langflow/DB-GPT services, Epic 11
-# mounts those inside this same image as pluggable Django apps, never
-# sidecars).
+# src/platform/ -- originally platform + postgres:17 + redis:7 ONLY
+# (spec-python-agent-platform's own Boundaries & Constraints:
+# "infrastructure is exactly PostgreSQL + Redis + Kubernetes"). Langflow
+# still matches that: Epic 11 mounts it inside the `platform` image as a
+# pluggable Django app (Pattern A), never a sidecar. DB-GPT does NOT --
+# Story 10.5 (AD-14 Pattern B deviation, dream doc
+# docs/dreams/db-gpt-django-plugin.md, 2026-08-21 entry) moved it to its own
+# `dbgpt` service below, because `dbgpt-app` transitively pins
+# `fastapi <0.113.0` while `langflow-base` (already resident in the shared
+# `python-agent-platform` env) needs `fastapi >=0.135.0` -- disjoint ranges,
+# no single pixi env can hold both. See `pixi.toml`'s own
+# `[feature.dbgpt-sidecar]` comment and
+# `src/platform/compose/dbgpt/Containerfile`'s top-of-file comment for the
+# full citation; not re-derived here.
 #
 # Compose Specification syntax (no top-level `version:` key -- dropped by
 # the Compose Specification itself and ignored-with-a-warning by `docker
@@ -18,14 +26,17 @@
 # real deployments (K8s secrets at run time, `--mount=type=secret` at build
 # time); a throwaway compose-local Django `SECRET_KEY` for a database that
 # only ever exists inside this compose network is not the credential that
-# constraint protects.
+# constraint protects. The `dbgpt` service's own placeholder LLM credentials
+# are baked into its own Containerfile, not repeated here -- see that file.
 #
 # `build.context: ../../..` + `build.dockerfile: src/platform/Containerfile`
 # -- deliberately the REPO ROOT as build context, matching the Containerfile
 # itself (see that file's own top-of-file comment for why: the builder
 # stage's `pixi install --frozen -e python-agent-platform` needs the
 # workspace-root `pixi.toml`/`pixi.lock`, which do not exist inside
-# `src/platform/`).
+# `src/platform/`). The `dbgpt` service below uses the identical
+# `context: ../../..` for the identical reason (its own Containerfile's
+# `pixi install --frozen -e dbgpt-sidecar`).
 
 services:
   postgres:
@@ -125,3 +136,86 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  # Story 10.5 (AD-14 Pattern B): DB-GPT's own model-worker + FastAPI
+  # webserver, run as its own container -- see this file's own top-of-file
+  # comment for why (disjoint `fastapi` ranges vs. the shared
+  # `python-agent-platform` env `platform` builds from). Deliberately no
+  # `depends_on: [postgres, redis]`: this story's own boundaries don't
+  # require `dbgpt_schema` to exist (Story 11.2's Django migration
+  # provisions that) -- the sidecar boots and migrates its OWN metadata
+  # store (SQLite, baked into its Containerfile's own config), independent
+  # of this file's `postgres` service. It still joins the same default
+  # compose network as every other service here, so `platform`/`postgres`/
+  # `redis` can already reach it by service name once Story 11.2 wires
+  # real routing -- `depends_on` isn't what puts services on a shared
+  # network, only what shared network membership is worth for THIS story's
+  # own verification (`docker compose up`, one command, no extra step).
+  dbgpt:
+    build:
+      context: ../../..
+      dockerfile: src/platform/compose/dbgpt/Containerfile
+    ports:
+      - "5670:5670"
+    # No `command:` override -- the image's own ENTRYPOINT/CMD (`dbgpt start
+    # webserver -y -c /app/dbgpt-sidecar-config.toml`) is already the full
+    # non-interactive boot sequence; unlike `platform` above, there's no
+    # separate migrate step to sequence first (DB-GPT's own alembic
+    # migration runs as part of that one CMD) and no postgres readiness race
+    # to retry against.
+    #
+    # `restart:` IS still needed, for the same absorb-a-transient-first-boot-
+    # failure reason as `platform`'s own `restart: on-failure` above (see
+    # that comment for the full race description) -- this container's CMD
+    # runs its own alembic autogenerate/upgrade pass on every boot, and
+    # without a restart policy any transient early crash leaves it
+    # permanently stopped instead of retried.
+    restart: on-failure
+    volumes:
+      # Interim durability for DB-GPT's sqlite metadata store. The configured
+      # `path` ("pilot/meta_data/dbgpt.db") LOOKS like it resolves under
+      # /app/.home, but DB-GPT actually resolves it against $HOME/.dbgpt/
+      # workspace (traced into dbgpt/configs/model_config.py -- see the
+      # Containerfile's own comment at the point that path is configured for
+      # the full citation); confirmed live at
+      # /app/.home/.dbgpt/workspace/pilot/meta_data/dbgpt.db. Mounting the
+      # parent dir (not just the .db file) also captures the
+      # alembic/versions/*.py migration script DB-GPT autogenerates into the
+      # same subtree on first boot. So `docker compose down && up` doesn't
+      # silently lose all session/conversation state, per
+      # docs/dreams/db-gpt-django-plugin.md's own storage rule. NOT a
+      # permanent fix -- Story 11.2 wires this sidecar to the shared
+      # PostgreSQL `dbgpt_schema` instead; this is only interim coverage
+      # until that lands.
+      - dbgpt_sqlite_data:/app/.home/.dbgpt/workspace/pilot/meta_data
+    healthcheck:
+      # Same "use the env's own python, not curl" reasoning as `platform`'s
+      # healthcheck above -- UBI9-minimal ships neither curl nor wget, and
+      # `/app/entrypoint.sh` is what puts the pixi-materialized `dbgpt-sidecar`
+      # env on PATH. `/api/health` (not `/`) is DB-GPT's own dedicated
+      # liveness route -- confirmed live via `openapi.json`, returns a bare
+      # `{"status": "ok"}` with no DB/service dependency beyond the process
+      # having finished booting.
+      test:
+        - "CMD"
+        - "/app/entrypoint.sh"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5670/api/health', timeout=5).status == 200 else 1)"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      # A `docker run` of this same image reached `/api/health` in
+      # ~20-25s (alembic autogenerate-and-upgrade pass, then loading its
+      # `dbgpt_app`/`dbgpt_serve` component set, confirmed live). 90s
+      # (vs. `platform`'s 60s) is a deliberately generous margin for a
+      # cold, uncached CI runner rather than a value tuned to an observed
+      # failure.
+      start_period: 90s
+
+# Named volume for the `dbgpt` service's interim sqlite durability -- see
+# that service's own `volumes:` comment above. `postgres`/`redis` deliberately
+# have none: this local compose stack has never persisted their data across
+# `down`, and adding it here is out of this story's scope.
+volumes:
+  dbgpt_sqlite_data:
