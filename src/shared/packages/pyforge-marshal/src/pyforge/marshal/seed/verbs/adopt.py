@@ -190,7 +190,8 @@ read LITERALLY: an empty plan skips the state write entirely, no
 no-op" contract (10.3's AC) one layer up.
 
 **Import surface.** ``detect.inventory`` (``classify``, ``ArtifactState``,
-``Inventory``, ``effective_never_write``), ``plan.build`` (``build_plan``,
+``Inventory``, ``effective_never_write``, ``writable_exemptions``),
+``plan.build`` (``build_plan``,
 ``write_plan``, ``default_plan_path`` -- never modifies ``build_plan``
 itself), ``plan.types`` (``Action``, ``Plan``), ``apply.run`` (``run_apply``,
 ``CommitAction``, ``ApplyResult``), ``verbs.preconditions``
@@ -228,7 +229,13 @@ from pyforge.core.process import PosixProcess, ProcessError
 from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
 from ..detect.hashes import hash_content, region_body_text
-from ..detect.inventory import ArtifactState, Inventory, classify, effective_never_write
+from ..detect.inventory import (
+    ArtifactState,
+    Inventory,
+    classify,
+    effective_never_write,
+    writable_exemptions,
+)
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
@@ -922,7 +929,10 @@ def run_adopt(
     plan = _augment_plan_with_first_claims(plan, inventory, filtered_manifest, state)
     plan = apply_skips(plan, skip)
 
-    never_write = fs.NeverWrite(patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))))
+    never_write = fs.NeverWrite(
+        patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
+        exempt=writable_exemptions(filtered_manifest, inventory),
+    )
     managed_records = managed_after_skips(_managed_records(state, filtered_manifest), plan)
 
     check_preconditions(

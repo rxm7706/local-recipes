@@ -64,11 +64,35 @@ never inspects its internal structure again -- the check runs BEFORE the
 ``hybrid-managed-region`` branch precisely so that branch is never reached
 for a legacy entry. ``classify()`` collects every ``present-legacy``
 classification into ``Inventory.legacy`` in the same single walk (no second
-pass); ``effective_never_write()`` and ``legacy_findings()`` are this
-module's two small legacy consumers, turning that collection into,
+pass); ``effective_never_write()`` and ``legacy_findings()`` are two of this
+module's small legacy consumers, turning that collection into,
 respectively, the write-guard set a later plan builder (S-9.6) must honor
 and the one INFO ``Finding`` per legacy artifact a ``check`` renderer will
 eventually surface.
+
+S-10.8 (FR-83/FR-84's own never-write collision, architecture AD-61) adds
+this module's third small consumer: ``writable_exemptions(manifest,
+inventory) -> frozenset[str]``, the ALLOW-list counterpart to
+``effective_never_write()``'s pure deny-list. A manifest can declare a
+``copied-managed``/``copied-seeded`` artifact whose own path ALSO matches a
+broader ``never_write`` glob meant to cover other files under it (the
+shipped manifest's own ``dreams-readme`` -- ``docs/dreams/README.md`` --
+under ``docs/dreams/*.md``) -- ``fnmatch`` has no negation, so the guard
+cannot express "deny this glob except that one path" as a single pattern.
+``writable_exemptions`` resolves that: every entry whose ``artifact_class``
+is ``COPIED_MANAGED`` or ``COPIED_SEEDED`` (the epics AC's own two named
+classes; ``REFERENCED``/``GENERATED_DERIVED``/``HYBRID_MANAGED_REGION``/
+``UNCLASSIFIED_DEFERRED`` are never exempted this way) contributes its
+``path``, minus every path already in ``inventory.legacy`` -- AD-59 still
+wins: a path that is ALSO recognized as ``present-legacy`` is never
+writable, even if a manifest-declared writable entry happens to share its
+location. Like ``effective_never_write()``, it trusts ``manifest.entries``
+and ``inventory.legacy`` exactly as given (already ``applies_to``-filtered
+by the caller) and performs no filesystem access of its own beyond what
+``inventory`` already recorded. ``effective_never_write()`` itself is
+UNCHANGED by this addition -- it stays the pure deny-list; the caller
+(``verbs/adopt.py``'s ``run_adopt``) passes both into ``fs.NeverWrite``'s
+two separate fields (``patterns``/``exempt``), never merging them here.
 
 An entry's own declared ``path`` is always checked DIRECTLY against the
 live filesystem, regardless of the walk's own exclusion rules below (the
@@ -607,6 +631,41 @@ def effective_never_write(manifest: Manifest, inventory: Inventory) -> frozenset
     only ONE set to consult, not two independent ones it could forget to
     check both of."""
     return frozenset(manifest.never_write) | {record.path for record in inventory.legacy}
+
+
+# The exempt classes `writable_exemptions` ever draws from -- the epics AC's
+# own two named classes (see that function's own docstring, and the module
+# docstring's S-10.8 paragraph, for why the other four never qualify).
+_WRITABLE_EXEMPTION_CLASSES = frozenset({ArtifactClass.COPIED_MANAGED, ArtifactClass.COPIED_SEEDED})
+
+
+def writable_exemptions(manifest: Manifest, inventory: Inventory) -> frozenset[str]:
+    """The exact-path allow-list `fs.NeverWrite.exempt`/rung 4's own exempt
+    check ultimately enforce (S-10.8): every entry's ``path`` whose
+    ``artifact_class`` is in `_WRITABLE_EXEMPTION_CLASSES`, MINUS every path
+    already in ``inventory.legacy`` -- AD-59's "never written to" still wins
+    even when a manifest-declared writable entry happens to name the same
+    location a legacy record also claims (module docstring's own S-10.8
+    paragraph). Like `effective_never_write`, trusts ``manifest.entries`` as
+    given (already ``applies_to``-filtered by the caller -- it does not
+    itself inspect ``entry.applies_to`` against "the running verb") and
+    performs no filesystem access beyond what ``inventory`` already
+    recorded.
+
+    Deliberately does NOT consult `classify()`'s own per-entry
+    `ArtifactState` at all -- unlike `effective_never_write`, which only
+    ever draws from `inventory.legacy` (a state-derived collection), this
+    function draws from `manifest.entries` directly: a `copied-managed`/
+    `copied-seeded` entry that is currently `ABSENT` (the ordinary "create
+    it for the first time" case, and the shape this story's own confirmed
+    defect reproduces) still needs its path exempted, precisely because the
+    write that would MAKE it present is the one rung 4 was refusing."""
+    legacy_paths = {record.path for record in inventory.legacy}
+    return frozenset(
+        entry.path
+        for entry in manifest.entries
+        if entry.artifact_class in _WRITABLE_EXEMPTION_CLASSES
+    ) - legacy_paths
 
 
 def legacy_findings(inventory: Inventory) -> tuple[Finding, ...]:

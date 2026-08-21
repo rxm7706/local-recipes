@@ -10,7 +10,10 @@ legacy short-circuit, ``Inventory.legacy``, ``effective_never_write``, and
 matcher's leading-``/`` anchoring and ``**`` grammar -- and (S-9.5)
 ``coverage_findings``/``coverage_counts``'s two failure rules (an
 unrecognized ``artifact_class`` force-set past ``ManifestEntry.__post_init__``,
-and an ``unclassified-deferred`` entry with a blank ``rationale``).
+and an ``unclassified-deferred`` entry with a blank ``rationale``) -- and
+(S-10.8) ``writable_exemptions``'s own exempt-set computation: it includes
+``copied-managed``/``copied-seeded`` entries, excludes every other class,
+and subtracts a path that is also ``present-legacy`` (AD-59 still wins).
 """
 
 from __future__ import annotations
@@ -32,6 +35,7 @@ from pyforge.marshal.seed.detect.inventory import (
     coverage_findings,
     effective_never_write,
     legacy_findings,
+    writable_exemptions,
 )
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
@@ -686,6 +690,56 @@ def test_effective_never_write_dedupes_when_legacy_path_already_in_never_write(t
     )
     inventory = classify(manifest, tmp_path)
     assert effective_never_write(manifest, inventory) == frozenset({"docs/specs/", "b/*"})
+
+
+def test_writable_exemptions_includes_copied_managed_and_copied_seeded_entries(tmp_path):
+    """The epics AC's own two named classes -- both draw straight from
+    ``manifest.entries``, regardless of whether the path exists on disk (see
+    ``writable_exemptions``'s own docstring: the ordinary "create it for the
+    first time" case is exactly the shape this exists to unblock)."""
+    manifest = _manifest(
+        _whole_file("dreams-readme", "docs/dreams/README.md", ArtifactClass.COPIED_MANAGED),
+        _whole_file("specs-readme", "specs/README.md", ArtifactClass.COPIED_SEEDED),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert writable_exemptions(manifest, inventory) == frozenset(
+        {"docs/dreams/README.md", "specs/README.md"}
+    )
+
+
+def test_writable_exemptions_excludes_every_other_artifact_class(tmp_path):
+    """``referenced``/``generated-derived``/``hybrid-managed-region``/
+    ``unclassified-deferred`` are never exempted this way -- only the two
+    named classes above are."""
+    manifest = _manifest(
+        _referenced("ref"),
+        _whole_file("derived", "derived.txt", ArtifactClass.GENERATED_DERIVED),
+        _hybrid("hybrid", "HYBRID.md", "tiers"),
+        _whole_file("deferred", "deferred.txt", ArtifactClass.UNCLASSIFIED_DEFERRED),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert writable_exemptions(manifest, inventory) == frozenset()
+
+
+def test_writable_exemptions_subtracts_a_path_that_is_also_present_legacy(tmp_path):
+    """AD-59 still wins: a path recognized as ``present-legacy`` is never
+    exempted, even though its own entry is a ``copied-managed`` class that
+    would otherwise qualify -- the spec's own I/O Matrix row."""
+    (tmp_path / "docs" / "dreams").mkdir(parents=True)
+    (tmp_path / "docs" / "dreams" / "README.md").write_text("x\n", encoding="utf-8")
+    manifest = _manifest(
+        _whole_file(
+            "dreams-readme",
+            "docs/dreams/README.md",
+            ArtifactClass.COPIED_MANAGED,
+            legacy_of="succ",
+        )
+    )
+    inventory = classify(manifest, tmp_path)
+    assert inventory.legacy == (
+        LegacyRecord(entry_id="dreams-readme", path="docs/dreams/README.md", legacy_of="succ"),
+    )
+    assert writable_exemptions(manifest, inventory) == frozenset()
 
 
 def test_multiple_legacy_entries_yield_records_and_findings_in_manifest_order(tmp_path):
