@@ -141,22 +141,47 @@ services:
   # webserver, run as its own container -- see this file's own top-of-file
   # comment for why (disjoint `fastapi` ranges vs. the shared
   # `python-agent-platform` env `platform` builds from). Deliberately no
-  # `depends_on: [postgres, redis]`: this story's own boundaries don't
-  # require `dbgpt_schema` to exist (Story 11.2's Django migration
-  # provisions that) -- the sidecar boots and migrates its OWN metadata
-  # store (SQLite, baked into its Containerfile's own config), independent
-  # of this file's `postgres` service. It still joins the same default
-  # compose network as every other service here, so `platform`/`postgres`/
-  # `redis` can already reach it by service name once Story 11.2 wires
-  # real routing -- `depends_on` isn't what puts services on a shared
-  # network, only what shared network membership is worth for THIS story's
-  # own verification (`docker compose up`, one command, no extra step).
+  # `depends_on: [postgres, redis]`: Story 11.2 investigated wiring this
+  # sidecar's OWN metadata store to real PostgreSQL and found a genuine,
+  # dual-confirmed upstream limitation (see the `volumes:` comment below) --
+  # so this service still boots and migrates its OWN metadata store
+  # (SQLite, baked into its Containerfile's own config) independent of this
+  # file's `postgres` service, same as Story 10.5 left it. It still joins
+  # the same default compose network as every other service here, so
+  # `platform`/Celery workers can reach it by service name for the REST
+  # calls `dbgpt_integration/tasks.py` drives (a different connection than
+  # the metadata store -- see that module's own docstring) -- `depends_on`
+  # isn't what puts services on a shared network, only what shared network
+  # membership is worth for verification (`docker compose up`, one command).
   dbgpt:
     build:
       context: ../../..
       dockerfile: src/platform/compose/dbgpt/Containerfile
     ports:
       - "5670:5670"
+    environment:
+      # Story 11.2 (CAP-3 verification): passthrough for the Containerfile's
+      # own `${env:DBGPT_LLM_*:-...}` TOML placeholders (baked-in defaults:
+      # `proxy/openai` + `gpt-4o` + api.openai.com + a non-functional
+      # placeholder key). Bare-name (no `=value`) Compose Specification
+      # syntax: the host's value passes through, or the key is left UNSET in
+      # the container entirely if the host doesn't export it (NOT set to an
+      # empty string -- that distinction matters here, since DB-GPT's own
+      # `${env:VAR:-default}` TOML interpolation only falls through to
+      # `default` when `VAR` is actually absent from its process
+      # environment) -- so no behavior change for anyone not setting these.
+      # An operator with a real provider key exports these four before
+      # `docker compose up` to drive a genuine LLM-backed round trip through
+      # `dbgpt_integration/tasks.py`'s `text_to_sql` task -- verified live
+      # this way (Story 11.2) against Google's Gemini OpenAI-compatible
+      # endpoint: `DBGPT_LLM_MODEL_PROVIDER=proxy/openai`,
+      # `DBGPT_LLM_MODEL_NAME=gemini-3.6-flash`,
+      # `DBGPT_LLM_API_BASE=https://generativelanguage.googleapis.com/v1beta/openai/`,
+      # `DBGPT_LLM_API_KEY=<a real key>`.
+      - DBGPT_LLM_MODEL_NAME
+      - DBGPT_LLM_MODEL_PROVIDER
+      - DBGPT_LLM_API_BASE
+      - DBGPT_LLM_API_KEY
     # No `command:` override -- the image's own ENTRYPOINT/CMD (`dbgpt start
     # webserver -y -c /app/dbgpt-sidecar-config.toml`) is already the full
     # non-interactive boot sequence; unlike `platform` above, there's no
@@ -172,21 +197,41 @@ services:
     # permanently stopped instead of retried.
     restart: on-failure
     volumes:
-      # Interim durability for DB-GPT's sqlite metadata store. The configured
-      # `path` ("pilot/meta_data/dbgpt.db") LOOKS like it resolves under
-      # /app/.home, but DB-GPT actually resolves it against $HOME/.dbgpt/
-      # workspace (traced into dbgpt/configs/model_config.py -- see the
-      # Containerfile's own comment at the point that path is configured for
-      # the full citation); confirmed live at
+      # Durability for DB-GPT's sqlite metadata store. The configured `path`
+      # ("pilot/meta_data/dbgpt.db") LOOKS like it resolves under /app/.home,
+      # but DB-GPT actually resolves it against $HOME/.dbgpt/workspace
+      # (traced into dbgpt/configs/model_config.py -- see the Containerfile's
+      # own comment at the point that path is configured for the full
+      # citation); confirmed live at
       # /app/.home/.dbgpt/workspace/pilot/meta_data/dbgpt.db. Mounting the
       # parent dir (not just the .db file) also captures the
       # alembic/versions/*.py migration script DB-GPT autogenerates into the
       # same subtree on first boot. So `docker compose down && up` doesn't
       # silently lose all session/conversation state, per
-      # docs/dreams/db-gpt-django-plugin.md's own storage rule. NOT a
-      # permanent fix -- Story 11.2 wires this sidecar to the shared
-      # PostgreSQL `dbgpt_schema` instead; this is only interim coverage
-      # until that lands.
+      # docs/dreams/db-gpt-django-plugin.md's own storage rule.
+      #
+      # Story 10.5 called this "interim, pending Story 11.2's PostgreSQL
+      # wiring" -- Story 11.2 investigated that wiring and found it is NOT
+      # achievable without forking DB-GPT itself (AD-9 forbids that), so this
+      # stays PERMANENT until upstream fixes the blocker. Verified live,
+      # dual-confirmed: (1) `dbgpt_app/base.py::_initialize_db_storage`
+      # hardcodes SQLite/MySQL/OceanBase as the only supported
+      # `[service.web.database]` backends, and `_migration_db_storage` skips
+      # DDL init/upgrade entirely for anything else; `dbgpt_app/_cli.py::
+      # _get_migration_config` (the standalone `dbgpt db migration` CLI)
+      # independently `raise`s "Only SQLite is supported for migration now."
+      # (2) working around the app-layer gate by calling DB-GPT's own public
+      # `dbgpt.storage.metadata.db_manager.initialize_db()` +
+      # `db.create_all()` directly against a real PostgreSQL engine (not a
+      # fork -- their own exposed API, used the same way their own sqlite
+      # branch uses it) fails with `psycopg2.errors.SyntaxError: type
+      # modifier is not allowed for type "text"`: DB-GPT's own SQLAlchemy
+      # models declare columns as `Text(length=2147483647)`, a MySQL-only
+      # TEXT-length-hint idiom PostgreSQL's DDL grammar rejects outright --
+      # 69 occurrences across the installed `dbgpt-sidecar` package set, not
+      # a one-off. `dbgpt_integration/apps.py`'s docstring carries the same
+      # citation. `DBGPT_DATABASE_URL` (`config/settings/base.py`) is still
+      # derived, real, and ready for whenever this is fixed upstream.
       - dbgpt_sqlite_data:/app/.home/.dbgpt/workspace/pilot/meta_data
     healthcheck:
       # Same "use the env's own python, not curl" reasoning as `platform`'s
@@ -213,9 +258,9 @@ services:
       # failure.
       start_period: 90s
 
-# Named volume for the `dbgpt` service's interim sqlite durability -- see
-# that service's own `volumes:` comment above. `postgres`/`redis` deliberately
-# have none: this local compose stack has never persisted their data across
-# `down`, and adding it here is out of this story's scope.
+# Named volume for the `dbgpt` service's sqlite durability (permanent, not
+# interim -- see that service's own `volumes:` comment above). `postgres`/
+# `redis` deliberately have none: this local compose stack has never
+# persisted their data across `down`, and adding it here is out of scope.
 volumes:
   dbgpt_sqlite_data:
