@@ -66,12 +66,14 @@ where it deliberately does NOT wrap it.** ``apply.run.run_apply`` imports no
 ``engine``/``copier`` at all -- its own module docstring is explicit that
 materializing content is entirely the caller-supplied ``commit`` callback's
 job. ``_default_commit`` below is that callback, and it dispatches on
-``artifact_class`` to TWO DIFFERENT content sources, not one:
+``artifact_class``/``entry.id`` to THREE different content sources (Story
+11.1 added the third; the original two are otherwise unchanged):
 
 * For a whole-file class (``COPIED_MANAGED``/``COPIED_SEEDED``/
   ``GENERATED_DERIVED`` -- including a first-claim augmented ``Action``,
   which this callback does NOT special-case, since its ``artifact_class`` is
-  ordinary either way), it renders the FULL seed template tree via
+  ordinary either way) whose ``id`` is NOT one of ``derive.adapters.
+  ADAPTER_COMPOSITION``'s keys, it renders the FULL seed template tree via
   ``engine.materialize`` with ``MaterializeVerb.COPY``, lazily, on the FIRST
   such call, and reuses that one staged result for every subsequent
   whole-file action in the same run -- a deliberate choice, not a literal
@@ -85,6 +87,19 @@ job. ``_default_commit`` below is that callback, and it dispatches on
   N for a render whose ``data=`` answers do not change within one run. The
   callback then locates the staged file whose relative path TAILS
   ``action.target_path`` and writes its bytes via ``fs.write``.
+* For a whole-file entry whose ``id`` IS one of ``derive.adapters.
+  ADAPTER_COMPOSITION``'s keys (``cursor-rules``/``gemini-md``/
+  ``copilot-instructions``, Story 11.1), content comes from ``derive.
+  adapters.render_adapter(entry.id, template_path=template_path)`` instead,
+  and ``_materialized()`` is never called for that action at all. See
+  ``derive.adapters``'s own module docstring for why: routing these three
+  through ``engine.copier.materialize`` was tried against the real packaged
+  manifest and fails immediately (``TemplateBoundaryError`` -- the packaged
+  tree's own ``manifest.yaml``/``__init__.py``/region fragments all get
+  staged too, and none of them corresponds to a manifest entry's ``path``).
+  The membership check (`entry.id in derive_adapters.ADAPTER_COMPOSITION`)
+  is data-driven, not a per-id branch: a fifth adapter reaches this same
+  branch with no change here, once it has a row in that table.
 * For a ``HYBRID_MANAGED_REGION`` action, the region's body is read
   DIRECTLY off the packaged (or injected) template root's
   ``files/<region-name>.*`` fragment -- ``_region_body_from_template`` --
@@ -118,20 +133,25 @@ job. ``_default_commit`` below is that callback, and it dispatches on
   never parse-once-apply-many).
 
 **Known, inherited limitations this story does not close** (named rather
-than silently worked around, per this package's convention): (1) the
-packaged ``seed/templates/`` tree ships REGION-body fragments only -- no
-whole-file content exists yet for any ``copied-managed``/``copied-seeded``/
+than silently worked around, per this package's convention): (1) [Story
+11.1 CLOSED THIS for the three whole-file agent-adapter entries --
+``cursor-rules``/``gemini-md``/``copilot-instructions`` -- via ``derive.
+adapters.render_adapter``; see that module's own docstring and the third
+``_default_commit`` dispatch branch above.] The packaged ``seed/templates/``
+tree otherwise still ships REGION-body fragments only -- no whole-file
+content exists yet for any OTHER ``copied-managed``/``copied-seeded``/
 ``generated-derived`` entry (there is no ``copier.yml`` at all, and every
-file in the tree besides the six region fragments -- ``manifest.yaml``,
-``__init__.py`` -- would themselves fail ``materialize()``'s own
-manifest-boundary reconciliation if staged), so a real ``--apply`` against
-the packaged manifest can only succeed for entries a later template-
-authoring story supplies content for; this module's own tests inject a
-synthetic ``template_path`` (a documented test seam, ``run_adopt(...,
-template_path=...)``) to exercise the whole-file path end to end without
-depending on that future content, and rely on the REAL packaged region
-fragments (``template_path=None``) for the hybrid-region path, which needs
-no such workaround (see above). (2) A directory-shaped artifact (a manifest
+file in the tree besides the region fragments and the three new wrapper
+templates -- ``manifest.yaml``, ``__init__.py`` -- would themselves fail
+``materialize()``'s own manifest-boundary reconciliation if staged), so a
+real ``--apply`` against the packaged manifest can only succeed, for those
+OTHER entries, once a later template-authoring story supplies content for
+them; this module's own tests inject a synthetic ``template_path`` (a
+documented test seam, ``run_adopt(..., template_path=...)``) to exercise the
+generic whole-file path end to end without depending on that future
+content, and rely on the REAL packaged region fragments (``template_path=
+None``) for the hybrid-region path, which needs no such workaround (see
+above). (2) A directory-shaped artifact (a manifest
 ``path`` ending in ``/``, e.g. ``docs/dreams/``) is out of this story's
 tested scope: ``fs.write`` has no directory-creation primitive, and no
 I/O-matrix row names this case. (3) A ``copied-seeded``/``generated-
@@ -189,9 +209,11 @@ read LITERALLY: an empty plan skips the state write entirely, no
 ``last_update`` refresh, matching ``run_apply``'s own "an empty plan is a
 no-op" contract (10.3's AC) one layer up.
 
-**Import surface.** ``detect.inventory`` (``classify``, ``ArtifactState``,
-``Inventory``, ``effective_never_write``, ``writable_exemptions``),
-``plan.build`` (``build_plan``,
+**Import surface.** ``derive.adapters`` (the MODULE, imported as
+``derive_adapters`` -- Story 11.1's ``ADAPTER_COMPOSITION``/``render_adapter``
+for the three whole-file agent-adapter ids), ``detect.inventory``
+(``classify``, ``ArtifactState``, ``Inventory``, ``effective_never_write``,
+``writable_exemptions``), ``plan.build`` (``build_plan``,
 ``write_plan``, ``default_plan_path`` -- never modifies ``build_plan``
 itself), ``plan.types`` (``Action``, ``Plan``), ``apply.run`` (``run_apply``,
 ``CommitAction``, ``ApplyResult``), ``verbs.preconditions``
@@ -228,6 +250,7 @@ from pyforge.core.process import PosixProcess, ProcessError
 
 from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
+from ..derive import adapters as derive_adapters
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
@@ -757,6 +780,27 @@ def _default_commit(
                     repo_root=repo_root,
                     never_write=never_write,
                 )
+        elif (
+            entry.id in derive_adapters.ADAPTER_COMPOSITION
+            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+        ):
+            # Story 11.1: the three whole-file agent-adapter ids
+            # (`cursor-rules`/`gemini-md`/`copilot-instructions`) render via
+            # `derive.adapters`'s own fragment-composition seam -- NEVER via
+            # `_materialized()`/`engine.copier.materialize` (see `derive.
+            # adapters`'s own module docstring for the empirically-confirmed
+            # `TemplateBoundaryError` that rules that path out). A data-driven
+            # membership check, not a per-id branch: a fifth adapter added to
+            # `ADAPTER_COMPOSITION` reaches this same line with no change
+            # here. The `artifact_class` cross-check (review finding) means
+            # an id collision with a differently-classed future manifest
+            # entry falls through to the generic `_materialized()` path
+            # below instead of being silently rerouted through
+            # derive-composition.
+            content = derive_adapters.render_adapter(entry.id, template_path=template_path)
+            fs.write(
+                target, content.encode("utf-8"), repo_root=repo_root, never_write=never_write
+            )
         else:
             result = _materialized()
             content = _staged_bytes_for(result.staged_paths, action.target_path)
