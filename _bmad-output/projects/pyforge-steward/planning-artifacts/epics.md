@@ -884,7 +884,7 @@ rerender). Dev session invokes `conda-forge-expert` (Rule 1). Success: a py3.14 
 langflow + dbgpt + django completes cleanly.
 
 ### Story 10.5: The DB-GPT sidecar image + docker-compose wiring
-**Type:** infra • **Effort:** M • **Deps:** S-10.3, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-6, AD-17
+**Type:** infra • **Effort:** M • **Deps:** S-10.3 • **FR/AD:** spec-python-agent-platform CAP-6, AD-17
 **Surface:** `src/platform/compose/dbgpt/`, platform CI
 **Given** DB-GPT's Pattern-B deviation (AD-14, dated 2026-08-21 in `db-gpt-django-plugin.md`)
 **Then** a `docker-compose.yml` service builds and runs DB-GPT as its own container (model
