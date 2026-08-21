@@ -602,6 +602,19 @@ def check_preconditions(
         contained.append((action, relative))
 
     for action, relative in contained:
+        # `relative in never_write.exempt` is rung 4's OWN short-circuit
+        # (Story 10.8), evaluated before `first_match` ever runs for this
+        # action -- a manifest-declared writable artifact (`copied-managed`/
+        # `copied-seeded`) can match a broader deny glob that must otherwise
+        # keep refusing every other path under it (`fs.NeverWrite`'s own
+        # docstring: `docs/dreams/README.md` under `docs/dreams/*.md`).
+        # `fs._matches` carries the identical short-circuit, ahead of its own
+        # pattern loop, for the same reason: rung 4 must re-derive the same
+        # never-write decision `fs._guard` will make on the eventual write,
+        # exactly as it already does for the pattern loop below (see the
+        # module docstring's "Stated bounds, not aspirations" paragraph).
+        if relative in never_write.exempt:
+            continue
         matched = first_match(never_write.patterns, relative)
         if matched is not None:
             raise PreconditionFailure(

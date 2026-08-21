@@ -32,7 +32,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import PreconditionFailure
-from pyforge.marshal.seed.fs import NeverWrite
+from pyforge.marshal.seed.fs import NeverWrite, _matches
 from pyforge.marshal.seed.model.manifest import ArtifactClass
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.build import _GIT_TIMEOUT_S as _BUILD_GIT_TIMEOUT_S
@@ -411,6 +411,86 @@ def test_the_never_write_remedy_claims_only_the_guarantee_the_code_provides(clea
     assert "no flag overrides" in excinfo.value.remedy
     assert "--force" in excinfo.value.remedy
     assert "or otherwise" not in excinfo.value.remedy
+
+
+def test_an_exempt_action_target_bypasses_a_matching_never_write_pattern(clean_repo):
+    """Story 10.8's own rung-4 short-circuit: a manifest-declared writable
+    artifact (``copied-managed``/``copied-seeded``) whose resolved path is
+    also in ``never_write.exempt`` must clear rung 4 even though it matches
+    a broader deny glob."""
+    assert (
+        _check(
+            _plan(_action(artifact_id="dream", target_path="docs/dreams/README.md")),
+            clean_repo,
+            never_write=NeverWrite(
+                patterns=("docs/dreams/*.md",),
+                exempt=frozenset({"docs/dreams/README.md"}),
+            ),
+        )
+        is None
+    )
+
+
+def test_a_non_exempt_action_in_the_same_plan_still_refuses(clean_repo):
+    """The other half: exempting ONE artifact's target must not widen
+    protection for a DIFFERENT action in the same plan that also matches the
+    pattern."""
+    with pytest.raises(PreconditionFailure, match="never-write-target"):
+        _check(
+            _plan(_action(artifact_id="other-dream", target_path="docs/dreams/other.md")),
+            clean_repo,
+            never_write=NeverWrite(
+                patterns=("docs/dreams/*.md",),
+                exempt=frozenset({"docs/dreams/README.md"}),
+            ),
+        )
+
+
+# --- exempt agreement: rung 4 vs. fs._matches (review finding) -------------
+#
+# Rung 4's ``relative in never_write.exempt`` and ``fs._matches``'s own
+# identical check are two independent short-circuits over the SAME
+# ``NeverWrite.exempt`` field (fs.py is a module this story's Surface may
+# not otherwise edit beyond the one field/check it already adds -- see
+# fs.py's own docstring). ``skips.first_match``/``fs._matches`` already have
+# a dedicated parametrized agreement test
+# (``test_seed_verbs_skips.py::test_first_match_agrees_with_fs_matches_on_every_pattern_and_path``)
+# because two independent implementations of "the same kind of rule" must
+# never silently disagree; this is that same guard applied to the NEW
+# exempt short-circuit, over a small table rather than a full cross-product
+# (``check_preconditions`` needs a real ``Plan``/git repo per case, unlike
+# ``first_match``/``_matches``' bare ``(pattern, path)`` signature, so a
+# parametrized N-by-M table is disproportionate for one new field).
+_EXEMPT_AGREEMENT_CASES = (
+    ("docs/dreams/README.md", frozenset({"docs/dreams/README.md"})),
+    ("docs/dreams/other.md", frozenset({"docs/dreams/README.md"})),
+    ("docs/dreams/README.md", frozenset()),
+)
+
+
+@pytest.mark.parametrize(("target_path", "exempt"), _EXEMPT_AGREEMENT_CASES)
+def test_rung_4_agrees_with_fs_matches_on_the_exempt_short_circuit(
+    clean_repo, target_path: str, exempt: frozenset[str]
+):
+    never_write = NeverWrite(patterns=("docs/dreams/*.md",), exempt=exempt)
+    fs_says_blocked = _matches(never_write, target_path) is not None
+
+    if fs_says_blocked:
+        with pytest.raises(PreconditionFailure, match="never-write-target"):
+            _check(
+                _plan(_action(artifact_id="dream", target_path=target_path)),
+                clean_repo,
+                never_write=never_write,
+            )
+    else:
+        assert (
+            _check(
+                _plan(_action(artifact_id="dream", target_path=target_path)),
+                clean_repo,
+                never_write=never_write,
+            )
+            is None
+        )
 
 
 def test_a_never_write_pattern_that_matches_nothing_does_not_refuse(clean_repo):
