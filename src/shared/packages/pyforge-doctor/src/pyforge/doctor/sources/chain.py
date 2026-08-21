@@ -2947,6 +2947,214 @@ def _check_project_due_for_verification(
             findings.append(item)
 
 
+# --- Story 11.6: near-duplicate entries surface as one defect class -----------
+#
+# The real 2026-07-30 campaign found ONE root defect (`bmad-ui` losing its
+# local `./build_artifacts` channel) independently hit and fixed three
+# separate times across three different projects' tracked ledgers -- two of
+# the three entries still read `open`, because nothing connected them; each
+# sat alone as an unremarkable, independent, low-priority "already fixed?"
+# line. Stories 11.1-11.5 already select, filter, and verify due entries ONE
+# AT A TIME; this section adds a read-only POST-PROCESSING pass over the
+# already-gathered `due-for-verification` items, correlating entries in
+# DIFFERENT projects that name the same backtick-quoted code path/symbol
+# token, or carry normalized-identical claim text, into one additive
+# `due-for-verification-cluster` Finding -- never fuzzy/semantic, the same
+# narrow, exact-normalized-equality proxy `apply_verification_verdicts.py`'s
+# own anti-restatement check (`_normalize`) already established for exactly
+# this kind of judgment-adjacent text comparison.
+
+#: Duplicated (not imported) from `apply_verification_verdicts.py`'s own
+#: `_FIELD_RE` -- narrowed to `summary`/`reason` only (Boundaries: "Never
+#: compare on the evidence: field -- only summary:/reason: (the entry's own
+#: CLAIM, not its proof-of-verification text)"). Matches a field line in
+#: either live shape: the identified-bulleted format's 2-space bullet
+#: continuation (`  summary: ...`) or the flat, unindented
+#: "review-budget-followup" format (`reason: ...`, no `summary:` at all) --
+#: both occur live across the fleet's tracked ledgers, mirroring that
+#: module's own documented cross-boundary convention (Code Map).
+_CLAIM_FIELD_RE = re.compile(r"^\s*(?:-\s+)?(summary|reason):\s*(.*)$")
+
+
+def _entry_claim_text(path: Path) -> dict[str, str]:
+    """``{id: claim_text}`` for every ID'd entry in a tracked ledger that
+    carries a recognizable claim -- ``summary:`` preferred, falling back to
+    ``reason:`` for the flat "review-budget-followup" shape that carries no
+    ``summary:`` at all (Tasks & Acceptance: "preferring summary: then
+    reason:"); the FIRST physical line matching either key wins for that key
+    (mirrors ``apply_verification_verdicts.py``'s own ``_entry_spans``
+    first-found-wins dict-building convention: ``if m and m.group(1) not in
+    fields``). An entry with NEITHER field, or whose only matched field's
+    value is empty/whitespace-only, is silently OMITTED from the returned
+    dict -- never included with an empty or fabricated claim (Tasks &
+    Acceptance: "entries with neither omitted"; mirrors
+    ``_known_project_code_roots``'s own "omit, never guess" precedent).
+
+    Duplicates ``_verification()``/``_entry_named_paths()``/
+    ``_entry_unused_symbol_claims()``'s own ``_ENTRY_RE``-only boundary walk
+    (bounded by the NEXT ``DW-`` mark, not ``apply_verification_verdicts.py``'s
+    own heading-bounded ``_entry_spans`` span) -- that module's wider,
+    heading-bounded span exists specifically so a NEW ``verified:`` line is
+    INSERTED in the right place among interleaved non-``DW-`` headings (its
+    own docstring); this function only ever READS a claim's text back out,
+    so the narrower, already-established local convention is the correct,
+    simpler shape here (Design Notes: neither ``_entries()`` nor
+    ``_verification()`` is touched by this story)."""
+    if not _is_file(path):
+        return {}
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    out: dict[str, str] = {}
+    for i, (pos, ident) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        fields: dict[str, str] = {}
+        for line in text[pos:end].splitlines():
+            m = _CLAIM_FIELD_RE.match(line)
+            if m and m.group(1) not in fields:
+                fields[m.group(1)] = m.group(2).strip()
+        claim = fields.get("summary") or fields.get("reason")
+        if claim:
+            out[ident] = claim
+    return out
+
+
+def _normalize_claim(text: str) -> str:
+    """Casefold + collapse-internal-whitespace form of a due entry's own
+    claim text (``_entry_claim_text``) -- mirrors
+    ``apply_verification_verdicts.py``'s own ``_normalize`` byte-for-byte
+    (Boundaries: "Never implement fuzzy/semantic text similarity ... EXACT
+    equality only, mirroring apply_verification_verdicts.py's own
+    _normalize"): used ONLY for the cross-project comparison, never surfaced
+    as anything a human would read as the claim's own text. Duplicated, not
+    imported (Boundaries: never import another script's private symbol) --
+    this story's own text-similarity channel needs the identical narrow
+    proxy for the identical reason, over a narrower field set
+    (``summary:``/``reason:`` here, never ``evidence:``)."""
+    return re.sub(r"\s+", " ", text).strip().casefold()
+
+
+def _correlate_due_for_verification(target: Path, items: list[dict]) -> list[dict]:
+    """Every ``due-for-verification-cluster`` item found by correlating
+    ``items`` (the SAME dicts ``_due_for_verification_findings`` already
+    built, including any ``due-for-verification-unevaluable`` ones --
+    filtered out HERE rather than by the caller, so the caller can pass its
+    whole ``findings`` list unchanged) across TWO independent channels:
+
+    1. **Path/symbol** -- ``_entry_named_paths`` (Story 11.2's own, reused
+       UNMODIFIED per Boundaries) re-read per project, indexed token ->
+       every item whose own id cites that token.
+    2. **Claim text** -- ``_entry_claim_text`` re-read per project, indexed
+       ``_normalize_claim(claim)`` -> every item whose own id carries that
+       normalized text.
+
+    Each project's tracked ledger is re-read ONCE per channel (grouping
+    ``items`` by ``project`` first), regardless of how many due items that
+    project contributed -- the same per-project-not-per-entry cost
+    discipline ``_check_project_due_for_verification``'s own docstring
+    already establishes for ``_known_project_code_roots``.
+
+    A key (token or normalized text) becomes a cluster only when its members
+    span AT LEAST TWO DISTINCT projects (Boundaries: "a cluster requires
+    members from at least two DIFFERENT projects ... a shared token/text
+    within one project's own ledger never clusters") -- ALL items sharing
+    that key are included as members once the key qualifies, not merely the
+    cross-project pairs, so a key hit by two entries in project A and one in
+    project B still yields one 3-member cluster.
+
+    The two channels are evaluated, and their clusters emitted,
+    INDEPENDENTLY: a pair matching on BOTH a shared path token AND
+    normalized-identical text produces TWO separate cluster items, never one
+    merged group (Boundaries: "Never merge overlapping clusters ... out of
+    scope for this story's narrow, mechanical shape").
+
+    The WHOLE pass is wrapped in one try/except degrading to ``[]`` on ANY
+    failure (Boundaries: "Isolate the whole correlation pass in one
+    try/except: a problem reading any project's ledger during this pass
+    degrades to 'no clusters found' ... never crashes or discards the
+    already-computed per-entry findings" -- mirrors the review-driven fix
+    already applied to ``_known_project_code_roots`` in Story 11.5). This is
+    a single blanket try/except around the ENTIRE pass, not per-project
+    isolation within it: one broken project during correlation forfeits
+    every cluster this pass would have found, not just that project's own --
+    correlation is inherently cross-project, so a partial result built on an
+    incomplete index would risk reporting a cluster that is missing a
+    member, or omitting one that a fully-read fleet would have found.
+
+    ``matched_value`` for the ``"summary"`` channel is the representative
+    member's ORIGINAL (non-normalized) claim text, never the casefolded/
+    whitespace-collapsed form ``_normalize_claim`` produces (review finding,
+    patch): that normalized form exists ONLY to compute the grouping key
+    (``_normalize_claim``'s own docstring), and surfacing it as
+    ``evidence["matched_value"]`` -- which flows straight into
+    ``Finding.evidence``, a human/agent-facing surface -- would violate that
+    same docstring's own "never surfaced as anything a human would read"
+    promise. The first (sort-order-first) member's own claim text is used,
+    deterministically, for the representative value.
+
+    A ledger with a duplicate, invariant-violating id (two physical entries
+    sharing one ``DW-`` id -- ``_check_project_due_for_verification``'s own
+    docstring names this "malformed") is a residual, KNOWN limitation, not
+    silently mishandled: ``_entry_named_paths``/``_entry_claim_text`` both
+    return one ``{id: ...}`` dict per project (collapsing to the LAST
+    physical occurrence), so both duplicate items would look up that same
+    occurrence's data rather than each carrying its own -- the same
+    id-keyed-collapse class of problem
+    ``_check_project_due_for_verification`` itself already documents and
+    solves with POSITIONAL pairing for its own per-entry attachments. This
+    pass does not attempt that same positional-correctness fix (it operates
+    on an already-filtered, already-flattened ``items`` list decoupled from
+    per-ledger physical order, for an advisory-only, WARN-never-FAIL
+    Source), but DOES deduplicate ``members`` by ``(project, id)`` below so
+    a duplicate-id ledger can, at worst, produce an under-informative or
+    slightly misattributed cluster -- never a member double-counted in one
+    cluster's own list."""
+    try:
+        due_items = [it for it in items if it.get("kind") == "due-for-verification"]
+        by_project: dict[str, list[dict]] = {}
+        for it in due_items:
+            by_project.setdefault(it["project"], []).append(it)
+
+        path_index: dict[str, list[dict]] = {}
+        text_index: dict[str, list[dict]] = {}
+        text_display: dict[str, str] = {}
+        for project_items in by_project.values():
+            tracked_path = target / project_items[0]["tracked"]
+            paths_by_id = dict(_entry_named_paths(tracked_path))
+            claims_by_id = _entry_claim_text(tracked_path)
+            for it in project_items:
+                for token in paths_by_id.get(it["id"], []):
+                    path_index.setdefault(token, []).append(it)
+                claim = claims_by_id.get(it["id"])
+                if claim is None:
+                    continue
+                normalized = _normalize_claim(claim)
+                if normalized:
+                    text_index.setdefault(normalized, []).append(it)
+                    text_display.setdefault(normalized, claim)
+
+        clusters: list[dict] = []
+        for matched_on, index in (("path", path_index), ("summary", text_index)):
+            for key, members in index.items():
+                if len({m["project"] for m in members}) < 2:
+                    continue
+                deduped = sorted(
+                    {(m["project"], m["id"]) for m in members},
+                )
+                display_value = key if matched_on == "path" else text_display[key]
+                clusters.append({
+                    "kind": "due-for-verification-cluster",
+                    "matched_on": matched_on,
+                    "matched_value": display_value,
+                    "members": [
+                        {"project": project, "id": entry_id}
+                        for project, entry_id in deduped
+                    ],
+                })
+        return clusters
+    except Exception:  # noqa: BLE001 -- see docstring: isolate the whole pass.
+        return []
+
+
 def _due_for_verification_findings(
     target: Path, *, today: date | None = None,
 ) -> list[dict]:
@@ -2967,7 +3175,18 @@ def _due_for_verification_findings(
     project's code root (``_known_project_code_roots``) -- never on a
     ``due-for-verification-unevaluable`` item, which is built entirely in
     THIS function's own except-branch, below, and never reaches that helper
-    at all."""
+    at all.
+
+    Story 11.6: after every project's own per-entry findings are appended,
+    THIS function additionally extends ``findings`` with
+    ``_correlate_due_for_verification(target, findings)``'s own return --
+    zero or more additive ``due-for-verification-cluster`` items grouping
+    near-duplicate entries across projects (Tasks & Acceptance: "wire the
+    correlation pass into `_due_for_verification_findings` ... extending
+    `findings` with its result before returning"). Called ONCE, after the
+    per-project loop, on the now-complete ``findings`` list -- correlation is
+    inherently cross-project, so it cannot run per-project the way Stories
+    11.2/11.3/11.5's own per-item attachments do."""
     as_of = today if today is not None else date.today()
     findings: list[dict] = []
     projects_dir = target / "_bmad-output" / "projects"
@@ -2986,6 +3205,7 @@ def _due_for_verification_findings(
                            f"{exc.__class__.__name__}: {exc}"),
                 "warn": True,
             })
+    findings.extend(_correlate_due_for_verification(target, findings))
     return findings
 
 
@@ -3004,7 +3224,15 @@ def _due_for_verification_message(item: dict) -> str:
     live call-site count so a human scanning WARN output can tell a
     mechanically-confirmed entry (``still-open``) apart from one that now
     needs Story 11.4's agent judgment (``escalate``), without opening the
-    evidence dict."""
+    evidence dict.
+
+    Story 11.6: a ``due-for-verification-cluster`` item's message names every
+    member (``project/id``), the shared signal (a cited code path/symbol
+    token, or normalized-identical claim text), and the project count --
+    handled in its OWN branch, before the generic ``item.get("detail", ...)``
+    fallback below, since a cluster item carries no top-level ``project`` key
+    (it spans MULTIPLE projects by construction) and the fallback's own
+    ``f"{item['project']}: {kind}"`` would raise ``KeyError`` on it."""
     kind = item["kind"]
     if kind == "due-for-verification":
         if item["reason"] == "never-verified":
@@ -3035,6 +3263,26 @@ def _due_for_verification_message(item: dict) -> str:
                 f"mechanical_verdict: escalate (needs agent judgment)."
             )
         return message
+    if kind == "due-for-verification-cluster":
+        members = item["members"]
+        projects = sorted({m["project"] for m in members})
+        member_names = ", ".join(f"{m['project']}/{m['id']}" for m in members)
+        value = item["matched_value"]
+        # Truncated for message readability only -- the full, untruncated
+        # value is always available in evidence["matched_value"] (Design
+        # Notes: this WARN text is a scannable summary, not the record).
+        excerpt = value if len(value) <= 80 else f"{value[:77]}..."
+        signal = (
+            f"code path/symbol `{excerpt}`"
+            if item["matched_on"] == "path"
+            else f"near-identical claim text (\"{excerpt}\")"
+        )
+        return (
+            f"{len(members)} due entries across {len(projects)} project(s) "
+            f"({', '.join(projects)}) name the same {signal} — likely one "
+            f"shared defect surfacing independently, not {len(members)} "
+            f"separate ones: {member_names}."
+        )
     return item.get("detail", f"{item['project']}: {kind}")
 
 
