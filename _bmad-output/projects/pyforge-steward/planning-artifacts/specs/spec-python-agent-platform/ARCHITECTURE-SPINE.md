@@ -3,7 +3,7 @@ name: 'python-agent-platform (SPEC companion)'
 type: architecture-spine
 purpose: build-substrate
 altitude: feature
-scope: 'spec-python-agent-platform — the invariant set shared by the 11 stories of Epics 10-12 (10.1-12.3) in pyforge-steward epics.md'
+scope: 'spec-python-agent-platform — the invariant set shared by the 12 stories of Epics 10-12 (10.1-12.3, incl. 10.5 added 2026-08-21) in pyforge-steward epics.md'
 status: final
 created: '2026-08-14'
 binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6]
@@ -127,6 +127,19 @@ stand in; a real Redis needs WSL2 or a remote. The bmad-loop machinery (tmux) is
 Tier 2 is moot natively: Docker Desktop and Podman machine both arrive on a WSL2 backend, so
 containers on Windows imply WSL2 regardless.
 
+**AD-17 — Engine integration pattern is a per-engine configuration switch, never a fork
+(2026-08-21).** AD-14's Pattern A / Pattern B choice is a named, per-engine setting — e.g. a
+`PLATFORM_ENGINE_PATTERN` registry keyed by engine (`{"langflow": "A", "dbgpt": "B"}`) — that
+the ASGI dispatcher and the Celery routing layer (Story 11.3) both consult to decide whether
+an engine is in-process-mounted or sidecar-dispatched. Switching an engine's pattern is a
+config change, never a code fork or a rewrite: the same dispatcher/routing code paths serve
+both patterns, branching only on the registry lookup. First triggered by DB-GPT's Pattern-B
+deviation (dated in `docs/dreams/db-gpt-django-plugin.md`, AD-14) after the `dbgpt-app` /
+`langflow-base` `fastapi` pin conflict — this AD generalizes the mechanism so the next engine
+that hits a Pattern-A pluggability conflict reuses the switch instead of re-deriving one, and
+so DB-GPT can revert to Pattern A later (once its upstream conflict resolves) without a
+rewrite.
+
 ## Local development tiers (AD-16 in practice)
 
 | Tier | Requires | Covers |
@@ -156,3 +169,4 @@ containers on Windows imply WSL2 regardless.
 | AD-14 | 11.1, 11.2 |
 | AD-15 | 10.1, 10.2, 10.3, 12.2, 12.3 |
 | AD-16 | 10.2 (env), 11.1 (platform-dev feature AC), 10.3, 11.3, 11.4, 12.1, 12.2, 12.3 |
+| AD-17 | 11.2, 11.3, 11.4, 10.5 (new) |

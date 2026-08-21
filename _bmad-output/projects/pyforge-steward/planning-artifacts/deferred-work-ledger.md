@@ -561,3 +561,20 @@ status: open
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-11-2-1: Story 11-2's original Pattern-A groundwork is superseded, not lost
+- source_spec: 2026-08-21 sprint-change-proposal (this dir)
+  summary: an earlier attempt at Story 11-2 built real, live-verified groundwork for DB-GPT's
+  Pattern A integration (Django app scaffold, `dbgpt_schema` migration, settings wiring) before
+  hitting the `fastapi` pin conflict documented in this same proposal. That work was committed
+  and pushed to `backup/steward-11-2-blocked-adf57ec5` as an insurance copy, never merged. The
+  2026-08-21 correct-course pass moves 11-2 to Pattern B (AD-14/AD-17); the schema-migration and
+  settings-wiring pieces are pattern-agnostic and likely reusable, but the ASGI-dispatcher piece
+  is Pattern-A-specific and should be discarded, not resurrected, by whoever next implements 11-2.
+  evidence: `backup/steward-11-2-blocked-adf57ec5` branch, PR #571 (ledger correction marking
+  11-2 blocked, since reopened to `backlog` by this proposal), and this proposal's own Impact
+  Analysis § Epic 11.
+  status: informational — no action needed unless 11-2's next implementer is unsure whether the
+  backup branch represents live work to recover. It does not; recover pattern-agnostic pieces
+  selectively, do not merge the branch wholesale.
+  promoted: 2026-08-21 — added directly during the sprint-change-proposal correct-course pass.
