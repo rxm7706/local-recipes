@@ -3175,7 +3175,7 @@
    "src/platform/.pre-commit-config.yaml": "2be31bff6f382a5045434cde7512f11c4368f64b",
    "src/platform/.python-version": "2c561ed018185a0ab382c0d28e718aa1debe8756",
    "src/platform/.readthedocs.yml": "aad6792ceba6b9654ac7cc40c3fd100459ec6242",
-   "src/platform/Containerfile": "90cff153f9ea285b763d479fe64f03b83cf48d8f",
+   "src/platform/Containerfile": "4de1338ebbcb339770ec35b94387bc778e7b0034",
    "src/platform/README.md": "7545abd88f7c9203778e30087a9c86ac26f908a5",
    "src/platform/compose/compose.yml": "abbb238ca978dc26fd20bcbcbe40b9abc6080e12",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
@@ -3183,7 +3183,7 @@
    "src/platform/config/celery_app.py": "8e399e616d50d87bc615392d275c247db9c0ca2d",
    "src/platform/config/fastapi_app.py": "c97ccf384513fc494455f97bf123904b11ded289",
    "src/platform/config/settings/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/platform/config/settings/base.py": "a8ca789cd83413d2516a1ab9c5b85f5d9703195f",
+   "src/platform/config/settings/base.py": "f7619137a827b8df55dd3366080e366b10da2755",
    "src/platform/config/settings/local.py": "bd1de55b8fe76abf47bb0760870cbc4e3caf37ae",
    "src/platform/config/settings/production.py": "744310b196fa06bebdc07474f50ffa052d3686a9",
    "src/platform/config/settings/test.py": "e867ee655727d33b41e8f84579498e8340d87d95",
@@ -3199,7 +3199,7 @@
    "src/platform/docs/users.rst": "754b0d83892444ed52f4b9a6de831e07883f686a",
    "src/platform/langflow_integration/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/langflow_integration/apps.py": "4636dbac3806df32ec389cb3e1ed6ee625757206",
-   "src/platform/langflow_integration/asgi.py": "799537b18446bc51cbc987333aa59ddcb7f63e2b",
+   "src/platform/langflow_integration/asgi.py": "7afb4e386d646b9cd31d9c394894dcdc04f2ae95",
    "src/platform/langflow_integration/migrations/0001_create_langflow_schema.py": "75055ab7379944cdb33b3f43e92b5c60500ab35f",
    "src/platform/langflow_integration/migrations/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/langflow_integration/tests.py": "9a9e07d673e19002a0df78cf07ef5ded7440a5e4",
@@ -3272,7 +3272,7 @@
    "src/platform/tests/meta/test_no_pyforge_import.py": "4688555dac521905a13e16d26e64e0c732a9d3ba",
    "src/platform/tests/test_asgi_seam.py": "dd091680d9b2f942d22da6b1d4bbfb0dd57a4061",
    "src/platform/tests/test_health_endpoint.py": "f3547733a398c8c2d44be17e17e3e1870aef235a",
-   "src/platform/tests/test_langflow_mount.py": "8a7396c479843ccdb572bd410d2480644160451f",
+   "src/platform/tests/test_langflow_mount.py": "8514f068e041655ed2ef47728ecd8346b6ca0c61",
    "src/platform/utility/install_os_dependencies.sh": "bef4a6b36e028175010152eb749fb4ecd38e031c",
    "src/platform/utility/install_python_dependencies.sh": "a848d209892538c7f2821b4a36a0906fc68a030c",
    "src/platform/utility/requirements-bionic.apt": "a3c8f3428904066bd93650a9d91b2c2f4e9a934c",
@@ -3300,7 +3300,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/navigation.py": "c1ea4dd03bca3dcfae7d97a7817e878596115353",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8"
   },
-  "memlog": "44fa84cce6da13fb39ec8d99c53a855e71f613df"
+  "memlog": "886f03dec287e2a5ccdb29d9c9297443ab1533df"
  },
  "pyforge-mason/spec-fleet-stewardship": {
   "files": {},
@@ -3905,7 +3905,7 @@
    "src/platform/.pre-commit-config.yaml": "2be31bff6f382a5045434cde7512f11c4368f64b",
    "src/platform/.python-version": "2c561ed018185a0ab382c0d28e718aa1debe8756",
    "src/platform/.readthedocs.yml": "aad6792ceba6b9654ac7cc40c3fd100459ec6242",
-   "src/platform/Containerfile": "90cff153f9ea285b763d479fe64f03b83cf48d8f",
+   "src/platform/Containerfile": "4de1338ebbcb339770ec35b94387bc778e7b0034",
    "src/platform/README.md": "7545abd88f7c9203778e30087a9c86ac26f908a5",
    "src/platform/compose/compose.yml": "abbb238ca978dc26fd20bcbcbe40b9abc6080e12",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
@@ -3913,7 +3913,7 @@
    "src/platform/config/celery_app.py": "8e399e616d50d87bc615392d275c247db9c0ca2d",
    "src/platform/config/fastapi_app.py": "c97ccf384513fc494455f97bf123904b11ded289",
    "src/platform/config/settings/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/platform/config/settings/base.py": "a8ca789cd83413d2516a1ab9c5b85f5d9703195f",
+   "src/platform/config/settings/base.py": "f7619137a827b8df55dd3366080e366b10da2755",
    "src/platform/config/settings/local.py": "bd1de55b8fe76abf47bb0760870cbc4e3caf37ae",
    "src/platform/config/settings/production.py": "744310b196fa06bebdc07474f50ffa052d3686a9",
    "src/platform/config/settings/test.py": "e867ee655727d33b41e8f84579498e8340d87d95",
@@ -3929,7 +3929,7 @@
    "src/platform/docs/users.rst": "754b0d83892444ed52f4b9a6de831e07883f686a",
    "src/platform/langflow_integration/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/langflow_integration/apps.py": "4636dbac3806df32ec389cb3e1ed6ee625757206",
-   "src/platform/langflow_integration/asgi.py": "799537b18446bc51cbc987333aa59ddcb7f63e2b",
+   "src/platform/langflow_integration/asgi.py": "7afb4e386d646b9cd31d9c394894dcdc04f2ae95",
    "src/platform/langflow_integration/migrations/0001_create_langflow_schema.py": "75055ab7379944cdb33b3f43e92b5c60500ab35f",
    "src/platform/langflow_integration/migrations/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/langflow_integration/tests.py": "9a9e07d673e19002a0df78cf07ef5ded7440a5e4",
@@ -4002,7 +4002,7 @@
    "src/platform/tests/meta/test_no_pyforge_import.py": "4688555dac521905a13e16d26e64e0c732a9d3ba",
    "src/platform/tests/test_asgi_seam.py": "dd091680d9b2f942d22da6b1d4bbfb0dd57a4061",
    "src/platform/tests/test_health_endpoint.py": "f3547733a398c8c2d44be17e17e3e1870aef235a",
-   "src/platform/tests/test_langflow_mount.py": "8a7396c479843ccdb572bd410d2480644160451f",
+   "src/platform/tests/test_langflow_mount.py": "8514f068e041655ed2ef47728ecd8346b6ca0c61",
    "src/platform/utility/install_os_dependencies.sh": "bef4a6b36e028175010152eb749fb4ecd38e031c",
    "src/platform/utility/install_python_dependencies.sh": "a848d209892538c7f2821b4a36a0906fc68a030c",
    "src/platform/utility/requirements-bionic.apt": "a3c8f3428904066bd93650a9d91b2c2f4e9a934c",
@@ -4017,7 +4017,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "9d11504d7c4522654bfd294a524543352d373060"
+  "memlog": "21a692e3fc78a5cb3c9b6fdfb6dd420b4fb4442d"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
