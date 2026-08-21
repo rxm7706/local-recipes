@@ -317,6 +317,34 @@ def _guard(
         )
 
 
+def check_never_write(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
+    """The plan-time never-write check (Story 11.3): whether writing to
+    ``path`` would later be refused by ``write``/``replace_span``/``remove``
+    -- without touching the filesystem at all beyond the same non-strict,
+    symlink-following ``Path.resolve()`` ``_guard`` already performs for
+    every guarded primitive. Raises ``NeverWriteViolation`` on a match;
+    returns ``None`` silently otherwise.
+
+    A thin public wrapper around ``_guard``'s own check -- never a second
+    spelling of it: this function's entire body is the one delegating call,
+    so the match rule a plan-time caller sees is, by construction, the exact
+    rule ``write``/``replace_span``/``remove`` enforce at ACTUAL write time.
+    Without a public entry point, a caller wanting to validate a target
+    before committing to it had no way to ask the question at all except by
+    attempting (and catching a failed) write -- exactly the "fails at apply
+    time, not plan time" gap ``seed/migrate/registry.py::compose`` exists to
+    close (AD-62): it calls this once per proposed ``Action`` target, before
+    returning a composed ``Plan``, so a never-write violation is a plan-time
+    refusal rather than a partially-applied migration.
+
+    ``resolve_leaf`` is left at ``_guard``'s own default (``True``): every
+    real caller of this function is checking a target `write`/`replace_span`
+    would materialize as an ordinary file, never a symlink `symlink()`'s own
+    ``resolve_leaf=False`` carve-out exists for (see that parameter's own
+    docstring on ``_guard``)."""
+    _guard(path, repo_root=repo_root, never_write=never_write)
+
+
 def write(path: Path, data: bytes, *, repo_root: Path, never_write: NeverWrite) -> None:
     """Write ``data`` to ``path`` atomically, after the never-write guard
     clears.
