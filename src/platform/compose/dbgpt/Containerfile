@@ -465,6 +465,24 @@ RUN DBGPT_APP_DIR=$(/app/.pixi/envs/dbgpt-sidecar/bin/python -c "import dbgpt_ap
 # relocates this file; a WORKDIR-only change would NOT (they are only the
 # same value here by coincidence). `compose.yml`'s `dbgpt` service volume
 # mount targets this real, confirmed path.
+# `[service.web.database]` STAYS SQLITE -- PERMANENT, not interim (Story
+# 11.2 investigated pointing this at the shared PostgreSQL and found a
+# genuine, dual-confirmed upstream limitation: DB-GPT's own app/CLI layer
+# hardcodes SQLite/MySQL/OceanBase as the only supported metadata-store
+# backends, and working around that gate via DB-GPT's own public
+# `db.create_all()` API fails outright with a PostgreSQL DDL syntax error --
+# their own SQLAlchemy models use MySQL-specific `TEXT(length)` columns.
+# Fixing this would mean forking DB-GPT's own model classes, which AD-9
+# forbids. Full citation: `src/platform/compose/compose.yml`'s `dbgpt`
+# service `volumes:` comment and `dbgpt_integration/apps.py`'s docstring.
+#
+# The `models.llms` overrides below WERE verified for real (Story 11.2):
+# `docker compose`'s `dbgpt` service now passes through
+# `DBGPT_LLM_MODEL_NAME`/`DBGPT_LLM_MODEL_PROVIDER`/`DBGPT_LLM_API_BASE`/
+# `DBGPT_LLM_API_KEY` from the host when set (`compose.yml`'s own comment);
+# a real Google Gemini key routed through `proxy/openai` pointed at Gemini's
+# OpenAI-compatible endpoint produced a genuine, correct text-to-SQL round
+# trip end-to-end through `dbgpt_integration/tasks.py`.
 RUN printf '%s\n' \
     '[system]' \
     'language = "en"' \
@@ -490,9 +508,10 @@ RUN printf '%s\n' \
 # `/app/.home/pilot/meta_data/...` the bare relative string would suggest)
 # BEFORE the group-write fixup below, not left for the app to create on
 # first boot: `compose.yml`'s `dbgpt` service mounts a named volume at this
-# exact path for durability across `docker compose down && up` (interim
-# measure, pending Story 11.2's real Postgres/`dbgpt_schema` wiring -- see
-# that file's own comment). Docker initializes a fresh named volume from
+# exact path for durability across `docker compose down && up` (permanent,
+# not interim -- Story 11.2 found real PostgreSQL/`dbgpt_schema` wiring for
+# this store structurally impossible; see that file's own comment). Docker
+# initializes a fresh named volume from
 # whatever already exists at the image mount point, INCLUDING permissions --
 # so this directory has to already carry the same group-0-writable posture
 # as the rest of `/app/.home`, or the volume-backed mount would come up
