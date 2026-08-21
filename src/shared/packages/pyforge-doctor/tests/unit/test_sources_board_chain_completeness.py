@@ -26,10 +26,25 @@ from pyforge.doctor.verdict import exit_code_for
 # --- fixture helpers ---------------------------------------------------------
 
 
-def _write_spec(path: Path, status: str) -> None:
+def _write_spec(
+    path: Path, status: str, *, capabilities: list[int] | str | None = None
+) -> None:
+    """Write a SPEC.md fixture. ``capabilities``, when a list of ints, adds a
+    ``## Capabilities`` section with one well-formed ``- **CAP-<n> — title.**``
+    line per id; when a raw string, writes that string verbatim as the
+    section body instead (for a malformed/no-match-at-all fixture). ``None``
+    (the default) omits the section entirely, exactly as before this
+    parameter existed."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(f"---\nstatus: {status}\nowner-dream: docs/dreams/x.md\n---\n\nbody\n",
-                     encoding="utf-8")
+    text = f"---\nstatus: {status}\nowner-dream: docs/dreams/x.md\n---\n\nbody\n"
+    if capabilities is not None:
+        body = (
+            capabilities
+            if isinstance(capabilities, str)
+            else "\n".join(f"- **CAP-{n} — title.**" for n in capabilities)
+        )
+        text += f"\n## Capabilities\n\n{body}\n"
+    path.write_text(text, encoding="utf-8")
 
 
 def _write_epics_md(path: Path, story_ids: list[str], *, canonical: bool = True) -> None:
@@ -116,6 +131,156 @@ def test_shipped_spec_is_not_open_and_reports_no_finding(tmp_path: Path) -> None
 
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
+
+
+# --- INV-A capability-id coverage (Story 12.3 / DW-CHAIN-COMPLETENESS-1) -----
+
+
+def test_multi_cap_spec_partial_coverage_reports_uncovered_ids(tmp_path: Path) -> None:
+    """The DW-CHAIN-COMPLETENESS-1 repro, shrunk to a fixture:
+    ``spec-deferred-work-visibility``'s real shape (10 declared capabilities,
+    only some cited) used to read as fully decomposed forever the moment the
+    slug appeared anywhere in prose. It must now name the specific ids
+    nothing cites -- never `ok`."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=list(range(1, 11)))
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "## Epic 1: Test\n### Story 1.1: title\nDecomposes spec-foo CAP-1..3.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "spec-not-decomposed"
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["inv"] == "INV-A"
+    assert finding.evidence["subject"] == "spec-foo"
+    assert "CAP-4..10" in finding.message
+
+
+def test_multi_cap_spec_full_coverage_via_mixed_citation_shapes_reports_no_finding(
+    tmp_path: Path,
+) -> None:
+    """Every declared id covered by at least one citation shape -- bare,
+    slash-grouped, and range -- clears INV-A with no finding."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3, 4, 5])
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "## Epic 1: Test\n### Story 1.1: title\n"
+        "Decomposes spec-foo CAP-1, CAP-2/3, CAP-4..5.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_malformed_capability_line_is_skipped_but_valid_ones_still_checked(
+    tmp_path: Path,
+) -> None:
+    """A capability bullet that does not match the declared shape (free-form
+    prose under the heading) is skipped silently, never crashes, and the
+    lines that DO match are still parsed and checked for coverage."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(
+        pa / "specs" / "spec-foo" / "SPEC.md", "draft",
+        capabilities=(
+            "- **CAP-1 — title.**\n"
+            "some free-form prose that is not a CAP bullet at all\n"
+            "- **CAP-2 — title.**"
+        ),
+    )
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "## Epic 1: Test\n### Story 1.1: title\nDecomposes spec-foo CAP-1.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.FAIL
+    assert "capabilities CAP-2 are cited" in finding.message
+
+
+def test_capabilities_section_with_no_parseable_lines_falls_back_to_substring(
+    tmp_path: Path,
+) -> None:
+    """A `## Capabilities` heading exists but nothing under it matches the
+    declared shape -- treated as zero-CAP, falling back to the pre-existing
+    bare-substring behavior exactly like a Spec with no section at all."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(
+        pa / "specs" / "spec-foo" / "SPEC.md", "draft",
+        capabilities="nothing here matches the declared bullet shape",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.check == "spec-not-decomposed"
+    assert finding.status is DoctorStatus.FAIL
+    assert "no FR or epic references" in finding.message  # the zero-CAP message shape
+
+
+def test_malformed_reversed_range_citation_contributes_no_ids(tmp_path: Path) -> None:
+    """`CAP-10..4` (end < start) must not raise, invert, or silently cover
+    anything -- the uncovered-id list is unaffected by a token that resolves
+    to nothing."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[4, 5, 6])
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "## Epic 1: Test\n### Story 1.1: title\nDecomposes spec-foo CAP-10..4.\n",
+        encoding="utf-8",
+    )
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.status is DoctorStatus.FAIL
+    assert "CAP-4..6" in finding.message
+
+
+def test_parse_declared_cap_ids_only_counts_the_capabilities_section() -> None:
+    text = (
+        "---\nstatus: draft\n---\n\n## Capabilities\n\n"
+        "- **CAP-1 — a.**\n"
+        "  - **intent:** something, not a CAP bullet\n"
+        "- **CAP-2 — b.**\n"
+        "not a bullet at all\n"
+        "## Next Section\n"
+        "- **CAP-99 — outside the section, must not count.**\n"
+    )
+    assert board._parse_declared_cap_ids(text) == {1, 2}
+
+
+def test_parse_declared_cap_ids_returns_empty_set_with_no_heading() -> None:
+    assert board._parse_declared_cap_ids("no capabilities section here at all\n") == set()
+
+
+def test_parse_cited_cap_ids_expands_all_three_shapes_and_skips_the_bad_range() -> None:
+    prose = "cites CAP-1, then CAP-2/3, then CAP-4..6, and a bad CAP-9..2."
+    assert board._parse_cited_cap_ids(prose) == {1, 2, 3, 4, 5, 6}
+
+
+def test_format_cap_ids_collapses_consecutive_runs() -> None:
+    assert board._format_cap_ids([4, 6, 7, 8, 9, 10]) == "CAP-4, CAP-6..10"
+    assert board._format_cap_ids([1]) == "CAP-1"
+    assert board._format_cap_ids([]) == ""
 
 
 # --- INV-B: epics.md set == ledger set ---------------------------------------
