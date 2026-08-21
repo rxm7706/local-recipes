@@ -81,6 +81,7 @@ class _LifespanManager:
             # below); awaiting the task here only drains it so the exception
             # isn't left un-retrieved, never to surface the RuntimeError above.
             with contextlib.suppress(BaseException):
+                assert self._task is not None
                 await self._task
             msg = f"startup failed: {message.get('message')}"
             raise RuntimeError(msg)
@@ -91,7 +92,9 @@ class _LifespanManager:
         message = await self._send_queue.get()
         if message["type"] == "lifespan.shutdown.failed":
             with contextlib.suppress(BaseException):
+                assert self._task is not None
                 await self._task
             msg = f"shutdown failed: {message.get('message')}"
             raise RuntimeError(msg)
+        assert self._task is not None
         await self._task
