@@ -92,11 +92,21 @@ ungated = false
 # changed paths (corrected in review, 2026-08-06 -- the shipped code had
 # this backwards, firing on almost every PR EXCEPT the one it exists to
 # catch; see core/landing.py).
+#
+# `required_check` is a GitHub CHECK-RUN name, not this rule's own name, and the
+# two are not the same thing here (corrected 2026-08-20). This repo emits exactly
+# two check runs -- `linter` and `detectors` -- and the environment.yaml/pixi.toml
+# sync assertion is step 3 INSIDE `.github/workflows/scripts/linter.py`, published
+# under the `linter` job of staged-recipes-linter.yml. There has never been a check
+# named `environment-yaml-sync`, so this rule could only ever resolve to
+# "has not yet concluded" and then refuse the merge -- every `marshal land` on a
+# pixi.toml-touching branch stalled on MRS-LAND-005/006 until a human acknowledged
+# a finding about a check that does not exist. Observed live landing marshal 8.5.
 [[landing_rules]]
 name = "environment-yaml-sync"
 trigger_path_glob = "pixi.toml"
 trigger_mode = "include"
-required_check = "environment-yaml-sync"
+required_check = "linter"
 ungated = true
 
 # model_tier_map (FR-51, Story 3.11): DIFFICULTY CLASS -> {stage: model}. Must stay
