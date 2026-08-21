@@ -50,7 +50,7 @@ development_status:
   5-1-cfe-independence-test: done
   5-2-governance-test: done
   5-3-delegation-fidelity-test: done
-  5-4-free-inheritance-verification: blocked
+  5-4-free-inheritance-verification: done
   5-5-rule-2-conda-forge-expert-retrospective: done
   6-1-slice-map-and-campaign-state: done
   6-2-the-divergence-and-endgame-guard-proven-red-first: done
@@ -64,7 +64,7 @@ development_status:
   epic-3-retrospective: optional
   epic-4: backlog
   epic-4-retrospective: optional
-  epic-5: backlog
+  epic-5: done
   epic-5-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional

@@ -137,6 +137,34 @@ services:
       redis:
         condition: service_healthy
 
+  # Story 11.3 (CAP-4): the Celery worker process itself -- `config/
+  # celery_app.py` and `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` (derived
+  # from `REDIS_URL` above) already existed, and Story 11.2 wrote the first
+  # real task (`dbgpt_integration/tasks.py::text_to_sql`), but until this
+  # service nothing ever consumed the broker -- every `.delay()` call sat in
+  # Redis forever. Mirrors `platform`'s own `build:`/`environment:`/
+  # `depends_on:` verbatim (same image, same DB/Redis connectivity a task
+  # may need -- e.g. `text_to_sql`'s own Django ORM/settings access), only
+  # `command:` differs. No Celery Beat/scheduler service here -- no periodic
+  # work is specced (this story's own Boundaries & Constraints).
+  worker:
+    build:
+      context: ../../..
+      dockerfile: src/platform/Containerfile
+    command: celery -A config worker -l info
+    environment:
+      DJANGO_SECRET_KEY: local-compose-placeholder-not-a-real-secret
+      DJANGO_ADMIN_URL: admin/
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,platform
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      DATABASE_URL: postgres://platform:platform@postgres:5432/platform
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   # Story 10.5 (AD-14 Pattern B): DB-GPT's own model-worker + FastAPI
   # webserver, run as its own container -- see this file's own top-of-file
   # comment for why (disjoint `fastapi` ranges vs. the shared

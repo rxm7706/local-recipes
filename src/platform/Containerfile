@@ -44,21 +44,17 @@
 # build on an arm64 Docker host would fail `pixi install --frozen` outright
 # with no matching lock entry for the host's native arch.
 
-# pixi.toml's own `requires-pixi` floor is `>=0.76.2` (checked live), and
-# so is every other pixi pin site in the repo EXCEPT the repo-root
-# Containerfile (Story 7.1), which is still on
-# `ghcr.io/prefix-dev/pixi:0.76.1` -- i.e. BELOW the floor its own manifest
-# declares. That is not a latent inconsistency: this file hit it as a hard
-# build failure (`this project requires pixi '>=0.76.2', but you have pixi
-# 0.76.1`) when it first reused that tag, which means the ROOT image's own
-# builder stage cannot currently install either. Fixing that is out of this
-# story's scope (Code Map marks the root Containerfile reference-only) and
-# is carried as a deferred-work item; this tag is at 0.76.2, matching the
-# floor. It IS registered in `pixi.toml`'s own enumerated pin-site list,
-# which this story corrected in the same change -- that enumeration is
-# comment-maintained and unenforced by design, so an unregistered site is
-# exactly how the drift it documents recurs.
-FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.2 AS builder
+# pixi.toml's own `requires-pixi` floor is `>=0.77.0` (checked live), and
+# so is every other pixi pin site in the repo, including the repo-root
+# Containerfile (Story 7.1) -- which used to sit BELOW the floor its own
+# manifest declared (`ghcr.io/prefix-dev/pixi:0.76.1` against a 0.76.2
+# floor, a hard build failure when Story 10.3 first reused that tag).
+# Closed 2026-08-21 in the same pass that raised the workspace floor to
+# 0.77.0 (see pixi.toml's `requires-pixi` comment). This tag is registered
+# in `scripts/pixi_version_registry.py` -- `pixi run -e local-recipes
+# pixi-version-check` fails CI if it ever drifts from the workspace floor
+# again, and `bump-pixi-version` is how you change it.
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder
 
 # WORKDIR /app -- fixed and short, mirrors the repo-root Containerfile's own
 # `/pyforge` rationale (this repo's worktree tooling has a documented

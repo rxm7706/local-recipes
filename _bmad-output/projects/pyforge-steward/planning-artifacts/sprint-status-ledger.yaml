@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 81
+# stories: 82
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -28,8 +28,8 @@ development_status:
   10-5-the-db-gpt-sidecar-image-docker-compose-wiring: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-as-a-pluggable-app: done
-  11-3-async-work-never-blocks-django: backlog
-  11-4-isolation-and-statelessness-proven: done
+  11-3-async-work-never-blocks-django: done
+  11-4-isolation-and-statelessness-proven: backlog
   12-1-the-vanilla-chart-with-an-ocp-overlay: backlog
   12-2-gke-as-a-portability-profile: backlog
   12-3-air-gap-parity-is-a-failing-check: backlog

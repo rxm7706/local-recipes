@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 184
+# stories: 185
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -36,7 +36,7 @@ development_status:
   10-8-manifest-declared-writable-artifacts-are-exempt-from-their-own-never-write-collision: done
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
-  11-3-migration-registry-and-runner: backlog
+  11-3-migration-registry-and-runner: done
   11-4-marshal-seed-update-two-phase: backlog
   11-5-referenced-dependency-verification-and-doctor-delegation: backlog
   11-6-marshal-seed-explain-and-version: backlog

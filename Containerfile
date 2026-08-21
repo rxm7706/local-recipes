@@ -55,7 +55,7 @@
 # install --frozen` fail outright -- no matching lock entry for the host's
 # native arch.
 
-FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.1 AS builder
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder
 
 # WORKDIR /pyforge -- fixed, short, and literal by design, not merely the
 # default choice. `/pyforge` is deliberately NOT a build ARG or ENV: this
