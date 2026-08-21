@@ -1,16 +1,17 @@
 """Smoke test for Story 7.1's ``pyforge.marshal.seed`` scaffold + ``marshal
-seed`` CLI wiring: the module tree imports cleanly, and each of the five
+seed`` CLI wiring: the module tree imports cleanly, and each of the three
 still-stub verbs reports not-yet-implemented and exits clean. Mirrors
 ``tests/unit/test_cli.py``'s ``main([...])``/``capsys`` style -- no real
-detect/plan/apply/Copier logic exists yet to exercise (Epics 8, 10.6, 10.7,
-11, 12).
+detect/plan/apply/Copier logic exists yet to exercise for those three
+(Epics 11, 12).
 
-``check`` (Story 10.5) and ``adopt`` (Story 10.6) are no longer stubs -- each
-is excluded from the parametrized stub-verb test below (unlike its four
-remaining siblings, neither ever prints "not yet implemented") and gets its
-own smoke test proving the full ``main()`` dispatch path reaches the real
-verb; ``tests/unit/test_seed_cli_seed_check.py``/``test_seed_cli_seed_adopt.py``
-cover their exit-code/rendering behavior in full.
+``check`` (Story 10.5), ``adopt`` (Story 10.6), and ``init`` (Story 10.7) are
+no longer stubs -- each is excluded from the parametrized stub-verb test
+below (unlike its three remaining siblings, none of them ever prints "not
+yet implemented") and gets its own smoke test proving the full ``main()``
+dispatch path reaches the real verb; ``tests/unit/test_seed_cli_seed_check.py``/
+``test_seed_cli_seed_adopt.py``/``test_seed_cli_seed_init.py`` cover their
+exit-code/rendering behavior in full.
 """
 
 from __future__ import annotations
@@ -18,7 +19,11 @@ from __future__ import annotations
 import pytest
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.core.verdict import EXIT_USAGE
-from pyforge.marshal.seed.errors import ConformanceFailure, PreconditionFailure
+from pyforge.marshal.seed.errors import (
+    ConformanceFailure,
+    PreconditionFailure,
+    UsageError,
+)
 
 
 def test_seed_package_imports_with_no_side_effects():
@@ -50,7 +55,7 @@ def test_each_architecture_subpackage_imports(subpackage):
     importlib.import_module(f"pyforge.marshal.seed.{subpackage}")
 
 
-@pytest.mark.parametrize("verb", ["init", "update", "explain", "version"])
+@pytest.mark.parametrize("verb", ["update", "explain", "version"])
 def test_seed_verb_stub_exits_zero_and_names_itself(verb, capsys):
     exit_code = main(["seed", verb])
     assert exit_code == 0
@@ -59,7 +64,7 @@ def test_seed_verb_stub_exits_zero_and_names_itself(verb, capsys):
 
 
 def test_seed_check_is_no_longer_a_stub(tmp_path, capsys):
-    """The one verb this test file's own stub loop no longer covers (Story
+    """The first verb this test file's own stub loop no longer covers (Story
     10.5): dispatched through the real ``main()`` -- not a hand-built
     ``argparse.Namespace`` -- against an explicit ``--repo-root`` so the
     result does not depend on wherever pytest happens to be invoked from."""
@@ -101,6 +106,29 @@ def test_seed_adopt_is_no_longer_a_stub(tmp_path, capsys):
     assert "not-a-git-repo" in captured.out
     assert exit_code == PreconditionFailure.exit_code
     assert not (tmp_path / ".marshal").exists()
+
+
+def test_seed_init_is_no_longer_a_stub(tmp_path, capsys):
+    """The third verb this test file's own stub loop no longer covers
+    (Story 10.7): dispatched through the real ``main()`` against an
+    explicit target directory (``init``'s own positional ``<path>``, unlike
+    ``check``/``adopt``'s ``--repo-root`` flag). Exercises FR-78's own
+    non-empty-directory refusal rather than a real bootstrap+materialize
+    run: `init` (unlike `adopt`) WOULD bootstrap a fresh git repo and
+    proceed all the way to `run_apply` against the real packaged manifest,
+    whose whole-file content the packaged template tree does not yet ship
+    (`verbs/adopt.py`'s own documented "known limitations" (1)) -- a
+    deterministic, side-effect-free refusal proves the real verb is wired
+    without depending on that still-incomplete content."""
+    (tmp_path / "something.txt").write_text("pre-existing\n", encoding="utf-8")
+
+    exit_code = main(["seed", "init", str(tmp_path)])
+
+    captured = capsys.readouterr()
+    assert "not yet implemented" not in captured.out
+    assert "adopt" in captured.out
+    assert exit_code == UsageError.exit_code
+    assert not (tmp_path / ".git").exists()
 
 
 def test_bare_seed_is_a_usage_error(capsys):

@@ -617,6 +617,75 @@ def test_an_absent_whole_file_entry_is_always_reported_regardless_of_opt_outs(cl
     assert any(f.type is FindingType.ARTIFACT_MISSING for f in report.findings)
 
 
+# --- Story 10.7: the applies_to-vs-state.mode ARTIFACT_MISSING fix ---------
+
+
+def test_an_adopt_only_entry_is_not_reported_missing_on_an_init_mode_repo(clean_repo):
+    """The exact confirmed defect Story 10.7's own spec names, via
+    `specs-dir-legacy`'s own real shape: an `applies_to: adopt` entry, absent
+    from a freshly `init`'d repo (`state.mode == "init"`), must NOT be
+    reported `ARTIFACT_MISSING` -- "a fresh init never creates it" is not a
+    conformance problem, it is the manifest's own documented rationale for
+    why the entry is `adopt`-only in the first place. Without the fix, this
+    entry's `ABSENT` classification (nothing was ever written for it) still
+    lands in `plan.actions` (`build_plan` has no `applies_to` awareness of
+    its own), so the pre-fix gate (`entry_id in actioned_ids` alone) would
+    have flagged it."""
+    adopt_only_entry = ManifestEntry(
+        id="specs-dir-legacy",
+        artifact_class=ArtifactClass.GENERATED_DERIVED,
+        path="docs/specs/",
+        applies_to=AppliesTo.ADOPT,
+        rationale="legacy Tier-1 skeleton; a fresh init never creates it",
+    )
+    manifest = _manifest(adopt_only_entry)
+    _write_state(clean_repo, _state(mode="init"))
+    _commit_all(clean_repo)
+
+    report = run_check(clean_repo, manifest)
+
+    assert not any(f.type is FindingType.ARTIFACT_MISSING for f in report.findings)
+    assert report.findings == ()
+
+
+def test_an_init_only_entry_is_not_reported_missing_on_an_adopt_mode_repo(clean_repo):
+    """The symmetric direction: `starter-dream`/`specs-readme`-shaped
+    `applies_to: init` entries must not be reported `ARTIFACT_MISSING` on a
+    repo that was `adopt`ed (never `init`ed) -- `state.mode == "adopt"`."""
+    init_only_entry = ManifestEntry(
+        id="starter-dream",
+        artifact_class=ArtifactClass.COPIED_SEEDED,
+        path="docs/dreams/example.md",
+        applies_to=AppliesTo.INIT,
+        rationale="it is the repo's content from the moment it is written",
+    )
+    manifest = _manifest(init_only_entry)
+    _write_state(clean_repo, _state(mode="adopt"))
+    _commit_all(clean_repo)
+
+    report = run_check(clean_repo, manifest)
+
+    assert not any(f.type is FindingType.ARTIFACT_MISSING for f in report.findings)
+    assert report.findings == ()
+
+
+def test_applies_to_both_entries_are_always_reported_missing_regardless_of_mode(clean_repo):
+    """The fix's own carve-out: an `applies_to: both` entry participates in
+    every mode, so it is never exempted by this gate -- confirmed for both
+    `state.mode` values."""
+    manifest = _manifest(_whole_file("whole", "WHOLE.md"))
+
+    _write_state(clean_repo, _state(mode="init"))
+    _commit_all(clean_repo)
+    init_report = run_check(clean_repo, manifest)
+    assert any(f.type is FindingType.ARTIFACT_MISSING for f in init_report.findings)
+
+    _write_state(clean_repo, _state(mode="adopt"))
+    _commit_all(clean_repo)
+    adopt_report = run_check(clean_repo, manifest)
+    assert any(f.type is FindingType.ARTIFACT_MISSING for f in adopt_report.findings)
+
+
 # --- write-blocking fixture -------------------------------------------------
 
 

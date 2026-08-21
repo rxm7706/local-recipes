@@ -83,6 +83,32 @@ silence, not a finding; rung 6's "hand-edit reported" contract belongs to
 `verbs.preconditions`, a MUTATING-verb gate this module does not call and
 does not duplicate (see this story's own Never bullets).
 
+**Why `ARTIFACT_MISSING` is also gated on `applies_to` vs. `state.mode`
+(Story 10.7 fix).** `run_check`'s `ARTIFACT_MISSING` gate above only asked
+`build_plan`'s own "is there a real pending remediation" question -- it had
+no `applies_to` awareness at all, a narrowly-scoped, confirmed-necessary
+latent defect in this ALREADY-SHIPPED module. Direct reading of `templates/
+manifest.yaml` confirms the concrete failure it produces: `specs-dir-legacy`
+(`applies_to: adopt`)'s own rationale reads "a fresh init never creates
+it" -- yet nothing before this fix ever consulted that field, so this gate
+WOULD flag `specs-dir-legacy` as a HARD finding on every freshly `init`'d
+repo, and symmetrically WOULD flag `starter-dream`/`specs-readme`
+(`applies_to: init`) as HARD findings on every `adopt`'d repo. Story 10.5's
+own AC never exercised `applies_to` at all (it predates both `init` and
+`adopt` having any real implementation), so this was never caught until
+Story 10.7's own "`marshal seed check` on the fresh repo is green" AC could
+not hold without it. The fix is one additive condition on the existing
+branch: skip the finding when `state is not None and entry.applies_to is
+not AppliesTo.BOTH and entry.applies_to.value != state.mode` -- i.e. only
+when there IS a recorded mode (a never-adopted repo, `state is None`, keeps
+its UNCHANGED pre-fix behavior: every non-``referenced`` entry, `init`-only
+or `adopt`-only alike, is still reported missing, matching 10.5's own
+existing AC/tests for that case byte-for-byte) and the entry's own
+`applies_to` neither is `BOTH` (which participates in every mode, so it is
+never exempted) nor matches the CURRENT repo's recorded `state.mode`. This
+is the ONLY change this story makes to this module -- no other finding
+type, no other branch, no refactor.
+
 **Why the record lookup also compares `record.path`, not just `record.id`.**
 `detect.optout._claims_region` already documents (and was fixed for) the
 identical trap: AD-55 makes `id`, not `path`, the stable address, so a
@@ -128,7 +154,8 @@ of those).
 module composes), `plan.build.build_plan` (never `write_plan`, and never
 `plan.build.write_plan`'s sibling `default_plan_path`/`load_plan` -- this
 module persists nothing and reads no `plan.json`), `model.manifest`
-(`ArtifactClass`, `Manifest`), `regions.parse`/`regions.markers` (parsing a
+(`AppliesTo` -- Story 10.7's own addition, for the `applies_to`-vs-`state.
+mode` gate above -- `ArtifactClass`, `Manifest`), `regions.parse`/`regions.markers` (parsing a
 present hybrid file's spans for the region-hash check, the identical
 exception triple every sibling degrade-rather-than-guess call site in this
 package already catches), `state` (`read_state`, `SeedState`, `state_path`)
@@ -149,7 +176,7 @@ from ..detect.hashes import check_managed_file, check_managed_region
 from ..detect.inventory import ArtifactState, classify, legacy_findings
 from ..detect.optout import classify_regions, region_findings
 from ..errors import StateInvalid
-from ..model.manifest import ArtifactClass, Manifest
+from ..model.manifest import AppliesTo, ArtifactClass, Manifest
 from ..plan.build import build_plan
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, parse_regions
@@ -317,8 +344,17 @@ def run_check(repo_root: Path, manifest: Manifest, *, strict: bool = False) -> C
         if classification.state is ArtifactState.ABSENT:
             # Gated by `plan.actions`, never by the classification alone --
             # see the module docstring's `build_plan` paragraph for the real
-            # correctness gap ("fully opted out") this closes.
-            if classification.entry_id in actioned_ids:
+            # correctness gap ("fully opted out") this closes -- AND by
+            # `applies_to` vs. the current repo's recorded `state.mode`
+            # (Story 10.7 fix, see the module docstring's own paragraph):
+            # an entry that does not apply to THIS repo's mode is never
+            # "missing", it was simply never owed here in the first place.
+            applies_to_other_mode = (
+                state is not None
+                and entry.applies_to is not AppliesTo.BOTH
+                and entry.applies_to.value != state.mode
+            )
+            if classification.entry_id in actioned_ids and not applies_to_other_mode:
                 findings.append(
                     Finding.new(
                         Severity.HARD,

@@ -32,7 +32,7 @@ development_status:
   10-4-preconditions-refusals-and-skips: done
   10-5-marshal-seed-check: done
   10-6-marshal-seed-adopt: done
-  10-7-marshal-seed-init: backlog
+  10-7-marshal-seed-init: done
   10-8-manifest-declared-writable-artifacts-are-exempt-from-their-own-never-write-collision: done
   11-1-neutral-contract-and-agent-adapter-fan-out: backlog
   11-2-projects-md-index-and-artifact-symlink-derivation: backlog
