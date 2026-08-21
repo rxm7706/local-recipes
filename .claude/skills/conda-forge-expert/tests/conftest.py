@@ -18,7 +18,11 @@ from types import ModuleType
 import pytest
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
-SCRIPTS_DIR = SKILL_DIR / "scripts"
+# Story 6.3 (CAP-2 equivalence): overridable via CFE_TEST_SCRIPTS_DIR so the
+# unmodified test suite can be pointed at a Skill-Forge-compiled replacement's
+# copied scripts without editing any test body/assertion. Default behavior
+# (unset) is unchanged -- resolves to this skill's own scripts/ as before.
+SCRIPTS_DIR = Path(os.environ["CFE_TEST_SCRIPTS_DIR"]) if os.environ.get("CFE_TEST_SCRIPTS_DIR") else SKILL_DIR / "scripts"
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 RECIPES_DIR = FIXTURES_DIR / "recipes"
 ERROR_LOGS_DIR = FIXTURES_DIR / "error_logs"

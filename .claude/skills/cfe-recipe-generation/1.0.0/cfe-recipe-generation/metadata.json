@@ -1,0 +1,119 @@
+{
+  "name": "cfe-recipe-generation",
+  "version": "1.0.0",
+  "skill_type": "single",
+  "scope_type": "specific-modules",
+  "source_authority": "community",
+  "source_repo": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.claude/worktrees/agent-a00a0f6206d94a499",
+  "source_root": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.claude/worktrees/agent-a00a0f6206d94a499",
+  "source_commit": "c4402271c5ccac501a6121bd4f60d0a036d338ca",
+  "source_ref": "local",
+  "confidence_tier": "Quick",
+  "spec_version": "1.3",
+  "generation_date": "2026-08-21T00:00:00Z",
+  "description": "Generates conda-forge recipe.yaml files from PyPI, CRAN, CPAN, LuaRocks, npm, and GitHub sources, resolves PyPI package names to their conda-forge equivalents, and checks/updates recipes against upstream GitHub releases. Use when authoring or refreshing a conda-forge recipe's source/version/name fields -- backs the generate-recipe (+ -cran/-cpan/-luarocks/-npm) and resolve-name CLI wrappers and the generate_recipe_from_pypi/update_recipe_from_github/get_conda_name MCP tools.",
+  "language": "python",
+  "exports": [],
+  "tool_versions": {
+    "ast_grep": "unknown",
+    "qmd": "unknown",
+    "skf": "2.0.1"
+  },
+  "confidence_distribution": {
+    "t1": 0,
+    "t1_low": 62,
+    "t2": 0,
+    "t3": 0
+  },
+  "stats": {
+    "exports_documented": 62,
+    "exports_public_api": 19,
+    "exports_internal": 43,
+    "exports_total": 62,
+    "public_api_coverage": 3.2632,
+    "total_coverage": 1.0,
+    "scripts_count": 4,
+    "assets_count": 7
+  },
+  "scripts": [
+    {
+      "file": "scripts/recipe-generator.py",
+      "purpose": "Generate conda-forge recipe.yaml/meta.yaml from PyPI, GitHub, template, CRAN, CPAN, LuaRocks, or npm sources",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/recipe-generator.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/name_resolver.py",
+      "purpose": "Resolve a PyPI package name to its conda-forge equivalent",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/name_resolver.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/github_updater.py",
+      "purpose": "Autotick-bot style update of a conda recipe to the latest GitHub release",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/github_updater.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/_cfy_template.py",
+      "purpose": "Render conda-forge.yml (Story 6.3 addition -- real runtime dependency of recipe-generator.py, not part of the original brief's scripts_inventory)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/_cfy_template.py",
+      "confidence": "T1-low"
+    }
+  ],
+  "assets": [
+    {
+      "file": "templates/python/noarch-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template (Story 6.3 addition -- placed at templates/ not assets/ because copy_template() hardcodes Path(__file__).parent.parent / 'templates')",
+      "source_file": ".claude/skills/conda-forge-expert/templates/python/noarch-recipe.yaml",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "templates/python/compiled-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template",
+      "source_file": ".claude/skills/conda-forge-expert/templates/python/compiled-recipe.yaml",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "templates/python/maturin-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template",
+      "source_file": ".claude/skills/conda-forge-expert/templates/python/maturin-recipe.yaml",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "templates/rust/cli-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template",
+      "source_file": ".claude/skills/conda-forge-expert/templates/rust/cli-recipe.yaml",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "templates/go/pure-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template",
+      "source_file": ".claude/skills/conda-forge-expert/templates/go/pure-recipe.yaml",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "templates/go/cgo-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template",
+      "source_file": ".claude/skills/conda-forge-expert/templates/go/cgo-recipe.yaml",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "templates/c-cpp/cmake-recipe.yaml",
+      "purpose": "recipe-generator.py copy_template() template",
+      "source_file": ".claude/skills/conda-forge-expert/templates/c-cpp/cmake-recipe.yaml",
+      "confidence": "T1-low"
+    }
+  ],
+  "doc_sources": [
+    {
+      "url": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.claude/worktrees/agent-a00a0f6206d94a499/README.md",
+      "detected_via": "readme_always",
+      "content_hash": "sha256:66cfe3cf35eb7f2a808843aa695cf8770ecb7773ec6ab6d8a36c40560df10f5d",
+      "recorded_at": "2026-08-21T00:00:00Z"
+    }
+  ],
+  "generated_by": "create-skill",
+  "dependencies": [],
+  "compatibility": "N/A -- internal packaging-factory tooling, not a published library"
+}

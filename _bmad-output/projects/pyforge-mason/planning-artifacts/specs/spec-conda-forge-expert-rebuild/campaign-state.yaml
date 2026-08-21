@@ -86,17 +86,42 @@ slices:
   - id: "slice-1-recipe-generation"
     order: 1
     name: "Recipe Generation"
-    status: "mapped"
-    equivalence: null
-    brief_path: null
-    brief_mirrored_through: null
+    status: "compiled"   # Story 6.3: brief produced, skf-create-skill compiled the replacement.
+                          # NOT advanced further -- 2 of CAP-2's 5 success clauses are unmet
+                          # (honest partial pass; see equivalence: null and next_action below).
+    equivalence: null     # Deliberately NOT "green". Clause 3 (all 60 existing tests pass
+                          # unmodified) is unmet: 59/60 pass against the compiled replacement's
+                          # copied scripts. The 1 failure (test_github_updater.py::
+                          # test_dry_run_live_against_actionlint) traces to a real, previously
+                          # undocumented cross-slice runtime dependency -- github_updater.py's
+                          # update_recipe() imports github_version_checker.py, which slice-map.md
+                          # classifies as a Slice 2 ("Recipe Lifecycle") canonical script, outside
+                          # this story's "exactly Slice 1" scope boundary -- NOT a copy-fidelity
+                          # defect (the 3 slice-1 scripts + the 2 in-scope runtime deps found and
+                          # fixed during equivalence testing, _cfy_template.py [Slice 5, already
+                          # documented in slice-map.md] and 7 copy_template() template files
+                          # [untracked by slice-map.md entirely], are all verified byte-identical
+                          # via sha256). Clause 4's new equivalence-harness test file
+                          # (.claude/skills/conda-forge-expert/tests/integration/
+                          # test_slice1_equivalence.py, @pytest.mark.slow, 6 tests, all passing)
+                          # deliberately asserts this one divergence explicitly rather than
+                          # reporting false zero-divergence. Clauses 1, 2, and 5 (brief cites the
+                          # gotchas; package compiled with scripts byte-identical; skf-audit-skill
+                          # reports CLEAN) are genuinely met. Full writeup: forge_version's
+                          # evidence-report.md "CAP-2 Equivalence Findings" section and
+                          # drift-report-20260821-125711.md.
+    brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
+    brief_mirrored_through: null   # No qualifying CFE Rule-2 retro has landed since DEFAULT_SINCE
+                                    # (806cb63046..HEAD reports 0 retros as of this story) --
+                                    # clause (b) is vacuous regardless of this value; verified via
+                                    # `pixi run -e local-recipes cfe-rebuild-guard-check`.
     coverage:
       scripts: 3
       wrappers: 3
       mcp_tools: 3
     mason_caller: true
     mason_caller_count: 2   # of 10 _CFE_SCRIPTS adapters (generate_recipe, update_recipe_from_github) -- structured, not just a comment
-    next_action: "Story 6.2: run skf-brief-skill against slice-map.md's Slice 1 section (recipe-generator.py + name_resolver.py + github_updater.py; G54/G91/G94's case-variant sub-item/G98)."
+    next_action: "Story 6.3 found a real architectural gap CAP-4's re-scope gate should weigh: github_updater.py (Slice 1) has a hard runtime dependency on github_version_checker.py, which slice-map.md classifies as Slice 2 canonical -- not a Slice-5-style shared-infra dependency slice-map.md already sanctioned porting opportunistically. Two options for a future story: (a) reclassify github_version_checker.py as a Slice-1 runtime dependency (like _cfy_template.py) and port it alongside recipe_editor.py's subprocess-only usage, accepting the scope-boundary blur; or (b) accept the permanent functional gap for update_recipe() in the standalone compiled skill and re-scope CAP-2's success bar to '59/60 acceptable' for slices with a documented, unfixable-within-scope cross-slice coupling. Do not re-run skf-brief-skill/skf-create-skill from scratch -- the compiled package at .claude/skills/cfe-recipe-generation/ is real and current; only the github_version_checker.py question remains open."
 
   - id: "slice-2-recipe-lifecycle"
     order: 2
