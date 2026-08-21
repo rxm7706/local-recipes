@@ -1,7 +1,7 @@
 ---
 name: sprint-change-proposal-2026-08-21
 type: sprint-change-proposal
-status: draft
+status: approved
 created: '2026-08-21'
 scope: spec-python-agent-platform Epics 10-12 (pyforge-steward)
 ---

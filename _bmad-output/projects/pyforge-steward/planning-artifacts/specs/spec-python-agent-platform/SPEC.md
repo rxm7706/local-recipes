@@ -56,13 +56,21 @@ thing. The operator named it: **python-agent-platform**.
   - **success:** Langflow flows execute through the mounted app with its tables confined to
     `langflow_schema` (verified by schema inspection), and killing/replacing the pod loses no
     state.
-- **CAP-3 — DB-GPT joins as a pluggable Django application.**
-  - **intent:** Pattern A of db-gpt-django-plugin: `dbgpt_schema` provisioned by Django data
-    migration (Django ORM never crosses in; DB-GPT's Alembic never touches `public`),
-    `DBGPT_SESSION_STORAGE_TYPE=db` + every local state path forced off, ASGI dispatcher
-    routing `/api/dbgpt/`; pgvector inside the same PostgreSQL if a vector store is needed.
-  - **success:** Text-to-SQL / data-chat round-trips succeed through the mount with all DB-GPT
-    state in `dbgpt_schema`, and pod replacement loses no session.
+- **CAP-3 — DB-GPT joins the platform through its configured integration pattern.**
+  - **intent:** DB-GPT integrates via whichever pattern AD-17's per-engine config switch
+    selects — Pattern A of db-gpt-django-plugin (ASGI-mounted, in-process) by default, or
+    Pattern B (Celery-dispatched sidecar, `docker-compose.yml`-managed) where Pattern A is
+    demonstrably not pluggable (AD-14). As of 2026-08-21, DB-GPT is configured to Pattern B —
+    `dbgpt-app`'s `fastapi<0.113.0` ceiling is disjoint from `langflow-base`'s
+    `fastapi>=0.135.0` floor in the shared environment, confirmed live. Regardless of pattern:
+    `dbgpt_schema` provisioned by Django data migration (Django ORM never crosses in; DB-GPT's
+    Alembic never touches `public`), `DBGPT_SESSION_STORAGE_TYPE=db` + every local state path
+    forced off, pgvector inside the same PostgreSQL if a vector store is needed — the storage
+    rule holds regardless of which pattern is configured.
+  - **success:** Text-to-SQL / data-chat round-trips succeed end-to-end through whichever
+    pattern is configured, with all DB-GPT state in `dbgpt_schema`, and pod/container
+    replacement loses no session. Switching DB-GPT's configured pattern later requires no code
+    change, only a registry update (AD-17).
 - **CAP-4 — Async work never blocks Django.**
   - **intent:** Celery over Redis carries LLM/AWEL work (the plugin dreams' Pattern B/D
     element); workers call the engines in-process or over the internal network, never through

@@ -883,11 +883,25 @@ via the local-mirror-first maintainer flow (edit `recipes/`, build locally, push
 rerender). Dev session invokes `conda-forge-expert` (Rule 1). Success: a py3.14 solve of
 langflow + dbgpt + django completes cleanly.
 
+### Story 10.5: The DB-GPT sidecar image + docker-compose wiring
+**Type:** infra • **Effort:** M • **Deps:** S-10.3, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-6, AD-17
+**Surface:** `src/platform/compose/dbgpt/`, platform CI
+**Given** DB-GPT's Pattern-B deviation (AD-14, dated 2026-08-21 in `db-gpt-django-plugin.md`)
+**Then** a `docker-compose.yml` service builds and runs DB-GPT as its own container (model
+worker + API server), rootless-clean under the same Docker∩Podman intersection discipline as
+Story 10.3's image, wired into the local-dev tiers (AD-16) and platform CI so 11.2's sidecar
+integration is testable end-to-end without a manual DB-GPT setup step. Added 2026-08-21 —
+Story 10.3 shipped "one image, both engines" before this deviation existed; this is the
+additive counterpart for the engine that no longer fits that image, not a correction to 10.3.
+
 ## Epic 11: The engines join as pluggable apps
 
 **Spec binding.** CAP-2, CAP-3, CAP-4 and the isolation/statelessness constraints of
 `spec-python-agent-platform`. Pattern A per the plugin dreams ([[langflow-django-plugin]],
-[[db-gpt-django-plugin]]); a sidecar fallback requires a dated deviation in the Dream first.
+[[db-gpt-django-plugin]]) is the default; a sidecar fallback requires a dated deviation in
+the Dream first (AD-14) and is selected through AD-17's per-engine config switch, added
+2026-08-21 after DB-GPT's Pattern-B deviation — see the 2026-08-21 sprint-change-proposal.
+Langflow (11.1) is unaffected and stays on Pattern A.
 
 ### Story 11.1: Langflow joins as a pluggable app
 **Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2 • **FR/AD:** spec-python-agent-platform CAP-2
@@ -904,29 +918,38 @@ per-user `postgresql` + `pgvector` + `redis-server` (plus `kubernetes-helm`/
 guaranteed baseline with no managed services and no containers; its pixi.toml edit carries
 the standard env-count reconcile ripple.
 
-### Story 11.2: DB-GPT joins as a pluggable app
-**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2 • **FR/AD:** spec-python-agent-platform CAP-3
+### Story 11.2: DB-GPT joins via its configured integration pattern
+**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2, S-10.5 • **FR/AD:** spec-python-agent-platform CAP-3, AD-17
 **Surface:** `src/platform/dbgpt_integration/`
-**Given** the `dbgpt_integration` app **Then** a Django data migration provisions
-`dbgpt_schema` (Django ORM never crosses in; DB-GPT's Alembic never touches `public`);
-`DBGPT_SESSION_STORAGE_TYPE=db` plus disabled local paths make the container genuinely
-ephemeral; the dispatcher routes `/api/dbgpt/` (stripped); pgvector lives in the SAME
-PostgreSQL if a vector store is needed; a text-to-SQL round-trip succeeds through the mount.
+**Given** the `dbgpt_integration` app configured for Pattern B (AD-17 — `dbgpt: B` in the
+pattern registry, per the 2026-08-21 deviation dated in `db-gpt-django-plugin.md`) **Then** a
+Django data migration provisions `dbgpt_schema` exactly as Pattern A would (Django ORM never
+crosses in; DB-GPT's Alembic never touches `public`); the sidecar built by Story 10.5
+(`docker-compose`-managed, its own FastAPI/AWEL process) is registered in the AD-17 pattern
+registry; requests route to it via the Celery/Redis path (11.3) rather than an in-process
+ASGI mount; `DBGPT_SESSION_STORAGE_TYPE=db` plus disabled local paths still apply inside the
+sidecar; pgvector lives in the SAME PostgreSQL if a vector store is needed; a text-to-SQL
+round-trip succeeds end-to-end through the sidecar. Rationale: `dbgpt-app` cannot co-install
+with `langflow-base` in the shared environment (`fastapi` ceiling conflict) — Pattern B
+avoids it entirely since `dbgpt-app` never enters the shared environment.
 
 ### Story 11.3: Async work never blocks Django
-**Type:** feature • **Effort:** M • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-4
+**Type:** feature • **Effort:** M • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-4, AD-17
 **Surface:** `src/platform/config/celery*`, worker wiring
-**Given** Celery over Redis **Then** LLM/AWEL work dispatches to workers that call the
-engines internally (never through the public edge), the host stays responsive under a
-long-running agent task, and the new failure mode (timeout / partial result) is named and
-handled, not discovered.
+**Given** Celery over Redis **Then** LLM/AWEL work dispatches to workers that call each
+engine per its AD-17 pattern — Pattern-A engines in-process, Pattern-B engines (DB-GPT) via a
+REST call to the sidecar's AWEL endpoint (never through the public edge) — the host stays
+responsive under a long-running agent task, and the new failure mode (timeout / partial
+result, now including a sidecar-unreachable case) is named and handled, not discovered.
 
 ### Story 11.4: Isolation and statelessness proven
-**Type:** test • **Effort:** L • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-2, CAP-3 (success clauses)
+**Type:** test • **Effort:** L • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-2, CAP-3 (success clauses), AD-17
 **Surface:** `src/platform/tests/`
 **Given** the proof suite **Then** schema inspection asserts each engine's tables live only
-in its schema; a container-replacement simulation (kill + fresh start) loses no flow, no
-session, no state; and the suite fails loudly if isolation or statelessness is removed — a
+in its schema; a container-replacement simulation covers BOTH the in-process Pattern-A case
+(kill + fresh start loses no flow, no session, no state) AND the Pattern-B sidecar case (kill
++ restart the `docker-compose` service, proven against the same shared `dbgpt_schema`); and
+the suite fails loudly if isolation or statelessness is removed, under either pattern — a
 suite that cannot fail is a failing suite (the 9.6 discipline).
 
 ## Epic 12: Deploy anywhere, including nowhere-connected
