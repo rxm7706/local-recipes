@@ -35,12 +35,27 @@ own, and using it for real is what lets this file's own post-apply
 ``state.managed[]`` assertions mean something): P-01 constrains what
 ``seed/`` modules may call, not what a test's own caller-supplied callback
 does, matching ``test_seed_apply_run.py``'s own stated convention for its
-``_committer`` double."""
+``_committer`` double.
+
+Story 10.8 adds one more, at the end of this file: the REAL packaged
+manifest's own ``dreams-readme`` entry (``docs/dreams/README.md``,
+``copied-managed``) matches the manifest's own ``docs/dreams/*.md``
+never-write glob, so ``run_adopt(..., apply=True)`` against a fresh repo
+missing that file refused it UNCONDITIONALLY at ``check_preconditions``'s
+rung 4 before this story's ``NeverWrite.exempt``/``writable_exemptions``
+fix -- confirmed live and cited verbatim in the spec's own Problem
+statement. That test skips every OTHER manifest entry (derived from the
+loaded manifest itself, never hardcoded) so its only materialized
+artifact, and its only exercised never-write decision, is ``dreams-readme``;
+a minimal injected ``commit`` double supplies its content -- see that
+test's own docstring for why an injected ``template_path`` (this file's
+usual whole-file seam) is deliberately NOT used here."""
 
 from __future__ import annotations
 
 import subprocess
 import tempfile
+from importlib import resources
 from pathlib import Path
 
 import pytest
@@ -52,6 +67,7 @@ from pyforge.marshal.seed.model.manifest import (
     Manifest,
     ManifestEntry,
     Region,
+    load_manifest,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.build import _GIT_TIMEOUT_S as _BUILD_GIT_TIMEOUT_S
@@ -983,3 +999,70 @@ def test_region_body_from_template_reads_a_single_unambiguous_static_fragment(cl
     (template_root / "files" / "tiers.md.j2").write_text("static body\n", encoding="utf-8")
 
     assert _region_body_from_template(template_root, "tiers") == "static body\n"
+
+
+# --- real-manifest regression: dreams-readme's own never-write collision ---
+# (Story 10.8) -- see the module docstring's own closing paragraph.
+
+
+@pytest.fixture(scope="module")
+def real_manifest() -> Manifest:
+    """The REAL packaged manifest (``seed/templates/manifest.yaml``), loaded
+    through ``importlib.resources`` -- mirrors ``test_seed_verbs_check.py``'s
+    own ``real_manifest`` fixture (Story 10.5's NFR-P1 test)."""
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        return load_manifest(manifest_path)
+
+
+def test_dreams_readme_materializes_against_the_real_manifest_previously_refused_unconditionally(
+    clean_repo, real_manifest
+):
+    """The literal, confirmed-live regression this story fixes: before
+    ``NeverWrite.exempt``/``writable_exemptions``, ``dreams-readme``
+    (``docs/dreams/README.md``, ``copied-managed``) matched the REAL
+    manifest's own ``docs/dreams/*.md`` never-write glob, so
+    ``marshal seed adopt --apply`` refused it UNCONDITIONALLY at
+    ``check_preconditions``'s rung 4 -- the spec's own Problem statement,
+    verbatim.
+
+    Every OTHER entry is skipped -- derived from ``real_manifest.entries``
+    itself, never a hardcoded list, so a future manifest addition never
+    silently drops out of this skip set -- keeping this test's only
+    materialized artifact, and its only exercised never-write decision,
+    ``dreams-readme`` alone. A minimal ``commit`` double (mirroring this
+    file's own ``_fake_commit`` whole-file branch) supplies its content
+    instead of an injected ``template_path``: the packaged template tree
+    ships no whole-file content yet for any ``copied-managed`` entry
+    (module docstring's own note), and staging synthetic content for
+    ``docs/dreams/README.md`` through the real ``engine.copier.materialize``
+    trips a SEPARATE, pre-existing manifest-boundary check
+    (``engine/copier.py::_check_manifest_boundary``) that independently
+    denies against ``manifest.never_write`` with no exempt concept of its
+    own -- a real but unrelated gap outside this story's scope (only
+    reachable once whole-file content actually ships for a never-write-glob
+    -matched path, which it does not today). This test's own regression
+    target is ``check_preconditions``'s rung 4, reached and cleared before
+    ``commit`` ever runs, so bypassing ``materialize()`` here changes
+    nothing about what is actually proved."""
+    skip = tuple(entry.path for entry in real_manifest.entries if entry.id != "dreams-readme")
+
+    def commit(action: Action) -> None:
+        target = clean_repo / action.target_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# Dreams\n\nTier-0 contract.\n", encoding="utf-8")
+
+    result = run_adopt(
+        clean_repo,
+        real_manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        skip=skip,
+        commit=commit,
+    )
+
+    assert result.applied == ("dreams-readme",)
+    assert (clean_repo / "docs" / "dreams" / "README.md").read_text(encoding="utf-8") == (
+        "# Dreams\n\nTier-0 contract.\n"
+    )

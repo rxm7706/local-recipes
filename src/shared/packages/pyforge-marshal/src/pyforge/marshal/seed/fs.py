@@ -90,7 +90,8 @@ from .errors import NeverWriteViolation
 
 @dataclass(frozen=True)
 class NeverWrite:
-    """An immutable set of never-write glob patterns.
+    """An immutable set of never-write glob patterns, plus an explicit
+    exact-path allow-list checked BEFORE them (Story 10.8).
 
     ``patterns`` carries plain glob strings -- the exact shape
     ``Manifest.never_write`` already carries (Story 7.4) -- never a
@@ -111,9 +112,32 @@ class NeverWrite:
     never match any real, unpadded path -- silently protecting nothing
     while still LOOKING like an active rule. Stripping at construction is
     exactly what closes that gap, and is why ``Manifest.never_write`` does
-    it too."""
+    it too.
+
+    ``exempt`` is a SEPARATE, EXACT-path allow-list -- never a glob, never
+    folded into ``patterns`` -- for the one case ``fnmatch`` has no way to
+    express: a manifest-declared writable artifact (``copied-managed``/
+    ``copied-seeded``, e.g. ``docs/dreams/README.md``) whose own resolved
+    path also matches a BROADER deny glob that must otherwise keep covering
+    every other path under it (``docs/dreams/*.md``). ``fnmatch`` has no
+    negation, so narrowing the glob string itself would either fail to
+    protect every other file it names or require an enumerated,
+    existence-dependent rewrite that stops protecting a not-yet-existing
+    future file (see ``detect.inventory.writable_exemptions``'s own
+    docstring for the full rationale) -- an allow-list checked BEFORE the
+    deny-list, in `_matches` below, is the only mechanism that satisfies
+    both "the named path is writable" and "every other path matching the
+    same glob still refuses". Validated the same way ``patterns`` is
+    (coerced from a ``list``/``set``/``tuple`` to a ``frozenset``, every
+    member a stripped, non-blank ``str``), so a caller passing a malformed
+    exempt set fails loudly at construction rather than degrading into
+    "nothing is exempt" or a bare ``TypeError`` from deep inside
+    `_matches`. Defaults to ``frozenset()`` so every ``NeverWrite(...)``
+    construction that predates this field (every call site in this
+    package's own test suite until Story 10.8) stays valid unchanged."""
 
     patterns: tuple[str, ...]
+    exempt: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         patterns = tuple(self.patterns) if isinstance(self.patterns, list) else self.patterns
@@ -125,10 +149,29 @@ class NeverWrite:
             )
         object.__setattr__(self, "patterns", tuple(item.strip() for item in patterns))
 
+        exempt = (
+            frozenset(self.exempt)
+            if isinstance(self.exempt, (list, set, tuple))
+            else self.exempt
+        )
+        if not isinstance(exempt, frozenset) or not all(
+            isinstance(item, str) and item.strip() for item in exempt
+        ):
+            raise ValueError(
+                f"NeverWrite.exempt must contain only non-blank str, got {self.exempt!r}"
+            )
+        object.__setattr__(self, "exempt", frozenset(item.strip() for item in exempt))
+
 
 def _matches(never_write: NeverWrite, relative_posix_str: str) -> str | None:
     """The first pattern in ``never_write.patterns`` that matches
-    ``relative_posix_str``, or ``None`` if none does.
+    ``relative_posix_str``, or ``None`` if none does -- but ``None``
+    IMMEDIATELY, before any pattern is even considered, when
+    ``relative_posix_str`` is itself a member of ``never_write.exempt``
+    (Story 10.8). The exempt check is a membership test against exact,
+    already-resolved paths -- cheap, and deliberately evaluated first so an
+    exempt artifact never pays for, or risks disagreeing with, the glob loop
+    below.
 
     Matching uses ``fnmatch.fnmatchcase`` uniformly for every pattern -- no
     distinct ``**``-vs-``*`` handling (see the module docstring's "Why
@@ -150,6 +193,8 @@ def _matches(never_write: NeverWrite, relative_posix_str: str) -> str | None:
     order and the FIRST hit wins; which one wins among several simultaneous
     matches is not a meaningful distinction for a guard whose only job is
     "block or don't", so no further tie-breaking is defined."""
+    if relative_posix_str in never_write.exempt:
+        return None
     for pattern in never_write.patterns:
         if fnmatch.fnmatchcase(relative_posix_str, pattern):
             return pattern

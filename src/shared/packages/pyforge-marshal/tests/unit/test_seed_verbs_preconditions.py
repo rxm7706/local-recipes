@@ -413,6 +413,39 @@ def test_the_never_write_remedy_claims_only_the_guarantee_the_code_provides(clea
     assert "or otherwise" not in excinfo.value.remedy
 
 
+def test_an_exempt_action_target_bypasses_a_matching_never_write_pattern(clean_repo):
+    """Story 10.8's own rung-4 short-circuit: a manifest-declared writable
+    artifact (``copied-managed``/``copied-seeded``) whose resolved path is
+    also in ``never_write.exempt`` must clear rung 4 even though it matches
+    a broader deny glob."""
+    assert (
+        _check(
+            _plan(_action(artifact_id="dream", target_path="docs/dreams/README.md")),
+            clean_repo,
+            never_write=NeverWrite(
+                patterns=("docs/dreams/*.md",),
+                exempt=frozenset({"docs/dreams/README.md"}),
+            ),
+        )
+        is None
+    )
+
+
+def test_a_non_exempt_action_in_the_same_plan_still_refuses(clean_repo):
+    """The other half: exempting ONE artifact's target must not widen
+    protection for a DIFFERENT action in the same plan that also matches the
+    pattern."""
+    with pytest.raises(PreconditionFailure, match="never-write-target"):
+        _check(
+            _plan(_action(artifact_id="other-dream", target_path="docs/dreams/other.md")),
+            clean_repo,
+            never_write=NeverWrite(
+                patterns=("docs/dreams/*.md",),
+                exempt=frozenset({"docs/dreams/README.md"}),
+            ),
+        )
+
+
 def test_a_never_write_pattern_that_matches_nothing_does_not_refuse(clean_repo):
     assert (
         _check(
