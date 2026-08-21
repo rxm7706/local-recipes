@@ -39,7 +39,15 @@
 # `dbgpt-sidecar` feature's own `platforms = ["linux-64"]` (pixi.toml) has no
 # osx-arm64/linux-aarch64 entry -- this env is container-build-only, never a
 # native local-dev target, so it was never given one.
-FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.2 AS builder
+#
+# This tag must track pixi.toml's own `requires-pixi` floor. It went
+# unregistered in the pin-site list for its entire life until 2026-08-21,
+# when a real `pixi upgrade` (0.76.2 -> 0.77.0) left it stale and broke
+# `container-dbgpt` CI on the very next push -- nothing had ever pointed
+# here. Now registered in `scripts/pixi_version_registry.py`:
+# `pixi run -e local-recipes pixi-version-check` fails CI if this drifts
+# again, and `bump-pixi-version` is how you change it.
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder
 
 # WORKDIR /app -- same short, fixed path as both existing Containerfiles in
 # this repo (worktree tooling has a documented path-length panic in
