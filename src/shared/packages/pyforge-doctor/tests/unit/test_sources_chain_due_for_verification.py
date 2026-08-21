@@ -1431,3 +1431,362 @@ def test_cross_project_evidence_closes_the_entry_via_apply_verification_verdicts
         tmp_path / "_bmad-output" / "projects" / "alpha" / verdicts_module.TRACKED_REL
     ).read_text(encoding="utf-8")
     assert "verified: 2026-08-21 — resolved — Fixed in src/shared/packages/beta" in tracked_text
+
+
+# --- Story 11.6: near-duplicate entries surface as one defect class -----------
+#
+# Covers the spec's own I/O & Edge-Case Matrix: (a) the real precedent shape
+# -- 3 due entries, one per project, citing the identical backtick-quoted
+# path token -- one cluster; (b) a same-project duplicate never clusters;
+# (c) normalized-identical `summary:` text across projects clusters on
+# `matched_on: "summary"`; (d) distinct paths/distinct text never clusters;
+# (e) the correlation pass itself failing degrades to zero clusters without
+# discarding any already-computed per-entry Finding; (f) the cluster Finding
+# survives the public `gather_due_for_verification` API wrap.
+
+
+# --- (a) real precedent shape: 3 projects, identical path token ----------------
+
+
+def test_three_projects_citing_same_path_token_form_one_cluster(tmp_path: Path) -> None:
+    """The real precedent shape (Intent): 3 due entries, one per project (A,
+    B, C), each citing the identical backtick-quoted path token -- exactly
+    one `due-for-verification-cluster` Finding naming all 3 members."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py` looks wrong here\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nAlso touches `shared/thing.py` differently\n",
+    )
+    _write_tracked(
+        tmp_path, "gamma",
+        "## DW-3\nstatus: open\nStill about `shared/thing.py` too, elsewhere\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    cluster = clusters[0]
+    assert cluster["matched_on"] == "path"
+    assert cluster["matched_value"] == "shared/thing.py"
+    assert sorted((m["project"], m["id"]) for m in cluster["members"]) == [
+        ("alpha", "DW-1"), ("beta", "DW-2"), ("gamma", "DW-3"),
+    ]
+
+
+# --- (b) same-project duplicate: never clusters ---------------------------------
+
+
+def test_two_entries_same_project_sharing_path_token_do_not_cluster(tmp_path: Path) -> None:
+    """Two due entries in the SAME project citing the identical path token
+    must NOT cluster -- a cluster requires members from at least two
+    DIFFERENT projects (Boundaries: "a shared token/text within one
+    project's own ledger never clusters")."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n"
+        "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    assert [f["kind"] for f in findings] == [
+        "due-for-verification", "due-for-verification",
+    ]
+
+
+# --- (c) near-identical claim text across projects ------------------------------
+
+
+def test_two_entries_different_projects_matching_summary_text_form_one_cluster(
+    tmp_path: Path,
+) -> None:
+    """Two due entries in different projects with normalized-identical
+    `summary:` text -- one cluster Finding, `matched_on: "summary"`, 2
+    members. Differing whitespace/casing on each side proves the match is
+    NORMALIZED, never verbatim."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nsummary: The retry loop never backs off\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nsummary:   the RETRY loop   never backs off  \n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    cluster = clusters[0]
+    assert cluster["matched_on"] == "summary"
+    assert sorted((m["project"], m["id"]) for m in cluster["members"]) == [
+        ("alpha", "DW-1"), ("beta", "DW-2"),
+    ]
+    # review finding, patch: matched_value is the ORIGINAL claim text, never
+    # the casefolded/whitespace-collapsed grouping key -- _normalize_claim's
+    # own docstring promises the normalized form is never human/agent-facing.
+    assert cluster["matched_value"] == "The retry loop never backs off"
+
+
+def test_matched_value_is_never_the_normalized_grouping_key(tmp_path: Path) -> None:
+    """`matched_value` must never equal the casefolded/whitespace-collapsed
+    form `_normalize_claim` produces -- only the representative member's
+    ORIGINAL text (review finding, patch)."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nsummary: Mixed CASE   with   extra spaces\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nsummary: mixed case with extra spaces\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    cluster = next(f for f in findings if f["kind"] == "due-for-verification-cluster")
+    assert cluster["matched_value"] != chain._normalize_claim(cluster["matched_value"])
+    assert cluster["matched_value"] in (
+        "Mixed CASE   with   extra spaces", "mixed case with extra spaces",
+    )
+
+
+def test_reason_only_flat_shape_entries_cluster_on_reason_text(tmp_path: Path) -> None:
+    """Two due entries carrying only `reason:` (the flat "review-budget-
+    followup" shape, no `summary:` at all) with normalized-identical text
+    still cluster on `matched_on: "summary"` via the `reason:` fallback
+    (Tasks & Acceptance: "preferring summary: then reason:")."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-FU-1\nstatus: open\nreason: the CLI flag was never wired up\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-FU-2\nstatus: open\nreason: the cli flag was never wired up\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    assert clusters[0]["matched_on"] == "summary"
+    assert sorted((m["project"], m["id"]) for m in clusters[0]["members"]) == [
+        ("alpha", "DW-FU-1"), ("beta", "DW-FU-2"),
+    ]
+
+
+def test_empty_summary_field_falls_back_to_reason(tmp_path: Path) -> None:
+    """An entry whose `summary:` field is present but EMPTY falls back to
+    `reason:` rather than using the empty string as a match key (which would
+    spuriously cluster every entry with a blank summary together) --
+    `fields.get("summary") or fields.get("reason")` is a deliberate,
+    correct precedence, not an oversight (review finding: documented by a
+    test, not just a docstring claim)."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nsummary:\nreason: the real claim text here\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nsummary: \nreason: the real claim text here\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    assert clusters[0]["matched_value"] == "the real claim text here"
+
+
+def test_two_in_one_project_plus_one_in_another_form_a_three_member_cluster(
+    tmp_path: Path,
+) -> None:
+    """A shared path token cited by TWO entries in project A and ONE entry
+    in project B yields ONE 3-member cluster, not something narrower --
+    ALL items sharing the key are included once the key qualifies as
+    cross-project, not merely the cross-project pairs (docstring: "a key
+    hit by two entries in project A and one in project B still yields one
+    3-member cluster")."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n"
+        "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-3\nstatus: open\nStill `shared/thing.py`\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    assert sorted((m["project"], m["id"]) for m in clusters[0]["members"]) == [
+        ("alpha", "DW-1"), ("alpha", "DW-2"), ("beta", "DW-3"),
+    ]
+
+
+def test_dual_match_on_path_and_text_never_merges_into_one_cluster(tmp_path: Path) -> None:
+    """A pair matching on BOTH a shared path token AND normalized-identical
+    claim text produces TWO independent cluster items, never one merged
+    group (Boundaries: "Never merge overlapping clusters ... out of scope
+    for this story's narrow, mechanical shape")."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nsummary: the exact same claim\n"
+        "Code: `shared/thing.py`\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nsummary: the exact same claim\n"
+        "Code: `shared/thing.py`\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 2
+    matched_on_values = sorted(c["matched_on"] for c in clusters)
+    assert matched_on_values == ["path", "summary"]
+    for cluster in clusters:
+        assert sorted((m["project"], m["id"]) for m in cluster["members"]) == [
+            ("alpha", "DW-1"), ("beta", "DW-2"),
+        ]
+
+
+def test_duplicate_id_within_one_ledger_never_double_counts_a_member(
+    tmp_path: Path,
+) -> None:
+    """A malformed ledger with two physical entries sharing one `DW-` id
+    (a known, pre-existing data-quality edge case this exact file already
+    documents for `_check_project_due_for_verification`'s own per-entry
+    attachments) must never produce a cluster with the same `(project, id)`
+    member listed twice (review finding, patch: `_entry_named_paths`/
+    `_entry_claim_text` collapse a duplicate id to its last occurrence, so
+    both physical entries look up the same data -- `members` is deduplicated
+    by `(project, id)` specifically to bound this to "at most one entry per
+    id," never a doubled count)."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n\n"
+        "## DW-1\nstatus: open\nAlso `shared/thing.py` here too\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    members = clusters[0]["members"]
+    assert len(members) == len({(m["project"], m["id"]) for m in members})
+
+
+# --- (d) no shared signal: never clusters ----------------------------------------
+
+
+def test_distinct_paths_and_distinct_text_do_not_cluster(tmp_path: Path) -> None:
+    """Due entries in different projects with distinct paths and distinct
+    text -- no cluster emitted at all."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nsummary: alpha's own unrelated issue\n"
+        "Code: `alpha/only.py`\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nsummary: beta's own totally different issue\n"
+        "Code: `beta/only.py`\n",
+    )
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    assert [f["kind"] for f in findings] == [
+        "due-for-verification", "due-for-verification",
+    ]
+
+
+# --- (e) the correlation pass itself failing degrades to zero clusters ---------
+
+
+def test_correlation_pass_failure_degrades_to_zero_clusters_but_keeps_per_entry_findings(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    """A project's ledger becoming unreadable SPECIFICALLY during the
+    correlation pass's own re-read (not during `_check_project_due_for_
+    verification`'s own per-entry pass) must degrade the WHOLE correlation
+    pass to zero clusters, never crash, and never discard any already-
+    computed per-entry Finding (Boundaries: "Isolate the whole correlation
+    pass in one try/except ... degrades to 'no clusters found' ... never
+    crashes or discards the already-computed per-entry findings").
+
+    Monkeypatches `_entry_claim_text` -- a function called ONLY from the
+    correlation pass, never from `_check_project_due_for_verification` --
+    so both projects' own per-entry passes genuinely succeed FIRST (proving
+    the two per-entry findings below are real, not accidentally suppressed
+    by the same failure); only the correlation pass's own re-read fails.
+    The fixture shares a path token across both projects specifically so
+    that, absent the induced failure, a cluster WOULD have formed -- proving
+    the zero-cluster outcome is the induced degrade, not just "nothing to
+    cluster"."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nCode: `shared/thing.py`\n",
+    )
+
+    def _boom(path):
+        raise OSError("simulated unreadable ledger during correlation")
+
+    monkeypatch.setattr(chain, "_entry_claim_text", _boom)
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    per_entry = [f for f in findings if f["kind"] == "due-for-verification"]
+    clusters = [f for f in findings if f["kind"] == "due-for-verification-cluster"]
+    assert {(f["project"], f["id"]) for f in per_entry} == {
+        ("alpha", "DW-1"), ("beta", "DW-2"),
+    }
+    assert clusters == []
+
+
+# --- (f) public API: the cluster Finding survives the wrap ----------------------
+
+
+def test_cluster_finding_survives_gather_due_for_verification_public_api(
+    tmp_path: Path,
+) -> None:
+    """The cluster Finding survives `gather_due_for_verification`'s wrap
+    with `check == "due-for-verification-cluster"` and `evidence` carrying
+    `matched_on`/`matched_value`/`members` (Tasks & Acceptance). No
+    `verified:` line on either entry -- always "never-verified", so this
+    stays time-invariant (module docstring's own testing discipline)."""
+    _write_tracked(
+        tmp_path, "alpha",
+        "## DW-1\nstatus: open\nCode: `shared/thing.py`\n",
+    )
+    _write_tracked(
+        tmp_path, "beta",
+        "## DW-2\nstatus: open\nAlso `shared/thing.py`\n",
+    )
+
+    findings = chain.gather_due_for_verification(tmp_path)
+
+    clusters = [f for f in findings if f.check == "due-for-verification-cluster"]
+    assert len(clusters) == 1
+    cluster = clusters[0]
+    assert cluster.source is Source.DUE_FOR_VERIFICATION
+    assert cluster.status is DoctorStatus.WARN
+    assert cluster.evidence["matched_on"] == "path"
+    assert cluster.evidence["matched_value"] == "shared/thing.py"
+    assert sorted((m["project"], m["id"]) for m in cluster.evidence["members"]) == [
+        ("alpha", "DW-1"), ("beta", "DW-2"),
+    ]
