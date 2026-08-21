@@ -27,7 +27,7 @@ development_status:
   11-3-mechanically-checkable-claims-are-verified-without-an-agent: done
   11-4-judgment-requiring-entries-get-an-evidence-grounded-verdict: done
   11-5-verification-reaches-across-project-boundaries: done
-  11-6-near-duplicate-entries-surface-as-one-defect-class: backlog
+  11-6-near-duplicate-entries-surface-as-one-defect-class: done
   11-7-verification-staleness-surfaces-in-the-ambient-fleet-report: backlog
   11-8-backlog-intake-surfaces-deferred-entries-during-story-drafting: backlog
   12-1-the-hygiene-verification-catalog-stays-a-maintained-current-artifact: backlog
