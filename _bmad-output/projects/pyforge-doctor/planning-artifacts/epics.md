@@ -1056,14 +1056,13 @@ Finding whenever the two disagree — proven against today's real drift (`>=6.11
 ### Story 10.2: The installed core is compared against the latest upstream release
 **Given** Story 10.1's Source and a resolved data-source decision for "latest published
 `bmad-method` release" **When** the installed version is older than that release **Then** a
-Finding names both versions (CAP-2). **Blocked:** the Spec's own Open Questions leave "how is
-the latest release sourced" unresolved — no npm-registry-lookup infrastructure exists anywhere
-in this fleet (atlas's `behind-upstream`/`version-downloads` machinery is conda-forge/PyPI-scoped
-only), and a live network query at check time cuts against Marshal's own "no live query per
-home" discipline this fleet otherwise favors. Needs an operator/architecture decision (live
-query vs. a periodically-refreshed cached feed) before this can be scoped further — tracked
-openly, not silently dropped, the same way marshal's own 1 blocked story already is in this
-fleet's status reporting. **Deps:** S-10.1.
+Finding names both versions (CAP-2). **Resolved and done** (2026-08-15, PR #554) — was blocked
+on the Spec's Open Question of "how is the latest release sourced" (no npm-registry-lookup
+infrastructure existed in this fleet; atlas's `behind-upstream`/`version-downloads` machinery is
+conda-forge/PyPI-scoped only, and a live network query at check time cuts against Marshal's own
+"no live query per home" discipline this fleet otherwise favors). Operator decision: a live npm
+registry query at check time, scoped narrowly to this one warn-only, non-gating Finding — fails
+open (no Finding, no error) if the query is unreachable. **Deps:** S-10.1.
 
 ### Story 10.3: The drift surfaces ambiently, never gates
 **Given** a Finding from Story 10.1 (and Story 10.2, once unblocked) **When** doctor's report
@@ -1131,17 +1130,17 @@ shows a "% of tracked entries verified within N days, per project" line, so the 
 six-week staleness gap is visible incrementally instead of requiring another pointed
 challenge to notice it (CAP-7). **Deps:** S-11.1.
 
-### Story 11.8: Backlog-intake surfaces deferred entries during story drafting
-**Given** a new story/spec drafted for an epic **When** tracked deferred-work entries name
-that epic or story in their `owner:`/prose **Then** they surface as candidate acceptance
-criteria (CAP-8). **Blocked:** the Spec's own Open Questions leave this capability's scope
-boundary unresolved — it is write-adjacent to story-drafting, a different subsystem than the
-read-only sweep Stories 11.1–11.7, and may belong in its own follow-on Spec rather than this
-epic. Tracked openly rather than silently dropped. **Deps:** —
+**CAP-8 (backlog-intake surfaces deferred entries during story drafting) split out, 2026-08-21.**
+Formerly Story 11.8 here. The Spec's own Open Question on CAP-8's scope boundary — same story
+wave as CAP-1..7, or its own follow-on Spec, since it is write-adjacent to story-drafting, a
+different subsystem than the read-only sweep CAP-1..7 are — is now resolved: **own follow-on
+Spec**, decided once Epic 11 shipped cleanly as a self-contained read-only pipeline (11.1–11.7,
+all done) and bundling a write-adjacent capability into it would have muddied that result. No
+follow-on Spec/Dream exists yet — tracked in `deferred-work-ledger.md` (`DW-11-8-1`) rather than
+silently dropped. `spec-deferred-work-resolution-sweep`'s own CAP-8 entry updated to match.
 
-**Epic 11 clears to dispatch on Stories 11.1–11.7** (a natural pipeline, each depending on the
-last); **Story 11.8 stays blocked** pending the scope-boundary decision above, same treatment
-as Epic 10's Story 10.2.
+**Epic 11 clears to dispatch, and is now fully shipped, on Stories 11.1–11.7** (a natural
+pipeline, each depending on the last) — CAP-8 was never part of that pipeline's own scope.
 
 ## Epic 12: The fleet's own hygiene/verification tooling gets its documented sharp edges fixed
 
