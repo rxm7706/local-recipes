@@ -10,7 +10,7 @@ required=True)``, one ``add_parser`` per verb. ``required=True`` means a
 bare ``marshal seed`` with no verb is a clean argparse usage error, not a
 silent no-op -- same convention as ``gate``'s own ``gate_command``.
 
-Four of the six verbs here are still STUBs (Story 7.1's own scope -- naming
+Three of the six verbs here are still STUBs (Story 7.1's own scope -- naming
 was contested until the 2026-08-10 correct-course settled it: the installer
 lives *inside* ``pyforge-marshal``, no new package, no second binary, no
 binding revival of the retired ``genesis`` name): each prints a one-line
@@ -19,23 +19,27 @@ imported from ``core/verdict.py`` (AD-7's sole-ownership rule -- never a new
 exit-code literal here; used ONLY for the literal ``0`` success value, per
 this story's own Boundaries bullet -- ``core/verdict.py``'s MRS lattice
 itself is never reused for anything else). ``run_check`` (Story 10.5,
-FR-88..93) and ``run_adopt`` (Story 10.6, FR-79..87) are the two real ones.
-``run_check`` loads the packaged model manifest, resolves ``--repo-root`` (a
-plain ``argparse`` validation, not a ``seed/verbs/preconditions.py`` rung --
-``check`` never calls that mutating-verb gate), and delegates every real
-decision to ``seed.verbs.check.run_check``, which is pure and read-only (see
-that module's own docstring). ``run_adopt`` does the same for
-``seed.verbs.adopt.run_adopt``, the first MUTATING verb this module wires: it
-additionally resolves ``--agents``/``--skip`` into typed sequences and
-supplies the confirmation seam (a real ``input()``-based prompt by default,
-overridable for tests) that verb's own ``confirm`` parameter requires (see
-``seed/verbs/adopt.py``'s module docstring). This module's own job is thin
+FR-88..93), ``run_adopt`` (Story 10.6, FR-79..87), and ``run_init`` (Story
+10.7, FR-72..78) are the three real ones. ``run_check`` loads the packaged
+model manifest, resolves ``--repo-root`` (a plain ``argparse`` validation,
+not a ``seed/verbs/preconditions.py`` rung -- ``check`` never calls that
+mutating-verb gate), and delegates every real decision to ``seed.verbs.
+check.run_check``, which is pure and read-only (see that module's own
+docstring). ``run_adopt`` does the same for ``seed.verbs.adopt.run_adopt``,
+the first MUTATING verb this module wires: it additionally resolves
+``--agents``/``--skip`` into typed sequences and supplies the confirmation
+seam (a real ``input()``-based prompt by default, overridable for tests)
+that verb's own ``confirm`` parameter requires (see ``seed/verbs/adopt.py``'s
+module docstring). ``run_init`` resolves ``<path>``/``--slug``/``--agents``/
+``--force`` and delegates to ``seed.verbs.init.run_init`` -- unlike
+``run_adopt``, it supplies no confirmation seam at all (``init`` never
+confirms; see that module's own docstring). This module's own job is thin
 CLI plumbing: parse args, load the manifest, call the verb, render its
 result as text, and map ``seed/errors.py``'s six-leaf taxonomy to a process
 exit code -- it contains no detect/plan/hash/region/apply/materialize logic
-of its own. No Copier import here (``seed.verbs.adopt``/``seed.engine`` own
-that, per P-02) -- state/derive/migrate logic beyond what ``adopt`` already
-wires belongs to Epics 10.7, 11, 12.
+of its own. No Copier import here (``seed.verbs.adopt``/``seed.verbs.init``/
+``seed.engine`` own that, per P-02) -- state/derive/migrate logic beyond
+what ``adopt``/``init`` already wire belongs to Epics 11, 12.
 """
 
 from __future__ import annotations
@@ -55,17 +59,14 @@ from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
 from ..seed.verbs.adopt import run_adopt as _run_adopt_verb
 from ..seed.verbs.check import CheckReport
 from ..seed.verbs.check import run_check as _run_check_verb
+from ..seed.verbs.init import InitResult
+from ..seed.verbs.init import run_init as _run_init_verb
 
 # The severity groups a text report renders, in the fixed order the spec's
 # own "matching bmad_drift_check.py's report shape" bullet requires:
 # HARD before DRIFT before INFO, the same worst-first ordering the origin
 # script and `Severity`'s own member declaration order both use.
 _TEXT_REPORT_SEVERITY_ORDER: tuple[Severity, ...] = (Severity.HARD, Severity.DRIFT, Severity.INFO)
-
-
-def run_init(args: argparse.Namespace) -> int:
-    print("marshal seed init: not yet implemented")
-    return EXIT_OK
 
 
 def _load_packaged_manifest() -> Manifest:
@@ -368,6 +369,85 @@ def run_adopt(
     return EXIT_OK
 
 
+def _render_init_result_text(result: InitResult) -> str:
+    """The human-readable ``marshal seed init`` report -- mirrors ``_render_
+    plan_text``'s per-action listing (id, target path, rationale), but with
+    no "dry-run"/"declined" branches at all: ``init`` never dry-runs and
+    never confirms (that module's own docstring), so there is exactly one
+    outcome to render -- what was actually applied, or, for a ``--force``'d
+    target whose every filtered entry was already conformant, that nothing
+    needed to happen."""
+    lines = [f"marshal seed init -- slug {result.slug!r}:"]
+    if not result.plan.actions:
+        lines.append("  plan is empty; nothing to do")
+    else:
+        lines.append(f"  plan ({len(result.plan.actions)} action(s)):")
+        for action in result.plan.actions:
+            lines.append(f"    {action.artifact_id} ({action.target_path}): {action.rationale}")
+        lines.append(f"applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
+    return "\n".join(lines)
+
+
+def run_init(
+    args: argparse.Namespace,
+    *,
+    manifest: Manifest | None = None,
+) -> int:
+    """``marshal seed init`` (Story 10.7): thin CLI plumbing over ``seed.
+    verbs.init.run_init`` -- this function performs no bootstrap/detect/
+    plan/apply/materialize logic of its own; every real decision is that
+    module's (see its own docstring for the full orchestration).
+
+    ``manifest`` is the same keyword-only test-injection seam ``run_check``/
+    ``run_adopt`` already establish; a production caller (``main.py``'s
+    dispatch) never supplies it. Unlike ``run_adopt``, there is no
+    ``confirm=`` seam here at all -- ``init`` never confirms (``seed.verbs.
+    init``'s own docstring).
+
+    The verb call is INSIDE the ``try``, and a bare ``Exception`` is wrapped
+    as ``InternalError`` rather than left to escape as a traceback -- the
+    identical widened try/except shape ``run_check``/``run_adopt`` already
+    establish."""
+    try:
+        path = Path(args.path)
+        if manifest is None:
+            manifest = _load_packaged_manifest()
+        result: InitResult = _run_init_verb(
+            path,
+            manifest,
+            slug=args.slug,
+            agents=_parse_agents(args.agents),
+            force=args.force,
+        )
+    except ManifestError as exc:
+        wrapped = InternalError(
+            f"the packaged seed manifest could not be loaded: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the packaged manifest.yaml ships inside"
+                " the distribution and its absence or corruption is a broken"
+                " installation, not a problem with the directory being initialized"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=False)
+        return wrapped.exit_code
+    except SeedError as exc:
+        _print_seed_error(exc, as_json=False)
+        return exc.exit_code
+    except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
+        wrapped = InternalError(
+            f"an unanticipated internal failure occurred: {exc}",
+            remedy=(
+                "this is unexpected -- please file a bug report against"
+                " pyforge-marshal with the full command and output"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=False)
+        return wrapped.exit_code
+
+    print(_render_init_result_text(result))
+    return EXIT_OK
+
+
 def run_update(args: argparse.Namespace) -> int:
     print("marshal seed update: not yet implemented")
     return EXIT_OK
@@ -392,10 +472,10 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         "seed",
         help="Scaffold/adopt/check/update a project from Marshal's seed templates (AD-70).",
         description=(
-            "The seed-installer noun group. `check` (Story 10.5) and `adopt` "
-            "(Story 10.6) are real; the other four verbs are still stubs from "
-            "Story 7.1 -- their real detect/plan/apply/Copier logic lands in "
-            "Epics 10.7, 11, 12."
+            "The seed-installer noun group. `check` (Story 10.5), `adopt` "
+            "(Story 10.6), and `init` (Story 10.7) are real; `update`/`explain`/"
+            "`version` are still stubs from Story 7.1 -- their real logic lands "
+            "in Epics 11, 12."
         ),
     )
     seed_subparsers = parser.add_subparsers(dest="seed_command", required=True)
@@ -403,7 +483,37 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
     init_parser = seed_subparsers.add_parser(
         "init",
         help="Scaffold a brand-new project from Marshal's seed templates.",
-        description="Stub (Story 7.1) -- greenfield materialization lands in a later story.",
+        description=(
+            "Story 10.7: bootstrap (mkdir + git init if needed) -> detect -> plan ->"
+            " preconditions -> apply DIRECTLY -- no dry-run, no confirm prompt"
+            " (FR-78's non-empty-directory refusal is this verb's own safety gate)."
+        ),
+    )
+    init_parser.add_argument(
+        "path",
+        metavar="PATH",
+        help="The target directory to scaffold (created, and git-initialized, if needed).",
+    )
+    init_parser.add_argument(
+        "--slug",
+        dest="slug",
+        default=None,
+        metavar="SLUG",
+        help="The project slug substituted into every {{ slug }}-templated path/answer"
+        " (default: PATH's resolved directory name).",
+    )
+    init_parser.add_argument(
+        "--agents",
+        dest="agents",
+        default=None,
+        metavar="LIST",
+        help="Comma-separated agent adapters to record, e.g. claude,cursor.",
+    )
+    init_parser.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help="Proceed even though PATH already exists and is non-empty (FR-78).",
     )
     init_parser.set_defaults(handler=run_init)
 
