@@ -2410,6 +2410,51 @@ directing the user to `adopt` (FR-78)
 **And** init runs the same `resolve → detect → plan → apply` pipeline as adopt — asserted by a
 test that init produces a plan artifact identical in shape
 
+### Story 10.8: Manifest-declared writable artifacts are exempt from their own never-write collision
+
+As a maintainer running `init` or `adopt`,
+I want a manifest entry the extraction manifest itself marks writable to actually be writable,
+So that `init` and `adopt` are not refused by the same guard that is supposed to let them write
+their own seeded files.
+
+**Type:** fix • **Effort:** S • **Deps:** S-10.6 • **FR/AD:** AD-61 (corrected 2026-08-21)
+**Surface:** `seed/detect/inventory.py::effective_never_write`, `seed/verbs/adopt.py`,
+`seed/verbs/init.py` — all under `src/shared/packages/pyforge-marshal/`
+
+**Why this exists.** Found live during Story 10.7's own implementation, independently
+verified: `docs/dreams/*.md` and `**/planning-artifacts/**` are `never_write` patterns, but
+the manifest also declares `dreams-readme` (`docs/dreams/README.md`) and `specs-readme`
+(`.../planning-artifacts/specs/README.md`) as `copied-managed` artifacts every `init`/`adopt`
+run must be able to write — both patterns the extraction manifest's own rationale table always
+named as intentional exceptions (`extraction-manifest.md`), a clause AD-61's original text
+never carried. `check_preconditions` refuses the ENTIRE plan atomically the instant it sees
+either action, leaving the target directory untouched: `marshal seed init` cannot complete a
+single real invocation today, and the already-shipped `marshal seed adopt --apply` (Story
+10.6) fails identically against any target repo missing one of those two files.
+
+**Acceptance Criteria:**
+
+**Given** the manifest declares an artifact as `copied-managed` or `copied-seeded` whose
+resolved path also matches a `never_write` pattern, and whose `applies_to` includes the verb
+being run
+**When** `effective_never_write` (or its call site) constructs the guard set
+**Then** that artifact's resolved path is excluded from the set — never in the set to begin
+with, not special-cased at the refusal site — so rung 4 of `check_preconditions` does not fire
+on it
+**And** a legacy artifact's path (`inventory.legacy`, AD-59) is NOT exempted this way even if
+it happens to also be a manifest-declared writable path at the same location — legacy still
+wins
+**And** `marshal seed init <empty-dir> --slug test` completes against the REAL packaged
+manifest (not a synthetic test fixture) and `marshal seed check` on the result is green
+**And** `marshal seed adopt --apply --yes` against a plain git repo missing both
+`docs/dreams/README.md` and `.../planning-artifacts/specs/README.md` completes and writes both
+**And** every other `never_write` pattern still refuses normally — this exempts named manifest
+entries only, never widens a glob
+
+**Deps:** S-10.6 (fixes an already-merged defect in it). Unblocks the resumption of S-10.7,
+whose own preserved implementation (`marshal/story-10-7-seed-init` branch) does not need to
+change once this lands.
+
 ---
 
 ## Epic 11: Derive, Migrate & Update
