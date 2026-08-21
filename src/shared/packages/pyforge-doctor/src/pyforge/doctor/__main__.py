@@ -18,7 +18,12 @@ surface from the SAME already-gathered findings via ``fleet_surface``;
 Story 4.3 adds ``adoption`` as a fourth, opt-in-only ``--watch`` axis
 (``sources.atlas`` itself, not this module, does the real work); Story
 4.4's ``prescribe.recommend_safe_upgrade`` populates each Prescription's
-``safe_upgrade_target``/``safe_upgrade_reason``.
+``safe_upgrade_target``/``safe_upgrade_reason``. Story 13.1 wires a fifth
+subcommand, ``backlog-intake <identifier> [path]``, composing
+``sources.backlog_intake.gather`` the same gather-then-emit way -- the
+``identifier`` is pre-validated via ``backlog_intake.parse_identifier`` at
+the argparse boundary before ``gather`` ever runs (mirrors
+``_validate_check_names``'s own "validate at the call boundary" discipline).
 
 ``main`` always RETURNS an int; it never calls an exit primitive itself
 (``verdict.py`` is the sole module permitted to do that -- the
@@ -46,6 +51,7 @@ from . import fleet_surface, prescribe, score, sources
 from .checks import env_hygiene, registry
 from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
 from .sources import atlas
+from .sources import backlog_intake
 from .sources import bmad_method
 from .sources import marshal as marshal_source
 from .sources import warden as warden_source
@@ -88,6 +94,7 @@ _CATEGORY_SOURCE: dict[str, Source] = {
 
 
 def _build_parser() -> tuple[
+    argparse.ArgumentParser,
     argparse.ArgumentParser,
     argparse.ArgumentParser,
     argparse.ArgumentParser,
@@ -275,7 +282,33 @@ def _build_parser() -> tuple[
         action="store_true",
         help="emit one schema-valid DoctorReport document on stdout",
     )
-    return parser, check, monitor, diagnose
+
+    backlog_intake_parser = subparsers.add_parser(
+        "backlog-intake",
+        help=(
+            "scan every station's tracked deferred-work-ledger.md for "
+            "entries naming an epic/story, fleet wide"
+        ),
+    )
+    backlog_intake_parser.add_argument(
+        "identifier",
+        help=(
+            "an epic ('13') or story ('13.1'/'13-1') id, optionally "
+            "prefixed 'Epic '/'Story ' (case-insensitive)"
+        ),
+    )
+    backlog_intake_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="target directory to scan (default: current directory)",
+    )
+    backlog_intake_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one schema-valid DoctorReport document on stdout",
+    )
+    return parser, check, monitor, diagnose, backlog_intake_parser
 
 
 def _validate_check_names(
@@ -434,6 +467,22 @@ def _validate_monitor_args(
             )
 
 
+def _validate_backlog_intake_args(
+    args: argparse.Namespace, backlog_intake_parser: argparse.ArgumentParser
+) -> None:
+    """An ``identifier`` that ``backlog_intake.parse_identifier`` cannot
+    parse is a usage error (``.error()``, exit 2) raised HERE, before
+    ``backlog_intake.gather`` is ever called -- mirrors
+    ``_validate_check_names``'s own "validate at the call boundary, not
+    inside gather" discipline."""
+    if backlog_intake.parse_identifier(args.identifier) is None:
+        backlog_intake_parser.error(
+            f"argument identifier: {args.identifier!r} is not a parseable "
+            "epic/story id (expected e.g. '13', '13.1', '13-1', 'Epic 13', "
+            "'Story 13.1')"
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse ``argv`` and return an exit code -- never raises ``SystemExit``
     itself. Exit codes stay inside Doctor's frozen ``{0, 2, 130}`` domain
@@ -443,7 +492,9 @@ def main(argv: list[str] | None = None) -> int:
     """
     if argv is None:
         argv = sys.argv[1:]
-    parser, check_parser, monitor_parser, _diagnose_parser = _build_parser()
+    parser, check_parser, monitor_parser, _diagnose_parser, backlog_intake_parser = (
+        _build_parser()
+    )
     try:
         try:
             args = parser.parse_args(argv)
@@ -452,6 +503,8 @@ def main(argv: list[str] | None = None) -> int:
                 _validate_scope_against_explicit_categories(args, check_parser)
             elif args.command == "monitor":
                 _validate_monitor_args(args, monitor_parser)
+            elif args.command == "backlog-intake":
+                _validate_backlog_intake_args(args, backlog_intake_parser)
             # "diagnose" has no name/axis catalog to validate against --
             # --target is a free-form string and argparse's own
             # required=True already enforces its presence.
@@ -480,12 +533,14 @@ def main(argv: list[str] | None = None) -> int:
         # during dispatch -- not just during parsing -- must also return
         # EXIT_SIGINT rather than escape as a raw KeyboardInterrupt (main()
         # never raises -- see its own docstring). `args.command` is one of
-        # `{"check", "monitor", "diagnose"}` past this point (subparsers is
-        # required=True).
+        # `{"check", "monitor", "diagnose", "backlog-intake"}` past this
+        # point (subparsers is required=True).
         if args.command == "monitor":
             return _run_monitor(args)
         if args.command == "diagnose":
             return _run_diagnose(args)
+        if args.command == "backlog-intake":
+            return _run_backlog_intake(args)
         return _run_check(args)
     except KeyboardInterrupt:
         return EXIT_SIGINT
@@ -835,6 +890,23 @@ def _run_diagnose(args: argparse.Namespace) -> int:
             prescriptions=prescriptions if args.prescribe else None,
             grade_result=grade_result,
         )
+    return exit_code
+
+
+def _run_backlog_intake(args: argparse.Namespace) -> int:
+    """Story 13.1: composes ``backlog_intake.gather`` into one
+    ``DoctorReport`` -- mirrors ``_run_check``'s own gather-then-emit shape.
+    ``args.identifier`` was already validated by
+    ``_validate_backlog_intake_args`` before this ever runs, so
+    ``gather`` cannot hit its own unparseable-identifier WARN branch here.
+    """
+    findings = backlog_intake.gather(Path(args.path), identifier=args.identifier)
+
+    exit_code = exit_code_for(findings)
+    if args.json:
+        _emit_json(findings, verb="backlog-intake")
+    else:
+        _emit_text(findings, verb="backlog-intake")
     return exit_code
 
 

@@ -12,7 +12,7 @@
       "description": "Envelope schema version; starts at 1 (carries warden's ComplianceReport precedent — schema-validated, versioned — forward)."
     },
     "verb": {
-      "enum": ["check", "monitor", "diagnose"],
+      "enum": ["check", "monitor", "diagnose", "backlog-intake"],
       "description": "The CLI verb that produced this report."
     },
     "generated_at": {
@@ -75,7 +75,8 @@
             "bmad-drift",
             "bmad-output-hygiene",
             "due-for-verification",
-            "bmad-method-version-drift"
+            "bmad-method-version-drift",
+            "backlog-intake"
           ]
         },
         "check": { "type": "string" },

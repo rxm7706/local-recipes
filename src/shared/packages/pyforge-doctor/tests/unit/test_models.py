@@ -159,6 +159,10 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # floor -- distinct from the existing BMAD_DRIFT (a different artifact:
     # the installed framework tool, not pyforge-marshal's project-doc
     # currency).
+    # Story 13.1 (Epic 13/CAP-1) added BACKLOG_INTAKE: which tracked
+    # deferred-work-ledger entries, fleet wide, precisely name a caller-
+    # supplied epic/story -- wired as its own `doctor backlog-intake`
+    # verb, not a sweep dispatched by name.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -182,6 +186,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "bmad-output-hygiene",
         "due-for-verification",
         "bmad-method-version-drift",
+        "backlog-intake",
     }
 
 
