@@ -252,3 +252,27 @@ def test_run_flow_writes_land_only_in_langflow_schema():
     public_tables = {name for schema, name in rows if schema == "public"}
     langflow_tables = {name for schema, name in rows if schema == "langflow_schema"}
     assert not (langflow_tables & public_tables)
+
+
+# ---------------------------------------------------------------------------
+# Story 11.3 -- `langflow_integration/tasks.py::run_echo_flow`, the Pattern-A
+# dispatch-shape proof (AC5). Matches `platformapp/users/tests/test_tasks.py`'s
+# own Celery test convention: `settings.CELERY_TASK_ALWAYS_EAGER = True`
+# drives `.delay()` synchronously, no live broker/worker needed for THIS
+# proof -- the real out-of-process `.delay()` dispatch is this story's own
+# manual Verification (docker compose), not pytest-collected.
+# ---------------------------------------------------------------------------
+
+
+def test_run_echo_flow_executes_in_process_and_echoes_the_input(settings):
+    from celery.result import EagerResult  # noqa: PLC0415
+
+    from langflow_integration.tasks import run_echo_flow  # noqa: PLC0415
+
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+    seed_text = "story-11-3 pattern-a echo probe"
+
+    task_result = run_echo_flow.delay(seed_text)
+
+    assert isinstance(task_result, EagerResult)
+    assert task_result.result == {"echoed": seed_text}

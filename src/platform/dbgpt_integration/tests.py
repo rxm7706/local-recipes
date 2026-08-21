@@ -22,6 +22,7 @@ import pytest
 from django.conf import settings
 
 from dbgpt_integration.tasks import DbgptRequestError
+from dbgpt_integration.tasks import DbgptSidecarUnreachableError
 from dbgpt_integration.tasks import text_to_sql
 
 # Captured before any `patch("dbgpt_integration.tasks.httpx.Client", ...)`
@@ -141,3 +142,31 @@ def test_text_to_sql_surfaces_non_2xx_instead_of_swallowing_it():
         pytest.raises(DbgptRequestError),
     ):
         text_to_sql("this should fail")
+
+
+# ---------------------------------------------------------------------------
+# Story 11.3 -- sidecar-unreachable is a named, catchable failure mode, not a
+# raw/undocumented `httpx` exception (AC3). `httpx.MockTransport`'s handler
+# raising instead of returning a `Response` reproduces exactly what a real
+# connection-refused/DNS-failure/connect-timeout looks like from the
+# `httpx.Client`'s own perspective -- `httpx.ConnectError` is a
+# `httpx.TransportError` subclass, the family both wrapped `client.post()`
+# calls in `dbgpt_integration/tasks.py` now catch.
+# ---------------------------------------------------------------------------
+
+
+def _unreachable_handler(request: httpx.Request) -> httpx.Response:
+    raise httpx.ConnectError("Connection refused", request=request)
+
+
+def _client_with_unreachable_transport(*, base_url, timeout):
+    transport = httpx.MockTransport(_unreachable_handler)
+    return _RealHttpxClient(base_url=base_url, timeout=timeout, transport=transport)
+
+
+def test_text_to_sql_surfaces_sidecar_unreachable_as_named_error():
+    with (
+        patch("dbgpt_integration.tasks.httpx.Client", _client_with_unreachable_transport),
+        pytest.raises(DbgptSidecarUnreachableError),
+    ):
+        text_to_sql("this should never reach a live sidecar")

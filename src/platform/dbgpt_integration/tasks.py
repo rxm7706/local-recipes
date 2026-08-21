@@ -65,6 +65,18 @@ class DbgptRequestError(RuntimeError):
     """
 
 
+class DbgptSidecarUnreachableError(DbgptRequestError):
+    """Story 11.3 (CAP-4): the sidecar itself never answered -- connection
+    refused, DNS failure, or a connect timeout (`httpx.TransportError`),
+    raised while OPENING or WRITING the request, as opposed to
+    `DbgptRequestError`'s own non-2xx-response/malformed-body cases (which
+    all require a response to have come back at all). A subclass, not a
+    sibling `RuntimeError`, so any existing `except DbgptRequestError` site
+    keeps working unmodified (Design Notes) while a caller that cares can
+    `except DbgptSidecarUnreachableError` distinctly.
+    """
+
+
 def _json_or_raise(text: str, *, context: str) -> Any:
     """`json.loads`, with a malformed body surfaced as `DbgptRequestError`
     (this module's own documented contract) instead of a raw
@@ -96,7 +108,11 @@ def _register_datasource(client: httpx.Client, db_name: str) -> None:
             "registered for the text-to-SQL round trip."
         ),
     }
-    response = client.post("/api/v1/chat/db/add", json=payload)
+    try:
+        response = client.post("/api/v1/chat/db/add", json=payload)
+    except httpx.TransportError as exc:
+        msg = f"dbgpt sidecar unreachable while registering datasource {db_name!r}: {exc}"
+        raise DbgptSidecarUnreachableError(msg) from exc
     body = (
         _json_or_raise(response.text, context="db/add") if response.is_success else {}
     )
@@ -127,7 +143,17 @@ def _extract_chart_view(content: str) -> dict[str, Any]:
     return _json_or_raise(unescape(match.group("content")), context="chart-view")
 
 
-@shared_task()
+# Story 11.3 (CAP-4): a per-task override, not a change to the global
+# `CELERY_TASK_SOFT_TIME_LIMIT = 60` (`config/settings/base.py`) -- that
+# default is an unedited cookiecutter-django placeholder other tasks may
+# still rely on. This task's own client-side `httpx.Client(timeout=120.0)`
+# below covers the `/api/v1/chat/completions` call alone; `soft_time_limit`
+# needs headroom ABOVE that (the `/api/v1/chat/db/add` registration call and
+# the network hop through `platform`->`dbgpt` both add on top of it), and
+# `time_limit` (the hard `SIGKILL` bound) needs headroom above
+# `soft_time_limit` so `SoftTimeLimitExceeded` has a real chance to be
+# caught/logged before the process is killed outright.
+@shared_task(soft_time_limit=130, time_limit=150)
 def text_to_sql(
     user_input: str,
     db_name: str = "platform",
@@ -169,16 +195,20 @@ def text_to_sql(
     with httpx.Client(base_url=base_url, timeout=120.0) as client:
         _register_datasource(client, db_name)
 
-        response = client.post(
-            "/api/v1/chat/completions",
-            json={
-                "conv_uid": conv_uid,
-                "chat_mode": "chat_with_db_execute",
-                "select_param": db_name,
-                "model_name": model_name,
-                "user_input": user_input,
-            },
-        )
+        try:
+            response = client.post(
+                "/api/v1/chat/completions",
+                json={
+                    "conv_uid": conv_uid,
+                    "chat_mode": "chat_with_db_execute",
+                    "select_param": db_name,
+                    "model_name": model_name,
+                    "user_input": user_input,
+                },
+            )
+        except httpx.TransportError as exc:
+            msg = f"dbgpt sidecar unreachable during chat/completions: {exc}"
+            raise DbgptSidecarUnreachableError(msg) from exc
 
     if not response.is_success:
         msg = f"sidecar returned {response.status_code}"
