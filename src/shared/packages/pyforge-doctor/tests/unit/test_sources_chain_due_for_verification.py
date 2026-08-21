@@ -278,7 +278,10 @@ def test_findings_evidence_project_key_names_its_own_project_via_public_api(
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 1
+    # Story 11.7: `alpha` and `beta` each ALSO carry a `verification-coverage`
+    # item (both have >=1 tracked entry) alongside alpha's own due item --
+    # the due item is still appended first, so `findings[0]` is unaffected.
+    assert len(findings) == 3
     finding = findings[0]
     assert finding.evidence["project"] == "alpha"
 
@@ -319,9 +322,18 @@ def test_fully_fresh_project_reports_vacuous_ok_with_scanned_count(tmp_path: Pat
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER the vacuous-OK finding, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     assert findings[0].status is DoctorStatus.OK
     assert findings[0].evidence == {"projects_scanned": 1}
+    # review finding, patch: this was the only test exercising the vacuous-OK
+    # branch of `_gather_due_for_verification`, but it never inspected
+    # `findings[1]` -- pin its content too, not just its count.
+    assert findings[1].check == "verification-coverage"
+    assert findings[1].evidence["project"] == "proj"
+    assert findings[1].evidence["pct"] == 100
 
 
 # --- Finding shape through the public API (never-verified, time-invariant) -----------
@@ -332,7 +344,10 @@ def test_gather_wraps_never_verified_finding_with_correct_shape(tmp_path: Path) 
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     finding = findings[0]
     assert finding.source is Source.DUE_FOR_VERIFICATION
     assert finding.check == "due-for-verification"
@@ -352,7 +367,10 @@ def test_gather_never_emits_fail_status(tmp_path: Path) -> None:
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 2
+    # Story 11.7: `proj` also carries one `verification-coverage` item (an
+    # aggregate over its 2 tracked entries, not per-entry) alongside the 2
+    # due items.
+    assert len(findings) == 3
     assert all(f.status is DoctorStatus.WARN for f in findings)
 
 
@@ -721,7 +739,10 @@ def test_message_appends_skip_decision_text_when_skip_reason_present(
 
     findings = chain.gather_due_for_verification(target)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     finding = findings[0]
     assert finding.evidence.get("skip_reason") == "no-churn"
     assert "skip_reason: no-churn" in finding.message
@@ -733,7 +754,10 @@ def test_message_omits_skip_decision_text_when_no_skip_reason(tmp_path: Path) ->
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     assert "skip_reason" not in findings[0].message
 
 
@@ -1070,7 +1094,10 @@ def test_message_appends_still_open_text_when_mechanical_verdict_present(
 
     findings = chain.gather_due_for_verification(target)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     finding = findings[0]
     assert finding.evidence.get("mechanical_verdict") == "still-open"
     assert "mechanical_verdict: still-open" in finding.message
@@ -1095,7 +1122,10 @@ def test_message_appends_escalate_text_when_mechanical_verdict_present(
 
     findings = chain.gather_due_for_verification(target)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     finding = findings[0]
     assert finding.evidence.get("mechanical_verdict") == "escalate"
     assert "mechanical_verdict: escalate" in finding.message
@@ -1108,7 +1138,10 @@ def test_message_omits_mechanical_text_when_no_mechanical_verdict(
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 1
+    # Story 11.7: `proj` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected.
+    assert len(findings) == 2
     assert "mechanical_verdict" not in findings[0].message
 
 
@@ -1320,7 +1353,11 @@ def test_other_project_roots_survives_the_public_api_finding_wrap(tmp_path: Path
 
     findings = chain.gather_due_for_verification(tmp_path)
 
-    assert len(findings) == 1
+    # Story 11.7: `alpha` also carries a `verification-coverage` item (it has
+    # 1 tracked entry) appended AFTER this due item, which stays
+    # `findings[0]` unaffected (`beta` has no tracked ledger of its own, so
+    # it contributes no coverage item here).
+    assert len(findings) == 2
     finding = findings[0]
     assert finding.check == "due-for-verification"
     assert finding.evidence["other_project_roots"] == {"beta": "src/shared/packages/beta"}
@@ -1790,3 +1827,184 @@ def test_cluster_finding_survives_gather_due_for_verification_public_api(
     assert sorted((m["project"], m["id"]) for m in cluster.evidence["members"]) == [
         ("alpha", "DW-1"), ("beta", "DW-2"),
     ]
+
+
+# === Story 11.7: aggregate verification coverage ================================
+#
+# Covers the spec's own I/O & Edge-Case Matrix for `_verification_coverage`
+# directly against REAL tmp fixture trees -- mirrors Story 11.5's own
+# `_known_project_code_roots` testing discipline (lines 1217+ above) of unit-
+# testing a new pure helper directly, plus one integration-style test proving
+# the item survives `gather_due_for_verification`'s own Finding wrap (the
+# story's own AC wording). Direct-helper tests pin `today` (mirrors this
+# module's own "precise day-count assertions" convention); the one public-API
+# test below uses a far-future `verified:` date to stay time-invariant
+# (module docstring's own testing discipline), exactly like
+# `test_findings_evidence_project_key_names_its_own_project_via_public_api`'s
+# own `9999-01-01` fixture above.
+
+
+def test_verification_coverage_mixed_staleness_reports_correct_total_and_pct(
+    tmp_path: Path,
+) -> None:
+    """10 tracked entries, 4 verified within the 30-day window (the spec's
+    own I/O matrix example): total=10, verified_within_window=4, pct=40."""
+    text = "".join(
+        f"## DW-{n}\nverified: 2026-08-{10 - n:02d}\n\n" for n in range(1, 5)
+    )  # DW-1..DW-4: verified 2026-08-09..2026-08-06 -- all within 30 days
+    text += "".join(
+        f"## DW-{n}\nverified: 2026-01-01 — ancient\n\n" for n in range(5, 8)
+    )  # DW-5..DW-7: stale
+    text += "".join(
+        f"## DW-{n}\nstatus: open\n\n" for n in range(8, 11)
+    )  # DW-8..DW-10: never-verified
+    _write_tracked(tmp_path, "proj", text)
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    assert len(items) == 1
+    item = items[0]
+    assert item["kind"] == "verification-coverage"
+    assert item["project"] == "proj"
+    assert item["total"] == 10
+    assert item["verified_within_window"] == 4
+    assert item["window_days"] == chain.DUE_FOR_VERIFICATION_STALENESS_DAYS
+    assert item["pct"] == 40
+
+
+def test_verification_coverage_all_fresh_reports_pct_100(tmp_path: Path) -> None:
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-1\nverified: 2026-08-10\n\n## DW-2\nverified: 2026-08-01\n",
+    )
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    assert len(items) == 1
+    assert items[0]["total"] == 2
+    assert items[0]["verified_within_window"] == 2
+    assert items[0]["pct"] == 100
+
+
+def test_verification_coverage_none_verified_reports_pct_0(tmp_path: Path) -> None:
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-1\nstatus: open\n\n## DW-2\nverified: 2000-01-01 — ancient\n",
+    )
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    assert len(items) == 1
+    assert items[0]["total"] == 2
+    assert items[0]["verified_within_window"] == 0
+    assert items[0]["pct"] == 0
+
+
+def test_verification_coverage_zero_tracked_entries_emits_no_item(tmp_path: Path) -> None:
+    """A project directory that exists but has no tracked ledger file at
+    all -- zero tracked entries -- must emit no item (Boundaries: "a '0% of
+    0' line is noise, not signal")."""
+    _project_dir(tmp_path, "proj").mkdir(parents=True, exist_ok=True)
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    assert items == []
+
+
+def test_verification_coverage_anonymous_headerless_entries_emit_no_item(
+    tmp_path: Path,
+) -> None:
+    """A ledger with content but zero ID'd entries (no ``## DW-...`` heading)
+    counts as zero tracked entries too."""
+    _write_tracked(tmp_path, "proj", "- source_spec: `foo`\n  verified: 2000-01-01\n")
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    assert items == []
+
+
+def test_verification_coverage_no_projects_tree_degrades_to_empty_list(
+    tmp_path: Path,
+) -> None:
+    assert chain._verification_coverage(tmp_path, today=date(2026, 8, 15)) == []
+
+
+def test_verification_coverage_multiple_projects_each_get_own_item(
+    tmp_path: Path,
+) -> None:
+    _write_tracked(tmp_path, "alpha", "## DW-1\nverified: 2026-08-10\n")
+    _write_tracked(
+        tmp_path, "beta", "## DW-1\nstatus: open\n\n## DW-2\nstatus: open\n",
+    )
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    by_project = {item["project"]: item for item in items}
+    assert set(by_project) == {"alpha", "beta"}
+    assert by_project["alpha"]["total"] == 1
+    assert by_project["alpha"]["pct"] == 100
+    assert by_project["beta"]["total"] == 2
+    assert by_project["beta"]["pct"] == 0
+
+
+def test_verification_coverage_unreadable_ledger_is_isolated_per_project(
+    tmp_path: Path,
+) -> None:
+    """Mirrors ``test_unreadable_tracked_ledger_directory_is_isolated_as_warn``'s
+    own chmod fixture: one project's unreadable tracked-ledger directory must
+    not discard another, ALREADY-COMPUTED project's coverage item."""
+    _write_tracked(tmp_path, "good", "## DW-1\nverified: 2026-08-10\n")
+    _write_tracked(tmp_path, "broken", "## DW-1\nstatus: open\n")
+
+    pa_dir = _project_dir(tmp_path, "broken") / "planning-artifacts"
+    pa_dir.chmod(0o000)
+    try:
+        items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+    finally:
+        pa_dir.chmod(0o755)
+
+    assert [item["project"] for item in items] == ["good"]
+    assert items[0]["total"] == 1
+    assert items[0]["verified_within_window"] == 1
+    assert items[0]["pct"] == 100
+
+
+def test_due_for_verification_message_verification_coverage_branch() -> None:
+    item = {
+        "kind": "verification-coverage", "project": "proj",
+        "total": 10, "verified_within_window": 4,
+        "window_days": chain.DUE_FOR_VERIFICATION_STALENESS_DAYS, "pct": 40,
+    }
+    assert chain._due_for_verification_message(item) == (
+        "proj: 40% of 10 tracked entries verified within 30 days."
+    )
+
+
+def test_gather_due_for_verification_carries_verification_coverage_item(
+    tmp_path: Path,
+) -> None:
+    """AC: given a project's tracked ledger with a known mix of verified/
+    stale/never-verified entries, `gather_due_for_verification`'s evidence
+    carries a `verification-coverage` item with the correct total/
+    verified_within_window/pct."""
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-1\nverified: 9999-01-01 — always fresh\n\n"
+        "## DW-2\nverified: 2000-01-01 — ancient\n\n"
+        "## DW-3\nstatus: open\n",
+    )
+
+    findings = chain.gather_due_for_verification(tmp_path)
+
+    coverage = [f for f in findings if f.check == "verification-coverage"]
+    assert len(coverage) == 1
+    finding = coverage[0]
+    assert finding.source is Source.DUE_FOR_VERIFICATION
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence["project"] == "proj"
+    assert finding.evidence["total"] == 3
+    assert finding.evidence["verified_within_window"] == 1
+    assert finding.evidence["pct"] == 33
+    assert finding.message == (
+        "proj: 33% of 3 tracked entries verified within 30 days."
+    )
