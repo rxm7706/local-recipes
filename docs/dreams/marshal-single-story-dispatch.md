@@ -2,7 +2,7 @@
 title: Single-story dispatch is a marshal verb, not a session's discipline
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # Single-story dispatch is a marshal verb, not a session's discipline
