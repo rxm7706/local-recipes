@@ -334,6 +334,19 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # `scripts/fleet_picture.py`'s ATTENTION block (a subprocess probe
     # naming any `warn` finding under `watch`) -- never `doctor monitor`
     # (see that story's own Boundaries for why).
+    SourceRegistration(
+        source=Source.BACKLOG_INTAKE,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 13.1 (Epic 13/CAP-1) -- sources/backlog_intake.py. Judges a
+    # Marshal-produced artifact (every station's tracked deferred-work-
+    # ledger.md), same subject_station rationale as DEFERRED_WORK/
+    # DUE_FOR_VERIFICATION above. Wired as its own `doctor backlog-intake
+    # <identifier>` CLI verb, not a scope="repo" whole-sweep dispatch entry
+    # -- it takes a caller-supplied identifier, which is why it stays out
+    # of sources/__main__.py's DISPATCH (every member there is
+    # Callable[[Path], tuple[Finding, ...]], with no room for one).
 )
 
 
