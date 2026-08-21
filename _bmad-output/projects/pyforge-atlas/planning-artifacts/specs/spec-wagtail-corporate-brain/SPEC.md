@@ -6,13 +6,24 @@ surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py
   - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
+  - src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py
+  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py
 sources:
   - ../../../../../../docs/dreams/wagtail-corporate-brain.md
-# 2 of 3 open_questions resolved 2026-08-15 by S-16.1 (deployment substrate; DW-H1 dependency for
-# the LOCAL-REHEARSAL scope only) -- see the prose Open Questions section below and
+# All 3 open_questions resolved. Two by S-16.1 2026-08-15 (deployment substrate; DW-H1 dependency
+# for the LOCAL-REHEARSAL scope only) -- see the prose Open Questions section below and
 # ../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md's Design Notes.
-open_questions:
-  - home of the live verification — attended checklist only, or also a network-marked pytest outside the default gate?
+# The third by S-16.2 2026-08-15: the rehearsal lives in the DEFAULT `kedro-test` gate, not a
+# network-marked pytest outside it -- a real httpx opener (`tools/lasuite_bringup.py`) driven over
+# a loopback-only stdlib `http.server` stub stays fully offline, so no new pytest marker was
+# needed. See `spec-16-2-httpx-opener-and-rehearsal.md` beside this file.
+#
+# Composed at landing time (2026-08-20): S-16.2's work was authored against main BEFORE S-16.1
+# landed, so each side of that merge closed one question and still listed the other's as open.
+# Both closures stand; neither reopens the other. What is NOT closed here is DW-H1's own
+# PostgreSQL/MinIO requirement for the separate ATTENDED PRODUCTION bring-up -- that stays open
+# under DW-H1, where it belongs, and is not an open question of this spec.
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -110,6 +121,10 @@ later runs and passes, DW-H3 closes citing this SPEC; until then the SPEC holds 
 
 ## Open Questions
 
+All three are resolved; none remain open. The two S-16.1 closures and the S-16.2 closure below were
+written against different baselines — S-16.2's work predates S-16.1 landing, so each still listed
+the other's question as open — and were composed at landing time, 2026-08-20.
+
 - **Deployment substrate — RESOLVED (S-16.1).** conda-forge django-lasuite 0.0.26 is confirmed
   live on the real conda-forge channel; Wagtail 7.4.1 has a working recipe in this repo but its
   upstream feedstock status is unconfirmed by repo evidence, so treat it as needing this repo's
@@ -122,5 +137,20 @@ later runs and passes, DW-H3 closes citing this SPEC; until then the SPEC holds 
   ("+ PostgreSQL/MinIO from DW-H1") — that remains exactly as open as before, still owned by
   DW-H1. See `../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md`'s
   Design Notes for the full resolution and evidence.
-- **Verification home:** attended checklist only, or also a network-marked pytest kept out of the
-  default offline gate. Story 16.2 is scoped to resolve this.
+- **Verification home — RESOLVED (S-16.2, 2026-08-15).** The rehearsal lives in the DEFAULT `kedro-test`
+  gate — a real httpx-backed opener (`src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py`)
+  driven over a loopback-only stdlib `http.server` stub
+  (`src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py`) reproduces the
+  mock-proven create / no-op re-push / single-update / mapping-resume sequence over REAL HTTP while
+  staying fully offline (127.0.0.1 ephemeral port, started and torn down inside the test, no
+  external network, no credentials), so no network-marked pytest outside the default gate was
+  needed. DW-H3's own "Do NOT weaken the gate to import httpx into package code or bind a socket
+  (AC-2 / NFR-12)" clause is not contradicted by this: it bars making the offline gate depend on a
+  real network or a live CMS, `httpx` still enters no package file (the import lives under
+  `tools/`, outside the no-inline-IO scan root), and this repo already binds loopback stub servers
+  inside the same default gate (`tests/publish/test_emit_range.py`, `tests/wasm/test_wasm_smoke.py`)
+  — recorded here so a future reader does not re-litigate the apparent contradiction. The attended
+  DW-H3 checklist (Design Notes of
+  `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-httpx-opener-and-rehearsal.md`)
+  is additional, not a substitute — it still runs the same script against a real Wagtail/La Suite
+  instance.

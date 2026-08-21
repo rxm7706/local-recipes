@@ -1658,11 +1658,16 @@ kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke —
 playwright = ">=1.62.1"            # CLI + browser driver
 playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # Story 14.3 (CAP-2, review-pass patch): tests/views/test_live.py hard-imports
-# `starlette.testclient.TestClient`, which requires `httpx` at import time. TEST-ONLY
-# (mirrors the playwright pair above) — already resolvable transitively via a2a-sdk's own
+# `starlette.testclient.TestClient`, which requires `httpx` at import time. Was TEST-ONLY
+# (mirroring the playwright pair above) — already resolvable transitively via a2a-sdk's own
 # httpx run-dep, but AUD-ATLAS-010 doctrine is that an undeclared hard import is a runtime
 # dependency whether or not the manifest says so, and this diff's own commit message invokes
 # that doctrine for tornado/starlette without applying it to this test file's httpx import.
+# Story 16.2 (CAP-2) added a SECOND, non-test consumer: shipped operator tooling
+# `src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py` hard-imports httpx to build the
+# real La Suite/Wagtail opener for the attended DW-H3 bring-up (it lives under tools/, outside
+# the no-inline-IO scan root, so package code still imports no HTTP client — AC-2). Named here
+# so pruning the starlette test never takes this declaration with it and breaks the bring-up.
 httpx = ">=0.28.1"
 
 [feature.pyforge-atlas.pypi-dependencies]
