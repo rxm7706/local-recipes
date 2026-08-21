@@ -55,7 +55,7 @@ development_status:
   6-1-slice-map-and-campaign-state: done
   6-2-the-divergence-and-endgame-guard-proven-red-first: done
   6-3-pilot-slice-recipe-generation-built-and-parallel-validated: done
-  6-4-the-re-scope-gate-measured-cost-recorded-decision: backlog
+  6-4-the-re-scope-gate-measured-cost-recorded-decision: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog
@@ -66,5 +66,5 @@ development_status:
   epic-4-retrospective: optional
   epic-5: backlog
   epic-5-retrospective: optional
-  epic-6: backlog
+  epic-6: done
   epic-6-retrospective: optional
