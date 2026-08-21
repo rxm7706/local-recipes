@@ -28,9 +28,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-# The three verbs the CLI will dispatch (Epic 1-3); this story only freezes
-# the envelope's verb/prescriptions coherence rule, not the dispatch itself.
-_VALID_VERBS = frozenset({"check", "monitor", "diagnose"})
+# The verbs the CLI dispatches. Originally the three Epic 1-3 verbs this
+# story froze the envelope's verb/prescriptions coherence rule for; Story
+# 13.1 (Epic 13/CAP-1) added "backlog-intake" -- a fourth verb that, like
+# "check"/"monitor", never carries prescriptions (only "diagnose" does).
+_VALID_VERBS = frozenset({"check", "monitor", "diagnose", "backlog-intake"})
 
 
 class DoctorStatus(StrEnum):
@@ -160,6 +162,23 @@ class Source(StrEnum):
     # ATTENTION block, closing the "undetected until an operator happened to
     # ask" gap the standalone pixi task left open.
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
+    # Story 13.1 (Epic 13/CAP-1): the closed taxonomy EXTENDED once more --
+    # Doctor's verdict on which tracked deferred-work-ledger entries, fleet
+    # wide, precisely name a given epic or story -- surfaced at
+    # story-drafting time so a human does not have to grep the ledger by
+    # hand (the motivating incident: DW-CHAIN-COMPLETENESS-1, a bare
+    # substring test over concatenated prose that reported false-clean
+    # while missing most of what it claimed to check). Unlike every member
+    # above, this one takes a caller-supplied identifier rather than
+    # judging a fixed artifact wholesale -- it is a query, not a sweep --
+    # so it is wired as its own `doctor backlog-intake <id>` CLI verb,
+    # never a `sources/__main__.py` DISPATCH entry (whose members are all
+    # `Callable[[Path], tuple[Finding, ...]]`, with no room for the
+    # identifier). Always WARN (a match) or OK (no match), never FAIL --
+    # informs, never gates, mirroring DUE_FOR_VERIFICATION's own
+    # discipline. Judges a Marshal-produced artifact (the tracked ledger);
+    # see sources/backlog_intake.py for the independence rationale.
+    BACKLOG_INTAKE = "backlog-intake"
 
 
 class Partition(StrEnum):

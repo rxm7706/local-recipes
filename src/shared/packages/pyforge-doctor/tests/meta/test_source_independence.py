@@ -121,6 +121,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.BMAD_OUTPUT_HYGIENE: "hygiene.py",
     Source.DUE_FOR_VERIFICATION: "chain.py",  # Story 11.1 (Epic 11/CAP-1)
     Source.BMAD_METHOD_VERSION_DRIFT: "bmad_method.py",  # Story 10.1 (Epic 10/CAP-1)
+    Source.BACKLOG_INTAKE: "backlog_intake.py",  # Story 13.1 (Epic 13/CAP-1)
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``
