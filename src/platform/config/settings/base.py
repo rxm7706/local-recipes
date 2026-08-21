@@ -110,6 +110,11 @@ LOCAL_APPS = [
     # Story 11.1: migration-only app provisioning `langflow_schema` (AD-5).
     # No models -- see langflow_integration/apps.py.
     "langflow_integration",
+    # Story 11.2: migration-only app provisioning `dbgpt_schema` (AD-5/AD-17).
+    # No models -- see dbgpt_integration/apps.py. Registered so `manage.py
+    # migrate` creates the schema; DB-GPT is Pattern B (its own sidecar
+    # container, never an ASGI mount) -- see that app's own docstring.
+    "dbgpt_integration",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -417,6 +422,57 @@ LANGFLOW_KNOWLEDGE_BASES_DIR = env(
 )
 os.environ["LANGFLOW_CONFIG_DIR"] = LANGFLOW_CONFIG_DIR
 os.environ["LANGFLOW_KNOWLEDGE_BASES_DIR"] = LANGFLOW_KNOWLEDGE_BASES_DIR
+
+# DB-GPT integration (Story 11.2, spec-python-agent-platform CAP-3, AD-17
+# Pattern B)
+# ------------------------------------------------------------------------------
+# AD-5: `DBGPT_DATABASE_URL` is derived from this platform's OWN
+# `DATABASES["default"]` -- the SAME PostgreSQL instance, never a second
+# hand-maintained credential -- with a `search_path` suffix pointing at
+# `dbgpt_schema` (provisioned by `dbgpt_integration`'s `RunSQL` migration),
+# mirroring `LANGFLOW_DATABASE_URL`'s shape exactly.
+#
+# UNLIKE `LANGFLOW_DATABASE_URL`, this value is NOT auto-consumed by anything
+# today -- neither Django (no in-process DB-GPT import: DB-GPT is Pattern B,
+# its own sidecar container, never an ASGI mount -- see `config/asgi.py`'s
+# registry-consult touchpoint and `dbgpt_integration/apps.py`'s docstring)
+# NOR the sidecar's own config (DB-GPT's `[service.web.database]` metadata
+# store is a TOML value read by its own `ConfigurationManager`, not
+# `os.environ`, and -- verified live, Story 11.2 -- only supports
+# SQLite/MySQL/OceanBase as a backend; a manual `db.create_all()` against a
+# real PostgreSQL engine, using DB-GPT's own public `dbgpt.storage.metadata.
+# db_manager` API, fails with a genuine DDL syntax error because DB-GPT's own
+# SQLAlchemy models use MySQL-specific `TEXT(length)` column definitions
+# PostgreSQL's grammar rejects -- 69 occurrences repo-wide in the installed
+# `dbgpt-sidecar` package set, not a one-off. AD-9 forbids forking DB-GPT's
+# own model classes to fix this, so the sidecar's metadata store stays on
+# Story 10.5's SQLite volume; see `src/platform/compose/compose.yml`'s
+# `dbgpt` service for the full citation.
+#
+# This value exists anyway, as the single source of truth ANY future
+# consumer of Django's real PostgreSQL credentials scoped to `dbgpt_schema`
+# should read rather than re-deriving them -- e.g. a future upstream fix
+# that makes DB-GPT's metadata store PostgreSQL-capable, or a different
+# Pattern-B engine that doesn't share this limitation. Today, the actual
+# Celery-driven round trip (`dbgpt_integration/tasks.py`) reads
+# `DATABASES["default"]` directly instead (it registers `public`, the
+# database Django's own tables live in, as a DB-GPT DATASOURCE to query --
+# an entirely different connection than the sidecar's own metadata store,
+# and unaffected by the limitation above).
+_dbgpt_db = DATABASES["default"]
+_dbgpt_db_auth = ""
+if _dbgpt_db.get("USER"):
+    _dbgpt_db_auth = quote(_dbgpt_db["USER"], safe="")
+    if _dbgpt_db.get("PASSWORD"):
+        _dbgpt_db_auth += f":{quote(_dbgpt_db['PASSWORD'], safe='')}"
+    _dbgpt_db_auth += "@"
+DBGPT_DATABASE_URL = (
+    f"postgresql://{_dbgpt_db_auth}"
+    f"{quote(_dbgpt_db.get('HOST') or 'localhost', safe='')}:{_dbgpt_db.get('PORT') or 5432}"
+    f"/{quote(_dbgpt_db['NAME'], safe='')}"
+    "?options=-c%20search_path=dbgpt_schema"
+)
+os.environ["DBGPT_DATABASE_URL"] = DBGPT_DATABASE_URL
 
 # Your stuff...
 # ------------------------------------------------------------------------------
