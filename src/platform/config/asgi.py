@@ -32,6 +32,7 @@ django_application = get_asgi_application()
 # (Story 11.2) never gets an ASGI mount at all -- AD-14/AD-17 moved it to
 # Pattern B (its own sidecar container, reached over Celery/REST) before this
 # module would have needed one; see the registry-consult touchpoint below.
+from config.engine_patterns import ENGINE_PATTERNS  # noqa: E402
 from config.fastapi_app import fastapi_application  # noqa: E402
 from config.websocket import websocket_application  # noqa: E402
 
@@ -52,8 +53,6 @@ from langflow_integration.asgi import langflow_application  # noqa: E402
 # revert lands here without also adding the ASGI sub-app Pattern A would
 # need (mirroring `langflow_integration/asgi.py`'s own `create_app()` +
 # `_LifespanManager` shape), rather than silently mounting nothing.
-from config.engine_patterns import ENGINE_PATTERNS  # noqa: E402
-
 assert ENGINE_PATTERNS["dbgpt"] != "A", (
     "dbgpt is configured as Pattern A (config/engine_patterns.py) but "
     "config/asgi.py builds no DB-GPT ASGI sub-app -- add one (mirroring "

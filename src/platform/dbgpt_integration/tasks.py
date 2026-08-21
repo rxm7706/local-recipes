@@ -53,6 +53,7 @@ logger = logging.getLogger(__name__)
 _CHART_VIEW_CONTENT_RE = re.compile(r'<chart-view content="(?P<content>[^"]*)"\s*/?>')
 
 _DEFAULT_MODEL_NAME = "gpt-4o"
+_HTTP_STATUS_SUCCESS_CLASS = 2  # `status_code // 100` for any 2xx response
 
 
 class DbgptRequestError(RuntimeError):
@@ -85,7 +86,10 @@ def _register_datasource(client: httpx.Client, db_name: str) -> None:
         ),
     }
     response = client.post("/api/v1/chat/db/add", json=payload)
-    if response.status_code // 100 != 2 or not response.json().get("success"):
+    if (
+        response.status_code // 100 != _HTTP_STATUS_SUCCESS_CLASS
+        or not response.json().get("success")
+    ):
         msg = (
             f"failed to register datasource {db_name!r}: "
             f"{response.status_code} {response.text}"
@@ -165,7 +169,7 @@ def text_to_sql(
             },
         )
 
-    if response.status_code // 100 != 2:
+    if response.status_code // 100 != _HTTP_STATUS_SUCCESS_CLASS:
         msg = f"sidecar returned {response.status_code}: {response.text}"
         raise DbgptRequestError(msg)
 

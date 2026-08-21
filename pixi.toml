@@ -251,11 +251,14 @@ platforms = ["linux-64"]  # container-only: the Containerfile pins --platform=li
 [feature.dbgpt-sidecar.dependencies]
 python = "3.12.*"      # matches python-agent-platform's env-scoped floor -- no reason to diverge, this env never coexists with it
 dbgpt-app = ">=0.8.1"  # the FastAPI server app (webserver CLI + AgenticData text-to-SQL router); pulls its dozen pin_subpackage'd dbgpt-* siblings transitively
-# Story 11.2: real PostgreSQL wiring, both for the `[service.web.database]` metadata
-# store (superseding Story 10.5's interim SQLite -- PostgreSQLParameters.driver
-# defaults to "postgresql+psycopg2", verified live: create_engine() against a
-# postgresql+psycopg2 URL ModuleNotFoundErrors on psycopg2 without this) and for the
-# `chat_with_db_execute` datasource connector the Celery task drives (same driver).
+# Story 11.2: NOT for `[service.web.database]` (that metadata store stays
+# permanently on SQLite/PVC -- AD-6 bounded exception, `compose.yml`'s
+# `dbgpt` service `volumes:` comment). This is for the `chat_with_db_execute`
+# datasource connector the Celery task drives: `dbgpt_integration/tasks.py`
+# registers Django's own PostgreSQL (`db_type: "postgresql"`) as a DB-GPT
+# datasource, and DB-GPT's `PostgreSQLParameters.driver` defaults to
+# "postgresql+psycopg2" -- verified live: create_engine() against a
+# postgresql+psycopg2 URL ModuleNotFoundErrors on psycopg2 without this.
 psycopg2 = ">=2.9.12"  # matches python-agent-platform's own floor (pixi.toml line ~177) -- no reason to diverge
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --

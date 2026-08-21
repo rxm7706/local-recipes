@@ -508,9 +508,10 @@ RUN printf '%s\n' \
 # `/app/.home/pilot/meta_data/...` the bare relative string would suggest)
 # BEFORE the group-write fixup below, not left for the app to create on
 # first boot: `compose.yml`'s `dbgpt` service mounts a named volume at this
-# exact path for durability across `docker compose down && up` (interim
-# measure, pending Story 11.2's real Postgres/`dbgpt_schema` wiring -- see
-# that file's own comment). Docker initializes a fresh named volume from
+# exact path for durability across `docker compose down && up` (permanent,
+# not interim -- Story 11.2 found real PostgreSQL/`dbgpt_schema` wiring for
+# this store structurally impossible; see that file's own comment). Docker
+# initializes a fresh named volume from
 # whatever already exists at the image mount point, INCLUDING permissions --
 # so this directory has to already carry the same group-0-writable posture
 # as the rest of `/app/.home`, or the volume-backed mount would come up
