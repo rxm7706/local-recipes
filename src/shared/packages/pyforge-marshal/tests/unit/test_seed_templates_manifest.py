@@ -22,6 +22,7 @@ from collections import Counter
 from importlib import resources
 
 import pytest
+from pyforge.marshal.seed.derive.adapters import ADAPTER_COMPOSITION
 from pyforge.marshal.seed.detect.inventory import coverage_counts, coverage_findings
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, load_manifest
 
@@ -224,7 +225,17 @@ def test_every_body_file_is_claimed_by_a_declared_region(manifest):
     convention with no schema field behind it (Design Notes), so the tests
     are its only specification. One-directional coverage lets a renamed or
     removed region leave an orphaned `.j2` shipping to every adopting repo
-    with a fully green suite."""
+    with a fully green suite.
+
+    Story 11.1 added a SECOND, disjoint category of `.j2` file under this
+    same directory: whole-file agent-adapter WRAPPER templates
+    (`derive.adapters.ADAPTER_COMPOSITION`'s own `wrapper` filenames) --
+    never a region body, never spliced verbatim into a managed region, read
+    by `derive.adapters.render_adapter` instead and covered by their own
+    dedicated suite (`test_seed_derive_adapters.py`). Excluded here by exact
+    filename so this test's "every `.j2` file must be a claimed region body"
+    claim stays precise about which files it is actually claiming that for.
+    """
     files_root = resources.files("pyforge.marshal.seed.templates") / "files"
     declared_names = {
         region.name
@@ -232,12 +243,13 @@ def test_every_body_file_is_claimed_by_a_declared_region(manifest):
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
         for region in entry.regions
     }
+    wrapper_filenames = {spec.wrapper for spec in ADAPTER_COMPOSITION.values()}
     shipped_names = {
         # `<region-name>.md.j2` / `<region-name>.gitignore.j2` -- strip the
         # `.j2` and whatever host-file suffix precedes it.
         path.name.split(".", 1)[0]
         for path in files_root.iterdir()
-        if path.is_file() and path.name.endswith(".j2")
+        if path.is_file() and path.name.endswith(".j2") and path.name not in wrapper_filenames
     }
     assert shipped_names == declared_names, (
         f"orphaned body files: {sorted(shipped_names - declared_names)}; "
