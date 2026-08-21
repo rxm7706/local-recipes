@@ -30,6 +30,7 @@ pytest.importorskip("langflow")
 from httpx import ASGITransport
 from httpx import AsyncClient
 
+import config.asgi as asgi_module
 from config.asgi import application
 
 
@@ -144,8 +145,6 @@ def test_lifespan_startup_failure_rolls_back_already_started_subapp(monkeypatch)
     startup fails, and the stub's shutdown must still fire before the
     dispatcher reports `lifespan.startup.failed` to the real server.
     """
-    import config.asgi as asgi_module
-
     events: list[str] = []
 
     async def fake_fastapi_app(scope, receive, send):
@@ -180,7 +179,7 @@ def test_lifespan_startup_failure_rolls_back_already_started_subapp(monkeypatch)
             sent.append(message)
 
         await receive_queue.put({"type": "lifespan.startup"})
-        await asgi_module._dispatch_lifespan(receive, send)
+        await asgi_module.application({"type": "lifespan"}, receive, send)
         return sent
 
     sent = asyncio.run(_run())

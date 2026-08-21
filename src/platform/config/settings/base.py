@@ -400,13 +400,16 @@ os.environ["LANGFLOW_DB_DRIVER_CONNECTION_SETTINGS"] = json.dumps(
 # in-memory default, and its config/knowledge-base paths are explicit,
 # non-default locations rather than the ambient `platformdirs.user_cache_dir()`
 # default -- both env-overridable, matching every other `env()`-sourced value
-# in this file.
+# in this file. The defaults live under `BASE_DIR / ".langflow"` (gitignored);
+# the Containerfile's arbitrary-UID runtime MUST keep `/app/.langflow`
+# group-writable (GID 0, `g+rwX`) because `create_app()` mkdir's them at
+# import time and `/app` itself is deliberately not writable.
 LANGFLOW_CACHE_TYPE = env("LANGFLOW_CACHE_TYPE", default="redis")
 os.environ["LANGFLOW_CACHE_TYPE"] = LANGFLOW_CACHE_TYPE
 os.environ["LANGFLOW_REDIS_URL"] = env("LANGFLOW_REDIS_URL", default=REDIS_URL)
 
 LANGFLOW_CONFIG_DIR = env(
-    "LANGFLOW_CONFIG_DIR", default=str(BASE_DIR / ".langflow" / "config")
+    "LANGFLOW_CONFIG_DIR", default=str(BASE_DIR / ".langflow" / "config"),
 )
 LANGFLOW_KNOWLEDGE_BASES_DIR = env(
     "LANGFLOW_KNOWLEDGE_BASES_DIR",

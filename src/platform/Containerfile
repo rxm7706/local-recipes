@@ -9,9 +9,10 @@
 #      target (`restricted-v2` SCC), so this image is built for that
 #      posture from the start, not retrofitted later.
 #   2. The runtime stage runs as a non-root, arbitrary-UID-compatible user
-#      (GID 0, `g+rwX` on exactly the two paths written at runtime --
-#      `MEDIA_ROOT` and `$HOME`; see the permissions RUN near the bottom for
-#      why `STATIC_ROOT` and `/app` itself are deliberately NOT among them)
+#      (GID 0, `g+rwX` on exactly the three paths written at runtime --
+#      `MEDIA_ROOT`, `$HOME`, and `/app/.langflow`; see the permissions RUN
+#      near the bottom for why `STATIC_ROOT` and `/app` itself are
+#      deliberately NOT among them)
 #      instead of root -- OCP's `restricted-v2` assigns a RANDOM uid at
 #      deploy time, so nothing here may hardcode a specific uid.
 #
@@ -450,12 +451,21 @@ RUN DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
 # rather than chmod'ing for one hardcoded UID, because `restricted-v2`
 # assigns a RANDOM uid at deploy time and keeps only the declared GID.
 #
-# EXACTLY TWO PATHS ARE GROUP-WRITABLE, and the distinction between them and
+# EXACTLY THREE PATHS ARE GROUP-WRITABLE, and the distinction between them and
 # everything else is the whole security posture of this image:
 #   - `MEDIA_ROOT` (`config/settings/base.py`: `APPS_DIR / "media"`) -- user
 #     uploads; genuinely written at runtime.
 #   - `$HOME` (`/app/.home`, created above) -- gunicorn's control socket and
 #     any library cache/config dir.
+#   - `/app/.langflow` -- Langflow's config + knowledge-base scratch
+#     (`LANGFLOW_CONFIG_DIR` / `LANGFLOW_KNOWLEDGE_BASES_DIR` default to
+#     `BASE_DIR / ".langflow" / {config,knowledge_bases}` in
+#     `config/settings/base.py`). `create_app()` mkdir's both at import
+#     time; without this grant the arbitrary-UID gunicorn worker dies with
+#     `PermissionError: /app/.langflow` before `/ht/` can ever 200 (caught
+#     in platform-ci `container` on PR #567). Same category as `MEDIA_ROOT`
+#     (ephemeral runtime scratch, gitignored as `src/platform/.langflow/`),
+#     NOT a `$HOME` substitute -- `/app` itself stays unwritable.
 # `STATIC_ROOT` (`BASE_DIR / "staticfiles"`, populated by `collectstatic`
 # above) is group-READABLE ONLY (`g+rX`, no `w`). Nothing writes to it after
 # the build -- WhiteNoise's `CompressedManifestStaticFilesStorage` serves it
@@ -479,9 +489,9 @@ RUN DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
 # `production.py`) uses a `console` `StreamHandler` only -- there is no
 # on-disk log directory to chmod. If a future story adds a file-based log
 # handler, that story must extend the writable list here.
-RUN mkdir -p /app/platformapp/media \
-    && chgrp -R 0 /app/platformapp/media /app/.home \
-    && chmod -R g+rwX /app/platformapp/media /app/.home \
+RUN mkdir -p /app/platformapp/media /app/.langflow \
+    && chgrp -R 0 /app/platformapp/media /app/.home /app/.langflow \
+    && chmod -R g+rwX /app/platformapp/media /app/.home /app/.langflow \
     && chgrp -R 0 /app/staticfiles \
     && chmod -R g+rX /app/staticfiles
 
