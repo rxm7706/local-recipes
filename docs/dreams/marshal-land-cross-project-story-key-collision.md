@@ -2,7 +2,7 @@
 title: A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another

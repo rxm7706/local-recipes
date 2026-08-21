@@ -2,7 +2,7 @@
 title: A spin-time poll timeout never permanently blinds marshal status to a healthy run
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # A spin-time poll timeout never permanently blinds marshal status to a healthy run

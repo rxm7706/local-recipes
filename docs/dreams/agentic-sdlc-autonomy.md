@@ -2,7 +2,7 @@
 title: The Agentic SDLC — four views of autonomy, one governed factory
 type: practice
 owner: marshal
-status: pitched
+status: specified
 ---
 
 # The Agentic SDLC — redefining autonomy in software engineering
