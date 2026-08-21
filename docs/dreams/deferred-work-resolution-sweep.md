@@ -203,6 +203,11 @@ parseable fact the way "does this id exist in file X" is):
    able to look at any project's source tree, not just the owning
    project's.
 
+## Realization log
+
+- **2026-08-15** — Spec'd as `spec-deferred-work-resolution-sweep` (pyforge-doctor), CAP-1..8, decomposed into Epic 11 (Stories 11.1-11.8). CAP-8's own scope-boundary question (this Dream's "backlog-intake check" bullet above) left open at spec time.
+- **2026-08-21** — **CAP-8 split into its own companion Spec, `spec-backlog-intake-check`** (operator decision, tracked `DW-11-8-1` in pyforge-doctor's deferred-work-ledger.md pending it). Epic 11 shipped cleanly as Stories 11.1-11.7, a self-contained read-only sweep pipeline; bundling CAP-8's write-adjacent, story-drafting-time capability into it after the fact would have muddied that result. This Dream remains the owner-dream for both Specs — the "resolution sweep" (periodic re-verification, CAP-1..7) and the "backlog-intake check" (drafting-time surfacing, `spec-backlog-intake-check`'s CAP-1) are two capabilities this one Dream always named, now two Specs.
+
 ## Relationship to the sibling Dream
 
 `deferred-work-audit-completeness.md` is "get every real finding into
