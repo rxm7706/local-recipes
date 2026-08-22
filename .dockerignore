@@ -222,6 +222,9 @@ src/platform/config/settings/test.py
 # context, and the BUILDER stage's pip layer reads
 # `src/platform/requirements/{base,production}.txt` out of it.
 src/platform/compose/
+# The Helm charts (Story 12.1), by the same rule as compose/ above: deploy-
+# time-only content nothing in the image reads.
+src/platform/deploy/
 # The root `.env`/`.secrets`/`.private` patterns above (this file's
 # documented root-anchored convention) don't reach `src/platform/.env` --
 # django-environ's natural local-secrets location for this app. No such
