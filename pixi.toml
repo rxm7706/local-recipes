@@ -1244,17 +1244,17 @@ nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 bmad-method = ">=6.11.0"       # BMAD Method installer/CLI (upgrade from the 6.6.0 npx-era install; gains bmad-dev-auto)
 # tmux lives in the linux-64/osx-arm64 target tables (no win-64 build; bmad-loop is Linux/macOS — Windows via WSL)
 # BMAD-METHOD: Agentic AI‑SDLC: AI Driven Agile Development
-bmad-builder = ">=2.1.0"          # BMAD module builder # PR #33123 # https://github.com/bmad-code-org/bmad-builder
-bmad-creative-intelligence-suite = ">=0.2.1"  # CIS module  bumped; PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+bmad-builder = ">=2.2.1"          # BMAD module builder (2.2.x: uv-run resolver + bmad-eval-runner skill) # PR #33123 # https://github.com/bmad-code-org/bmad-builder
+bmad-creative-intelligence-suite = ">=0.3.1"  # CIS module (0.3.x: uv-run resolver, 6.11-era persistent_facts) # PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
 bmad-dashboard = ">=1.2.2.dev0"   # VS Code extension installer # PR #33513 # https://github.com/bmad-code-org/bmad-method-ui
-bmad-loop = ">=0.9.0"             # deterministic ralph-loop orchestrator (+TUI) # https://github.com/bmad-code-org/bmad-loop
-bmad-method-test-architecture-enterprise = ">=1.19.1"  # TEA module  external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+bmad-loop = ">=0.11.0"            # deterministic ralph-loop orchestrator (+TUI); 0.9.0 hardcodes /bmad-dev-auto and stalls unattended on BMAD >=6.11 # https://github.com/bmad-code-org/bmad-loop
+bmad-method-test-architecture-enterprise = ">=1.23.2"  # TEA module (1.20+: working tea-test-review bin; 1.22+: uv-run) external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-method-wds-expansion = ">=0.4.3"  # Whiteport Design Studio # PR #33126 # https://github.com/bmad-code-org/bmad-method-wds-expansion
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
 bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restructure fixes # PR #33129 # https://github.com/bmad-code-org/bmad-utility-skills
 #mybmad-dashboard = ">=0.1.0.dev0" # Next.js web dashboard + Postgres launcher # mirror of PR #33513 # linux/osx only #  https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
 bmad-labs-skills = ">=1.0.0.dev0" # community skills marketplace (21 skills) # https://github.com/bmad-labs/skills
-bmad-manticore = ">=2.0.0.dev0"   # From brain dump to a rendered, graphics-rich video, in your own words
+bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich video, in your own words (upstream renumbered past 2.0.0; 3.1.0.dev0 = main @ c9bcf759)
 #bmalph = ">=2.11.0"               # BMAD phases + Ralph loop CLI  current # PR #33557 # https://github.com/LarsCowe/bmalph
 #bmad-autopilot = ">=0.1.0"        # community precursor loop w/ PR-lifecycle automation # unix-only (skip: win) # https://github.com/martin-janci/autopilot
 #claude-mem = "*"                  # Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory.
