@@ -2,7 +2,7 @@
 title: A local OpenShift hybrid environment runs the agentic SDLC end to end — visual lifecycle, wired BMAD suite, multiplexed apps, synced tracker
 type: dream
 owner: steward
-status: dreamt
+status: specified   # 2026-08-22 — spec-local-ocp-hybrid-environment (5 CAPs, 2 companions), decomposed as steward Epic 12 extension S-12.4..12.8 (operator-locked)
 ---
 
 # A local OpenShift hybrid environment runs the agentic SDLC end to end
@@ -40,10 +40,10 @@ spec pass must reconcile "scaffold fresh" against "deploy what exists":
   cluster IS the missing verification environment for 12.1 — and 12.2 (GKE
   profile) / 12.3 (air-gap parity) are its siblings in the same epic.
 - **ASGI multiplexing has a prior Dream**: [[asgi-multiplexer-monolith]]
-  (Django+Langflow+DB-GPT in one ASGI process, no Spec yet). The OCP spec's
-  Traefik-routed multiplexer is the cluster-shaped form of the same
-  aspiration — the spec pass DECIDES absorb-vs-kin rather than minting a
-  duplicate chain.
+  — RESOLVED at spec time (2026-08-22): ABSORBED into python-agent-platform
+  per its own 2026-08-14 Realization log; pointer spec authored; the
+  intake's Traefik multiplexer is struck (the shipped in-process dispatcher
+  + Route is the topology).
 - **BMAD wiring is already chartered**: the spec's "BMAD Suite Wiring Plan"
   table is `spec-bmad-suite-channel-product` CAP-3's target state verbatim
   (steward Epic 15.3 wires TEA/BMB/CIS/utility-skills/manticore; WDS skip).
@@ -54,10 +54,11 @@ spec pass must reconcile "scaffold fresh" against "deploy what exists":
 - **Tracker sync has a prior spec**: steward's `spec-jira-github-projects-sync`
   (planning-artifacts/specs). The dlt→`github_metrics` bridge is kin —
   reconcile at spec time.
-- **Versions**: the spec names Langflow 1.11.2; the factory's langflow-suite
-  recipes are at 1.10.1 (`docs/specs/langflow-conda-forge.md`, suite PR
-  #33972 in flight) — a bump decision, not a given. DB-GPT is
-  consume-not-submit (G58, external PR #33883).
+- **Versions** *(corrected 2026-08-22 at spec time)*: the langflow suite
+  MERGED and graduated to `conda-forge/langflow-feedstock`, now v1.11.4
+  (8 outputs) — the platform pins `langflow >=1.11.4`, so the intake's
+  1.11.2 was BEHIND the estate, not ahead; no bump decision exists. DB-GPT
+  stays consume-not-submit (G58, external PR #33883).
 - **Pixi-as-foundation and dlt** are native here: dlt ships in the pixi
   estate (`library-llms-full.md`), and the workspace conventions
   (environments, lock discipline, the 16-site pixi version registry) apply

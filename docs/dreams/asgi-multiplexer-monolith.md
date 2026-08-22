@@ -2,7 +2,7 @@
 title: Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other
 type: dream
 owner: steward
-status: dreamt
+status: absorbed   # 2026-08-22 pointer spec authored (spec-asgi-multiplexer-monolith); realized through python-agent-platform per the 2026-08-14 Realization log
 ---
 
 # Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other

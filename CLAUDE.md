@@ -183,7 +183,7 @@ otherwise, run a spec via `bmad-build` (6.11 name of `bmad-quick-dev`) with the 
 
 | Spec | What it is |
 |---|---|
-| `docs/specs/langflow-conda-forge.md` | langflow-suite multi-output recipe (4 outputs: langflow-sdk+lfx+langflow-base+langflow, v1.10.1) + full ~71-recipe closure submission to staged-recipes. Suite PR #33972 is a fully-green draft; closure PRs in flight. python_min 3.11 (G41). |
+| `docs/specs/langflow-conda-forge.md` | langflow-suite — MERGED + graduated to `conda-forge/langflow-feedstock`, now v1.11.4 with 8 outputs (2026-08-20; the 4 `lfx-*` plugins absorbed). The spec file is the historical record of the submission era plus dated addenda; open residue tracked there (`DW-FU-10-4` cp314 onnxruntime gate). python_min 3.11 (G41). |
 | `docs/specs/db-gpt-conda-forge.md` | DB-GPT on conda-forge. **TERMINAL — delivered via external PR #33883 (consume-not-submit, G58); do NOT re-run BMAD on it.** Only § Current State + § Readiness are authoritative; the stories are historical. |
 | `docs/specs/flyte-conda-forge.md` | Flyte 2 SDK (PyPI `flyte` ≠ v1 `flytekit`) — 6-recipe closure built GREEN locally; submission blocked on the buf.validate namespace collision (G88). python_min 3.11 (G40/G41). |
 | `docs/specs/feedstock-refresh.md` | Two-track bulk refresh of ALL 769 feedstocks rxm7706 can modify (regenerate, v0→v1, platform-expand). Track A (sole, 537): Waves B–F shipped, reopened for Wave H total-coverage (179 remaining). Track B (co, 232): ready; adds co-maintainer etiquette + a no-local-recipe bucket. Delegates per-feedstock work to `feedstock-platform-expansion.md`. |

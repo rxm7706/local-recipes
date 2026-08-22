@@ -2,7 +2,7 @@
 title: Django, Langflow, and DB-GPT scale as isolated containers behind one gateway
 type: dream
 owner: steward
-status: dreamt
+status: absorbed   # 2026-08-22 pointer spec authored (spec-enterprise-multi-agent-orchestration); realized through python-agent-platform per the 2026-08-14 Realization log
 ---
 
 # Django, Langflow, and DB-GPT scale as isolated containers behind one gateway

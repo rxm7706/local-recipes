@@ -1110,3 +1110,61 @@ cited command per class (dashboards excluded by build cost, check-by-doc), failu
 reported not gating, and the matrix stays the cited source of truth.
 
 **Epic 15 clears to dispatch on 15.1/15.3/15.4; 15.2 follows 15.1.**
+
+### Epic 12 extension (2026-08-22): the local OCP hybrid environment — Stories 12.4–12.8
+
+**Spec binding.** Decomposes `spec-local-ocp-hybrid-environment` CAP-1..5 (Spec landed
+2026-08-22 from `docs/dreams/local-ocp-hybrid-environment.md` + the verbatim operator
+intake under `docs/intake/`; companions `reconciliation-and-corrections.md` — every
+STRIKE binding — and `cluster-bringup-facts.md`). Operator-locked at spec time: this
+lands as an Epic 12 EXTENSION (not a new epic); the DB-GPT sidecar joins the chart now;
+Redis keeps emptyDir but gains AUTH + NetworkPolicy; the internal-registry push is the
+canonical image path. 12.2 (GKE) and 12.3 (air-gap) are unchanged; 12.3 gains sidecar
+coverage for free once 12.5 lands.
+
+### Story 12.4: The cluster bring-up is documented, reproducible, and key-disciplined
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-local-ocp-hybrid-environment CAP-1 (mints the OpenShift/registry-posture AD the steward spine anticipates)
+**Surface:** `src/platform/deploy/` docs, steward keys inventory, new bring-up doc
+**Given** a fresh workstation (CRC 2.63.0 / OpenShift 4.22.7 baseline; 4 cores/10.5 GB/35 GB;
+Linux needs `crc` on PATH — the repo's own `openshift-client`/`podman-desktop` recipes
+apply) **Then** the documented flow reaches cluster Running + `oc` authenticated + the
+platform image pushed via the internal registry into an ImageStream, with pull secret,
+kubeadmin credentials, and the PAT recorded as hand-authored keys-inventory entries —
+zero improvised steps.
+
+### Story 12.5: The DB-GPT sidecar joins the chart
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-local-ocp-hybrid-environment CAP-2 (closes the Epic-12-kickoff follow-up 12.1 bound out)
+**Surface:** `src/platform/deploy/charts/platform/`, `tests/test_chart_invariants.py`
+**Given** the platform's own sidecar image **Then** the chart renders a sidecar
+Deployment (replicas 1, Recreate) + dedicated SQLite PVC at the resolved metadata path +
+internal-only Service consumed via `DBGPT_SIDECAR_BASE_URL`, all under restricted-v2 —
+and 12.1's inventory-test sidecar REJECTION flips to expectation, suite green.
+
+### Story 12.6: Redis is hardened, still ephemeral
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-local-ocp-hybrid-environment CAP-3 (closes 12.1's named unauthenticated-Redis follow-up)
+**Surface:** chart templates + invariant tests
+**Given** the chart's emptyDir Redis **Then** AUTH arrives via an `existingSecret` key
+wired into `REDIS_URL`, and a NetworkPolicy restricts Redis to platform pods — both
+render-asserted; persistence deliberately unchanged (Celery re-queues).
+
+### Story 12.7: The 12.1 Tier-3 items are verified on the live cluster
+**Type:** verification • **Effort:** M • **Deps:** S-12.4, S-12.5, S-12.6 • **FR/AD:** spec-local-ocp-hybrid-environment CAP-4
+**Surface:** attended run + a dated verification record in the 12.1 spec's orbit
+**Given** `helm install` of core + OCP overlay on the running cluster **Then** the four
+honestly-unverified items are proven — Route admission, SCC enforcement, PVC binding,
+official postgres/redis images under an SCC-assigned arbitrary UID (contingency ladder:
+dataMountPath/UID seams → RH images → bitnami, whichever was needed gets recorded) —
+plus the fresh-install migration-window observation; failures land as findings, never
+silent notes.
+
+### Story 12.8: GitHub Projects V2 lands in github_metrics via dlt
+**Type:** feature • **Effort:** M • **Deps:** S-12.4 • **FR/AD:** spec-local-ocp-hybrid-environment CAP-5
+**Surface:** new small dlt pipeline (pixi workspace), board + `gh project link`
+**Given** a classic PAT with `read:project` (fine-grained PATs cannot reach user-owned
+projects) **Then** a custom dlt GraphQL source (no verified source covers Projects V2;
+reuse `steward/sync.py`'s queries) loads items/fields/status into the `github_metrics`
+dataset on cluster Postgres via port-forward, within the 5,000-points/hr budget — the
+board created and repo-linked, queryable end to end; kin-declared to
+`spec-jira-github-projects-sync` Mode B, never a second sync engine.
+
+**Stories 12.4–12.6 and 12.8 clear to dispatch (12.8 after 12.4); 12.7 follows all three chart/bring-up stories.**
