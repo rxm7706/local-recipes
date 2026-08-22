@@ -2,14 +2,17 @@
 schema_version: 1
 
 context:
-  # Upstream's 2.0.0 is written up in CHANGELOG.md but NOT yet tagged (the
-  # section is headed "2.0.0 - Unreleased"), so this is a snapshot of main:
-  # .claude-plugin/marketplace.json metadata.version (2.0.0) + a .dev0
-  # marker, pinned to a commit — the bmad-labs-skills precedent. Bump
-  # `version` and `commit` together; switch to the tag archive once
-  # upstream cuts v2.0.0.
-  version: "2.0.0.dev0"
-  commit: 97ce6f15db343ce7a2433b81f5cbd562bab71aed
+  # Upstream renumbered PAST 2.0.0 without ever tagging it: main carries
+  # "Release 3.0.0" and "Release 3.1.0" commits (2026-07-27) but the
+  # CHANGELOG section is still headed "3.1.0 - Unreleased" and the latest
+  # tag remains v1.0.1 — so 2.0.0 will never exist upstream. This is a
+  # snapshot of main: .claude-plugin/marketplace.json version (3.1.0) + a
+  # .dev0 marker, pinned to a commit — the bmad-labs-skills precedent.
+  # Conda ordering stays safe: 2.0.0.dev0 < 3.1.0.dev0 < a future 3.1.0
+  # tag. Bump `version` and `commit` together; switch to the tag archive
+  # once upstream cuts a 3.x tag.
+  version: "3.1.0.dev0"
+  commit: c9bcf75939c841b0dcc38df4d34db2074bb03bca
 
 package:
   name: bmad-manticore
@@ -17,7 +20,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-manticore/archive/${{ commit }}.tar.gz
-  sha256: 9e1db7a797c2159f51aa08ae8c6d2e658bbaefc55bc929a6a31761a53b0996aa
+  sha256: 0d72328161beae69ef557803737ad34686866917be16db063aadd85ff4aee8f2
 
 build:
   number: 0
@@ -52,7 +55,7 @@ about:
   repository: https://github.com/bmad-code-org/bmad-manticore
   license: MIT
   license_file: LICENSE
-  summary: BMad Manticore — AI video production pipeline packaged as an installable BMad Method module (16 mc-* skills)
+  summary: BMad Manticore — AI video production pipeline packaged as an installable BMad Method module (15 mc-* skills)
   description: |
     BMad Manticore is an AI video production pipeline for content creators,
     distributed as an installable BMad Method module / Claude Code plugin
@@ -64,11 +67,11 @@ about:
     render — with approval gates at every taste decision and an editor
     timeline export written alongside at every step.
 
-    This package ships the module content: the 16 ``mc-*`` skills (mc-agent,
+    This package ships the module content: the 15 ``mc-*`` skills (mc-agent,
     mc-setup, mc-new, mc-braindump, mc-outline, mc-script, mc-cut, mc-beats,
-    mc-graphics, mc-assets, mc-audio, mc-package, mc-pipeline, mc-ograf,
-    mc-retro, mc-stream-pack), the module manifest, the plugin marketplace
-    manifest, and the user guide.
+    mc-graphics, mc-assets, mc-audio, mc-package, mc-pipeline, mc-retro,
+    mc-stream-pack), the module manifest, the plugin marketplace manifest,
+    and the user guide.
 
     After installation, run ``bmad-manticore-install`` in your project
     directory to copy the skills into ``.claude/skills/`` so Claude Code can
@@ -90,7 +93,7 @@ extra:
   cfe-upstream-name: bmad-code-org/bmad-manticore
   cfe-purls:
     - pkg:conda/bmad-manticore@${{ version }}?channel=conda-forge
-    - "pkg:github/bmad-code-org/bmad-manticore@97ce6f15db343ce7a2433b81f5cbd562bab71aed"
+    - "pkg:github/bmad-code-org/bmad-manticore@c9bcf75939c841b0dcc38df4d34db2074bb03bca"
   cfe-upstream-repo: https://github.com/bmad-code-org/bmad-manticore
   cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-manticore
   cfe-import-names: []
@@ -101,11 +104,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-last-checked: "2026-08-21T00:00:00Z"
   cfe-generated-by-version: 8.79.1
   cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-26T12:47:24Z"
+  cfe-local-build-datetime: "2026-08-21T00:00:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -116,14 +119,16 @@ extra:
 #    # (bmad-utility-skills, bmad-labs-skills): a noarch:generic skills payload
 #    # under share/<name>/ plus a Python installer entry point.
 # context:
-#    # Snapshot of main at 97ce6f1 (2026-07-24, "Merge PR #8 from
-#    # drop-remotion"). CHANGELOG's 2.0.0 section is headed "Unreleased" and
-#    # no v2.0.0 tag exists, so the version is marketplace.json's 2.0.0 plus a
-#    # .dev0 marker and the source is a commit archive. 2.0.0 consolidates
-#    # motion graphics on HyperFrames (Remotion retired), makes the final
-#    # render incremental, and adds Windows/Linux/Intel-Mac support. Skills
-#    # set is unchanged at 16 mc-*. Switch to the tag archive when v2.0.0
-#    # is cut.
+#    # Snapshot of main at c9bcf759 (head as of the 2026-08-21 BMAD 6.11.0
+#    # sweep). Upstream renumbered past 2.0.0 without tagging it — "Release
+#    # 3.0.0" / "Release 3.1.0" commits landed 2026-07-27, CHANGELOG says
+#    # "3.1.0 - Unreleased", latest tag is still v1.0.1, and there is NO
+#    # package.json (the version of record is marketplace.json, now 3.1.0).
+#    # The prior local 2.0.0.dev0 snapshot will never correspond to an
+#    # upstream release; superseded by 3.1.0.dev0 (conda ordering safe:
+#    # 2.0.0.dev0 < 3.1.0.dev0 < 3.1.0). 3.x drops mc-ograf (skills set is
+#    # now 15 mc-*) and adds skills/module-help.csv. Switch to the tag
+#    # archive once upstream cuts a 3.x tag.
 # build:
 #    # Only skills/ + .claude-plugin/ + README.md + docs/user-guide.md are
 #    # packaged. docs/assets/ is 11 MB of marketing media (banner JPEGs and an
