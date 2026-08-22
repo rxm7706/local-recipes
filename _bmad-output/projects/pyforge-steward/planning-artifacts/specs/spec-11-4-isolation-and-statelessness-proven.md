@@ -2,8 +2,9 @@
 title: 'Isolation and statelessness proven'
 type: 'test'
 created: '2026-08-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '150a8057b9076f768f59eaa9f61266de1f401fca'
+final_revision: '17f0d9b95f36aafb872c1d500bda4b6252e66f4f'
 review_loop_iteration: 0
 followup_review_recommended: true
 context: ['{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md', '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md']
@@ -111,3 +112,19 @@ All commands below assume the AD-16 Tier-1 environment the Dev Notes describe: t
 **Manual checks (if no CLI):**
 - Each live mutation (planted duplicate table / deleted flow row / deleted marker) turns exactly its real test RED; restoring turns it GREEN — evidence in Dev Notes
 - `docker compose -f src/platform/compose/compose.yml ps -a` shows no lingering `dbgpt` container after the real run
+
+## Auto Run Result
+
+**Status:** done (branch `steward/11-4-isolation-statelessness-land`, implementation commit `17f0d9b95f36`; not pushed — the landing session owns push/PR/ledger).
+
+**Summary:** Resumed the 546-line WIP proof suite from `backup/steward-a9b6f8d0`, extended its Pattern-A proof to cover the "no session" clause (cycle 2 re-runs the flow with cycle 1's API key; write-path counts must exactly double), verified everything live at AD-16 Tier 1 AND Tier 2 (a real `docker compose kill`+`start` of the `dbgpt` sidecar), and hardened it through an adversarial + edge-case review pass (7 patches, headline: the module-level langflow importorskip was silently disabling all three guard-removed companions in the pip-only CI lane, falsifying AC6 — now per-test gating, proven in a langflow-less venv).
+
+**Files changed:**
+- `src/platform/tests/test_isolation_and_statelessness.py` — Pattern-A API-key/doubling extension; per-test `requires_langflow` gating; bogus-key vacuousness guard; evidence-bearing failure messages; two gate-forced WIP fixes (formatter, `fetchone` None-guard)
+- this spec — authored (new), with dated Dev Notes for both verification passes, the review triage log, and DW-FU-11-4's deferral context
+
+**Review findings breakdown:** 7 patched (1 high, 3 medium, 3 low), 1 deferred (DW-FU-11-4, Tier-3 file), 4 rejected. No intent_gap, no bad_spec, no loopbacks.
+
+**Verification:** Tier 1 story suite 5 passed + 1 skipped; pip-lane (langflow-less local.txt venv) 3 passed + 3 skipped; Tier 2 real docker round trip 6 passed (27.54s; same-container-id premise asserted in-test); full `src/platform` suite 48 passed + 1 skipped; ruff check/format clean; mypy clean (50 files); `dbgpt_schema` zero-tables invariant intact and no containers left behind. Five live red/green mutation demos total (planted `public.flow`; deleted flow row; deleted marker row; deleted apikey rows; partial `vertex_build` deletion) — every real assertion demonstrated able to fail.
+
+**Residual risks:** the docker-compose proof is opt-in (`PLATFORM_DOCKER_COMPOSE_TESTS=1`) by design and runs in no CI job — it was proven live on this host, and the skip reason names the capability; the Tier-1 Postgres was 18.6 (conda) vs CI's 17 — noted honestly in Tasks/Dev Notes; the langflow-dependent proofs still run only where langflow is installed (the `platform-dev`/`python-agent-platform` envs), same as the rest of the langflow test surface.
