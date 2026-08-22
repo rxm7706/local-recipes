@@ -170,6 +170,21 @@ artifacts via the public Azure REST API (no PAT), and extracts to
 — a valid `file://` mamba channel. See
 `guides/testing-recipes.md` § "Downloading artifacts from a PR".
 
+### Publishing to the SelfExplainML channel (anaconda.org)
+
+```bash
+# ALWAYS pass -s: the bare client asks an interactive anaconda.com-vs-.org
+# destination question that hangs non-TTY sessions with
+# `error: (25, 'Inappropriate ioctl for device')`.
+anaconda -s https://api.anaconda.org whoami   # expect: Username: SelfExplainML
+anaconda -s https://api.anaconda.org upload --user SelfExplainML \
+    build_artifacts/<config>/<subdir>/<name>-<version>-<build>.conda
+```
+
+Auth comes from the keyring (`~/.anaconda/keyring`); bump the matching
+pixi.toml floor only AFTER the upload lands, or `pixi install` breaks for
+everyone (proven live 2026-08-21, the bmad-suite refresh).
+
 ## Linting
 
 ```bash

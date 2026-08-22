@@ -1,6 +1,7 @@
 ---
-status: in-progress
-spec_updated: 2026-07-12
+status: shipped
+spec_updated: 2026-08-21
+shipped_ref: "W1 commit 277100e458 (6.6.0->6.10.0); closeout 2026-08-21 on branch bmad-method-v6.11.0-update: Rule-2 CFE retro landed as skill v8.83.0 (CHANGELOG), core since upgraded to 6.11.0 + bmad-loop 0.11.0"
 ---
 # Tech Spec: BMAD 6.10 upgrade + bmad-loop adoption
 
@@ -199,9 +200,9 @@ single-branch flow limiting.
 - [x] W1: manifest reads 6.10.0; `bmad-dev-auto` present; custom layers verified; drift-check green.
 - [x] W2: `bmad-loop` runs from the pixi env; init complete; policy committed; validate green modulo the W3 feed.
 - [x] W3 (feed): sprint-status generated (20/20 actionable); `bmad-loop validate` 9/9 OK.
-- [ ] W3 (pilot): human hooks-approval + the Story-1.1 run reaches the spec-approval gate.
+- [x] W3 (pilot): human hooks-approval + the Story-1.1 run reaches the spec-approval gate. (Satisfied beyond the pilot: bmad-loop ran the entire pyforge-warden implementation — 31/31 stories — and weeks of 8-station fleet operation.)
 - [x] W4: both staged-recipes **#33513** recipes mirrored + built GREEN locally + consumable via the `bmad-ui` pixi env (`bmad-dashboard-install`, `mybmad`).
-- [ ] Rule-2 CFE-skill retro at closeout (engaged by W4).
-- [ ] `status: shipped` with `shipped_ref`.
+- [x] Rule-2 CFE-skill retro at closeout (engaged by W4). Landed 2026-08-21 as CFE v8.83.0 (G109/G110 + G92 recurrence + SelfExplainML publish flow), covering the W4 dashboard recipes lineage and the 6.11-era suite refresh.
+- [x] `status: shipped` with `shipped_ref` (2026-08-21).
 
 *CFE Rules 1/2: N/A (no recipe work) — unless the bmad-loop conda-forge packaging follow-on is taken up, which would engage them.*
