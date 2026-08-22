@@ -750,9 +750,11 @@ depending on them without adding them first:
 - **pixi-devenv, pixi-browse, nebi-desktop** — python>=3.13-only or glibc
   constraints. (`pixitainer` is NOT parked — it is live, linux-64-only, in
   `local-recipes`; see § 3.)
-- **bmad-story-automator, bmalph, bmad-autopilot** — BMAD-adjacent
+- **bmalph, bmad-autopilot** — BMAD-adjacent
   tools parked (unix-only or superseded by bmad-loop). (`mybmad-dashboard` is NOT
-  parked — it is live in the `bmad-ui` env; see § 12.)
+  parked — it is live in the `bmad-ui` env; see § 12. `bmad-story-automator` is
+  gone entirely: retired upstream in favor of bmad-loop, recipe removed
+  2026-08-21.)
 - **claude-mem, caveman, headroom-ai, codegraph, ppt-master, aichat** — parked
   agent-tooling candidates.
 - **ffmpeg** — never listed; pydub/audio work beyond WAV needs it added first.

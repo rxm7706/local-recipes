@@ -1255,7 +1255,6 @@ bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restru
 #mybmad-dashboard = ">=0.1.0.dev0" # Next.js web dashboard + Postgres launcher # mirror of PR #33513 # linux/osx only #  https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
 bmad-labs-skills = ">=1.0.0.dev0" # community skills marketplace (21 skills) # https://github.com/bmad-labs/skills
 bmad-manticore = ">=2.0.0.dev0"   # From brain dump to a rendered, graphics-rich video, in your own words
-#bmad-story-automator = ">=1.15.0" # ARCHIVED story orchestration skill + helper runtime  bumped + build fixed for upstream restructure; unix-only (skip: win) # PR #33128 # https://github.com/bmad-code-org/bmad-automator
 #bmalph = ">=2.11.0"               # BMAD phases + Ralph loop CLI  current # PR #33557 # https://github.com/LarsCowe/bmalph
 #bmad-autopilot = ">=0.1.0"        # community precursor loop w/ PR-lifecycle automation # unix-only (skip: win) # https://github.com/martin-janci/autopilot
 #claude-mem = "*"                  # Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory.
