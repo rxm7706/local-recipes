@@ -28,6 +28,7 @@ SCRIPTS = [
     "epss_fetcher.py",
     "export_purls.py",
     "failure_analyzer.py",
+    "failure_catalog_generator.py",
     "feedstock_context.py",
     "feedstock_enrich.py",
     "feedstock_health.py",

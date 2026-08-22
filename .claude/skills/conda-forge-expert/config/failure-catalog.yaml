@@ -1,0 +1,889 @@
+# GENERATED FILE — DO NOT HAND-EDIT.
+# Regenerate with: pixi run -e local-recipes generate-failure-catalog
+# Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
+# "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
+# regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
+source_sha256: "e8abd10e6a5826ae5453c5024e058acc8ddd290098a2f9f3b55b95609ef16087"
+rows:
+  - id: G1
+    title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
+    symptom_signature:
+      - "export FOO=bar"
+      - "pip install"
+      - "CFLAGS"
+    enforced_by: null
+  - id: G2
+    title: "v0/meta.yaml field names in v1 recipe.yaml are silently ignored"
+    symptom_signature:
+      - "about.dev_url"
+      - "about.doc_url"
+      - "about.home"
+    enforced_by: ".claude/skills/conda-forge-expert/scripts/recipe_optimizer.py:ABT-002"
+  - id: G3
+    title: "`py < N` skip selectors do nothing in v1 recipe.yaml"
+    symptom_signature:
+      - "build.skip: - py < 311"
+      - "requires a different Python: 3.10.X not in '>=3.11'"
+    enforced_by: ".claude/skills/conda-forge-expert/scripts/recipe_optimizer.py:SEL-003"
+  - id: G4
+    title: "Sdist may omit LICENSE — `pip install` succeeds, build fails with \"No license files were copied\""
+    symptom_signature:
+      - "validate_recipe"
+      - "Copying license files"
+      - "No license files were copied"
+      - "LICENSE"
+    enforced_by: null
+  - id: G5
+    title: "tree-sitter PyPI sdists inconsistently strip `src/tree_sitter/*.h` headers — default to GitHub source"
+    symptom_signature:
+      - "tree-sitter-<lang>"
+      - "tree_sitter/parser.h"
+    enforced_by: null
+  - id: G6
+    title: "npm packages with rich transitive deps ship `node_modules/.bin/` symlinks that fail noarch builds"
+    symptom_signature:
+      - "noarch: generic"
+      - "npm pack"
+      - "npm install --global"
+      - ".conda"
+    enforced_by: null
+  - id: G7
+    title: "Grayskull's inferred Python import name can be wrong — verify against the sdist"
+    symptom_signature:
+      - "generate_recipe_from_pypi"
+      - "validate_recipe"
+      - "optimize_recipe"
+    enforced_by: null
+  - id: G8
+    title: "Grayskull adds redundant `wheel` + `setuptools` host deps for poetry-core projects"
+    symptom_signature:
+      - "pyproject.toml"
+      - "build-system: requires = [\"poetry-core\"]"
+    enforced_by: null
+  - id: G9
+    title: "Monorepo upstreams may have no per-language Git tag — pin the LICENSE to a commit hash"
+    symptom_signature:
+      - "https://raw.githubusercontent.com/<org>/<repo>/v${{ version }}/LICENSE"
+      - "vN.M.K"
+    enforced_by: null
+  - id: G10
+    title: "PyPI → conda-forge name divergence — verify across four spellings before declaring a dep missing"
+    symptom_signature:
+      - "requirements.run:"
+      - "missing"
+      - "-py"
+      - "-python"
+    enforced_by: null
+  - id: G11
+    title: "PyPI sdist symlinks fail hatchling's wheel build on Windows"
+    symptom_signature:
+      - "noarch: python"
+    enforced_by: null
+  - id: G12
+    title: "Platform-conditional `run:` deps in noarch:python recipes need `noarch_platforms` in `conda-forge.yml`"
+    symptom_signature:
+      - "noarch: python"
+      - "if: linux / then:"
+    enforced_by: null
+  - id: G13
+    title: "CWD persists across `script:` list entries — and `(cmd)` is not a subshell on Windows cmd.exe"
+    symptom_signature:
+      - "build.script:"
+      - "Directory '.' is not installable. Neither 'setup.py' nor 'pyproject.toml' found."
+      - "cd subdir && ..."
+      - "(parens)"
+      - "isolate"
+    enforced_by: null
+  - id: G14
+    title: "Autotick bot v0 version bumps can fail the conda-forge-linter `package.version` float-parse rule"
+    symptom_signature:
+      - "[bot-automerge] <pkg> vX.Y"
+      - "regro-cf-autotick-bot"
+      - "meta.yaml"
+    enforced_by: null
+  - id: G15
+    title: "Rebuilding the same recipe re-hashes the `.conda` artifact but leaves `repodata.json` stale"
+    symptom_signature:
+      - ".conda"
+      - "repodata.json"
+      - "pkg-1.0.0-h00.conda"
+      - "rattler-build build"
+      - "changed"
+      - "pixi run -e local-recipes rattler-build build --recipe recipes/X/recipe.yaml ..."
+      - "✔ all tests passed!"
+      - "pixi run rattler-index"
+    enforced_by: null
+  - id: G16
+    title: "PyPI Varnish CDN degradation on `/packages/source/<letter>/...` route"
+    symptom_signature:
+      - "HTTP status server error (503 Service Unavailable)"
+      - "https://pypi.org/packages/source/<letter>/<name>/<sdist>"
+      - "https://files.pythonhosted.org/packages/<2-char>/<2-char>/<long-hash>/<sdist>"
+      - "lyric-task"
+      - "Retry-After"
+      - "0"
+    enforced_by: null
+  - id: G17
+    title: "`pnpm install --ignore-scripts` doesn't suppress the root project's lifecycle scripts"
+    symptom_signature:
+      - "postinstall: node ./scripts/postinstall.mjs"
+      - "pnpm install --ignore-scripts --filter '@org/<app>...'"
+      - "postinstall"
+    enforced_by: null
+  - id: G18
+    title: "`workflow_settings.store_build_artifacts: true` (unscoped) crashes Windows Azure builds via 7z + INetCache ACLs"
+    symptom_signature:
+      - "Run Windows build: succeeded"
+      - ".conda"
+      - "Prepare conda build artifacts: failed"
+    enforced_by: null
+  - id: G19
+    title: "Windows pip-install fails `Error reading output: stream did not contain valid UTF-8` — set `PYTHONUTF8: \"1\"` (+ canonical Rust env block while you're there)"
+    symptom_signature:
+      - "Run Windows build"
+      - "pip install . -vv --no-deps --no-build-isolation"
+      - "stream did not contain valid UTF-8"
+    enforced_by: null
+  - id: G20
+    title: "v0 jinja `{{ X }}` syntax in v1 recipe.yaml is silently rendered as literal text"
+    symptom_signature:
+      - "schema_version: 1"
+      - "validate_recipe"
+      - "conda-smithy lint"
+    enforced_by: null
+  - id: G21
+    title: "conda-smithy mis-aligns the zip-keyed `is_python_min` flag when `python_min` is overridden upward"
+    symptom_signature:
+      - "skip: is_abi3 and not is_python_min"
+      - "conda_build_config.yaml"
+      - "python_min"
+      - "python_min: \"3.11\""
+      - "pyo3/abi3-py311"
+      - "'3.10'"
+      - ".ci_support/<platform>_is_python_mintruepython3.10.____cpython.yaml"
+    enforced_by: null
+  - id: G22
+    title: "Recipe-local CBC `python:` override using `*_cpython` suffix crashes smithy on py3.13+"
+    symptom_signature:
+      - "conda_build_config.yaml"
+      - "python"
+    enforced_by: null
+  - id: G23
+    title: "Inline `sed` + `powershell` in `build.script` hits cmd.exe escape hell — use `sed` (with `m2-sed` on Windows) for a single cross-platform line"
+    symptom_signature:
+      - "sed -i ..."
+      - "powershell -Command \"(Get-Content X) -replace ...\" | Set-Content X"
+    enforced_by: null
+  - id: G24
+    title: "Conda label ≠ wheel `dist-info` version — when upstream's `pyproject.toml` hardcodes a placeholder, `pip check` fails downstream"
+    symptom_signature:
+      - "validate_recipe"
+      - "build"
+      - "pip_check: true"
+      - "<pkg>-<X.Y.Z>-*.conda"
+      - "<pkg> >=0.7,<0.9"
+      - "pip check"
+    enforced_by: null
+  - id: G25
+    title: "Conda has no \"extras\" — flatten every `pkg[extra]` upstream dep into `run:`, and resolve each extra to its *actual* conda packages (which may be renamed)"
+    symptom_signature:
+      - "pyproject.toml"
+      - "dbgpt[client,cli,agent,code,...]"
+      - "httpx[socks]"
+      - "uvicorn[standard]"
+      - "celery[redis]"
+      - "pip_check"
+      - "ModuleNotFoundError"
+      - "<pkg> X has requirement <extra-dep>...; not satisfied"
+    enforced_by: null
+  - id: G26
+    title: "Loosening upstream `==` pins to `>=` requires patching the source pyproject when `pip_check: true` — the wheel METADATA bakes in the `==`"
+    symptom_signature:
+      - "pkg==X"
+      - "pkg >=X"
+      - "validate_recipe"
+      - "optimize_recipe"
+      - "check_dependencies"
+      - "pip check"
+    enforced_by: null
+  - id: G27
+    title: "A top-level `import` in a split package can eagerly pull a sibling's submodule whose deps are only declared under an extra"
+    symptom_signature:
+      - "noarch: python"
+      - "pip check"
+      - "ModuleNotFoundError: No module named 'bs4'"
+    enforced_by: null
+  - id: G28
+    title: "An external dep's broken `dist-info` version (e.g. conda-forge `pdfminer.six` → 0.0.0) breaks `pip_check` for any dependent that pins it exactly"
+    symptom_signature:
+      - "pip check"
+    enforced_by: null
+  - id: G29
+    title: "Multi-output recipe checkers are top-level-only — `optimize_recipe` TEST-001 and `check_dependencies` silently ignore `outputs[]`"
+    symptom_signature:
+      - "recipe:"
+      - "outputs:"
+      - "tests:"
+      - "requirements:"
+      - "optimize_recipe"
+      - "Recipe has no tests section"
+      - "validate_recipe"
+      - "No tests section defined"
+    enforced_by: null
+  - id: G30
+    title: "conda-forge `protobuf` is the Python bindings (no `protoc`) — Rust prost/tonic builds need `libprotobuf`; a stray host `protoc` masks it locally"
+    symptom_signature:
+      - "protoc"
+      - "build.rs"
+      - "tonic_build::compile_protos(...)"
+      - "prost_build::compile_protos(...)"
+      - "<crate> (.../build.rs)"
+      - "PROTOC"
+    enforced_by: null
+  - id: G31
+    title: "Overriding `python_min` upward on an existing feedstock — v1 needs a recipe-local `conda_build_config.yaml` (+ rerender); v0 needs `{% set python_min %}`; `context.python_min` is silently ignored in v1"
+    symptom_signature:
+      - "datetime.UTC"
+      - "tomllib"
+      - "requires-python >=3.12"
+      - "noarch: python"
+      - "python_min"
+    enforced_by: null
+  - id: G32
+    title: "Triaging autotick-bot version-bump PRs (flake vs. real fix) — and pushing the fix to the bot's branch"
+    symptom_signature:
+      - "[bot-automerge]"
+      - "git push"
+      - "gh pr checkout"
+    enforced_by: null
+  - id: G33
+    title: "Local rattler-build of a v1 feedstock recipe — don't pass `.ci_support` as a variant config; its strict `channel_sources` excludes the just-built package from its own test"
+    symptom_signature:
+      - "rattler-build build --recipe recipe.yaml --variant-config .ci_support/linux_64_.yaml …"
+      - "<pkg> ==<ver> … excluded because due to strict channel priority not using this option from: 'file:///…/<out>/'"
+      - "<dep> ==<X>, for which no candidates were found"
+    enforced_by: null
+  - id: G34
+    title: "`pkg_resources.declare_namespace` packages (e.g. `fs` / Pyfilesystem2) break under setuptools 81+ → `ModuleNotFoundError: No module named 'pkg_resources'`"
+    symptom_signature:
+      - "import <X>"
+      - "ModuleNotFoundError: No module named 'pkg_resources'"
+      - "__init__.py"
+    enforced_by: null
+  - id: G35
+    title: "noarch numpy env-marker selector collapse (a G12 refinement) — per-Python numpy run-dep selectors track numpy's *own* wheel-availability floor, not a package feature"
+    symptom_signature:
+      - "numpy"
+      - "noarch: python"
+      - "<3.13"
+      - "run:"
+    enforced_by: null
+  - id: G36
+    title: "Stale conda-forge build whose wheel METADATA caps a dep tighter than its conda `run:` dep → `pip check` fails even though the conda solve succeeds"
+    symptom_signature:
+      - "pip check"
+      - "<outer-pkg> A has requirement <dep> !=…,<X,>=…, but you have <dep> Y"
+      - "run:"
+    enforced_by: null
+  - id: G37
+    title: "`[tool.uv]` no-build / source flags in an sdist are NOT runtime dependencies — read deps only from `[project.dependencies]`"
+    symptom_signature:
+      - "apify-shared = false"
+      - "pyproject.toml"
+    enforced_by: null
+  - id: G38
+    title: "A compiled local-only prereq built for only ONE Python blocks consumers on other Python versions (compiled ≠ noarch)"
+    symptom_signature:
+      - "impit ==0.13.0, for which no candidates were found"
+      - "impit-0.13.0-py310...conda"
+    enforced_by: null
+  - id: G39
+    title: "setuptools_scm private-API `_version_helper` import breaks at metadata generation (cf ships setuptools_scm 8.x)"
+    symptom_signature:
+      - "ImportError: cannot import name '_types'"
+      - "Configuration"
+      - "fallbacks"
+      - "version.*"
+      - "setuptools_scm"
+      - "[tool.setuptools.dynamic] version = {attr = ...}"
+      - "_version_helper.py"
+      - "_version.py"
+    enforced_by: null
+  - id: G40
+    title: "A dependency can DROP a Python version in a newer release — a noarch consumer's declared floor then can't resolve the dep's latest build (refines G38)"
+    symptom_signature:
+      - "noarch: python"
+      - "python_min: \"3.10\""
+    enforced_by: null
+  - id: G41
+    title: "A hidden py3.11 floor via an unconditional PEP-655 / new-stdlib import overrides the consumer's declared `requires-python`"
+    symptom_signature:
+      - "requires-python >=3.10"
+      - "python_min: \"3.10\""
+      - "ImportError"
+    enforced_by: null
+  - id: G42
+    title: "Verify the CURRENT version's artifact shape before assuming compiled — build shape can change across versions"
+    symptom_signature:
+      - "py3-none-any"
+      - "Root-Is-Purelib: true"
+      - ".so"
+      - "compiled"
+      - ".pyd"
+      - "Root-Is-Purelib"
+      - "WHEEL"
+      - "RECORD"
+    enforced_by: null
+  - id: G43
+    title: "v1 inline `# comment` on a list item trips conda-smithy's comment-selector lint — use a full-line comment ABOVE instead"
+    symptom_signature:
+      - "recipe.yaml"
+      - "# comment"
+      - "extra:"
+    enforced_by: null
+  - id: G44
+    title: ".NET / C# CLI tools have NO source-build path on conda-forge — repackage the self-contained release binaries per-platform"
+    symptom_signature:
+      - "generate_recipe_from_pypi"
+      - "dotnet restore"
+    enforced_by: null
+  - id: G45
+    title: "A browser SPA (Vue/React/Svelte + Vite) is usually NOT conda-forge-submittable — run the viability gate first, then build local-only as a static-site + launcher"
+    symptom_signature:
+      - "package <web app> for conda-forge"
+      - "import"
+    enforced_by: null
+  - id: G46
+    title: "A stale local `meta.yaml`'s `noarch: python` flag can be WRONG for a genuinely-compiled package — the CURRENT sdist is the source of truth (the \"local-meta-is-wrong\" sibling of G42)"
+    symptom_signature:
+      - "meta.yaml"
+      - "noarch: python"
+      - "stdlib"
+      - "succeeds"
+      - ".so"
+    enforced_by: null
+  - id: G47
+    title: "A stale git-tracked recipe-dir `conda_build_config.yaml` (a verbatim copy of the global pinning CBC) breaks the build — lint errors + a variant `duplicate entry` collision; rattler-build auto-discovers it"
+    symptom_signature:
+      - "recipes/<name>/"
+      - "conda_build_config.yaml"
+      - "recipe.yaml"
+      - "conda-smithy lint"
+      - "MACOSX_DEPLOYMENT_TARGET"
+      - "c_stdlib_version"
+      - "duplicate entry \"<key>\""
+      - "duplicate entry \"libitk_devel\""
+    enforced_by: null
+  - id: G48
+    title: "\"Rust / Go upstream\" does NOT imply a heavy from-source compile — verify the actual PEP-517 build backend before sizing the build or adding `compiler('cxx')`"
+    symptom_signature:
+      - "compiler('rust')"
+      - "compiler('cxx')"
+      - "stdlib('c')"
+      - "cargo-bundle-licenses"
+    enforced_by: null
+  - id: G49
+    title: "Per-Python compiled ≠ abi3 — verify against `Cargo.toml` / setup.py before adding `version_independent` + `python-abi3`; a per-Python artifact needs a SIMPLE imports+pip_check test, not the CFEP-25 cross-version triad"
+    symptom_signature:
+      - "version_independent: ${{ is_abi3 }}"
+      - "python-abi3"
+      - "OPENSSL_DIR"
+      - "py_limited_api = false"
+      - "python_version: [${{ python_min }}.*, \"*\"]"
+      - "\"*\""
+      - ".so"
+    enforced_by: null
+  - id: G50
+    title: "A newer CPython that drops a private C-API symbol breaks a compiled build / a host pin — cap the python matrix to upstream's supported range with `match(python, \">=N\")` (NOT `py<N`, per G3)"
+    symptom_signature:
+      - "error: '_PyInterpreterState_Get' undeclared"
+      - "numpy<2.0"
+    enforced_by: null
+  - id: G51
+    title: "A GitHub monorepo subdir may ship NONE of the release-time-generated assets — source the PyPI wheel instead, or you ship a broken empty package (a possibly-already-deployed REAL BUG)"
+    symptom_signature:
+      - "prefer GitHub source"
+      - ".conda"
+      - "www/"
+    enforced_by: null
+  - id: G52
+    title: "Bulk recipe sweeps poison a shared local channel — build each recipe into an ISOLATED per-recipe output dir"
+    symptom_signature:
+      - "--output-dir"
+      - "fixedint 0.1.6"
+      - "build-clean-test-blocked"
+    enforced_by: null
+  - id: G53
+    title: "Refreshing an existing feedstock must RE-MERGE the deployed maintainer list — a regen emits only the invoker and silently drops co-maintainers"
+    symptom_signature:
+      - "recipe.yaml"
+      - "generate_recipe_from_pypi"
+      - "extra.recipe-maintainers"
+    enforced_by: null
+  - id: G54
+    title: "Source preference is `sdist > GitHub-source > wheel` — but the source must actually SHIP the module; verify before switching (existence ≠ usable)"
+    symptom_signature:
+      - "…-py3-none-any.whl"
+      - "Detected pure Python wheel(s) in source … it's preferred to use a source distribution (sdist) if possible."
+      - "the sdist"
+      - "ModuleNotFoundError"
+      - "0.0.0"
+    enforced_by: null
+  - id: G55
+    title: "\"No valid build backend found for Python recipe … using pip\" → a SOURCE build needs an explicit build backend in `host` (wheel installs do NOT)"
+    symptom_signature:
+      - "No valid build backend found for Python recipe for package &lt;X&gt; using pip. Python recipes using pip need to explicitly specify a build backend in the host section … you likely should add setuptools to the host section."
+    enforced_by: null
+  - id: G56
+    title: "Multi-output `noarch: python` build scripts must be cross-platform — bash `cd \"$SRC_DIR/<sub>\"` + `\"$PYTHON\"` fails on win-64; use `${{ PYTHON }} -m pip install ./<sub>`"
+    symptom_signature:
+      - "source:"
+      - "target_directory"
+      - "$SRC_DIR/core_src"
+      - "$PYTHON"
+    enforced_by: null
+  - id: G57
+    title: "A build-control env var set only via bash `export` is UNSET on win-64 — the build silently falls back to a network fetch (CMake FetchContent 404)"
+    symptom_signature:
+      - "export PYCBC_OPENSSL_DIR=\"${PREFIX}\""
+    enforced_by: null
+  - id: G58
+    title: "`lookup_feedstock` BEFORE submitting — a package already on conda-forge is rejected by the GHA linter (\"feedstock exists\"), even while the linting-service bot says \"excellent\""
+    symptom_signature:
+      - "in excellent condition."
+      - "linter.py"
+    enforced_by: null
+  - id: G59
+    title: "Prefer a SOURCE PATCH over an in-build `sed` for editing upstream source — bare `sed -i` fails on macOS/BSD sed (noarch builds on every platform), and reviewers ask for patches"
+    symptom_signature:
+      - "noarch"
+      - "sed -i 'script' file"
+      - "sed: 1: \"<file>\": extra characters at the end of p command"
+      - "pip check"
+      - "Can we do this with a patch instead? … it becomes harder to maintain and less readable than a patch."
+    enforced_by: null
+  - id: G60
+    title: "The strip-before-push must remove ONLY `extra.cfe-*` keys + `# CFE …` blocks — never the schema header or `context:` block"
+    symptom_signature:
+      - "Jinja template error: Template rendering failed: undefined value (in <string>:1) (template: ${{ version }})"
+      - "recipe.yaml:3"
+      - "version: ${{ version }}"
+    enforced_by: null
+  - id: G61
+    title: "GitHub commit-archive (`archive/<commit>.tar.gz`) sha256 can drift — GitHub re-gzips, breaking the recorded checksum"
+    symptom_signature:
+      - "https://github.com/<org>/<repo>/archive/<commit>.tar.gz"
+      - "× sha256 checksum validation failed for \".../src_cache/...<commit>.tar.gz\""
+    enforced_by: null
+  - id: G62
+    title: "NEVER ship `cfe-*` metadata — the strip is mandatory AND must be VERIFIED on the pushed artifact (verify, don't assume)"
+    symptom_signature:
+      - "extra.cfe-*"
+      - "#### CFE metadata"
+      - "# CFE comments"
+    enforced_by: null
+  - id: G63
+    title: "Open staged-recipes PRs with the conda-forge **template + completed checklist** — `--body` REPLACES the template, it does not merge"
+    symptom_signature:
+      - "review-requested"
+    enforced_by: null
+  - id: G64
+    title: "Request review with ONE language-matched ping AFTER CI is all-green — and check the PR's LABELS first (the bot's labels are the dedup signal)"
+    symptom_signature:
+      - "@conda-forge/help-<lang>, ready for review!"
+    enforced_by: null
+  - id: G65
+    title: "Local-vs-CI linter parity — lint with the CURRENT conda-smithy via `pixi exec`, and run the `linter.py` checks conda-smithy doesn't"
+    symptom_signature:
+      - "conda-forge-linter"
+      - "linter"
+      - "passed"
+    enforced_by: null
+  - id: G66
+    title: "A MERGED staged-recipes PR is NOT immediately installable — verify the prereq is LIVE on the cf channel before submitting its dependent"
+    symptom_signature:
+      - "just merged"
+      - "nothing provides <prereq>"
+    enforced_by: null
+  - id: G67
+    title: "An external feedstock's stale `run_constrained` can block a consumer — it lives in `constrains`, NOT `depends`, so verify with the REAL consumer solve (a narrow dry-run misses it)"
+    symptom_signature:
+      - "does X co-install with Y"
+    enforced_by: null
+  - id: G68
+    title: "After an upstream/feedstock skew resolves, PURGE the obsolete local workaround build — stale higher-build artifacts shadow the real cf package under strict channel priority"
+    symptom_signature:
+      - "excluded because due to strict channel priority not using this option from `file://…/build_artifacts/`"
+    enforced_by: null
+  - id: G69
+    title: "A multi-output / suite version bump can CASCADE to a sibling recipe bump via a tightened cross-dep — bump + rebuild the sibling locally AND flag the submitted PR"
+    symptom_signature:
+      - "pip_check"
+      - "<output> X.Y.Z has requirement <sibling>>=A.B.C, but you have <sibling> A.B.(C-1)"
+    enforced_by: null
+  - id: G70
+    title: "Reconcile a recipe's OWN `run_constraints` to upstream's real extra pins — it's soft (metadata-only, lint-verified), so it's a safe high-value faithfulness pass"
+    symptom_signature:
+      - "run_constraints"
+      - ">=0.1"
+      - "work"
+    enforced_by: null
+  - id: G71
+    title: "A dependency's event-loop reactor needs libev (Unix-only) or asyncore (removed in py3.12) — on win+py3.12+ `import <pkg>.cluster` raises, failing a noarch consumer's CFEP-25 `*` test (win-only)"
+    symptom_signature:
+      - "noarch: python"
+      - "cassio"
+      - "python_min"
+      - "python_version: \"*\""
+      - "cassandra.DependencyException: Unable to load a default connection class"
+      - "__init__"
+      - "import cassandra.cluster"
+    enforced_by: null
+  - id: G72
+    title: "Fold a same-monorepo sibling into a multi-output suite (per-output version + `pin_subpackage`) to dissolve a cross-feedstock submission gate"
+    symptom_signature:
+      - "${{ PYTHON }} -m pip install src/sdk …"
+      - "version"
+      - "sdk_version: \"0.2.1\""
+      - "package.version"
+      - "${{ pin_subpackage('<sibling>', exact=True) }}"
+      - "wait for the sibling PR"
+      - "python_min"
+      - "pin_subpackage"
+    enforced_by: null
+  - id: G73
+    title: "A noarch app built from a GitHub monorepo TAG ships NONE of the release-time-generated frontend/web assets (wheel-only) — and `import`/`pip_check` can't catch it (a G51 trap for apps with a UI)"
+    symptom_signature:
+      - "noarch: python"
+      - "langflow"
+      - "import <app>"
+      - "pip check"
+      - "<app> run"
+      - ".conda"
+      - "index.html"
+      - ".js"
+    enforced_by: null
+  - id: G74
+    title: "\"Is X on conda-forge?\" — the offline atlas can be STALE for recently-created feedstocks; cross-check live `channeldata.json` before any membership-driven destructive edit"
+    symptom_signature:
+      - "cf_atlas.db"
+      - "packages"
+      - "absent"
+      - "run_constraint"
+    enforced_by: null
+  - id: G75
+    title: "A lean staged-recipes SUBMISSION copy may go BEYOND the default cfe-strip — remove ALL comments + filter optional run_constraints to on-cf-only; branch off conda-forge MAIN, push to your fork, no PR"
+    symptom_signature:
+      - "extra.cfe-*"
+      - "# CFE …"
+      - "context:"
+      - "# yaml-language-server …"
+      - "schema_version: 1"
+      - "${{ }}"
+      - "run_constraints"
+      - "run_constraints:"
+    enforced_by: null
+  - id: G76
+    title: "A Unix-only dependency in a `noarch: python` recipe CANNOT be a hard dep — `noarch` bakes `depends` at build time, so the package becomes unsolvable on Windows; make it OPTIONAL (strip from the wheel + `run_constraints`)"
+    symptom_signature:
+      - "noarch: python"
+      - "win-64"
+      - "noarch"
+      - "gunicorn"
+      - "uvloop"
+      - "nothing provides <dep>"
+      - "pip check"
+      - "pip_check:"
+    enforced_by: null
+  - id: G77
+    title: "A TRANSITIVE dep whose conda feedstock dropped a win-only wheel marker breaks `pip check` on Windows — you can't fix it in your noarch recipe; exclude win via `conda-forge.yml noarch_platforms`, or fix the upstream feedstock"
+    symptom_signature:
+      - "pip check"
+      - "win32"
+      - "<your-pkg> → markitdown → magika"
+    enforced_by: null
+  - id: G78
+    title: "`cfe-submission-pr` / `cfe-on-conda-forge-status` are LOCAL hints that go STALE — answer \"is X on staged-recipes / conda-forge?\" from LIVE signals, never the cfe fields"
+    symptom_signature:
+      - "cfe-*"
+      - "pending/blocked, not submitted"
+    enforced_by: null
+  - id: G79
+    title: "`go-licenses save` fatals on a package's OWN non-OSI / non-standard license — pass `--ignore <module-path>` and ship the LICENSE separately"
+    symptom_signature:
+      - "go-licenses save ./cmd/<name> --save_path ..."
+      - "go build"
+      - "unknown"
+      - "github.com/<org>/<repo>"
+      - "github.com/<org>/<repo>/cmd/<name>"
+    enforced_by: null
+  - id: G80
+    title: "A waived external-feedstock metadata bug is often fixed by a same-version REBUILD — re-check the latest BUILD (build number), not the latest VERSION"
+    symptom_signature:
+      - "pdfminer.six"
+      - "Version: 0.0.0"
+      - "pdfplumber"
+      - "pdfminer.six==<exact>"
+      - "pip check"
+      - "cfe-pip-check: false:pdfminer.six"
+      - "is there a newer **version** of the dep?"
+    enforced_by: null
+  - id: G81
+    title: "conda-forge ships pnpm 11, which no longer reads `package.json`'s `pnpm` field — a lockfile made under pnpm <11 fails `--frozen-lockfile` with `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`; pin `pnpm <11`"
+    symptom_signature:
+      - "pnpm install --frozen-lockfile"
+      - "pnpm"
+      - "pnpm.overrides"
+      - "pnpm.patchedDependencies"
+      - "overrides"
+    enforced_by: null
+  - id: G82
+    title: "staged-recipes CANNOT build osx-arm64 (or any arm/aarch64) pre-merge — it's local-only (on a Mac) before merge, opt-in on the feedstock after"
+    symptom_signature:
+      - "conda-forge/staged-recipes"
+      - "osx-arm64"
+      - ".azure-pipelines/azure-pipelines-osx.yml"
+      - "osx_64: { CONFIG: osx64 }"
+      - "vmImage: macOS-15"
+      - "/Users/runner/bld/osx-64/"
+      - "linux_64"
+      - "win_64"
+    enforced_by: null
+  - id: G83
+    title: "A staged-recipes per-recipe `conda-forge.yml` is almost entirely INERT during the PR build — `build_all.py` reads ONLY `conda_build_tool`; every other key just SEEDS the post-merge feedstock"
+    symptom_signature:
+      - "recipes/<name>/conda-forge.yml"
+      - "provider"
+      - "build_platform"
+      - "noarch_platforms"
+      - "test"
+      - "workflow_settings.store_build_artifacts"
+      - "bot.*"
+      - "os_version"
+    enforced_by: null
+  - id: G84
+    title: "`migrate_to_v1` / `feedrattler` is a REMOTE-feedstock tool — it CANNOT convert a local `recipes/<name>/` directory"
+    symptom_signature:
+      - "migrate_to_v1"
+      - "feedrattler"
+      - "UnknownObjectException: 404 {\"message\": \"Not Found\"}"
+      - "org.get_repo(<arg>)"
+      - "conda-forge"
+    enforced_by: null
+  - id: G85
+    title: "A native `trigger_build` reports \"No build summary found — build may have crashed\" even on SUCCESS — confirm from the `.conda` artifact + `rattler-build test --package-file`"
+    symptom_signature:
+      - "mode=\"native\""
+      - "get_build_summary"
+      - "{\"status\": \"unknown\", \"message\": \"No build summary found — build may have crashed\"}"
+      - "build.pid"
+    enforced_by: null
+  - id: G86
+    title: "Omit `bot.run_deps_from_wheel` when the recipe PATCHES the wheel's dependency metadata — the bot would regenerate run deps from the wheel and DROP your hand-managed dep"
+    symptom_signature:
+      - "pip check"
+      - "run:"
+      - "bot.run_deps_from_wheel: true"
+    enforced_by: null
+  - id: G87
+    title: "v0→v1 FEEDSTOCK migration: verify the feedstock's CURRENT version FIRST (the local mirror can be stale → a silent downgrade), then bump build.number, rerender, and drop `conda_build.error_overlinking`"
+    symptom_signature:
+      - "mailpit"
+      - "1.30.2"
+      - "1.30.3"
+      - "gh api repos/conda-forge/<name>-feedstock/contents/recipe/meta.yaml --jq .content | base64 -d | grep version"
+      - "upstream/main"
+      - "git remote add upstream …"
+      - "git checkout -b migrate-to-v1 upstream/main"
+      - "cfe-*"
+    enforced_by: null
+  - id: G88
+    title: "Shared protobuf-namespace stubs (`buf.validate`, generated `<ns>/`) collide across a closure — one owner at the newest superset version; strip from siblings (often NOT cf-submittable)"
+    symptom_signature:
+      - "buf.validate"
+      - "buf generate"
+      - "buf/"
+      - "cel/"
+      - "google/cloud/*"
+      - "pip install <lib>"
+      - "import <lib>"
+      - "ModuleNotFoundError: No module named 'buf'"
+    enforced_by: null
+  - id: G89
+    title: "Stale red autotick PRs with Azure-pruned runs are UNRESTARTABLE — `restart ci` is a silent no-op; kick fresh CI with `please rerender` (which can disable bot-automerge)"
+    symptom_signature:
+      - "[bot-automerge]"
+      - "@conda-forge-admin, please restart ci"
+      - "buildId"
+    enforced_by: null
+  - id: G90
+    title: "Freshly-GENERATED recipes need a sanitize/verify pass before building — five verified generator emission gaps (including NO cfe block)"
+    symptom_signature:
+      - "generate_recipe_from_pypi"
+      - "REPLACE_LICENSE"
+      - "ModuleNotFoundError: No module named 'tests'"
+      - "#### CFE metadata"
+    enforced_by: null
+  - id: G91
+    title: "PEP 517 backend + plugin host deps the generator misses — `uv_build` backends and hatchling metadata hooks fail at METADATA-PREP; read `[build-system].requires` from the sdist"
+    symptom_signature:
+      - "error: metadata-generation-failed"
+      - "ERROR: Exception"
+      - "pip._vendor.pyproject_hooks._impl.BackendUnavailable: Cannot import 'uv_build'"
+      - "uv_build"
+      - "host:"
+      - "setuptools"
+      - "hatchling.plugin.exceptions.UnknownPluginError: Unknown metadata hook: requirements_txt"
+    enforced_by: null
+  - id: G92
+    title: "Any YAML re-serialization FOLDS the `#### CFE` comment block into plain inline keys — a subsequent stamp append then DUPLICATES them (parse-fatal); strip BOTH forms before stamping"
+    symptom_signature:
+      - "Failed to parse YAML: Duplicate key \"cfe-conda-name\""
+      - "cfe-*"
+      - "extra:"
+      - "####"
+    enforced_by: null
+  - id: G93
+    title: "conda-recipe-manager CRASHES on column-0 comments inside indented blocks — conda-smithy lint calls the recipe unparseable while rattler-build builds it fine; col-0 comments are safe ONLY at the document tail"
+    symptom_signature:
+      - "validate_recipe"
+      - "Error parsing recipe with conda-recipe-manager: ParsingException('The recipe parser ran into an unexpected issue…')"
+      - "RecipeReader"
+      - "IndexError: pop from empty list"
+      - "_construct_parse_tree"
+    enforced_by: null
+  - id: G94
+    title: "Local mirror dirs accumulate STALE feedstock files that fail local gates — prune against the LIVE feedstock on every refresh"
+    symptom_signature:
+      - "validate_recipe"
+      - "regeneration"
+    enforced_by: null
+  - id: G95
+    title: "`build-clean-test-blocked` means metadata-UNVERIFIED — a recipe whose local test env never solved has an unexercised import list and pip check; statically verify both before shipping it anywhere"
+    symptom_signature:
+      - "verified"
+      - "build-clean-test-blocked"
+      - "ModuleNotFoundError: No module named 'src'"
+      - "'go'"
+      - "not installed"
+    enforced_by: null
+  - id: G96
+    title: "When BUMPING an existing feedstock, the dep authority is the previous feedstock recipe + an upstream `requires_dist` diff — NEVER the regenerated recipe alone"
+    symptom_signature:
+      - "boto3"
+      - "wrapt"
+      - "setuptools-scm"
+      - "pybindgen"
+      - "python <X"
+    enforced_by: null
+  - id: G97
+    title: "An unsolvable env can be a C-ABI ERA DIAMOND between ecosystem pin epochs — diagnose at the repodata level (libabseil/libgrpc/libarrow pins), don't debug the recipe"
+    symptom_signature:
+      - "Cannot solve"
+      - "libabseil 20260107.1 conflicts with the versions reported above"
+      - "conflict with versions previously reported"
+    enforced_by: null
+  - id: G98
+    title: "Repo-wide cfe-metadata batch edits: line-based rewrites with a parse-gate after EVERY write, `\\g<1>` in re.sub, provenance-check failures against git — and purl-spec normalization keeps DOTS"
+    symptom_signature:
+      - "fails"
+    enforced_by: null
+  - id: G99
+    title: "Fixture-scale tests hide O(n²) VALIDATOR behavior — jsonschema's `uniqueItems` makes universe-scale CycloneDX validation intractable; strip + exact O(n) hash check + chunked parallel walk"
+    symptom_signature:
+      - "uniqueItems: true"
+      - "components"
+      - "uniqueItems"
+      - "sha1(json.dumps(c, sort_keys=True))"
+      - "validate the REAL full BOM"
+    enforced_by: null
+  - id: G100
+    title: "npm CLIs are per-arch recipes (openspec/bmalph pattern) — noarch + bash-wrapper + `__unix` cannot serve Windows and fights the symlink check"
+    symptom_signature:
+      - "noarch: generic"
+      - "bin/<name>"
+      - "node_modules/.bin"
+      - "if: unix then: __unix"
+      - ".cmd"
+    enforced_by: null
+  - id: G101
+    title: "npm dists that are shims over per-platform Bun static binaries — detect via `optionalDependencies`; the native may segfault and CANNOT be built from source"
+    symptom_signature:
+      - "npm-shim.js"
+      - "src/cli.js"
+      - "dependencies"
+      - "optionalDependencies"
+      - "@scope/<name>-<os>-<arch>"
+      - "\"native binary is not available for <platform>\""
+      - "--omit=optional"
+    enforced_by: null
+  - id: G102
+    title: "The staged-recipes win-64 leg builds noarch recipes too — a unix-only build script renders EMPTY on Windows and dies as \"No license files were copied\""
+    symptom_signature:
+      - "Error: × No license files were copied"
+      - "license_file"
+      - "IF \"\" == \"\" (call build_env.bat)"
+    enforced_by: null
+  - id: G103
+    title: "Don't copy npm `engines` version caps into conda run deps — the host nodejs run-export makes the combined constraint unsolvable"
+    symptom_signature:
+      - "run: nodejs >=20,<25"
+      - "engines"
+      - "nodejs >=20,<25"
+      - "nodejs >=26.5.0,<27.0a0"
+    enforced_by: null
+  - id: G104
+    title: "Strict channel priority: ANY stale local-channel package shadows every conda-forge version of that name"
+    symptom_signature:
+      - "package X is excluded because due to strict channel priority not using this option from 'conda-forge'"
+    enforced_by: null
+  - id: G105
+    title: "rattler-build python tests run `pip check` BY DEFAULT — an omitted `pip_check:` means true, and the repo convention is explicit true + dual `python_version`"
+    symptom_signature:
+      - "pip_check:"
+      - "<pkg> requires <dep>, which is not installed"
+    enforced_by: null
+  - id: G106
+    title: "A build-hook SKIP env var does NOT stop `hatch-build-scripts` from DELETING the hook's prebuilt artifacts first — `clean_artifacts` defaults to true, so skipping silently ships an incomplete package"
+    symptom_signature:
+      - "import <pkg>"
+      - "pip_check"
+      - ".conda"
+      - "Skipping local <X> build."
+    enforced_by: null
+  - id: G107
+    title: "A conda package EXISTING under the bare name does not mean it ships the Python module — the name may belong to a different artifact entirely, and the env solves green while `import` fails"
+    symptom_signature:
+      - "feedback_pypi_conda_mapping_unreliable"
+      - "-py"
+      - "-python"
+      - "does a package with this name exist?"
+      - "does that package contain the importable module?"
+      - "playwright"
+      - "bin/playwright"
+      - "playwright-python"
+    enforced_by: null
+  - id: G108
+    title: "Autotick's internal `recipe_editor.py` subprocess call must resolve the interpreter the same way as its sibling — a bare `\"python\"` argv0 breaks on any environment without a `python` alias"
+    symptom_signature:
+      - "recipe_updater.py"
+      - "--dry-run"
+      - "FileNotFoundError"
+      - "recipe_editor.py failed"
+      - "python3"
+      - "python"
+    enforced_by: null
+  - id: G109
+    title: "Upstream can renumber PAST your dev-snapshot version — a `X.Y.Z.dev0` recipe waiting for tag `X.Y.Z` may be waiting for a version that will never exist"
+    symptom_signature:
+      - "2.0.0.dev0"
+      - "switch to the tag archive once upstream cuts v2.0.0"
+    enforced_by: null
+  - id: G110
+    title: "An npm package can publish a bin entry EMPTY in one release and real in the next — re-read the `bin` map on every version bump, and smoke-test every bin you ship"
+    symptom_signature:
+      - "package.json"
+      - "\"bin\": {}"
+      - "version"
+      - "sha256"
+    enforced_by: null
