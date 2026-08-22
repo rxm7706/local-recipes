@@ -392,6 +392,13 @@ def gather_story_status(
     two of the three evidence routes are git queries, so an ungathered answer
     would read as "no evidence found" and convict a genuinely-landed story.
     That case returns a single WARN instead — cannot-evaluate is never a FAIL.
+
+    Premise note (2026-08-22, text-only — marshal Story 25.5): BMAD 6.11's
+    build-auto finalize writes ``done`` only at TRUE finalize (post-review),
+    no longer at dev completion, so the dev-marks-done window this detector
+    was built to contain has shrunk on 6.11-era runs. It has not closed —
+    pre-6.11 feeds, interrupted runs, and any non-finalize writer keep the
+    premise live — so detector behavior and containment are unchanged.
     """
     if loop_root is None:
         try:

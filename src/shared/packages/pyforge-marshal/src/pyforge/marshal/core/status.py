@@ -670,17 +670,46 @@ _DEFERRED_PHASE = "deferred"
 # whatever task is actually running later in the tuple -- precisely the
 # "stuck work reported as healthy" failure this command exists to prevent.
 _ESCALATED_PHASE = "escalated"
-_TERMINAL_TASK_PHASES = frozenset({_DONE_PHASE, _DEFERRED_PHASE, _ESCALATED_PHASE})
+# Story 25.5 (0.11 status vocabulary, CAP-5): bmad-loop 0.11.0's fourth
+# terminal phase -- the story's agent-doable work is finished and COMMITTED,
+# but its acceptance criteria include external actions only a human can
+# perform; the run moves on rather than halting (`bmad_loop.model.Phase.
+# AWAITING_OPERATOR`, deliberately NOT a pause upstream). Mirrored verbatim,
+# never re-spelled; `tests/unit/test_bmad_loop_status_vocabulary.py` pins
+# this literal against the installed package.
+_AWAITING_OPERATOR_PHASE = "awaiting-operator"
+# Mirrors `bmad_loop.model.TERMINAL_PHASES` EXACTLY ({done, deferred,
+# escalated, awaiting-operator}). Before Story 25.5 `awaiting-operator` was
+# missing, so a parked task read as still IN-FLIGHT: `derive_home_state`
+# reported `"running"` for a home whose only non-terminal-looking task was
+# deliberately parked awaiting `bmad-loop confirm`, and
+# `scripts/loop_stall_check.py` read the same run as a 15-minute stall
+# (DW-BL011-1) -- the same class of mislabel the 2026-08-07 `"escalated"`
+# fix above closed.
+_TERMINAL_TASK_PHASES = frozenset(
+    {_DONE_PHASE, _DEFERRED_PHASE, _ESCALATED_PHASE, _AWAITING_OPERATOR_PHASE}
+)
 
-#: The closed 5-value state vocabulary the spec's own Boundaries name: the
-#: 4 "healthy" states PLUS ``"unsupervised"`` -- never conflated with them
-#: (a dead supervisor is never reported as any of the other four).
+#: The ONE spelling of the parked state's human remedy suffix (Story 25.5):
+#: every text render projects the machine token ``"awaiting-operator"`` as
+#: ``awaiting-operator (run bmad-loop confirm)`` -- the machine field keeps
+#: the bare token; this suffix is the human projection, never a second
+#: state value.
+AWAITING_OPERATOR_REMEDY = "run bmad-loop confirm"
+
+#: The closed 6-value state vocabulary: the 4 "healthy" states PLUS
+#: ``"unsupervised"`` (never conflated with them -- a dead supervisor is
+#: never reported as any of the healthy four) PLUS ``"awaiting-operator"``
+#: (Story 25.5: a parked run -- >=1 task at ``awaiting-operator`` and no
+#: task in a non-terminal phase -- is deliberately still, completed via
+#: ``bmad-loop confirm``; never "stalled"/"dead"/"unsupervised"/"running").
 FLEET_STATES = (
     "idle",
     "running",
     "paused-on-escalation",
     "stopped",
     "unsupervised",
+    "awaiting-operator",
 )
 
 
@@ -733,33 +762,61 @@ def derive_home_state(
     ``engine_alive`` (the default, ``None``) reproduces today's exact
     behavior unchanged.
 
-    Ordering below matches the spec's own I/O matrix exactly:
+    **A parked run reports ``"awaiting-operator"`` (Story 25.5, CAP-5,
+    absorbing DW-BL011-1).** "Parked" = at least one task at bmad-loop
+    0.11's own ``Phase.AWAITING_OPERATOR`` AND no task in a non-terminal
+    phase -- a run actively driving another story stays ``"running"`` (a
+    park "must never block the stories behind it", bmad-loop's own design).
+    Precedence: escalation-pause > parked > finished/unsupervised. The
+    escalation pause outranks the park because it is run-halting by design
+    (the park never is); but once nothing is active, the confirm is the
+    truthful next action even for a ``finished`` run (the park's commit IS
+    real -- a re-spin is not the remedy, ``bmad-loop confirm`` is) or a
+    supervisor-dead one (a parked run's processes naturally wind down while
+    the human actions stay owed -- reporting it ``"unsupervised"``/dead is
+    exactly the DW's mislabel).
+
+    Ordering below otherwise matches the spec's own I/O matrix exactly:
     ``finished`` -> ``"stopped"``; ``paused_stage == "escalation"`` ->
-    ``"paused-on-escalation"``; a task whose ``phase`` is neither
-    ``"done"`` nor ``"deferred"`` -> ``"running"`` (mirrors
+    ``"paused-on-escalation"``; a task whose ``phase`` is outside
+    bmad-loop's own terminal set -> ``"running"`` (mirrors
     ``cli/retire.py``'s own reuse of the identical ``_DONE_PHASE``
     literal); otherwise -> ``"idle"`` (a run that exists but has no
     in-flight task right now -- e.g. between stories -- reads the same as
     "nothing to report" a caller with no run at all would report)."""
+    has_active = any(task.phase not in _TERMINAL_TASK_PHASES for task in tasks)
+    parked = not has_active and any(
+        task.phase == _AWAITING_OPERATOR_PHASE for task in tasks
+    )
+    if parked:
+        if paused_stage == _ESCALATION_PAUSED_STAGE:
+            return "paused-on-escalation"
+        return "awaiting-operator"
     if not finished and supervisor_alive is False and engine_alive is not True:
         return "unsupervised"
     if finished:
         return "stopped"
     if paused_stage == _ESCALATION_PAUSED_STAGE:
         return "paused-on-escalation"
-    for task in tasks:
-        if task.phase not in _TERMINAL_TASK_PHASES:
-            return "running"
+    if has_active:
+        return "running"
     return "idle"
 
 
 def _current_story_key(tasks: tuple[TaskPhaseSnapshot, ...]) -> str | None:
     """ "Current story" (the spec's own Always bullet): the ``story_key`` of
-    the FIRST ``TaskPhaseSnapshot`` whose ``phase`` is neither ``"done"``
-    nor ``"deferred"`` -- ``None`` when every task is terminal, or there
-    are none at all."""
+    the FIRST ``TaskPhaseSnapshot`` whose ``phase`` is outside bmad-loop's
+    own terminal set. Story 25.5: when NOTHING is active, falls back to the
+    FIRST ``awaiting-operator`` task (the story the operator owes a
+    ``bmad-loop confirm`` for) -- the fallback engages only after the full
+    active scan, so a parked story can never hide an active one. ``None``
+    when every task is terminal with none parked, or there are none at
+    all."""
     for task in tasks:
         if task.phase not in _TERMINAL_TASK_PHASES:
+            return task.story_key
+    for task in tasks:
+        if task.phase == _AWAITING_OPERATOR_PHASE:
             return task.story_key
     return None
 
@@ -832,6 +889,12 @@ class FleetHomeFacts:
     paused_reason: str | None = None
     escalated_spec_file: str | None = None
     escalated_task_phase: str | None = None
+    # Story 25.5 (CAP-5): `RunStatusSnapshot.escalated_preserve_ref`,
+    # threaded through verbatim exactly like the three Story-5.3 fields
+    # above -- the escalated story's own recovery pointer (an
+    # `attempt-preserve/*` git ref, unredacted like `commit_sha`), `None`
+    # when no ref was parked or the snapshot predates 0.10.
+    escalated_preserve_ref: str | None = None
     # Story 5.5 (FR-62/AD-48): the caller's own already-matched finding from
     # `scripts/unpushed_work_check.py --json --branches-only` (`cli/status.py``
     # runs that detector ONCE per sweep and matches by `ref == branch`) --
@@ -968,6 +1031,8 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "budget_consumed": None,
             "escalation_reason": None,
             "escalation_artifact": None,
+            "escalation_preserve_ref": None,
+            "parked_stories": (),
             "unpushed_work": facts.unpushed_work,
             "failed_patches": facts.failed_patches,
         }
@@ -993,6 +1058,8 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "budget_consumed": None,
             "escalation_reason": None,
             "escalation_artifact": None,
+            "escalation_preserve_ref": None,
+            "parked_stories": (),
             "unpushed_work": facts.unpushed_work,
             "failed_patches": facts.failed_patches,
         }
@@ -1049,6 +1116,24 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         "budget_consumed": facts.budget_consumed,
         "escalation_reason": escalation_reason,
         "escalation_artifact": escalation_artifact,
+        # Story 25.5 (CAP-5): the escalated story's recovery pointer --
+        # gated on the DERIVED state exactly like `escalation_reason`/
+        # `escalation_artifact` above (same 2026-08-07 review rationale:
+        # a stale ref must not leak into a row whose state is not the
+        # escalated one).
+        "escalation_preserve_ref": (
+            facts.escalated_preserve_ref if escalated else None
+        ),
+        # Story 25.5 (CAP-5): every task currently parked at bmad-loop
+        # 0.11's `awaiting-operator`, in `state.json`'s own task order --
+        # populated for ANY state (a park never blocks siblings, so a
+        # `running` run can legitimately carry parked stories the operator
+        # still owes), `()` when none.
+        "parked_stories": tuple(
+            task.story_key
+            for task in facts.tasks
+            if task.phase == _AWAITING_OPERATOR_PHASE
+        ),
         # Story 5.5: the caller's own already-matched detector finding,
         # verbatim -- never re-derived here (AD-48). `None` when no
         # matching finding exists, or the detector could not be consulted.
@@ -1167,6 +1252,12 @@ class RunDetailFacts:
     gate_verdicts: Mapping[str, str] = field(default_factory=dict)
     budget_by_story: Mapping[str, int | float] = field(default_factory=dict)
     open_intents: tuple[dict[str, object], ...] = ()
+    # Story 25.5 (CAP-5): `RunStatusSnapshot.sweeps_refused` verbatim --
+    # trigger -> reason slug (the closed `SWEEP_REFUSED_*` vocabulary).
+    # `None` = the live run state could not be read at all (the caller had
+    # no snapshot), NEVER a fabricated `{}`-clean; `{}` = a readable state
+    # that refused nothing.
+    sweeps_refused: Mapping[str, str] | None = None
 
 
 def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding | None]:
@@ -1189,6 +1280,7 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
             "paused_reason": None,
             "escalated_spec_file": None,
             "escalated_task_phase": None,
+            "sweeps_refused": None,
             "stories": [],
             "deferred": [],
             "open_intents": [],
@@ -1213,6 +1305,10 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
                 "phase": task.phase,
                 "commit_sha": task.commit_sha,
                 "branch": task.branch,
+                # Story 25.5 (CAP-5): the recovery pointer wherever an
+                # escalated/deferred story is surfaced -- reported
+                # verbatim for EVERY task (null when none was parked).
+                "preserve_ref": task.preserve_ref,
                 "gate_verdict": facts.gate_verdicts.get(rendered_key),
                 "budget_consumed": facts.budget_by_story.get(rendered_key),
             }
@@ -1226,6 +1322,9 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
             "branch": deferred_story.branch,
             "worktree_path": deferred_story.worktree_path,
             "spec_file": deferred_story.spec_file,
+            # Story 25.5 (CAP-5): same recovery pointer, on the
+            # `Phase.DEFERRED` subset's own rows.
+            "preserve_ref": deferred_story.preserve_ref,
         }
         for deferred_story in facts.deferred
     ]
@@ -1246,6 +1345,14 @@ def build_run_detail(facts: RunDetailFacts) -> tuple[dict[str, object], Finding 
         ),
         "escalated_task_phase": (
             facts.escalated_task_phase if facts.state_readable else None
+        ),
+        # Story 25.5 (CAP-5): trigger -> reason slug, verbatim. `None` when
+        # the live run state could not be read (mirrors the sibling
+        # snapshot-sourced fields above), never fabricated as `{}`-clean.
+        "sweeps_refused": (
+            dict(facts.sweeps_refused)
+            if facts.state_readable and facts.sweeps_refused is not None
+            else None
         ),
         "stories": stories,
         "deferred": deferred,

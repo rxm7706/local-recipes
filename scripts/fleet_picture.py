@@ -40,6 +40,39 @@ LOOP_ROOT = pathlib.Path.home() / ".bmad-loops"
 # routine gap a loop home carries between other stations' independent merges.
 STALE_BEHIND_THRESHOLD = 20
 
+# bmad-loop 0.11's operator-parked run state (marshal Story 25.5, DW-BL011-1):
+# the machine token stays bare `awaiting-operator`; the remedy suffix is the
+# one human projection, spelled identically everywhere run state is shown
+# (marshal status text, this table's state column, loop_stall_check.py).
+AWAITING_OPERATOR_LABEL = "awaiting-operator (run bmad-loop confirm)"
+
+
+def station_state(*, running: bool, story: str, hstate: str, done: int,
+                  total: int, backlog: int) -> str:
+    """The state-column cell for one station row -- pure, so the meta test
+    (test_fleet_picture_awaiting_operator.py) can pin the naming without
+    driving main()'s subprocess sweep. `hstate` is `marshal status`'s own
+    derived state for the station ("idle" when marshal reported nothing).
+
+    A `hstate == "awaiting-operator"` station (bmad-loop 0.11: >=1 story
+    parked for external human-only actions, nothing else active) is NAMED
+    with the confirm remedy -- never folded into the stopped/unsupervised
+    "needs re-spin" bucket: the parked story's work is already committed,
+    so `bmad-loop confirm` is the next action, not a re-spin."""
+    if running:
+        return f"RUNNING  {story[:38]}"
+    if hstate == "awaiting-operator":
+        return AWAITING_OPERATOR_LABEL
+    if hstate == "paused-on-escalation":
+        return "PAUSED - needs you (escalation)"
+    if hstate in ("stopped", "unsupervised", "unknown") and backlog:
+        return f"{hstate.upper()} - {backlog} left, needs re-spin"
+    if done == total:
+        return "complete"
+    if backlog:
+        return f"idle - {backlog} not started"
+    return "idle"
+
 
 def loop_home_staleness(
     loop_root: pathlib.Path = LOOP_ROOT, threshold: int = STALE_BEHIND_THRESHOLD
@@ -328,7 +361,8 @@ def main() -> int:
 
         rows.append((slug, len(stories), counts["done"], proj, counts["blocked"],
                      len(by_epic), ep_now, ep_proj, is_running,
-                     live.get(slug, {}).get("state", "idle"), counts["backlog"]))
+                     live.get(slug, {}).get("state", "idle"), counts["backlog"],
+                     counts["awaiting-operator"]))
         for k, v in (("tot", len(stories)), ("done", counts["done"]), ("proj", proj),
                      ("blkd", counts["blocked"]), ("ep", len(by_epic)),
                      ("epn", ep_now), ("epp", ep_proj)):
@@ -338,19 +372,9 @@ def main() -> int:
            f"{'epics':>7}{'ep now':>8}{'->proj':>8}  {'state'}")
     print(hdr)
     print("-" * (len(hdr) + 24))
-    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back) in rows:
-        if run:
-            state = f"RUNNING  {current.get(slug, '')[:38]}"
-        elif hstate == "paused-on-escalation":
-            state = "PAUSED - needs you (escalation)"
-        elif hstate in ("stopped", "unsupervised", "unknown") and back:
-            state = f"{hstate.upper()} - {back} left, needs re-spin"
-        elif done == n:
-            state = "complete"
-        elif back:
-            state = f"idle - {back} not started"
-        else:
-            state = "idle"
+    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, _aw) in rows:
+        state = station_state(running=run, story=current.get(slug, ""),
+                              hstate=hstate, done=done, total=n, backlog=back)
         print(f"{slug:<9}{n:>8}{done:>6}{proj:>8}{blkd:>6}{ep:>7}{epn:>8}{epp:>8}  {state}")
     print("-" * (len(hdr) + 24))
     print(f"{'PYFORGE':<9}{tot['tot']:>8}{tot['done']:>6}{tot['proj']:>8}"
@@ -373,7 +397,7 @@ def main() -> int:
     # which is why the report always states one or the other explicitly rather
     # than staying silent and letting "no news" mean two different things.
     needs, watch = [], []
-    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back) in rows:
+    for (slug, n, done, proj, blkd, ep, epn, epp, run, hstate, back, awaiting) in rows:
         if hstate == "paused-on-escalation":
             reason = ((live.get(slug, {}) or {}).get("escalation_reason") or "unstated").split(chr(10))[0][:110]
             needs.append(f"{slug}: PAUSED on escalation ({reason}) -- "
@@ -387,6 +411,15 @@ def main() -> int:
         elif not run and back and done != n:
             needs.append(f"{slug}: idle with {back} story(ies) not started -- "
                          f"needs a spin if it should be running")
+        # bmad-loop 0.11 (marshal Story 25.5): stories parked at
+        # `awaiting-operator` in the TRACKED ledger -- the durable board
+        # record of external human-only actions still owed, which outlives
+        # the run that parked them (the live-run case shows in the state
+        # column above; this line is what survives once the run is gone).
+        if awaiting:
+            needs.append(f"{slug}: {awaiting} story(ies) parked "
+                         f"{AWAITING_OPERATOR_LABEL} -- external actions "
+                         f"owed; confirm in the loop home when done")
         if blkd:
             watch.append(f"{slug}: {blkd} story(ies) BLOCKED -- will not run, "
                          f"not waiting on you")

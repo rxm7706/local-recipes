@@ -32,6 +32,7 @@ def _write_state(
     paused_story_key: str | None = None,
     paused_reason: str | None = None,
     finished: bool = False,
+    sweeps_refused: dict[str, str] | None = None,
 ) -> Path:
     run_dir = project / ".bmad-loop" / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -45,6 +46,11 @@ def _write_state(
         "finished": finished,
         "tasks": tasks,
     }
+    if sweeps_refused is not None:
+        # bmad-loop 0.11's own `RunState.to_dict` key, spelled verbatim
+        # (Story 25.5); omitted entirely for the pre-0.11 fixture shape,
+        # exercising `from_dict`'s own `{}` default.
+        state["sweeps_refused"] = sweeps_refused
     state_path = run_dir / "state.json"
     state_path.write_text(json.dumps(state), encoding="utf-8")
     return state_path
@@ -61,8 +67,9 @@ def _task(
     worktree_path: str = "",
     spec_file: str | None = None,
     commit_sha: str | None = None,
+    preserve_ref: str | None = None,
 ) -> dict[str, object]:
-    return {
+    task: dict[str, object] = {
         "story_key": story_key,
         "epic": 3,
         "phase": phase,
@@ -74,6 +81,11 @@ def _task(
         "spec_file": spec_file,
         "commit_sha": commit_sha,
     }
+    if preserve_ref is not None:
+        # bmad-loop 0.10/0.11's own `StoryTask.to_dict` key, spelled
+        # verbatim (Story 25.5); omitted for the pre-0.10 fixture shape.
+        task["preserve_ref"] = preserve_ref
+    return task
 
 
 # --- ordinary finish: no pause, no deferred stories ------------------------------
@@ -526,3 +538,128 @@ def test_a_malformed_state_json_degrades_tasks_to_none_snapshot(harness, tmp_pat
     (run_dir / "state.json").write_text("{not valid json", encoding="utf-8")
 
     assert harness.run_status_snapshot(tmp_path, "acme-run-1") is None
+
+
+# --- Story 25.5 (CAP-5): the 0.11 status vocabulary at the read seam ------------
+
+
+def test_awaiting_operator_phase_is_read_verbatim(harness, tmp_path):
+    """bmad-loop 0.11's fourth terminal phase round-trips through the seam
+    as the bare token -- never rejected as an unknown phase, never
+    re-spelled."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "25.1": _task("25.1", "done", commit_sha="cafe123"),
+            "25.2": _task("25.2", "awaiting-operator", commit_sha="beef456"),
+        },
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    by_key = {t.story_key: t for t in snapshot.tasks}
+    assert by_key["25.2"].phase == "awaiting-operator"
+    # A park carries a commit (terminal like DONE, unlike DEFERRED).
+    assert by_key["25.2"].commit_sha == "beef456"
+
+
+def test_preserve_ref_is_read_verbatim_on_tasks_and_deferred(harness, tmp_path):
+    """`preserve_ref` (0.10/0.11) reports VERBATIM -- a git ref like
+    `commit_sha`, never redacted, never re-validated against git."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "3.6": _task(
+                "3.6",
+                "deferred",
+                defer_reason="verify exhausted",
+                preserve_ref="attempt-preserve/20260822-abc123",
+            ),
+            "3.7": _task("3.7", "dev-running"),
+        },
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    by_key = {t.story_key: t for t in snapshot.tasks}
+    assert by_key["3.6"].preserve_ref == "attempt-preserve/20260822-abc123"
+    assert by_key["3.7"].preserve_ref is None
+    assert snapshot.deferred[0].preserve_ref == "attempt-preserve/20260822-abc123"
+
+
+def test_escalated_preserve_ref_reads_the_paused_storys_own_ref(harness, tmp_path):
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "3.7": _task(
+                "3.7",
+                "escalated",
+                spec_file="spec-3-7.md",
+                preserve_ref="refs/attempt-preserve-dirty/20260822-def456",
+            )
+        },
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous spec",
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert (
+        snapshot.escalated_preserve_ref
+        == "refs/attempt-preserve-dirty/20260822-def456"
+    )
+
+
+def test_escalated_preserve_ref_is_none_without_an_escalation(harness, tmp_path):
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "3.6": _task(
+                "3.6", "deferred", preserve_ref="attempt-preserve/20260822-abc123"
+            )
+        },
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.escalated_preserve_ref is None
+
+
+def test_sweeps_refused_is_read_verbatim(harness, tmp_path):
+    """`sweeps_refused` (0.11): trigger -> reason slug, the CLOSED
+    `SWEEP_REFUSED_*` vocabulary, reported as-is."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={"3.6": _task("3.6", "done")},
+        sweeps_refused={"epic-1": "dirty", "run-end": "not-started"},
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.sweeps_refused == {"epic-1": "dirty", "run-end": "not-started"}
+
+
+def test_a_pre_011_state_json_defaults_the_new_fields(harness, tmp_path):
+    """Matrix row 'Old state.json': a fixture without the 0.11 keys reads
+    back via `from_dict`'s own defaults -- `preserve_ref` None,
+    `sweeps_refused` {} -- behavior identical to today, never an error."""
+    _write_state(tmp_path, "acme-run-1", tasks={"3.6": _task("3.6", "deferred")})
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.tasks[0].preserve_ref is None
+    assert snapshot.deferred[0].preserve_ref is None
+    assert snapshot.escalated_preserve_ref is None
+    assert snapshot.sweeps_refused == {}
