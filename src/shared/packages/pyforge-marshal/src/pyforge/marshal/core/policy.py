@@ -383,9 +383,10 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # repo defaults match bmad_loop 0.11.0 stock -- each a choice, not an
     # accident:
     #
-    # "retry" (stock): the retry-then-salvage ladder is the right first
-    # response to a review timeout -- burn a review cycle per timeout-like
-    # verdict up to max_review_cycles, then defer.
+    # "retry" (stock): re-review on a timeout-like verdict, burning a review
+    # cycle per timeout up to max_review_cycles, then defer;
+    # "salvage-if-done" and "defer" are the alternative modes, not later
+    # rungs of this one.
     "review_on_timeout": "retry",
     # "escalate" (stock): matches the fleet's escalate-don't-silently-retry
     # posture -- a review that revokes the story's sprint sign-off pauses
@@ -880,9 +881,9 @@ def _valid_review_on_status_contradiction(value: object) -> str | None:
     return None
 
 
-def _valid_capture_kb(value: object) -> int | None:
+def _valid_stream_capture_kb(value: object) -> int | None:
     """``stream_capture_kb`` (Story 25.4): a plain ``int``, not ``bool``,
-    ``>= 0`` -- mirrors ``_valid_attempt_count``'s exact shape (0 = capture
+    ``>= 0`` -- mirrors ``_valid_attempt_count``'s shape (0 = capture
     nothing is a legitimate policy, legal on both sides: bmad-loop 0.11's
     own load floor is ``verify.stream_capture_kb >= 0``). A separate
     function rather than an alias of ``_valid_attempt_count`` per the
@@ -892,10 +893,28 @@ def _valid_capture_kb(value: object) -> int | None:
     to the attempt counts. Strict int-not-bool: the harness's own loader
     ``int()``-coerces this key, so marshal rejecting ``True``/``"256"``
     here is what keeps a coercible mismatch a VISIBLE finding instead of a
-    silent coercion one process later."""
-    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
-        return value
-    return None
+    silent coercion one process later.
+
+    Magnitude-bounded the same way ``_valid_parallel_count`` is (review
+    finding): an arbitrary-precision ``int`` built by non-string arithmetic
+    (e.g. ``10**5000``) would compose cleanly here and then blow up later
+    str/JSON conversion against Python's int-to-str digit limit
+    (``content_hash``'s ``json.dumps``, tomlkit's render) -- breaking the
+    "never raises on malformed content" posture one call later than
+    ``compose()`` itself. ``float(value)`` raises ``OverflowError`` on a
+    too-large int -- never the digit-limit error -- so probing magnitude
+    this way rejects the value before any later formatting ever could. Not
+    reachable via a real ``marshal-policy.toml`` (``tomllib``'s own parser
+    is gated by the identical digit limit and fails first), only via a
+    direct programmatic ``compose()`` call -- but the function's own
+    contract holds regardless of caller."""
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        return None
+    try:
+        float(value)
+    except OverflowError:
+        return None
+    return value
 
 
 def _valid_attempt_count(value: object) -> int | None:
@@ -1661,7 +1680,7 @@ def compose(
         ),
         "stream_capture_kb": _merge_field(
             "stream_capture_kb",
-            _valid_capture_kb,
+            _valid_stream_capture_kb,
             DEFAULT_POLICY["stream_capture_kb"],
             project,
             flags,

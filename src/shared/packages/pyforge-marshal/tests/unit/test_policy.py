@@ -1498,6 +1498,29 @@ def test_bmad_loop_knob_malformed_flag_keeps_valid_project_value():
     assert findings[0].path == "flag"
 
 
+def test_stream_capture_kb_rejects_an_arbitrary_precision_int_without_raising():
+    """Review finding: mirrors ``test_max_parallel_rejects_an_arbitrary_
+    precision_int_without_raising`` -- an int too large to convert to a C
+    double must come back as the ordinary MRS-POLICY-003 finding, never
+    compose cleanly and then blow up ``content_hash``'s ``json.dumps`` or
+    tomlkit's render against Python's int-to-str digit limit. Not reachable
+    via a real ``marshal-policy.toml`` (``tomllib`` hits the same digit
+    limit first), only via a direct programmatic ``compose()`` call."""
+    huge = int("9" * 400)
+    assert huge > 0  # it is not the >= 0 floor that must reject this
+
+    effective, findings = compose(
+        project_slug="acme", project={"stream_capture_kb": huge}, flags={}
+    )
+
+    assert effective.seed_view()["stream_capture_kb"].value == DEFAULT_POLICY[
+        "stream_capture_kb"
+    ]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
 def test_stream_capture_kb_zero_is_legal():
     """Matrix row 'Zero capture': 0 = capture nothing is a legitimate
     policy on both sides (bmad-loop 0.11's own load floor is >= 0)."""

@@ -260,7 +260,7 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_twenty_keys(capsys, monkeypatch):
+def test_config_prints_all_twenty_eight_keys(capsys, monkeypatch):
     """AC: 'every one of the (now 28, Story 25.4's 5 bmad-loop 0.10/0.11
     knobs joining Story 3.13's `max_parallel`, Story 6.9's `mcp_servers`,
     Story 4.5's `landing_resync_commands`, Story 4.4's
@@ -904,7 +904,12 @@ def test_config_set_on_a_budget_ceiling_is_a_usage_error(capsys, key):
 def test_config_set_on_a_bmad_loop_knob_is_a_usage_error(capsys, key):
     """Story 25.4's 5 bmad-loop 0.10/0.11 knobs join the budget ceilings as
     project-policy-only -- rejected the same clean way at the flag
-    boundary, never as a `MRS-POLICY-003` "malformed value" finding."""
+    boundary, never as a `MRS-POLICY-003` "malformed value" finding.
+
+    The literal value (`retry`, well-typed only for the enum keys) is
+    deliberately irrelevant: `_parse_set_item` rejects by KEY membership in
+    `_UNSETTABLE_KEYS` before any value parsing, so the bools and the int
+    hit the identical usage error regardless of what follows the `=`."""
     exit_code = main(["config", "--set", f"{key}=retry"])
     assert exit_code == EXIT_USAGE
     captured = capsys.readouterr()

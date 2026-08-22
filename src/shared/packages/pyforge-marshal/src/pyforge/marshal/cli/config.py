@@ -176,6 +176,8 @@ _UNSETTABLE_KEYS = frozenset(
 # `epic_surfaces` -- the spec's own Code Map enumeration order -- for the
 # same reason: no `--set` surface, `marshal-policy.toml` only. Story 3.13's
 # `max_parallel` (FR-184) follows the 4 budget ceilings for the identical
+# reason: `marshal-policy.toml` only, no `--set` surface. Story 25.4's 5
+# bmad-loop 0.10/0.11 knobs (CAP-4) follow `max_parallel` for the identical
 # reason: `marshal-policy.toml` only, no `--set` surface.
 _FIELD_ORDER: tuple[str, ...] = (
     "verify_commands",
