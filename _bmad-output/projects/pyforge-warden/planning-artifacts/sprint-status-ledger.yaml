@@ -45,7 +45,7 @@ development_status:
   6-7-epss-feed-the-min-epss-gate: done
   6-8-baseline-grandfathering: done
   6-9-fix-pr-actuator: done
-  7-1-sourcecontract-adapters-the-identity-api: backlog
+  7-1-sourcecontract-adapters-the-identity-api: done
   7-2-the-eligibility-union-carries-its-provenance: backlog
   7-3-cyclonedx-out-the-corpus-in: backlog
   8-1-upload-runs-the-real-engines-async: backlog
