@@ -7,6 +7,14 @@
   "files": {},
   "memlog": ""
  },
+ "pyforge-atlas/spec-conda-forge-packaging-inventory-operations": {
+  "files": {},
+  "memlog": "b801c61a2865834727e034c747d1bf2745f20b8a"
+ },
+ "pyforge-atlas/spec-enterprise-data-models-and-apis": {
+  "files": {},
+  "memlog": "3d9008859e95249d2ae6ef4fc4d1f108d464eb9c"
+ },
  "pyforge-atlas/spec-kedro-org-tooling-adoption": {
   "files": {},
   "memlog": ""
@@ -465,6 +473,10 @@
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
   "memlog": ""
+ },
+ "pyforge-doctor/spec-sibling-dreams-drift": {
+  "files": {},
+  "memlog": "6c0b9254350469bb15cf5189c300cc6d06c08d6a"
  },
  "pyforge-genesis/spec-pyforge-charter": {
   "files": {
@@ -1300,6 +1312,14 @@
    "scripts/deck_export.py": "dca2ed6dfd8cdd2a576b1ee56da9d6ff9b2645df"
   },
   "memlog": "70879d200b07775444a609737222efe47193f0bb"
+ },
+ "pyforge-herald/spec-pptx-custom-shapes": {
+  "files": {},
+  "memlog": "5064ee417f40d002c496a7d4d17f6ea8a22e7f1b"
+ },
+ "pyforge-herald/spec-pptx-deck-generation": {
+  "files": {},
+  "memlog": "a4fc9c242afeb8549464da51020cd4556bb9581a"
  },
  "pyforge-herald/spec-pyforge-herald": {
   "files": {
@@ -3409,6 +3429,14 @@
   "files": {},
   "memlog": "7afada4d5175d6d3874c334e0625dd1b419831af"
  },
+ "pyforge-mason/spec-machine-checked-recipe-knowledge": {
+  "files": {},
+  "memlog": "263b8ccd58bb0485f0321d31a813688b5946762a"
+ },
+ "pyforge-mason/spec-miniforge-installer": {
+  "files": {},
+  "memlog": "10d66dfe202825266e21a72dcc89eb9e6f2da4fb"
+ },
  "pyforge-mason/spec-packaging-factory": {
   "files": {
    ".claude/scripts/conda-forge-expert/README.md": "a7372e54da10dfd0c897434b14c00061c11fa23d",
@@ -3787,6 +3815,10 @@
   },
   "memlog": "4e89cb121ce63498989c60c42142e78b6fecc7be+5f9fe496520ccab96c69e6fb15ac9db0294f38d3"
  },
+ "pyforge-mason/spec-pixi-container-image": {
+  "files": {},
+  "memlog": "17040bda0453e7d51fc57729750c6e88b622fe8b"
+ },
  "pyforge-mason/spec-presenton-pixi-image": {
   "files": {},
   "memlog": "15e3f3cedbd590456e9b9cef34f12699805202fe"
@@ -3867,6 +3899,10 @@
   "files": {},
   "memlog": ""
  },
+ "pyforge-mason/spec-reusable-cicd-workflows": {
+  "files": {},
+  "memlog": "1c720ee8e6c35413ad469c1e7c357b7d40123292"
+ },
  "pyforge-scribe/spec-pyforge-scribe": {
   "files": {
    "src/shared/packages/pyforge-scribe/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
@@ -3895,6 +3931,10 @@
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
   "memlog": ""
+ },
+ "pyforge-scribe/spec-scribe-mines-raw-session-transcripts": {
+  "files": {},
+  "memlog": "cf1fd414cf341d6fb466b45cb605b1d2639d12ad"
  },
  "pyforge-scribe/spec-sentinel": {
   "files": {},
@@ -3926,6 +3966,10 @@
   "files": {},
   "memlog": "d165e07cd002a1297e7b961a4f4e10dc3a610719"
  },
+ "pyforge-steward/spec-developer-machine-bootstrap": {
+  "files": {},
+  "memlog": "fd1ac7827d657584038479ed55a366088fcd02ea"
+ },
  "pyforge-steward/spec-enterprise-airgap": {
   "files": {
    ".claude/skills/conda-forge-expert/scripts/_http.py": "5ff705aff127d11b462b4156d31d441293ffc917",
@@ -3948,6 +3992,14 @@
  "pyforge-steward/spec-local-ocp-hybrid-environment": {
   "files": {},
   "memlog": "e058fe692e01ef59826424ed3c691d4010f98016"
+ },
+ "pyforge-steward/spec-multi-repo-workspaces": {
+  "files": {},
+  "memlog": "b9d9a896e744d9748cea460bd718f898a25e3c30"
+ },
+ "pyforge-steward/spec-platform-fifteen-factors": {
+  "files": {},
+  "memlog": "a1a1d0772a52a2e037973d05a6597fbb7a98130e"
  },
  "pyforge-steward/spec-pyforge-steward": {
   "files": {
@@ -4202,6 +4254,14 @@
    "scripts/container-gates": "e963665a0bc5868c07d964669a026bb0fc151f41"
   },
   "memlog": "e4b8cc3e2747883de7542966a68f43d45e854630"
+ },
+ "pyforge-warden/spec-compliance-factory-web-face": {
+  "files": {},
+  "memlog": "da060f4a0063cd4f6e49a7259b365c86d9bb1a13"
+ },
+ "pyforge-warden/spec-package-inventory-eligibility": {
+  "files": {},
+  "memlog": "84ddf6505bd80acb872a54e33915ac3298096722"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {

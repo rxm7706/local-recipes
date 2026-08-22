@@ -300,3 +300,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   reason: 6 of the 10 watched bmad-* pins (bmad-loop, bmad-labs-skills, bmad-manticore, bmad-method-wds-expansion, bmad-module-template, bmad-utility-skills) are GitHub-only and 404 on registry.npmjs.org, so CAP-4's live npm path is structurally blind to them — including bmad-loop, the package whose 0.9.0-vs-0.11.0 lag motivated CAP-4. The `packages_watched` (10) vs `packages_checked` (4) evidence keeps the gap operator-visible; the follow-on is a GitHub-releases fallback query through the same fail-open budget. Relayed here because the DW pipeline cannot yet read frontmatter `deferred:` lists (marshal DW-BL011-2).
   status: open
+
+### DW-12-5-3: The spec-surface baseline write race RECURRED cross-process — scoped stamps from two live processes drop each other's entries
+  origin: live recurrence 2026-08-22 (parent session + the Story 25.5 agent stamping concurrently)
+  source_spec: `spec-12-5-*` orbit (Story 12.5 closed "the spec-surface baseline write race"; this is the cross-process shape)
+  severity: medium
+  reason: While the 25.5 agent ran scoped `--write-baseline --spec` stamps, the parent session's own scoped stamps interleaved — each full-file read-modify-write rewrote scripts/.spec-surface-baseline.json from its own read, and last-writer-wins dropped the other's entries (observed twice: 4 entries lost, re-stamped, then a DIFFERENT 8 lost — mason x2, scribe, steward x3, warden x2). Story 12.5's fix evidently does not cover two independent processes (or one path bypasses its lock). Remedy shape: file-lock (fcntl) around the read-modify-write, or merge-on-write keyed per spec (the file is per-spec keyed — a targeted upsert of only the stamped spec's entries would be race-immune by construction). Workaround until fixed: never stamp while another stamping process is live; do one consolidated pass on a quiet tree (this session's recovery).
+  status: open
