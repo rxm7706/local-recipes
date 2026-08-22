@@ -1,8 +1,8 @@
 ---
 spec: conda-forge-packaging-inventory-operations
-status: in-progress   # CAP-1 (16.1) chartered; CAP-2 (16.2) still backlog
+status: in-progress   # CAP-1 (17.1) chartered; CAP-2 (17.2) still backlog
 owner-dream: docs/dreams/conda-forge-packaging-inventory-operations.md
-surface:            # 16.1 claims the quartet + data files (per-file, not a glob — a
+surface:            # 17.1 claims the quartet + data files (per-file, not a glob — a
                      # scripts/conda-forge-packaging-inventory-operations* glob would
                      # be the same invisible-by-construction breadth the 2026-08-08
                      # scripts/ allowlist split removed; see spec_surface_allowlist.txt)
@@ -20,7 +20,7 @@ companions:          # the other two named quartet members ("prompt"/"replay" in
   - ../../../../../../docs/reference/conda-forge-packaging-inventory-operations_replay.md
 sources:
   - ../../../../../../docs/dreams/conda-forge-packaging-inventory-operations.md
-open_questions: []   # parselmouth fold placement RESOLVED 2026-08-22 at 16.1 — see § Constraints
+open_questions: []   # parselmouth fold placement RESOLVED 2026-08-22 at 17.1 — see § Constraints
 ---
 
 # SPEC — The packaging-inventory intake engine, governed
@@ -56,7 +56,7 @@ Never consume a prior consolidated inventory; the quartet stays the ONE
 toolchain (no second engine); gist id never in git; p2cf's three heuristics
 (all-main-builds-broken, builds-from-PyPI-source, DoD auto-check) join as
 enrichment signals per the 2026-08-22 fold charter. Parselmouth PyPI↔conda
-mapping fold placement (RESOLVED 2026-08-22, Story 16.1): the core
+mapping fold placement (RESOLVED 2026-08-22, Story 17.1): the core
 pyforge-atlas `mapping_manager`/`name_resolver` chain is the fold target,
 not this quartet — `..._openteams_identity.py`'s existing direct
 purl-associator fetch (`ASSOCIATOR_URL`) is a separate, narrower join and
