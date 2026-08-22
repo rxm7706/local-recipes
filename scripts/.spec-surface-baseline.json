@@ -2992,7 +2992,7 @@
    ".claude/skills/conda-forge-expert/templates/rust/cli-meta.yaml": "744902086052707027c1526411c6f95766991cc9",
    ".claude/skills/conda-forge-expert/templates/rust/cli-recipe.yaml": "0e450c3bf2b46f7687306d88047486387380dd9f",
    ".claude/skills/conda-forge-expert/templates/rust/library-recipe.yaml": "71924a89da2345d6dfcc53350e029ca41610a550",
-   ".claude/skills/conda-forge-expert/tests/conftest.py": "52689c4088e98507ac7f243a192c033d9e3e2231",
+   ".claude/skills/conda-forge-expert/tests/conftest.py": "904216696bf0fb67433f11c2951292ef49fa136b",
    ".claude/skills/conda-forge-expert/tests/data/bom-1.6.schema.json": "515e93df1b9be461b72ccd878e660a576c38ef9c",
    ".claude/skills/conda-forge-expert/tests/data/jsf-0.82.schema.json": "09bdb7c43640da683161882a779cd6d91528b570",
    ".claude/skills/conda-forge-expert/tests/fixtures/error_logs/unmatched.log": "ce12139ca296d7801e4f04cb9e8838aab2ad123b",
@@ -3036,6 +3036,7 @@
    ".claude/skills/conda-forge-expert/tests/fixtures/recipes/v1-noarch/recipe.yaml": "18de3d50de1f3c60e709f3f11aa19d9c72e73c90",
    ".claude/skills/conda-forge-expert/tests/fixtures/recipes/v1-pinned-vulnerable/recipe.yaml": "7464be911c9eb2e4557cbba7801c787f0caab2f0",
    ".claude/skills/conda-forge-expert/tests/integration/test_mcp_atlas_tools.py": "7e2b8a1abcbc10d7bb47fdb3e6af217c00765631",
+   ".claude/skills/conda-forge-expert/tests/integration/test_slice1_equivalence.py": "f2c5ba88aa878935c58764cb189fb5731d182e88",
    ".claude/skills/conda-forge-expert/tests/integration/test_workflow_generate_validate_optimize.py": "2e5d3c84d484d792049ef8aada8e2f4e8c80c86a",
    ".claude/skills/conda-forge-expert/tests/integration/test_workflow_npm.py": "cec3bcd783344401468080baae0ceca3fa73c059",
    ".claude/skills/conda-forge-expert/tests/integration/test_workflow_v0_to_v1_migration.py": "ca2a7bb491aacd85623aefc3e89086891fe99af2",
@@ -3046,7 +3047,9 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_dashboard_renders.py": "a499a898b1fccffd249f2d8a8c3d8430396d6676",
    ".claude/skills/conda-forge-expert/tests/meta/test_dashboard_resolve_project.py": "ba17aca69000cda1440d33774323c2c560dd8e76",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_bmad_core_drift.py": "1dba228910685b3238ee9f4b34de49beccdd5724",
+   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_dream_chain_gap.py": "8121f20e1181410235dd3e919dfa1199e9cf2c1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_loop_home_staleness.py": "0c7290f42a030f7fa6768383509edc9c39dc94fb",
+   ".claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_verification_staleness.py": "de1cafd3a8e1983adafde2031e175e8a4c5a6a72",
    ".claude/skills/conda-forge-expert/tests/meta/test_forward_dependency_check.py": "89a0dae562b448c251ba36e7281c0f8f1f9ce1ac",
    ".claude/skills/conda-forge-expert/tests/meta/test_no_redundant_python_min.py": "e70772c3b06d743e7a4846c24366f70f70f96b0c",
    ".claude/skills/conda-forge-expert/tests/meta/test_pypi_intelligence_scope.py": "bb4e8a3e0137fa191d594d9779fb1802eb87308e",
@@ -3054,7 +3057,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_schema_header.py": "54b57ab14b4e154515b2a3c0e1cd8e66256d197d",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_files_tracked.py": "492e8be23f0ac59ff92d836b4238f649587ded1f",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py": "df36ab27bd20e8850c45ca9d1c897b59e4ec6c83",
-   ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "bcad7ecb6749a4d8d61b8ad639197d2266b2fd3b",
+   ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "2187b7a03678c17672a534c2f655182512fdef99",
    ".claude/skills/conda-forge-expert/tests/meta/test_unpushed_work_check.py": "36e123f54a48d409640a19e61016aa2c1d0c3130",
    ".claude/skills/conda-forge-expert/tests/pytest.ini": "6253aa543e8c7a2b1fd6e13cea99c64767d48b4c",
    ".claude/skills/conda-forge-expert/tests/run_skill_suite.py": "78de5e37d17b36cb46a6a58d2542836faccd4c44",
@@ -3157,7 +3160,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "5e4b8db5da15d2d54c575fc854d76d00c3ffe100"
   },
-  "memlog": "881bfd7057440b0b4e91b04ac6d841a4bda898f8"
+  "memlog": "ed99497835eb76b6d22d2528b4318ddd3804886e"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},

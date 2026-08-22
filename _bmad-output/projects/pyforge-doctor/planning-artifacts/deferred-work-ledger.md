@@ -278,3 +278,18 @@ marshal-owned (foreign to doctor); surfaced incidentally by Story 12.4's pass-2 
 deferred rather than fixed cross-station. Remedy: fix the entry in the owning spec (a real
 glob or the file list), then re-stamp that spec's surface baseline. Severity: low. Status:
 open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.
+
+## DW-FU-12-5 — Corrupt committed baseline dies with a raw JSONDecodeError on scoped stamps
+
+Pre-existing in `scripts/spec_surface_check.py`: a corrupt `scripts/.spec-surface-baseline.json`
+raises raw `json.JSONDecodeError` on a scoped `--write-baseline`. Remedy: a diagnostic naming
+the file and the re-stamp recovery path — never an `except -> {}` fallback (rejected in Story
+12.5's review as reintroducing the drop-every-other-spec hazard). Severity: low. Status: open.
+Relayed from the story worktree's ephemeral Tier-3 at landing, 2026-08-21.
+
+## DW-FU-12-5-2 — Zero-discoverable-specs full stamp silently wipes the baseline to `{}` at exit 0
+
+Pre-existing accept-everything semantics of the `--spec`-less full stamp, degenerate case: with
+spec discovery returning nothing it replaces the whole baseline with `{}`, exit 0. Remedy:
+refuse (or gate behind a flag) when the live snapshot is empty and the existing baseline is
+not. Severity: low. Status: open. Relayed 2026-08-21.

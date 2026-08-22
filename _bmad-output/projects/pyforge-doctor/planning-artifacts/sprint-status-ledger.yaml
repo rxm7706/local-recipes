@@ -33,7 +33,7 @@ development_status:
   12-2-the-exemplar-standard-conformance-table-is-refreshed-and-re-verified: done
   12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match: done
   12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: done
-  12-5-the-spec-surface-baseline-write-race-is-closed: backlog
+  12-5-the-spec-surface-baseline-write-race-is-closed: done
   13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic: done
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
@@ -73,13 +73,13 @@ development_status:
   9-4-loop-home-staleness-surfaces-in-the-attention-block: done
   epic-1: done
   epic-1-retrospective: optional
-  epic-10: backlog
+  epic-10: done
   epic-10-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
-  epic-12: backlog
+  epic-12: done
   epic-12-retrospective: optional
-  epic-13: backlog
+  epic-13: done
   epic-13-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
@@ -91,9 +91,9 @@ development_status:
   epic-5-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
-  epic-7: backlog
+  epic-7: done
   epic-7-retrospective: optional
   epic-8: done
   epic-8-retrospective: optional
-  epic-9: backlog
+  epic-9: done
   epic-9-retrospective: optional

@@ -746,12 +746,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "56/57",
+            "57/57",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "0",
             "remaining",
             ""
           ]
@@ -804,8 +804,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "12.5"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -1155,7 +1155,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "12.5",
-              "pending",
+              "done",
               "The spec surface baseline write race is closed"
             ]
           ]
@@ -4709,7 +4709,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-22 00:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-22 00:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7306,9 +7306,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "in-progress",
+          "state": "done",
           "note": "line 2 — consolidative wrap",
-          "done": 56,
+          "done": 57,
           "total": 57,
           "epics_path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
           "redirect": null
@@ -7693,7 +7693,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "56/57",
+        "progress": "57/57",
         "complete": 14,
         "of": 14
       },
@@ -19188,7 +19188,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "5 complete (atlas, herald, mason, scribe, warden); 3 building (doctor, marshal, steward)",
+        "gate": "6 complete (atlas, doctor, herald, mason, scribe, warden); 2 building (marshal, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -20145,7 +20145,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 12.5",
+        "line": "complete",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -20391,7 +20391,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 456,
+    "open": 458,
     "done": 26,
     "triaged": 145,
     "bySeverity": {
@@ -20399,7 +20399,7 @@ window.DASHBOARD_DATA = {
       "high": 1,
       "medium": 15,
       "low": 48,
-      "unspecified": 392
+      "unspecified": 394
     },
     "projects": [
       {
@@ -23595,7 +23595,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 25,
+        "open": 27,
         "done": 2,
         "triaged": 4,
         "entries": [
@@ -23787,6 +23787,20 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-12-5",
+            "title": "Corrupt committed baseline dies with a raw JSONDecodeError on scoped stamps",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-12-5-2",
+            "title": "Zero-discoverable-specs full stamp silently wipes the baseline to `{}` at exit 0",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
@@ -23854,15 +23868,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "11.4",
-      "epoch": 1787357268,
-      "sha": "7c7fcf8fd",
-      "subject": "steward: Story 11.4 - spec done, final_revision stamped"
+      "station": "doctor",
+      "story": "12.5",
+      "epoch": 1787360088,
+      "sha": "2f2e6654e",
+      "subject": "doctor: Story 12.5 — record final_revision in the story spec"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-22 00:17 UTC",
-    "generatedEpoch": 1787357860
+    "generatedAt": "2026-08-22 00:58 UTC",
+    "generatedEpoch": 1787360331
   },
   "storySpecs": [
     {
@@ -23873,8 +23887,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 56,
-      "tracked": 38,
+      "done": 57,
+      "tracked": 39,
       "gap": 18
     },
     {
@@ -24066,30 +24080,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "in-progress",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 56,
-        "backlog": 1,
-        "blocked": 0,
-        "total": 57,
-        "next": "12-5-the-spec-surface-baseline-write-race-is-closed",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "12-5-the-spec-surface-baseline-write-race-is-closed"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -24116,6 +24106,28 @@ window.DASHBOARD_DATA = {
         "backlog": 0,
         "blocked": 0,
         "total": 55,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      },
+      {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 57,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 57,
         "next": "",
         "blockedKeys": [],
         "backlogKeys": [],
@@ -24209,8 +24221,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 407,
-      "backlog": 54,
+      "done": 408,
+      "backlog": 53,
       "blocked": 0,
       "total": 461
     }
@@ -24231,13 +24243,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 57,
-        "done": 56,
+        "done": 57,
         "blocked": 0,
         "epics": 13,
-        "epicsDone": 12,
-        "complete": false,
+        "epicsDone": 13,
+        "complete": true,
         "running": false,
-        "projected": 56
+        "projected": 57
       },
       {
         "key": "herald",
@@ -24308,15 +24320,15 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 461,
-      "done": 407,
+      "done": 408,
       "blocked": 0,
       "epics": 93,
-      "epicsDone": 79
+      "epicsDone": 80
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 407
+      "projected": 408
     }
   }
 };
