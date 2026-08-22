@@ -201,7 +201,19 @@ command line), no transport call, no inference SDK, no argv parsing.
 ``deck_qa.py`` (Story 14.1) joins for the same reason again: the deck
 visual-QA gate report schema and its ``run()`` entrypoint are pure local
 computation over a caller-supplied gate mapping -- no transport call, no
-inference SDK, no argv parsing (that's ``cli.py``'s ``_run_deck_qa``)."""
+inference SDK, no argv parsing (that's ``cli.py``'s ``_run_deck_qa``).
+
+``pptx_pipeline.py`` (Story 15.1) does NOT join here -- unlike every module
+above, it is not part of the Design<->Code bridge at all: the spec's own Why
+states this second, parallel PPTX pipeline "shares no code with the bridge".
+It never imports ``DesignTransport``/``bridge.run``, so it has no
+determinism-boundary reach to police in the first place, and it has a
+legitimate, unrelated reason to use ``importlib.resources``
+(``default_template_path``, resolving the bundled template asset from an
+installed wheel/conda package -- never a source-tree-relative path) that
+would otherwise trip ``_FORBIDDEN_DYNAMIC_IMPORT_NAMES`` below for a reach
+that has nothing to do with a transport adapter. It joins ``cli``/
+``transport`` in the sweep's exclusion set."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
@@ -331,13 +343,14 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
     derived -- this pin makes the declaration loud instead of silently
     stale: a new package module (Story 1.5's ``registry.py``) fails here
     until it is either added to the sweep or, with cause, to the exclusion
-    set (``cli`` is the CLI layer, AD-2; ``transport`` is the adapter
-    side, AD-3)."""
+    set (``cli`` is the CLI layer, AD-2; ``transport`` is the adapter side,
+    AD-3; ``pptx_pipeline`` is Story 15.1's parallel, non-bridge PPTX
+    pipeline -- see ``_BRIDGE_CORE_MODULES``'s own docstring)."""
     package_modules = {
         module.name for module in pkgutil.iter_modules(herald_pkg.__path__)
     }
     swept = {module.__name__.rsplit(".", 1)[-1] for module in _BRIDGE_CORE_MODULES}
-    assert package_modules - {"cli", "transport"} == swept
+    assert package_modules - {"cli", "transport", "pptx_pipeline"} == swept
 
 
 def _import_statements(source: str) -> list[tuple[str, tuple[str, ...]]]:
