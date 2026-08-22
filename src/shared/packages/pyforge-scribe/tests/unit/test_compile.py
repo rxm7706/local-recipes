@@ -67,6 +67,20 @@ def _assistant_transcript_line(
     return json.dumps(entry)
 
 
+def _assistant_transcript_line_with_numeric_timestamp(text: str, timestamp: int) -> str:
+    """A transcript entry whose `"timestamp"` field is a raw JSON number
+    (e.g. epoch millis) rather than an ISO-8601 string -- `transcripts.py`'s
+    `entry.get("timestamp") or "unknown time"` passes a truthy int straight
+    through as `candidate.timestamp`, so `datetime.fromisoformat()` sees a
+    non-string argument and raises `TypeError`, not `ValueError`."""
+    entry: dict = {
+        "type": "assistant",
+        "message": {"content": [{"type": "text", "text": text}]},
+        "timestamp": timestamp,
+    }
+    return json.dumps(entry)
+
+
 def _write_transcript_jsonl(transcript_root: Path, filename: str, lines: list[str]) -> Path:
     transcript_root.mkdir(parents=True, exist_ok=True)
     path = transcript_root / filename
@@ -376,6 +390,40 @@ def test_transcript_surface_missing_timestamp_falls_back_to_file_mtime(
         store=store,
         transcript_root=transcript_root,
     )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert len(transcript_nodes) == 1
+    assert transcript_nodes[0].valid_from == expected_valid_from
+
+
+def test_transcript_surface_non_string_timestamp_falls_back_to_file_mtime_without_raising(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: a transcript entry whose `"timestamp"` is a JSON
+    number (e.g. epoch millis) made `datetime.fromisoformat()` raise
+    `TypeError` (not `ValueError`), which was uncaught and crashed the whole
+    `compile_graph()` run -- contradicting `_transcript_valid_from()`'s own
+    docstring promise to degrade rather than abort. Mirrors
+    `test_transcript_surface_missing_timestamp_falls_back_to_file_mtime`."""
+    transcript_root = tmp_path / "transcripts"
+    path = _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [
+            _assistant_transcript_line_with_numeric_timestamp(
+                "We decided to use SQLite for the local cache.", 1755683400000
+            )
+        ],
+    )
+    expected_valid_from = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )  # must not raise
 
     transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
     assert len(transcript_nodes) == 1

@@ -395,21 +395,30 @@ def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
     fallback (unlike the git-surface's unparseable-date fallback above),
     because `datetime.now()` here would break `compile_graph()`'s own
     byte-identical-rerun guarantee for any candidate lacking a parseable
-    timestamp. The mtime `stat()` call is itself guarded: a transcript file
-    is per-user/local and can be pruned or rotated outside Scribe's control,
-    so it can vanish between `scan_transcripts()` returning its candidates
-    and this stat -- that race degrades to `datetime.now(timezone.utc)`
-    (breaking idempotency only in this narrow, rare race, same tradeoff the
-    git-surface already accepts for its own unparseable-date case) rather
-    than raising and aborting the whole compile.
+    timestamp. `fromisoformat()` is guarded against both `ValueError` (an
+    unparseable string) and `TypeError` (a non-string `timestamp`, e.g. a
+    raw JSON number) -- review finding. The mtime `stat()` call is itself
+    guarded: a transcript file is per-user/local and can be pruned or
+    rotated outside Scribe's control, so it can vanish between
+    `scan_transcripts()` returning its candidates and this stat -- that race
+    (plus `OverflowError` from an out-of-range mtime -- review finding)
+    degrades to `datetime.now(timezone.utc)` (breaking idempotency only in
+    this narrow, rare case, same tradeoff the git-surface already accepts
+    for its own unparseable-date case) rather than raising and aborting the
+    whole compile.
     """
     try:
         return datetime.fromisoformat(candidate.timestamp)
-    except ValueError:
+    except (ValueError, TypeError):
+        # TypeError: a transcript entry whose `timestamp` field is a JSON
+        # number (or any other non-string value) makes `fromisoformat`
+        # raise TypeError rather than ValueError -- review finding.
         pass
     try:
         return datetime.fromtimestamp(candidate.source_file.stat().st_mtime, tz=timezone.utc)
-    except OSError:
+    except (OSError, OverflowError):
+        # OverflowError: `fromtimestamp()` can raise this for an
+        # out-of-range mtime, per its own docs -- review finding.
         return datetime.now(timezone.utc)
 
 

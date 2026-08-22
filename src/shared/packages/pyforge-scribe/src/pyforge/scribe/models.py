@@ -134,12 +134,12 @@ class GraphNode(BaseModel):
     `GraphStore.invalidate_edge()`, so a superseded fact stays queryable and
     traceable (`query_by_citation()`), just no longer current.
 
-    `citation` is always resolvable to a real repo artifact: a repo-relative
-    file path, `"commit:<sha>"` for a git-history node, or
-    `"<jsonl filename>:L<line>"` for a transcript node -- the last is
-    format-checked only, never re-resolved against a live file, since a
-    session transcript is per-user/local and can be pruned or rotated
-    outside Scribe's control (AD-8, Story 3.2).
+    `citation` is always verified resolvable before `recall.py` surfaces a
+    node: a repo-relative file path or `"commit:<sha>"` for a git-history
+    node point at a real repo artifact, while `"<jsonl filename>:L<line>"`
+    for a transcript node is format-checked only, never re-resolved against
+    a live file, since a session transcript is per-user/local and can be
+    pruned or rotated outside Scribe's control (AD-8, Story 3.2).
     """
 
     id: str
