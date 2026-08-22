@@ -37,7 +37,7 @@ development_status:
   15-2-identity-join-and-internal-flag: done
   15-3-kedro-pipeline-surfacing: done
   16-1-instance-deploy-definition: done
-  16-1-the-from-scratch-run-is-a-chartered-capability: backlog
+  16-1-the-from-scratch-run-is-a-chartered-capability: done
   16-2-handoffs-are-execution-ready: backlog
   16-2-httpx-opener-and-rehearsal: done
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
