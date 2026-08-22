@@ -1,20 +1,27 @@
 installation:
-  version: 6.10.0
+  version: 6.11.0
   installDate: 2026-04-30T17:24:22.503Z
-  lastUpdated: 2026-07-12T13:41:42.194Z
+  lastUpdated: 2026-08-22T01:28:24.584Z
 modules:
   - name: core
-    version: 6.10.0
+    version: 6.11.0
     installDate: 2026-04-30T17:24:22.365Z
-    lastUpdated: 2026-07-12T13:41:42.193Z
+    lastUpdated: 2026-08-22T01:28:22.703Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
-    version: 6.10.0
+    version: 6.11.0
     installDate: 2026-04-30T17:24:22.445Z
-    lastUpdated: 2026-07-12T13:41:42.194Z
+    lastUpdated: 2026-08-22T01:28:22.703Z
     source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: skf
+    version: 2.1.0
+    installDate: 2026-08-22T01:28:24.584Z
+    lastUpdated: 2026-08-22T01:28:24.584Z
+    source: custom
     npmPackage: null
     repoUrl: null
 ides:
