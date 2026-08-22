@@ -153,6 +153,120 @@ def verification_staleness_findings(
     return [f for f in findings if f.get("check") == "verification-coverage"]
 
 
+def dream_chain_gap_findings(
+    repo: pathlib.Path = REPO, timeout: int = 30
+    # 30s: measured live at ~0.4s for the bare `python -m` module run (an
+    # earlier ~4s figure included pixi task/env startup, which this direct
+    # `sys.executable -m` invocation never pays) -- 30s carries a wide
+    # margin over the measured cost, same idiom as the sibling consumers'
+    # commented bounds above.
+) -> list[dict]:
+    """Dream-chain gap Findings from ``pyforge.doctor``'s dream-chain
+    source (Story 12.4/CAP-4 -- Dreams fleet-wide with no Spec, INV-1's
+    ``dream-without-spec``), plus every unevaluable-equivalent shape that
+    says the count cannot be trusted: per-cause ``dream-chain-unevaluable``
+    items AND ``degrade_on_exception``'s total-degrade WARN, which is
+    emitted under ``check="dream-chain"`` -- the same ``check`` as the
+    vacuous OK, separable only by ``status`` (the OK stays filtered out).
+    The ``dream-chain-unevaluable`` arm deliberately ignores ``status``:
+    every live emitter sets WARN today, and a hypothetical future
+    FAIL-status unevaluable item must not silently vanish from the filter.
+    Every other kind (``spec-without-dream-link``, ``owner-unassigned``,
+    ``spec-location-mismatch``, the INV-3 kinds) is dropped -- CAP-4 is the
+    Dreams-without-Spec count only.
+
+    Shells out via ``sys.executable -m pyforge.doctor.sources dream-chain
+    --json`` -- the same subprocess discipline ``bmad_core_drift_findings``
+    /``verification_staleness_findings`` above already establish; this
+    script never imports ``pyforge.doctor`` directly.
+
+    DELIBERATE deviation from the siblings' ``check=True``: exit codes
+    {0, 2} are BOTH success here. The siblings' sources are WARN-only, so
+    they always exit 0 and ``check=True`` is safe -- but
+    ``dream-without-spec`` findings are FAIL-status, so ``exit_code_for``
+    makes this CLI exit 2 on ANY real gap (verified live: exit=2 with 17
+    gaps today). A verbatim ``check=True`` mirror would raise on exactly
+    the case this function exists for and degrade every real invocation to
+    "could not check". Honest limit: argparse usage errors ALSO exit 2
+    (with empty stdout), so the exit-code gate alone cannot tell them
+    apart -- the ``json.loads`` below is the guard that actually fires
+    there. Any other exit code raises ``CalledProcessError`` with stderr
+    attached.
+
+    Like the siblings, this function does NOT catch its own failures -- it
+    raises; degrading to one "could not check dream-chain gaps" line is
+    the CALLER's job (``main()``'s own ``try/except Exception`` idiom)."""
+    cmd = [sys.executable, "-m", "pyforge.doctor.sources",
+           "dream-chain", "--json"]
+    result = subprocess.run(
+        cmd, cwd=repo, capture_output=True, text=True, timeout=timeout,
+        check=False,  # {0, 2} are both success -- see docstring
+    )
+    if result.returncode not in (0, 2):
+        raise subprocess.CalledProcessError(
+            result.returncode, cmd, output=result.stdout, stderr=result.stderr
+        )
+    findings = json.loads(result.stdout)
+    return [
+        f for f in findings
+        if f.get("check") in ("dream-without-spec", "dream-chain-unevaluable")
+        or (f.get("check") == "dream-chain" and f.get("status") == "warn")
+    ]
+
+
+def _dream_chain_watch_lines(findings: list[dict]) -> list[str]:
+    """ATTENTION ``watch`` lines for ``dream_chain_gap_findings()``'s
+    output -- a pure assembly helper so the count/slug-cap/sanitization
+    logic is directly unit-testable (unlike the verification-staleness
+    consumer above, which only echoes a pre-formatted ``message``, this
+    consumer BUILDS a line).
+
+    One count line when any ``dream-without-spec`` item exists (count + up
+    to 3 example slugs + the `dream-chain-check` pointer); one
+    directionally-NEUTRAL trust line when any unevaluable-equivalent item
+    is present -- spec-side unevaluable causes INFLATE the count (Specs
+    dropped from ``covered`` make INV-1 fire falsely) while an unreadable
+    ``docs/dreams/`` understates it, so the line claims neither direction.
+    ``[]`` when clean, matching the siblings' clean-state silence."""
+    gaps = [f for f in findings if f.get("check") == "dream-without-spec"]
+    unevaluable = [
+        f for f in findings
+        if f.get("check") == "dream-chain-unevaluable"
+        or (f.get("check") == "dream-chain" and f.get("status") == "warn")
+    ]
+    lines = []
+    if gaps:
+        # Same sanitization discipline as the `escalation_reason`/`message`
+        # consumers in main(), applied PER SLUG, not to the joined string:
+        # an externally-sourced slug (a docs/dreams/*.md file stem -- any
+        # legal POSIX filename) must never inject extra, indistinguishable
+        # bullet lines or flood the block. First line only (newline drops
+        # the tail), remaining control chars scrubbed (`\r`/ESC are legal
+        # in filenames and would overwrite or spoof the printed line in a
+        # terminal), 40-char cap. `subject` present-but-null or non-string
+        # degrades to the same `?` placeholder as a missing key -- one
+        # malformed item must not send the whole probe to "could not
+        # check" (review pass 2).
+        slugs = [
+            re.sub(
+                r"[\x00-\x1f\x7f]", "?",
+                str((f.get("evidence") or {}).get("subject") or "?")
+                .split(chr(10))[0],
+            )[:40]
+            for f in gaps[:3]
+        ]
+        lines.append(
+            f"{len(gaps)} Dream(s) with no Spec (e.g. {', '.join(slugs)}) -- "
+            f"run `pixi run -e local-recipes dream-chain-check` for the full list"
+        )
+    if unevaluable:
+        lines.append(
+            "dream-chain could not be fully evaluated -- the "
+            "Dreams-without-Spec count may be wrong in either direction"
+        )
+    return lines
+
+
 def running_stations() -> tuple[set[str], dict[str, dict]]:
     """(slugs running, slug -> live row) from marshal status.
 
@@ -341,6 +455,17 @@ def main() -> int:
         # query/baseline-drift-check above): degrade to one "could not
         # check" line rather than crash the whole report.
         watch.append("could not check verification staleness")
+
+    try:
+        watch.extend(_dream_chain_watch_lines(dream_chain_gap_findings()))
+    except Exception:  # noqa: BLE001 -- same ATTENTION-probe degrade idiom
+        # as the verification-staleness probe directly above: one "could
+        # not check" line rather than crashing the whole report. Reached on
+        # any probe or assembly failure (exit not in {0, 2}, timeout,
+        # malformed or wrong-shape JSON, an unexpected item shape) -- never
+        # on the normal any-gap path, which is exit 2 with valid JSON (see
+        # dream_chain_gap_findings' docstring).
+        watch.append("could not check dream-chain gaps")
 
     print("\nATTENTION:")
     if needs:
