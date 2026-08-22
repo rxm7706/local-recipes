@@ -54,6 +54,26 @@ that helper itself and never raises, so a registry outage degrades CAP-2 to
 outer ``degrade_on_exception`` WARN. Nothing fetched is ever persisted --
 every ``gather()`` call pays its own round-trip (mirrors ``pypi_index.py``'s
 own no-local-persistence precedent).
+
+**CAP-4 (Story 14.1, Epic 14): the suite pass.** Epic 10 watched only the
+CORE; the suite tools around it stayed invisible -- in the live 2026-08-21
+upgrade session ``bmad-loop`` sat at 0.9.0 vs upstream 0.11.0 (0.9.0 stalls
+every unattended session on BMAD >= 6.11) and TEA lagged 1.19.1 vs 1.23.2
+(1.19.1's ``tea-test-review`` bin was published empty), with no ambient
+signal. ``_gather`` therefore also runs a suite pass: the watched set is
+DERIVED from ``pixi.toml``'s own ``bmad-*`` dependency keys (never a
+hardcoded list -- a declared list omits exactly the newest tool), each
+package's installed version is read from ``.pixi/envs/*/conda-meta/``
+FILENAMES, and each is compared against its latest npm release through the
+SAME generalized fail-open fetch helper CAP-2 already holds, emitting one
+warn-only ``check="bmad-suite-upstream-drift"`` Finding per package behind
+upstream. UNLIKE CAP-1/CAP-2's raise-then-``degrade_on_exception`` style,
+the suite pass is ENTIRELY fail-open and never raises: CAP-1/2 read TRACKED
+contract files where absence is a reportable misconfiguration, while the
+suite pass reads gitignored runtime state that is legitimately absent on a
+fresh clone/CI, and its per-package fetches degrade individually -- no
+``.pixi``, no matching pins, unparseable versions, or all fetches failing
+means no suite Finding at all, with CAP-1/CAP-2's own outcomes untouched.
 """
 
 from __future__ import annotations
@@ -61,7 +81,9 @@ from __future__ import annotations
 import http.client
 import json
 import re
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -150,12 +172,14 @@ def _declared_floors(data: dict) -> list[tuple[int, int, int]]:
 
 
 #: npm's own public, unauthenticated per-package ``/latest`` endpoint --
-#: returns a JSON body shaped ``{"name": "bmad-method", "version": "X.Y.Z",
+#: returns a JSON body shaped ``{"name": "<package>", "version": "X.Y.Z",
 #: ...}`` on success. Mirrors ``pyforge-mason``'s ``pypi_index.py``'s own
 #: ``_PYPI_JSON_INDEX_URL_TEMPLATE`` precedent for a bare unauthenticated
-#: JSON-index GET, aimed at npm's registry instead of PyPI's -- bmad-method
-#: ships on npm, not PyPI.
-_NPM_LATEST_URL = "https://registry.npmjs.org/bmad-method/latest"
+#: JSON-index GET, aimed at npm's registry instead of PyPI's -- the whole
+#: bmad suite ships on npm, not PyPI. A ``{package}`` template since Story
+#: 14.1 (CAP-4's suite pass queries the same endpoint per suite package);
+#: before that it hardcoded ``bmad-method``.
+_NPM_LATEST_URL = "https://registry.npmjs.org/{package}/latest"
 
 #: Deliberately shorter than ``pypi_index.py``'s own 30s: that precedent is
 #: for ``ship_pypi``'s one-shot, human-triggered publish flow, while this
@@ -170,30 +194,44 @@ _NPM_LATEST_URL = "https://registry.npmjs.org/bmad-method/latest"
 _UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0
 
 
-def _fetch_latest_upstream_version(*, timeout: float | None = None) -> tuple[int, int, int] | None:
-    """Query npm's own public registry for bmad-method's latest published
-    release (Story 10.2, CAP-2) -- mirrors ``pypi_index.py``'s
-    ``version_exists`` as the fleet's own precedent for a bare
-    unauthenticated JSON-index GET. Unlike that function's 404-vs-other
-    split, every failure mode here folds to the SAME outcome: CAP-2 has no
-    "conclusively does not exist" answer to give, only "succeeded" or
-    "could not determine."
+def _fetch_latest_upstream_version(
+    *, package: str = DEPENDENCY_NAME, timeout: float | None = None
+) -> tuple[int, int, int] | None:
+    """Query npm's own public registry for ``package``'s latest published
+    release (Story 10.2, CAP-2; generalized to any package by Story 14.1 so
+    CAP-4's suite pass shares this ONE fail-open network path) -- mirrors
+    ``pypi_index.py``'s ``version_exists`` as the fleet's own precedent for
+    a bare unauthenticated JSON-index GET. ``package`` is keyword-only and
+    defaults to ``DEPENDENCY_NAME``, so every pre-CAP-4 caller and test
+    stub (``lambda **_: None``) keeps working unmodified. Unlike that
+    function's 404-vs-other split, every failure mode here folds to the
+    SAME outcome: neither CAP-2 nor CAP-4 has a "conclusively does not
+    exist" answer to give, only "succeeded" or "could not determine."
 
     Never raises: an ``HTTPError``, ``URLError``, a malformed/truncated HTTP
     response (``http.client.HTTPException`` -- NOT an ``OSError`` subclass,
     unlike ``RemoteDisconnected``, so it needs its own name in this tuple;
     review finding, Story 10.2), ``OSError``, ``TimeoutError``, a malformed
     JSON body, or a missing/unparseable ``"version"`` field all fold to
-    ``None`` (Boundaries). The ``"version"`` string is parsed with
+    ``None`` (Boundaries). The ``"version"`` string is parsed two ways
+    (review finding, Story 14.1): for the CORE package, with the strict
     ``_parse_version`` exactly as CAP-1 parses ``manifest.yaml``'s own
-    version, so both capabilities share one parsing/validation path and a
-    malformed npm version string degrades the same way a malformed local one
-    does (Design Notes)."""
+    version -- CAP-1/CAP-2 keep one shared strict parsing path, and a
+    malformed npm version string degrades the same way a malformed local
+    one does (Design Notes); for SUITE packages, with the lenient
+    ``_parse_release_triple``, symmetric with CAP-4's lenient installed
+    side, so a prerelease ``latest`` (e.g. ``0.12.0-rc.1``) still yields a
+    comparable release triple instead of silently vanishing from the pass.
+    ``package`` is percent-encoded into the URL at this one seam."""
     resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    url = _NPM_LATEST_URL.format(package=urllib.parse.quote(package, safe=""))
     try:
-        with urllib.request.urlopen(_NPM_LATEST_URL, timeout=resolved_timeout) as response:
+        with urllib.request.urlopen(url, timeout=resolved_timeout) as response:
             body = json.loads(response.read())
-        return _parse_version(str(body["version"]))
+        version_text = str(body["version"])
+        if package == DEPENDENCY_NAME:
+            return _parse_version(version_text)
+        return _parse_release_triple(version_text)
     except (
         urllib.error.HTTPError,
         urllib.error.URLError,
@@ -207,6 +245,216 @@ def _fetch_latest_upstream_version(*, timeout: float | None = None) -> tuple[int
         return None
 
 
+#: CAP-4's watched-set prefix (Story 14.1): every ``pixi.toml`` dependency
+#: key starting with this -- EXCLUDING ``DEPENDENCY_NAME`` itself, which is
+#: CAP-1/CAP-2's own territory (including it would duplicate
+#: ``bmad-method-upstream-drift``) -- is a bmad-suite package the suite pass
+#: compares against upstream. The set is DERIVED from the pins at gather
+#: time, never declared as a hardcoded list: a hardcoded list omits exactly
+#: the newest tool. Load-bearing assumption (review finding, Story 14.1):
+#: a ``bmad-*`` pixi/conda dependency key IS the npm package name -- true
+#: for every npm-published suite tool today, but a pin packaged from a
+#: GitHub-only source (no npm release at all) resolves to a 404 and is
+#: silently skipped, so such a package stays invisible to this signal until
+#: it ships on npm (live 2026-08-21: 6 of the 10 watched pins, bmad-loop
+#: included, are npm-invisible for exactly this reason).
+_SUITE_PREFIX = "bmad-"
+
+#: Shared budget for CAP-4's per-package fetch loop: one monotonic deadline
+#: bounds which fetches START (per-fetch timeout = min(remaining,
+#: ``_UPSTREAM_FETCH_TIMEOUT_SECONDS``); once exhausted, the remaining
+#: packages are skipped). ``urlopen``'s timeout is an idle
+#: (per-socket-operation) timeout, not total wall time, so a pathological
+#: slow-drip response can exceed the per-fetch bound -- the same semantics
+#: CAP-2's own single fetch already carries -- which makes CAP-2's 5s +
+#: this 5s = 10s the DESIGN budget for ``_gather``'s worst-case network
+#: cost, not a hard wall-clock guarantee; ``scripts/fleet_picture.py``'s
+#: ``bmad_core_drift_findings`` 15s subprocess bound carries the margin
+#: (Story 14.1, review finding).
+_SUITE_FETCH_TOTAL_BUDGET_SECONDS = 5.0
+
+
+def _parse_release_triple(text: str) -> tuple[int, int, int] | None:
+    """Lenient counterpart to ``_parse_version`` for CAP-4's suite pass
+    (Story 14.1): extract a LEADING ``X.Y.Z`` release triple, tolerating
+    ``.dev0``/prerelease/extra-segment suffixes -- suite pins like
+    ``1.2.2.dev0`` are legitimate conda versions that ``_parse_version``'s
+    strict exactly-three-plain-digit-segments form rejects. An optional
+    conda epoch prefix (``1!0.9.0``) is tolerated and ignored for the
+    triple (review finding: rejecting it would permanently exempt an
+    epoch-versioned package). Returns ``None`` instead of raising: the
+    suite pass is entirely fail-open, so an unparseable version silently
+    skips that one package rather than degrading the whole gather.
+    Comparison downstream is release-triple only -- equal triples
+    (installed ``1.2.2.dev0`` vs upstream ``1.2.2``) count as current,
+    biasing this warn-only signal against false warns. CAP-1/CAP-2 keep
+    their strict ``_parse_version`` path unchanged."""
+    match = re.match(r"(?:\d+!)?(\d+)\.(\d+)\.(\d+)", text.strip())
+    if match is None:
+        return None
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def _suite_packages(pixi_data: dict) -> tuple[str, ...]:
+    """CAP-4's watched set: every dependency key starting ``_SUITE_PREFIX``
+    across every table ``_dependency_tables`` already walks, excluding
+    ``DEPENDENCY_NAME`` itself (see ``_SUITE_PREFIX``'s own comment).
+    Sorted for deterministic Finding order (Boundaries, Story 14.1)."""
+    names: set[str] = set()
+    for table in _dependency_tables(pixi_data):
+        for name in table:
+            if name.startswith(_SUITE_PREFIX) and name != DEPENDENCY_NAME:
+                names.add(name)
+    return tuple(sorted(names))
+
+
+def _installed_suite_versions(
+    target: Path, packages: tuple[str, ...]
+) -> dict[str, tuple[tuple[int, int, int], str]]:
+    """Each watched package's installed version -- ``{name: (release_triple,
+    raw_version_text)}`` -- read from ``.pixi/envs/*/conda-meta/
+    {name}-<version>-<build>.json`` FILENAMES, zero file reads: conda
+    versions and build strings cannot contain ``-`` (names can), so
+    ``rsplit("-", 2)`` on the stem is an exact parse for a known name.
+    Newest release triple across every env wins: the signal asks "has this
+    repo caught up anywhere" -- a partially-synced env set is ``pixi
+    install`` hygiene, not upstream drift, and per-env findings would
+    multiply noise in a warn-only channel (Design Notes, Story 14.1).
+
+    Fail-open throughout: no ``.pixi/envs`` at all, an unreadable
+    directory, or an unparseable version each silently contributes
+    nothing -- this is gitignored runtime state, legitimately absent on a
+    fresh clone/CI (unlike CAP-1/2's tracked contract files, where absence
+    is a reportable misconfiguration)."""
+    watched = set(packages)
+    installed: dict[str, tuple[tuple[int, int, int], str]] = {}
+    envs_dir = target / ".pixi" / "envs"
+    try:
+        env_dirs = list(envs_dir.iterdir())
+    except OSError:
+        return installed
+    for env_dir in env_dirs:
+        try:
+            meta_files = list((env_dir / "conda-meta").iterdir())
+        except OSError:
+            continue
+        for meta_file in meta_files:
+            if meta_file.suffix != ".json":
+                continue
+            parts = meta_file.stem.rsplit("-", 2)
+            if len(parts) != 3:
+                continue
+            name, version_text, _build = parts
+            if name not in watched:
+                continue
+            triple = _parse_release_triple(version_text)
+            if triple is None:
+                continue
+            candidate = (triple, version_text)
+            if name not in installed or candidate > installed[name]:
+                installed[name] = candidate
+    return installed
+
+
+def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]:
+    """CAP-4 (Story 14.1): compare every INSTALLED bmad-suite package
+    against its latest npm release, through the same generalized
+    ``_fetch_latest_upstream_version`` seam CAP-2 uses. One WARN Finding
+    per package behind upstream (``check="bmad-suite-upstream-drift"``,
+    mirroring CAP-2's shape and wording); when at least one package was
+    successfully checked and none is behind, exactly one OK Finding (same
+    check) naming the checked count; when zero were checked, no suite
+    Finding at all.
+
+    ENTIRELY fail-open, never raises -- deliberately unlike CAP-1/CAP-2's
+    raise-then-``degrade_on_exception`` style. Rationale: CAP-1/2 read
+    TRACKED contract files where absence is a reportable misconfiguration;
+    this pass reads gitignored runtime state (``.pixi/envs/*/conda-meta/``)
+    that is legitimately absent on a fresh clone/CI, and its per-package
+    fetches degrade individually. Letting an exception escape here would
+    hand the WHOLE gather to ``degrade_on_exception``, collapsing CAP-1/
+    CAP-2's already-computed Findings into one generic WARN -- so the
+    ``except Exception`` below is what makes "CAP-1/CAP-2 outcomes are
+    untouched" a structural guarantee, not a hope."""
+    try:
+        packages = _suite_packages(pixi_data)
+        if not packages:
+            return ()
+        installed = _installed_suite_versions(target, packages)
+        if not installed:
+            # No runtime state at all => no fetches issued (I/O matrix:
+            # fresh clone/CI).
+            return ()
+
+        deadline = time.monotonic() + _SUITE_FETCH_TOTAL_BUDGET_SECONDS
+        warn_findings: list[Finding] = []
+        checked = 0
+        for name in packages:
+            versions = installed.get(name)
+            if versions is None:
+                continue  # pinned but not installed anywhere: nothing to compare
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break  # shared budget exhausted: skip the rest (fail-open)
+            latest = _fetch_latest_upstream_version(
+                package=name,
+                timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
+            )
+            if latest is None:
+                continue  # per-package fail-open (404, outage, garbage body)
+            checked += 1
+            triple, installed_text = versions
+            if triple < latest:
+                latest_text = ".".join(str(part) for part in latest)
+                warn_findings.append(
+                    Finding(
+                        source=Source.BMAD_METHOD_VERSION_DRIFT,
+                        check="bmad-suite-upstream-drift",
+                        status=DoctorStatus.WARN,
+                        message=(
+                            f"installed {name} {installed_text} is behind "
+                            f"the latest upstream release {latest_text}"
+                        ),
+                        evidence={
+                            "package": name,
+                            "installed": installed_text,
+                            "latest_upstream": latest_text,
+                        },
+                    )
+                )
+
+        if warn_findings:
+            return tuple(warn_findings)
+        if checked:
+            return (
+                Finding(
+                    source=Source.BMAD_METHOD_VERSION_DRIFT,
+                    check="bmad-suite-upstream-drift",
+                    status=DoctorStatus.OK,
+                    message=(
+                        "installed bmad-suite packages meet the latest "
+                        f"upstream releases ({checked} checked)"
+                    ),
+                    # packages_watched (the full derived watched-set size)
+                    # alongside packages_checked, so the evidence does not
+                    # hide how much of the set was actually reachable
+                    # (live: 4 checked of 10 watched, 6 npm-invisible --
+                    # review finding). The WARN evidence shape above is
+                    # spec-fixed and stays untouched.
+                    evidence={
+                        "packages_checked": checked,
+                        "packages_watched": len(packages),
+                    },
+                ),
+            )
+        return ()
+    except Exception:
+        # The last-resort net documented above: any unexpected failure in
+        # the suite pass folds to "adds nothing", never to a degraded
+        # gather.
+        return ()
+
+
 def gather(target: Path) -> tuple[Finding, ...]:
     """Compare ``pixi.toml``'s max declared ``bmad-method`` floor against
     ``_bmad/_config/manifest.yaml``'s installed version (CAP-1) and,
@@ -217,10 +465,13 @@ def gather(target: Path) -> tuple[Finding, ...]:
     ``_fetch_latest_upstream_version`` succeeds (``warn`` when installed is
     older than the fetched latest, ``ok`` otherwise) -- CAP-2 degrading to
     a failed fetch never changes CAP-1's own outcome, and adds nothing at
-    all when it fails. The outer ``degrade_on_exception`` wrapper is what
-    guarantees exactly one Finding OVERALL when something genuinely
-    unexpected happens on the success path, by converting any such
-    exception into one WARN instead.
+    all when it fails. Story 14.1 (CAP-4) appends
+    ``_gather_suite_findings``'s entirely-fail-open suite comparison to
+    both success-path returns -- it runs regardless of CAP-2's own fetch
+    outcome, and adds nothing at all when it degrades. The outer
+    ``degrade_on_exception`` wrapper is what guarantees exactly one Finding
+    OVERALL when something genuinely unexpected happens on the success
+    path, by converting any such exception into one WARN instead.
 
     Read-only: never runs ``npx bmad-method install``, never writes to
     ``_bmad/**`` (Boundaries).
@@ -269,9 +520,16 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             evidence=evidence,
         )
 
+    # CAP-4's suite pass (Story 14.1) runs regardless of CAP-2's own fetch
+    # outcome below -- independent fail-open, appended to BOTH success-path
+    # returns. Placed after CAP-1's parse so broken CAP-1 inputs (missing
+    # pixi.toml/manifest.yaml) still degrade through the outer net before
+    # the suite pass is ever reached, exactly as before CAP-4 existed.
+    suite_findings = _gather_suite_findings(target, pixi_data)
+
     latest_upstream = _fetch_latest_upstream_version()
     if latest_upstream is None:
-        return (drift_finding,)
+        return (drift_finding, *suite_findings)
 
     latest_text = ".".join(str(part) for part in latest_upstream)
     upstream_evidence = {"installed": installed_text, "latest_upstream": latest_text}
@@ -299,4 +557,4 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             evidence=upstream_evidence,
         )
 
-    return (drift_finding, upstream_finding)
+    return (drift_finding, upstream_finding, *suite_findings)

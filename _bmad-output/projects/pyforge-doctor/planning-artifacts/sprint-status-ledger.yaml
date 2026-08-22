@@ -35,7 +35,7 @@ development_status:
   12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: done
   12-5-the-spec-surface-baseline-write-race-is-closed: done
   13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic: done
-  14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared: backlog
+  14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared: done
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
