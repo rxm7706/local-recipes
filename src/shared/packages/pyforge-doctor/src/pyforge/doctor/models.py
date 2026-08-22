@@ -160,7 +160,16 @@ class Source(StrEnum):
     # 10.3 (Epic 10/CAP-3) wires this Source into `doctor check --bmad-core`
     # (opt-in only, never the default run) and `scripts/fleet_picture.py`'s
     # ATTENTION block, closing the "undetected until an operator happened to
-    # ask" gap the standalone pixi task left open.
+    # ask" gap the standalone pixi task left open. Story 14.1 (Epic 14/CAP-4)
+    # extends the SAME member's gather() once more with a suite pass: every
+    # `bmad-*` dependency key pixi.toml pins (DERIVED at gather time, never
+    # a hardcoded list; the core itself excluded -- that is CAP-1/CAP-2's
+    # own territory) is compared against its latest npm release
+    # (check="bmad-suite-upstream-drift"), reading installed versions from
+    # gitignored `.pixi/envs/*/conda-meta/` filenames -- entirely fail-open
+    # (that state is legitimately absent on a fresh clone/CI), still
+    # warn-only, still this one Source, riding Story 10.3's existing
+    # surfaces unchanged.
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
     # Story 13.1 (Epic 13/CAP-1): the closed taxonomy EXTENDED once more --
     # Doctor's verdict on which tracked deferred-work-ledger entries, fleet

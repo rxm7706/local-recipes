@@ -333,7 +333,16 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # the NFR-4 5s budget tension named above) and
     # `scripts/fleet_picture.py`'s ATTENTION block (a subprocess probe
     # naming any `warn` finding under `watch`) -- never `doctor monitor`
-    # (see that story's own Boundaries for why).
+    # (see that story's own Boundaries for why). Story 14.1 (Epic 14/CAP-4)
+    # extends the same gather() once more with an entirely-fail-open suite
+    # pass -- every pixi.toml `bmad-*` pin (derived, core excluded)
+    # compared against its latest npm release
+    # (check="bmad-suite-upstream-drift"), installed versions read from
+    # gitignored `.pixi/envs/*/conda-meta/` filenames (runtime state,
+    # legitimately absent on a fresh clone/CI, hence fail-open rather than
+    # CAP-1/2's raise-then-degrade) -- still this one Source, still
+    # WARN-or-OK only, riding the same two Story 10.3 dispatch surfaces
+    # with zero wiring changes.
     SourceRegistration(
         source=Source.BACKLOG_INTAKE,
         scope="repo",
