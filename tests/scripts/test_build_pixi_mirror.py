@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "build-pixi-mirror.py"
@@ -141,6 +143,29 @@ class TestParseMirrorTargets:
         with pytest.raises(bpm.MirrorBuildError, match="does not look like a conda package URL"):
             bpm.parse_mirror_targets(lockfile, "fixture-env", "linux-64")
 
+    def test_non_conda_entry_raises_mirror_build_error_naming_its_kind(self):
+        """A `pypi:`-kind (or any other non-`conda:`) entry alongside the
+        conda ones would otherwise be silently dropped, producing an
+        incomplete mirror with no warning -- this environment/platform has
+        none today (verified live against the real pixi.lock), but a
+        future addition must fail loudly, not silently under-mirror."""
+        lockfile = _fixture_lockfile()
+        lockfile["environments"]["fixture-env"]["packages"]["linux-64"].append(
+            {"pypi": "https://pypi.org/simple/some-package/some-package-1.0.whl"}
+        )
+        with pytest.raises(bpm.MirrorBuildError, match="non-conda entry"):
+            bpm.parse_mirror_targets(lockfile, "fixture-env", "linux-64")
+
+    def test_null_top_level_packages_raises_missing_from_catalog_not_a_crash(self):
+        """`packages:` present but YAML-null (not merely absent) must not
+        crash `.get(...).items()`-style code -- it should behave exactly
+        like an empty catalog and raise the normal "missing from pixi.lock"
+        MirrorBuildError, not an unhandled AttributeError/TypeError."""
+        lockfile = _fixture_lockfile()
+        lockfile["packages"] = None
+        with pytest.raises(bpm.MirrorBuildError, match="missing from pixi.lock"):
+            bpm.parse_mirror_targets(lockfile, "fixture-env", "linux-64")
+
 
 def _make_target(url: str = "https://conda.anaconda.org/conda-forge/linux-64/foo-1.0-0.conda"):
     content = b"pretend-conda-package-bytes"
@@ -216,6 +241,185 @@ class TestDownloadAndVerify:
 
         with pytest.raises(bpm.MirrorBuildError, match="download failed"):
             bpm._download_one(target, tmp_path, timeout=5)
+
+    def test_oserror_from_the_already_valid_check_falls_through_to_a_fresh_download(
+        self, tmp_path, monkeypatch
+    ):
+        """A stale directory, a permission error, or anything else that
+        stops `_sha256_of` from READING an existing dest_path must not
+        crash `_download_one` -- it should be treated as "not valid yet"
+        and fall through to a normal download. Only the pre-check call (on
+        `dest_path`) is made to raise; the real hashing function still runs
+        for the post-download verification call (on `tmp_path`), so this
+        isolates exactly the guarded code path."""
+        target, content = _make_target()
+        dest_path = tmp_path / target.dest_relpath
+        dest_path.parent.mkdir(parents=True)
+        dest_path.write_bytes(b"irrelevant -- the precheck raises before reading this")
+
+        real_sha256_of = bpm._sha256_of
+
+        def _flaky_sha256_of(path):
+            if path == dest_path:
+                raise OSError("simulated permission error")
+            return real_sha256_of(path)
+
+        monkeypatch.setattr(bpm, "_sha256_of", _flaky_sha256_of)
+        monkeypatch.setattr(bpm.requests, "get", lambda *a, **k: _FakeResponse(content))
+
+        result = bpm._download_one(target, tmp_path, timeout=5)
+
+        assert result == "downloaded"
+        assert dest_path.read_bytes() == content
+
+
+class TestBuildMirrorDedupAndProgress:
+    def test_duplicate_dest_relpath_is_downloaded_only_once(self, tmp_path, monkeypatch):
+        """Two MirrorTargets resolving to the same dest_relpath (pixi.lock
+        listing the identical URL twice for a platform) must not race two
+        threads writing/renaming the same `.part`/destination file --
+        dedup before submission means only one actual download happens."""
+        target, content = _make_target()
+        duplicate = bpm.MirrorTarget(
+            url=target.url,
+            sha256=target.sha256,
+            channel=target.channel,
+            subdir=target.subdir,
+            filename=target.filename,
+        )
+        assert target.dest_relpath == duplicate.dest_relpath
+
+        call_count = 0
+
+        def _counted_get(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return _FakeResponse(content)
+
+        monkeypatch.setattr(bpm.requests, "get", _counted_get)
+
+        downloaded, skipped = bpm.build_mirror([target, duplicate], tmp_path, workers=4, timeout=5)
+
+        assert downloaded == 1
+        assert skipped == 0
+        assert call_count == 1
+
+    def test_progress_is_printed_before_the_batch_completes(self, tmp_path, monkeypatch, capsys):
+        """With more than one progress-batch's worth of targets (batched
+        every 20 completions), a progress line must appear -- not just the
+        final "Mirror complete" summary main() prints separately -- so a
+        slow real run never goes long stretches with zero CI log output."""
+        targets = []
+        for i in range(21):
+            content = f"content-{i}".encode()
+            sha256 = hashlib.sha256(content).hexdigest()
+            targets.append(
+                bpm.MirrorTarget(
+                    url=f"https://conda.anaconda.org/conda-forge/noarch/pkg{i}-1.0-0.conda",
+                    sha256=sha256,
+                    channel="conda-forge",
+                    subdir="noarch",
+                    filename=f"pkg{i}-1.0-0.conda",
+                )
+            )
+
+        def _get_for_url(url, **kwargs):
+            body = url.rsplit("/", 1)[-1].rsplit("-", 2)[0]  # "pkg{i}"
+            i = body.removeprefix("pkg")
+            return _FakeResponse(f"content-{i}".encode())
+
+        monkeypatch.setattr(bpm.requests, "get", _get_for_url)
+
+        downloaded, skipped = bpm.build_mirror(targets, tmp_path, workers=4, timeout=5)
+
+        assert downloaded == 21
+        assert skipped == 0
+        out = capsys.readouterr().out
+        assert "21/21" in out
+
+
+class TestCLI:
+    def test_workers_zero_is_rejected_by_argparse(self, tmp_path):
+        lockfile_path = tmp_path / "pixi.lock"
+        lockfile_path.write_text(yaml.safe_dump(_fixture_lockfile()))
+
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--lockfile",
+                str(lockfile_path),
+                "--environment",
+                "fixture-env",
+                "--platform",
+                "linux-64",
+                "--dest",
+                str(tmp_path / "mirror"),
+                "--workers",
+                "0",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        assert proc.returncode != 0
+        assert "workers" in proc.stderr.lower()
+
+    def test_workers_negative_is_rejected_by_argparse(self, tmp_path):
+        lockfile_path = tmp_path / "pixi.lock"
+        lockfile_path.write_text(yaml.safe_dump(_fixture_lockfile()))
+
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--lockfile",
+                str(lockfile_path),
+                "--environment",
+                "fixture-env",
+                "--platform",
+                "linux-64",
+                "--dest",
+                str(tmp_path / "mirror"),
+                "--workers",
+                "-3",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        assert proc.returncode != 0
+
+    def test_malformed_yaml_lockfile_fails_cleanly_not_with_a_traceback(self, tmp_path):
+        lockfile_path = tmp_path / "pixi.lock"
+        # Unbalanced flow-mapping brace -- a real YAML parse error, not just
+        # semantically wrong content.
+        lockfile_path.write_text("environments: {fixture-env: [1, 2\n")
+
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT_PATH),
+                "--lockfile",
+                str(lockfile_path),
+                "--environment",
+                "fixture-env",
+                "--platform",
+                "linux-64",
+                "--dest",
+                str(tmp_path / "mirror"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        assert proc.returncode == 1
+        assert "::error::" in proc.stderr
+        assert "not valid YAML" in proc.stderr
+        assert "Traceback" not in proc.stderr
 
 
 class _FakeResponse:

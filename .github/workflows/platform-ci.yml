@@ -974,14 +974,24 @@ jobs:
       # impossible -- HALT, not a silent skip. Checked FIRST, before this
       # job spends 30+ minutes on a build/deploy it can't actually prove
       # anything with.
-      - name: Verify iptables + passwordless sudo are available (egress-block precondition)
+      - name: Verify iptables + ip6tables + passwordless sudo are available (egress-block precondition)
         run: |
           if ! command -v iptables >/dev/null 2>&1; then
             echo "::error::iptables not found on this runner -- cannot prove the AD-13 egress block (BLOCKED)"
             exit 1
           fi
+          # IPv4-only blocking is not actually air-gap parity: a runner
+          # with IPv6 connectivity could resolve conda.anaconda.org over an
+          # AAAA record and bypass an iptables-only block entirely, a
+          # false green on this story's own core Acceptance Criterion.
+          # ip6tables ships alongside iptables on every GitHub-hosted
+          # ubuntu-latest runner; treated as an equally hard precondition.
+          if ! command -v ip6tables >/dev/null 2>&1; then
+            echo "::error::ip6tables not found on this runner -- cannot prove the AD-13 egress block is IPv6-safe (BLOCKED)"
+            exit 1
+          fi
           if ! sudo -n true 2>/dev/null; then
-            echo "::error::sudo is not available non-interactively on this runner -- cannot install the egress-block iptables rules (BLOCKED)"
+            echo "::error::sudo is not available non-interactively on this runner -- cannot install the egress-block iptables/ip6tables rules (BLOCKED)"
             exit 1
           fi
 
@@ -1065,6 +1075,26 @@ jobs:
       - name: kind load the built image (no registry push)
         run: kind load docker-image platform:air-gap-smoke --name air-gap-smoke
 
+      # The chart's own postgres/redis StatefulSet/Deployment default to
+      # plain upstream images (values.yaml: postgres.image
+      # registry=""/repository=postgres/tag="17", redis.image
+      # registry=""/repository=redis/tag="7" -- i.e. `postgres:17` and
+      # `redis:7`) that this job never builds itself, unlike the platform
+      # image above. The egress block below only touches the `OUTPUT` chain
+      # (this RUNNER's own host-originated traffic) -- it does not touch
+      # `FORWARD` (container-routed traffic), so a pod would otherwise
+      # retain real internet access and could silently pull these two from
+      # Docker Hub instead of proving anything about the mirror-only
+      # premise. `docker pull` (network still on) + `kind load` (no push,
+      # same pattern as the platform image) puts both node-local BEFORE the
+      # block goes up, so the postgres/redis pods pull nothing over the
+      # network either.
+      - name: Pull + kind load postgres:17 and redis:7 (the chart's default infra images)
+        run: |
+          docker pull postgres:17
+          docker pull redis:7
+          kind load docker-image postgres:17 redis:7 --name air-gap-smoke
+
       # AD-12 pattern, identical to `gke-portability-smoke`'s own step
       # (chart never renders a Secret) -- separate namespace name so the
       # two jobs' logs are never confusable when read side by side.
@@ -1142,6 +1172,13 @@ jobs:
       # talking to the kind API server (127.0.0.1:<port>) and the
       # Docker/kind bridge networks kind-internal traffic uses -- nothing
       # else is reachable after this step.
+      #
+      # IPv4 alone is not a real egress block: `ip6tables` gets the
+      # identical ACCEPT-then-DROP treatment (loopback `::1/128` + the
+      # `fc00::/7` unique-local-address range, IPv6's private-range
+      # equivalent), or a runner with IPv6 connectivity could resolve
+      # conda.anaconda.org over AAAA and sail straight past the IPv4-only
+      # rules below -- a silent bypass of this story's own core AC.
       - name: Block all non-private-network egress
         run: |
           sudo iptables -I OUTPUT -o lo -j ACCEPT
@@ -1152,19 +1189,29 @@ jobs:
           sudo iptables -A OUTPUT -j DROP
           sudo iptables -L OUTPUT -n -v
 
+          sudo ip6tables -I OUTPUT -o lo -j ACCEPT
+          sudo ip6tables -I OUTPUT -d ::1/128 -j ACCEPT
+          sudo ip6tables -I OUTPUT -d fc00::/7 -j ACCEPT
+          sudo ip6tables -A OUTPUT -j DROP
+          sudo ip6tables -L OUTPUT -n -v
+
       # THE core AD-13 proof (this story's first Acceptance Criterion):
       # cache evicted to empty, env prefix gone, egress blocked -- if this
       # exits 0, `pixi install --frozen -e platform-dev` resolved the
       # ENTIRE `platform-dev` environment (the mirror-builder step above
       # downloaded its full `linux-64` package set) from the local
       # `file://` mirror alone, through the `.pixi/config.toml` `[mirrors]`
-      # rewrite appended above. A network request to any public host would
-      # hang or fail against the DROP rule and this step would fail loudly
-      # -- there is no silent-degrade path.
+      # rewrite appended above. `-j DROP` silently discards a blocked
+      # packet rather than rejecting it, so a genuine network attempt would
+      # hang for the full TCP retry/timeout window instead of failing fast
+      # -- `timeout 300` bounds that: a real mirror-only resolve completes
+      # in well under 5 minutes (428 packages, all local `file://` reads),
+      # so hitting the bound at all is itself a failure signal, not a
+      # false negative on a slow-but-honest run.
       - name: Prove pixi install --frozen resolves from the mirror alone (egress blocked)
         run: |
-          pixi install --frozen -e platform-dev || {
-            echo "::error::pixi install --frozen -e platform-dev failed to resolve from the mirror-only config under blocked egress"
+          timeout 300 pixi install --frozen -e platform-dev || {
+            echo "::error::pixi install --frozen -e platform-dev failed to resolve from the mirror-only config under blocked egress (or hit the 300s bound -- a hang here means a real network attempt, not a mirror-only resolve)"
             exit 1
           }
 
@@ -1227,16 +1274,26 @@ jobs:
 
       # This story's second Acceptance Criterion, extending the `container`
       # job's own `/static/` asset-fetch pattern (derive URLs from the
-      # rendered body, never hardcode): any absolute `http(s)://` reference
-      # whose host is not the port-forwarded `127.0.0.1` address fails the
-      # job. Zero-CDN-by-construction (Story 10.1's vendored static assets;
-      # the Containerfile's own comment documents stripping CDN
-      # `sourceMappingURL` references) means a healthy page has NO matches
-      # at all -- WhiteNoise's `{% static %}` rewrite and django-
-      # compressor's `/static/CACHE/...` bundles are both host-relative.
+      # rendered body, never hardcode): any absolute `http(s)://` OR
+      # protocol-relative (`//host/...`) reference whose host is not the
+      # port-forwarded `127.0.0.1` address fails the job. Case-insensitive
+      # (`-i`) and `(https?:)?//` (not bare `https?://`) so an
+      # `HTTPS://...` or a scheme-less `//cdn.example/x.js` reference can't
+      # silently slip past what would otherwise be a scheme-only match --
+      # both are valid, load-bearing CDN reference shapes browsers resolve
+      # identically to a fully-qualified URL. Zero-CDN-by-construction
+      # (Story 10.1's vendored static assets; the Containerfile's own
+      # comment documents stripping CDN `sourceMappingURL` references)
+      # means a healthy page has NO matches at all -- WhiteNoise's
+      # `{% static %}` rewrite and django-compressor's `/static/CACHE/...`
+      # bundles are both host-relative, and `base.html` carries no inline
+      # `<script>` content in its actual rendered output (its only
+      # `<script>` block sits inside a Django `{% comment %}`, which never
+      # renders) -- so this is a real zero-false-positive check for this
+      # app's own templates, not merely a theoretical one.
       - name: Scan the served home page for absolute external URL references
         run: |
-          external="$(grep -oE 'https?://[^"'"'"'<> ]+' /tmp/airgap-home.html | grep -vE '^https?://127\.0\.0\.1(:[0-9]+)?(/|$|[?#])' || true)"
+          external="$(grep -ioE '(https?:)?//[^"'"'"'<> ]+' /tmp/airgap-home.html | grep -viE '^(https?:)?//127\.0\.0\.1(:[0-9]+)?(/|$|[?#])' || true)"
           if [ -n "$external" ]; then
             echo "::error::absolute external URL reference(s) found in / -- AD-13 CDN-reference check failed:"
             printf '%s\n' "$external"

@@ -842,3 +842,10 @@ conf/conda-forge-packaging-inventory-operations.local.env
 # category as staticfiles/media, never git-tracked.
 src/platform/.langflow/
 _bmad/render/
+
+# Story 12.3: scripts/build-pixi-mirror.py's own documented usage example
+# (`--dest ci-airgap-mirror`, a relative path at the repo root) -- CI-runtime
+# scratch only, hundreds of MB across 428 packages, never git-tracked. A
+# developer following that example verbatim locally should not risk
+# `git add -A` staging it.
+/ci-airgap-mirror/

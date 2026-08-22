@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
@@ -53,6 +54,16 @@ import requests
 import yaml
 
 CHUNK_SIZE = 1 << 20  # 1 MiB
+
+
+def _positive_int(value: str) -> int:
+    """argparse `type=` for `--workers`: rejects 0/negative before it ever
+    reaches `ThreadPoolExecutor(max_workers=...)`, which raises its own
+    unguarded `ValueError` for either."""
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError(f"must be >= 1, got {parsed}")
+    return parsed
 
 
 class MirrorBuildError(RuntimeError):
@@ -99,8 +110,17 @@ def parse_mirror_targets(
             f"pixi.lock's {environment!r}/{platform!r} package list is empty "
             "or has no conda-kind entries"
         )
+    if len(conda_entries) != len(env_packages):
+        non_conda = [e for e in env_packages if "conda" not in e]
+        non_conda_keys = sorted({k for e in non_conda for k in e})
+        raise MirrorBuildError(
+            f"pixi.lock's {environment!r}/{platform!r} package list has "
+            f"{len(non_conda)} non-conda entry(ies) this script does not know how "
+            f"to mirror (kind(s): {', '.join(non_conda_keys) or '<empty>'}) -- "
+            "the mirror would be silently incomplete"
+        )
 
-    catalog = {e["conda"]: e for e in lockfile.get("packages", []) if "conda" in e}
+    catalog = {e["conda"]: e for e in (lockfile.get("packages") or []) if "conda" in e}
 
     targets: list[MirrorTarget] = []
     for entry in conda_entries:
@@ -148,8 +168,18 @@ def _download_one(target: MirrorTarget, dest_root: Path, timeout: int) -> str:
     "skipped" (already present and sha256-valid). Raises MirrorBuildError
     on any download or verification failure."""
     dest_path = dest_root / target.dest_relpath
-    if dest_path.exists() and _sha256_of(dest_path) == target.sha256:
-        return "skipped"
+    if dest_path.exists():
+        try:
+            already_valid = _sha256_of(dest_path) == target.sha256
+        except OSError:
+            # A stale directory at this path, a permission error, or
+            # anything else that stops us READING it -- not proof the file
+            # is invalid, but also not something worth failing over: fall
+            # through and let the normal download-and-overwrite path below
+            # sort it out (or surface a clearer error from there).
+            already_valid = False
+        if already_valid:
+            return "skipped"
 
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = dest_path.with_name(dest_path.name + ".part")
@@ -180,9 +210,23 @@ def build_mirror(
     """Download every target (skipping already-valid files). Raises
     MirrorBuildError -- naming every failed package, not just the first --
     if any target failed."""
+    # Dedup by destination path: two targets with the same dest_relpath
+    # (same channel/subdir/filename -- pixi.lock listing the identical URL
+    # twice for one platform) would otherwise race two threads writing/
+    # renaming the same `.part`/destination file. `dict` preserves the
+    # first-seen target per path, which is fine -- a true duplicate has
+    # the same url/sha256 by construction.
+    deduped: dict[Path, MirrorTarget] = {}
+    for target in targets:
+        deduped.setdefault(target.dest_relpath, target)
+    targets = list(deduped.values())
+
     downloaded = 0
     skipped = 0
+    completed = 0
     errors: list[str] = []
+    total = len(targets)
+    last_progress_at = time.monotonic()
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
@@ -190,15 +234,30 @@ def build_mirror(
             for target in targets
         }
         for future in as_completed(futures):
+            completed += 1
             try:
                 result = future.result()
             except MirrorBuildError as exc:
                 errors.append(str(exc))
-                continue
-            if result == "downloaded":
-                downloaded += 1
             else:
-                skipped += 1
+                if result == "downloaded":
+                    downloaded += 1
+                else:
+                    skipped += 1
+            # Progress, not just a start/end line: a slow connection
+            # working through hundreds of packages with zero output in
+            # between risks tripping a CI no-output stall detector. Printed
+            # every 20 completions OR every 60s of real elapsed time,
+            # whichever comes first -- the count alone doesn't bound wall
+            # time if individual downloads are slow, and the clock alone
+            # would be needlessly noisy on a fast connection.
+            now = time.monotonic()
+            if completed % 20 == 0 or completed == total or (now - last_progress_at) >= 60:
+                print(
+                    f"  ... {completed}/{total} ({downloaded} downloaded, "
+                    f"{skipped} skipped, {len(errors)} failed)"
+                )
+                last_progress_at = now
 
     if errors:
         raise MirrorBuildError("\n".join(errors))
@@ -217,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--platform", required=True, help="pixi platform, e.g. linux-64")
     parser.add_argument("--dest", required=True, type=Path, help="Mirror destination directory")
     parser.add_argument(
-        "--workers", type=int, default=8, help="Concurrent downloads (default: 8)"
+        "--workers", type=_positive_int, default=8, help="Concurrent downloads (default: 8)"
     )
     parser.add_argument(
         "--timeout", type=int, default=300, help="Per-request timeout in seconds (default: 300)"
@@ -228,8 +287,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::error::lockfile not found: {args.lockfile}", file=sys.stderr)
         return 1
 
-    with args.lockfile.open() as f:
-        lockfile = yaml.safe_load(f)
+    try:
+        with args.lockfile.open() as f:
+            lockfile = yaml.safe_load(f)
+    except yaml.YAMLError as exc:
+        print(f"::error::{args.lockfile} is not valid YAML: {exc}", file=sys.stderr)
+        return 1
 
     try:
         targets = parse_mirror_targets(lockfile, args.environment, args.platform)
