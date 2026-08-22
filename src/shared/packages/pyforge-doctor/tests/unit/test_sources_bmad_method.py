@@ -1,23 +1,27 @@
 """Unit tests for ``pyforge.doctor.sources.bmad_method.gather`` (Story 10.1,
 Epic 10/CAP-1; Story 10.2, Epic 10/CAP-2; Story 14.1, Epic 14/CAP-4's suite
-pass; Story 15.1, Epic 15/DW-14-1-1's GitHub-releases fallback) -- covers
-every row of the specs' I/O & Edge-Case Matrices against REAL tmp fixture
-trees (a written ``pixi.toml`` + ``_bmad/_config/manifest.yaml``, plus
+pass; Story 15.1, Epic 15/DW-14-1-1's GitHub-releases fallback; Story 15.2,
+Epic 15/spec-15-2's channel + recipe-upstream drift checks) -- covers every
+row of the specs' I/O & Edge-Case Matrices against REAL tmp fixture trees (a
+written ``pixi.toml`` + ``_bmad/_config/manifest.yaml``, plus
 ``.pixi/envs/*/conda-meta/`` filename markers for CAP-4 and
-``recipes/<name>/recipe.yaml`` fixtures for Story 15.1), mirroring
+``recipes/<name>/recipe.yaml`` fixtures for Story 15.1/15.2), mirroring
 ``test_sources_chain_due_for_verification.py``'s own real-fixture discipline.
 The exceptions are ``test_gather_degrades_on_unexpected_exception``, which
 deliberately monkeypatches ``_gather`` to force an exception shape no real
 fixture can produce -- proving the outer ``degrade_on_exception`` safety net
 itself, not the comparison logic (review finding: the prior wording claimed
-"no mocks" unconditionally) -- and CAP-2/Story 15.1's own network-boundary
-tests, which monkeypatch ``_fetch_latest_upstream_version``/
-``urllib.request.urlopen`` rather than making a live registry/GitHub call.
+"no mocks" unconditionally) -- and CAP-2/Story 15.1/15.2's own
+network-boundary tests, which monkeypatch ``_fetch_latest_upstream_version``/
+``_fetch_channel_version``/``urllib.request.urlopen`` rather than making a
+live registry/GitHub/anaconda.org call.
 
-The module-level ``_stub_upstream_fetch`` fixture below is ``autouse=True``
-so every CAP-1 test above it keeps asserting ``len(findings) == 1``
-unmodified, exactly as it did before CAP-2 existed (Boundaries) -- mirrors
-this file's own ``test_gather_degrades_on_unexpected_exception`` monkeypatch
+The module-level ``_stub_upstream_fetch``/``_stub_channel_fetch`` fixtures
+below are ``autouse=True`` so every CAP-1 test above them keeps asserting
+``len(findings) == 1`` unmodified, exactly as it did before CAP-2/Story 15.2
+existed (Boundaries), and so Story 15.2's own channel fetch is never
+attempted by a test that does not explicitly stub/reach it -- mirrors this
+file's own ``test_gather_degrades_on_unexpected_exception`` monkeypatch
 idiom, and ``test_sources_chain_due_for_verification.py``'s own
 autouse-fixture-per-module convention.
 """
@@ -42,10 +46,21 @@ from pyforge.doctor.sources import bmad_method
 #: network-boundary logic under test).
 _real_fetch_latest_upstream_version = bmad_method._fetch_latest_upstream_version
 
+#: Same rationale as ``_real_fetch_latest_upstream_version`` above, for
+#: Story 15.2's ``_fetch_channel_version`` -- captured before
+#: ``_stub_channel_fetch`` (below) patches the module attribute of the same
+#: name for every test.
+_real_fetch_channel_version = bmad_method._fetch_channel_version
+
 
 @pytest.fixture(autouse=True)
 def _stub_upstream_fetch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", lambda **_: None)
+
+
+@pytest.fixture(autouse=True)
+def _stub_channel_fetch(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: None)
 
 
 # --- fixture helpers ---------------------------------------------------------
@@ -1686,3 +1701,662 @@ def test_packages_checked_rises_when_npm_invisible_package_resolves_via_github(
     assert suite[0].status is DoctorStatus.OK
     assert "2 checked" in suite[0].message
     assert suite[0].evidence == {"packages_checked": 2, "packages_watched": 2}
+
+
+# --- channel + recipe-upstream drift (Story 15.2, Epic 15/spec-15-2) ---------------
+
+
+def _recipe_context(version: str) -> str:
+    """A minimal ``recipes/<package>/recipe.yaml`` body carrying only the
+    ``context.version`` field ``_recipe_version`` reads -- every other field
+    a real recipe.yaml carries is irrelevant to that one read."""
+    return f'context:\n  version: "{version}"\n'
+
+
+# --- _recipe_version -----------------------------------------------------------
+
+
+def test_recipe_version_returns_the_parsed_triple_on_a_hit(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.11.0"))
+    assert bmad_method._recipe_version(tmp_path, "bmad-method") == (6, 11, 0)
+
+
+def test_recipe_version_parses_leniently_for_a_dev_suffixed_recipe(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", _recipe_context("1.2.2.dev0"))
+    assert bmad_method._recipe_version(tmp_path, "bmad-loop") == (1, 2, 2)
+
+
+def test_recipe_version_returns_none_when_recipe_yaml_is_missing(
+    tmp_path: Path,
+) -> None:
+    assert bmad_method._recipe_version(tmp_path, "bmad-method") is None
+
+
+def test_recipe_version_returns_none_when_context_block_is_missing(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_MISSING_EXTRA)
+    assert bmad_method._recipe_version(tmp_path, "bmad-loop") is None
+
+
+def test_recipe_version_returns_none_when_context_is_not_a_mapping(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", "context: not-a-mapping\n")
+    assert bmad_method._recipe_version(tmp_path, "bmad-loop") is None
+
+
+def test_recipe_version_returns_none_when_version_key_is_missing(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", "context:\n  name: bmad-loop\n")
+    assert bmad_method._recipe_version(tmp_path, "bmad-loop") is None
+
+
+def test_recipe_version_returns_none_on_malformed_yaml(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_MALFORMED_YAML)
+    assert bmad_method._recipe_version(tmp_path, "bmad-loop") is None
+
+
+def test_recipe_version_returns_none_for_a_non_string_version(tmp_path: Path) -> None:
+    # An unquoted numeric-looking version (`version: 6.11`) parses to a YAML
+    # float, not a string -- must fold to None rather than stringify it.
+    _write_recipe_yaml(tmp_path, "bmad-loop", "context:\n  version: 6.11\n")
+    assert bmad_method._recipe_version(tmp_path, "bmad-loop") is None
+
+
+# --- _fetch_channel_version ------------------------------------------------------
+
+
+def test_fetch_channel_version_returns_parsed_tuple_on_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(
+        monkeypatch,
+        json.dumps({"name": "bmad-method", "latest_version": "6.3.0"}).encode(),
+    )
+    assert _real_fetch_channel_version(package="bmad-method") == (6, 3, 0)
+
+
+def test_fetch_channel_version_builds_the_expected_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, str] = {}
+
+    def _urlopen(url: str, timeout: float | None = None) -> _FakeUrlopenResponse:
+        seen["url"] = url
+        return _FakeUrlopenResponse(json.dumps({"latest_version": "0.11.0"}).encode())
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+    assert _real_fetch_channel_version(package="bmad-loop") == (0, 11, 0)
+    assert seen["url"] == "https://api.anaconda.org/package/SelfExplainML/bmad-loop"
+
+
+def test_fetch_channel_version_folds_http_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        # A 404 (package not published to this channel) is not special-cased
+        # here (unlike the GitHub fallback's releases/latest) -- every
+        # HTTPError folds to the same "could not determine" None.
+        raise urllib.error.HTTPError(
+            "https://api.anaconda.org", 404, "Not Found", email.message.Message(), None
+        )
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_url_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise urllib.error.URLError("no route to host")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_http_exception_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise http.client.BadStatusLine("garbage")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_os_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_timeout_error_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise(*args, **kwargs):
+        raise TimeoutError("timed out")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_malformed_json_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, b"not json")
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_missing_latest_version_field_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(monkeypatch, json.dumps({"name": "bmad-method"}).encode())
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_folds_unparseable_latest_version_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_urlopen(
+        monkeypatch,
+        json.dumps(
+            {"name": "bmad-method", "latest_version": "not-a-version"}
+        ).encode(),
+    )
+    assert _real_fetch_channel_version(package="bmad-method") is None
+
+
+def test_fetch_channel_version_passes_through_a_custom_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, float] = {}
+
+    def _urlopen(url: str, timeout: float | None = None):
+        seen["timeout"] = timeout
+        return _FakeUrlopenResponse(json.dumps({"latest_version": "6.3.0"}).encode())
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+    _real_fetch_channel_version(package="bmad-method", timeout=1.5)
+    assert seen["timeout"] == 1.5
+
+
+def test_fetch_channel_version_parses_leniently_even_for_the_core_package(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Unlike `_fetch_latest_upstream_version`'s strict-for-core split, this
+    # axis draws no core/suite distinction -- a prerelease `latest_version`
+    # parses to its leading release triple for bmad-method too.
+    _stub_urlopen(monkeypatch, json.dumps({"latest_version": "6.11.0-rc.1"}).encode())
+    assert _real_fetch_channel_version(package="bmad-method") == (6, 11, 0)
+
+
+# --- _channel_and_recipe_drift_findings (pure, no I/O) ----------------------------
+
+
+def test_channel_and_recipe_drift_findings_channel_behind_recipe_fires_channel_drift() -> (
+    None
+):
+    findings = bmad_method._channel_and_recipe_drift_findings(
+        package="bmad-method", recipe=(6, 11, 0), channel=(6, 3, 0), upstream=(6, 11, 0)
+    )
+    assert [f.check for f in findings] == ["bmad-channel-drift"]
+    finding = findings[0]
+    assert finding.source is Source.BMAD_METHOD_VERSION_DRIFT
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-method" in finding.message
+    assert "6.3.0" in finding.message
+    assert "6.11.0" in finding.message
+    assert finding.evidence == {
+        "package": "bmad-method",
+        "channel_version": "6.3.0",
+        "recipe_version": "6.11.0",
+    }
+
+
+def test_channel_and_recipe_drift_findings_recipe_behind_upstream_fires_recipe_upstream_drift() -> (
+    None
+):
+    findings = bmad_method._channel_and_recipe_drift_findings(
+        package="bmad-loop", recipe=(0, 10, 0), channel=(0, 10, 0), upstream=(0, 11, 0)
+    )
+    assert [f.check for f in findings] == ["bmad-recipe-upstream-drift"]
+    finding = findings[0]
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-loop" in finding.message
+    assert "0.10.0" in finding.message
+    assert "0.11.0" in finding.message
+    assert finding.evidence == {
+        "package": "bmad-loop",
+        "recipe_version": "0.10.0",
+        "latest_upstream": "0.11.0",
+    }
+
+
+def test_channel_and_recipe_drift_findings_all_equal_fires_neither() -> None:
+    findings = bmad_method._channel_and_recipe_drift_findings(
+        package="bmad-method", recipe=(6, 11, 0), channel=(6, 11, 0), upstream=(6, 11, 0)
+    )
+    assert findings == ()
+
+
+def test_channel_and_recipe_drift_findings_channel_none_skips_channel_drift_only() -> (
+    None
+):
+    findings = bmad_method._channel_and_recipe_drift_findings(
+        package="bmad-loop", recipe=(0, 10, 0), channel=None, upstream=(0, 11, 0)
+    )
+    assert [f.check for f in findings] == ["bmad-recipe-upstream-drift"]
+
+
+def test_channel_and_recipe_drift_findings_both_fire_when_both_conditions_hold() -> None:
+    findings = bmad_method._channel_and_recipe_drift_findings(
+        package="bmad-method", recipe=(6, 10, 0), channel=(6, 3, 0), upstream=(6, 11, 0)
+    )
+    assert [f.check for f in findings] == [
+        "bmad-channel-drift",
+        "bmad-recipe-upstream-drift",
+    ]
+
+
+# --- integration: gather() -- CORE package ----------------------------------------
+
+
+def test_the_6_3_0_relic_fixture_core_channel_drift_names_bmad_method(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # THE fixture named by spec-15-2's own title: the channel served a
+    # stale bmad-method 6.3.0 for four months against a recipe already at
+    # 6.11.0, with no ambient signal -- this is that state, reproduced.
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.11.0"))
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (6, 3, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    channel_drift = [f for f in findings if f.check == "bmad-channel-drift"]
+    assert len(channel_drift) == 1
+    finding = channel_drift[0]
+    assert finding.source is Source.BMAD_METHOD_VERSION_DRIFT
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-method" in finding.message
+    assert "6.3.0" in finding.message
+    assert "6.11.0" in finding.message
+    # Recipe (6.11.0) meets upstream (6.11.0) -- only the channel axis
+    # drifts.
+    assert not [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+
+
+def test_core_recipe_behind_upstream_reports_recipe_upstream_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.10.0"))
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+    # autouse `_stub_channel_fetch` default (None) applies: no channel data.
+
+    findings = bmad_method.gather(tmp_path)
+
+    recipe_drift = [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+    assert len(recipe_drift) == 1
+    finding = recipe_drift[0]
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-method" in finding.message
+    assert "6.10.0" in finding.message
+    assert "6.11.0" in finding.message
+    assert finding.evidence == {
+        "package": "bmad-method",
+        "recipe_version": "6.10.0",
+        "latest_upstream": "6.11.0",
+    }
+    assert not [f for f in findings if f.check == "bmad-channel-drift"]
+
+
+def test_core_channel_recipe_upstream_all_agree_reports_neither_new_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.11.0"))
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (6, 11, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [
+        f
+        for f in findings
+        if f.check in ("bmad-channel-drift", "bmad-recipe-upstream-drift")
+    ]
+
+
+def test_core_missing_recipe_yaml_skips_both_new_findings_and_never_fetches_channel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    # No recipes/bmad-method/recipe.yaml written at all.
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+
+    def _unreachable(**_):
+        raise AssertionError("_fetch_channel_version must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [
+        f
+        for f in findings
+        if f.check in ("bmad-channel-drift", "bmad-recipe-upstream-drift")
+    ]
+
+
+def test_core_recipe_yaml_missing_context_version_skips_both_new_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _RECIPE_MISSING_EXTRA)
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (6, 3, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [
+        f
+        for f in findings
+        if f.check in ("bmad-channel-drift", "bmad-recipe-upstream-drift")
+    ]
+
+
+def test_core_channel_fetch_failure_skips_only_channel_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.10.0"))
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+    # autouse `_stub_channel_fetch` default (None) simulates a failed fetch.
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [f for f in findings if f.check == "bmad-channel-drift"]
+    recipe_drift = [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+    assert len(recipe_drift) == 1
+    assert recipe_drift[0].status is DoctorStatus.WARN
+
+
+def test_core_upstream_unresolved_skips_both_new_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.10.0"))
+    # _fetch_latest_upstream_version defaults (autouse) to None.
+
+    def _unreachable(*args, **kwargs):
+        raise AssertionError("_recipe_version must not be called")
+
+    monkeypatch.setattr(bmad_method, "_recipe_version", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == ["bmad-method-version-drift"]
+
+
+def test_channel_fetch_unreachable_leaves_every_other_finding_unaffected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # I/O matrix "Offline / anaconda.org unreachable": exercises the REAL
+    # _fetch_channel_version (undoing the autouse stub) with urlopen itself
+    # raising -- no bmad-channel-drift Finding anywhere, no crash, and every
+    # other Finding (CAP-1/CAP-2/bmad-recipe-upstream-drift) is unaffected.
+    monkeypatch.setattr(
+        bmad_method, "_fetch_channel_version", _real_fetch_channel_version
+    )
+
+    def _raise(*args, **kwargs):
+        raise urllib.error.URLError("no route to host")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.10.0"))
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [f for f in findings if f.check == "bmad-channel-drift"]
+    recipe_drift = [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+    assert len(recipe_drift) == 1
+    assert recipe_drift[0].status is DoctorStatus.WARN
+    # CAP-1/CAP-2 outcomes are unaffected.
+    assert findings[0].check == "bmad-method-version-drift"
+    assert findings[1].check == "bmad-method-upstream-drift"
+
+
+# --- integration: gather() -- suite packages --------------------------------------
+
+
+def test_suite_package_recipe_behind_upstream_reports_recipe_upstream_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _recipe_context("0.10.0"))
+    _stub_fetch_by_package(
+        monkeypatch, {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)}
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    recipe_drift = [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+    assert len(recipe_drift) == 1
+    finding = recipe_drift[0]
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-loop" in finding.message
+    assert "0.10.0" in finding.message
+    assert "0.11.0" in finding.message
+    assert finding.evidence == {
+        "package": "bmad-loop",
+        "recipe_version": "0.10.0",
+        "latest_upstream": "0.11.0",
+    }
+
+
+def test_suite_package_channel_behind_recipe_reports_channel_drift_naming_package(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _recipe_context("0.11.0"))
+    _stub_fetch_by_package(
+        monkeypatch, {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)}
+    )
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (0, 9, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    channel_drift = [f for f in findings if f.check == "bmad-channel-drift"]
+    assert len(channel_drift) == 1
+    finding = channel_drift[0]
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-loop" in finding.message
+    assert "0.9.0" in finding.message
+    assert "0.11.0" in finding.message
+    assert finding.evidence == {
+        "package": "bmad-loop",
+        "channel_version": "0.9.0",
+        "recipe_version": "0.11.0",
+    }
+    assert not [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+
+
+def test_suite_package_missing_recipe_yaml_skips_both_new_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    # No recipes/bmad-loop/recipe.yaml written at all.
+    _stub_fetch_by_package(
+        monkeypatch, {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)}
+    )
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (0, 1, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [
+        f
+        for f in findings
+        if f.check in ("bmad-channel-drift", "bmad-recipe-upstream-drift")
+    ]
+
+
+def test_suite_package_upstream_unresolved_skips_both_new_findings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _recipe_context("0.9.0"))
+    # bmad-loop's npm+github fetches both miss -> latest stays None for it,
+    # so neither new Story 15.2 check is even attempted (no upstream to
+    # compare against).
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [
+        f
+        for f in findings
+        if f.check in ("bmad-channel-drift", "bmad-recipe-upstream-drift")
+    ]
+
+
+def test_suite_channel_fetch_skipped_once_shared_budget_exhausted_but_recipe_check_still_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Boundaries: "Suite-side channel fetches stay inside the existing
+    # shared budget" -- once that budget is gone, the channel HTTP fetch is
+    # skipped entirely (never attempted, not merely given a tiny timeout),
+    # but bmad-recipe-upstream-drift needs no network and still fires.
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _recipe_context("0.9.0"))
+
+    clock = _FakeClock()
+    monkeypatch.setattr(bmad_method, "time", clock)
+
+    def _npm_fetch(
+        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    ) -> tuple[int, int, int] | None:
+        if package == "bmad-method":
+            return (6, 11, 0)
+        clock.now += 10.0  # bmad-loop's own npm fetch blows the 5s budget
+        return (0, 11, 0)
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _npm_fetch)
+
+    def _unreachable_channel(**_):
+        raise AssertionError("_fetch_channel_version must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", _unreachable_channel)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert not [f for f in findings if f.check == "bmad-channel-drift"]
+    recipe_drift = [f for f in findings if f.check == "bmad-recipe-upstream-drift"]
+    assert len(recipe_drift) == 1
+    assert recipe_drift[0].evidence == {
+        "package": "bmad-loop",
+        "recipe_version": "0.9.0",
+        "latest_upstream": "0.11.0",
+    }
+
+
+def test_suite_channel_fetch_timeout_is_bounded_by_remaining_shared_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_THREE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-builder", "2.2.1")
+    _write_recipe_yaml(tmp_path, "bmad-builder", _recipe_context("2.2.1"))
+
+    clock = _FakeClock()
+    monkeypatch.setattr(bmad_method, "time", clock)
+
+    def _npm_fetch(
+        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    ) -> tuple[int, int, int] | None:
+        if package == "bmad-method":
+            return (6, 11, 0)
+        clock.now += 2.0  # consumes 2s of the 5s shared budget
+        return (2, 2, 1)
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _npm_fetch)
+
+    seen: dict[str, float] = {}
+
+    def _channel_fetch(*, package: str, timeout: float | None = None):
+        seen["timeout"] = timeout
+        return None
+
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", _channel_fetch)
+
+    bmad_method.gather(tmp_path)
+
+    assert seen["timeout"] == pytest.approx(3.0)  # 5.0 - 2.0 elapsed
+
+
+def test_gather_never_raises_when_channel_and_recipe_upstream_both_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Both new checks firing at once for the SAME package (CORE): a stale
+    # channel behind a recipe that is itself behind upstream.
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-method", _recipe_context("6.10.0"))
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_upstream_version", lambda **_: (6, 11, 0)
+    )
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (6, 3, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == [
+        "bmad-method-version-drift",
+        "bmad-method-upstream-drift",
+        "bmad-channel-drift",
+        "bmad-recipe-upstream-drift",
+    ]
