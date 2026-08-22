@@ -40,7 +40,7 @@ gate, and its dependency edges (§ 14 ordering).
 
 **Execution-mode legend** (spec § 2.5):
 - **ATTENDED** — scheduled wave-boundary event with human present.
-- **DEV-AUTO** — `bmad-dev-auto` inline single-story implementation.
+- **DEV-AUTO** — `bmad-dev-auto` (the retired 6.x name of `bmad-build-auto`) inline single-story implementation.
 - **LOOP-S** — bmad-loop, per-story-spec-approval gate.
 - **LOOP-E** — bmad-loop, per-epic approval gate.
 
