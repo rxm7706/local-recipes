@@ -726,6 +726,9 @@ def _gather_home_facts(
         paused_reason=snapshot.paused_reason,
         escalated_spec_file=snapshot.escalated_spec_file,
         escalated_task_phase=snapshot.escalated_task_phase,
+        # Story 25.5 (CAP-5): threaded from the SAME snapshot read the
+        # three fields above already paid for -- never a second read.
+        escalated_preserve_ref=snapshot.escalated_preserve_ref,
     )
 
 
@@ -1693,6 +1696,11 @@ def _run_detail(
         gate_verdicts=gate_verdicts,
         budget_by_story=journal_facts.budget_by_story,
         open_intents=journal_facts.open_intents,
+        # Story 25.5 (CAP-5): `None` when there is no snapshot (run state
+        # unreadable) -- never fabricated as `{}`-clean.
+        sweeps_refused=(
+            snapshot.sweeps_refused if snapshot is not None else None
+        ),
     )
     row, finding = status_core.build_run_detail(facts)
     if finding is not None:
@@ -1875,8 +1883,18 @@ def _render_text_status(
         # unaffected (same fields either way, NFR-12).
         escalated = home["state"] == "paused-on-escalation"
         prefix = "[ESCALATED] " if escalated else ""
+        # Story 25.5 (CAP-5): the machine field keeps the bare token
+        # `"awaiting-operator"`; the remedy suffix is the HUMAN projection
+        # of that same field (`status_core.AWAITING_OPERATOR_REMEDY`, the
+        # one spelling) -- a parked run is named, never "stalled"/"dead"/
+        # "unsupervised"/"running".
+        state_text = home["state"]
+        if state_text == "awaiting-operator":
+            state_text = (
+                f"awaiting-operator ({status_core.AWAITING_OPERATOR_REMEDY})"
+            )
         line = (
-            f"  {prefix}{home['slug']} ({home['branch']}): {home['state']} "
+            f"  {prefix}{home['slug']} ({home['branch']}): {state_text} "
             f"story={home['current_story']} "
             f"elapsed_seconds={home['elapsed_seconds']} "
             f"budget_consumed={home['budget_consumed']}"
@@ -1886,6 +1904,18 @@ def _render_text_status(
                 f" reason={home.get('escalation_reason')!r} "
                 f"artifact={home.get('escalation_artifact')!r}"
             )
+            # Story 25.5 (CAP-5): the recovery pointer, appended only when
+            # present -- a pure projection of the SAME
+            # `escalation_preserve_ref` JSON field (NFR-12).
+            if home.get("escalation_preserve_ref") is not None:
+                line += f" preserve_ref={home.get('escalation_preserve_ref')}"
+        # Story 25.5 (CAP-5): the parked stories the operator owes a
+        # `bmad-loop confirm` for -- a pure projection of the SAME
+        # `parked_stories` JSON field, rendered whenever non-empty (a park
+        # never blocks siblings, so even a `running` row can carry them).
+        parked = home.get("parked_stories") or ()
+        if parked:
+            line += f" parked={','.join(parked)}"
         # Story 5.5 (FR-62/AD-48): the SAME `unpushed_work` dict the
         # `--format json` payload carries -- a pure projection, never a
         # second/independently-derived summary (NFR-12).
@@ -1963,25 +1993,55 @@ def _render_text_run_detail(
             f"escalated_task_phase={data.get('escalated_task_phase')}"
         )
 
+        # Story 25.5 (CAP-5): a pure projection of the SAME
+        # `sweeps_refused` JSON field (NFR-12). Non-empty renders each
+        # `trigger (reason)` plus the untouched-deferred-work hint
+        # (mirroring bmad-loop's own status text); `{}` is the ordinary
+        # none-refused answer; `None` (run state unreadable) prints
+        # verbatim like the sibling nulled fields above -- never dressed
+        # up as clean.
+        sweeps = data.get("sweeps_refused")
+        if sweeps:
+            detail = ", ".join(
+                f"{trigger} ({reason})" for trigger, reason in sweeps.items()
+            )
+            lines.append(
+                f"sweeps_refused: {detail} -- deferred work is untouched; "
+                "run `bmad-loop sweep` with a clean worktree"
+            )
+        elif sweeps is not None:
+            lines.append("sweeps_refused: (none)")
+        else:
+            lines.append("sweeps_refused: None")
+
         stories = data.get("stories") or []
         lines.append(f"stories: {len(stories)}")
         for story in stories:
-            lines.append(
+            line = (
                 f"  {story['story_key']} phase={story['phase']} "
                 f"commit_sha={story['commit_sha']} branch={story['branch']!r} "
                 f"gate_verdict={story['gate_verdict']} "
                 f"budget_consumed={story['budget_consumed']}"
             )
+            # Story 25.5: the recovery pointer, appended only when set --
+            # the fleet's standing non-destructive policy, now
+            # upstream-native.
+            if story.get("preserve_ref") is not None:
+                line += f" preserve_ref={story.get('preserve_ref')}"
+            lines.append(line)
 
         deferred = data.get("deferred") or []
         lines.append(f"deferred: {len(deferred)}")
         for deferred_story in deferred:
-            lines.append(
+            line = (
                 f"  {deferred_story['story_key']} "
                 f"attempt={deferred_story['attempt']} "
                 f"reason={deferred_story['reason']!r} "
                 f"branch={deferred_story['branch']!r}"
             )
+            if deferred_story.get("preserve_ref") is not None:
+                line += f" preserve_ref={deferred_story.get('preserve_ref')}"
+            lines.append(line)
 
         open_intents = data.get("open_intents") or []
         lines.append(f"open_intents: {len(open_intents)}")

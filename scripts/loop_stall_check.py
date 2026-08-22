@@ -37,6 +37,17 @@ among its session logs and its journal.
 A finished, stopped or paused run is never reported: a paused run is *supposed*
 to sit still, and reporting it would train the check away.
 
+bmad-loop 0.11 adds a fourth deliberately-still shape (marshal Story 25.5,
+DW-BL011-1): a run PARKED at `awaiting-operator` — every task terminal
+({done, deferred, escalated, awaiting-operator}), at least one of them
+awaiting external human-only actions, completed via `bmad-loop confirm`.
+A parked-only run is reported distinctly as
+`awaiting-operator (run bmad-loop confirm)` with its parked story keys and is
+NOT a stall (exit 0): attention is wanted, but a wedged-session diagnosis is
+the wrong triage. A quiet run that carries a parked task AND a task still
+claiming to run is still a stall — something claims to be working and is not —
+with the parked keys named alongside.
+
 Threshold defaults to 15 minutes. That is above the longest legitimate quiet
 period observed across the 2026-07-30/31 six-station run (a single dev pass
 thinking between tool calls, ~4 min) and well below the 74-minute incident.
@@ -60,6 +71,14 @@ from pathlib import Path
 LOOP_ROOT = Path.home() / ".bmad-loops"
 DEFAULT_MIN = 15
 
+# bmad-loop 0.11's own terminal set, mirrored verbatim (`bmad_loop.model.
+# TERMINAL_PHASES`); pinned against the installed package by marshal's
+# tests/unit/test_bmad_loop_status_vocabulary.py.
+TERMINAL_PHASES = {"done", "deferred", "escalated", "awaiting-operator"}
+# The one spelling of the parked state's human name (marshal Story 25.5) --
+# the same projection marshal status / fleet_picture.py print.
+AWAITING_OPERATOR_LABEL = "awaiting-operator (run bmad-loop confirm)"
+
 
 def newest_activity(run: Path) -> float:
     """Newest mtime across a run's logs + journal. 0.0 if it has produced nothing."""
@@ -70,19 +89,41 @@ def newest_activity(run: Path) -> float:
     return max(times, default=0.0)
 
 
-def live_state(run: Path) -> tuple[bool, str]:
-    """(is_live, why_not). A run must be neither finished, stopped nor paused."""
+def parked_tasks(st: dict) -> tuple[list[str], bool]:
+    """(story keys parked at `awaiting-operator`, any task still non-terminal).
+
+    A parked-ONLY run (parked keys, nothing non-terminal) is deliberately
+    still -- bmad-loop 0.11 parks a story whose remaining acceptance criteria
+    are external human-only actions, completed via `bmad-loop confirm` -- so
+    it must never be diagnosed as a wedged session (DW-BL011-1)."""
+    tasks = st.get("tasks") or {}
+    parked, active = [], False
+    for key, task in tasks.items():
+        if not isinstance(task, dict):
+            continue
+        phase = task.get("phase")
+        if phase == "awaiting-operator":
+            parked.append(key)
+        elif phase not in TERMINAL_PHASES:
+            active = True
+    return parked, active
+
+
+def live_state(run: Path) -> tuple[bool, str, dict]:
+    """(is_live, why_not, state_dict). A run must be neither finished,
+    stopped nor paused; the parsed state.json rides along so the caller can
+    classify a live run's tasks (0.11 park detection) off the SAME read."""
     try:
         st = json.loads((run / "state.json").read_text())
     except Exception:
-        return False, "unreadable state.json"
+        return False, "unreadable state.json", {}
     if st.get("finished"):
-        return False, "finished"
+        return False, "finished", st
     if st.get("stopped"):
-        return False, "stopped"
+        return False, "stopped", st
     if st.get("paused_reason"):
-        return False, f"paused ({st.get('paused_stage') or 'escalation'})"
-    return True, ""
+        return False, f"paused ({st.get('paused_stage') or 'escalation'})", st
+    return True, "", st
 
 
 def tmux_sessions() -> set[str]:
@@ -105,7 +146,8 @@ def main() -> int:
         print(f"no loop homes at {LOOP_ROOT} — nothing to watch")
         return 0
 
-    now, live_panes, stalled, checked = time.time(), tmux_sessions(), [], 0
+    now, live_panes, stalled, parked_runs, checked = (
+        time.time(), tmux_sessions(), [], [], 0)
 
     for home in sorted(p for p in LOOP_ROOT.iterdir() if (p / ".git").exists()):
         runs = sorted((home / ".bmad-loop" / "runs").glob("*/"),
@@ -113,10 +155,16 @@ def main() -> int:
         if not runs:
             continue
         run = runs[0]
-        ok, why = live_state(run)
+        ok, why, st = live_state(run)
         if not ok:
             if args.verbose:
                 print(f"  skip     {home.name:22s} {run.name}  ({why})")
+            continue
+        parked, active = parked_tasks(st)
+        if parked and not active:
+            # bmad-loop 0.11: parked-only — deliberately still, like paused;
+            # reported distinctly below, never as a stall (DW-BL011-1).
+            parked_runs.append((home.name, run.name, parked))
             continue
         checked += 1
         last = newest_activity(run)
@@ -124,15 +172,22 @@ def main() -> int:
         pane = f"bmad-loop-{run.name}"
         attached = pane in live_panes
         if quiet_min >= args.minutes:
-            stalled.append((home.name, run.name, quiet_min, attached))
+            stalled.append((home.name, run.name, quiet_min, attached, parked))
         elif args.verbose:
             print(f"  working  {home.name:22s} {run.name}  quiet {quiet_min:.1f}m")
 
     print(f"loop-stall — {checked} live run(s) checked, threshold {args.minutes}m\n")
+    for name, run, parked in parked_runs:
+        print(f"  ⏸ [{AWAITING_OPERATOR_LABEL}] {name}: run {run} is deliberately "
+              f"still — story(ies) {', '.join(parked)} await external human-only")
+        print(f"      actions. Complete them, then `bmad-loop confirm` in the loop home.")
     if stalled:
-        for name, run, quiet, attached in stalled:
+        for name, run, quiet, attached, parked in stalled:
             q = "never produced output" if quiet == float("inf") else f"silent for {quiet:.0f} min"
             print(f"  ✗ [stalled] {name}: run {run} claims to be running but has been {q}.")
+            if parked:
+                print(f"      (also carries parked awaiting-operator story(ies): "
+                      f"{', '.join(parked)} — the stall is the NON-parked work.)")
             if attached:
                 print(f"      Its pane is alive — inspect it: tmux attach -t bmad-loop-{run}")
                 print(f"      An interactive dialog does NOT reach the log; only the pane shows it.")

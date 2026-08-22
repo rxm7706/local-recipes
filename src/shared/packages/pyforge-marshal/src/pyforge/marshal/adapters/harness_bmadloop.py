@@ -1552,11 +1552,27 @@ class BmadLoopHarness:
             )
             escalated_spec_file: str | None = None
             escalated_task_phase: str | None = None
+            escalated_preserve_ref: str | None = None
             if paused_story_key is not None:
                 paused_task = state.tasks.get(paused_story_key)
                 if paused_task is not None:
                     escalated_spec_file = paused_task.spec_file
                     escalated_task_phase = paused_task.phase.value
+                    # Story 25.5 (CAP-5): the escalated story's own recovery
+                    # pointer -- `StoryTask.preserve_ref` VERBATIM (a git
+                    # ref like `commit_sha`, never session-authored free
+                    # text, so no redaction; never re-validated against git
+                    # here -- bmad-loop's own `status_document` documents
+                    # the identical report-verbatim contract).
+                    escalated_preserve_ref = paused_task.preserve_ref
+            # Story 25.5 (CAP-5): `RunState.sweeps_refused` verbatim --
+            # trigger -> reason slug, the CLOSED `model.SWEEP_REFUSED_*`
+            # vocabulary (slugs by upstream design, precisely so run state
+            # stays sanitizer-safe -- never free text). `{}` = nothing
+            # refused; an unreadable state.json degrades this WHOLE
+            # snapshot to None via the widened guard below, never to a
+            # fabricated `{}`-clean.
+            sweeps_refused = dict(state.sweeps_refused)
             deferred: list[DeferredStory] = []
             # Story 3.8 (AD-46/FR-61): EVERY task's phase/commit_sha, not
             # only the deferred ones -- `supervisor/durability.py::
@@ -1573,6 +1589,9 @@ class BmadLoopHarness:
                         phase=task.phase.value,
                         commit_sha=task.commit_sha,
                         branch=task.branch,
+                        # Story 25.5: verbatim, unredacted -- a git ref
+                        # (see `escalated_preserve_ref` above).
+                        preserve_ref=task.preserve_ref,
                     )
                 )
                 # `StrEnum` members compare equal to their own value, but a
@@ -1596,6 +1615,7 @@ class BmadLoopHarness:
                         worktree_path=task.worktree_path,
                         spec_file=task.spec_file,
                         review_cycle=task.review_cycle,
+                        preserve_ref=task.preserve_ref,
                     )
                 )
         except (
@@ -1617,6 +1637,8 @@ class BmadLoopHarness:
             deferred=tuple(deferred),
             finished=finished,
             tasks=tuple(tasks),
+            escalated_preserve_ref=escalated_preserve_ref,
+            sweeps_refused=sweeps_refused,
         )
 
     def resolution_reference(

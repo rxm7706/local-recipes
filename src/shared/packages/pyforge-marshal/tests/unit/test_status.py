@@ -782,6 +782,80 @@ class TestDeriveHomeState:
         )
         assert state == "stopped"
 
+    # --- Story 25.5 (CAP-5, DW-BL011-1): the 0.11 `awaiting-operator`
+    # parked state -- covers every parked row of the spec's own I/O matrix.
+
+    def test_parked_only_run_is_awaiting_operator_not_running(self):
+        """Matrix row 'Parked-only run': terminal-set fix -- before this
+        story a parked task read as in-flight and the run reported
+        `running` with the parked story as 'current' (the DW's mislabel)."""
+        tasks = (
+            _task(story_key="25.1", phase="done"),
+            _task(story_key="25.2", phase="awaiting-operator"),
+        )
+        state = status.derive_home_state(
+            finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True
+        )
+        assert state == "awaiting-operator"
+
+    def test_parked_plus_active_stays_running(self):
+        """Matrix row 'Parked + active': a park never blocks siblings --
+        a run actively driving another story stays `running`."""
+        tasks = (
+            _task(story_key="25.2", phase="awaiting-operator"),
+            _task(story_key="25.3", phase="dev-running"),
+        )
+        state = status.derive_home_state(
+            finished=False, paused_stage=None, tasks=tasks, supervisor_alive=True
+        )
+        assert state == "running"
+
+    def test_parked_plus_finished_is_awaiting_operator_not_stopped(self):
+        """Matrix row 'Parked + finished': the confirm is the next action,
+        not a re-spin -- the park outranks `stopped`."""
+        state = status.derive_home_state(
+            finished=True,
+            paused_stage=None,
+            tasks=(_task(story_key="25.2", phase="awaiting-operator"),),
+            supervisor_alive=False,
+        )
+        assert state == "awaiting-operator"
+
+    def test_parked_plus_dead_supervisor_is_awaiting_operator_never_dead(self):
+        """Matrix row 'Parked + dead supervisor': a parked run's processes
+        naturally wind down while the human actions stay owed -- never
+        `unsupervised`."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage=None,
+            tasks=(_task(story_key="25.2", phase="awaiting-operator"),),
+            supervisor_alive=False,
+            engine_alive=False,
+        )
+        assert state == "awaiting-operator"
+
+    def test_parked_plus_escalation_pause_stays_paused_on_escalation(self):
+        """Matrix row 'Parked + escalation pause': escalation outranks the
+        park -- it is run-halting by design; a park never is."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage="escalation",
+            tasks=(_task(story_key="25.2", phase="awaiting-operator"),),
+            supervisor_alive=True,
+        )
+        assert state == "paused-on-escalation"
+
+    def test_escalated_only_tasks_still_report_idle_not_awaiting_operator(self):
+        """Terminal-set regression guard: widening the set must not turn a
+        plain all-escalated (no park) run into the new state."""
+        state = status.derive_home_state(
+            finished=False,
+            paused_stage=None,
+            tasks=(_task(phase="escalated"),),
+            supervisor_alive=True,
+        )
+        assert state == "idle"
+
 
 class TestIsRunLive:
     """Story 4.11's own pure predicate: the full boolean matrix over
@@ -896,6 +970,8 @@ class TestBuildFleetRow:
             "budget_consumed": None,
             "escalation_reason": None,
             "escalation_artifact": None,
+            "escalation_preserve_ref": None,
+            "parked_stories": (),
             "unpushed_work": None,
             "failed_patches": (),
         }
@@ -1059,6 +1135,85 @@ class TestBuildFleetRow:
         row, _ = status.build_fleet_row(facts)
         assert row["state"] == "running"
         assert row["current_story"] == "1.1"
+
+    # --- Story 25.5 (CAP-5): parked rows + the two new row fields ---------
+
+    def test_parked_row_names_state_parked_stories_and_current_story(self):
+        """Matrix row 'Parked-only run' at the row level: the machine
+        `state` field keeps the BARE token (the remedy suffix is the text
+        projection's), `parked_stories` lists the parked keys in task
+        order, and `current_story` falls back to the first parked key --
+        the story the operator owes."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            tasks=(
+                _task(story_key="25.1", phase="done"),
+                _task(story_key="25.2", phase="awaiting-operator"),
+            ),
+            supervisor_alive=True,
+        )
+        row, finding = status.build_fleet_row(facts)
+        assert row["state"] == "awaiting-operator"
+        assert row["current_story"] == "25.2"
+        assert row["parked_stories"] == ("25.2",)
+        assert finding is None
+
+    def test_parked_plus_active_row_never_hides_the_active_story(self):
+        """Matrix row 'Parked + active': `running`, current = the ACTIVE
+        story; the parked key still rides in `parked_stories` (a park
+        never blocks siblings, but the operator still owes it)."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            tasks=(
+                _task(story_key="25.2", phase="awaiting-operator"),
+                _task(story_key="25.3", phase="dev-running"),
+            ),
+            supervisor_alive=True,
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "running"
+        assert row["current_story"] == "25.3"
+        assert row["parked_stories"] == ("25.2",)
+
+    def test_escalated_row_carries_preserve_ref(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            paused_stage="escalation",
+            supervisor_alive=True,
+            paused_reason="needs a human decision",
+            escalated_spec_file="spec-1.2.md",
+            escalated_preserve_ref="attempt-preserve/run1-abc123",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "paused-on-escalation"
+        assert row["escalation_preserve_ref"] == "attempt-preserve/run1-abc123"
+
+    def test_non_escalated_row_nulls_preserve_ref_like_the_sibling_fields(self):
+        """`escalation_preserve_ref` follows the DERIVED state exactly like
+        `escalation_reason`/`escalation_artifact` (the 2026-08-07 review
+        gating, mirrored) -- a stale ref never leaks into a non-escalated
+        row's payload."""
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=True,
+            finished=False,
+            tasks=(_task(phase="dev-running"),),
+            supervisor_alive=True,
+            escalated_preserve_ref="attempt-preserve/run1-abc123",
+        )
+        row, _ = status.build_fleet_row(facts)
+        assert row["state"] == "running"
+        assert row["escalation_preserve_ref"] is None
 
 
 class TestSortFleetRows:
@@ -1734,6 +1889,8 @@ def _snapshot(
     paused_reason: str | None = None,
     escalated_spec_file: str | None = None,
     escalated_task_phase: str | None = None,
+    escalated_preserve_ref: str | None = None,
+    sweeps_refused: dict[str, str] | None = None,
 ) -> RunStatusSnapshot:
     return RunStatusSnapshot(
         paused_stage=paused_stage,
@@ -1744,6 +1901,8 @@ def _snapshot(
         deferred=(),
         finished=finished,
         tasks=tasks,
+        escalated_preserve_ref=escalated_preserve_ref,
+        sweeps_refused=sweeps_refused if sweeps_refused is not None else {},
     )
 
 
@@ -2883,6 +3042,7 @@ class TestBuildRunDetail:
             "paused_reason": None,
             "escalated_spec_file": None,
             "escalated_task_phase": None,
+            "sweeps_refused": None,
             "stories": [],
             "deferred": [],
             "open_intents": [],
@@ -2944,6 +3104,7 @@ class TestBuildRunDetail:
                 "phase": "done",
                 "commit_sha": "cafe123",
                 "branch": "",
+                "preserve_ref": None,
                 "gate_verdict": "clean",
                 "budget_consumed": None,
             }
@@ -3015,6 +3176,7 @@ class TestBuildRunDetail:
                 "branch": "loop/acme/1.2",
                 "worktree_path": "/loop-homes/acme/.worktrees/1.2",
                 "spec_file": "spec-1.2.md",
+                "preserve_ref": None,
             }
         ]
 
@@ -3062,6 +3224,83 @@ class TestBuildRunDetail:
         )
         row, _ = status.build_run_detail(facts)
         assert row["stories"][0]["budget_consumed"] is None
+
+    # --- Story 25.5 (CAP-5): preserve_ref + sweeps_refused ------------------
+
+    def test_story_rows_carry_preserve_ref_verbatim(self):
+        """Matrix row 'preserve_ref present': the recovery pointer is
+        reported VERBATIM (never re-validated against git) on the task's
+        own row."""
+        task = TaskPhaseSnapshot(
+            story_key="1.4",
+            phase="escalated",
+            commit_sha=None,
+            preserve_ref="attempt-preserve/run1-abc123",
+        )
+        facts = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            tasks=(task,),
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["stories"][0]["preserve_ref"] == "attempt-preserve/run1-abc123"
+
+    def test_deferred_rows_carry_preserve_ref_verbatim(self):
+        deferred_story = DeferredStory(
+            story_key="1.2",
+            reason="verify exhausted",
+            attempt=2,
+            branch="",
+            worktree_path="",
+            spec_file=None,
+            preserve_ref="refs/attempt-preserve-dirty/run1-def456",
+        )
+        facts = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            deferred=(deferred_story,),
+        )
+        row, _ = status.build_run_detail(facts)
+        assert (
+            row["deferred"][0]["preserve_ref"]
+            == "refs/attempt-preserve-dirty/run1-def456"
+        )
+
+    def test_sweeps_refused_dict_is_carried_verbatim(self):
+        """Matrix row 'sweeps_refused': trigger -> reason slug, the closed
+        `SWEEP_REFUSED_*` vocabulary, reported as-is."""
+        facts = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            sweeps_refused={"epic-1": "dirty"},
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["sweeps_refused"] == {"epic-1": "dirty"}
+
+    def test_sweeps_refused_empty_is_reported_as_empty_not_null(self):
+        """Matrix row 'sweeps_refused empty': `{}` = a READABLE state that
+        refused nothing -- distinct from null (unreadable)."""
+        facts = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=True,
+            sweeps_refused={},
+        )
+        row, _ = status.build_run_detail(facts)
+        assert row["sweeps_refused"] == {}
+
+    def test_sweeps_refused_unreadable_state_reports_null_never_fabricated(self):
+        """Matrix row 'sweeps_refused unreadable': null, never a fabricated
+        `{}`-clean -- both via the facts-level `None` and via
+        `state_readable=False` (the same gating every sibling
+        snapshot-sourced field already follows)."""
+        no_snapshot = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=False,
+        )
+        row, _ = status.build_run_detail(no_snapshot)
+        assert row["sweeps_refused"] is None
+
+        stale_dict = status.RunDetailFacts(
+            project="acme", run_id="acme-run1", found=True, state_readable=False,
+            sweeps_refused={"epic-1": "dirty"},
+        )
+        row, _ = status.build_run_detail(stale_dict)
+        assert row["sweeps_refused"] is None
 
     def test_render_story_key_best_effort_renders_dot_form(self):
         key = normalize("1.2")
@@ -3231,6 +3470,63 @@ class TestRunDetail:
         assert data["open_intents"][0]["kind"] == "story-spec-commit"
         assert exit_code == 0
 
+    def test_run_detail_threads_sweeps_refused_from_the_snapshot(
+        self, tmp_path, capsys
+    ):
+        """Story 25.5 (CAP-5): `_run_detail` threads the snapshot's own
+        `sweeps_refused` dict through to the row; with NO snapshot at all
+        (no attached loop home) the field reports null -- never a
+        fabricated `{}`-clean."""
+        slug = "acme"
+        run_id = "acme-run1"
+        _seed_run_detail_journal(
+            tmp_path,
+            slug=slug,
+            run_id=run_id,
+            lines=[_outcome_line(run_id, pid=4242, harness_run_id="hrid-1")],
+        )
+        home = tmp_path / "loop-homes" / slug
+        vcs = _FakeVcs(
+            repo_root_value=tmp_path,
+            worktrees=(WorktreeEntry(path=home, branch=f"loop/{slug}"),),
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False,
+                    tasks=(_task(story_key="1.1", phase="done"),),
+                    sweeps_refused={"epic-1": "dirty"},
+                )
+            }
+        )
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["sweeps_refused"] == {"epic-1": "dirty"}
+        assert exit_code == 0
+
+        # No attached loop home -> no snapshot -> null, with the reused
+        # MRS-STATUS-002 degrade (unchanged behavior for every sibling
+        # snapshot-sourced field).
+        vcs_no_home = _FakeVcs(repo_root_value=tmp_path, worktrees=())
+        exit_code = status_cli.run_status(
+            _args(project=slug, run=run_id),
+            vcs=vcs_no_home,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        assert payload["data"]["sweeps_refused"] is None
+        assert exit_code == 0
+
     def test_run_paused_on_escalation_names_reason_and_artifact(
         self, tmp_path, capsys
     ):
@@ -3327,6 +3623,7 @@ class TestRunDetail:
                 "branch": "loop/acme/1.4",
                 "worktree_path": "/loop-homes/acme/.worktrees/1.4",
                 "spec_file": "spec-1.4.md",
+                "preserve_ref": None,
             }
         ]
         assert exit_code == 0
@@ -5174,3 +5471,236 @@ class TestFailedPatches:
         ]
         assert patch_path.is_file()
         assert patch_path.read_bytes() == before
+
+
+# =============================================================================
+# Story 25.5 (CAP-5): the 0.11 status vocabulary's TEXT projections -- pure
+# render-level tests over the SAME envelope dicts the JSON path emits
+# (NFR-12: the text view is a projection, never a second derivation), plus
+# one end-to-end parked-run sweep through `run_status` itself.
+# =============================================================================
+
+
+def _fleet_row(**overrides: object) -> dict[str, object]:
+    row: dict[str, object] = {
+        "slug": "acme",
+        "branch": "loop/acme",
+        "state": "idle",
+        "current_story": None,
+        "elapsed_seconds": None,
+        "budget_consumed": None,
+        "escalation_reason": None,
+        "escalation_artifact": None,
+        "escalation_preserve_ref": None,
+        "parked_stories": (),
+        "unpushed_work": None,
+        "failed_patches": (),
+    }
+    row.update(overrides)
+    return row
+
+
+class TestAwaitingOperatorTextProjections:
+    def test_parked_state_renders_the_remedy_suffix_and_parked_list(self):
+        text = status_cli._render_text_status(
+            {
+                "project": None,
+                "homes": [
+                    _fleet_row(
+                        state="awaiting-operator",
+                        current_story="25-2-parked",
+                        parked_stories=("25-2-parked",),
+                    )
+                ],
+            },
+            (),
+        )
+        assert "awaiting-operator (run bmad-loop confirm)" in text
+        assert "parked=25-2-parked" in text
+        for banned in ("stalled", "dead", "unsupervised", "running"):
+            assert banned not in text
+
+    def test_remedy_spelling_is_the_single_core_constant(self):
+        """The one spelling rule: renders compose the suffix from
+        `core.status.AWAITING_OPERATOR_REMEDY`, so the projection can
+        never drift from the constant the spec pins."""
+        assert status.AWAITING_OPERATOR_REMEDY == "run bmad-loop confirm"
+
+    def test_non_parked_states_render_without_a_suffix_or_parked_list(self):
+        text = status_cli._render_text_status(
+            {"project": None, "homes": [_fleet_row(state="running")]}, ()
+        )
+        assert "running" in text
+        assert "bmad-loop confirm" not in text
+        assert "parked=" not in text
+
+    def test_escalated_row_appends_preserve_ref_only_when_present(self):
+        base = _fleet_row(
+            state="paused-on-escalation",
+            escalation_reason="needs a human decision",
+            escalation_artifact="spec-1.2.md",
+        )
+        without = status_cli._render_text_status(
+            {"project": None, "homes": [base]}, ()
+        )
+        assert "preserve_ref=" not in without
+
+        with_ref = status_cli._render_text_status(
+            {
+                "project": None,
+                "homes": [
+                    _fleet_row(
+                        state="paused-on-escalation",
+                        escalation_reason="needs a human decision",
+                        escalation_artifact="spec-1.2.md",
+                        escalation_preserve_ref="attempt-preserve/run1-abc123",
+                    )
+                ],
+            },
+            (),
+        )
+        assert "preserve_ref=attempt-preserve/run1-abc123" in with_ref
+
+    def _detail(self, **overrides: object) -> dict[str, object]:
+        data: dict[str, object] = {
+            "project": "acme",
+            "run_id": "acme-run1",
+            "found": True,
+            "state_readable": True,
+            "finished": False,
+            "paused_stage": None,
+            "paused_story_key": None,
+            "paused_reason": None,
+            "escalated_spec_file": None,
+            "escalated_task_phase": None,
+            "sweeps_refused": {},
+            "stories": [],
+            "deferred": [],
+            "open_intents": [],
+        }
+        data.update(overrides)
+        return data
+
+    def test_run_detail_renders_sweeps_refused_triggers_and_hint(self):
+        text = status_cli._render_text_run_detail(
+            self._detail(sweeps_refused={"epic-1": "dirty", "run-end": "failed"}),
+            (),
+        )
+        assert "sweeps_refused: epic-1 (dirty), run-end (failed)" in text
+        assert "deferred work is untouched" in text
+
+    def test_run_detail_renders_empty_and_null_sweeps_refused_distinctly(self):
+        clean = status_cli._render_text_run_detail(
+            self._detail(sweeps_refused={}), ()
+        )
+        assert "sweeps_refused: (none)" in clean
+
+        unreadable = status_cli._render_text_run_detail(
+            self._detail(state_readable=False, sweeps_refused=None), ()
+        )
+        assert "sweeps_refused: None" in unreadable
+
+    def test_run_detail_story_and_deferred_lines_append_preserve_ref_when_set(self):
+        text = status_cli._render_text_run_detail(
+            self._detail(
+                stories=[
+                    {
+                        "story_key": "1.4",
+                        "phase": "escalated",
+                        "commit_sha": None,
+                        "branch": "",
+                        "preserve_ref": "attempt-preserve/run1-abc123",
+                        "gate_verdict": None,
+                        "budget_consumed": None,
+                    },
+                    {
+                        "story_key": "1.5",
+                        "phase": "done",
+                        "commit_sha": "cafe123",
+                        "branch": "",
+                        "preserve_ref": None,
+                        "gate_verdict": None,
+                        "budget_consumed": None,
+                    },
+                ],
+                deferred=[
+                    {
+                        "story_key": "1.2",
+                        "reason": "verify exhausted",
+                        "attempt": 2,
+                        "branch": "",
+                        "worktree_path": "",
+                        "spec_file": None,
+                        "preserve_ref": "refs/attempt-preserve-dirty/run1-def456",
+                    }
+                ],
+            ),
+            (),
+        )
+        assert "1.4" in text
+        assert "preserve_ref=attempt-preserve/run1-abc123" in text
+        assert "preserve_ref=refs/attempt-preserve-dirty/run1-def456" in text
+        # The absent case renders NO suffix -- one occurrence per set ref.
+        assert text.count("preserve_ref=") == 2
+
+    def test_end_to_end_parked_run_reports_awaiting_operator_in_json_and_text(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """AC 1 at the command level: a parked run sweeps through
+        `run_status` as `awaiting-operator` (bare token in JSON, remedy
+        suffix in text) with the parked story as current -- never
+        stalled/dead/unsupervised/running."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False,
+                    tasks=(
+                        _task(story_key="25.1", phase="done"),
+                        _task(story_key="25.2", phase="awaiting-operator"),
+                    ),
+                )
+            }
+        )
+        # Both processes dead -- the parked state must still never read
+        # `unsupervised` (the DW's "never mislabeled dead").
+        process = _FakeProcess(alive_pids=frozenset())
+
+        exit_code = status_cli.run_status(
+            _args(format="json"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert exit_code == 0
+        assert row["state"] == "awaiting-operator"
+        assert row["current_story"] == "25.2"
+        assert row["parked_stories"] == ["25.2"]
+
+        exit_code = status_cli.run_status(
+            _args(format="text"),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        text_out = capsys.readouterr().out
+        assert exit_code == 0
+        assert "awaiting-operator (run bmad-loop confirm)" in text_out
+        assert "parked=25.2" in text_out
+        assert "unsupervised" not in text_out

@@ -190,7 +190,7 @@ established for ``paused_reason``/``defer_reason``.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
@@ -282,7 +282,19 @@ class DeferredStory:
     ``max_dev_attempts``/``max_review_cycles`` ceilings -- never a new
     hand-maintained flag (AD-26): both counters already exist in bmad-loop's
     own ``state.json``, this dataclass simply exposes the second one this
-    package had not yet needed."""
+    package had not yet needed.
+
+    Story 25.5 (0.11 status vocabulary, CAP-5) adds ``preserve_ref: str |
+    None = None`` -- ``StoryTask``'s own same-named 0.10/0.11 field, the
+    ``attempt-preserve/*`` (or ``refs/attempt-preserve-dirty/*``) recovery
+    ref the last auto-rollback parked this task's work on, reported VERBATIM
+    from ``state.json`` (a git ref like ``commit_sha``, never
+    session-authored free text -- no redaction, and never re-validated
+    against git here: retention may since have pruned it, exactly as
+    bmad-loop's own ``documents.py::status_document`` documents for the same
+    key). Trailing default (``review_cycle``'s own precedent) so every
+    existing call site keeps constructing this type unchanged; ``None`` =
+    the last auto-rollback parked nothing, or a pre-0.10 ``state.json``."""
 
     story_key: str
     reason: str | None
@@ -291,6 +303,7 @@ class DeferredStory:
     worktree_path: str
     spec_file: str | None
     review_cycle: int = 0
+    preserve_ref: str | None = None
 
 
 @dataclass(frozen=True)
@@ -316,12 +329,22 @@ class TaskPhaseSnapshot:
     beyond the story's own Code Map literal 3-field enumeration (see the
     spec's own Spec Change Log): a stage-boundary push must also push "that
     story's own per-story branch too" when the triggering story ran
-    worktree-isolated, and no other field on this type names it."""
+    worktree-isolated, and no other field on this type names it.
+
+    Story 25.5 (0.11 status vocabulary, CAP-5) adds ``preserve_ref: str |
+    None = None`` -- ``StoryTask.preserve_ref`` verbatim (see
+    ``DeferredStory.preserve_ref``'s own docstring for the field's full
+    semantics; this is the SAME state.json key, exposed here for the full
+    task population so ``core.status.build_run_detail`` can name the
+    recovery pointer on escalated/any-phase story rows, not only the
+    ``Phase.DEFERRED`` subset). Trailing default (``branch``'s own
+    precedent)."""
 
     story_key: str
     phase: str
     commit_sha: str | None
     branch: str = ""
+    preserve_ref: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -359,7 +382,24 @@ class RunStatusSnapshot:
     no positional ordering constraint, so ``deferred`` is restored to no
     default while ``tasks`` (and ``finished``, already-defaulted before this
     story) keep theirs -- every existing call site already constructs this
-    type by keyword, so this is a pure narrowing, not a break."""
+    type by keyword, so this is a pure narrowing, not a break.
+
+    Story 25.5 (0.11 status vocabulary, CAP-5) adds two run-level fields,
+    both mirroring the installed bmad_loop 0.11.0's own spellings verbatim:
+
+    - ``escalated_preserve_ref`` -- ``paused_story_key``'s own task's
+      ``preserve_ref`` (the recovery pointer for the escalated story --
+      the SAME task whose ``spec_file``/``phase`` the two ``escalated_*``
+      fields above already read), ``None`` when ``paused_story_key`` is
+      ``None``, names no known task, or that task carries no ref.
+    - ``sweeps_refused`` -- ``RunState.sweeps_refused`` verbatim: auto-sweep
+      triggers this run did NOT deliver, trigger -> reason slug (the CLOSED
+      ``model.SWEEP_REFUSED_*`` vocabulary: ``"not-started"`` / ``"failed"``
+      / ``"dirty"`` -- slugs, never free text, so no redaction applies).
+      ``{}`` = nothing refused (bmad-loop's own ``status_document`` reports
+      the key always-present for the same absent-vs-clean ambiguity
+      reason); a snapshot that could not be read at all is ``None`` at the
+      ``run_status_snapshot`` level, never a fabricated ``{}``."""
 
     paused_stage: str | None
     paused_story_key: str | None
@@ -369,6 +409,8 @@ class RunStatusSnapshot:
     deferred: tuple[DeferredStory, ...]
     finished: bool = False
     tasks: tuple[TaskPhaseSnapshot, ...] = ()
+    escalated_preserve_ref: str | None = None
+    sweeps_refused: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
