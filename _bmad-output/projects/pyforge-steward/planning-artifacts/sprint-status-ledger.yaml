@@ -31,7 +31,7 @@ development_status:
   11-3-async-work-never-blocks-django: done
   11-4-isolation-and-statelessness-proven: done
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
-  12-2-gke-as-a-portability-profile: backlog
+  12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: backlog
   12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined: backlog
   12-5-the-db-gpt-sidecar-joins-the-chart: backlog

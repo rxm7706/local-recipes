@@ -29,6 +29,17 @@ deferred:
     severity: medium
 ---
 
+> **Renumbered 2026-08-22** (post-merge `bmad-correct-course` fix, same day as this story
+> landed): this story was originally chartered as Epic 16 / Story 16.1, but `epics.md` carried
+> two unrelated `## Epic 16:` headings (this packaging-inventory epic and the already-`done`
+> "Wagtail corporate brain" epic) — a duplicate-numbering defect this story's own review pass
+> found and flagged but explicitly left out of scope. Resolved by renumbering this epic to
+> **Epic 17** (Wagtail keeps 16, unchanged). Every mention of "16.1"/"Epic 16" below this line
+> is historical narrative from the original dev/review session and is accurate for that
+> point in time — it describes the numbering that was current when the work happened, not a
+> stale error. `epics.md`, `sprint-status-ledger.yaml`, this file's own name, and the owning
+> `SPEC.md`/`.memlog.md` now all say 17.1/Epic 17.
+
 <intent-contract>
 
 ## Intent
