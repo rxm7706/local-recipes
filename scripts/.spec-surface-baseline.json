@@ -2184,6 +2184,10 @@
   "files": {},
   "memlog": "d0901df5cf6147b38cffce298ccbc33df7f945ff"
  },
+ "pyforge-marshal/spec-bmad-611-era-alignment": {
+  "files": {},
+  "memlog": "eb46c80424c2f396fa6594d52cec5aadfd59a95c"
+ },
  "pyforge-marshal/spec-bmad-loop-baseline-drift": {
   "files": {
    "docs/dreams/bmad-loop-baseline-drift.md": "56f5ee0420aecca7acc42b5437b92cab563fddf7",

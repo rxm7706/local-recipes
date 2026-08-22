@@ -111,7 +111,8 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E22** | Single-story dispatch is a marshal verb | The 22-story hand ritual replays as governed machinery: one isolated session per story, judged from git facts, independently verified, landed with the full paper trail | 6 | (new 2026-08-21) |
 | **E23** | Velocity captures hand-driven work | Every done story with real signal shows a timing mark; wall-clock never masquerades as active-compute | 3 | (new 2026-08-21) |
 | **E24** | Liveness is one command | "Is this run alive?" answered by the supported CLI — never by hand-parsing engine.pid | 3 | (new 2026-08-21) |
-| **Total** | | | **155** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
+| **E25** | Aligned to the installed BMAD era | Artifacts, patterns, and marshal surfaces match 6.11/0.11 — retired IDs purged and guarded, every spec folder tool-updatable, the new policy knobs governed and run states named | 7 | (new 2026-08-22) |
+| **Total** | | | **162** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
 *Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
 `sprint-status-ledger.yaml` story keys agree at **119** (E1-E6 = 60, E7-E12 = 36, E13 = 7,
@@ -3822,3 +3823,73 @@ All 15 ADs (AD-51–AD-65) flow into specific stories. The 12 conflict-preventio
 | SC-08 (update cannot write Tier-0/2) | S-12.4 |
 | SC-09 (init < 5 min) | S-12.5 |
 | SC-10 (100% manifest coverage) | S-9.5 |
+
+## Epic 25: Aligned to the installed BMAD era
+
+**Goal:** decomposes `spec-bmad-611-era-alignment` CAP-1..7 (Spec landed 2026-08-22 from
+`docs/dreams/bmad-611-era-alignment.md`; `alignment-inventory.md` carries the verified
+findings each story closes, `horizon-watches.md` the named watch-don't-build triggers).
+The 2026-08-21/22 upgrade made the stack RUN current; this epic makes the fleet BE
+current — and guards it. **HARD boundaries carried from the Spec:** never adopt what
+upstream is removing (no stories.yaml / folder+id / `{spec-folder}/stories/`), HOLD the
+AGENTS.md managed block, watch-don't-build the TOML cutover and bmad-ticket tree, exact
+TOML scalar types in policy work, `[dev] skill = "bmad-dev-auto"` stays, shims stay
+installed until 25.1's guard is green.
+
+### Story 25.1: Retired skill IDs are purged and guarded
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-1
+**Surface:** 6 planning artifacts (5 epics.md + marshal PRD.md), `seed/templates/files/dream-first-workflow.md.j2`, AGENTS.md, 3 auto-memory entries, new meta-test
+**Given** the published 20-shim list **Then** no retired ID survives in live docs, seed
+templates, memory, or code (historical text glossed, not rewritten), and a new meta-test
+reds any reintroduction — proven by passing on the swept tree and failing on a planted ID.
+
+### Story 25.2: bmad-loop's repo skills match the installed package
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-2
+**Surface:** `.claude/skills/bmad-loop-{setup,resolve,sweep}`
+**Given** the package canon in `bmad_loop/data/skills/` (today 217/134/7 diff lines stale)
+**Then** a diff-reviewed refresh lands and `bmad-loop validate` stays clean across all 8
+loop homes.
+
+### Story 25.3: Every spec folder accepts a 6.11 bmad-spec update
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-3
+**Surface:** 22 spec folders across all 8 stations' `planning-artifacts/specs/`
+**Given** the 8 frontmatter-less memlogs and 14 memlog-less folders **Then** each gains
+6.11-valid frontmatter or a genesis-baseline `.memlog.md` (marshal S-13.7 bootstrap
+pattern), and `memlog.py append` verifiably succeeds against all 22.
+
+### Story 25.4: The 0.10/0.11 policy knobs are governable
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-4 (AD-16)
+**Surface:** `core/policy.py`, `adapters/harness_bmadloop.py` render pipeline, `policy-defaults.toml`, loop-home policy re-render
+**Given** `review.on_timeout`, `review.on_status_contradiction`, `limits.dev_contract_nudge`,
+`operator.enabled`, `verify.stream_capture_kb` **Then** each flows through the
+defaults→project→flags chain with a deliberate repo default and exact TOML scalar types
+(0.11 rejects coercible mismatches), rendered policies pass `bmad-loop validate`, and the
+marshal suite stays green.
+
+### Story 25.5: Marshal speaks the 0.11 status vocabulary
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-5 (absorbs DW-BL011-1)
+**Surface:** `cli/status.py`, `core/status.py`, `scripts/fleet_picture.py`, `scripts/loop_stall_check.py`
+**Given** a parked (`awaiting-operator`) run, a `preserve_ref`-carrying task, and a
+`sweeps_refused` record **Then** each is named where operators look (`marshal status`,
+fleet-picture), the stall-check reports parked runs as `awaiting-operator (run bmad-loop
+confirm)` instead of stalled, `preserve_ref` feeds the escalation-preservation flow, and
+the false-green detector's premise text gains the 6.11 status-before-commit note —
+fixture-driven tests throughout.
+
+### Story 25.6: A hand-driven run's deferrals reach the ledger unaided
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-6 (closes DW-BL011-2)
+**Surface:** `scripts/deferred_work_*.py`, `scripts/deferred_work_check.py` intake seam
+**Given** a spec-frontmatter `deferred:` list in the shape of doctor's DW-14-1-1 (the
+2026-08-22 canary) **Then** the pipeline ingests it into the tracked ledger without a
+human relay — loop runs stay covered by bmad-loop's own `_harvest_spec_deferrals` bridge,
+both sources honored, proven by fixture.
+
+### Story 25.7: The factory's living docs are re-grounded, with a named owner
+**Type:** docs • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-611-era-alignment CAP-7 (+ the spec's open question)
+**Surface:** `architecture-bmad-infra.md`, 8 × `projects/<slug>/project-context.md`, SYNC-RUNBOOK
+**Given** the retired reconciler skills **Then** `architecture-bmad-infra.md` describes the
+6.11 infra (render pipeline, TOML layers, current skill set) and all 8 rulebooks are
+re-grounded via plain agents with bumped `source_pin`s, and SYNC-RUNBOOK names the
+recurring owner + cadence — resolving the spec's open question with a dated entry.
+
+**Epic 25 clears to dispatch in full — all seven stories are independent.**

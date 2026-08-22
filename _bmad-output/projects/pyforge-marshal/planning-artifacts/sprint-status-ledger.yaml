@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 203
+# stories: 212
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -105,6 +105,13 @@ development_status:
   24-1-marshal-gains-the-missing-liveness-primitive: backlog
   24-2-the-operator-answer-is-one-documented-command: backlog
   24-3-an-unsupervised-row-has-a-cheap-documented-double-check: backlog
+  25-1-retired-skill-ids-are-purged-and-guarded: backlog
+  25-2-bmad-loops-repo-skills-match-the-installed-package: backlog
+  25-3-every-spec-folder-accepts-a-6-11-bmad-spec-update: backlog
+  25-4-the-0-10-0-11-policy-knobs-are-governable: backlog
+  25-5-marshal-speaks-the-0-11-status-vocabulary: backlog
+  25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided: backlog
+  25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
@@ -203,6 +210,8 @@ development_status:
   epic-23-retrospective: optional
   epic-24: backlog
   epic-24-retrospective: optional
+  epic-25: backlog
+  epic-25-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done
