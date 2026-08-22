@@ -155,12 +155,13 @@ class InvalidContentPlanError(HeraldError):
     references a layout or placeholder idx absent from the resolved
     template, or a placeholder value that is neither a string nor a list of
     strings (Story 15.1, CAP-1). Also covers a slide entry's optional
-    ``"shapes"`` list (Story 15.2, CAP-2): an unknown shape ``"type"``, a
-    missing/malformed required field for that type, or non-positive shape
-    geometry. Always raised before ``fill_template``'s ``Presentation`` is
-    written to disk, so no output file exists on this error (the I/O
-    matrix's "No file written" rows). Falls through to the default exit
-    code (``1``)."""
+    ``"shapes"`` list (Story 15.2, CAP-2): a ``"shapes"`` value that is not
+    a JSON array, an individual shape entry that is not a JSON object, an
+    unknown shape ``"type"``, a missing/malformed required field for that
+    type, or non-positive shape geometry. Always raised before
+    ``fill_template``'s ``Presentation`` is written to disk, so no output
+    file exists on this error (the I/O matrix's "No file written" rows).
+    Falls through to the default exit code (``1``)."""
 
 
 _EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (

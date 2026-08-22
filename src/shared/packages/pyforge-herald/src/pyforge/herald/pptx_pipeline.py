@@ -410,10 +410,13 @@ def _write_fitted_lines(
     """Materialize ``fitted``'s literal wrapped lines into ``paragraph``
     as their own runs, joined by explicit ``add_line_break()`` calls
     (Design Notes: "Literal line breaks, not word_wrap reliance") --
-    never relying on PowerPoint's own re-flow at open time, since a
-    substituted font could re-wrap our measured breaks differently.
-    Every run's color is a theme color reference, never a hardcoded RGB
-    (Boundaries & Constraints).
+    the primary line-break source, not PowerPoint's own re-flow at open
+    time, since a substituted font could re-wrap our measured breaks
+    differently. (Every ``add_*`` function still sets ``word_wrap = True``
+    as a passive safety net only, per Design Notes -- these literal breaks
+    are what actually determines layout in the common case.) Every run's
+    color is a theme color reference, never a hardcoded RGB (Boundaries &
+    Constraints).
 
     ``fit_text``'s height budget assumes a 1.2x line-height with zero
     inter-paragraph spacing -- explicitly pinned here (rather than left
@@ -838,7 +841,10 @@ def _resolve_shapes(entry: Mapping[str, Any], slide_index: int) -> list[Resolved
 
 def _add_shapes(slide: Slide, shapes: Sequence[ResolvedShape]) -> None:
     """Dispatch each resolved shape to its ``add_*`` function, in plan
-    order."""
+    order. The final branch checks ``SectionLabelShape`` explicitly (rather
+    than assuming it as an ``else`` fallthrough) so a future
+    :data:`ResolvedShape` variant added without updating this function fails
+    loudly instead of silently mis-rendering as a section label."""
     for shape in shapes:
         if isinstance(shape, CardShape):
             add_card(
@@ -864,10 +870,12 @@ def _add_shapes(slide: Slide, shapes: Sequence[ResolvedShape]) -> None:
             add_table(
                 slide, shape.left, shape.top, shape.width, shape.height, shape.rows
             )
-        else:
+        elif isinstance(shape, SectionLabelShape):
             add_section_label(
                 slide, shape.left, shape.top, shape.width, shape.height, shape.text
             )
+        else:
+            raise AssertionError(f"unhandled ResolvedShape variant: {type(shape)!r}")
 
 
 def fill_template(template_path: Path, content_plan: object) -> PptxPresentation:

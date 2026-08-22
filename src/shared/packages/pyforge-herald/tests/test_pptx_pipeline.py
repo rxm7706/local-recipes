@@ -522,6 +522,19 @@ def test_add_card_creates_a_real_autoshape_with_theme_colors_and_real_text():
     assert "schemeClr" in xml
     assert "srgbClr" not in xml
 
+    title_run = shape.text_frame.paragraphs[0].runs[0]
+    body_run = shape.text_frame.paragraphs[1].runs[0]
+    assert title_run.font.bold is True
+    assert body_run.font.bold is False
+
+    # `_reset_margins` must actually zero all four margins -- `fit_text`'s
+    # EMU width/height budget assumes the shape's box IS the text area.
+    text_frame = shape.text_frame
+    assert text_frame.margin_left == 0
+    assert text_frame.margin_right == 0
+    assert text_frame.margin_top == 0
+    assert text_frame.margin_bottom == 0
+
 
 def test_add_metric_box_renders_a_large_value_line_above_a_small_label_line():
     _, slide = _blank_slide()
@@ -529,9 +542,22 @@ def test_add_metric_box_renders_a_large_value_line_above_a_small_label_line():
         slide, 0, 0, 1_500_000, 900_000, "42%", "of findings resolved"
     )
     value_paragraph, label_paragraph = shape.text_frame.paragraphs
-    assert value_paragraph.runs[0].text == "42%"
+    value_run = value_paragraph.runs[0]
+    label_run = label_paragraph.runs[0]
+    assert value_run.text == "42%"
     assert "of findings resolved" in label_paragraph.text
-    assert value_paragraph.runs[0].font.size.pt > label_paragraph.runs[0].font.size.pt
+    assert value_run.font.size.pt > label_run.font.size.pt
+
+    assert value_run.font.bold is True
+    assert value_run.font.color.theme_color == pptx_pipeline.MSO_THEME_COLOR.ACCENT_1
+    assert label_run.font.bold is False
+    assert label_run.font.color.theme_color == pptx_pipeline.MSO_THEME_COLOR.TEXT_1
+
+    text_frame = shape.text_frame
+    assert text_frame.margin_left == 0
+    assert text_frame.margin_right == 0
+    assert text_frame.margin_top == 0
+    assert text_frame.margin_bottom == 0
 
 
 def test_add_table_gives_every_cell_one_font_size_and_a_distinct_header_row():
@@ -552,6 +578,14 @@ def test_add_table_gives_every_cell_one_font_size_and_a_distinct_header_row():
 
     body_cell = table.cell(1, 0)
     assert body_cell.text_frame.paragraphs[0].runs[0].font.bold is False
+
+    # `_reset_margins` must actually zero all four margins on a cell's
+    # text frame too, same invariant as the other shape functions.
+    body_text_frame = body_cell.text_frame
+    assert body_text_frame.margin_left == 0
+    assert body_text_frame.margin_right == 0
+    assert body_text_frame.margin_top == 0
+    assert body_text_frame.margin_bottom == 0
 
 
 def test_add_table_single_row_has_no_header():
@@ -583,6 +617,12 @@ def test_add_section_label_renders_a_single_theme_colored_run():
     assert textbox.text_frame.text == "Act I"
     run = textbox.text_frame.paragraphs[0].runs[0]
     assert run.font.color.theme_color == pptx_pipeline.MSO_THEME_COLOR.ACCENT_1
+
+    text_frame = textbox.text_frame
+    assert text_frame.margin_left == 0
+    assert text_frame.margin_right == 0
+    assert text_frame.margin_top == 0
+    assert text_frame.margin_bottom == 0
 
 
 # === Story 15.2: content_plan.json "shapes" list (fill_template / run_fill) ===
@@ -907,6 +947,43 @@ def test_fill_template_no_shapes_key_behaves_exactly_as_story_15_1(template_path
     assert slide.placeholders[1].text_frame.text == "There"
 
 
+def test_fill_template_placeholders_and_shapes_coexist_on_the_same_slide(
+    template_path: Path,
+):
+    """The `"shapes"` key is additive to a slide entry's existing
+    `"placeholders"` mapping -- a single slide entry setting BOTH a real
+    (non-empty) `"placeholders"` mapping AND a real `"shapes"` list must
+    materialize both with no interference."""
+    plan = {
+        "slides": [
+            {
+                "layout": 0,
+                "placeholders": {"0": "A Real Title", "1": "A Real Subtitle"},
+                "shapes": [
+                    {
+                        "type": "card",
+                        "left": 0,
+                        "top": 0,
+                        "width": 2_000_000,
+                        "height": 1_500_000,
+                        "title": "Card Title",
+                        "body": "Card body text.",
+                    }
+                ],
+            }
+        ]
+    }
+    prs = pptx_pipeline.fill_template(template_path, plan)
+    assert len(prs.slides) == 1
+    slide = prs.slides[0]
+    assert slide.placeholders[0].text_frame.text == "A Real Title"
+    assert slide.placeholders[1].text_frame.text == "A Real Subtitle"
+    card = next(
+        s for s in slide.shapes if s.has_text_frame and "Card Title" in s.text_frame.text
+    )
+    assert "Card body text." in card.text_frame.text
+
+
 # === Story 15.2: the Warden-appendix acceptance case ===========================
 
 _WARDEN_APPENDIX_PERSONAS = [
@@ -1027,6 +1104,46 @@ def test_deck_pptx_fill_unknown_shape_type_exits_1_and_writes_nothing(
     plan_path = _write_content_plan(
         tmp_path,
         _shape_plan({"type": "chart", "left": 0, "top": 0, "width": 1, "height": 1}),
+    )
+    out_path = tmp_path / "out.pptx"
+    exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
+    assert exit_code == 1
+    assert not out_path.exists()
+    assert "InvalidContentPlanError" in capsys.readouterr().err
+
+
+def test_deck_pptx_fill_missing_required_field_exits_1_and_writes_nothing(
+    tmp_path: Path, capsys
+):
+    """I/O matrix's "Missing required field" row, proven all the way
+    through the CLI (mirroring the unknown-shape-type CLI test above) --
+    not just at the in-memory `fill_template` level."""
+    plan_path = _write_content_plan(
+        tmp_path,
+        _shape_plan(
+            {"type": "card", "left": 0, "top": 0, "width": 1_000_000, "height": 1_000_000,
+             "title": "x"}  # no "body"
+        ),
+    )
+    out_path = tmp_path / "out.pptx"
+    exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
+    assert exit_code == 1
+    assert not out_path.exists()
+    assert "InvalidContentPlanError" in capsys.readouterr().err
+
+
+def test_deck_pptx_fill_non_positive_shape_geometry_exits_1_and_writes_nothing(
+    tmp_path: Path, capsys
+):
+    """I/O matrix's "Non-positive geometry" row, proven all the way
+    through the CLI (mirroring the unknown-shape-type CLI test above) --
+    not just at the in-memory `fill_template` level."""
+    plan_path = _write_content_plan(
+        tmp_path,
+        _shape_plan(
+            {"type": "section_label", "text": "x", "left": 0, "top": 0,
+             "width": 0, "height": 1_000_000}
+        ),
     )
     out_path = tmp_path / "out.pptx"
     exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
