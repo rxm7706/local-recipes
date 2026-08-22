@@ -31,12 +31,17 @@ authors = [{ name = "rxm7706" }]
 # Python package and its bundled browser build are version-coupled, so a
 # mismatch is a real "browser doesn't match driver" failure mode, not just
 # a cosmetic drift).
+# Story 15.1 (2026-08-22): pptx_pipeline.py imports `pptx` (python-pptx)
+# directly for the template-parse-then-fill CAP-1 pipeline -- a real runtime
+# dependency of this package, not just of the pixi env it builds in. Floor
+# matches `pixi.toml`'s own `python-pptx` pin.
 dependencies = [
     "mcp>=1.28.1",
     "httpx2>=2.5.0",
     "pyforge-core",
     "playwright>=1.62.1",
     "pillow>=12.3.0",
+    "python-pptx>=1.0.2",
 ]
 
 [project.optional-dependencies]
