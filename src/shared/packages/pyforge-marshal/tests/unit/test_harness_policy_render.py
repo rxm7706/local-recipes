@@ -236,7 +236,10 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     0.11's own ``loads()`` (the same strict/coercive loaders `bmad-loop
     validate` exercises) must accept the rendered file whole -- including
     ``_limit_bool``'s strict boolean check on ``limits.dev_contract_nudge``
-    -- and carry every one of the five knobs at its composed value. A
+    -- and carry every one of the five knobs at its composed value. Every
+    member of BOTH review-knob vocabularies round-trips through the
+    installed loader across the three loads below (on_timeout: retry /
+    salvage-if-done / defer; on_status_contradiction: escalate / retry). A
     direct ``bmad_loop`` import is fine IN A TEST: AD-3's import-linter
     contract binds the installed package's modules, not test code (the same
     bounds ``test_harness_bmadloop_preflight.py`` already relies on)."""
@@ -265,6 +268,29 @@ def test_rendered_defaults_pass_the_installed_bmad_loop_load():
     assert overridden.limits.dev_contract_nudge is False
     assert overridden.operator.enabled is False
     assert overridden.verify.stream_capture_kb == 0
+
+    deferred = bmad_loop_policy.loads(
+        render_policy_toml(_compose(review_on_timeout="defer"))
+    )
+    assert deferred.review.on_timeout == "defer"
+
+
+def test_enum_frozensets_mirror_the_installed_bmad_loop_vocabularies():
+    """The drift guard for the mirrored vocabularies (review finding):
+    ``core/policy.py``'s two frozensets CLAIM to mirror the installed
+    bmad_loop's own module constants verbatim -- assert equality against
+    the live installed package, so a future bmad-loop bump that widens or
+    respells either vocabulary reds this test instead of surfacing as a
+    load-time PolicyError in a loop home."""
+    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
+    from pyforge.marshal.core import policy as policy_module
+
+    assert policy_module._REVIEW_ON_TIMEOUT_MODES == frozenset(
+        bmad_loop_policy.REVIEW_ON_TIMEOUT_MODES
+    )
+    assert policy_module._REVIEW_ON_STATUS_CONTRADICTION_MODES == frozenset(
+        bmad_loop_policy.REVIEW_ON_STATUS_CONTRADICTION_MODES
+    )
 
 
 # --- empty verify_commands ----------------------------------------------------

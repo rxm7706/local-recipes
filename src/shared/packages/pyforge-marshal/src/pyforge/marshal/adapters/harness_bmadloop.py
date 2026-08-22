@@ -289,8 +289,9 @@ enabled = true
 # own self-assessment of whether it needs review -- the exact self-grading "always"
 # existed to not depend on; revisit if that trust turns out to be misplaced.
 trigger = "recommended"       # recommended | always
-# Deliberate repo default = stock "retry": the retry-then-salvage ladder is
-# the right first response to a review timeout (retry | salvage-if-done | defer).
+# Deliberate repo default = stock "retry": re-review up to
+# limits.max_review_cycles before deferring; salvage-if-done / defer are the
+# alternative modes.
 on_timeout = "retry"          # overwritten per render from EffectivePolicy
 # Deliberate repo default = stock "escalate": matches the fleet's
 # escalate-don't-silently-retry posture (escalate | retry).
@@ -420,18 +421,22 @@ def render_policy_toml(
 
     The 11 mapped keys: ``gate_mode`` -> ``[gates].mode``,
     ``max_dev_attempts``/``max_review_cycles``/``max_followup_reviews`` ->
-    ``[limits]``'s same-named keys (all four SEED fields, read exclusively
-    via ``seed_view()`` per AD-26), ``verify_commands`` -> ``[verify].commands``,
-    ``worktree_seed_paths`` -> ``[scm].worktree_seed`` (both STATIC fields),
-    plus Story 25.4's five bmad-loop 0.10/0.11 knobs (all SEED, CAP-4):
-    ``review_on_timeout`` -> ``[review].on_timeout``,
+    ``[limits]``'s same-named keys, ``verify_commands`` -> ``[verify].commands``,
+    ``worktree_seed_paths`` -> ``[scm].worktree_seed`` (the only two STATIC
+    fields in the mapped set), plus Story 25.4's five bmad-loop 0.10/0.11
+    knobs (CAP-4): ``review_on_timeout`` -> ``[review].on_timeout``,
     ``review_on_status_contradiction`` -> ``[review].on_status_contradiction``,
     ``dev_contract_nudge`` -> ``[limits].dev_contract_nudge``,
     ``operator_enabled`` -> ``[operator].enabled``, and
-    ``stream_capture_kb`` -> ``[verify].stream_capture_kb`` -- each written
-    as its native Python type (bool/int/str), which tomlkit preserves as the
-    exact TOML scalar type bmad-loop 0.11's stricter loaders demand
-    (``_limit_bool`` rejects a coercible mismatch at load).
+    ``stream_capture_kb`` -> ``[verify].stream_capture_kb``. 9 of the 11 are
+    SEED fields, every one read exclusively via ``seed_view()`` (AD-26).
+    The five knobs are each written as their native Python type
+    (bool/int/str), which tomlkit preserves as the exact TOML scalar type.
+    Marshal validates all five strictly at compose; at load only
+    ``limits.dev_contract_nudge`` is strict (``_limit_bool`` rejects a
+    coercible mismatch), while ``operator.enabled`` and
+    ``verify.stream_capture_kb`` are ``bool()``/``int()``-coerced by the
+    harness -- exact types are emitted for all five regardless.
     Seed fields carry the INITIAL composed values: during a live run the
     operative value of a seed field (``gate_mode`` above all) comes solely
     from the journal fold (AD-26), so a mid-run re-render reproduces
@@ -483,8 +488,11 @@ def render_policy_toml(
     # Story 25.4 (CAP-4): the five bmad-loop 0.10/0.11 knobs, each projected
     # onto the harness's table-qualified name. The composed values are
     # native Python bool/int/str (marshal's own validators reject coercible
-    # mismatches before this point), so tomlkit emits the exact TOML scalar
-    # types bmad-loop 0.11's load() demands.
+    # mismatches before this point), so tomlkit emits exact TOML scalar
+    # types for all five -- required by 0.11's strict `_limit_bool` for
+    # dev_contract_nudge, and kept exact anyway for the two keys the
+    # harness's loader would silently coerce (`operator.enabled` via
+    # bool(), `stream_capture_kb` via int()).
     doc["limits"]["dev_contract_nudge"] = seed["dev_contract_nudge"].value
     doc["verify"]["stream_capture_kb"] = seed["stream_capture_kb"].value
     doc["review"]["on_timeout"] = seed["review_on_timeout"].value
