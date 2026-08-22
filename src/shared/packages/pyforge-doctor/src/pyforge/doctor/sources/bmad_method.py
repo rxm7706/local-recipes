@@ -90,6 +90,30 @@ the npm path it extends and shares the SAME per-package/overall budget: a
 missing recipe.yaml mapping, a non-github registry, or any GitHub HTTP/
 network/JSON failure all fold to ``None`` and the package stays unchecked,
 exactly as before this story.
+
+**Story 15.2 (Epic 15, spec-15-2): channel and recipe staleness become
+ambient findings.** CAP-4/Story 15.1's suite pass only ever compares an
+INSTALLED package against upstream -- it has no signal at all for whether
+the SelfExplainML anaconda.org channel this repo actually publishes to
+serves what a package's own TRACKED ``recipes/<name>/recipe.yaml`` declares,
+or whether that recipe itself has caught up to upstream. The channel served
+a stale ``bmad-method 6.3.0`` for four months with no ambient signal before
+a maintainer noticed by hand (``spec-bmad-suite-channel-product`` CAP-5,
+steward-owned publishing -- relayed here for detection). Two more entirely
+fail-open, warn-only checks -- ``bmad-channel-drift`` (the channel is behind
+the recipe's own declared ``context.version``) and
+``bmad-recipe-upstream-drift`` (the recipe is behind upstream) -- run for
+every package this module already watches (the CORE plus every
+``_suite_packages``-derived pin), gated on that SAME package's already-
+resolved upstream-latest (never a third independent fetch): a missing/
+unparseable ``recipe.yaml``/``context.version`` (``_recipe_version``) skips
+BOTH new findings for that package; the channel fetch failing (``GET
+https://api.anaconda.org/package/SelfExplainML/{package}``, bare
+unauthenticated ``urllib.request`` via ``_fetch_channel_version``, mirroring
+``_NPM_LATEST_URL``'s own precedent) skips only ``bmad-channel-drift``.
+Rides the same ``doctor check --bmad-core`` / ``fleet_picture.py`` dispatch
+surfaces Story 10.3 already wired -- no new CLI flag, no new ``Source``
+member.
 """
 
 from __future__ import annotations
@@ -523,6 +547,160 @@ def _fetch_latest_github_release(
         return None
 
 
+#: The anaconda.org channel this repo's feedstocks actually publish to
+#: (Story 15.2) -- a plain constant, not derived from ``pixi.toml``'s own
+#: ``channels`` array, which mixes ``conda-forge`` in with it: picking "the
+#: non-standard one" programmatically would be speculative complexity for a
+#: single fixed value (Design Notes), mirroring ``DEPENDENCY_NAME``'s own
+#: precedent for a repo-specific, rarely-changing identifier.
+_ANACONDA_CHANNEL = "SelfExplainML"
+
+#: anaconda.org's own public, unauthenticated per-package endpoint -- returns
+#: a JSON body shaped ``{"name": "<package>", "latest_version": "X.Y.Z",
+#: ...}`` on success (Story 15.2). Mirrors ``_NPM_LATEST_URL``'s own
+#: precedent for a bare unauthenticated JSON-index GET, aimed at the
+#: SelfExplainML channel this repo actually publishes to rather than npm's
+#: registry (which CAP-2/CAP-4 already query for the SAME package's latest
+#: upstream release -- a different axis entirely).
+_ANACONDA_PACKAGE_URL = "https://api.anaconda.org/package/{channel}/{package}"
+
+
+def _recipe_version(target: Path, package: str) -> tuple[int, int, int] | None:
+    """``package``'s recipe-declared release triple, read from that
+    package's own TRACKED ``recipes/<package>/recipe.yaml``'s
+    ``context.version`` field (Story 15.2) -- mirrors ``_github_owner_repo``'s
+    existing recipe-read fail-open try/except shape, and parses leniently
+    with ``_parse_release_triple``, symmetric with ``latest_upstream``'s own
+    suite-side parsing and the six ``.dev0``-pinned suite recipes
+    (Boundaries).
+
+    Entirely fail-open, never raises: a missing or unreadable ``recipe.yaml``
+    (``OSError``), an unrepresentable path such as an embedded NUL byte
+    (``ValueError``), malformed YAML (``yaml.YAMLError``), a non-mapping
+    document or a missing/non-mapping ``context``/``version``
+    (``KeyError``/``TypeError``/``AttributeError``), or a non-string/
+    unparseable version all fold to ``None`` -- the caller
+    (``_gather``/``_gather_suite_findings``) treats that identically to
+    "cannot evaluate either new Story 15.2 Finding for this package"
+    (Boundaries: a broken recipe.yaml skips BOTH new findings, unlike a
+    failed channel fetch, which skips only ``bmad-channel-drift``)."""
+    try:
+        recipe_path = target / "recipes" / package / "recipe.yaml"
+        data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
+        version_text = data["context"]["version"]
+        if not isinstance(version_text, str):
+            return None
+        return _parse_release_triple(version_text)
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        return None
+
+
+def _fetch_channel_version(
+    *, package: str, timeout: float | None = None
+) -> tuple[int, int, int] | None:
+    """Query anaconda.org's public API for the SelfExplainML channel's
+    currently-served ``latest_version`` of ``package`` (Story 15.2) --
+    mirrors ``_fetch_latest_upstream_version``'s fail-open GET shape. Always
+    parsed leniently with ``_parse_release_triple`` -- unlike CAP-1/CAP-2's
+    strict-for-core split, this axis draws no "core" distinction: the CORE
+    package is parsed the same lenient way as every suite package.
+
+    Never raises: an ``HTTPError`` (including a 404 -- the package is not
+    published to this channel at all), ``URLError``, a malformed/truncated
+    HTTP response (``http.client.HTTPException``), ``OSError``,
+    ``TimeoutError``, a malformed JSON body, or a missing/unparseable
+    ``"latest_version"`` field all fold to ``None`` (Boundaries: a failed
+    channel fetch skips only ``bmad-channel-drift``, never
+    ``bmad-recipe-upstream-drift``)."""
+    resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    url = _ANACONDA_PACKAGE_URL.format(
+        channel=_ANACONDA_CHANNEL, package=urllib.parse.quote(package, safe="")
+    )
+    try:
+        with urllib.request.urlopen(url, timeout=resolved_timeout) as response:
+            body = json.loads(response.read())
+        return _parse_release_triple(str(body["latest_version"]))
+    except (
+        urllib.error.HTTPError,
+        urllib.error.URLError,
+        http.client.HTTPException,
+        OSError,
+        TimeoutError,
+        ValueError,
+        KeyError,
+        TypeError,
+    ):
+        return None
+
+
+def _channel_and_recipe_drift_findings(
+    *,
+    package: str,
+    recipe: tuple[int, int, int],
+    channel: tuple[int, int, int] | None,
+    upstream: tuple[int, int, int],
+) -> tuple[Finding, ...]:
+    """Given ``package``'s already-RESOLVED recipe/channel/upstream release
+    triples, build the ``bmad-channel-drift``/``bmad-recipe-upstream-drift``
+    WARN ``Finding``s that apply (Story 15.2) -- the ONE shared shape both
+    the CORE call site (``_gather``) and the suite call site
+    (``_gather_suite_findings``) build their message/evidence through, so
+    the two cannot drift apart from each other (Code Map). Performs no I/O
+    itself: ``channel`` is ``None`` exactly when ``_fetch_channel_version``
+    failed or was never attempted, in which case ``bmad-channel-drift``
+    simply does not fire -- ``bmad-recipe-upstream-drift`` is unaffected
+    either way.
+
+    ``bmad-channel-drift`` fires when the channel is STRICTLY behind the
+    recipe's own declared version; ``bmad-recipe-upstream-drift`` fires when
+    the recipe is STRICTLY behind upstream -- equal triples on either axis
+    are current, not drift (I/O matrix: "Channel, recipe, upstream all
+    agree")."""
+    findings: list[Finding] = []
+    recipe_text = ".".join(str(part) for part in recipe)
+
+    if channel is not None and channel < recipe:
+        channel_text = ".".join(str(part) for part in channel)
+        findings.append(
+            Finding(
+                source=Source.BMAD_METHOD_VERSION_DRIFT,
+                check="bmad-channel-drift",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"the {_ANACONDA_CHANNEL} channel serves {package} "
+                    f"{channel_text}, behind recipes/{package}/recipe.yaml's "
+                    f"declared {recipe_text}"
+                ),
+                evidence={
+                    "package": package,
+                    "channel_version": channel_text,
+                    "recipe_version": recipe_text,
+                },
+            )
+        )
+
+    if recipe < upstream:
+        upstream_text = ".".join(str(part) for part in upstream)
+        findings.append(
+            Finding(
+                source=Source.BMAD_METHOD_VERSION_DRIFT,
+                check="bmad-recipe-upstream-drift",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"recipes/{package}/recipe.yaml's declared {recipe_text} "
+                    f"is behind the latest upstream release {upstream_text}"
+                ),
+                evidence={
+                    "package": package,
+                    "recipe_version": recipe_text,
+                    "latest_upstream": upstream_text,
+                },
+            )
+        )
+
+    return tuple(findings)
+
+
 def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]:
     """CAP-4 (Story 14.1): compare every INSTALLED bmad-suite package
     against its latest npm release, through the same generalized
@@ -540,6 +718,15 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
     ``_github_owner_repo``) is tried before giving up on it, still inside
     the SAME shared budget below -- ``checked`` increments identically
     regardless of which source ultimately resolved a package.
+
+    Story 15.2 extends the per-package comparison once more: whenever a
+    package's own ``recipe_version`` resolves, its already-resolved
+    ``latest`` (this SAME iteration's value, never re-fetched) also drives
+    ``_channel_and_recipe_drift_findings`` -- ``bmad-channel-drift``/
+    ``bmad-recipe-upstream-drift`` findings accumulate in ``extra_findings``
+    and ride whichever of the three returns below fires, so they appear
+    alongside the suite-upstream-drift WARN/OK outcome rather than only on
+    one branch of it.
 
     ENTIRELY fail-open, never raises -- deliberately unlike CAP-1/CAP-2's
     raise-then-``degrade_on_exception`` style. Rationale: CAP-1/2 read
@@ -563,6 +750,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
 
         deadline = time.monotonic() + _SUITE_FETCH_TOTAL_BUDGET_SECONDS
         warn_findings: list[Finding] = []
+        extra_findings: list[Finding] = []
         checked = 0
         for name in packages:
             versions = installed.get(name)
@@ -591,6 +779,30 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
             if latest is None:
                 continue  # per-package fail-open (404, outage, garbage body)
             checked += 1
+
+            # Story 15.2: channel/recipe drift, gated on THIS iteration's
+            # own already-resolved `latest` -- never a third fetch. A
+            # missing/unparseable recipe.yaml skips both new findings; the
+            # channel fetch (network) stays inside the SAME shared budget
+            # as every other fetch in this loop, and is skipped entirely
+            # (not merely given a tiny timeout) once that budget is gone --
+            # `bmad-recipe-upstream-drift` needs no network and is
+            # unaffected either way.
+            recipe = _recipe_version(target, name)
+            if recipe is not None:
+                channel = None
+                channel_remaining = deadline - time.monotonic()
+                if channel_remaining > 0:
+                    channel = _fetch_channel_version(
+                        package=name,
+                        timeout=min(channel_remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
+                    )
+                extra_findings.extend(
+                    _channel_and_recipe_drift_findings(
+                        package=name, recipe=recipe, channel=channel, upstream=latest,
+                    )
+                )
+
             triple, installed_text = versions
             if triple < latest:
                 latest_text = ".".join(str(part) for part in latest)
@@ -612,7 +824,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                 )
 
         if warn_findings:
-            return tuple(warn_findings)
+            return (*warn_findings, *extra_findings)
         if checked:
             return (
                 Finding(
@@ -634,6 +846,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                         "packages_watched": len(packages),
                     },
                 ),
+                *extra_findings,
             )
         return ()
     except Exception:
@@ -656,10 +869,15 @@ def gather(target: Path) -> tuple[Finding, ...]:
     all when it fails. Story 14.1 (CAP-4) appends
     ``_gather_suite_findings``'s entirely-fail-open suite comparison to
     both success-path returns -- it runs regardless of CAP-2's own fetch
-    outcome, and adds nothing at all when it degrades. The outer
-    ``degrade_on_exception`` wrapper is what guarantees exactly one Finding
-    OVERALL when something genuinely unexpected happens on the success
-    path, by converting any such exception into one WARN instead.
+    outcome, and adds nothing at all when it degrades. Story 15.2 appends
+    the CORE package's own ``bmad-channel-drift``/``bmad-recipe-upstream-
+    drift`` findings (via ``_channel_and_recipe_drift_findings``), gated on
+    ``latest_upstream`` already being resolved -- so it only ever runs on
+    the SAME success path CAP-2's own upstream Finding does, never on the
+    early-return path above. The outer ``degrade_on_exception`` wrapper is
+    what guarantees exactly one Finding OVERALL when something genuinely
+    unexpected happens on the success path, by converting any such
+    exception into one WARN instead.
 
     Read-only: never runs ``npx bmad-method install``, never writes to
     ``_bmad/**`` (Boundaries).
@@ -719,6 +937,22 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     if latest_upstream is None:
         return (drift_finding, *suite_findings)
 
+    # Story 15.2: the CORE package's own channel/recipe drift, gated on
+    # `latest_upstream` already being resolved above -- never a third
+    # independent fetch. A missing/unparseable recipes/bmad-method/
+    # recipe.yaml skips both new findings entirely (no channel fetch is
+    # even attempted in that case).
+    core_recipe = _recipe_version(target, DEPENDENCY_NAME)
+    core_findings: tuple[Finding, ...] = ()
+    if core_recipe is not None:
+        core_channel = _fetch_channel_version(package=DEPENDENCY_NAME)
+        core_findings = _channel_and_recipe_drift_findings(
+            package=DEPENDENCY_NAME,
+            recipe=core_recipe,
+            channel=core_channel,
+            upstream=latest_upstream,
+        )
+
     latest_text = ".".join(str(part) for part in latest_upstream)
     upstream_evidence = {"installed": installed_text, "latest_upstream": latest_text}
 
@@ -745,4 +979,4 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             evidence=upstream_evidence,
         )
 
-    return (drift_finding, upstream_finding, *suite_findings)
+    return (drift_finding, upstream_finding, *suite_findings, *core_findings)
