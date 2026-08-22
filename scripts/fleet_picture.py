@@ -113,20 +113,25 @@ def loop_home_staleness(
 
 
 def bmad_core_drift_findings(
-    repo: pathlib.Path = REPO, timeout: int = 15
-    # 15s vs the source's own ~10s worst-case network design budget: since
+    repo: pathlib.Path = REPO, timeout: int = 20
+    # 20s vs the source's own ~15s worst-case network design budget: since
     # Story 14.1 (CAP-4) the gather issues CAP-2's core fetch (bounded at
     # `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0`) PLUS a suite fetch loop under
-    # its own 5.0s shared deadline (`_SUITE_FETCH_TOTAL_BUDGET_SECONDS`) --
-    # this timeout must also cover interpreter startup and package import
-    # before either starts, so the margin over the inner bounds is now
-    # thinner than the pre-14.1 15s-over-5s arithmetic suggested, but still
-    # positive for the blackholed-network worst case.
+    # its own 5.0s shared deadline (`_SUITE_FETCH_TOTAL_BUDGET_SECONDS`);
+    # Story 15.2 adds one more CORE-side fetch (the SelfExplainML channel
+    # lookup, also bounded at `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0`,
+    # issued only when CAP-2's own fetch already resolved) -- 5+5+5 = 15s
+    # inner worst case, up from 10s pre-15.2. This timeout must also cover
+    # interpreter startup and package import before any of the three
+    # starts, so it is bumped by the same 5s the inner budget grew
+    # (15 -> 20), preserving the ~5s margin Story 14.1 already established
+    # as "still positive" rather than letting it shrink to zero.
 ) -> list[dict]:
     """WARN-status Findings from ``pyforge.doctor``'s bmad-method-version-
     drift source (Story 10.1/10.2's CAP-1/CAP-2 -- installed BMAD-METHOD
     behind pixi.toml's declared floor, and/or behind the latest release
-    published upstream on npm).
+    published upstream on npm; Story 15.2's CORE-side channel/recipe drift
+    checks -- see that source module for the fuller picture).
 
     Shells out via ``sys.executable -m pyforge.doctor.sources
     bmad-method-version-drift --json`` -- the same subprocess discipline
@@ -153,12 +158,12 @@ def bmad_core_drift_findings(
 
 def verification_staleness_findings(
     repo: pathlib.Path = REPO, timeout: int = 90
-    # 90s, not `bmad_core_drift_findings`'s 15s: measured live against this
+    # 90s, not `bmad_core_drift_findings`'s 20s: measured live against this
     # repo's own real fleet (`time python -m pyforge.doctor.sources
     # due-for-verification --json`) at ~48s -- the due-for-verification
     # source, unlike the cheap bmad-method-version-drift check, does real
     # per-entry `git log`/`git grep` churn and mechanical-verdict work
-    # (Stories 11.2/11.3) across the fleet's 400+ tracked entries, so a 15s
+    # (Stories 11.2/11.3) across the fleet's 400+ tracked entries, so a 20s
     # bound would degrade EVERY real invocation, defeating this story's own
     # "ambient, always-visible" Intent. 90s carries a ~2x margin over the
     # measured cost, the same proportional margin `bmad_core_drift_findings`

@@ -348,6 +348,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # own `recipes/<name>/recipe.yaml` github mapping, never a hardcoded
     # name->repo table) is tried before giving up on it -- still this one
     # Source, still WARN-or-OK only, zero wiring changes here either.
+    # Story 15.2 (Epic 15/spec-15-2) extends the same gather() a further
+    # time: for every watched package whose upstream-latest is already
+    # resolved, two more fail-open warn-only checks compare that package's
+    # tracked recipe.yaml-declared version against the SelfExplainML
+    # anaconda.org channel's actually-served version
+    # (check="bmad-channel-drift") and against upstream itself
+    # (check="bmad-recipe-upstream-drift") -- still this one Source, still
+    # WARN-or-OK only, zero wiring changes here either.
     SourceRegistration(
         source=Source.BACKLOG_INTAKE,
         scope="repo",
