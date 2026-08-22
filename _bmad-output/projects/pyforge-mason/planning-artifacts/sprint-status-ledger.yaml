@@ -57,7 +57,7 @@ development_status:
   6-3-pilot-slice-recipe-generation-built-and-parallel-validated: done
   6-4-the-re-scope-gate-measured-cost-recorded-decision: done
   7-1-the-failure-catalog-derives-from-the-skill-spec: done
-  7-2-the-pointers-lint-and-the-drift-gates: backlog
+  7-2-the-pointers-lint-and-the-drift-gates: done
   8-1-the-convention-is-written-and-guarded: backlog
   9-1-the-repos-ci-is-consumable-via-workflow-call: backlog
   9-2-the-air-gap-distribution-contract-has-a-socket: backlog
