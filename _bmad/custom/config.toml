@@ -5,3 +5,13 @@
 #
 # [agents.bmad-agent-pm]
 # description = "Prefers short, bulleted PRDs over narrative drafts."
+
+# The 6.10.0 -> 6.11.0 installer upgrade regenerated _bmad/config.toml's
+# [core] table without `communication_language` / `user_skill_level`
+# (present in the module config.yaml files but not the installer-managed
+# toml), so render_skill.py halts with "missing config value `...`" for
+# every skill. Pin them here per this file's own convention (values taken
+# from _bmad/bmm/config.yaml) until the installer restores them.
+[core]
+communication_language = "English"
+user_skill_level = "intermediate"
