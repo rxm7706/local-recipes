@@ -53,6 +53,12 @@ name: Platform CI
 # {steward,core}/**` -- its build context is the repo root too, for the
 # identical reason the `container` job's is) are already covered by the
 # entries above; no separate ones were needed for it.
+#
+# Story 12.3 added `scripts/build-pixi-mirror.py` and the `air-gap-parity`
+# job below, which invokes that script as a CI step (not baked into the
+# Containerfile the way `scripts/container-gates` is) -- same rule as
+# every other entry in this list: a change to it can break the job while
+# leaving `src/platform/**` untouched, so it needs its own filter entry.
 
 # The two lists below are duplicated verbatim rather than shared via a YAML
 # anchor: GitHub Actions does not support YAML anchors/aliases in workflow
@@ -66,6 +72,7 @@ on:
       - '.pixi/config.toml'
       - '.dockerignore'
       - 'scripts/container-gates'
+      - 'scripts/build-pixi-mirror.py'
       - 'src/shared/packages/pyforge-steward/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/platform/compose/dbgpt/**'
@@ -79,6 +86,7 @@ on:
       - '.pixi/config.toml'
       - '.dockerignore'
       - 'scripts/container-gates'
+      - 'scripts/build-pixi-mirror.py'
       - 'src/shared/packages/pyforge-steward/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/platform/compose/dbgpt/**'
@@ -927,3 +935,319 @@ jobs:
       - name: Teardown
         if: always()
         run: kind delete cluster --name gke-smoke || true
+
+  # Story 12.3 ("Air-gap parity is a failing check"): proves AD-13/CAP-6 --
+  # a build + deploy executed with external egress blocked must succeed
+  # end-to-end. Reuses `gke-portability-smoke`'s established patterns
+  # verbatim wherever they apply (disk-reclaim, setup-pixi, pinned kind,
+  # `docker build` with the unmodified Containerfile at the repo-root
+  # context, `kind load` with no registry push, the `platform-secrets` K8s
+  # Secret pattern, the no-`--wait` helm-install / migrate-Job-wait split,
+  # `if: always()` teardown) -- only the NEW pieces this story adds are
+  # commented in depth below.
+  #
+  # Single engine (Docker) only, same rationale as `gke-portability-smoke`:
+  # a second network-egress axis (docker vs. podman) is out of scope here.
+  #
+  # No `needs:` on any other job, for the same reason `gke-portability-
+  # smoke` has none: this job builds its own throwaway image rather than
+  # reusing one that's already been torn down by the time it would run.
+  air-gap-parity:
+    runs-on: ubuntu-latest
+    # 40: builds the same 395-package image `gke-portability-smoke` does
+    # (45 min budget there) MINUS the ingress-nginx install/wait this job
+    # doesn't do, plus the mirror build (428 packages, network-limited, not
+    # CPU-bound) and the blocked-egress reinstall proof.
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same workflow_dispatch guard as every other job in this workflow
+      # (workflow_dispatch has no `paths:` filter) -- see `test`'s own step
+      # for the full rationale.
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      # Block If (this story's own Boundaries & Constraints): iptables
+      # unavailable or sudo refused makes the whole egress-block premise
+      # impossible -- HALT, not a silent skip. Checked FIRST, before this
+      # job spends 30+ minutes on a build/deploy it can't actually prove
+      # anything with.
+      - name: Verify iptables + passwordless sudo are available (egress-block precondition)
+        run: |
+          if ! command -v iptables >/dev/null 2>&1; then
+            echo "::error::iptables not found on this runner -- cannot prove the AD-13 egress block (BLOCKED)"
+            exit 1
+          fi
+          if ! sudo -n true 2>/dev/null; then
+            echo "::error::sudo is not available non-interactively on this runner -- cannot install the egress-block iptables rules (BLOCKED)"
+            exit 1
+          fi
+
+      # Same disk-pressure rationale as `gke-portability-smoke`'s own step
+      # (this job stacks the identical three real disk consumers: the
+      # `platform-dev` pixi env, `docker build`'s own cache, and a second
+      # copy of the image inside the kind node) -- not re-derived here.
+      - name: Free disk space (reclaim unused preinstalled toolchains)
+        run: |
+          echo "Before:"; df -h /
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /opt/az || true
+          echo "After:"; df -h /
+
+      # AD-16: helm and kubectl come from the `platform-dev` pixi
+      # environment, never a system install -- identical usage to
+      # `gke-portability-smoke`'s own step. This FIRST install runs with
+      # egress still open (it is also how `python`/`requests`/`pyyaml` --
+      # all already in this env's real solve, see pixi.toml's own
+      # `python-agent-platform` feature comment -- reach the mirror-builder
+      # script below) and is DELIBERATELY evicted and reinstalled later,
+      # under the egress block, as the actual AD-13 proof -- see "Evict the
+      # pixi cache" below for why a second install is needed at all.
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.77.0
+          environments: platform-dev
+          locked: true
+          cache: true
+
+      # Same AD-16 named system exception as `gke-portability-smoke`'s own
+      # step -- not re-derived here.
+      - name: Install kind v0.32.0 (pinned; AD-16's named system exception)
+        run: |
+          curl -fLo ./kind https://kind.sigs.k8s.io/dl/v0.32.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
+
+      # No ingress-ready node label / extraPortMappings here -- this job
+      # curls the app through `kubectl port-forward`, not an Ingress (12.2
+      # already proves the Ingress path); a plain cluster is enough.
+      - name: Create kind cluster
+        run: kind create cluster --name air-gap-smoke --wait 90s
+
+      # Same Containerfile, same repo-root build context as `container`'s
+      # and `gke-portability-smoke`'s own build steps -- no second image
+      # definition. Network still on: the Containerfile's pip-install layer
+      # and its build-time-only `pyforge-steward` secrets-scan env fetch
+      # live from PyPI during this step, and this story deliberately does
+      # NOT air-gap either (Design Notes' own stated scope boundary --
+      # AD-8 names the conda/pixi lockfile specifically). Tagged away from
+      # `latest` for the same reason `gke-portability-smoke`'s build step
+      # is: a kind-loaded image with no registry behind it would otherwise
+      # sit in `ImagePullBackOff` forever. Runs BEFORE the mirror is built
+      # below (deliberately reordered from a naive top-to-bottom reading of
+      # this story's own Boundaries): the mirror can total hundreds of MB
+      # across 428 packages, and building it first would ship it into THIS
+      # step's own `docker build .` context for no reason (the image build
+      # never reads it -- it isn't needed until the mirror-only pixi
+      # install, several steps below).
+      - name: Build the platform image (docker, network still on)
+        run: docker build -f src/platform/Containerfile -t platform:air-gap-smoke .
+
+      # Same belt-and-suspenders reasoning as `gke-portability-smoke`'s own
+      # step -- not re-derived here. Doubly worth running before the mirror
+      # download below, on the same runner that already hit a real
+      # no-space-left-on-device failure once (see the disk-reclaim step's
+      # own comment above).
+      - name: Reclaim docker build cache
+        run: |
+          docker builder prune -af
+          df -h /
+
+      # No registry push -- same as `gke-portability-smoke`'s own step.
+      - name: kind load the built image (no registry push)
+        run: kind load docker-image platform:air-gap-smoke --name air-gap-smoke
+
+      # AD-12 pattern, identical to `gke-portability-smoke`'s own step
+      # (chart never renders a Secret) -- separate namespace name so the
+      # two jobs' logs are never confusable when read side by side.
+      - name: Create namespace + platform-secrets Secret
+        run: |
+          kubectl create namespace platform-airgap
+          kubectl create secret generic platform-secrets \
+            --namespace platform-airgap \
+            --from-literal=DJANGO_SECRET_KEY=ci-airgap-smoke-placeholder-not-a-real-secret \
+            --from-literal=DATABASE_URL=postgres://platform:ci-airgap-smoke-not-a-real-secret@platform-postgres:5432/platform \
+            --from-literal=POSTGRES_PASSWORD=ci-airgap-smoke-not-a-real-secret
+
+      # Builds the mirror BEFORE the egress block goes up -- network is
+      # still on here, exactly like the `docker build` step above. Reads
+      # `pixi.lock` directly (never a live repodata fetch) for the
+      # `platform-dev` environment's `linux-64` package set, downloading
+      # each artifact into `<dest>/<channel>/<subdir>/<filename>` with
+      # sha256 verification (script's own module docstring has the full
+      # design). `ci-airgap-mirror/` is not `.dockerignore`d (checked --
+      # only named entries are excluded, no catch-all) and is created only
+      # at CI-runtime, never committed. Deliberately AFTER the image is
+      # already built and kind-loaded -- see that step's own comment.
+      - name: Build the local pixi mirror from pixi.lock (network still on)
+        run: |
+          python scripts/build-pixi-mirror.py \
+            --lockfile pixi.lock \
+            --environment platform-dev \
+            --platform linux-64 \
+            --dest "${{ github.workspace }}/ci-airgap-mirror"
+
+      # Appends to THIS CHECKOUT'S OWN `.pixi/config.toml` only -- never
+      # committed (no `git add`/`git commit` anywhere in this job). The
+      # file already carries `run-post-link-scripts = "insecure"` as a
+      # top-level key, which TOML requires to precede any `[table]` header,
+      # so appending `[mirrors]` after it is valid. Schema per
+      # `docs/reference/pixi-config-jfrog.example.toml`:
+      # `{"<original-channel-url>" = ["<mirror-url>", ...]}`. Both channels
+      # this workspace's `python-agent-platform`/`platform-dev` solve
+      # actually uses (pixi.toml's own comment: SelfExplainML's `slowapi`
+      # alongside conda-forge) are mapped -- the mirror-builder step above
+      # downloaded both into `${{ github.workspace }}/ci-airgap-mirror/
+      # <channel>/`, so each mapped `file://` base matches on disk exactly.
+      - name: Append the local mirror to .pixi/config.toml (this checkout only)
+        run: |
+          cat >> .pixi/config.toml <<EOF
+
+          [mirrors]
+          "https://conda.anaconda.org/conda-forge" = ["file://${{ github.workspace }}/ci-airgap-mirror/conda-forge"]
+          "https://conda.anaconda.org/SelfExplainML" = ["file://${{ github.workspace }}/ci-airgap-mirror/SelfExplainML"]
+          EOF
+          cat .pixi/config.toml
+
+      # THE false-green guard this story's own I/O & Edge-Case Matrix names
+      # explicitly: the `platform-dev` env this job's own setup-pixi step
+      # already installed above (network on) would otherwise let a second
+      # `pixi install --frozen -e platform-dev` no-op straight off the
+      # existing, already-valid `.pixi/envs/platform-dev` prefix -- proving
+      # nothing about the mirror or the egress block, regardless of whether
+      # either actually works. Removing that installed env prefix, not just
+      # pixi's download cache, is what forces the next install to
+      # genuinely re-materialize the environment from scratch. `rm -rf
+      # ~/.cache/rattler` is the spec's own named alternative to a fresh
+      # `PIXI_CACHE_DIR` -- both evict the same thing (pixi's package
+      # cache); this uses the default location rather than introducing a
+      # custom `PIXI_CACHE_DIR` for the whole job.
+      - name: Evict the pixi cache + installed env before the mirror-only install
+        run: |
+          rm -rf ~/.cache/rattler
+          rm -rf .pixi/envs/platform-dev
+
+      # iptables ordering is load-bearing (this story's own Design Notes):
+      # `-I` (insert at head) for every ACCEPT so they are evaluated BEFORE
+      # the final `-A` (append) DROP regardless of the order these lines
+      # run in. Loopback + the three private ranges cover kubectl/helm
+      # talking to the kind API server (127.0.0.1:<port>) and the
+      # Docker/kind bridge networks kind-internal traffic uses -- nothing
+      # else is reachable after this step.
+      - name: Block all non-private-network egress
+        run: |
+          sudo iptables -I OUTPUT -o lo -j ACCEPT
+          sudo iptables -I OUTPUT -d 127.0.0.0/8 -j ACCEPT
+          sudo iptables -I OUTPUT -d 10.0.0.0/8 -j ACCEPT
+          sudo iptables -I OUTPUT -d 172.16.0.0/12 -j ACCEPT
+          sudo iptables -I OUTPUT -d 192.168.0.0/16 -j ACCEPT
+          sudo iptables -A OUTPUT -j DROP
+          sudo iptables -L OUTPUT -n -v
+
+      # THE core AD-13 proof (this story's first Acceptance Criterion):
+      # cache evicted to empty, env prefix gone, egress blocked -- if this
+      # exits 0, `pixi install --frozen -e platform-dev` resolved the
+      # ENTIRE `platform-dev` environment (the mirror-builder step above
+      # downloaded its full `linux-64` package set) from the local
+      # `file://` mirror alone, through the `.pixi/config.toml` `[mirrors]`
+      # rewrite appended above. A network request to any public host would
+      # hang or fail against the DROP rule and this step would fail loudly
+      # -- there is no silent-degrade path.
+      - name: Prove pixi install --frozen resolves from the mirror alone (egress blocked)
+        run: |
+          pixi install --frozen -e platform-dev || {
+            echo "::error::pixi install --frozen -e platform-dev failed to resolve from the mirror-only config under blocked egress"
+            exit 1
+          }
+
+      # Only scalar --set overrides, never a second chart/overlay/values
+      # file -- same AD-11 discipline as `gke-portability-smoke`'s own
+      # step, and the identical two gotchas (image.tag away from "latest";
+      # secureSslRedirect off for this bare-HTTP install). Deliberately NO
+      # `--wait`, for the identical documented migrate-Job deadlock reason
+      # `gke-portability-smoke`'s own helm-install step's comment explains
+      # in full -- not re-derived here.
+      - name: helm install the unmodified core chart (scalar --set overrides only)
+        run: |
+          helm install platform src/platform/deploy/charts/platform \
+            --namespace platform-airgap \
+            --set image.tag=air-gap-smoke \
+            --set django.secureSslRedirect=False \
+            --timeout 5m || {
+            echo "::error::helm install failed"
+            kubectl get pods,jobs,events -n platform-airgap
+            exit 1
+          }
+
+      # Load-bearing now that helm install runs without --wait -- same
+      # reasoning as `gke-portability-smoke`'s own identical step.
+      - name: Wait for the migrate hook Job to complete
+        run: |
+          kubectl wait --namespace platform-airgap --for=condition=complete job/platform-migrate --timeout=180s || {
+            echo "::error::migrate Job did not reach Complete"
+            kubectl get pods,jobs,events -n platform-airgap
+            kubectl logs -n platform-airgap -l app.kubernetes.io/component=migrate --tail=200 || true
+            exit 1
+          }
+
+      # `kubectl port-forward` (not Ingress -- 12.2 already proves that
+      # path) backgrounded for the two steps below; its PID is captured so
+      # Teardown can kill it explicitly rather than relying on the runner
+      # tearing the whole VM down anyway. `Host: platform.internal` is
+      # still required even through a port-forward: `django.allowedHosts`
+      # is not overridden by this job's `--set` list, so production.py's
+      # `ALLOWED_HOSTS` would 400 a request whose Host header doesn't match
+      # -- the forwarded ADDRESS is still 127.0.0.1, which is what the next
+      # step's external-URL scan treats as "local", not this header.
+      - name: Start kubectl port-forward to the web Service
+        run: |
+          kubectl port-forward --namespace platform-airgap svc/platform 8000:8000 >/tmp/port-forward.log 2>&1 &
+          echo $! > /tmp/port-forward.pid
+          sleep 3
+
+      - name: Poll / for 200 through the port-forward
+        run: |
+          for i in $(seq 1 60); do
+            code="$(curl -s -o /tmp/airgap-home.html -w '%{http_code}' -H 'Host: platform.internal' http://127.0.0.1:8000/ || true)"
+            if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::/ through the port-forward never returned 200"
+          cat /tmp/port-forward.log || true
+          kubectl get pods -n platform-airgap
+          exit 1
+
+      # This story's second Acceptance Criterion, extending the `container`
+      # job's own `/static/` asset-fetch pattern (derive URLs from the
+      # rendered body, never hardcode): any absolute `http(s)://` reference
+      # whose host is not the port-forwarded `127.0.0.1` address fails the
+      # job. Zero-CDN-by-construction (Story 10.1's vendored static assets;
+      # the Containerfile's own comment documents stripping CDN
+      # `sourceMappingURL` references) means a healthy page has NO matches
+      # at all -- WhiteNoise's `{% static %}` rewrite and django-
+      # compressor's `/static/CACHE/...` bundles are both host-relative.
+      - name: Scan the served home page for absolute external URL references
+        run: |
+          external="$(grep -oE 'https?://[^"'"'"'<> ]+' /tmp/airgap-home.html | grep -vE '^https?://127\.0\.0\.1(:[0-9]+)?(/|$|[?#])' || true)"
+          if [ -n "$external" ]; then
+            echo "::error::absolute external URL reference(s) found in / -- AD-13 CDN-reference check failed:"
+            printf '%s\n' "$external"
+            exit 1
+          fi
+          echo "no external URL references found"
+
+      - name: Teardown
+        if: always()
+        run: |
+          if [ -f /tmp/port-forward.pid ]; then
+            kill "$(cat /tmp/port-forward.pid)" 2>/dev/null || true
+          fi
+          kind delete cluster --name air-gap-smoke || true
