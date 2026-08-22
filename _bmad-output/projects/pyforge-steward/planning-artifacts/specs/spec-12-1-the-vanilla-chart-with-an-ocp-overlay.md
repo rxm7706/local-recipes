@@ -2,10 +2,11 @@
 title: 'The vanilla chart with an OCP overlay'
 type: 'infra'
 created: '2026-08-21'
-status: 'in-review'
+status: 'done'
 baseline_revision: '3783e63bc5b70a2806be2e432a6fd1784a219105'
+final_revision: 'e913a8f19a8f858a7407bef50a94cf90f2f218f6'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: ['{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/ARCHITECTURE-SPINE.md', '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md']
 warnings: ['oversized']
 ---
@@ -132,3 +133,23 @@ The DB-GPT sidecar (AD-6 bounded exception, PVC + singleton) is deliberately abs
 
 **Manual checks (if no CLI):**
 - A real cluster deploy (OCP Route admission, SCC enforcement) is AD-16 Tier 3 — attended-only and OUT OF REACH here; this story verifies by lint + render + parsed-manifest invariants and says so honestly. Live red/green: temporarily violate an invariant in a scratch render (e.g. add `runAsUser` to the web pod) and watch the real test go RED, then restore GREEN; evidence in Dev Notes.
+
+## Auto Run Result
+
+**Status:** done (branch `steward/12-1-vanilla-chart-ocp-overlay`, implementation commit `e913a8f19a`; not pushed — the landing session owns push/PR/ledger).
+
+**Summary:** Built the CAP-6/AD-11 deployment surface: a vanilla-Kubernetes Helm core chart (`src/platform/deploy/charts/platform/` — web/worker Deployments, post-install/pre-upgrade migrate hook Job, postgres StatefulSet with headless governing Service + PVC, redis Deployment, Ingress, two ServiceAccounts; restricted-v2 hardcoded for the platform-image pods with no fixed UID anywhere; AD-12 secret-by-reference, registry-relocatable images, values validation) plus a thin OCP overlay (`overlays/ocp/` — a Route-only chart and `core-overrides.yaml`), and an invariant suite parsing `helm template` output (7 helm-gated real proofs + 13 ungated guard-removed companions). The DB-GPT sidecar is deliberately absent per the 2026-08-21 sprint-change proposal's "no story text changes; revisit at Epic 12 kickoff" flag — recorded in Design Notes, follow-up owned by Epic-12 planning.
+
+**Files changed:**
+- `src/platform/deploy/charts/platform/` — core chart (13 files): templates, values, helpers, NOTES
+- `src/platform/deploy/overlays/ocp/` — Route overlay chart + core-overrides + README (6 files)
+- `src/platform/deploy/README.md` — install flows, Secret contract, TLS story, Honest limitations
+- `src/platform/tests/test_chart_invariants.py` — 20-test invariant suite (pip-lane-safe collection)
+- `.dockerignore` — `src/platform/deploy/` excluded from the image build (deploy-time-only)
+- this spec — authored, with implementation + review-patch Dev Notes and the full triage log
+
+**Review findings breakdown:** 22 patched (2 high, 9 medium, 11 low), 0 deferred, 0 rejected, 0 intent_gap, 0 bad_spec, no loopbacks. Headlines: the image-inventory test's substring bypass (a `platform-dbgpt-sidecar` image passed "exactly three images") and the restricted-v2 helper's container-level override escapes (`runAsNonRoot: false`, seccomp `Unconfined`, `capabilities.add`) — both closed with exact matching / per-container assertions and red-proven companions.
+
+**Verification:** `helm lint` (Helm v4.2.4+conda-forge via the platform-dev pixi env, AD-16 CLI compat live) → 2 charts, 0 failed; default core render → vanilla kinds only, zero `openshift.io`, exactly platform/postgres/redis images; overrides render → no Ingress, no runAsUser/fsGroup fields; overlay render → a single `route.openshift.io/v1` Route targeting the named `http` port; 53-char release name → all resource names ≤ 63 chars; test module 20 passed with helm on PATH, 13 passed + 7 skipped without (skip reasons name the capability); whole-suite collection 69 tests; `ruff check`/`ruff format --check` clean; `mypy platformapp config tests` clean (51 files, from the `requirements/local.txt` venv per the documented fallback). Live red/green demos: fixed-UID plant, planted Route, superstring sidecar image, container-level `runAsNonRoot: false` — each turned exactly its real test RED with evidence-bearing messages, then GREEN on revert.
+
+**Residual risks:** no live-cluster verification of any kind (AD-16 Tier 3 is attended-only): OCP Route admission, SCC enforcement, PVC binding, and the official postgres/redis images' behavior under an SCC-assigned arbitrary UID are unverified — the deploy README documents the likely need for UID-agnostic data-service image overrides on hardened OCP; the fresh-install migration window (Ready-and-500s until the post-install migrate Job completes) is inherent to the hook design and documented, not eliminated; redis ships unauthenticated inside the namespace (NetworkPolicy/AUTH descoped by this story, named follow-up); the full live pytest run over all of src/platform was not executed (needs Tier-1 databases, proven in Story 11.4 — collection-only here).
