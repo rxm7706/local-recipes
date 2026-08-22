@@ -3694,12 +3694,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "51/56",
+            "52/56",
             "stories complete",
             "var(--done)"
           ],
           [
-            "5",
+            "4",
             "remaining",
             ""
           ]
@@ -3741,7 +3741,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "12.1"
+        "at": "12.2"
       },
       "epics": [
         {
@@ -4071,7 +4071,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "12.1",
-              "pending",
+              "done",
               "The vanilla chart with an OCP overlay"
             ],
             [
@@ -4709,7 +4709,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-22 00:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-22 01:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7330,7 +7330,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "in-progress",
           "note": "next free slot",
-          "done": 51,
+          "done": 52,
           "total": 56,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
@@ -8339,7 +8339,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "51/56",
+        "progress": "52/56",
         "complete": 14,
         "of": 14
       },
@@ -20270,7 +20270,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "paused 12.1",
+        "line": "paused 12.2",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -23868,15 +23868,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "doctor",
-      "story": "12.5",
-      "epoch": 1787360088,
-      "sha": "2f2e6654e",
-      "subject": "doctor: Story 12.5 — record final_revision in the story spec"
+      "station": "steward",
+      "story": "12.1",
+      "epoch": 1787361469,
+      "sha": "473281c34",
+      "subject": "steward: Story 12.1 spec finalize - status done, triage log, auto run result"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-22 00:58 UTC",
-    "generatedEpoch": 1787360331
+    "generatedAt": "2026-08-22 01:20 UTC",
+    "generatedEpoch": 1787361638
   },
   "storySpecs": [
     {
@@ -23917,8 +23917,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 51,
-      "tracked": 23,
+      "done": 52,
+      "tracked": 24,
       "gap": 28
     },
     {
@@ -24064,14 +24064,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 51,
-        "backlog": 5,
+        "done": 52,
+        "backlog": 4,
         "blocked": 0,
         "total": 56,
-        "next": "12-1-the-vanilla-chart-with-an-ocp-overlay",
+        "next": "12-2-gke-as-a-portability-profile",
         "blockedKeys": [],
         "backlogKeys": [
-          "12-1-the-vanilla-chart-with-an-ocp-overlay",
           "12-2-gke-as-a-portability-profile",
           "12-3-air-gap-parity-is-a-failing-check",
           "13-1-workspace-verbs-over-git-worktree",
@@ -24221,8 +24220,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 408,
-      "backlog": 53,
+      "done": 409,
+      "backlog": 52,
       "blocked": 0,
       "total": 461
     }
@@ -24298,13 +24297,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 56,
-        "done": 51,
+        "done": 52,
         "blocked": 0,
         "epics": 13,
         "epicsDone": 11,
         "complete": false,
         "running": false,
-        "projected": 51
+        "projected": 52
       },
       {
         "key": "warden",
@@ -24320,7 +24319,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 461,
-      "done": 408,
+      "done": 409,
       "blocked": 0,
       "epics": 93,
       "epicsDone": 80
@@ -24328,7 +24327,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 408
+      "projected": 409
     }
   }
 };
