@@ -35,8 +35,14 @@ coverage already lives at
 """
 from __future__ import annotations
 
+import fcntl
+import importlib.util
+import json
+import os
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -174,3 +180,134 @@ def test_bare_invocation_redirects_to_the_doctor_source(tmp_path: Path):
                        capture_output=True, text=True, cwd=repo)
     assert r.returncode == 2
     assert "pyforge.doctor.sources spec-surface" in r.stderr
+
+
+# --- S-12.5: the --write-baseline read-modify-write race is closed (DW-13-5-2/-3) ---
+
+
+def _load_checker_module(checker: Path):
+    """Import the patched checker copy in-process. Unique module name per
+    call (derived from the tmp path) so parallel tests never collide in
+    sys.modules."""
+    name = f"spec_surface_checker_{checker.parent.parent.name}_{id(checker)}"
+    spec = importlib.util.spec_from_file_location(name, checker)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_concurrent_scoped_stamps_neither_write_lost(tmp_path: Path):
+    """The race itself, forced deterministically. A 2-party barrier gates
+    `_read_baseline` inside `_stamp_baseline`'s critical section: on the
+    UNLOCKED pre-fix shape both threads read the stale baseline concurrently,
+    the barrier releases instantly, each merges into its own stale copy, and
+    the last write clobbers the first -- the final both-entries-updated
+    assertion catches exactly that lost write. Under the lock the second
+    reader can never reach the barrier while the first thread holds the
+    flock, so the barrier BREAKS after its bounded wait (safe direction:
+    waiting longer only proves serialization harder), the BrokenBarrierError
+    is swallowed, and the fully serialized threads land BOTH writes."""
+    repo, _ = _fixture_repo(tmp_path)
+    checker = _patched_checker(repo)
+    subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                   capture_output=True, text=True, cwd=repo, check=True)
+
+    # Both governed files drift, so both scoped stamps must change an entry.
+    (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
+    (repo / "b.py").write_text("y = 2\n", encoding="utf-8")
+
+    mod = _load_checker_module(checker)
+    current = mod._live_state()  # computed once -- identical input for both
+
+    gate = threading.Barrier(2)
+    real_read = mod._read_baseline
+
+    def gated_read():
+        data = real_read()
+        try:
+            gate.wait(timeout=5)
+        except threading.BrokenBarrierError:
+            pass
+        return data
+
+    mod._read_baseline = gated_read
+    threads = [
+        threading.Thread(target=mod._stamp_baseline,
+                         args=(["proj/spec-alpha"], current)),
+        threading.Thread(target=mod._stamp_baseline,
+                         args=(["proj/spec-beta"], current)),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=30)
+    assert not any(t.is_alive() for t in threads), "stamp threads never finished"
+
+    after = json.loads(
+        (repo / "scripts" / ".spec-surface-baseline.json").read_text())
+    assert after["proj/spec-alpha"] == current["proj/spec-alpha"], (
+        "alpha's stamp was silently lost -- the DW-13-5-2/-3 clobber")
+    assert after["proj/spec-beta"] == current["proj/spec-beta"], (
+        "beta's stamp was silently lost -- the DW-13-5-2/-3 clobber")
+
+
+def test_write_baseline_blocks_while_lock_held(tmp_path: Path):
+    """Cross-process serialization: while another process holds the sidecar
+    flock, the CLI must block (no timeout machinery, by design) and proceed
+    to a correct stamp only after release."""
+    repo, _ = _fixture_repo(tmp_path)
+    checker = _patched_checker(repo)
+    subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                   capture_output=True, text=True, cwd=repo, check=True)
+    baseline = repo / "scripts" / ".spec-surface-baseline.json"
+    (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
+    stale = baseline.read_bytes()
+
+    # The test itself plays the concurrent holder.
+    fd = os.open(repo / "scripts" / ".spec-surface-baseline.json.lock",
+                 os.O_CREAT | os.O_RDWR, 0o644)
+    fcntl.flock(fd, fcntl.LOCK_EX)
+    proc = subprocess.Popen(
+        [sys.executable, str(checker), "--write-baseline",
+         "--spec", "proj/spec-alpha"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=repo)
+    try:
+        # Safe-direction premise: the unblocked CLI completes in well under
+        # 2s on this two-spec fixture (sub-second in practice), so "still
+        # running after 2s" can only mean it is blocked on the flock.
+        time.sleep(2.0)
+        assert proc.poll() is None, "CLI completed despite the held flock"
+        assert baseline.read_bytes() == stale, "baseline mutated under the lock"
+        os.close(fd)  # release -- the blocked CLI may now proceed
+        fd = -1
+        assert proc.wait(timeout=30) == 0, proc.stderr.read()
+    finally:
+        if fd != -1:
+            os.close(fd)
+        if proc.poll() is None:
+            proc.kill()  # never leak a blocked subprocess on a failed assert
+            proc.wait(timeout=10)
+
+    after = json.loads(baseline.read_text())
+    assert after["proj/spec-alpha"] != json.loads(stale)["proj/spec-alpha"], (
+        "post-release stamp did not land")
+
+
+def test_stamp_is_atomic_and_leaves_no_residue(tmp_path: Path):
+    """After a scoped stamp: no `.tmp` left behind (os.replace consumed it),
+    the baseline parses as JSON (never torn), and the sidecar lockfile is
+    still there -- deliberately never unlinked (unlink-while-others-wait
+    recreates the race); it is gitignored instead."""
+    repo, _ = _fixture_repo(tmp_path)
+    checker = _patched_checker(repo)
+    subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                   capture_output=True, text=True, cwd=repo, check=True)
+    (repo / "a.py").write_text("x = 2\n", encoding="utf-8")
+    subprocess.run([sys.executable, str(checker), "--write-baseline",
+                    "--spec", "proj/spec-alpha"],
+                   capture_output=True, text=True, cwd=repo, check=True)
+
+    scripts = repo / "scripts"
+    assert not (scripts / ".spec-surface-baseline.json.tmp").exists()
+    json.loads((scripts / ".spec-surface-baseline.json").read_text())
+    assert (scripts / ".spec-surface-baseline.json.lock").exists()

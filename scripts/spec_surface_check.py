@@ -25,6 +25,13 @@ same live "what does every governed spec's contract + file set look like
 right now" state the read-only port also computes internally, and (only
 when asked) merge it into the committed `scripts/.spec-surface-baseline.json`.
 
+Story 12.5 closed the concurrent-stamp race (CAP-5's `DW-13-5-2`, recorded
+in the atlas ledger as `DW-13-5-3`): the whole read-modify-write span now
+holds an advisory flock on a sidecar `.spec-surface-baseline.json.lock`,
+and the write itself is atomic (temp file + `os.replace`), so two
+concurrent `--write-baseline` invocations serialize instead of silently
+clobbering each other, and a concurrent reader never sees a torn baseline.
+
 Usage (plain `python`, no pixi task -- the `spec-surface-check` pixi task
 invokes the dispatcher below instead, which does not understand this flag):
         python scripts/spec_surface_check.py --write-baseline [--spec NAME ...]
@@ -35,11 +42,14 @@ Verdict (coverage/drift/blindness, unchanged behavior):
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 # Explicit opt-out: this file still matches detectors.py's `*_check.py` glob
@@ -164,6 +174,65 @@ def _live_state() -> dict[str, dict]:
     }
 
 
+def _read_baseline() -> dict:
+    return (json.loads(BASELINE.read_text(encoding="utf-8"))
+            if BASELINE.exists() else {})
+
+
+@contextmanager
+def _baseline_lock():
+    # Lock the SIDECAR, never the baseline itself -- `_write_baseline`'s
+    # os.replace swaps the baseline's inode, so a lock held on the baseline
+    # would not exclude the next locker. Holding an advisory flock across the
+    # whole read -> merge -> write span closes the DW-13-5-2/DW-13-5-3
+    # lost-write race. No timeout, no staleness detection, no retry, and the
+    # lockfile is never unlinked (unlink-while-others-wait recreates the
+    # race) -- the herald/marshal precedent (pyforge.herald.locking,
+    # fs_local.acquire_advisory_lock) mirrored inline, since this script must
+    # stay stdlib-only. Path resolved here at call time: tests monkeypatch
+    # BASELINE.
+    fd = os.open(BASELINE.with_name(BASELINE.name + ".lock"),
+                 os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(fd)  # closing the fd releases the flock
+
+
+def _write_baseline(merged: dict) -> None:
+    # Atomic: sibling temp file + os.replace, so the read-only Doctor
+    # detector never sees a torn baseline. The fixed .tmp name is safe
+    # because it is only ever written under _baseline_lock().
+    tmp = BASELINE.with_name(BASELINE.name + ".tmp")
+    tmp.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
+                   encoding="utf-8")
+    os.replace(tmp, BASELINE)
+
+
+def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict]) -> str:
+    """The locked critical section: read -> merge -> write, fully serialized
+    against every other concurrent stamp. Returns the scope message."""
+    with _baseline_lock():
+        # S-13.1 -- SCOPED stamping. Stamping every spec in one write made the
+        # sanctioned fix for a single `[no-baseline]` unusable: it necessarily
+        # accepted every OTHER spec's pending drift as correct, so the honest
+        # move was to leave the finding standing. With --spec, one spec
+        # reconciles in isolation.
+        if spec_names:
+            # MERGE, never rewrite: building from `current` alone would
+            # silently drop every spec this invocation did not name.
+            merged = _read_baseline()
+            for name in spec_names:
+                merged[name] = current[name]
+            scope = f"{len(set(spec_names))} spec(s): {', '.join(sorted(set(spec_names)))}"
+        else:
+            merged = current
+            scope = f"{len(current)} spec(s) — ALL (accepts every spec's pending drift)"
+        _write_baseline(merged)
+    return scope
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--write-baseline", action="store_true",
@@ -187,31 +256,18 @@ def main() -> int:
         )
         return 2
 
+    # Expensive live-state walk and arg validation stay OUTSIDE the lock --
+    # they read the working tree and the spec set, never the baseline.
     current = _live_state()
 
-    # S-13.1 -- SCOPED stamping. Stamping every spec in one write made the
-    # sanctioned fix for a single `[no-baseline]` unusable: it necessarily
-    # accepted every OTHER spec's pending drift as correct, so the honest
-    # move was to leave the finding standing. With --spec, one spec
-    # reconciles in isolation.
     if args.spec:
         unknown = sorted(set(args.spec) - set(current))
         if unknown:
             print(f"unknown spec(s): {', '.join(unknown)}\n"
                   f"known: {', '.join(sorted(current))}", file=sys.stderr)
             return 2
-        # MERGE, never rewrite: building from `current` alone would silently
-        # drop every spec this invocation did not name.
-        merged = (json.loads(BASELINE.read_text(encoding="utf-8"))
-                  if BASELINE.exists() else {})
-        for name in args.spec:
-            merged[name] = current[name]
-        scope = f"{len(set(args.spec))} spec(s): {', '.join(sorted(set(args.spec)))}"
-    else:
-        merged = current
-        scope = f"{len(current)} spec(s) — ALL (accepts every spec's pending drift)"
-    BASELINE.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
-                        encoding="utf-8")
+
+    scope = _stamp_baseline(args.spec, current)
     print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} — {scope}")
     return 0
 
