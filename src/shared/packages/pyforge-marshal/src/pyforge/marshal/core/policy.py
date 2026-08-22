@@ -2,11 +2,14 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 23-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 28-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
-AD-40's 4 landing keys (Story 4.7), and FR-184's ``max_parallel`` (Story
-3.13)) -- not a mirror of the harness's much
+AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
+3.13), and Story 25.4's 5 bmad-loop 0.10/0.11 knobs
+(``review_on_timeout``, ``review_on_status_contradiction``,
+``dev_contract_nudge``, ``operator_enabled``, ``stream_capture_kb`` --
+CAP-4, spec-bmad-611-era-alignment)) -- not a mirror of the harness's much
 larger ``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
 rendering concern). Every field is wrapped in a ``PolicyField{value, layer,
 raw_source}`` so an operator can always answer "why is this value what it
@@ -39,7 +42,7 @@ on by later stories (4.5, 4.8, 4.10), never narrowed by a journal entry, plus
 STATIC for the identical reason ``epic_surfaces``/``model_tier_map`` are:
 declared and validated here, rendered by ``cli/init.py::run_init`` into a
 loop home's ``.mcp.json`` and probed for resolvability by ``run_preflight``,
-never narrowed by a journal entry. 11
+never narrowed by a journal entry. 16
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -53,7 +56,13 @@ regardless of what is requested, so this key exists to let a requested
 value compose cleanly instead of tripping the generic "unknown key" finding
 (``MRS-POLICY-001``), never to make the fan-out real; a resolved value above
 1 raises a dedicated WARN advisory naming the clamp and its cause
-(``_max_parallel_clamp_finding``). Seed fields live ONLY in a private
+(``_max_parallel_clamp_finding``) -- and (Story 25.4, CAP-4) the 5 bmad-loop
+0.10/0.11 knobs ``review_on_timeout``, ``review_on_status_contradiction``,
+``dev_contract_nudge``, ``operator_enabled``, ``stream_capture_kb``: scalar
+operator-tunable knobs (the ``gate_mode``/attempt-count analog), each
+flattening the harness's table-qualified name the same way
+``max_dev_attempts`` <-> ``[limits].max_dev_attempts`` already does. Seed
+fields live ONLY in a private
 ``_seed`` mapping;
 ``seed_view()`` is the sole whitelisted
 accessor (closing F-8: it is what lets ``marshal config``/FR-54 and FR-53
@@ -144,7 +153,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 23-key vocabulary -------------------------------------------
+# --- the closed 28-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -218,12 +227,37 @@ _SEED_KEYS: frozenset[str] = frozenset(
         # `_max_parallel_clamp_finding` names the clamp whenever the
         # resolved value exceeds 1.
         "max_parallel",
+        # Story 25.4's 5 keys (CAP-4, spec-bmad-611-era-alignment): the
+        # bmad-loop 0.10/0.11 policy knobs, SEED because all five are
+        # scalar operator-tunable knobs -- the `gate_mode`/attempt-count
+        # analog -- keeping `EffectivePolicy`'s public attribute surface
+        # unchanged (STATIC is reserved for structural declarations:
+        # commands, paths, maps, rules). Marshal key names flatten the
+        # harness's table-qualified names the same way `max_dev_attempts`
+        # <-> `[limits].max_dev_attempts` already does; the two review
+        # knobs keep a `review_` prefix (bare `on_timeout` says nothing at
+        # the marshal layer), `operator_enabled` keeps `operator_` (bare
+        # `enabled` is meaningless), and `dev_contract_nudge`/
+        # `stream_capture_kb` are already self-naming.
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
     }
 )
 _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
+# Story 25.4's two review-knob vocabularies (CAP-4): mirror the installed
+# bmad_loop 0.11.0's own REVIEW_ON_TIMEOUT_MODES /
+# REVIEW_ON_STATUS_CONTRADICTION_MODES verbatim (bmad_loop/policy.py L31-32)
+# -- marshal validates BEFORE the harness's own PolicyError can, so a bad
+# value fails here as an ordinary MRS-POLICY-003 finding instead of bricking
+# a loop home's next run at policy load.
+_REVIEW_ON_TIMEOUT_MODES: frozenset[str] = frozenset({"retry", "salvage-if-done", "defer"})
+_REVIEW_ON_STATUS_CONTRADICTION_MODES: frozenset[str] = frozenset({"escalate", "retry"})
 # Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
 # the default because it matches this repo's own observed real practice
 # (`git log --merges` shows real, non-squash merge commits throughout).
@@ -345,6 +379,34 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # requested. See `_valid_parallel_count`/`_max_parallel_clamp_finding`
     # for the composed value and the advisory naming the clamp.
     "max_parallel": 1,
+    # Story 25.4's 5 bmad-loop 0.10/0.11 knobs (CAP-4). All five DELIBERATE
+    # repo defaults match bmad_loop 0.11.0 stock -- each a choice, not an
+    # accident:
+    #
+    # "retry" (stock): the retry-then-salvage ladder is the right first
+    # response to a review timeout -- burn a review cycle per timeout-like
+    # verdict up to max_review_cycles, then defer.
+    "review_on_timeout": "retry",
+    # "escalate" (stock): matches the fleet's escalate-don't-silently-retry
+    # posture -- a review that revokes the story's sprint sign-off pauses
+    # the run naming both sides of the disagreement rather than burning the
+    # budget down onto a rollback.
+    "review_on_status_contradiction": "escalate",
+    # True (stock): the marker-repair nudge closes the exact
+    # `## Auto Run Result` omission this fleet's own detectors chase -- one
+    # targeted per-session nudge asking the skill to append the section it
+    # skipped, with harness-side frontmatter synthesis as the backstop.
+    "dev_contract_nudge": True,
+    # True (stock): the fleet WANTS parked-not-dead semantics --
+    # `awaiting-operator` is the honest outcome for a story whose remaining
+    # acceptance criteria are human-only actions (`done` hides them,
+    # `blocked` halts the run over work the loop was never going to do).
+    "operator_enabled": True,
+    # 256 (stock): generous for real pytest/ruff failure tails (tens of KB)
+    # while bounding a runaway chatty verifier that could otherwise emit
+    # hundreds of MB per attempt; 0 = capture nothing is legal on both
+    # sides.
+    "stream_capture_kb": 256,
     # Story 2.3's `epic_surfaces` (AD-27): no epic has a declared allowlist
     # until a project's own policy says otherwise -- an empty mapping, the
     # same "nothing declared yet" posture `model_tier_map`'s own empty-dict
@@ -605,8 +667,15 @@ def _valid_mcp_servers(value: object) -> dict[str, dict[str, object]] | None:
 
 
 def _valid_bool(value: object) -> bool | None:
-    """``landing_branch_retirement``/``landing_resync``: a plain ``bool``
-    only. ``isinstance(value, bool)`` alone is enough (unlike
+    """Every plain-``bool`` policy key: ``landing_branch_retirement``/
+    ``landing_resync`` (Story 4.7) and Story 25.4's ``dev_contract_nudge``/
+    ``operator_enabled``. A plain ``bool`` only -- a coercible mismatch
+    (``1``, ``"true"``) is rejected, never coerced: bmad-loop 0.11's own
+    ``_limit_bool`` rejects the same shapes at load for
+    ``limits.dev_contract_nudge``, and marshal validates all four strictly
+    so a bad value fails HERE with a clear finding even for the keys the
+    harness would silently ``bool()``-coerce (``operator.enabled``).
+    ``isinstance(value, bool)`` alone is enough (unlike
     ``_valid_attempt_count``'s explicit ``not isinstance(value, bool)``
     exclusion) because THIS validator's whole job is accepting exactly that
     type."""
@@ -787,6 +856,44 @@ def _valid_landing_base_branch(value: object) -> str | None:
 
 def _valid_gate_mode(value: object) -> str | None:
     if isinstance(value, str) and value in _GATE_MODES:
+        return value
+    return None
+
+
+def _valid_review_on_timeout(value: object) -> str | None:
+    """``review_on_timeout`` (Story 25.4): the closed
+    ``_REVIEW_ON_TIMEOUT_MODES`` vocabulary -- same shape as
+    ``_valid_gate_mode``, deliberately a separate function per the
+    ``_valid_landing_base_branch`` "unrelated questions" precedent."""
+    if isinstance(value, str) and value in _REVIEW_ON_TIMEOUT_MODES:
+        return value
+    return None
+
+
+def _valid_review_on_status_contradiction(value: object) -> str | None:
+    """``review_on_status_contradiction`` (Story 25.4): the closed
+    ``_REVIEW_ON_STATUS_CONTRADICTION_MODES`` vocabulary -- same shape as
+    ``_valid_gate_mode``, separate for the same "unrelated questions"
+    reason as ``_valid_review_on_timeout``."""
+    if isinstance(value, str) and value in _REVIEW_ON_STATUS_CONTRADICTION_MODES:
+        return value
+    return None
+
+
+def _valid_capture_kb(value: object) -> int | None:
+    """``stream_capture_kb`` (Story 25.4): a plain ``int``, not ``bool``,
+    ``>= 0`` -- mirrors ``_valid_attempt_count``'s exact shape (0 = capture
+    nothing is a legitimate policy, legal on both sides: bmad-loop 0.11's
+    own load floor is ``verify.stream_capture_kb >= 0``). A separate
+    function rather than an alias of ``_valid_attempt_count`` per the
+    ``_valid_landing_base_branch`` "unrelated questions" precedent: a
+    per-stream capture budget and a retry ceiling answer different
+    questions, and a future capture-specific check must not silently apply
+    to the attempt counts. Strict int-not-bool: the harness's own loader
+    ``int()``-coerces this key, so marshal rejecting ``True``/``"256"``
+    here is what keeps a coercible mismatch a VISIBLE finding instead of a
+    silent coercion one process later."""
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return value
     return None
 
@@ -1129,9 +1236,9 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 4 public STATIC
+    """The composed, immutable policy value (AD-10): 12 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
-    11 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
+    16 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
     fails the build if any other module IN THE INSTALLED PACKAGE accesses
     the ``_seed`` attribute directly (its scan surface; test code and
@@ -1226,7 +1333,7 @@ class EffectivePolicy:
         return f"{type(self).__name__}({static}, _seed={{{seed}}})"
 
     def seed_view(self) -> Mapping[str, PolicyField]:
-        """The sole whitelisted accessor for the 10 seed-tagged fields
+        """The sole whitelisted accessor for the 16 seed-tagged fields
         (AD-26, closing F-8): a read-only mapping keyed by field name. This
         is what lets ``marshal config`` (FR-54) print every effective key
         and FR-53 validation range over every key without contradicting
@@ -1238,7 +1345,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (5 static + 11 seed) -- AD-35's naming primitive. Hashing only
+        (12 static + 16 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -1282,7 +1389,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 23-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 28-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -1508,6 +1615,54 @@ def compose(
             "max_parallel",
             _valid_parallel_count,
             DEFAULT_POLICY["max_parallel"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        # Story 25.4's 5 bmad-loop 0.10/0.11 knobs (CAP-4) -- see _SEED_KEYS
+        # for why all five are SEED and how their names flatten the
+        # harness's table-qualified spellings.
+        "review_on_timeout": _merge_field(
+            "review_on_timeout",
+            _valid_review_on_timeout,
+            DEFAULT_POLICY["review_on_timeout"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "review_on_status_contradiction": _merge_field(
+            "review_on_status_contradiction",
+            _valid_review_on_status_contradiction,
+            DEFAULT_POLICY["review_on_status_contradiction"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "dev_contract_nudge": _merge_field(
+            "dev_contract_nudge",
+            _valid_bool,
+            DEFAULT_POLICY["dev_contract_nudge"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "operator_enabled": _merge_field(
+            "operator_enabled",
+            _valid_bool,
+            DEFAULT_POLICY["operator_enabled"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "stream_capture_kb": _merge_field(
+            "stream_capture_kb",
+            _valid_capture_kb,
+            DEFAULT_POLICY["stream_capture_kb"],
             project,
             flags,
             findings,

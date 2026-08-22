@@ -1232,3 +1232,26 @@ versions, through the same fail-open live-query exception Story 10.2's operator 
 already granted (unreachable ⇒ no Finding, no error, never gating) and the same ambient
 surfaces as Story 10.3 — proven by a fixture of the 2026-08-21 pre-update state naming
 `bmad-loop 0.9.0 < 0.11.0` and `TEA 1.19.1 < 1.23.2` (CAP-4). **Deps:** —
+
+## Epic 15: The suite pipeline's drift is ambient at every stage
+
+Decomposes `spec-bmad-suite-channel-product` **CAP-5** (steward-owned chain, detection
+relayed here per the version-drift split — same day as steward Epic 15). Extends Epic 14's
+suite check from installed-env-vs-npm to the full pipeline: the channel served a stale
+bmad-method 6.3.0 for four months and 7 of 10 watched packages are npm-invisible.
+
+### Story 15.1: GitHub releases unblind the npm-invisible packages
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-5 (closes doctor DW-14-1-1)
+**Surface:** `sources/bmad_method.py` suite pass
+**Given** the 6-7 GitHub-only suite packages (bmad-loop first — the package whose lag
+motivated CAP-4) **Then** upstream latest falls back to GitHub releases/tags through the
+same fail-open budget, `packages_checked` rises accordingly, and the DW-14-1-1 fixture
+(bmad-loop named from GitHub) passes.
+
+### Story 15.2: Channel and recipe staleness are ambient findings
+**Type:** feature • **Effort:** S • **Deps:** S-15.1 • **FR/AD:** spec-bmad-suite-channel-product CAP-5
+**Surface:** `sources/bmad_method.py` (new stages), fleet-picture ATTENTION
+**Given** api.anaconda.org's SelfExplainML listing and `recipes/*/recipe.yaml` versions
+**Then** channel-vs-recipe and recipe-vs-upstream drift are warn-only findings on the
+same surfaces as Stories 10.3/14.1 — a fixture of the bmad-method 6.3.0 relic fires
+channel-drift; offline degrades silently.

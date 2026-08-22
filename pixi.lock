@@ -3562,6 +3562,7 @@ environments:
     - https://pypi.org/simple
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.1-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.1-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -15446,6 +15447,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
 packages:
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/bmad-module-skill-forge-2.1.0-ha52a1c0_1.conda
+  sha256: c89264275528da2a4ca6c923f3d4e6c66d97b495aab2403e690ac96140fa4360
+  md5: 77e200765a1b675284d9564366e40b25
+  depends:
+  - nodejs >=22
+  license: MIT
+  size: 3278028
+  timestamp: 1787397940167
 - conda: https://conda.anaconda.org/SelfExplainML/linux-64/mybmad-dashboard-0.1.0.dev0-py311hde45a35_0.conda
   noarch: python
   sha256: ac9dbcd08ca7efa57634fd5f6bd0eb8fce6006a2a80ef8a0419833a497cf3839

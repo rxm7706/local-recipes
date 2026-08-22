@@ -1065,3 +1065,48 @@ foreign-station sites are reported, never edited.
 bmad-drift-check integrity, CFE skill meta-tests, per-loop-home `bmad-loop init` relay
 refresh + `validate` — and reports a single verdict; the 2026-08-21 checklist (8/8 homes
 validate clean, zero warnings) is the reproduced worked example.
+
+## Epic 15: The bmad-suite channel is a governed product
+
+**Spec binding.** Decomposes `spec-bmad-suite-channel-product` CAP-1..4 (Spec landed
+2026-08-22 from `docs/dreams/bmad-suite-channel-product.md`; companion `install-matrix.md`
+is the dual-path contract). CAP-5 (ambient drift) is doctor's — decomposed as doctor
+Epic 15 the same day. Operator decisions locked at spec time: channel bmad-method
+refreshed to 6.11.0 (executed 2026-08-22; conda-forge stays canonical), and the standing
+always-refresh-outdated policy. **HARD boundaries:** wiring is per-module triage (WDS is
+an explicit skip); publish credential-gated, before floor bumps; autotick output = 
+reviewable PRs; dev recipes keep `X.Y.Z.dev0 @ sha` + G109 re-derivation.
+
+### Story 15.1: One command reports the whole pipeline's truth
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-1
+**Surface:** steward duty (new), consuming existing probes (npm/GitHub queries, recipe.yaml parse, api.anaconda.org listing, pixi list, .claude/skills census)
+**Given** the 13 suite packages **Then** one command reports upstream latest (npm AND
+GitHub per the package's class), recipe version, channel version, installed version, and
+wired-or-not — drift named per stage, each probe fail-open — and run against the
+2026-08-22 baseline it reproduces the research matrix.
+
+### Story 15.2: One command advances a stale package end-to-end
+**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-bmad-suite-channel-product CAP-2
+**Surface:** steward duty; autotick extension (CFE Rule 1: the github_updater HEAD-advance
+mode for commit-pinned dev recipes lands as CFE-skill work with its Rule-2 retro)
+**Given** a package the truth-report names stale **Then** one command chains autotick
+(tag-mode or HEAD-advance) → local build → recipe tests → channel publish → listing
+verification, landing as a reviewable PR — the 2026-08-21 seven-stage hand ritual with
+zero improvised steps, never auto-merged.
+
+### Story 15.3: Five modules wire through the provisioning verb
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-3
+**Surface:** `src/pyforge/steward/provision.py` `_SUPPORTED_MODULES`
+**Given** `{bmb}` today **Then** tea, cis, utility-skills, and manticore join (their conda
+packages' installer entry points), each addition manifest-recorded, skill-name-collision-
+checked, retired-ID guard + integrity meta tests green, reproducible on a fresh clone —
+and WDS is recorded as a skip-decision with the upstream-deprecation citation.
+
+### Story 15.4: The upgrade gate spot-checks one native path per class
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-channel-product CAP-4
+**Surface:** install-matrix.md (the tracked contract), steward Epic 14 CAP-5 gate orbit
+**Given** the seven native-method classes **Then** the verification gate exercises ≥1
+cited command per class (dashboards excluded by build cost, check-by-doc), failures
+reported not gating, and the matrix stays the cited source of truth.
+
+**Epic 15 clears to dispatch on 15.1/15.3/15.4; 15.2 follows 15.1.**

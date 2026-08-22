@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 89
+# stories: 95
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -40,6 +40,10 @@ development_status:
   14-3-clobbered-custom-surfaces-are-caught-and-re-applied: backlog
   14-4-the-pin-fan-out-is-enumerated-not-discovered-by-red-tests: backlog
   14-5-one-command-proves-the-upgrade-landed: backlog
+  15-1-one-command-reports-the-whole-pipelines-truth: backlog
+  15-2-one-command-advances-a-stale-package-end-to-end: backlog
+  15-3-five-modules-wire-through-the-provisioning-verb: backlog
+  15-4-the-upgrade-gate-spot-checks-one-native-path-per-class: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
@@ -87,6 +91,8 @@ development_status:
   epic-13-retrospective: optional
   epic-14: backlog
   epic-14-retrospective: optional
+  epic-15: backlog
+  epic-15-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

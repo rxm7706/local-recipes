@@ -223,7 +223,7 @@ from ..ports.harness import (
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
-# Covers every section of the installed bmad_loop 0.9.0 schema at its own
+# Covers every section of the installed bmad_loop 0.11.0 schema at its own
 # stock default (deliberately not every key -- the module docstring names
 # the omitted instance-local/reserved ones). Keys that are rendered from
 # Marshal's EffectivePolicy composition (the 4-layer fold: code DEFAULT_POLICY
@@ -231,11 +231,14 @@ from ..ports.harness import (
 # from marshal-policy.toml -> invocation --set flags) carry placeholder
 # baselines here -- render_policy_toml() always overwrites them, so their
 # template value never reaches a caller. These include gates.mode,
-# max_dev_attempts/.max_review_cycles/.max_followup_reviews, verify.commands,
-# and scm.worktree_seed.
+# max_dev_attempts/.max_review_cycles/.max_followup_reviews/
+# .dev_contract_nudge, verify.commands/.stream_capture_kb,
+# review.on_timeout/.on_status_contradiction, operator.enabled, and
+# scm.worktree_seed (Story 25.4 added the five bmad-loop 0.10/0.11 knobs,
+# CAP-4).
 _POLICY_TEMPLATE = """\
 # bmad-loop orchestration policy -- the harness's own vocabulary (bmad_loop
-# 0.9.0). This file is a DERIVED artifact: Marshal renders it whole from the
+# 0.11.0). This file is a DERIVED artifact: Marshal renders it whole from the
 # canonical EffectivePolicy every time it is written. Never hand-edit it --
 # a per-project setting belongs in Marshal's own policy source, and a
 # repo-wide default belongs in this template (adapters/harness_bmadloop.py's
@@ -250,6 +253,9 @@ retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 max_review_cycles = 3        # overwritten per render from EffectivePolicy
 max_dev_attempts = 2         # overwritten per render from EffectivePolicy
 max_followup_reviews = 1     # overwritten per render from EffectivePolicy
+# Deliberate repo default = stock true: the marker-repair nudge closes the
+# exact `## Auto Run Result` omission this fleet's own detectors chase.
+dev_contract_nudge = true    # overwritten per render from EffectivePolicy
 session_timeout_min = 180    # repo-wide override (stock default: 90) -- keystone stories need the headroom
 git_timeout_s = 120
 teardown_grace_s = 20
@@ -266,6 +272,10 @@ session_budget_grace_s = 240
 
 [verify]
 commands = []                 # overwritten per render from EffectivePolicy
+# Deliberate repo default = stock 256 KiB per stream: generous for real
+# pytest/ruff failure tails, bounds a runaway chatty verifier; 0 = capture
+# nothing (legal on both sides).
+stream_capture_kb = 256       # overwritten per render from EffectivePolicy
 
 [notify]
 desktop = true
@@ -279,6 +289,12 @@ enabled = true
 # own self-assessment of whether it needs review -- the exact self-grading "always"
 # existed to not depend on; revisit if that trust turns out to be misplaced.
 trigger = "recommended"       # recommended | always
+# Deliberate repo default = stock "retry": the retry-then-salvage ladder is
+# the right first response to a review timeout (retry | salvage-if-done | defer).
+on_timeout = "retry"          # overwritten per render from EffectivePolicy
+# Deliberate repo default = stock "escalate": matches the fleet's
+# escalate-don't-silently-retry posture (escalate | retry).
+on_status_contradiction = "escalate"  # overwritten per render from EffectivePolicy
 
 [stories]
 source = "sprint-status"      # sprint-status | stories
@@ -286,6 +302,12 @@ spec_folder = ""
 
 [dev]
 skill = "bmad-dev-auto"
+
+[operator]
+# Deliberate repo default = stock true: the fleet WANTS parked-not-dead
+# semantics -- `awaiting-operator` is the honest outcome for a story whose
+# remaining acceptance criteria are human-only actions.
+enabled = true                # overwritten per render from EffectivePolicy
 
 [adapter]
 name = "claude"               # claude | codex | gemini | copilot | antigravity | opencode-http | <custom .bmad-loop/profiles/*.toml>
@@ -391,16 +413,25 @@ def render_policy_toml(
     adapter: str | None = None,
 ) -> str:
     """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
-    Marshal's 6 mapped keys from ``effective``, apply FR-51 tier-batching,
+    Marshal's 11 mapped keys from ``effective``, apply FR-51 tier-batching,
     and return ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
     produces byte-identical output (AD-12/AD-35 "derived artifact"
     discipline).
 
-    The 6 mapped keys: ``gate_mode`` -> ``[gates].mode``,
+    The 11 mapped keys: ``gate_mode`` -> ``[gates].mode``,
     ``max_dev_attempts``/``max_review_cycles``/``max_followup_reviews`` ->
     ``[limits]``'s same-named keys (all four SEED fields, read exclusively
     via ``seed_view()`` per AD-26), ``verify_commands`` -> ``[verify].commands``,
-    ``worktree_seed_paths`` -> ``[scm].worktree_seed`` (both STATIC fields).
+    ``worktree_seed_paths`` -> ``[scm].worktree_seed`` (both STATIC fields),
+    plus Story 25.4's five bmad-loop 0.10/0.11 knobs (all SEED, CAP-4):
+    ``review_on_timeout`` -> ``[review].on_timeout``,
+    ``review_on_status_contradiction`` -> ``[review].on_status_contradiction``,
+    ``dev_contract_nudge`` -> ``[limits].dev_contract_nudge``,
+    ``operator_enabled`` -> ``[operator].enabled``, and
+    ``stream_capture_kb`` -> ``[verify].stream_capture_kb`` -- each written
+    as its native Python type (bool/int/str), which tomlkit preserves as the
+    exact TOML scalar type bmad-loop 0.11's stricter loaders demand
+    (``_limit_bool`` rejects a coercible mismatch at load).
     Seed fields carry the INITIAL composed values: during a live run the
     operative value of a seed field (``gate_mode`` above all) comes solely
     from the journal fold (AD-26), so a mid-run re-render reproduces
@@ -449,6 +480,18 @@ def render_policy_toml(
     doc["limits"]["max_dev_attempts"] = seed["max_dev_attempts"].value
     doc["limits"]["max_review_cycles"] = seed["max_review_cycles"].value
     doc["limits"]["max_followup_reviews"] = seed["max_followup_reviews"].value
+    # Story 25.4 (CAP-4): the five bmad-loop 0.10/0.11 knobs, each projected
+    # onto the harness's table-qualified name. The composed values are
+    # native Python bool/int/str (marshal's own validators reject coercible
+    # mismatches before this point), so tomlkit emits the exact TOML scalar
+    # types bmad-loop 0.11's load() demands.
+    doc["limits"]["dev_contract_nudge"] = seed["dev_contract_nudge"].value
+    doc["verify"]["stream_capture_kb"] = seed["stream_capture_kb"].value
+    doc["review"]["on_timeout"] = seed["review_on_timeout"].value
+    doc["review"]["on_status_contradiction"] = seed[
+        "review_on_status_contradiction"
+    ].value
+    doc["operator"]["enabled"] = seed["operator_enabled"].value
     # S-13.7 (FR-174): the station's own commands, THEN the repo-wide surface
     # guard. Appended rather than composed (see _SURFACE_RECONCILE_COMMAND), and
     # de-duplicated so re-rendering an already-rendered home stays idempotent --

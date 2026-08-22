@@ -261,9 +261,10 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
 
 
 def test_config_prints_all_twenty_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 23, Story 3.13's `max_parallel` joining
-    Story 6.9's `mcp_servers`, Story 4.5's `landing_resync_commands`, Story
-    4.4's `landing_base_branch`, and Story 4.7's 4 landing keys) keys prints
+    """AC: 'every one of the (now 28, Story 25.4's 5 bmad-loop 0.10/0.11
+    knobs joining Story 3.13's `max_parallel`, Story 6.9's `mcp_servers`,
+    Story 4.5's `landing_resync_commands`, Story 4.4's
+    `landing_base_branch`, and Story 4.7's 4 landing keys) keys prints
     its effective value and winning layer' -- checked
     exhaustively, not just a couple of spot-checked fields. The layer half
     is counted, not merely detected: exactly one `(layer=...)` suffix per
@@ -297,9 +298,14 @@ def test_config_prints_all_twenty_keys(capsys, monkeypatch):
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
         "max_parallel",
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 23
+    assert captured.out.count("(layer=") == 28
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -876,6 +882,30 @@ def test_config_set_on_a_budget_ceiling_is_a_usage_error(capsys, key):
     project-policy-only -- rejected the SAME clean way at the flag
     boundary, never as a `MRS-POLICY-003` "malformed value" finding."""
     exit_code = main(["config", "--set", f"{key}=30"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert key in captured.err
+    assert "--project-policy" in captured.err
+    assert "MRS-POLICY-003" not in captured.err
+    assert "list/mapping-typed" not in captured.err
+    assert "project-policy-only" in captured.err
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
+    ],
+)
+def test_config_set_on_a_bmad_loop_knob_is_a_usage_error(capsys, key):
+    """Story 25.4's 5 bmad-loop 0.10/0.11 knobs join the budget ceilings as
+    project-policy-only -- rejected the same clean way at the flag
+    boundary, never as a `MRS-POLICY-003` "malformed value" finding."""
+    exit_code = main(["config", "--set", f"{key}=retry"])
     assert exit_code == EXIT_USAGE
     captured = capsys.readouterr()
     assert key in captured.err

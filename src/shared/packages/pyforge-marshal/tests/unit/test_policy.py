@@ -219,7 +219,7 @@ def test_different_inputs_produce_different_hash():
     assert first.content_hash != second.content_hash
 
 
-def test_seed_view_returns_all_eleven_seed_fields():
+def test_seed_view_returns_all_sixteen_seed_fields():
     effective, _ = compose(project_slug="acme", project={}, flags={})
     seed = effective.seed_view()
     assert set(seed.keys()) == {
@@ -234,6 +234,11 @@ def test_seed_view_returns_all_eleven_seed_fields():
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
         "max_parallel",
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
     }
     assert all(isinstance(field, PolicyField) for field in seed.values())
 
@@ -252,6 +257,11 @@ def test_seed_fields_are_not_reachable_as_public_attributes():
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
         "max_parallel",
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
     ):
         assert not hasattr(effective, key)
 
@@ -290,6 +300,11 @@ def test_none_of_the_real_keys_are_secret_shaped():
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
     }
     assert not any(is_secret_key(key) for key in all_keys)
 
@@ -1355,6 +1370,146 @@ def test_max_parallel_is_seed_reachable_only_via_seed_view():
     assert "max_parallel" in effective.seed_view()
 
 
+# --- the 5 bmad-loop 0.10/0.11 knobs (Story 25.4, CAP-4) ----------------------
+# One section per matrix row of the spec's I/O & Edge-Case Matrix: defaults,
+# project-override wins, illegal enum values, coercible type mismatches
+# (rejected marshal-side BEFORE bmad-loop 0.11's own stricter/coercive
+# loaders ever see them), the legal zero capture, and the negative capture.
+
+_BMAD_LOOP_KNOB_DEFAULTS = {
+    "review_on_timeout": "retry",
+    "review_on_status_contradiction": "escalate",
+    "dev_contract_nudge": True,
+    "operator_enabled": True,
+    "stream_capture_kb": 256,
+}
+
+
+def test_bmad_loop_knob_defaults_match_stock():
+    """Matrix row 'Defaults render' (composition half): all five knobs at
+    their DELIBERATE repo defaults -- each matching bmad_loop 0.11.0 stock
+    -- pinned here so a future accidental edit to DEFAULT_POLICY is caught
+    by a failing test, not silently. Identity-asserted for the bools
+    (``is True``): int 1 must never satisfy this."""
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    seed = effective.seed_view()
+    assert seed["review_on_timeout"].value == "retry"
+    assert seed["review_on_status_contradiction"].value == "escalate"
+    assert seed["dev_contract_nudge"].value is True
+    assert seed["operator_enabled"].value is True
+    assert seed["stream_capture_kb"].value == 256
+    assert not isinstance(seed["stream_capture_kb"].value, bool)
+    for key in _BMAD_LOOP_KNOB_DEFAULTS:
+        assert seed[key].layer is PolicyLayer.DEFAULT
+        assert DEFAULT_POLICY[key] == _BMAD_LOOP_KNOB_DEFAULTS[key]
+
+
+@pytest.mark.parametrize(
+    ("key", "override"),
+    [
+        ("review_on_timeout", "salvage-if-done"),
+        ("review_on_timeout", "defer"),
+        ("review_on_status_contradiction", "retry"),
+        ("dev_contract_nudge", False),
+        ("operator_enabled", False),
+        ("stream_capture_kb", 64),
+    ],
+)
+def test_bmad_loop_knob_project_override_wins(key, override):
+    """Matrix row 'Project override wins': a marshal-policy.toml-shaped
+    mapping setting each knob to a legal non-default carries layer=PROJECT
+    and the override value."""
+    effective, findings = compose(project_slug="acme", project={key: override}, flags={})
+    assert findings == ()
+    field = effective.seed_view()[key]
+    assert field.value == override
+    assert field.layer is PolicyLayer.PROJECT
+
+
+def test_bmad_loop_knob_flag_layer_wins_over_project():
+    """The flags layer still composes uniformly for programmatic callers
+    (AD-16's 'no per-key reordering') even though `--set` refuses these
+    keys at the CLI boundary."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={"review_on_timeout": "defer"},
+        flags={"review_on_timeout": "salvage-if-done"},
+    )
+    assert findings == ()
+    field = effective.seed_view()["review_on_timeout"]
+    assert field.value == "salvage-if-done"
+    assert field.layer is PolicyLayer.FLAG
+
+
+@pytest.mark.parametrize(
+    ("key", "bad_value"),
+    [
+        # Matrix row 'Bad enum value'.
+        ("review_on_timeout", "yolo"),
+        ("review_on_timeout", "escalate"),  # the OTHER knob's vocabulary
+        ("review_on_status_contradiction", "salvage-if-done"),  # ditto, reversed
+        ("review_on_status_contradiction", "yolo"),
+        # Matrix row 'Coercible type mismatch': each would be absorbed (or
+        # refused only at load) by bmad-loop's own loaders -- marshal
+        # rejects them first with a clear finding.
+        ("review_on_timeout", 1),
+        ("review_on_status_contradiction", None),
+        ("dev_contract_nudge", 1),
+        ("dev_contract_nudge", "true"),
+        ("dev_contract_nudge", None),
+        ("operator_enabled", "true"),
+        ("operator_enabled", 1),
+        ("stream_capture_kb", True),
+        ("stream_capture_kb", False),
+        ("stream_capture_kb", "256"),
+        ("stream_capture_kb", 3.5),
+        # Matrix row 'Negative capture'.
+        ("stream_capture_kb", -1),
+    ],
+)
+def test_bmad_loop_knob_malformed_value_falls_back_and_reports(key, bad_value):
+    """MRS-POLICY-003 names the key and the layer; the prior layer's value
+    (here the default) stands, so rendering never emits the bad value."""
+    effective, findings = compose(project_slug="acme", project={key: bad_value}, flags={})
+    field = effective.seed_view()[key]
+    assert field.value == DEFAULT_POLICY[key]
+    assert field.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+    assert key in findings[0].message
+
+
+def test_bmad_loop_knob_malformed_flag_keeps_valid_project_value():
+    """The 'excluded, not poisoned' semantics hold for the new knobs too: a
+    malformed flag value must not discard an otherwise-valid project-layer
+    decision."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={"stream_capture_kb": 64},
+        flags={"stream_capture_kb": "lots"},
+    )
+    field = effective.seed_view()["stream_capture_kb"]
+    assert field.value == 64
+    assert field.layer is PolicyLayer.PROJECT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "flag"
+
+
+def test_stream_capture_kb_zero_is_legal():
+    """Matrix row 'Zero capture': 0 = capture nothing is a legitimate
+    policy on both sides (bmad-loop 0.11's own load floor is >= 0)."""
+    effective, findings = compose(
+        project_slug="acme", project={"stream_capture_kb": 0}, flags={}
+    )
+    assert findings == ()
+    field = effective.seed_view()["stream_capture_kb"]
+    assert field.value == 0
+    assert field.layer is PolicyLayer.PROJECT
+
+
 # --- the "excluded, not poisoned" fallback semantics -------------------------
 
 
@@ -1501,7 +1656,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
-                # All 11 seed keys present (an INCOMPLETE mapping would
+                # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
                 # per-value type check this test exists to exercise) --
                 # exactly one value ("gate_mode") is a bare str, not a
@@ -1525,6 +1680,19 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
                     value=600, layer="default", raw_source=600
                 ),
                 "max_parallel": PolicyField(value=1, layer="default", raw_source=1),
+                "review_on_timeout": PolicyField(
+                    value="retry", layer="default", raw_source="retry"
+                ),
+                "review_on_status_contradiction": PolicyField(
+                    value="escalate", layer="default", raw_source="escalate"
+                ),
+                "dev_contract_nudge": PolicyField(
+                    value=True, layer="default", raw_source=True
+                ),
+                "operator_enabled": PolicyField(
+                    value=True, layer="default", raw_source=True
+                ),
+                "stream_capture_kb": PolicyField(value=256, layer="default", raw_source=256),
             },
         )
 
@@ -1540,7 +1708,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_twenty_keys():
+def test_schema_file_declares_the_twenty_eight_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -1570,6 +1738,11 @@ def test_schema_file_declares_the_twenty_keys():
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
         "max_parallel",
+        "review_on_timeout",
+        "review_on_status_contradiction",
+        "dev_contract_nudge",
+        "operator_enabled",
+        "stream_capture_kb",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
 

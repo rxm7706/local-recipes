@@ -33,10 +33,10 @@ def _compose(**project_overrides):
     return effective
 
 
-# --- full composition, all 6 mapped keys ------------------------------------
+# --- full composition, all 11 mapped keys ------------------------------------
 
 
-def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewhere():
+def test_full_composition_maps_all_eleven_keys_and_keeps_template_baseline_elsewhere():
     effective = _compose(
         gate_mode="none",
         max_dev_attempts=5,
@@ -44,10 +44,15 @@ def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewher
         max_followup_reviews=7,
         verify_commands=["pytest -q", "ruff check ."],
         worktree_seed_paths=["extra/seed-dir"],
+        review_on_timeout="salvage-if-done",
+        review_on_status_contradiction="retry",
+        dev_contract_nudge=False,
+        operator_enabled=False,
+        stream_capture_kb=64,
     )
     doc = tomllib.loads(render_policy_toml(effective))
 
-    # the 6 mapped keys
+    # the 6 original mapped keys
     assert doc["gates"]["mode"] == "none"
     assert doc["limits"]["max_dev_attempts"] == 5
     assert doc["limits"]["max_review_cycles"] == 6
@@ -60,6 +65,14 @@ def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewher
         "_bmad/custom/.active-project",
         "extra/seed-dir",
     ]
+    # Story 25.4's 5 bmad-loop 0.10/0.11 knobs: the project override values,
+    # each at its exact TOML scalar type (`is False`: int 0 must not pass).
+    assert doc["review"]["on_timeout"] == "salvage-if-done"
+    assert doc["review"]["on_status_contradiction"] == "retry"
+    assert doc["limits"]["dev_contract_nudge"] is False
+    assert doc["operator"]["enabled"] is False
+    assert doc["verify"]["stream_capture_kb"] == 64
+    assert not isinstance(doc["verify"]["stream_capture_kb"], bool)
 
     # every other key at template baseline, including the 6 hardcoded
     # repo-wide overrides
@@ -80,13 +93,24 @@ def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewher
 
 
 def test_defaults_only_composition_maps_marshal_defaults():
-    """No project overrides at all: the 6 mapped keys reflect Marshal's own
-    built-in DEFAULT_POLICY values, not the harness's stock ones."""
+    """No project overrides at all: the 11 mapped keys reflect Marshal's own
+    built-in DEFAULT_POLICY values, not the harness's stock ones (Story
+    25.4's five deliberately MATCH stock, so their assertions double as the
+    matrix's 'Defaults render' row -- exact TOML scalar types included:
+    `is True` so int 1 can never pass, int-not-bool for the capture cap)."""
     effective = _compose()
     doc = tomllib.loads(render_policy_toml(effective))
     assert doc["gates"]["mode"] == "per-story-spec-approval"
     assert doc["limits"]["max_dev_attempts"] == 2
     assert doc["limits"]["max_review_cycles"] == 3
+    # Story 25.4 (CAP-4): the five bmad-loop 0.10/0.11 knobs at their
+    # deliberate repo defaults (all matching bmad_loop 0.11.0 stock).
+    assert doc["review"]["on_timeout"] == "retry"
+    assert doc["review"]["on_status_contradiction"] == "escalate"
+    assert doc["limits"]["dev_contract_nudge"] is True
+    assert doc["operator"]["enabled"] is True
+    assert doc["verify"]["stream_capture_kb"] == 256
+    assert not isinstance(doc["verify"]["stream_capture_kb"], bool)
     # 2, deliberately not the harness's stock 1 and not a loosened assertion:
     # DEFAULT_POLICY is the only repo-wide home for a repo-wide decision, and a
     # cap of 1 damped five still-recommended follow-up reviews across three
@@ -192,6 +216,55 @@ def test_zero_max_followup_reviews_renders_fine():
     effective = _compose(max_followup_reviews=0)
     doc = tomllib.loads(render_policy_toml(effective))
     assert doc["limits"]["max_followup_reviews"] == 0
+
+
+# --- Story 25.4's knobs: overrides, zero capture, the real 0.11 load gate -----
+
+
+def test_stream_capture_kb_zero_renders_zero():
+    """Matrix row 'Zero capture': 0 = capture nothing is legal on both
+    sides (bmad-loop 0.11's own load floor is >= 0) and renders as the int
+    0, never a bool."""
+    effective = _compose(stream_capture_kb=0)
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert doc["verify"]["stream_capture_kb"] == 0
+    assert not isinstance(doc["verify"]["stream_capture_kb"], bool)
+
+
+def test_rendered_defaults_pass_the_installed_bmad_loop_load():
+    """The AC's real gate, run against the INSTALLED harness: bmad_loop
+    0.11's own ``loads()`` (the same strict/coercive loaders `bmad-loop
+    validate` exercises) must accept the rendered file whole -- including
+    ``_limit_bool``'s strict boolean check on ``limits.dev_contract_nudge``
+    -- and carry every one of the five knobs at its composed value. A
+    direct ``bmad_loop`` import is fine IN A TEST: AD-3's import-linter
+    contract binds the installed package's modules, not test code (the same
+    bounds ``test_harness_bmadloop_preflight.py`` already relies on)."""
+    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
+
+    loaded = bmad_loop_policy.loads(render_policy_toml(_compose()))
+    assert loaded.review.on_timeout == "retry"
+    assert loaded.review.on_status_contradiction == "escalate"
+    assert loaded.limits.dev_contract_nudge is True
+    assert loaded.operator.enabled is True
+    assert loaded.verify.stream_capture_kb == 256
+
+    overridden = bmad_loop_policy.loads(
+        render_policy_toml(
+            _compose(
+                review_on_timeout="salvage-if-done",
+                review_on_status_contradiction="retry",
+                dev_contract_nudge=False,
+                operator_enabled=False,
+                stream_capture_kb=0,
+            )
+        )
+    )
+    assert overridden.review.on_timeout == "salvage-if-done"
+    assert overridden.review.on_status_contradiction == "retry"
+    assert overridden.limits.dev_contract_nudge is False
+    assert overridden.operator.enabled is False
+    assert overridden.verify.stream_capture_kb == 0
 
 
 # --- empty verify_commands ----------------------------------------------------

@@ -13,7 +13,7 @@ source:
   sha256: 7b95d60b6c5dbd37d292de317465b8feddace57778ccfe704eac34c145f51aa5
 
 build:
-  number: 0
+  number: 1
   script:
     - if: unix
       then:
@@ -41,6 +41,14 @@ requirements:
     - nodejs >=22
   run:
     - nodejs >=22
+  ignore_run_exports:
+    # nodejs's run-export pins run to the BUILD-time major (>=26.6,<27 when
+    # built against 26.x), overriding the deliberate floor-only `nodejs >=22`
+    # above (G103) and colliding with the workspace's Node 24 LTS pin —
+    # found 2026-08-22 when the pixi pin could not solve. The explicit run
+    # floor stands alone.
+    from_package:
+      - nodejs
 
 tests:
   - script:
