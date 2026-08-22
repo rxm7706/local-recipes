@@ -841,3 +841,4 @@ conf/conda-forge-packaging-inventory-operations.local.env
 # default (config/settings/base.py) -- ephemeral runtime scratch (AD-6), same
 # category as staticfiles/media, never git-tracked.
 src/platform/.langflow/
+_bmad/render/
