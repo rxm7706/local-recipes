@@ -5,3 +5,16 @@
 #
 # [agents.bmad-agent-pm]
 # description = "Prefers short, bulleted PRDs over narrative drafts."
+
+# `communication_language` and (below) `user_skill_level` were never
+# migrated into the installer-managed _bmad/config.toml / _bmad/bmm's
+# module table (present only in the legacy _bmad/core/config.yaml and
+# _bmad/bmm/config.yaml, which render_skill.py's TOML config path does
+# not read) — every skill referencing {{.communication_language}} or
+# {{.user_skill_level}} halts with "missing config value" without this.
+# Backfilled here to match the legacy YAML values.
+[core]
+communication_language = "English"
+
+[modules.bmm]
+user_skill_level = "intermediate"
