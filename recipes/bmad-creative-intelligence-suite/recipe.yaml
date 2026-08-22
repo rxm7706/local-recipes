@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-creative-intelligence-suite
-  version: "0.2.1"
+  version: "0.3.1"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 2e85ce42e0a98e135694f89e678c9949498708759e13ff525f34216cc4fe1cde
+  sha256: bbd989f61a53597f9e614d1450da6abc245147c20f8818b9f7133c6e1694ccbf
 
 build:
   number: 0
@@ -81,11 +81,11 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33124
-  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-last-checked: "2026-08-21T00:00:00Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T15:59:29Z"
+  cfe-local-build-datetime: "2026-08-21T00:00:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -93,4 +93,11 @@ extra:
 # Header:
 #    # Version bumped 0.2.0 -> 0.2.1 (latest upstream tag) in the
 #    # 2026-07-12 BMAD-recipe sweep.
+#    # Version bumped 0.2.1 -> 0.3.1 in the 2026-08-21 BMAD 6.11.0 sweep.
+#    # Layout unchanged (src/skills: 6 agents + 4 workflows).
+# requirements:
+#    # 0.3.x converts the skills' resolver calls to `uv run`, but uv is
+#    # deliberately NOT declared as a run dep — mirrors the bmad-method
+#    # 6.11.0 recipe convention (skills are markdown instructions executed
+#    # by a coding agent; external tools are per-project prerequisites).
 ####
