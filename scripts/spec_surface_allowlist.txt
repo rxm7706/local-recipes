@@ -108,3 +108,17 @@ conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage 
 # already listed per-file above, so only their data files are added here.
 conf/conda-forge-packaging-inventory-operations.local.env.example    # template for the gitignored .local.env carrying OPENTEAMS_IDENTITY_GIST_ID — the secret-gist id must never be committed; read by ..._openteams_identity.py
 conf/conda-forge-packaging-inventory-operations_curated_groups.json  # curated-group sample fallback (per-vendor package lists, not membership truth) — ..._metrics.py's --curated-config default
+# --- pixi-version enforcement trio + verdict applier + rebuild guard (2026-08-21) ------
+# The pixi-version trio was built 2026-08-21 morning as direct repo tooling after the
+# 4th/5th pin-site drifts broke CI (see feedback_pixi_toml_pin_sites_dont_auto_propagate)
+# — no Dream/Spec chain produced it, so no `surface:` can claim it; delete these lines
+# when a Spec does. apply_verification_verdicts.py is the deferred-work verification
+# campaign's applier (PRs #145-147 lineage), same no-owning-Spec class.
+# cfe_rebuild_guard_check.py IS contract-bound (pyforge-mason Story 6.2, pixi task
+# cfe-rebuild-guard-check) but spec-conda-forge-expert-rebuild's `surface:` never
+# claimed it — allowlisted pending mason claiming it properly; delete then.
+scripts/pixi_version_registry.py     # single source of truth for the 16 pixi pin sites
+scripts/pixi_version_check.py        # detector (pixi task pixi-version-check)
+scripts/bump_pixi_version.py         # mutator (pixi task bump-pixi-version)
+scripts/apply_verification_verdicts.py  # DW verification-campaign verdict applier
+scripts/cfe_rebuild_guard_check.py   # mason Story 6.2 detector awaiting surface claim
