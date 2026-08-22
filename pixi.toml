@@ -1875,6 +1875,7 @@ daphne = ">=4.2.3"                   # Story 13.6: the ASGI host `webhook_host.p
 playwright = ">=1.62.1"                  # CLI + browser driver
 playwright-python = ">=1.62.0"           # the `import playwright` bindings
 pillow = ">=12.3.0"                      # Pillow -- render_gate's contact-sheet compositing
+python-pptx = ">=1.0.2"                  # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-core (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
