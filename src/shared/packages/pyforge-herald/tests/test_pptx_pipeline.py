@@ -563,6 +563,20 @@ def test_add_table_single_row_has_no_header():
     assert cell.text_frame.paragraphs[0].runs[0].font.bold is False
 
 
+def test_table_font_size_falls_back_to_min_pt_when_nothing_fits():
+    """When no candidate size in `_table_font_size`'s descending search
+    range lets a cell's text fit its own budget -- even at `_MIN_PT` --
+    the function still falls through to the shared minimum rather than
+    raising or looping forever."""
+    rows = (("This is a very long cell of text that will not fit", "b"),)
+    assert (
+        pptx_pipeline._table_font_size(
+            rows, cell_width_emu=50_000, cell_height_emu=50_000
+        )
+        == pptx_pipeline._MIN_PT
+    )
+
+
 def test_add_section_label_renders_a_single_theme_colored_run():
     _, slide = _blank_slide()
     textbox = pptx_pipeline.add_section_label(slide, 0, 0, 3_000_000, 400_000, "Act I")
@@ -753,6 +767,134 @@ def test_fill_template_non_positive_shape_geometry_raises(template_path: Path, g
         pptx_pipeline.fill_template(template_path, plan)
 
 
+def test_fill_template_shape_geometry_bool_value_raises(template_path: Path):
+    """``bool`` is an ``int`` subclass in Python -- a shape's geometry
+    field must still reject ``true``/``false``, not silently treat it as
+    1/0 (the same discipline `_resolve_layout`'s layout-reference check
+    already applies, per ``_resolve_shape_geometry``'s own docstring)."""
+    plan = _shape_plan(
+        {
+            "type": "section_label",
+            "text": "x",
+            "left": 0,
+            "top": 0,
+            "width": True,
+            "height": 1_000_000,
+        }
+    )
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        "not-a-list",
+        [],
+        [["a", "b"], ["c"]],  # non-rectangular: differing column counts
+        [["a", 1]],  # non-string cell
+    ],
+)
+def test_fill_template_table_rows_validation_raises(template_path: Path, rows):
+    plan = _shape_plan(
+        {
+            "type": "table",
+            "left": 0,
+            "top": 0,
+            "width": 2_000_000,
+            "height": 1_000_000,
+            "rows": rows,
+        }
+    )
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
+def test_run_fill_invalid_table_rows_writes_no_output_file(
+    template_path: Path, tmp_path: Path
+):
+    plan_path = _write_content_plan(
+        tmp_path,
+        _shape_plan(
+            {
+                "type": "table",
+                "left": 0,
+                "top": 0,
+                "width": 2_000_000,
+                "height": 1_000_000,
+                "rows": [["a", "b"], ["c"]],  # non-rectangular
+            }
+        ),
+    )
+    out_path = tmp_path / "out.pptx"
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.run_fill(template_path, plan_path, out_path)
+    assert not out_path.exists()
+
+
+def test_fill_template_metric_box_missing_value_raises(template_path: Path):
+    plan = _shape_plan(
+        {
+            "type": "metric_box",
+            "left": 0,
+            "top": 0,
+            "width": 1_000_000,
+            "height": 1_000_000,
+            "label": "of findings resolved",
+        }
+    )
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
+def test_fill_template_metric_box_missing_label_raises(template_path: Path):
+    plan = _shape_plan(
+        {
+            "type": "metric_box",
+            "left": 0,
+            "top": 0,
+            "width": 1_000_000,
+            "height": 1_000_000,
+            "value": "42%",
+        }
+    )
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
+def test_fill_template_section_label_missing_text_raises(template_path: Path):
+    plan = _shape_plan(
+        {
+            "type": "section_label",
+            "left": 0,
+            "top": 0,
+            "width": 1_000_000,
+            "height": 1_000_000,
+        }
+    )
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
+def test_fill_template_shape_missing_type_key_raises_a_distinct_message(
+    template_path: Path,
+):
+    """A shape entry missing the ``"type"`` key entirely must raise with
+    a message distinct from an entry carrying an unrecognized ``"type"``
+    value (both would otherwise read identically: "unknown shape type
+    None")."""
+    plan = _shape_plan({"left": 0, "top": 0, "width": 1_000_000, "height": 1_000_000})
+    with pytest.raises(errors.InvalidContentPlanError, match="missing 'type'"):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
+@pytest.mark.parametrize("shape", ["not-a-mapping", 42])
+def test_fill_template_non_mapping_shape_entry_raises(template_path: Path, shape):
+    plan = {"slides": [{"layout": 6, "placeholders": {}, "shapes": [shape]}]}
+    with pytest.raises(errors.InvalidContentPlanError):
+        pptx_pipeline.fill_template(template_path, plan)
+
+
 def test_fill_template_no_shapes_key_behaves_exactly_as_story_15_1(template_path: Path):
     """No `"shapes"` key -- an existing Story 15.1-shaped content_plan
     entry (placeholders only) -- must behave exactly as before this
@@ -871,6 +1013,20 @@ def test_deck_pptx_fill_unknown_placeholder_idx_exits_1_and_writes_nothing(
 ):
     plan_path = _write_content_plan(
         tmp_path, {"slides": [{"layout": 0, "placeholders": {"99": "nope"}}]}
+    )
+    out_path = tmp_path / "out.pptx"
+    exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])
+    assert exit_code == 1
+    assert not out_path.exists()
+    assert "InvalidContentPlanError" in capsys.readouterr().err
+
+
+def test_deck_pptx_fill_unknown_shape_type_exits_1_and_writes_nothing(
+    tmp_path: Path, capsys
+):
+    plan_path = _write_content_plan(
+        tmp_path,
+        _shape_plan({"type": "chart", "left": 0, "top": 0, "width": 1, "height": 1}),
     )
     out_path = tmp_path / "out.pptx"
     exit_code = cli.main(["deck", "pptx-fill", str(plan_path), "-o", str(out_path)])

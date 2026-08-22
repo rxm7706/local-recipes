@@ -413,7 +413,16 @@ def _write_fitted_lines(
     never relying on PowerPoint's own re-flow at open time, since a
     substituted font could re-wrap our measured breaks differently.
     Every run's color is a theme color reference, never a hardcoded RGB
-    (Boundaries & Constraints)."""
+    (Boundaries & Constraints).
+
+    ``fit_text``'s height budget assumes a 1.2x line-height with zero
+    inter-paragraph spacing -- explicitly pinned here (rather than left
+    to theme inheritance) so a template swap can never silently inflate
+    the actual rendered height past what the autofit search accounted
+    for."""
+    paragraph.space_before = Pt(0)
+    paragraph.space_after = Pt(0)
+    paragraph.line_spacing = 1.0
     for index, line in enumerate(fitted.lines):
         if index > 0:
             paragraph.add_line_break()
@@ -648,6 +657,7 @@ def add_table(
         for col_index, cell_text in enumerate(row):
             cell = table.cell(row_index, col_index)
             _reset_margins(cell.text_frame)
+            cell.text_frame.word_wrap = True
             if is_header:
                 cell.fill.solid()
                 cell.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
@@ -781,6 +791,10 @@ def _resolve_one_shape(
     if not isinstance(raw_shape, Mapping):
         raise errors.InvalidContentPlanError(
             f"slide #{slide_index} shape #{shape_index} is not a JSON object"
+        )
+    if "type" not in raw_shape:
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index} is missing 'type'"
         )
     shape_type = raw_shape.get("type")
     if shape_type not in _SHAPE_TYPES:
