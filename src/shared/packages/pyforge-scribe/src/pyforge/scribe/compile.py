@@ -362,7 +362,10 @@ def _read_transcript_surface(
     try:
         proposal = scan_transcripts(transcript_root, memory_root)
     except ValueError as exc:
-        warnings.append(f"transcript surface unavailable -- skipping: {exc}")
+        warnings.append(
+            f"transcript surface unavailable ({exc}) -- this is expected if no "
+            "session transcripts exist yet for this repo"
+        )
         return []
 
     nodes: list[GraphNode] = []
@@ -388,15 +391,26 @@ def _read_transcript_surface(
 
 def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
     """`candidate.timestamp` parsed as ISO-8601 first; falling back to the
-    source file's own mtime -- deliberately NOT `datetime.now()` (unlike the
-    git-surface's unparseable-date fallback above), because `datetime.now()`
-    here would break `compile_graph()`'s own byte-identical-rerun guarantee
-    for any candidate lacking a parseable timestamp.
+    source file's own mtime -- deliberately NOT `datetime.now()` as the FIRST
+    fallback (unlike the git-surface's unparseable-date fallback above),
+    because `datetime.now()` here would break `compile_graph()`'s own
+    byte-identical-rerun guarantee for any candidate lacking a parseable
+    timestamp. The mtime `stat()` call is itself guarded: a transcript file
+    is per-user/local and can be pruned or rotated outside Scribe's control,
+    so it can vanish between `scan_transcripts()` returning its candidates
+    and this stat -- that race degrades to `datetime.now(timezone.utc)`
+    (breaking idempotency only in this narrow, rare race, same tradeoff the
+    git-surface already accepts for its own unparseable-date case) rather
+    than raising and aborting the whole compile.
     """
     try:
         return datetime.fromisoformat(candidate.timestamp)
     except ValueError:
+        pass
+    try:
         return datetime.fromtimestamp(candidate.source_file.stat().st_mtime, tz=timezone.utc)
+    except OSError:
+        return datetime.now(timezone.utc)
 
 
 # --- supersession (Story 2.3) -------------------------------------------------

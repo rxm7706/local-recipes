@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
-from pyforge.scribe.capture import capture
+from pyforge.scribe.capture import _DESCRIPTION_MAX_LEN, _truncate, capture
 from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.graph_store import FlatFileGraphStore
 
@@ -51,12 +52,18 @@ def _init_git_repo_with_commits(repo_root: Path, count: int = 2) -> None:
         _git(repo_root, "commit", "-q", "-m", f"commit {i}")
 
 
-def _assistant_transcript_line(text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z") -> str:
-    entry = {
+def _assistant_transcript_line(
+    text: str, *, timestamp: str | None = "2026-08-20T12:00:00.000Z"
+) -> str:
+    """`timestamp=None` omits the field entirely -- exercises
+    `transcripts.py`'s own `"unknown time"` sentinel for an untimestamped
+    entry, which in turn exercises `compile.py`'s mtime-fallback branch."""
+    entry: dict = {
         "type": "assistant",
-        "timestamp": timestamp,
         "message": {"content": [{"type": "text", "text": text}]},
     }
+    if timestamp is not None:
+        entry["timestamp"] = timestamp
     return json.dumps(entry)
 
 
@@ -303,11 +310,26 @@ def test_compile_never_prompts(tmp_path: Path, memory_root: Path, monkeypatch: p
 
 
 def test_transcript_surface_happy_path_produces_one_node(tmp_path: Path, memory_root: Path) -> None:
+    # Deliberately > 120 chars (the truncation boundary, matching
+    # test_transcripts.py's own truncation-boundary fixture) so
+    # `candidate.snippet` (title) and `candidate.text` (text) are NOT
+    # byte-identical -- a title/text field swap in `_read_transcript_surface`
+    # would otherwise pass unnoticed with a short sentence.
+    long_sentence = (
+        "We decided to migrate the entire ingestion pipeline from the legacy REST "
+        "polling architecture to a fully event-driven Kafka-based system after "
+        "benchmarking showed a forty percent reduction in end-to-end latency "
+        "during peak load testing."
+    )
+    assert len(long_sentence) > 120
+    expected_snippet = _truncate(long_sentence, _DESCRIPTION_MAX_LEN)
+    assert expected_snippet != long_sentence  # sanity: truncation actually occurred
+
     transcript_root = tmp_path / "transcripts"
     _write_transcript_jsonl(
         transcript_root,
         "session-a.jsonl",
-        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+        [_assistant_transcript_line(long_sentence)],
     )
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
@@ -321,9 +343,43 @@ def test_transcript_surface_happy_path_produces_one_node(tmp_path: Path, memory_
     transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
     assert len(transcript_nodes) == 1
     node = transcript_nodes[0]
-    assert node.text == "We decided to use SQLite for the local cache."
+    assert node.text == long_sentence
+    assert node.title == expected_snippet
+    assert node.title != node.text
     assert node.citation == "session-a.jsonl:L1"
     assert node.id == "transcript:session-a.jsonl:L1"
+
+
+def test_transcript_surface_missing_timestamp_falls_back_to_file_mtime(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """`transcripts.py` substitutes its own `"unknown time"` sentinel for an
+    entry with no `timestamp` field at all; `datetime.fromisoformat()` on
+    that sentinel raises `ValueError`, exercising `_transcript_valid_from()`'s
+    mtime-fallback branch."""
+    transcript_root = tmp_path / "transcripts"
+    path = _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [
+            _assistant_transcript_line(
+                "We decided to use SQLite for the local cache.", timestamp=None
+            )
+        ],
+    )
+    expected_valid_from = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert len(transcript_nodes) == 1
+    assert transcript_nodes[0].valid_from == expected_valid_from
 
 
 def test_transcript_surface_curated_covered_content_is_not_double_indexed(
