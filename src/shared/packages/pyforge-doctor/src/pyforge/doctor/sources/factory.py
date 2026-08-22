@@ -1066,6 +1066,16 @@ def classify(path: Path, target: Path) -> str:
     # archives rather than tracks (no pin gating).
     if re.fullmatch(r"planning-artifacts/spike-\d+-[a-z0-9-]+-report\.md", rel):
         return "archive:spike-report"
+    # Readiness assessments at the planning-artifacts root: the fourth
+    # instance of the spike-report lesson. Marshal Story 3.13 (2026-08-12)
+    # left `parallel-fan-out-readiness-assessment.md` — a frozen, dated,
+    # read-only record explicitly disclaiming certification — which fell
+    # through to UNKNOWN and tripped `uncovered` (caught 2026-08-21 by the
+    # meta-test gate during the BMAD 6.11.0 upgrade). Generalized over the
+    # descriptive slug so a future assessment following the same convention
+    # stays covered. A dated one-off record, so it archives (no pin gating).
+    if re.fullmatch(r"planning-artifacts/[a-z0-9-]+-readiness-assessment\.md", rel):
+        return "archive:readiness-assessment"
     return "UNKNOWN"
 
 
