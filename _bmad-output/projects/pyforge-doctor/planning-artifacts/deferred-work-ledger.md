@@ -267,3 +267,14 @@ status: open
   status: closed — Story 13.1 landed 2026-08-21: `pyforge.doctor.sources.backlog_intake` (`Source.BACKLOG_INTAKE`) + the `doctor backlog-intake <identifier>` CLI verb ship the fleet-wide, precisely-id-matched deferred-work surfacing this entry called for.
   raised: 2026-08-21 — raised directly while resolving Epic 11's own closeout; resolved same day once the operator directed the follow-on Spec be written.
   closed: 2026-08-21 — Story 13.1 (`spec-13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic.md`) landed.
+
+## DW-FU-12-4 — A glob-less, trailing-slash spec-surface entry that can never match (foreign defect, surfaced by Story 12.4's review)
+
+`spec-dream-to-code-model-self-verification/SPEC.md:13` declares the surface entry
+`.claude/skills/conda-forge-expert/tests/meta/` — glob-less with a trailing slash, which
+`chain.py::_glob_to_re`'s exact-match rule can never match; the directory is actually
+governed by pyforge-mason's `spec-packaging-factory` blanket glob. Pre-existing and
+marshal-owned (foreign to doctor); surfaced incidentally by Story 12.4's pass-2 review and
+deferred rather than fixed cross-station. Remedy: fix the entry in the owning spec (a real
+glob or the file list), then re-stamp that spec's surface baseline. Severity: low. Status:
+open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.

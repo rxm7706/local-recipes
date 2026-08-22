@@ -746,12 +746,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "55/57",
+            "56/57",
             "stories complete",
             "var(--done)"
           ],
           [
-            "2",
+            "1",
             "remaining",
             ""
           ]
@@ -805,7 +805,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "12.4"
+        "at": "12.5"
       },
       "epics": [
         {
@@ -1150,7 +1150,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "12.4",
-              "pending",
+              "done",
               "Dream chain gap count surfaces in the ambient ATTENTION block"
             ],
             [
@@ -3694,12 +3694,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "50/56",
+            "51/56",
             "stories complete",
             "var(--done)"
           ],
           [
-            "6",
+            "5",
             "remaining",
             ""
           ]
@@ -3741,7 +3741,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "11.4"
+        "at": "12.1"
       },
       "epics": [
         {
@@ -4060,7 +4060,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "11.4",
-              "pending",
+              "done",
               "Isolation and statelessness proven"
             ]
           ]
@@ -4709,7 +4709,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-21 23:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-22 00:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7308,7 +7308,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "in-progress",
           "note": "line 2 — consolidative wrap",
-          "done": 55,
+          "done": 56,
           "total": 57,
           "epics_path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
           "redirect": null
@@ -7330,7 +7330,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "in-progress",
           "note": "next free slot",
-          "done": 50,
+          "done": 51,
           "total": 56,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
@@ -7693,7 +7693,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "55/57",
+        "progress": "56/57",
         "complete": 14,
         "of": 14
       },
@@ -8339,7 +8339,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "50/56",
+        "progress": "51/56",
         "complete": 14,
         "of": 14
       },
@@ -20145,7 +20145,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 12.4",
+        "line": "paused 12.5",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -20270,7 +20270,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "paused 11.4",
+        "line": "paused 12.1",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -20391,7 +20391,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 454,
+    "open": 456,
     "done": 26,
     "triaged": 145,
     "bySeverity": {
@@ -20399,7 +20399,7 @@ window.DASHBOARD_DATA = {
       "high": 1,
       "medium": 15,
       "low": 48,
-      "unspecified": 390
+      "unspecified": 392
     },
     "projects": [
       {
@@ -22047,7 +22047,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-steward",
         "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
-        "open": 74,
+        "open": 75,
         "done": 2,
         "triaged": 1,
         "entries": [
@@ -22582,6 +22582,13 @@ window.DASHBOARD_DATA = {
             "status": "done",
             "severity": "unspecified",
             "triaged": true
+          },
+          {
+            "id": "DW-FU-11-4",
+            "title": "`langflow_integration/tests.py` keeps an unguarded `cursor.fetchone()[0]` — the identical",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
@@ -23588,7 +23595,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 24,
+        "open": 25,
         "done": 2,
         "triaged": 4,
         "entries": [
@@ -23773,6 +23780,13 @@ window.DASHBOARD_DATA = {
             "status": "done",
             "severity": "unspecified",
             "triaged": true
+          },
+          {
+            "id": "DW-FU-12-4",
+            "title": "A glob-less, trailing-slash spec-surface entry that can never match (foreign defect, surfaced by Story 12.4's review)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
@@ -23840,15 +23854,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "mason",
-      "story": "5.4",
-      "epoch": 1787354163,
-      "sha": "7a05d2003",
-      "subject": "mason: Story 5.4 free-inheritance verification — SM-4 recorded, Epic 5 closed"
+      "station": "steward",
+      "story": "11.4",
+      "epoch": 1787357268,
+      "sha": "7c7fcf8fd",
+      "subject": "steward: Story 11.4 - spec done, final_revision stamped"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-21 23:48 UTC",
-    "generatedEpoch": 1787356115
+    "generatedAt": "2026-08-22 00:17 UTC",
+    "generatedEpoch": 1787357860
   },
   "storySpecs": [
     {
@@ -23859,8 +23873,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 55,
-      "tracked": 37,
+      "done": 56,
+      "tracked": 38,
       "gap": 18
     },
     {
@@ -23889,8 +23903,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 50,
-      "tracked": 22,
+      "done": 51,
+      "tracked": 23,
       "gap": 28
     },
     {
@@ -24036,14 +24050,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 50,
-        "backlog": 6,
+        "done": 51,
+        "backlog": 5,
         "blocked": 0,
         "total": 56,
-        "next": "11-4-isolation-and-statelessness-proven",
+        "next": "12-1-the-vanilla-chart-with-an-ocp-overlay",
         "blockedKeys": [],
         "backlogKeys": [
-          "11-4-isolation-and-statelessness-proven",
           "12-1-the-vanilla-chart-with-an-ocp-overlay",
           "12-2-gke-as-a-portability-profile",
           "12-3-air-gap-parity-is-a-failing-check",
@@ -24065,14 +24078,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
           }
         ],
-        "done": 55,
-        "backlog": 2,
+        "done": 56,
+        "backlog": 1,
         "blocked": 0,
         "total": 57,
-        "next": "12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block",
+        "next": "12-5-the-spec-surface-baseline-write-race-is-closed",
         "blockedKeys": [],
         "backlogKeys": [
-          "12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block",
           "12-5-the-spec-surface-baseline-write-race-is-closed"
         ],
         "state": "ready"
@@ -24197,8 +24209,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 405,
-      "backlog": 56,
+      "done": 407,
+      "backlog": 54,
       "blocked": 0,
       "total": 461
     }
@@ -24219,13 +24231,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 57,
-        "done": 55,
+        "done": 56,
         "blocked": 0,
         "epics": 13,
         "epicsDone": 12,
         "complete": false,
         "running": false,
-        "projected": 55
+        "projected": 56
       },
       {
         "key": "herald",
@@ -24274,13 +24286,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 56,
-        "done": 50,
+        "done": 51,
         "blocked": 0,
         "epics": 13,
-        "epicsDone": 10,
+        "epicsDone": 11,
         "complete": false,
         "running": false,
-        "projected": 50
+        "projected": 51
       },
       {
         "key": "warden",
@@ -24296,15 +24308,15 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 461,
-      "done": 405,
+      "done": 407,
       "blocked": 0,
       "epics": 93,
-      "epicsDone": 78
+      "epicsDone": 79
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 405
+      "projected": 407
     }
   }
 };

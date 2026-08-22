@@ -32,7 +32,7 @@ development_status:
   12-1-the-hygiene-verification-catalog-stays-a-maintained-current-artifact: done
   12-2-the-exemplar-standard-conformance-table-is-refreshed-and-re-verified: done
   12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match: done
-  12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: backlog
+  12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: done
   12-5-the-spec-surface-baseline-write-race-is-closed: backlog
   13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic: done
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done

@@ -617,3 +617,12 @@ status: open
   promoted: 2026-08-21 — added directly by the bmad-dev-auto implementation/orchestration pass
   that hit this blocker; resolved the same day via an approved correct-course pass, matching
   how DW-11-2-1's own Pattern-A blocker was resolved.
+
+### DW-FU-11-4
+
+`langflow_integration/tests.py` keeps an unguarded `cursor.fetchone()[0]` — the identical
+pattern Story 11.4's gates forced a None-guard for in the story's own file (mypy `[index]`),
+latent in the sibling only because it sits outside the `mypy platformapp config tests`
+surface. Pre-existing; Story 11.4 treated the file as read-only. Remedy: None-guard it and
+consider widening the mypy surface to the integration test modules. Severity: low. Status:
+open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.
