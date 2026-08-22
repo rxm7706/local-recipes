@@ -732,6 +732,12 @@ Thumbs.db
 # tracked either way.
 _bmad-output/projects/*/planning-artifacts/specs.lock
 
+# spec_surface_check.py --write-baseline (Story 12.5, DW-13-5-2/-3): the
+# advisory-flock sidecar (deliberately never unlinked) and the atomic-replace
+# temp file next to the committed baseline.
+scripts/.spec-surface-baseline.json.lock
+scripts/.spec-surface-baseline.json.tmp
+
 # BMAD: personal config (user-scoped) and per-developer artifacts.
 # Note: _bmad/custom/*.user.toml is already handled by _bmad/custom/.gitignore.
 # Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
