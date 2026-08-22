@@ -706,6 +706,34 @@ jobs:
       - name: Verify src/platform exists on this ref
         run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
 
+      # Found live (2026-08-22, PR #618's first CI run): this job stacks
+      # THREE real disk consumers on one `ubuntu-latest` runner -- the
+      # `platform-dev` pixi env below (composes the 395-package
+      # `python-agent-platform` solve for helm/kubectl on the RUNNER
+      # itself), `docker build`'s own build cache (the builder stage
+      # SEPARATELY solves that same env again, inside the container), and
+      # `kind load docker-image` duplicating the ~2GB final image a second
+      # time into the kind node's own containerd storage. Together they
+      # exceeded the runner's default free disk (~14GB of ~84GB total --
+      # the rest is preinstalled toolchains this job never touches), and
+      # `kind load` failed mid-run: "write .../django-5.2.15.dist-info/
+      # RECORD: no space left on device" (run 32588653903, job
+      # 97068844446). This is the well-known GitHub-hosted-runner fix:
+      # reclaim the large preinstalled SDKs no step here uses. `|| true` on
+      # each removal -- runner images change contents/paths over time, and
+      # a path that's already absent is not a failure.
+      - name: Free disk space (reclaim unused preinstalled toolchains)
+        run: |
+          echo "Before:"; df -h /
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /opt/az || true
+          echo "After:"; df -h /
+
       # AD-16: helm and kubectl come from the `platform-dev` pixi
       # environment, never a system install -- mirrors `dashboard.yml`'s
       # single-environment usage, which activates it onto PATH so later
@@ -777,6 +805,19 @@ jobs:
       # I/O & Edge-Case Matrix names this gotcha explicitly).
       - name: Build the platform image (docker, non-latest tag)
         run: docker build -f src/platform/Containerfile -t platform:gke-smoke .
+
+      # Belt-and-suspenders alongside the disk-reclaim step above: BuildKit
+      # retains the builder stage's OWN intermediate layers (a full second
+      # solve of the `python-agent-platform` pixi env, inside the container)
+      # in its build cache after the build finishes -- `platform:gke-smoke`
+      # itself is untouched (a tagged image, not cache) since `kind load`
+      # below needs it. This is exactly the disk `kind load` ran out of
+      # live (see the disk-reclaim step's comment) at the moment it needs
+      # headroom most, so free it right before that step, not after.
+      - name: Reclaim docker build cache
+        run: |
+          docker builder prune -af
+          df -h /
 
       # No registry push -- `kind load` sideloads the image directly into
       # every node's containerd, which is what makes the non-`latest` tag
