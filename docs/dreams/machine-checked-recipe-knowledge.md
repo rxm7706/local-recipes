@@ -2,7 +2,7 @@
 title: The CFE failure catalog is generated from the skill spec, every row lint-verified against its enforcing check
 type: dream
 owner: mason
-status: dreamt
+status: specified   # 2026-08-22 — spec + station decomposition landed same day
 ---
 
 # Machine-checked recipe knowledge

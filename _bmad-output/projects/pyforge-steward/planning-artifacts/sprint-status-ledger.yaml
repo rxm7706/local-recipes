@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 100
+# stories: 113
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -40,6 +40,8 @@ development_status:
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: backlog
   13-1-workspace-verbs-over-git-worktree: backlog
   13-2-status-and-the-feed-mirror-decision: backlog
+  13-3-a-repo-set-opens-as-one-workspace: backlog
+  13-4-the-set-reports-and-tears-down-safely: backlog
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: backlog
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: backlog
   14-3-clobbered-custom-surfaces-are-caught-and-re-applied: backlog
@@ -49,6 +51,13 @@ development_status:
   15-2-one-command-advances-a-stale-package-end-to-end: backlog
   15-3-five-modules-wire-through-the-provisioning-verb: backlog
   15-4-the-upgrade-gate-spot-checks-one-native-path-per-class: backlog
+  16-1-dependencies-are-pixi-sourced-single-authority: backlog
+  16-2-startup-refuses-misconfiguration-two-stage-and-named: backlog
+  16-3-every-process-speaks-structlog-otel: backlog
+  16-4-policy-is-a-test-suite: backlog
+  16-5-identity-is-oidc-delegated-no-local-passwords: backlog
+  17-1-steward-init-shell-init-detect-and-prepare-the-machine: backlog
+  17-2-steward-setup-initrepo-take-the-machine-to-green: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
@@ -98,6 +107,10 @@ development_status:
   epic-14-retrospective: optional
   epic-15: backlog
   epic-15-retrospective: optional
+  epic-16: backlog
+  epic-16-retrospective: optional
+  epic-17: backlog
+  epic-17-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

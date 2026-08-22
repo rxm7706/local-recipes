@@ -2,7 +2,7 @@
 title: Every package has one provenance trail and one eligibility answer, from any source
 type: dream
 owner: warden
-status: dreamt
+status: specified   # 2026-08-22 — spec + station decomposition landed same day
 ---
 
 # Every package has one provenance trail and one eligibility answer, from any source

@@ -1255,3 +1255,17 @@ same fail-open budget, `packages_checked` rises accordingly, and the DW-14-1-1 f
 **Then** channel-vs-recipe and recipe-vs-upstream drift are warn-only findings on the
 same surfaces as Stories 10.3/14.1 — a fixture of the bmad-method 6.3.0 relic fires
 channel-drift; offline degrades silently.
+
+
+## Epic 16: Sibling dreams directories don't drift silently
+
+Decomposes `spec-sibling-dreams-drift` CAP-1 (seeded 2026-08-22 from the seven-repo
+analysis — the sibling PyForge instantiation shares 13/15 dream titles, independently
+evolving, owners diverging).
+
+### Story 16.1: The shared-title diff is an ambient finding
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-sibling-dreams-drift CAP-1
+**Given** local `docs/dreams/` and the sibling's (operator token) **Then** a doctor source
+reports shared titles with diverging status/owner/content-hash — warn-only, fail-open
+unreachable, no sibling prose stored — on the doctor report + fleet-picture ATTENTION;
+fixture reproduces the 2026-08-22 demonstrated drift; offline yields nothing.

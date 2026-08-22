@@ -2,7 +2,7 @@
 title: A custom-branded Python distributable, if this repo ever needs one
 type: dream
 owner: mason
-status: dreamt
+status: specified   # 2026-08-22 — reframed as an EXTENSION-POINT (operator): the fleet ships the socket/contract; the capability develops separately (incl. air-gapped) — see the spec's Extension contract section
 ---
 
 # A custom-branded Python distributable, if this repo ever needs one

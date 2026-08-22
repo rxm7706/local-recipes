@@ -2,7 +2,7 @@
 title: A shared base container image with pixi already installed, if this repo ever ships one
 type: dream
 owner: mason
-status: dreamt
+status: specified   # 2026-08-22 — spec + station decomposition landed same day
 ---
 
 # A shared base container image with pixi already installed, if this repo ever ships one

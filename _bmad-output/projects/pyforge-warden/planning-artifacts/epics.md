@@ -577,3 +577,46 @@ So that the HARD-gate story is a mechanical schema bump, not design work on the 
 **Given** the decision record, **When** 6.1 executes, **Then** 6.1 implements it without new design decisions — 6.1 remains the sole schema writer and the HARD gate (one amendment, one bump; this spike changes no code and no schema).
 
 
+
+## Epic 7: One provenance trail, one eligibility answer
+
+**Spec binding.** Decomposes `spec-package-inventory-eligibility` CAP-1..3 (2026-08-22;
+sibling same-name dream = pattern reference only; FABRIC corpus Apache-2.0 with notices).
+
+### Story 7.1: SourceContract adapters + the identity API
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-package-inventory-eligibility CAP-1
+**Given** two heterogeneous evidence sources **Then** each ingests through a pluggable
+fetch/parse/validate/ingest adapter (feeds.py's shape generalized) without touching the
+union core, and the Component identity API (PEP-503-canonical, purl-derived) collapses
+`scikit_learn`/`sklearn` to one identity — adapter-facing, standalone.
+
+### Story 7.2: The eligibility union carries its provenance
+**Type:** feature • **Effort:** M • **Deps:** S-7.1 • **FR/AD:** spec-package-inventory-eligibility CAP-2
+**Given** required-authority sources (config-driven; default decided here) **Then** the
+union computes `eligible-union`/`observed-in-use`/`flagged-for-review` — distinct from the
+per-project Status rungs — with every result carrying ProvenanceEntry trails reproducible
+from provenance alone.
+
+### Story 7.3: CycloneDX out, the corpus in
+**Type:** feature • **Effort:** S • **Deps:** S-7.2 • **FR/AD:** spec-package-inventory-eligibility CAP-3
+**Given** sbom.py's renderer + purl discipline **Then** output is deterministic CycloneDX,
+and FABRIC's 13-archetype × 6-format manifest corpus lands as fixtures (notices kept)
+exercising every adapter.
+
+## Epic 8: A web face for the compliance factory
+
+**Spec binding.** Decomposes `spec-compliance-factory-web-face` CAP-1..2 (FABRIC-shaped;
+engines stay canonical, never reimplemented).
+
+### Story 8.1: Upload runs the real engines, async
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-compliance-factory-web-face CAP-1
+**Given** an uploaded manifest (safe-loader-only validation, the supported-format matrix)
+**Then** a Celery job calls the EXISTING warden/atlas engines (keys-not-blobs — blobs
+never transit broker/DB) and returns a job id that completes — host decision (platform-app
+vs standalone) resolved here with a dated entry. **Consult (2026-08-22):** atlas's parked `spec-enterprise-data-models-and-apis` — if this face grows a queryable model/API, that pattern unparks INTO this chain.
+
+### Story 8.2: Results render with derived progress
+**Type:** feature • **Effort:** M • **Deps:** S-8.1 • **FR/AD:** spec-compliance-factory-web-face CAP-2
+**Given** engine output **Then** SBOM + vuln/license/currency reports render byte-equal to
+the CLI on the same input, and progress derives from phase position (`_phase_guard`
+pattern — monotonic by construction, no phase chooses its own number).

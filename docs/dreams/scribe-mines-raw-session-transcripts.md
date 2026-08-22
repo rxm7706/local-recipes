@@ -2,7 +2,7 @@
 title: Scribe reaches past curated memory into the raw session transcripts underneath it
 type: dream
 owner: scribe
-status: dreamt
+status: specified   # 2026-08-22 — spec + station decomposition landed same day
 ---
 
 # Scribe reaches past curated memory into the raw session transcripts underneath it

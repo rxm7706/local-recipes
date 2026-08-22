@@ -2,7 +2,7 @@
 title: A new contributor or agent is productive on this repo without tribal knowledge
 type: practice
 owner: steward
-status: dreamt
+status: specified   # 2026-08-22 — spec-developer-machine-bootstrap, decomposed into the station backlog same day
 ---
 
 # A new contributor or agent is productive on this repo without tribal knowledge

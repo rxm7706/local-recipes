@@ -981,7 +981,7 @@ no root); and nothing in the core chart is OCP-specific.
 **Given** a build + deploy executed with external egress blocked **Then** it succeeds
 end-to-end — image from an internal/local registry, lockfile resolved from mirror-only
 channels, zero CDN references in served assets, credentials via secret mounts only — and any
-external reference is a FAILING check, not a warning.
+external reference is a FAILING check, not a warning. **Closeout consult (2026-08-22):** re-evaluate mason's parked `spec-miniforge-installer` — unpark if the air-gap run surfaces an offline-Python-distributable need beyond pixi+mirrored channels; else recommend archive-as-never-needed.
 
 ## Epic 13: Scratch worktrees become one command
 
@@ -1010,6 +1010,27 @@ cost (dirty/clean, ahead/behind, merged?) that `ls` deliberately does not, and t
 RESOLVES the spec's two open questions with dated Spec Change Log entries: whether the Tier-3
 feed rsync-mirror step becomes its own verb or joins `start`, and whether `workspace update`
 exists at all — decisions recorded, not silently implemented.
+
+### Epic 13 extension (2026-08-22): the multi-repo layer — Stories 13.3–13.4
+
+**Spec binding.** Decomposes `spec-multi-repo-workspaces` CAP-1..2 (seeded from the
+sibling org's developer-workspace-management dream — pattern only, unlicensed; the
+extend-vs-new decision is recorded in that spec's memlog: extend, because 13.1/13.2 are
+this layer's substrate).
+
+### Story 13.3: A repo set opens as one workspace
+**Type:** feature • **Effort:** M • **Deps:** S-13.1 • **FR/AD:** spec-multi-repo-workspaces CAP-1
+**Given** a declarative `[projects.<slug>]` repo set **Then** `steward workspace start
+<feature>` cuts one worktree per registered repo on branch `f-<feature>` and generates a
+`.code-workspace`; missing members are named, never guessed — and the registry-location
+open question resolves here with a dated entry.
+
+### Story 13.4: The set reports and tears down safely
+**Type:** feature • **Effort:** S • **Deps:** S-13.3 • **FR/AD:** spec-multi-repo-workspaces CAP-2
+**Given** an open workspace **Then** one command reports dirty/unpushed across the set,
+removal refuses while any member is dirty (naming it), `--merged-only` honors the
+archive-not-delete discipline per member, and the own-worktrees-only HARD rule holds
+set-wide (loop homes invisible, test-planted).
 
 ## Epic 14: The BMAD core upgrades repeatably
 
@@ -1168,3 +1189,63 @@ board created and repo-linked, queryable end to end; kin-declared to
 `spec-jira-github-projects-sync` Mode B, never a second sync engine.
 
 **Stories 12.4–12.6 and 12.8 clear to dispatch (12.8 after 12.4); 12.7 follows all three chart/bring-up stories.**
+
+## Epic 16: The platform host earns its 15 factors
+
+**Spec binding.** Decomposes `spec-platform-fifteen-factors` CAP-1..5 (seeded 2026-08-22
+from the seven-repo external analysis; MIT reference implementations
+django-15-factor-base + devinfra — borrow with notices; intake report carries the
+inventory). **HARD:** AD-4/AD-17 topology and the 12.1 chart contract untouched — factors
+land as seams, not rewrites.
+
+### Story 16.1: Dependencies are pixi-sourced, single-authority
+**Type:** chore • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-fifteen-factors CAP-5
+**Given** `src/platform/requirements/*.txt` **Then** pixi.toml (the existing platform
+features) becomes the sole dependency authority — CI lanes and both Containerfiles build
+from pixi alone, requirements files retired, docs updated; suites green.
+
+### Story 16.2: Startup refuses misconfiguration, two-stage and named
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-platform-fifteen-factors CAP-3
+**Given** a missing/invalid required setting **Then** boot fails fast in a validation
+stage that names the setting and its remedy before any app import side effects —
+fixture-proven for each required key.
+
+### Story 16.3: Every process speaks structlog + OTel
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-platform-fifteen-factors CAP-2
+**Given** a request that fans into Celery **Then** structured logs carry request_id/
+user_id/trace_id across web and worker, OTLP export activates only when the endpoint is
+configured, and one trace correlates the hop end-to-end — asserted in tests.
+
+### Story 16.4: Policy is a test suite
+**Type:** feature • **Effort:** S • **Deps:** 16.1 • **FR/AD:** spec-platform-fifteen-factors CAP-4
+**Given** the dependency/credential-surface/typing/coverage policies **Then** each is an
+executable test that reds on drift (the 15-factor repo's policy-suite pattern) — wired
+into the platform CI lanes.
+
+### Story 16.5: Identity is OIDC-delegated, no local passwords
+**Type:** feature • **Effort:** L • **Deps:** 16.2 • **FR/AD:** spec-platform-fifteen-factors CAP-1
+**Given** a Keycloak realm-as-code local substrate (devinfra pattern: aud+roles claims,
+reimport round-trip) **Then** identity keys on `idp_subject`, staff/superuser derive from
+IdP group claims per-authentication (unmatched groups ignored-and-logged), local
+passwords and the createsuperuser doc-path retire, and a local-dev persona/JWT minting
+path exists — end-to-end login proven locally.
+
+**Epic 16 clears to dispatch on 16.1/16.2/16.3; 16.4 after 16.1; 16.5 after 16.2.**
+
+## Epic 17: A fresh machine reaches validate-fast through steward verbs
+
+**Spec binding.** Decomposes `spec-developer-machine-bootstrap` CAP-1 (seeded 2026-08-22;
+the sibling org's command surface as pattern only). Consumes provision --env/--runner,
+the 12.4 bring-up, and Epic 16's substrate — never duplicates them.
+
+### Story 17.1: steward init/shell-init detect and prepare the machine
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-developer-machine-bootstrap CAP-1
+**Given** a machine with unknown tooling **Then** `steward init` reports each prereq
+(pixi/git/gh/podman + floors from the pixi version registry) with a named remedy, and
+`shell-init` emits PATH/completions/env — both idempotent, `--json` for automation.
+
+### Story 17.2: steward setup/initrepo take the machine to green
+**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-developer-machine-bootstrap CAP-1
+**Given** a passing `init` **Then** `setup` clones + pixi-installs + wires hooks and
+`initrepo` onboards a repo, ending at validate-fast passing — proven in a clean
+container, zero improvised steps.

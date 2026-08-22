@@ -2,7 +2,7 @@
 title: Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists
 type: dream
 owner: herald
-status: dreamt
+status: specified   # 2026-08-22 — UNPARKED same day (Marp inadequacy proven + operator named the 21-station stakeholder audience); decomposed as herald Epic 15
 ---
 
 # Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists

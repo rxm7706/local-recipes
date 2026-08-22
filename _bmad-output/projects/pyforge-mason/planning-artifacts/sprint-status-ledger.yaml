@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 54
+# stories: 65
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -56,6 +56,11 @@ development_status:
   6-2-the-divergence-and-endgame-guard-proven-red-first: done
   6-3-pilot-slice-recipe-generation-built-and-parallel-validated: done
   6-4-the-re-scope-gate-measured-cost-recorded-decision: done
+  7-1-the-failure-catalog-derives-from-the-skill-spec: backlog
+  7-2-the-pointers-lint-and-the-drift-gates: backlog
+  8-1-the-convention-is-written-and-guarded: backlog
+  9-1-the-repos-ci-is-consumable-via-workflow-call: backlog
+  9-2-the-air-gap-distribution-contract-has-a-socket: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog
@@ -68,3 +73,9 @@ development_status:
   epic-5-retrospective: optional
   epic-6: done
   epic-6-retrospective: optional
+  epic-7: backlog
+  epic-7-retrospective: optional
+  epic-8: backlog
+  epic-8-retrospective: optional
+  epic-9: backlog
+  epic-9-retrospective: optional

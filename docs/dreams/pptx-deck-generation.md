@@ -2,7 +2,7 @@
 title: A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output
 type: dream
 owner: herald
-status: dreamt
+status: specified   # 2026-08-22 — UNPARKED same day (Marp inadequacy proven + operator named the 21-station stakeholder audience); decomposed as herald Epic 15
 ---
 
 # A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output

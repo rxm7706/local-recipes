@@ -2,7 +2,7 @@
 title: Sibling dreams directories don't drift silently
 type: dream
 owner: doctor
-status: dreamt
+status: specified   # 2026-08-22 — spec-sibling-dreams-drift, decomposed into the station backlog same day
 ---
 
 # Sibling dreams directories don't drift silently

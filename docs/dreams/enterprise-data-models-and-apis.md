@@ -2,7 +2,7 @@
 title: A normalized data model and REST API pattern, waiting for a PyForge-native subject
 type: dream
 owner: atlas
-status: dreamt
+status: specified   # 2026-08-22 — reframed as an EXTENSION-POINT (operator): the fleet ships the socket/contract; the capability develops separately (incl. air-gapped) — see the spec's Extension contract section
 ---
 
 # A normalized data model and REST API pattern, waiting for a PyForge-native subject

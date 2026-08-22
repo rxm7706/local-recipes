@@ -2,7 +2,7 @@
 title: Build a conda-forge packaging inventory from scratch as a continuous intake engine
 type: dream
 owner: atlas
-status: dreamt
+status: specified   # 2026-08-22 — spec + station decomposition landed same day
 ---
 
 # Build a conda-forge packaging inventory from scratch as a continuous intake engine

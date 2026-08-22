@@ -1491,3 +1491,56 @@ from this decision. **Deps:** S-6.3.
   (python-agent-platform's `src/platform/` render, Story 10.1; steward's dashboard); CAP-2
   (the templating engine) explicitly parked on the dream's own third-surface trigger. No
   stories are minted here until that trigger fires — this entry is the chain reference.
+
+## Epic 7: Machine-checked recipe knowledge
+
+**Spec binding.** Decomposes `spec-machine-checked-recipe-knowledge` CAP-1..2 (seeded from
+the 2026-08-22 seven-repo analysis; auto-recipe pattern, unlicensed — pattern only).
+Rules 1/2 govern (CFE surface).
+
+### Story 7.1: The failure catalog derives from the skill spec
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-machine-checked-recipe-knowledge CAP-1
+**Given** SKILL.md's G-corpus **Then** `failure-catalog.yaml` regenerates deterministically —
+one row per gotcha class with greppable `symptom_signature` tokens and an `enforced_by:`
+pointer or explicit null — derived-artifact discipline (hand edits detectably wrong).
+
+### Story 7.2: The pointers lint and the drift gates
+**Type:** feature • **Effort:** S • **Deps:** S-7.1 • **FR/AD:** spec-machine-checked-recipe-knowledge CAP-2
+**Given** the catalog **Then** every non-null `enforced_by` resolves against the live CFE
+check/test surface, catalog↔SKILL.md drift fails CI, and the null-rows report is the
+machine-check backlog — planting a bogus pointer or editing a gotcha without regenerating
+reds the suite.
+
+## Epic 8: One pixi base-layer discipline across the Containerfiles
+
+**Spec binding.** Decomposes `spec-pixi-container-image` CAP-1 (the Dream's trigger FIRED
+— three Containerfiles ship; premise corrected in the Dream).
+
+### Story 8.1: The convention is written and guarded
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pixi-container-image CAP-1
+**Given** the three Containerfiles (root, src/platform, compose/dbgpt) **Then** one
+documented base-layer convention holds (registry-pinned `ghcr.io/prefix-dev/pixi` tags,
+multi-stage materialization, secrets only via `--mount=type=secret`) with a guard test
+that reds on a planted ENV-credential or unpinned base.
+
+## Epic 9: External integration seams
+
+**Spec binding.** The two stub stories minted by the 2026-08-22 extension-point reframing
+(operator decision): the fleet ships SOCKETS so these capabilities develop and integrate
+separately — including as air-gapped solutions — never as core builds. Contracts live in
+`spec-reusable-cicd-workflows` and `spec-miniforge-installer` (§ Extension contract).
+
+### Story 9.1: The repo's CI is consumable via workflow_call
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-reusable-cicd-workflows (extension contract)
+**Given** the existing plain-Actions workflows **Then** a thin `on: workflow_call`
+reusable wrapper exists with documented inputs/secrets, provably consumable from another
+repo via `uses:` (and vendorable where egress is blocked) — conda-forge-tracker is the
+named first candidate consumer; the 63-family shape stays out of scope.
+
+### Story 9.2: The air-gap distribution contract has a socket
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-miniforge-installer (extension contract; coordinate with steward 12.3)
+**Given** no distributable exists or is built here **Then** the contract doc (mirrored
+channel set, pixi bootstrap path, verification hooks), an EMPTY backend registry
+(`_SUPPORTED_MODULES` precedent), and a shape-validating test ship — so any external
+installer registers and validates as a separate deliverable; 12.3's air-gap run consumes
+the same contract.

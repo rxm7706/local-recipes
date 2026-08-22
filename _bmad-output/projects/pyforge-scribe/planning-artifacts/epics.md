@@ -258,3 +258,22 @@ So that I start already knowing what the team knows, instead of guessing or re-d
 - **All 9 stories are sized for single-dev-agent completion**, matching the architecture's module breakdown (`cli.py`+scaffold, `capture.py`, `promote.py` ×2, seed-data proof, `graph_store.py`+harness, `compile.py`, supersession logic, `recall.py`).
 - **UX Design Requirements:** N/A, confirmed above — no story introduces a UX gap.
 - **No epic organized by technical layer** — Epic 1 and Epic 2 each deliver complete, independently-valuable user capability (capture+promotion; compile+recall), matching the PRD's own Wave framing.
+
+## Epic 3: Scribe reaches the raw transcripts
+
+**Spec binding.** Decomposes `spec-scribe-mines-raw-session-transcripts` CAP-1..2
+(2026-08-22; the fleet's proven highest-fidelity recovery source, systematized).
+
+### Story 3.1: The scanner surfaces what sessions said but memory missed
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-scribe-mines-raw-session-transcripts CAP-1
+**Given** the repo's raw `.jsonl` transcripts (22/161MB live) **Then** promotion
+CANDIDATES — discussed-never-curated decisions/facts — surface with transcript+position
+provenance into the existing `capture --promote` review flow, never auto-promoted;
+curated-covered content stays quiet; the scan-economics question (incremental-by-mtime vs
+full) resolves here.
+
+### Story 3.2: Transcripts join the compile sources
+**Type:** feature • **Effort:** S • **Deps:** S-3.1 • **FR/AD:** spec-scribe-mines-raw-session-transcripts CAP-2
+**Given** Epic 2's knowledge-graph compile source list **Then** raw transcripts register
+alongside git history/memlogs/retros/CHANGELOGs/dreams with the same provenance
+discipline — the next Scribe layer cannot re-miss them.

@@ -415,3 +415,26 @@ with more than a stub. Against `presentations/agentic-sdlc/` today it flags exac
 ("In action"), whose three `<image-slot>` panels are documented as deliberately unfilled — a
 live true positive; a deck with every slot filled reports clean. Explicitly NOT the source
 org's PowerPoint-specific "Click to add"/Lorem-ipsum regex.
+
+## Epic 15: Editable decks — the PowerPoint-native pipeline
+
+**Spec binding.** Decomposes `spec-pptx-deck-generation` CAP-1 + `spec-pptx-custom-shapes`
+CAP-1 — UNPARKED 2026-08-22: Marp inadequacy proven (shipped exports are background-image
+slides, zero text runs) AND the operator named the audience (the 21-station deck program
+delivered to stakeholders who edit). Sibling-org blueprint = pattern only, unlicensed.
+Coexists with the HTML/Marp pipeline; never replaces it.
+
+### Story 15.1: Template-parse-then-fill produces a genuinely editable deck
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pptx-deck-generation CAP-1
+**Given** a .potx/.pptx template (own-template question resolved here with a dated entry)
+**Then** it parses once into a `spec.json` machine contract, an agent's
+`content_plan.json` fills placeholders mechanically — raw OOXML never hand-written — and
+an existing station deck renders to a .pptx whose every text run edits cleanly in
+PowerPoint (round-trip proven).
+
+### Story 15.2: Dense content renders as shapes that fit
+**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-pptx-custom-shapes CAP-1
+**Given** content no placeholder anticipates **Then** card/metric-box/table/section-label
+calls render editable objects into 15.1's decks with Pillow real-font-measured autofit
+(wrap, shrink, orphan rebalancing) — the densest six-act appendix slide fits, measured
+not guessed.

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: scribe
-# stories: 13
+# stories: 17
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
   1-2-claude-md-wiring-team-memory-loads-automatically: done
@@ -23,7 +23,11 @@ development_status:
   2-2-nightly-compile-from-named-tool-surfaces: done
   2-3-fact-supersession-in-the-compiled-graph: done
   2-4-scribe-recall-grounded-cited-answers: done
+  3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: backlog
+  3-2-transcripts-join-the-compile-sources: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
+  epic-3: backlog
+  epic-3-retrospective: optional

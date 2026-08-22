@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 84
+# stories: 88
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -43,6 +43,8 @@ development_status:
   14-1-gate-report-interface: done
   14-2-headless-render-gate: done
   14-3-image-slot-scan: done
+  15-1-template-parse-then-fill-produces-a-genuinely-editable-deck: backlog
+  15-2-dense-content-renders-as-shapes-that-fit: backlog
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
@@ -82,6 +84,8 @@ development_status:
   epic-13-retrospective: optional
   epic-14: backlog
   epic-14-retrospective: optional
+  epic-15: backlog
+  epic-15-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

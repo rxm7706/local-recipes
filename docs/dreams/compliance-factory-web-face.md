@@ -2,7 +2,7 @@
 title: A web face for the compliance factory — upload a manifest, watch warden and atlas analyze it
 type: dream
 owner: warden
-status: dreamt
+status: specified   # 2026-08-22 — spec + station decomposition landed same day
 ---
 
 # A web face for the compliance factory

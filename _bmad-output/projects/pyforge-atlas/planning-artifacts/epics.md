@@ -1636,3 +1636,25 @@ edits to `factory/lasuite.py` and the no-inline-IO gate green **And** that same 
 is recorded as the attended session's acceptance checklist (per the spec's verification-
 home open question) — executing the ATTENDED live bring-up stays out of scope.
 
+
+## Epic 16: The packaging-inventory intake engine, governed
+
+**Spec binding.** Decomposes `spec-conda-forge-packaging-inventory-operations` CAP-1..2 —
+chartering the quartet (runner/prompt/config/replay) that already runs allowlisted in
+scripts/+conf/; the allowlist's own delete-when-specced rule executes at 16.1.
+
+### Story 16.1: The from-scratch run is a chartered capability
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-1
+**Given** a clean workspace **Then** the quartet regenerates the full inventory from the
+workbook + live indexes + curated feeds (Master Prompt v3.0 bound): PEP-503 identity +
+provenance + timestamped verify per package, inspectable P1–P10/Score ranking, dated
+append-only identity tabs, gist id via env — and the spec's `surface:` claims the quartet
+with the allowlist lines DELETED. The parselmouth fold-placement question resolves here
+with a dated entry.
+
+### Story 16.2: Handoffs are execution-ready
+**Type:** feature • **Effort:** M • **Deps:** S-16.1 • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-2
+**Given** a completed run **Then** the OpenTeams universe emits one `[Conda-Forge
+Packaging] {name}` issue per library + the dated Mason handoff tab (four dispositions),
+the AOSS-Free extra queue never expands the universe, and the three dashboard views render
+from the live identity tab — Mason consumes a tab without questions.
