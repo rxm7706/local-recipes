@@ -30,7 +30,7 @@ dependencies = [
     "tomlkit>=0.13,<0.13.3",
     "psutil>=7.2.2",
     "jsonschema>=4.25",
-    "bmad-loop>=0.9.0,<0.10",
+    "bmad-loop>=0.11.0,<0.12",
     "pyforge-core",
     # Story 10.1: Genesis's template engine (architecture Stack table,
     # AD-52). Imported nowhere but seed/engine/copier.py (P-02, proven by

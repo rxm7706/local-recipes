@@ -55,8 +55,8 @@ def test_binary_present_false_for_a_nonsense_name(harness):
 
 
 def test_harness_version_matches_the_real_installed_package(harness):
-    """``bmad_loop.__version__`` is ``"0.9.0"`` -- pinned as this package's
-    floor (``pyproject.toml``/``pixi.toml``, ``>=0.9.0,<0.10``)."""
+    """``bmad_loop.__version__`` is ``"0.11.0"`` -- pinned as this package's
+    floor (``pyproject.toml``/``pixi.toml``, ``>=0.11.0,<0.12``)."""
     import bmad_loop
 
     assert harness.harness_version() == bmad_loop.__version__
@@ -266,11 +266,15 @@ def test_adapter_binary_raises_harness_error_when_profile_overlay_field_is_wrong
     harness, tmp_path
 ):
     """Same gap as the non-UTF-8 case above, one layer up (second review
-    pass): ``_parse_profile`` coerces overlay values with bare
-    ``float()``/``int()``/``.items()``, so a VALID-TOML overlay with a
-    wrong-typed field (``usage_grace_s = "boom"``) raises ``ValueError`` RAW
-    past ``ProfileError`` -- again even when looking up an UNRELATED adapter
-    name the broken file never mentions."""
+    pass): a VALID-TOML overlay with a wrong-typed field
+    (``usage_grace_s = "boom"``) must surface as ``HarnessError``, never a
+    raw ``ValueError`` -- even when looking up an UNRELATED adapter name
+    the broken file never mentions. Under bmad_loop 0.9.x the raw
+    ``float()`` coercion escaped ``ProfileError`` and Marshal's own
+    catch-all supplied the message; 0.11.x types the error upstream
+    (``malformed field value``), which Marshal translates through its
+    ``ProfileError`` branch instead -- either way the contract here is the
+    exception TYPE, plus a message naming the malformed field value."""
     profiles_dir = tmp_path / ".bmad-loop" / "profiles"
     profiles_dir.mkdir(parents=True)
     (profiles_dir / "broken.toml").write_text(
@@ -282,7 +286,7 @@ def test_adapter_binary_raises_harness_error_when_profile_overlay_field_is_wrong
         encoding="utf-8",
     )
 
-    with pytest.raises(HarnessError, match="cannot read adapter profile overlay"):
+    with pytest.raises(HarnessError, match="malformed field value"):
         harness.adapter_binary("claude", tmp_path)
 
 
@@ -416,15 +420,15 @@ def test_harness_version_tuple_treats_non_ascii_unicode_digits_as_non_digits():
 
 
 def test_harness_version_in_range_true_for_the_exact_floor():
-    assert harness_version_in_range("0.9.0") is True
+    assert harness_version_in_range("0.11.0") is True
 
 
 def test_harness_version_in_range_true_for_in_range_but_not_exact():
-    assert harness_version_in_range("0.9.5") is True
+    assert harness_version_in_range("0.11.5") is True
 
 
 def test_harness_version_in_range_false_for_same_major_out_of_minor_range():
-    assert harness_version_in_range("0.10.2") is False
+    assert harness_version_in_range("0.12.2") is False
 
 
 def test_harness_version_in_range_false_for_a_different_major():
@@ -436,14 +440,14 @@ def test_harness_version_in_range_false_for_unparseable_text():
 
 
 def test_harness_version_is_major_mismatch_false_for_the_exact_floor():
-    assert harness_version_is_major_mismatch("0.9.0") is False
+    assert harness_version_is_major_mismatch("0.11.0") is False
 
 
 def test_harness_version_is_major_mismatch_false_for_same_major_out_of_minor_range():
     """The one case this story's split exists for: a determinable,
     same-major version outside the minor range is NOT a major mismatch --
     it warns (MRS-PREFLIGHT-011) rather than blocking (MRS-PREFLIGHT-002)."""
-    assert harness_version_is_major_mismatch("0.10.2") is False
+    assert harness_version_is_major_mismatch("0.12.2") is False
 
 
 def test_harness_version_is_major_mismatch_true_for_a_different_major():

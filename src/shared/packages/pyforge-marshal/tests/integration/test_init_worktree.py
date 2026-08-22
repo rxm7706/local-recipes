@@ -299,7 +299,7 @@ def test_preflight_end_to_end_converges_seeds_and_acknowledges(tmp_path, monkeyp
     assert first_exit == 0, first_out
     assert elapsed < 10.0, f"preflight took {elapsed:.2f}s, over NFR-14's 10s budget"
     assert "findings:" not in first_out
-    assert "harness_version: 0.9.0" in first_out
+    assert "harness_version: 0.11.0" in first_out
     assert "adapter: name='claude' binary_present=True" in first_out
     assert "story_feed: resolvable=True" in first_out
     assert "main_checked_out_once: True" in first_out

@@ -158,33 +158,33 @@ def _default_fake_harness(monkeypatch):
     ambient out-of-range bmad-loop would add WARNING lines the tests never
     asked for). Tests that need a specific version override via
     ``_patch_harness_version`` -- their later ``setattr`` wins."""
-    _patch_harness_version(monkeypatch, "0.9.3")
+    _patch_harness_version(monkeypatch, "0.11.3")
 
 
 def test_version_harness_in_range_prints_both_versions_no_warning(monkeypatch, capsys):
-    _patch_harness_version(monkeypatch, "0.9.3")
+    _patch_harness_version(monkeypatch, "0.11.3")
     exit_code = main(["--version"])
     assert exit_code == 0
     out = capsys.readouterr().out
     assert __version__ in out
-    assert "bmad-loop 0.9.3" in out
+    assert "bmad-loop 0.11.3" in out
     # pixi.toml's pyforge-marshal-smoke greps `^bmad-loop [0-9]` out of this
     # exact output for its harness-resolvable proof (FR-56) -- pin the
     # line-anchored shape, not just the substring, so a reformat cannot
     # silently break that cross-artifact contract in a different tool on a
     # different machine.
-    assert re.search(r"^bmad-loop 0\.9\.3$", out, re.MULTILINE)
+    assert re.search(r"^bmad-loop 0\.11\.3$", out, re.MULTILINE)
     assert "WARNING" not in out
 
 
 def test_version_harness_same_major_out_of_range_shows_warning(monkeypatch, capsys):
-    _patch_harness_version(monkeypatch, "0.10.2")
+    _patch_harness_version(monkeypatch, "0.12.2")
     exit_code = main(["--version"])
     assert exit_code == 0
     out = capsys.readouterr().out
-    assert "bmad-loop 0.10.2" in out
+    assert "bmad-loop 0.12.2" in out
     assert "WARNING" in out
-    assert ">=0.9.0,<0.10" in out
+    assert ">=0.11.0,<0.12" in out
 
 
 def test_version_harness_major_mismatch_shows_warning(monkeypatch, capsys):

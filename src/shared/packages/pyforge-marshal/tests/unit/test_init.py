@@ -350,7 +350,7 @@ class FakeHarness:
 
     def __init__(self) -> None:
         self.binaries_present: set[str] = set()
-        self.version: str | None = "0.9.0"
+        self.version: str | None = "0.11.0"
         self.multiplexer: tuple[str, bool] = ("tmux", True)
         self.fail_multiplexer: Exception | None = None
         self.adapter_binaries: dict[str, str] = {"claude": "claude"}
@@ -1670,7 +1670,7 @@ def test_preflight_fully_converged_reports_zero_findings(repo_root, tmp_path, ca
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     assert "findings:" not in out
-    assert "harness_version: 0.9.0" in out
+    assert "harness_version: 0.11.0" in out
     assert "multiplexer: backend='tmux' available=True" in out
     assert "adapter: name='claude' binary_present=True" in out
     assert "story_feed: resolvable=True error=None" in out
@@ -1954,7 +1954,7 @@ def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_b
     fs = FakeFs(project_dirs={home})
     vcs = FakeVcs(repo_root=repo_root)
     harness = _converged_harness()
-    harness.version = "0.10.2"
+    harness.version = "0.12.2"
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
@@ -1963,8 +1963,8 @@ def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_b
     assert "MRS-PREFLIGHT-011" in out
     assert "[warn]" in out
     assert "MRS-PREFLIGHT-002" not in out
-    assert "0.10.2" in out
-    assert ">=0.9.0,<0.10" in out
+    assert "0.12.2" in out
+    assert ">=0.11.0,<0.12" in out
 
 
 def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(
@@ -1987,7 +1987,7 @@ def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-002" in out
     assert "2.0.0" in out
-    assert ">=0.9.0,<0.10" in out
+    assert ">=0.11.0,<0.12" in out
     assert "MRS-PREFLIGHT-011" not in out
 
 
