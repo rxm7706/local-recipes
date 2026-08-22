@@ -74,6 +74,22 @@ suite pass reads gitignored runtime state that is legitimately absent on a
 fresh clone/CI, and its per-package fetches degrade individually -- no
 ``.pixi``, no matching pins, unparseable versions, or all fetches failing
 means no suite Finding at all, with CAP-1/CAP-2's own outcomes untouched.
+
+**Story 15.1 (Epic 15, DW-14-1-1): unblinding the GitHub-only suite
+packages.** CAP-4's npm-only fetch left 6 of the 10 watched pins invisible
+-- including ``bmad-loop`` itself, the package whose 0.9.0-vs-0.11.0 lag
+originally motivated CAP-4 -- because they publish via GitHub Releases/tags
+and never to npm at all. When ``_fetch_latest_upstream_version`` returns
+``None`` for a suite package, ``_gather_suite_findings`` now falls back to
+``_fetch_latest_github_release``, using the per-package ``owner/repo``
+recorded in that package's own TRACKED ``recipes/<package>/recipe.yaml``
+(``extra.cfe-upstream-registry: github`` + ``extra.cfe-upstream-name``) --
+never a hardcoded name->repo table, mirroring ``_suite_packages``'s own
+derive-don't-declare discipline. The fallback is exactly as fail-open as
+the npm path it extends and shares the SAME per-package/overall budget: a
+missing recipe.yaml mapping, a non-github registry, or any GitHub HTTP/
+network/JSON failure all fold to ``None`` and the package stays unchecked,
+exactly as before this story.
 """
 
 from __future__ import annotations
@@ -254,10 +270,15 @@ def _fetch_latest_upstream_version(
 #: the newest tool. Load-bearing assumption (review finding, Story 14.1):
 #: a ``bmad-*`` pixi/conda dependency key IS the npm package name -- true
 #: for every npm-published suite tool today, but a pin packaged from a
-#: GitHub-only source (no npm release at all) resolves to a 404 and is
-#: silently skipped, so such a package stays invisible to this signal until
-#: it ships on npm (live 2026-08-21: 6 of the 10 watched pins, bmad-loop
-#: included, are npm-invisible for exactly this reason).
+#: GitHub-only source (no npm release at all) resolves to a 404 on this
+#: helper. Story 15.1 (DW-14-1-1) adds a GitHub releases/tags fallback for
+#: exactly that case (see ``_fetch_latest_github_release``), so such a
+#: package is no longer necessarily invisible -- it stays unchecked only
+#: when its own ``recipes/<name>/recipe.yaml`` carries no github mapping,
+#: or GitHub itself has neither a Release nor a tag to offer (live
+#: 2026-08-21: 6 of the 10 watched pins, bmad-loop included, were
+#: npm-invisible; see Design Notes for which of those 6 the GitHub
+#: fallback does and does not reach).
 _SUITE_PREFIX = "bmad-"
 
 #: Shared budget for CAP-4's per-package fetch loop: one monotonic deadline
@@ -356,6 +377,152 @@ def _installed_suite_versions(
     return installed
 
 
+#: GitHub's own public, unauthenticated per-repo endpoints (Story 15.1,
+#: DW-14-1-1). ``releases/latest`` returns the most recently published
+#: Release (a 404 body when the repo has never published one at all);
+#: ``tags`` returns every git tag regardless of whether a Release was ever
+#: attached to it -- the fallback for a repo that tags without ever using
+#: GitHub's "Releases" feature. Both are bare unauthenticated GETs,
+#: mirroring ``_NPM_LATEST_URL``'s own precedent (Boundaries: no token, no
+#: ``gh`` CLI, no subprocess -- this module's independence rule).
+_GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/{owner_repo}/releases/latest"
+_GITHUB_TAGS_URL = "https://api.github.com/repos/{owner_repo}/tags"
+
+
+def _strip_leading_v(text: str) -> str:
+    """Strip exactly one optional leading ``v``/``V`` (GitHub's own de
+    facto tag convention, e.g. ``v1.2.3``) before handing a tag/release
+    name to ``_parse_release_triple`` -- that parser itself treats a
+    leading ``v`` as garbage (an existing test asserts ``"v1.2.3"`` is
+    unparseable to it), so the strip happens here, once, at the one
+    GitHub-specific seam, leaving ``_parse_release_triple`` itself
+    unmodified (Boundaries, Story 15.1)."""
+    if text[:1] in ("v", "V"):
+        return text[1:]
+    return text
+
+
+def _github_owner_repo(target: Path, package: str) -> str | None:
+    """The ``owner/repo`` slug the GitHub fallback should query for
+    ``package``, derived from that package's own TRACKED
+    ``recipes/<package>/recipe.yaml`` -- never a hardcoded name->repo
+    table (Design Notes, Story 15.1: a hardcoded list omits exactly the
+    newest GitHub-only tool, the same derive-don't-declare discipline
+    ``_suite_packages`` already applies to the watched set itself).
+    Returns ``extra.cfe-upstream-name`` when that recipe's
+    ``extra.cfe-upstream-registry`` is exactly ``"github"``, else
+    ``None``.
+
+    Entirely fail-open, never raises: a missing or unreadable
+    ``recipe.yaml`` (``OSError``), an unrepresentable path such as an
+    embedded NUL byte (``ValueError`` -- review finding: a package name
+    from a corrupt/adversarial ``pixi.toml`` must not raise past this
+    function's own documented contract, even though a real ``pixi.toml``
+    dependency key cannot produce one today), malformed YAML
+    (``yaml.YAMLError``), a non-mapping document or a missing/non-mapping
+    ``extra``/``cfe-upstream-name`` (``KeyError``/``TypeError``/
+    ``AttributeError``), or a non-github registry all fold to ``None`` --
+    the caller (``_gather_suite_findings``) treats that identically to
+    "GitHub fallback not attempted" (Boundaries)."""
+    try:
+        recipe_path = target / "recipes" / package / "recipe.yaml"
+        data = yaml.safe_load(recipe_path.read_text(encoding="utf-8"))
+        extra = data["extra"]
+        if str(extra.get("cfe-upstream-registry")) != "github":
+            return None
+        owner_repo = extra.get("cfe-upstream-name")
+        if not isinstance(owner_repo, str) or not owner_repo:
+            return None
+        return owner_repo
+    except (OSError, ValueError, yaml.YAMLError, KeyError, TypeError, AttributeError):
+        return None
+
+
+#: Every exception ``_fetch_latest_github_release`` folds to ``None``
+#: EXCEPT a ``releases/latest`` ``HTTPError``, which needs its status code
+#: inspected first (Boundaries: only a 404 falls back to ``/tags``, any
+#: other failure returns ``None`` immediately). ``urllib.error.HTTPError``
+#: is itself a ``URLError`` subclass, so it is already covered here for
+#: the ``/tags`` fetch below, which has no such special case.
+_GITHUB_FETCH_FAIL_TYPES = (
+    urllib.error.URLError,
+    http.client.HTTPException,
+    OSError,
+    TimeoutError,
+    ValueError,
+    KeyError,
+    TypeError,
+)
+
+
+def _fetch_latest_github_release(
+    *, owner_repo: str, timeout: float | None = None
+) -> tuple[int, int, int] | None:
+    """Query GitHub's public REST API for ``owner_repo``'s latest release
+    (Story 15.1, DW-14-1-1) -- the CAP-4 suite pass's fallback for a
+    package whose npm fetch already returned ``None``. Mirrors
+    ``_fetch_latest_upstream_version``'s fail-open shape.
+
+    Tries ``GET .../releases/latest`` first. Only on a 404 SPECIFICALLY
+    (no Release has ever been published -- a definitive, distinguishable
+    state) does it fall back to ``GET .../tags`` and take the newest
+    successfully-parsed tag (``max()`` by release triple over every
+    parseable entry -- the same "biased against false warns" semantics
+    ``_parse_release_triple`` already documents). Any OTHER failure -- a
+    non-404 HTTPError, a network/timeout error, a malformed JSON body, or
+    a missing/unparseable tag/release name -- returns ``None`` immediately
+    WITHOUT trying ``/tags`` (Boundaries).
+
+    Both endpoints' tag/release names are stripped of one optional
+    leading ``v``/``V`` (``_strip_leading_v``) before parsing with the
+    existing lenient ``_parse_release_triple`` -- that parser itself is
+    NOT modified. Never raises: every failure mode folds to ``None``,
+    exactly like ``_fetch_latest_upstream_version``.
+
+    ``timeout`` bounds this function's TOTAL wall time, not each call
+    individually (review finding: the caller computes ``timeout`` from
+    its own shared per-package budget, so a 404-then-``/tags`` fallback
+    that reused the full ``timeout`` for BOTH sequential calls could
+    double one package's worst-case duration against that budget). A
+    shared internal deadline is re-checked before the ``/tags`` call;
+    once it is exhausted, ``/tags`` is not attempted at all."""
+    resolved_timeout = timeout if timeout is not None else _UPSTREAM_FETCH_TIMEOUT_SECONDS
+    deadline = time.monotonic() + resolved_timeout
+    release_url = _GITHUB_LATEST_RELEASE_URL.format(owner_repo=owner_repo)
+    try:
+        with urllib.request.urlopen(release_url, timeout=resolved_timeout) as response:
+            body = json.loads(response.read())
+        return _parse_release_triple(_strip_leading_v(str(body["tag_name"])))
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            return None
+    except _GITHUB_FETCH_FAIL_TYPES:
+        return None
+
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        return None
+    tags_url = _GITHUB_TAGS_URL.format(owner_repo=owner_repo)
+    try:
+        with urllib.request.urlopen(tags_url, timeout=remaining) as response:
+            entries = json.loads(response.read())
+        parsed: list[tuple[int, int, int]] = []
+        for entry in entries:
+            try:
+                triple = _parse_release_triple(_strip_leading_v(str(entry["name"])))
+            except (KeyError, TypeError):
+                # One malformed entry (missing "name", or not a mapping)
+                # skips only itself -- review finding: this used to abort
+                # the ENTIRE scan, discarding every otherwise-valid parsed
+                # tag alongside it.
+                continue
+            if triple is not None:
+                parsed.append(triple)
+        return max(parsed) if parsed else None
+    except _GITHUB_FETCH_FAIL_TYPES:
+        return None
+
+
 def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]:
     """CAP-4 (Story 14.1): compare every INSTALLED bmad-suite package
     against its latest npm release, through the same generalized
@@ -365,6 +532,14 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
     successfully checked and none is behind, exactly one OK Finding (same
     check) naming the checked count; when zero were checked, no suite
     Finding at all.
+
+    Story 15.1 (DW-14-1-1) extends the per-package comparison: whenever
+    the npm fetch misses (``None``) for a package, a GitHub releases/tags
+    fallback (``_fetch_latest_github_release``, keyed by that package's
+    own ``recipes/<name>/recipe.yaml`` github mapping via
+    ``_github_owner_repo``) is tried before giving up on it, still inside
+    the SAME shared budget below -- ``checked`` increments identically
+    regardless of which source ultimately resolved a package.
 
     ENTIRELY fail-open, never raises -- deliberately unlike CAP-1/CAP-2's
     raise-then-``degrade_on_exception`` style. Rationale: CAP-1/2 read
@@ -400,6 +575,19 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                 package=name,
                 timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
             )
+            if latest is None:
+                # Story 15.1 (DW-14-1-1): npm missed -- try GitHub next,
+                # still inside the SAME shared budget, and only when this
+                # package has a github mapping and there is still time
+                # left to spend.
+                remaining = deadline - time.monotonic()
+                if remaining > 0:
+                    owner_repo = _github_owner_repo(target, name)
+                    if owner_repo is not None:
+                        latest = _fetch_latest_github_release(
+                            owner_repo=owner_repo,
+                            timeout=min(remaining, _UPSTREAM_FETCH_TIMEOUT_SECONDS),
+                        )
             if latest is None:
                 continue  # per-package fail-open (404, outage, garbage body)
             checked += 1
