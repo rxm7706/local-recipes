@@ -1,0 +1,66 @@
+# Web Deployment: the Story 10.3 platform image serving gunicorn on 8000
+# (the image's own CMD -- no args override here, and NEVER a migrate step:
+# that belongs to the hook Job, concurrent replicas must not race
+# migrations).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: web
+          image: {{ include "platform.imageRef" .Values.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            {{- include "platform.djangoEnv" . | nindent 12 }}
+          # Probe contract (config/urls.py + config/fastapi_app.py):
+          #   /api/health = unconditional liveness (no DB/Redis)
+          #   /ht/        = DB connectivity + cache = readiness
+          # Both need X-Forwarded-Proto: https (SECURE_PROXY_SSL_HEADER +
+          # SECURE_SSL_REDIRECT would 301 plain-http probes) and a Host
+          # header ALLOWED_HOSTS accepts.
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ include "platform.probeHost" . | quote }}
+                - name: X-Forwarded-Proto
+                  value: https
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ht/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ include "platform.probeHost" . | quote }}
+                - name: X-Forwarded-Proto
+                  value: https
+            initialDelaySeconds: 5
+            periodSeconds: 10

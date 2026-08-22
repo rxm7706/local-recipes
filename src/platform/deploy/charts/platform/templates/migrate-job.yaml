@@ -1,0 +1,42 @@
+# Migrate hook Job -- the ONLY place `manage.py migrate` runs (the image
+# CMD never migrates; on K8s that step belongs here, not in every pod's
+# startup, because concurrent replicas would race the same migration --
+# Containerfile + compose.yml contract). post-install,pre-upgrade with
+# before-hook-creation so each helm operation gets a fresh run under the
+# same name. OnFailure restart + backoffLimit absorb the postgres-boot
+# race compose documents (pg_isready answers from initdb's temporary
+# server, then postgres restarts).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "platform.fullname" . }}-migrate
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "platform.fullname" . }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "platform.imageRef" .Values.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          # args (not command): runs through the image ENTRYPOINT so the
+          # pixi shell-hook puts python on PATH.
+          args: ["python", "manage.py", "migrate", "--noinput"]
+          env:
+            {{- include "platform.djangoEnv" . | nindent 12 }}

@@ -1,0 +1,32 @@
+{{ .Chart.Name }} {{ .Chart.Version }} released as {{ .Release.Name }} (namespace {{ .Release.Namespace }}).
+
+REQUIRED PRE-CREATED SECRET (this chart never renders one -- AD-12):
+  name: {{ .Values.existingSecret }}
+  keys:
+    DJANGO_SECRET_KEY  Django's SECRET_KEY.
+    DATABASE_URL       The WHOLE database URL. With this release's own
+                       PostgreSQL and default auth values:
+                       postgres://{{ .Values.postgres.auth.username }}:<password>@{{ include "platform.fullname" . }}-postgres:5432/{{ .Values.postgres.auth.database }}
+    POSTGRES_PASSWORD  The same <password>, consumed by the postgres
+                       container itself.
+
+In-cluster service DNS names (compose DATABASE_URL from these):
+  PostgreSQL  {{ include "platform.fullname" . }}-postgres:5432
+  Redis       {{ include "platform.fullname" . }}-redis:6379  (REDIS_URL is wired automatically)
+  Web         {{ include "platform.fullname" . }}:{{ .Values.service.port }}
+
+Exposure flows:
+{{- if .Values.ingress.enabled }}
+  Vanilla K8s (active): Ingress on host {{ .Values.ingress.host }}.
+{{- else }}
+  Ingress is DISABLED. On OpenShift, expose the web Service with the thin
+  Route overlay chart (src/platform/deploy/overlays/ocp/chart), installed
+  beside this release with route.service.name={{ include "platform.fullname" . }}.
+{{- end }}
+  OCP install shape: helm install {{ .Release.Name }} <core-chart> \
+      -f deploy/overlays/ocp/core-overrides.yaml
+  then: helm install {{ .Release.Name }}-ocp deploy/overlays/ocp/chart \
+      --set route.service.name={{ include "platform.fullname" . }}
+
+Migrations run in the {{ include "platform.fullname" . }}-migrate hook Job
+(post-install,pre-upgrade) -- never in the web/worker pods.

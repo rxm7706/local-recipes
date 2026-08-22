@@ -1,0 +1,106 @@
+# Default values for the platform core chart (Story 12.1).
+#
+# Deliberately lean: only knobs a real deployment needs today. The
+# restricted-v2 security fields for the platform-image pods are NOT here --
+# they are an invariant, hardcoded in templates/_helpers.tpl (a values knob
+# would be an invitation to regress them silently). The ONLY values-driven
+# security seam is the data services' runAsUser/fsGroup below, and the OCP
+# overlay (deploy/overlays/ocp/core-overrides.yaml) nulls those.
+
+# Web (gunicorn) replicas. The worker has its own count below.
+replicaCount: 1
+
+# The Story 10.3 platform image. Fully parameterized so the reference is
+# registry-relocatable (CAP-6 air-gap: point registry at an internal
+# mirror; no default upstream registry is assumed).
+image:
+  # e.g. "registry.internal.example" -- empty means "use the engine's
+  # default resolution" (a local/preloaded image).
+  registry: ""
+  repository: platform
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# AD-12: the chart NEVER renders a Secret and carries no credential
+# defaults. This names a PRE-CREATED Secret in the release namespace that
+# must hold exactly these keys:
+#   DJANGO_SECRET_KEY -- Django's SECRET_KEY
+#   DATABASE_URL      -- the whole SQLAlchemy-style URL, e.g.
+#                        postgres://platform:<password>@<release>-postgres:5432/platform
+#                        (NOTES.txt prints the exact DNS name to use)
+#   POSTGRES_PASSWORD -- the same password, consumed by the postgres
+#                        container itself
+existingSecret: platform-secrets
+
+# Non-secret Django settings surface (mirrors compose.yml's env wiring).
+django:
+  # Comma-separated, becomes DJANGO_ALLOWED_HOSTS (env.list in settings).
+  # The FIRST entry is also the Host header the kubelet probes send --
+  # production.py's SECURE_SSL_REDIRECT + ALLOWED_HOSTS would otherwise
+  # reject/redirect the probe requests.
+  allowedHosts: platform.internal
+  adminUrl: admin/
+  # production.py defaults True; probes still work because they send
+  # X-Forwarded-Proto: https (SECURE_PROXY_SSL_HEADER).
+  secureSslRedirect: "True"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+# Vanilla-K8s edge. The OCP overlay disables this and exposes the same
+# Service through a Route instead (deploy/overlays/ocp/).
+ingress:
+  enabled: true
+  # IngressClass name; empty uses the cluster default.
+  className: ""
+  host: platform.internal
+  # Standard networking.k8s.io/v1 tls blocks, passed through verbatim.
+  tls: []
+
+# Celery worker (same image, `celery -A config worker`, no HTTP surface).
+worker:
+  replicaCount: 1
+
+# Migrate hook Job (`manage.py migrate --noinput`, post-install +
+# pre-upgrade -- the image CMD never migrates; concurrent replicas must
+# not race migrations). backoffLimit absorbs the postgres-boot race the
+# compose stack documents (pg_isready answers during initdb's temporary
+# server, then postgres restarts).
+migrate:
+  backoffLimit: 6
+
+# PostgreSQL (official image, StatefulSet, 1 replica -- AD-1).
+postgres:
+  image:
+    registry: ""
+    repository: postgres
+    tag: "17"
+    pullPolicy: IfNotPresent
+  auth:
+    # Non-secret identity; the password comes ONLY from existingSecret's
+    # POSTGRES_PASSWORD key (AD-12).
+    username: platform
+    database: platform
+  persistence:
+    size: 8Gi
+    # Empty uses the cluster's default StorageClass.
+    storageClassName: ""
+  # The official postgres image's step-down UID. Needed on vanilla K8s:
+  # the image's USER is root, so the kubelet cannot verify the
+  # template-fixed runAsNonRoot without a numeric UID. The OCP overlay
+  # nulls both so the SCC assigns them instead (restricted-v2 forbids
+  # fixing a UID).
+  runAsUser: 999
+  fsGroup: 999
+
+# Redis (official image, Deployment, emptyDir -- cache + Celery broker,
+# nothing durable).
+redis:
+  image:
+    registry: ""
+    repository: redis
+    tag: "7"
+    pullPolicy: IfNotPresent
+  # Same rationale as postgres.runAsUser; nulled by the OCP overlay.
+  runAsUser: 999

@@ -1,0 +1,37 @@
+# Celery worker: same image and env surface as the web Deployment
+# (compose.yml's `worker` service mirrored), only the command differs.
+# No probes -- the worker has no HTTP surface.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.fullname" . }}-worker
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: worker
+          image: {{ include "platform.imageRef" .Values.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          # args (not command): the image ENTRYPOINT (/app/entrypoint.sh,
+          # which sources the pixi shell-hook) must keep running, with
+          # this as its "$@".
+          args: ["celery", "-A", "config", "worker", "-l", "info"]
+          env:
+            {{- include "platform.djangoEnv" . | nindent 12 }}

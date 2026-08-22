@@ -1,0 +1,104 @@
+# PostgreSQL 17 (official image), 1 replica -- AD-1's exact
+# infrastructure, mirroring compose.yml's `postgres` service. StatefulSet
+# + volumeClaimTemplate because this is the one durable store.
+#
+# Security posture: the restricted fields (runAsNonRoot, seccomp,
+# allowPrivilegeEscalation, drop ALL) are FIXED in this template; ONLY
+# runAsUser/fsGroup come from values (default 999, the official image's
+# step-down UID -- the vanilla-K8s kubelet cannot verify runAsNonRoot
+# against this root-USER image without a numeric UID). The OCP overlay
+# nulls both so the SCC assigns UIDs instead.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "platform.fullname" . }}-postgres
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  replicas: 1
+  serviceName: {{ include "platform.fullname" . }}-postgres
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgres
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        {{- with .Values.postgres.runAsUser }}
+        runAsUser: {{ . }}
+        {{- end }}
+        {{- with .Values.postgres.fsGroup }}
+        fsGroup: {{ . }}
+        {{- end }}
+      containers:
+        - name: postgres
+          image: {{ include "platform.imageRef" .Values.postgres.image }}
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.auth.username | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.auth.database | quote }}
+            # Password ONLY by reference to the pre-created Secret (AD-12).
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret | quote }}
+                  key: POSTGRES_PASSWORD
+            # Subdirectory of the mount: the official image requires PGDATA
+            # not to be the volume root (lost+found breaks initdb).
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgres.auth.username | quote }}
+                - -d
+                - {{ .Values.postgres.auth.database | quote }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - {{ .Values.postgres.auth.username | quote }}
+                - -d
+                - {{ .Values.postgres.auth.database | quote }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- with .Values.postgres.persistence.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.persistence.size }}

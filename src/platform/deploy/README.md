@@ -1,0 +1,95 @@
+# Deploying the platform (Story 12.1)
+
+Helm deployment for the python-agent-platform host: a **vanilla-Kubernetes
+core chart** (`charts/platform/`) plus a **thin OCP overlay**
+(`overlays/ocp/`) — AD-11's shape. The core chart renders only plain
+Kubernetes kinds; everything OpenShift-specific lives in the overlay.
+Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
+
+## Prerequisites
+
+- **helm from the `platform-dev` pixi env** (AD-16 — never a system helm):
+  every command below is `pixi run -e platform-dev helm ...` from the repo
+  root. Verified against Helm v4.2.4 (conda-forge).
+- The **Story 10.3 platform image** pushed somewhere the cluster can pull
+  (values: `image.registry`/`image.repository`/`image.tag` — fully
+  parameterized, so an internal mirror works with values alone, CAP-6).
+- A **pre-created Secret** (AD-12: the chart never renders a Secret and
+  carries no credential defaults). Default name `platform-secrets`
+  (values: `existingSecret`), keys:
+
+  | key | value |
+  |---|---|
+  | `DJANGO_SECRET_KEY` | Django's `SECRET_KEY` |
+  | `DATABASE_URL` | the whole URL, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` |
+  | `POSTGRES_PASSWORD` | the same `<password>`, consumed by the postgres container |
+
+  `helm install` prints the exact in-cluster DNS names (NOTES.txt), so the
+  operator composes `DATABASE_URL` from them — the chart never composes it
+  (that would drag the password into the render path).
+
+## Vanilla Kubernetes
+
+```sh
+kubectl create secret generic platform-secrets \
+    --from-literal=DJANGO_SECRET_KEY=... \
+    --from-literal=DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
+    --from-literal=POSTGRES_PASSWORD=...
+pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform
+```
+
+Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
+readiness), Celery worker Deployment, migrate hook Job
+(`post-install,pre-upgrade` — the image CMD never migrates), postgres:17
+StatefulSet + PVC, redis:7 Deployment, Services, ServiceAccount, and an
+Ingress on `ingress.host` (default `platform.internal`).
+
+## OpenShift
+
+Two installs (see `overlays/ocp/README.md` for detail):
+
+```sh
+pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
+    -f src/platform/deploy/overlays/ocp/core-overrides.yaml
+pixi run -e platform-dev helm install platform-ocp src/platform/deploy/overlays/ocp/chart
+```
+
+The overrides turn the Ingress off and null the data services'
+`runAsUser`/`fsGroup` so the `restricted-v2` SCC assigns arbitrary UIDs;
+the overlay chart adds the Route. The platform-image pods carry the
+`restricted-v2` contract hardcoded in the core templates (runAsNonRoot,
+RuntimeDefault seccomp, no privilege escalation, drop ALL, **no fixed UID
+anywhere** — the image's own `USER 1001:0` covers vanilla K8s).
+
+## Verifying locally (no cluster)
+
+```sh
+pixi run -e platform-dev helm lint src/platform/deploy/charts/platform src/platform/deploy/overlays/ocp/chart
+pixi run -e platform-dev helm template platform src/platform/deploy/charts/platform
+```
+
+`src/platform/tests/test_chart_invariants.py` asserts the story's
+invariants over parsed `helm template` output (vanilla-kinds allowlist,
+Route-only overlay, restricted-v2 on the platform pods, the exact
+three-image AD-1 inventory, override behavior) and skips with a
+capability-naming reason where helm/PyYAML are absent.
+
+## Honest limitations
+
+- **No live-cluster verification in this repo.** Real deploys (Route
+  admission, SCC enforcement, registry/OIDC wiring) are AD-16 Tier 3 —
+  attended-only. This chart is verified by lint + render + parsed-manifest
+  invariants only.
+- **The official `postgres`/`redis` images may need image overrides under
+  OCP `restricted-v2`.** Both declare a root `USER` and step down at
+  runtime; under an SCC-assigned arbitrary UID they generally run, but
+  hardened clusters may require UID-agnostic builds (e.g. Bitnami or Red
+  Hat images) via `postgres.image`/`redis.image`. The **platform image is
+  the one that passes `restricted-v2` by contract** (Story 10.3's
+  arbitrary-UID design); the data-service images are documented, not
+  solved, here.
+- **No DB-GPT sidecar in the chart** — deliberately (the 2026-08-21
+  sprint-change proposal deferred its chart membership to Epic-12
+  follow-up; the AD-1 inventory here is exactly postgres + redis + the
+  platform image).
+- No HPA/PDB/NetworkPolicy/media PVC — out of this story's scope.

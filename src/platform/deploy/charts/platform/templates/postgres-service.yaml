@@ -1,0 +1,19 @@
+# DNS name for DATABASE_URL (NOTES.txt prints it): the operator's
+# pre-created Secret carries the whole URL pointing at this Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "platform.fullname" . }}-postgres
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    {{- include "platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres

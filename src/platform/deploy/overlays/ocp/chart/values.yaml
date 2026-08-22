@@ -1,0 +1,21 @@
+# Default values for the platform-ocp overlay chart (Story 12.1).
+route:
+  # Route hostname; empty lets the OpenShift router generate one from its
+  # configured wildcard domain.
+  host: ""
+  service:
+    # MUST match the CORE release's rendered web Service name. The core
+    # chart's fullname idiom makes that simply the release name when it
+    # contains the chart name -- `helm install platform <core-chart>`
+    # renders the Service as "platform" (this default). For any other
+    # release name, set this to `<release>-platform` (or whatever
+    # `helm template <release> <core-chart>` shows for the web Service).
+    name: platform
+    # The core Service's port (core values: service.port).
+    port: 8000
+  tls:
+    # Edge termination: the router terminates TLS and forwards plain HTTP
+    # -- production.py's SECURE_PROXY_SSL_HEADER trusts the router's
+    # X-Forwarded-Proto, so the app still enforces https.
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
