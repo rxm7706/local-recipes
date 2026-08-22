@@ -740,6 +740,11 @@ pixi run -e local-recipes submit-pr <recipe-name>
 
 # Match a build error log against known failure patterns
 pixi run -e local-recipes analyze-failure <path-to-error-log>
+
+# Regenerate config/failure-catalog.yaml from SKILL.md's gotcha corpus (G1-G110);
+# --check diffs the committed catalog against a fresh regen without writing
+pixi run -e local-recipes generate-failure-catalog
+pixi run -e local-recipes generate-failure-catalog -- --check
 ```
 
 ### Tests

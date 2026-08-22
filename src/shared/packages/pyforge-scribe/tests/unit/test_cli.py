@@ -8,11 +8,13 @@ spec-1-1-package-scaffold-direct-capture-into-team-memory.md.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+import pyforge.scribe.cli as cli_module
 from pyforge.scribe.cli import app
 
 runner = CliRunner()
@@ -318,6 +320,205 @@ def test_capture_promote_mutually_exclusive_with_type_and_text_exits_2(
 
     assert result.exit_code == 2
     assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
+
+
+def _assistant_transcript_line(text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z") -> str:
+    entry = {
+        "type": "assistant",
+        "timestamp": timestamp,
+        "message": {"content": [{"type": "text", "text": text}]},
+    }
+    return json.dumps(entry)
+
+
+def _scaffold_transcript_entry(transcript_root: Path, filename: str, lines: list[str]) -> Path:
+    path = transcript_root / filename
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def test_capture_transcripts_confirm_yes_writes_file_and_prints_proposal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    source_path = _scaffold_transcript_entry(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    original_bytes = source_path.read_bytes()
+
+    result = runner.invoke(
+        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n"
+    )
+
+    assert result.exit_code == 0
+    written = list((tmp_path / ".claude" / "memory" / "project").glob("*.md"))
+    assert len(written) == 1
+    content = written[0].read_text(encoding="utf-8")
+    assert "We decided to use SQLite for the local cache." in content
+
+    output = _combined_output(result)
+    assert "session-a.jsonl:L1" in output
+    assert "captured:" in output
+
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
+    assert "SQLite" in memory_md
+
+    # No pointer-stub write-back (unlike --promote): the source transcript
+    # is left byte-for-byte unmodified -- it's a historical log, not a
+    # directory Scribe owns.
+    assert source_path.read_bytes() == original_bytes
+
+
+def test_capture_transcripts_confirm_no_writes_nothing_and_exits_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    _scaffold_transcript_entry(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+
+    result = runner.invoke(
+        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="n\n"
+    )
+
+    assert result.exit_code == 0
+    assert "Cancelled" in _combined_output(result)
+    assert list((tmp_path / ".claude" / "memory" / "project").glob("*.md")) == []
+
+
+def test_capture_transcripts_nothing_to_promote_skips_confirm_prompt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    _scaffold_transcript_entry(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("Nothing decision-shaped happened in this turn.")],
+    )
+
+    # No input provided -- if the code incorrectly still called typer.confirm()
+    # for an empty proposal, CliRunner would raise/abort for lack of stdin.
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)])
+
+    assert result.exit_code == 0
+    assert "Nothing to promote" in _combined_output(result)
+
+
+def test_capture_transcripts_missing_source_dir_writes_nothing_and_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+
+    result = runner.invoke(
+        app, ["capture", "--transcripts", "--source", str(tmp_path / "does-not-exist")]
+    )
+
+    assert result.exit_code == 2
+    for capture_type in ("feedback", "project", "reference"):
+        assert list((tmp_path / ".claude" / "memory" / capture_type).glob("*.md")) == []
+
+
+def test_capture_transcripts_mutually_exclusive_with_promote_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+
+    result = runner.invoke(app, ["capture", "--transcripts", "--promote"])
+
+    assert result.exit_code == 2
+    for capture_type in ("feedback", "project", "reference"):
+        assert list((tmp_path / ".claude" / "memory" / capture_type).glob("*.md")) == []
+
+
+def test_capture_transcripts_mutually_exclusive_with_type_and_text_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["capture", "--transcripts", "--type", "feedback", "--text", "some text"],
+    )
+
+    assert result.exit_code == 2
+    assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
+
+
+def test_capture_transcripts_confirm_yes_writes_full_sentence_at_truncation_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    long_sentence = (
+        "We decided to migrate the entire ingestion pipeline from the legacy REST "
+        "polling architecture to a fully event-driven Kafka-based system after "
+        "benchmarking showed a forty percent reduction in end-to-end latency "
+        "during peak load testing."
+    )
+    assert len(long_sentence) > 120
+    _scaffold_transcript_entry(
+        transcript_root, "session-a.jsonl", [_assistant_transcript_line(long_sentence)]
+    )
+
+    result = runner.invoke(
+        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n"
+    )
+
+    assert result.exit_code == 0
+    written = list((tmp_path / ".claude" / "memory" / "project").glob("*.md"))
+    assert len(written) == 1
+    content = written[0].read_text(encoding="utf-8")
+    assert long_sentence in content
+
+    # The printed proposal shows only the truncated snippet -- never the
+    # full sentence (Boundaries & Constraints: "quote only a truncated
+    # snippet... never the full message"). The permanent captured file
+    # (asserted above) is the only place the full sentence appears.
+    assert long_sentence not in _combined_output(result)
+
+
+def test_capture_transcripts_confirm_yes_capture_failure_exits_2_cleanly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    _scaffold_transcript_entry(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+
+    def _boom(*args, **kwargs):
+        raise ValueError("simulated capture failure")
+
+    monkeypatch.setattr(cli_module, "capture_write", _boom)
+
+    result = runner.invoke(
+        app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n"
+    )
+
+    assert result.exit_code == 2
+    assert "simulated capture failure" in _combined_output(result)
 
 
 def test_graph_compile_missing_memory_root_exits_2(

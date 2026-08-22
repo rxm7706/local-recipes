@@ -8,8 +8,15 @@
   "memlog": ""
  },
  "pyforge-atlas/spec-conda-forge-packaging-inventory-operations": {
-  "files": {},
-  "memlog": "b801c61a2865834727e034c747d1bf2745f20b8a"
+  "files": {
+   "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
+   "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
+   "scripts/conda-forge-packaging-inventory-operations_metrics.py": "a6a2d3f1fe2bd3b40408d685e33370e49ee6f9f4",
+   "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "66791663c2a9c99c65d5e40676bbc4f3f404e063",
+   "scripts/conda-forge-packaging-inventory-operations_priority.py": "fe4b53df7c08d63aabdf06cfb0462498ed534663",
+   "scripts/openteams_identity_dashboards.py": "05c5cf43803a72c3c200d20f2ac6102cf2872237"
+  },
+  "memlog": "8b01832b0123643f76e1760f43b44e3423117788"
  },
  "pyforge-atlas/spec-enterprise-data-models-and-apis": {
   "files": {},

@@ -1,11 +1,12 @@
 """pyforge.scribe.cli — the `scribe` CLI (FR-14, AD-7).
 
-The CLI is the sole public contract: `capture` (direct write, Wave 1, or
-`--promote` scan-classify-propose-confirm, Story 1.3), `graph compile
-[--nightly]` (Story 2.2/2.3 -- rebuilds the compiled graph, unattended) and
-`recall <query>` (Story 2.4 -- grounded, cited retrieval over that compiled
-graph). Other components integrate with Scribe via this CLI, never by
-importing internal modules directly (AD-7).
+The CLI is the sole public contract: `capture` (direct write, Wave 1,
+`--promote` scan-classify-propose-confirm, Story 1.3, or `--transcripts`
+scan-propose-confirm over raw session transcripts, Story 3.1), `graph
+compile [--nightly]` (Story 2.2/2.3 -- rebuilds the compiled graph,
+unattended) and `recall <query>` (Story 2.4 -- grounded, cited retrieval
+over that compiled graph). Other components integrate with Scribe via this
+CLI, never by importing internal modules directly (AD-7).
 """
 
 from __future__ import annotations
@@ -26,6 +27,11 @@ from pyforge.scribe.promote import (
     default_user_local_root,
 )
 from pyforge.scribe.recall import answer as recall_answer
+from pyforge.scribe.transcripts import (
+    TranscriptScanProposal,
+    default_transcript_root,
+    scan_transcripts,
+)
 
 app = typer.Typer(
     name="scribe",
@@ -80,14 +86,38 @@ def capture_cmd(
             "team-voice promotions -- proposal-then-confirm (Story 1.3)."
         ),
     ),
+    transcripts: bool = typer.Option(
+        False,
+        "--transcripts",
+        help=(
+            "Scan raw session transcripts for un-curated decision/fact "
+            "sentences and propose captures -- proposal-then-confirm "
+            "(Story 3.1)."
+        ),
+    ),
     source: Path | None = typer.Option(
         None,
         "--source",
-        help="Override the auto-detected user-local auto-memory directory.",
+        help=(
+            "Override the auto-detected user-local auto-memory directory "
+            "(--promote) or session-transcript directory (--transcripts)."
+        ),
     ),
 ) -> None:
     """Append a new record directly into `.claude/memory/<type>/` (AD-1), or
-    with `--promote`, scan user-local auto-memory and propose promotions."""
+    with `--promote`, scan user-local auto-memory and propose promotions, or
+    with `--transcripts`, scan raw session transcripts and propose captures."""
+    if promote and transcripts:
+        typer.echo("--transcripts is mutually exclusive with --promote", err=True)
+        raise typer.Exit(code=2)
+
+    if transcripts:
+        if capture_type is not None or text is not None:
+            typer.echo("--transcripts is mutually exclusive with --type/--text", err=True)
+            raise typer.Exit(code=2)
+        _run_transcripts(source)
+        return
+
     if promote:
         if capture_type is not None or text is not None:
             typer.echo("--promote is mutually exclusive with --type/--text", err=True)
@@ -96,7 +126,9 @@ def capture_cmd(
         return
 
     if capture_type is None or text is None:
-        typer.echo("--type and --text are required unless --promote is set", err=True)
+        typer.echo(
+            "--type and --text are required unless --promote/--transcripts is set", err=True
+        )
         raise typer.Exit(code=2)
 
     try:
@@ -157,6 +189,62 @@ def _render_proposal(proposal: PromotionProposal) -> str:
     summary = ", ".join(f"{count} {classification}" for classification, count in sorted(counts.items()))
     noun = "entry" if len(proposal.entries) == 1 else "entries"
     lines.append(f"{len(proposal.entries)} {noun} scanned: {summary or 'none'}.")
+    return "\n".join(lines)
+
+
+def _run_transcripts(source: Path | None) -> None:
+    """The `--transcripts` flow: scan, print the proposal, confirm, apply.
+
+    Mirrors `_run_promote()` exactly: zero writes under `.claude/memory/`
+    happen before the user answers the `typer.confirm()` prompt -- declining
+    prints a cancellation notice and exits 0 with nothing written. Each
+    accepted candidate is written via the same `capture()` path using the
+    FULL sentence (`candidate.text`), never the truncated `candidate.snippet`.
+    Unlike `_run_promote()`, there is no pointer-stub write-back: a session
+    transcript is a historical log this package does not own and must never
+    mutate (see transcripts.py's module docstring).
+    """
+    transcript_root = source if source is not None else default_transcript_root()
+    try:
+        proposal = scan_transcripts(transcript_root, memory_root=_MEMORY_ROOT)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from exc
+
+    typer.echo(_render_transcript_proposal(proposal))
+
+    if not proposal.candidates:
+        typer.echo("Nothing to promote.")
+        raise typer.Exit(code=0)
+
+    if not typer.confirm("Write these captures?"):
+        typer.echo("Cancelled -- no files written.")
+        raise typer.Exit(code=0)
+
+    for candidate in proposal.candidates:
+        try:
+            result = capture_write(_MEMORY_ROOT, candidate.capture_type, candidate.text)
+        except (ValueError, TimeoutError) as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=2) from exc
+        typer.echo(f"captured: {result.path}")
+
+
+def _render_transcript_proposal(proposal: TranscriptScanProposal) -> str:
+    """Plain-text rendering of a `TranscriptScanProposal` for the confirm
+    prompt: every candidate's transcript+position provenance
+    (`<jsonl filename>:L<line number>` plus timestamp) and its truncated
+    `snippet` -- never the full `text` (Boundaries & Constraints: "quote
+    only a truncated snippet... never the full message")."""
+    lines = [f"Scanned {proposal.transcript_root}:"]
+    for candidate in proposal.candidates:
+        lines.append(
+            f"  [{candidate.capture_type}] {candidate.source_file.name}:L{candidate.line_number} "
+            f"({candidate.timestamp})"
+        )
+        lines.append(f"      {candidate.snippet}")
+    noun = "candidate" if len(proposal.candidates) == 1 else "candidates"
+    lines.append(f"{len(proposal.candidates)} {noun} found.")
     return "\n".join(lines)
 
 
