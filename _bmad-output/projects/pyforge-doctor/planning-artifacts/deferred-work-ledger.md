@@ -293,3 +293,10 @@ Pre-existing accept-everything semantics of the `--spec`-less full stamp, degene
 spec discovery returning nothing it replaces the whole baseline with `{}`, exit 0. Remedy:
 refuse (or gate behind a flag) when the live snapshot is empty and the existing baseline is
 not. Severity: low. Status: open. Relayed 2026-08-21.
+
+### DW-14-1-1: GitHub-releases fallback for the 6 npm-invisible bmad-suite packages
+  origin: story-14-1 review (deferred, medium — carried in the story spec's 6.11-era frontmatter `deferred:` list)
+  source_spec: `planning-artifacts/specs/spec-14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared.md`
+  severity: medium
+  reason: 6 of the 10 watched bmad-* pins (bmad-loop, bmad-labs-skills, bmad-manticore, bmad-method-wds-expansion, bmad-module-template, bmad-utility-skills) are GitHub-only and 404 on registry.npmjs.org, so CAP-4's live npm path is structurally blind to them — including bmad-loop, the package whose 0.9.0-vs-0.11.0 lag motivated CAP-4. The `packages_watched` (10) vs `packages_checked` (4) evidence keeps the gap operator-visible; the follow-on is a GitHub-releases fallback query through the same fail-open budget. Relayed here because the DW pipeline cannot yet read frontmatter `deferred:` lists (marshal DW-BL011-2).
+  status: open
