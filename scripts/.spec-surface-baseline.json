@@ -12,11 +12,11 @@
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
    "scripts/conda-forge-packaging-inventory-operations_metrics.py": "ecff44f8a55ba74e0123863d868e1b19c9f2cb7b",
-   "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "c0ffeec6e76e277c04e6a0c55fcab3b830f5bc3f",
+   "scripts/conda-forge-packaging-inventory-operations_openteams_identity.py": "a2dc4d8facd2686a6ddd5d1edbf9cdd85a075a7c",
    "scripts/conda-forge-packaging-inventory-operations_priority.py": "fe4b53df7c08d63aabdf06cfb0462498ed534663",
    "scripts/openteams_identity_dashboards.py": "0b0bcf2ccddbefade59b4f9578af4513b418a204"
   },
-  "memlog": "c4c32851d638a6e6ba700eff1037d38c4d809759"
+  "memlog": "ffd1a17b0a2ed176132e9be5321a8d7d203f26f9"
  },
  "pyforge-atlas/spec-enterprise-data-models-and-apis": {
   "files": {},

@@ -365,17 +365,29 @@ def create_missing_issues(
 
     Additive-only and idempotent: this only ever creates issues for names the
     board join (``board_packaging_urls``) did not already find -- it never
-    edits, closes, or re-titles an existing issue. A created issue is also
-    added to OpenTeams project 1 so a subsequent run's board join sees it and
-    treats the name as ``Already tracked``.
+    edits, closes, or re-titles an existing issue. A row with a blank/missing
+    ``Core_Python_Package_Name`` is skipped (never produces a garbage
+    ``[Conda-Forge Packaging] `` title).
+
+    A created issue is also added to OpenTeams project 1 so a subsequent
+    run's board join sees it and treats the name as ``Already tracked``.
+    ``row["OpenTeams_Issue_URL"]``/``board[...]`` are only updated once BOTH
+    the issue-create and the project-item-add calls succeed -- if item-add
+    fails after a successful create, the row is left unmarked (still
+    reported via the return value) so a future run retries adding it to the
+    project board instead of silently treating it as done forever.
 
     ``dry_run`` (the default, ``--create-issues`` absent) makes no ``gh``
     mutation call: it only prints and returns the ``(name, title)`` pairs
-    that would be created. With ``dry_run=False`` a non-zero ``gh`` exit for
-    one name is logged to stderr and does not abort the remaining names.
+    that would be created. With ``dry_run=False`` a non-zero ``gh`` exit (or
+    the ``gh`` binary vanishing mid-run) for one name is logged to stderr and
+    does not abort the remaining names.
     """
     missing = [
-        row for row in records if not (row.get("OpenTeams_Issue_URL") or "").strip()
+        row
+        for row in records
+        if not (row.get("OpenTeams_Issue_URL") or "").strip()
+        and (row.get("Core_Python_Package_Name") or "").strip()
     ]
     if not missing:
         return []
@@ -398,11 +410,9 @@ def create_missing_issues(
                 [gh, "issue", "create", "--repo", ISSUE_CREATE_REPO, "--title", title],
                 text=True,
             ).strip()
-        except subprocess.CalledProcessError as exc:
+        except (subprocess.CalledProcessError, OSError) as exc:
             print(f"gh issue create failed for {name}: {exc}", file=sys.stderr)
             continue
-        row["OpenTeams_Issue_URL"] = url
-        board[pep503_name(name)] = url
         try:
             subprocess.check_call(
                 [
@@ -417,11 +427,15 @@ def create_missing_issues(
                     url,
                 ]
             )
-        except subprocess.CalledProcessError as exc:
+        except (subprocess.CalledProcessError, OSError) as exc:
             print(
                 f"gh project item-add failed for {name} ({url}): {exc}",
                 file=sys.stderr,
             )
+            created.append((name, title))
+            continue
+        row["OpenTeams_Issue_URL"] = url
+        board[pep503_name(name)] = url
         created.append((name, title))
     return created
 
@@ -1128,10 +1142,20 @@ def write_dashboard_markdown(
         render(records, xlsx, gist_id, tab, helpers=helpers),
         encoding="utf-8",
     )
-    write_ops_canvas(ops_canvas or DEFAULT_OPS_CANVAS_PATH, records, tab, helpers=helpers)
-    write_workbook_canvas(
-        workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH, records, xlsx, tab, helpers=helpers
-    )
+    # A canvas-write failure (unwritable default Cursor projects path, a
+    # locked/corrupt xlsx on write_workbook_canvas's second load_workbook
+    # open, ...) must never block the gist-markdown publish above it, nor
+    # the caller's subsequent publish_gist_files call.
+    try:
+        write_ops_canvas(ops_canvas or DEFAULT_OPS_CANVAS_PATH, records, tab, helpers=helpers)
+    except Exception as exc:
+        print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
+    try:
+        write_workbook_canvas(
+            workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH, records, xlsx, tab, helpers=helpers
+        )
+    except Exception as exc:
+        print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
 
 
 def gist_file_names(gh: str, gist_id: str) -> set[str]:
@@ -1341,6 +1365,13 @@ def main() -> int:
         return publish_gist_from_tab(
             args.xlsx, args.gist_id, args.tab_out, args.ops_canvas, args.workbook_canvas
         )
+    if args.create_issues and not gh_bin():
+        print(
+            "gh not found; cannot use --create-issues (pass --project-items and "
+            "omit --create-issues for a dry-run, or install gh)",
+            file=sys.stderr,
+        )
+        return 1
 
     cache = args.cache_dir
     cache.mkdir(parents=True, exist_ok=True)

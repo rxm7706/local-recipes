@@ -224,6 +224,98 @@ def test_create_issues_flag_is_wired_into_argparse():
     )
     assert proc.returncode == 0
     assert "--create-issues" in proc.stdout
+    assert "--ops-canvas" in proc.stdout
+    assert "--workbook-canvas" in proc.stdout
+
+
+def test_blank_package_name_is_skipped(monkeypatch):
+    """A row with a blank/missing Core_Python_Package_Name must never reach
+    `gh issue create` -- it would mint a garbage `[Conda-Forge Packaging] `
+    title."""
+    calls: list = []
+    monkeypatch.setattr(subprocess, "check_output", lambda *a, **k: calls.append(a) or "unexpected")
+    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: calls.append(a) or 0)
+
+    blank_row = _row("")
+    blank_row["Core_Python_Package_Name"] = "   "  # whitespace-only, still blank
+    rows = [blank_row, _row("good-pkg")]
+
+    dry_result = identity.create_missing_issues("gh", [dict(r) for r in rows], board={}, dry_run=True)
+    assert [name for name, _title in dry_result] == ["good-pkg"]
+    assert calls == []
+
+
+def test_gh_binary_vanishing_mid_run_is_caught_not_fatal(monkeypatch):
+    """A non-CalledProcessError OSError (e.g. FileNotFoundError if `gh`
+    disappears mid-run) must be caught too, in both the issue-create and the
+    project-item-add call, so the loop genuinely never aborts."""
+    monkeypatch.setattr(
+        subprocess,
+        "check_output",
+        lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("gh vanished")),
+    )
+    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: 0)
+
+    result = identity.create_missing_issues("gh", [_row("some-pkg")], board={}, dry_run=False)
+    assert result == []  # issue-create itself failed; nothing to report as created
+
+
+def test_project_item_add_failure_does_not_mark_row_as_tracked(monkeypatch):
+    """If `gh issue create` succeeds but `gh project item-add` fails, the row
+    must NOT be marked tracked (OpenTeams_Issue_URL / board), so a future
+    run's live board_packaging_urls join still sees it as missing and
+    retries the project-add step -- otherwise it is silently done forever."""
+    monkeypatch.setattr(
+        subprocess,
+        "check_output",
+        lambda *a, **k: "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/42\n",
+    )
+    monkeypatch.setattr(
+        subprocess,
+        "check_call",
+        lambda *a, **k: (_ for _ in ()).throw(subprocess.CalledProcessError(1, a)),
+    )
+
+    row = _row("some-pkg")
+    board: dict[str, str] = {}
+    result = identity.create_missing_issues("gh", [row], board=board, dry_run=False)
+
+    # Still reported as created (the issue really was created) ...
+    assert result == [("some-pkg", "[Conda-Forge Packaging] some-pkg")]
+    # ... but NOT merged into the row or the board, so it is retried next run.
+    assert row["OpenTeams_Issue_URL"] == ""
+    assert board == {}
+
+
+# ---------------------------------------------------------------------------
+# write_dashboard_markdown canvas-write guard
+# ---------------------------------------------------------------------------
+
+
+def test_write_dashboard_markdown_survives_a_canvas_write_failure(tmp_path, monkeypatch):
+    """A raising write_ops_canvas/write_workbook_canvas must never block the
+    gist-markdown write, nor propagate out of write_dashboard_markdown --
+    which would otherwise abort the caller's subsequent publish_gist_files
+    call even though the gist-markdown publish itself would have succeeded.
+    `render` is stubbed here too so this test isolates the canvas guard from
+    render()'s own (unrelated) real-xlsx requirement.
+    """
+    monkeypatch.setattr(dashboards, "render", lambda *a, **k: "# stub dashboard markdown\n")
+    monkeypatch.setattr(
+        dashboards, "write_ops_canvas", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("ops boom"))
+    )
+    monkeypatch.setattr(
+        dashboards,
+        "write_workbook_canvas",
+        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("workbook boom")),
+    )
+
+    dash_path = tmp_path / "dashboards.md"
+    identity.write_dashboard_markdown(
+        dash_path, [], tmp_path / "missing.xlsx", "gist-id-123", "identity-2026-08-20"
+    )
+
+    assert dash_path.read_text(encoding="utf-8") == "# stub dashboard markdown\n"
 
 
 # ---------------------------------------------------------------------------
