@@ -86,6 +86,6 @@ extra:
 # CFE comments
 # Header:
 #    # generate failed rc=1: Fetching info for bmad-method...
-Error: Failed to fetch PyPI metadata for 'bmad-method' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/bmad-method/json
+#    # Error: Failed to fetch PyPI metadata for 'bmad-method' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/bmad-method/json
 
 ####
