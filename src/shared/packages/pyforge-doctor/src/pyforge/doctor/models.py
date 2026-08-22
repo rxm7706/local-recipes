@@ -174,7 +174,15 @@ class Source(StrEnum):
     # GitHub releases/tags fallback (keyed by that package's own
     # `recipes/<name>/recipe.yaml` github mapping) is tried before giving
     # up on it -- still this one Source, still warn-only, riding the same
-    # surfaces.
+    # surfaces. Story 15.2 extends gather() a further time: for every
+    # watched package (CORE plus every suite pin) whose upstream-latest is
+    # already resolved, two more fail-open warn-only checks compare that
+    # package's `recipes/<name>/recipe.yaml`-declared version against what
+    # the SelfExplainML anaconda.org channel actually serves
+    # (`bmad-channel-drift`) and against upstream itself
+    # (`bmad-recipe-upstream-drift`) -- still this one Source, still
+    # WARN-or-OK only, riding the same two Story 10.3 dispatch surfaces
+    # with zero wiring changes.
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
     # Story 13.1 (Epic 13/CAP-1): the closed taxonomy EXTENDED once more --
     # Doctor's verdict on which tracked deferred-work-ledger entries, fleet
