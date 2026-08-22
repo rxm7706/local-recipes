@@ -28,6 +28,10 @@ Doctor already reports staleness for every other class of fleet dependency — f
   - **intent:** The drift Finding appears where operators already look — Doctor's own report/verdict shape and `fleet-picture`'s ATTENTION block — and never blocks or fails a check-suite run on its own.
   - **success:** `fleet-picture`'s ATTENTION block names the drift when CAP-1 or CAP-2 fire; the check-suite's exit code is unaffected by this Finding alone (a `warn`, never a `fail`).
 
+- **CAP-4 — suite-vs-upstream drift** *(added 2026-08-21, superseding the former "core only" non-goal).*
+  - **intent:** The same ambient signal covers the installed bmad-suite, not just the core. Motivating evidence (2026-08-21, the live 6.10.0→6.11.0 upgrade session): `bmad-loop` sat at 0.9.0 against upstream 0.11.0 — 0.9.0 hardcodes `/bmad-dev-auto` and stalls every unattended session on BMAD ≥ 6.11, which upstream patched in an emergency 0.9.1 — while TEA lagged 1.19.1 vs 1.23.2 (1.19.1's `tea-test-review` bin was published empty), and three coordinated ecosystem waves rode the window. None of it produced any ambient signal until a human checked.
+  - **success:** The watched set is DERIVED from `pixi.toml`'s `bmad-*` pins (never a hardcoded list — a hardcoded list omits exactly the newest tool); installed environment versions are compared against latest upstream releases through the same fail-open live-query exception CAP-2 already holds; warn-only per CAP-3. Pointed at the 2026-08-21 pre-update state, it names `bmad-loop 0.9.0 < 0.11.0` and `TEA 1.19.1 < 1.23.2`; offline it degrades silently.
+
 ## Constraints
 
 - **Read-only, always.** This Spec never runs `npx bmad-method install` or writes to `_bmad/**` — applying an upgrade is `bmad-method-core-upgrade`'s (owner: steward) territory entirely, never this one's.
@@ -38,7 +42,7 @@ Doctor already reports staleness for every other class of fleet dependency — f
 
 - Not applying, merging, or reconciling anything — steward's territory via `bmad-method-core-upgrade`.
 - Not deciding which currently-unexercised BMAD modules to keep or drop (`one-front-door`'s own open question).
-- Not a general "any dependency is behind" detector — scoped specifically to BMAD-METHOD's own installed core.
+- Not a general "any dependency is behind" detector — scoped to BMAD-METHOD's installed core and the `bmad-*` suite (CAP-4, 2026-08-21); every non-BMAD dependency stays out.
 
 ## Success signal
 

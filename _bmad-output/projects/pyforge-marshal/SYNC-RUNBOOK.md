@@ -67,18 +67,18 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 | `archive-misplaced`, `stray-file` | planning / impl | `python scripts/bmad_drift_check.py --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
 | `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's an **intake spec**, `git mv` it to `docs/specs/` (Tier 1); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
 | `docs-specs-nonmd` | docs/specs | `docs/specs/` holds Tier-1 markdown intake specs only — move the non-`.md` file out. |
-| `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`; for `project-context.md` regenerate with **`bmad-generate-project-context`** |
-| `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | **`bmad-document-project`** — re-grounds these from the live repo; then bump each `source_pin` |
-| `pin-behind` (context) | `project-context.md` | **`bmad-generate-project-context`** |
+| `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`; for `project-context.md` regenerate with **`bmad-project-context`** (6.11 successor of `bmad-generate-project-context`; note it maintains an `AGENTS.md` block, not `project-context.md` — an existing `project-context.md` is read as legacy input) |
+| `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | re-ground by hand or with a plain read-only agent, then bump each `source_pin` — **6.11 removed `bmad-document-project`** and its successor `bmad-project-context` does NOT produce brownfield docs (the deeper capability is promised upstream, not shipped) |
+| `pin-behind` (context) | `project-context.md` | **`bmad-project-context`** (writes the `AGENTS.md` block; `project-context.md` is a frozen legacy artifact — reconcile its pin by hand) |
 | `pin-behind` (plan) | `PRD.md`, `epics.md` | **`bmad-correct-course`** → **`bmad-edit-prd`** / **`bmad-create-epics-and-stories`** (structural: new epics/stories for net-new capabilities, not a number swap) |
-| `pin-behind` (snapshot) | `validation-report-PRD.md`, `implementation-readiness-report.md` | regenerate fresh: **`bmad-validate-prd`**, **`bmad-check-implementation-readiness`** (a gate is only meaningful re-run against current artifacts — never number-patch a dated snapshot) |
+| `pin-behind` (snapshot) | `validation-report-PRD.md`, `implementation-readiness-report.md` | regenerate fresh: **`bmad-prd`** (validate intent), **`bmad-sprint-planning`** readiness gate (6.11 absorbed `bmad-check-implementation-readiness`; PASS/CONCERNS/FAIL, finds artifacts by content not filename globs) (a gate is only meaningful re-run against current artifacts — never number-patch a dated snapshot) |
 | `stale-rule` | any | hand-fix the rule, then add the bad pattern to `STALE_RULE_PATTERNS` in `sources/factory.py` (the ported verdict's own copy — `scripts/bmad_drift_check.py` no longer carries this constant) so it can never silently return |
 | `spec-status-stale` | `implementation-artifacts/spec-*.md` | flip the spec's `status:` to its terminal value (it shipped — a matching retro exists) |
 | `deferred-stale` | `implementation-artifacts/deferred-work.md` | reconcile each item vs the CHANGELOG / live code, then refresh the `**Last reconciled:** … vX.Y.Z` stamp |
-| `index.md` after any move/refresh | `index.md` | **`bmad-index-docs`** |
+| `index.md` after any move/refresh | `index.md` | hand-edit — **6.11 removed `bmad-index-docs` with no replacement** |
 | `uncovered` | a new file | add a classification rule in `sources/factory.py` (`TRACKED` or `classify()` — the ported verdict's own copy; `scripts/bmad_drift_check.py` keeps an unused reference copy of `classify()` only, documented there as the extension pointer for anyone editing the script directly) so coverage stays complete |
 
-The index (`index.md`) is regenerated **last**, after all moves and refreshes, via `bmad-index-docs`.
+The index (`index.md`) is refreshed **last**, after all moves and refreshes — by hand since 6.11 removed `bmad-index-docs`.
 
 ## Step 2 — Re-ground deep correctness (the part a script can't do)
 
@@ -87,12 +87,14 @@ a claim that's false, a plan missing whole capability clusters) is re-grounded b
 BMAD brownfield skill against the live repo**:
 
 ```
-bmad-document-project        # re-derive architecture-*, source-tree-analysis, project-overview, project-parts
-bmad-generate-project-context# re-derive the spawn rulebook (project-context.md)
+# 6.11: bmad-document-project is removed and bmad-project-context does NOT
+# re-derive brownfield docs. Re-derive architecture-*, source-tree-analysis,
+# project-overview, project-parts with plain read-only agents grounded in the
+# live repo; bmad-project-context maintains only the AGENTS.md block.
+bmad-project-context         # refresh/audit the verified AGENTS.md block
 ```
 
-For high-stakes reconciliations, follow with an adversarial pass (`bmad-review-adversarial-general`
-/ `bmad-review-edge-case-hunter`) or a fan-out of read-only verification agents that check each
+For high-stakes reconciliations, follow with an adversarial pass (`bmad-review` — 6.11 consolidates the adversarial / edge-case-hunter / verification-gap lenses) or a fan-out of read-only verification agents that check each
 doc's claims against live code — the same method used in the 2026-06-20 audit.
 
 ## Step 3 — Re-stamp the baseline
