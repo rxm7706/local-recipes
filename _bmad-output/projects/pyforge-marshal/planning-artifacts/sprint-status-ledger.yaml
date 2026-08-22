@@ -37,7 +37,7 @@ development_status:
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
-  11-4-marshal-seed-update-two-phase: backlog
+  11-4-marshal-seed-update-two-phase: done
   11-5-referenced-dependency-verification-and-doctor-delegation: backlog
   11-6-marshal-seed-explain-and-version: backlog
   12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: backlog
