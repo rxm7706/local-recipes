@@ -1,16 +1,17 @@
 """Smoke test for Story 7.1's ``pyforge.marshal.seed`` scaffold + ``marshal
-seed`` CLI wiring: the module tree imports cleanly, and each of the three
+seed`` CLI wiring: the module tree imports cleanly, and each of the two
 still-stub verbs reports not-yet-implemented and exits clean. Mirrors
 ``tests/unit/test_cli.py``'s ``main([...])``/``capsys`` style -- no real
-detect/plan/apply/Copier logic exists yet to exercise for those three
-(Epics 11, 12).
+detect/plan/apply/Copier logic exists yet to exercise for those two
+(Epic 12).
 
-``check`` (Story 10.5), ``adopt`` (Story 10.6), and ``init`` (Story 10.7) are
-no longer stubs -- each is excluded from the parametrized stub-verb test
-below (unlike its three remaining siblings, none of them ever prints "not
-yet implemented") and gets its own smoke test proving the full ``main()``
-dispatch path reaches the real verb; ``tests/unit/test_seed_cli_seed_check.py``/
-``test_seed_cli_seed_adopt.py``/``test_seed_cli_seed_init.py`` cover their
+``check`` (Story 10.5), ``adopt`` (Story 10.6), ``init`` (Story 10.7), and
+``update`` (Story 11.4) are no longer stubs -- each is excluded from the
+parametrized stub-verb test below (unlike its two remaining siblings, none
+of them ever prints "not yet implemented") and gets its own smoke test
+proving the full ``main()`` dispatch path reaches the real verb;
+``tests/unit/test_seed_cli_seed_check.py``/``test_seed_cli_seed_adopt.py``/
+``test_seed_cli_seed_init.py``/``test_seed_cli_seed_update.py`` cover their
 exit-code/rendering behavior in full.
 """
 
@@ -55,7 +56,7 @@ def test_each_architecture_subpackage_imports(subpackage):
     importlib.import_module(f"pyforge.marshal.seed.{subpackage}")
 
 
-@pytest.mark.parametrize("verb", ["update", "explain", "version"])
+@pytest.mark.parametrize("verb", ["explain", "version"])
 def test_seed_verb_stub_exits_zero_and_names_itself(verb, capsys):
     exit_code = main(["seed", verb])
     assert exit_code == 0
@@ -129,6 +130,24 @@ def test_seed_init_is_no_longer_a_stub(tmp_path, capsys):
     assert "adopt" in captured.out
     assert exit_code == UsageError.exit_code
     assert not (tmp_path / ".git").exists()
+
+
+def test_seed_update_is_no_longer_a_stub(tmp_path, capsys):
+    """The fourth verb this test file's own stub loop no longer covers
+    (Story 11.4): dispatched through the real ``main()`` against an
+    explicit ``--repo-root`` (mirroring ``test_seed_adopt_is_no_longer_a_
+    stub``'s own convention exactly, for the identical reason).
+    ``tmp_path`` is not a git repo at all, so ``update`` -- a MUTATING verb,
+    like ``adopt`` -- reaches ``verbs.preconditions.check_preconditions``'s
+    rung 1 and refuses before writing anything: exit code 3
+    (``PreconditionFailure``), never 0."""
+    exit_code = main(["seed", "update", "--repo-root", str(tmp_path)])
+
+    captured = capsys.readouterr()
+    assert "not yet implemented" not in captured.out
+    assert "not-a-git-repo" in captured.out
+    assert exit_code == PreconditionFailure.exit_code
+    assert not (tmp_path / ".marshal").exists()
 
 
 def test_bare_seed_is_a_usage_error(capsys):

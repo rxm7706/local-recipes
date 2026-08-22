@@ -10,17 +10,18 @@ required=True)``, one ``add_parser`` per verb. ``required=True`` means a
 bare ``marshal seed`` with no verb is a clean argparse usage error, not a
 silent no-op -- same convention as ``gate``'s own ``gate_command``.
 
-Three of the six verbs here are still STUBs (Story 7.1's own scope -- naming
+Two of the six verbs here are still STUBs (Story 7.1's own scope -- naming
 was contested until the 2026-08-10 correct-course settled it: the installer
 lives *inside* ``pyforge-marshal``, no new package, no second binary, no
-binding revival of the retired ``genesis`` name): each prints a one-line
-message naming itself as not yet implemented and returns ``EXIT_OK``,
-imported from ``core/verdict.py`` (AD-7's sole-ownership rule -- never a new
-exit-code literal here; used ONLY for the literal ``0`` success value, per
-this story's own Boundaries bullet -- ``core/verdict.py``'s MRS lattice
-itself is never reused for anything else). ``run_check`` (Story 10.5,
-FR-88..93), ``run_adopt`` (Story 10.6, FR-79..87), and ``run_init`` (Story
-10.7, FR-72..78) are the three real ones. ``run_check`` loads the packaged
+binding revival of the retired ``genesis`` name): ``run_explain``/
+``run_version`` each print a one-line message naming themselves as not yet
+implemented and return ``EXIT_OK``, imported from ``core/verdict.py`` (AD-7's
+sole-ownership rule -- never a new exit-code literal here; used ONLY for the
+literal ``0`` success value, per this story's own Boundaries bullet --
+``core/verdict.py``'s MRS lattice itself is never reused for anything else).
+``run_check`` (Story 10.5, FR-88..93), ``run_adopt`` (Story 10.6, FR-79..87),
+``run_init`` (Story 10.7, FR-72..78), and ``run_update`` (Story 11.4,
+FR-94/FR-97..101) are the four real ones. ``run_check`` loads the packaged
 model manifest, resolves ``--repo-root`` (a plain ``argparse`` validation,
 not a ``seed/verbs/preconditions.py`` rung -- ``check`` never calls that
 mutating-verb gate), and delegates every real decision to ``seed.verbs.
@@ -33,13 +34,21 @@ that verb's own ``confirm`` parameter requires (see ``seed/verbs/adopt.py``'s
 module docstring). ``run_init`` resolves ``<path>``/``--slug``/``--agents``/
 ``--force`` and delegates to ``seed.verbs.init.run_init`` -- unlike
 ``run_adopt``, it supplies no confirmation seam at all (``init`` never
-confirms; see that module's own docstring). This module's own job is thin
+confirms; see that module's own docstring). ``run_update`` resolves
+``--repo-root``/``--run``/``--force``/``--include-seeded``/``--yes`` and
+delegates to ``seed.verbs.update.run_update``, the SAME confirmation seam
+``run_adopt`` supplies -- and gains its own plan renderer
+(``_render_update_plan_text``), fixing ``DW-FU-11-3`` (a migration-offered
+``copied-seeded`` skip renders as an explicit offer, never a false
+``matched --skip`` claim) rather than reusing ``_render_plan_text``
+(``adopt``-specific per its own docstring). This module's own job is thin
 CLI plumbing: parse args, load the manifest, call the verb, render its
 result as text, and map ``seed/errors.py``'s six-leaf taxonomy to a process
 exit code -- it contains no detect/plan/hash/region/apply/materialize logic
 of its own. No Copier import here (``seed.verbs.adopt``/``seed.verbs.init``/
-``seed.engine`` own that, per P-02) -- state/derive/migrate logic beyond
-what ``adopt``/``init`` already wire belongs to Epics 11, 12.
+``seed.verbs.update``/``seed.engine`` own that, per P-02) -- state/derive
+logic beyond what ``adopt``/``init``/``update`` already wire belongs to
+Epic 12.
 """
 
 from __future__ import annotations
@@ -53,6 +62,7 @@ from pathlib import Path
 from ..core.verdict import EXIT_OK
 from ..seed.detect.findings import Severity
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
+from ..seed.migrate import registry as migrate_registry
 from ..seed.model.manifest import Manifest, ManifestError, load_manifest
 from ..seed.plan.types import Plan
 from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
@@ -61,6 +71,8 @@ from ..seed.verbs.check import CheckReport
 from ..seed.verbs.check import run_check as _run_check_verb
 from ..seed.verbs.init import InitResult
 from ..seed.verbs.init import run_init as _run_init_verb
+from ..seed.verbs.update import UpdateResult
+from ..seed.verbs.update import run_update as _run_update_verb
 
 # The severity groups a text report renders, in the fixed order the spec's
 # own "matching bmad_drift_check.py's report shape" bullet requires:
@@ -448,8 +460,107 @@ def run_init(
     return EXIT_OK
 
 
-def run_update(args: argparse.Namespace) -> int:
-    print("marshal seed update: not yet implemented")
+def _render_update_plan_text(plan: Plan) -> str:
+    """The human-reviewable rendering of a ``marshal seed update`` plan --
+    mirrors ``_render_plan_text``'s own shape (one line per ``Action``, one
+    per skipped artifact, an explicit "nothing to do" line for an empty
+    plan), but ``update`` gets its OWN renderer rather than reusing
+    ``_render_plan_text`` unmodified (that one is ``adopt``-specific per its
+    own docstring) so it can fix ``DW-FU-11-3``: a migration-offered
+    ``copied-seeded`` skip (``SkippedArtifact.pattern ==
+    migrate_registry._SEEDED_OFFER_PATTERN``) renders as an explicit
+    migration offer, never the generic ``matched --skip {pattern!r}``
+    sentence that would falsely imply a ``--skip`` glob was given."""
+    if not plan.actions:
+        lines = ["marshal seed update -- plan is empty; nothing to do"]
+    else:
+        lines = [f"marshal seed update -- plan ({len(plan.actions)} action(s)):"]
+        for action in plan.actions:
+            lines.append(f"  {action.artifact_id} ({action.target_path}): {action.rationale}")
+    if plan.skipped:
+        lines.append(f"skipped ({len(plan.skipped)}):")
+        for skipped in plan.skipped:
+            if skipped.pattern == migrate_registry._SEEDED_OFFER_PATTERN:
+                lines.append(
+                    f"  {skipped.artifact_id} ({skipped.target_path}):"
+                    " offered by a migration; not applied without --include-seeded"
+                )
+            else:
+                lines.append(
+                    f"  {skipped.artifact_id} ({skipped.target_path}):"
+                    f" matched --skip {skipped.pattern!r}"
+                )
+    return "\n".join(lines)
+
+
+def run_update(
+    args: argparse.Namespace,
+    *,
+    manifest: Manifest | None = None,
+    confirm: Callable[[], bool] | None = None,
+) -> int:
+    """``marshal seed update`` (Story 11.4): thin CLI plumbing over
+    ``seed.verbs.update.run_update`` -- this function performs no detect/
+    plan/migrate/apply/materialize logic of its own; every real decision is
+    that module's (see its own docstring for the full orchestration and the
+    three-source merge it implements).
+
+    ``manifest``/``confirm`` are the identical keyword-only test-injection
+    seams ``run_adopt`` already establishes, extended here unchanged.
+
+    The verb call is INSIDE the ``try``, and a bare ``Exception`` is wrapped
+    as ``InternalError`` rather than left to escape as a traceback -- the
+    identical widened try/except shape ``run_check``/``run_adopt``/
+    ``run_init`` already establish."""
+    try:
+        repo_root = _resolve_repo_root(args.repo_root)
+        if manifest is None:
+            manifest = _load_packaged_manifest()
+        result: UpdateResult = _run_update_verb(
+            repo_root,
+            manifest,
+            run=args.run,
+            force=args.force,
+            include_seeded=args.include_seeded,
+            yes=args.yes,
+            confirm=confirm if confirm is not None else _real_confirm,
+        )
+    except ManifestError as exc:
+        wrapped = InternalError(
+            f"the packaged seed manifest could not be loaded: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the packaged manifest.yaml ships inside"
+                " the distribution and its absence or corruption is a broken"
+                " installation, not a problem with the repository being updated"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=False)
+        return wrapped.exit_code
+    except SeedError as exc:
+        _print_seed_error(exc, as_json=False)
+        return exc.exit_code
+    except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
+        wrapped = InternalError(
+            f"an unanticipated internal failure occurred: {exc}",
+            remedy=(
+                "this is unexpected -- please file a bug report against"
+                " pyforge-marshal with the full command and output"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=False)
+        return wrapped.exit_code
+
+    print(_render_update_plan_text(result.plan))
+    if result.declined:
+        print("update: apply declined; nothing was applied.")
+    elif result.applied is not None:
+        if result.applied:
+            print(f"update: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
+        else:
+            print("update: plan was empty; nothing to apply.")
+    else:
+        print("update: dry-run; re-run with --run to execute this plan.")
+
     return EXIT_OK
 
 
@@ -601,7 +712,46 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
     update_parser = seed_subparsers.add_parser(
         "update",
         help="Apply pending seed-template updates to a project.",
-        description="Stub (Story 7.1) -- migration/update logic lands in a later story.",
+        description=(
+            "Story 11.4: detect -> plan (migrations + absent entries + wholesale"
+            " regenerate, merged) -> confirm -> apply -> state-write. Dry-run by"
+            " default -- writes only .marshal/plan.json and prints it; --run executes"
+            " the plan (prompting for confirmation unless --yes is given)."
+        ),
+    )
+    update_parser.add_argument(
+        "--repo-root",
+        dest="repo_root",
+        default=None,
+        metavar="PATH",
+        help="The target repo to update (default: the current working directory).",
+    )
+    update_parser.add_argument(
+        "--run",
+        action="store_true",
+        default=False,
+        help="Execute the plan (default: dry-run -- compute and print the plan only).",
+    )
+    update_parser.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help=(
+            "Bypass the hand-edited-managed-content precondition (rung 6 only) and"
+            " materialize whole-file artifacts via Copier's recopy semantics."
+        ),
+    )
+    update_parser.add_argument(
+        "--include-seeded",
+        action="store_true",
+        default=False,
+        help="Also apply a migration-offered copied-seeded action (skipped by default).",
+    )
+    update_parser.add_argument(
+        "--yes",
+        action="store_true",
+        default=False,
+        help="Skip the confirmation prompt when applying (unattended/CI use).",
     )
     update_parser.set_defaults(handler=run_update)
 
