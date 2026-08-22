@@ -63,7 +63,7 @@ artifacts:
       Marshal's orchestrator; Genesis declares the floor, Marshal operates
       it. The floor is 0.11.0 because that is the load-bearing requirement:
       pyforge-marshal's own pyproject.toml declares `bmad-loop>=0.11.0,<0.12`
-      as a hard runtime dependency, and 0.9.x hardcodes /bmad-dev-auto in
+      as a hard runtime dependency, and 0.9.x hardcodes /bmad-dev-auto (the retired 6.x name) in
       session prompts, which stalls unattended runs on BMAD >=6.11 (the
       0.9.1 rename hotfix resolves the dev primitive on disk instead).
       Matches the live pixi.toml.

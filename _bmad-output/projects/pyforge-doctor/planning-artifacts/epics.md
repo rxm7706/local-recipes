@@ -801,11 +801,11 @@ same severity both sides). Sequenced behind 6-9, which landed (PRs #394/#395). A
 the fleet audit's Phase 3 (2026-08-10) per the operator-approved decomposition queue.
 
 ### Story 7.1: The emitter mints identity at defer time
-**Given** a bmad-dev-auto review pass that defers work **When** the deferral is written
+**Given** a `bmad-dev-auto` (the retired 6.x name of `bmad-build-auto`) review pass that defers work **When** the deferral is written
 **Then** the entry carries an id under the station's own convention (`DW-FU-<story>` for
 doctor/atlas/marshal/warden, `DW-<story>-<n>` for mason) from birth — an entry reaching
 promotion without an id is already invisible to the promoter (CAP-1; edits
-`.claude/skills/bmad-dev-auto/step-04-review.md`, allowlisted not governed).
+`.claude/skills/bmad-dev-auto/step-04-review.md` — the pre-6.11 path of the skill since renamed `bmad-build-auto` — allowlisted not governed).
 
 ### Story 7.2: Grandfather the 470 at a dated cut-off
 **Given** the pre-existing anonymous backlog **When** this story lands **Then** the dated
@@ -850,7 +850,7 @@ shrinking, not an ongoing leak — everything still anonymous predates PR #396.
 **Given** a Tier-3 `deferred-work.md` carrying entries from before the CAP-1 emitter fix
 **When** the deferred-work source parses it **Then** every entry is classified correctly
 across all four shapes proven to exist live — a headerless flat `- source_spec:`/`summary:`/
-`evidence:` bullet under a `bmad-dev-auto` step-04 marker comment (atlas, 58 findings dating
+`evidence:` bullet under a `bmad-dev-auto` step-04 marker comment (the retired 6.x name — a marker literal that parsers match, kept verbatim; atlas, 58 findings dating
 to July); the older `## Deferred from: code review of <spec> (<date>)` section-header
 convention predating any `DW-` id (warden); CAP-1's current headed shape; and a headed entry
 with **more than one** `- source_spec:` bullet stacked under it (marshal/steward) — with zero
@@ -889,7 +889,7 @@ a duplicate mint before being caught and renumbered by hand: `DW-10-5-1` against
 **Status:** done
 
 **Outcome (2026-08-15).** `mint_id_for_entry` (new, `pyforge/doctor/sources/chain.py`) ports
-the id-minting prose already living in `.claude/skills/bmad-dev-auto/step-04-review.md` into
+the id-minting prose already living in `.claude/skills/bmad-dev-auto/step-04-review.md` (the pre-6.11 path; skill since renamed `bmad-build-auto`) into
 real, tested code — pure computation, no file writes. Adversarial review, executed live
 against real fleet data, caught and fixed three HIGH bugs before landing: a silent-swallow of
 unreadable ledger files as "zero tokens"; a batch-minting collision (calling the function
@@ -1197,7 +1197,7 @@ atomic, or serialized) such that neither write is silently lost — reproduces a
 `docs/dreams/deferred-work-resolution-sweep.md`). Trigger mechanism resolved in that Spec's
 Assumptions (not left as an Open Question): a `pyforge.doctor.sources` detector / `doctor` CLI
 verb, invoked manually by a drafting session — matching every other Doctor capability's shape,
-not a hook into `bmad-create-story`/`bmad-create-epics-and-stories`'s own prompt instructions.
+not a hook into `bmad-create-story` (retired in 6.11)/`bmad-create-epics-and-stories`'s own prompt instructions.
 
 ### Story 13.1: A drafting session surfaces matching deferred-work entries for an epic
 **Given** an epic or story identifier named at invocation **When** the new detector/verb runs

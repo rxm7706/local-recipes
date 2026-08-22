@@ -1489,9 +1489,9 @@ hand to tell them apart
 ### Story 5.9: A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — FR-186)*
 
 As the operator,
-I want a story completed and merged via `bmad-quick-dev` — with no `bmad-loop` run ever
+I want a story completed and merged via `bmad-quick-dev` (the retired 6.x name of `bmad-build`) — with no `bmad-loop` run ever
 touching it — reconciled into the tracked ledger the same way a loop-landed story is,
-So that mixing `bmad-quick-dev` and `bmad-loop` within one station never leaves Marshal's own
+So that mixing `bmad-quick-dev` (retired name) and `bmad-loop` within one station never leaves Marshal's own
 state out of sync with what actually happened.
 
 **Type:** feature • **Effort:** M • **Deps:** S-5.4, S-4.1 • **FR/AD:** FR-186; AD-5, AD-33
@@ -1502,12 +1502,12 @@ state out of sync with what actually happened.
 `cli/`, `adapters/`, or a schema. `sprint-status-ledger.yaml`'s `development_status:` map is a
 flat `done | backlog` vocabulary that only ever advances on a signal `bmad-loop` itself emits
 (`scripts/promote_sprint_status.py`'s own docstring: "bmad-loop marks a story `done` at DEV
-completion"). A story hand-implemented via `bmad-quick-dev` — real, tested, merged to `main`
+completion"). A story hand-implemented via `bmad-quick-dev` (retired name) — real, tested, merged to `main`
 — never calls that path, so its key reads `backlog` forever unless an operator hand-edits a
 generated file. Story 5.4 already reports the converse case (a story marked done with no
 corresponding merge) as a named discrepancy; this is the mirror case Story 5.4 does not yet
 cover — a real merge with no ledger signal — and it is the concrete blocker to letting an
-operator hand-pick a story for `bmad-quick-dev` while that station's loop is between stories,
+operator hand-pick a story for `bmad-quick-dev` (retired name) while that station's loop is between stories,
 or mid-run on a different one, without Marshal's own tracked state silently going stale.
 
 **Acceptance Criteria:**
@@ -1519,7 +1519,7 @@ run/journal record
 plus existing spec/story-identity artifacts alone — never a new hand-maintained flag (AD-5,
 AD-33)
 **And** its key advances out of `backlog` in `sprint-status-ledger.yaml` (or the mechanism
-feeding it), with the completion path recorded as `bmad-quick-dev`, distinct from a
+feeding it), with the completion path recorded as `bmad-quick-dev` (retired name; the shipped code label is `not-loop-native`), distinct from a
 `bmad-loop` completion
 **And** `marshal status` / the fleet dashboard shows the completion path with no operator
 hand-edit and no commit-subject archaeology
@@ -1531,7 +1531,7 @@ gives a loop-landed story's spec
 **When** a separate story on that station is reconciled as quick-dev-completed
 **Then** the reconciliation neither reads from nor writes to the live run's own journal, and a
 test proves the live run's state is unaffected
-**And** this story does not change `bmad-quick-dev` itself, and does not decide whether
+**And** this story does not change `bmad-quick-dev` (retired name) itself, and does not decide whether
 Marshal ever invokes it on an operator's behalf (PRD Q-16 stays open)
 
 ### Story 5.10: `marshal land` renders a detectable merge subject *(added 2026-08-12 — FR-187, backlog)*
@@ -1551,7 +1551,7 @@ bmad-loop's own native form, but `marshal land` (`cli/land.py::run_land`) merges
 `forge.merge_pr` → `gh pr merge`, which lets GitHub auto-generate the subject — a shape
 byte-identical to a human's plain PR merge. Of the keys `merged_story_keys` finds outside the
 templated/native patterns, the large majority are `marshal land` landings, not genuine
-`bmad-quick-dev` sessions, so every consumer of this classification (fleet-picture, `marshal
+`bmad-quick-dev` (retired name) sessions, so every consumer of this classification (fleet-picture, `marshal
 status`, `dashboard-drift-check`, Story 5.9's own `reconcile-completions`) currently mislabels
 them. Confirmed low-risk: `gh pr merge` already supports `-t/--subject` for every strategy
 (merge/squash/rebase). Not urgent — backlog, not a prerequisite for Story 5.9, which ships with
@@ -1573,7 +1573,7 @@ step of `run_land`
 **Then** none of them change — only the merge commit's subject line changes
 **And** this story does not retroactively relabel any ledger row already marked
 `done`/`not-loop-native` before it ships, and does not change `deploy land-story`,
-`bmad-quick-dev`, or Story 5.9's own `reconcile-completions` code
+`bmad-quick-dev` (retired name), or Story 5.9's own `reconcile-completions` code
 
 ## Epic 6: Portability proven
 
@@ -3168,7 +3168,7 @@ other fails a check, and per-station tool-surface coverage is reported as a numb
 
 **Goal:** FR-129..FR-132 (+FR-130's kit): the fleet's test architecture becomes generated,
 current, and gated. Convergence: this epic IS the durable fix for the audit's
-test-architecture-stale-at-5-stations routing — the `bmad-document-project` sweep becomes
+test-architecture-stale-at-5-stations routing — the `bmad-document-project` (retired in 6.11) sweep becomes
 S-19.1's first run.
 
 ### Story 19.1: One generator produces every station's test architecture
@@ -3386,12 +3386,12 @@ this session.
 
 **Goal:** FR-193: decomposes `spec-marshal-single-story-dispatch`'s CAP-1..6 (Spec landed
 2026-08-21 from `docs/dreams/marshal-single-story-dispatch.md`). The fastest story-landing
-pattern the factory has run — one story per fresh worktree-isolated `bmad-dev-auto` session,
+pattern the factory has run — one story per fresh worktree-isolated `bmad-dev-auto` session (the retired 6.x name of `bmad-build-auto`, as run),
 real-completion await, independent verification, PR landing; validated at N=22 on 2026-08-21
 — exists only as an interactive session's hand ritual. This epic makes it a governed marshal
 launch mode. **HARD boundary carried from the Spec:** PRD Q-1 (§5.3 wrap-and-supervise) is
 not revised — dispatch is a sibling mode beside `factory spin`/`resume`, never a bmad-loop
-replacement, and the dispatched engine (`bmad-dev-auto`) stays external and unmodified.
+replacement, and the dispatched engine (`bmad-dev-auto` — the Spec's recorded wording; the retired 6.x name of `bmad-build-auto`) stays external and unmodified.
 Composition, not reimplementation: Epic 1 provisioning, Epic 2 gates, Epic 4 landing +
 FR-187 subject, Story 4.1/Epic 15 promotion are reused as shipped. Verb naming stays
 provisional (`marshal factory dispatch`) pending PRD Q-15 — the Spec binds behavior, not the
@@ -3403,11 +3403,11 @@ name.
 **Note:** the Spec's open question on the concrete headless launch mechanism is a
 story-level design decision bounded by two Spec assumptions: the harness is the
 agent-CLI pattern validated at N=22 (a plain background agent — never a fork-style
-subagent, whose nested subagents break `bmad-dev-auto`), and every harness call goes
+subagent, whose nested subagents break `bmad-build-auto`), and every harness call goes
 through one adapter seam (FR-52 extended to the second engine), never scattered
 subprocess calls.
 **Given** a station with a backlog story **When** the operator dispatches it **Then** a
-fresh isolated worktree is provisioned, exactly one `bmad-dev-auto` session launches
+fresh isolated worktree is provisioned, exactly one `bmad-build-auto` session launches
 detached with `BMAD_ACTIVE_PROJECT` passed per-invocation and physical artifact paths
 (never `scripts/bmad-switch`), the launch is journaled with intent/outcome discipline
 (AD-25/AD-28/AD-30), the session demonstrably receives the policy-resolved model/budget
@@ -3480,7 +3480,7 @@ active agent-compute exclusively from bmad-loop run journals, so a hand-driven s
 doctor 8.1–8.4, the 22-story dispatch session — shows nothing and the caption's "predates
 loop instrumentation" is false for part of that bucket. The honest signal census: retroactive
 active-compute is unobtainable; the implementable basis is wall-clock from the promoted
-spec's `baseline_revision`/`final_revision` frontmatter (written by `bmad-dev-auto`,
+spec's `baseline_revision`/`final_revision` frontmatter (written by `bmad-dev-auto` — retired name, now `bmad-build-auto` —
 preserved verbatim through promotion, reachable on main because landings use `--merge`).
 Constraint carriers from the Spec bind every story: never fabricate (no-signal stories stay
 absent), curated values byte-identical, per-story precedence (journal floor wins), the

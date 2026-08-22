@@ -476,7 +476,7 @@ So that a script calling this command can tell the difference between "no data,"
 - **Architecture compliance:** the Structural Seed's scaffold lands as Epic 1 Story 1.1 (this repo's "starter template" equivalent, per this skill's own validation rule); AD-7/AD-8 (shared `Duty` protocol, exit-code ownership) are established once in Story 1.1 and never re-decided; every story's ACs cite the AD(s) governing it.
 - **Epic independence:** each epic delivers complete, standalone functionality for its duty; Epics 2-4 depend only on Epic 1's scaffold output (packaging + dispatcher + protocol), never on each other or on a future epic.
 - **Within-epic story dependency:** every story within an epic depends only on prior stories in that same epic (e.g. 1.4 rotation depends on 1.3 encryption; 1.6 audit depends on 1.2's detection primitive + 1.5's inventory; 3.2 runner provisioning depends on 3.1's environment-materialization primitive) — no forward dependencies.
-- **Story sizing:** each story is scoped to one CLI verb (or a tight cluster: encrypt+decrypt in 1.3) with a small, testable surface — sized for a single `bmad-quick-dev`/`bmad-dev-story` session.
+- **Story sizing:** each story is scoped to one CLI verb (or a tight cluster: encrypt+decrypt in 1.3) with a small, testable surface — sized for a single `bmad-quick-dev`/`bmad-dev-story` session (retired 6.x names; now `bmad-build`).
 
 ## assumptions[]
 
@@ -990,7 +990,7 @@ authored 2026-08-14 from the best-evidenced dream of its batch — the hand-type
 scratch-worktree ritual observed a dozen-plus times in one session's landing passes).
 Deliberately deferred while the Epic 10-12 run was live (feed mutation under a live run is
 the stuck-baseline failure mode); decomposed at the run's stop. Quick-dev-sized by design —
-prefer `bmad-quick-dev` over a loop re-spin for these two stories if hand-picked.
+prefer `bmad-build` over a loop re-spin for these two stories if hand-picked.
 
 ### Story 13.1: Workspace verbs over git worktree
 **Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-scratch-worktree-lifecycle CAP-1, CAP-2, CAP-4, CAP-5
