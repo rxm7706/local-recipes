@@ -1,0 +1,20 @@
+# Story 12.1 ("The vanilla chart with an OCP overlay"): the CORE chart --
+# vanilla Kubernetes only (AD-11). Nothing OCP-specific lives here: no
+# route.openshift.io kinds or apiVersions anywhere in this chart; the OCP
+# face is a thin overlay at src/platform/deploy/overlays/ocp/ (a Route-only
+# chart + core-overrides.yaml value deltas for THIS chart). Enforced by
+# src/platform/tests/test_chart_invariants.py, not by convention.
+apiVersion: v2
+name: platform
+description: >-
+  Vanilla-Kubernetes core chart for the python-agent-platform host: the
+  Story 10.3 platform image (Django+FastAPI web, Celery worker, migrate
+  hook Job) plus its exact AD-1 infrastructure (PostgreSQL StatefulSet,
+  Redis Deployment). Credentials only by reference to a pre-created
+  Secret (AD-12); platform-image pods carry the OCP restricted-v2
+  contract hardcoded in templates.
+type: application
+version: 0.1.0
+# The platform image is versioned by its own registry tag (values:
+# image.tag), not by this chart's appVersion.
+appVersion: "0.1.0"

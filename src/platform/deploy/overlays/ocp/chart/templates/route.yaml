@@ -1,0 +1,28 @@
+# The overlay's single resource: an OpenShift Route to the core chart's
+# web Service (AD-11 -- Route lives ONLY here, never in the core chart).
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | quote }}
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  {{- with .Values.route.host }}
+  host: {{ . | quote }}
+  {{- end }}
+  to:
+    kind: Service
+    name: {{ required "route.service.name must name the core release's rendered web Service" .Values.route.service.name | quote }}
+  port:
+    targetPort: {{ .Values.route.service.port }}
+  {{- /* Nulling route.tls.termination yields a valid http-only Route
+       (no tls block at all); defaults keep edge termination. Inside the
+       `with`, `.` is the termination value itself. */}}
+  {{- with .Values.route.tls.termination }}
+  tls:
+    termination: {{ . }}
+    insecureEdgeTerminationPolicy: {{ $.Values.route.tls.insecureEdgeTerminationPolicy }}
+  {{- end }}

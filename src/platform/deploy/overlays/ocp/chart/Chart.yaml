@@ -1,0 +1,15 @@
+# Story 12.1: the thin OCP overlay chart -- its ONLY template is a
+# route.openshift.io/v1 Route pointing at the CORE chart's web Service
+# (AD-11: OCP specifics live here, never in the core chart). The other
+# half of the overlay is ../core-overrides.yaml -- the value deltas the
+# CORE chart needs on OCP (ingress off, data-service UIDs nulled for SCC
+# assignment).
+apiVersion: v2
+name: platform-ocp
+description: >-
+  Thin OpenShift overlay for the platform core chart: a single Route
+  exposing the core release's web Service. Install beside the core
+  release; nothing else renders from this chart.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

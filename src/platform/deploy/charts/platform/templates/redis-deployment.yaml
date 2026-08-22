@@ -1,0 +1,81 @@
+# Redis 7 (official image) -- cache + Celery broker (AD-1: Redis carries
+# both duties; not a licence for a fourth piece of infrastructure).
+# Deployment + emptyDir, not a StatefulSet: nothing durable lives here
+# (compose.yml's `redis` service persisted nothing either).
+#
+# Same security posture split as postgres: restricted fields fixed here,
+# only runAsUser values-driven (999 = the official image's redis UID;
+# nulled by the OCP overlay). No fsGroup: emptyDir is world-writable.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.redis.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      # The DATA services' own SA (serviceaccount.yaml): an operator
+      # granting a laxer SCC to postgres/redis on OCP binds it to this
+      # subject without widening the platform pods' restricted-v2 posture.
+      serviceAccountName: {{ include "platform.dataServiceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        {{- /* nil-check, not `with`-truthiness: an explicit 0 must
+             render, only null/absent may drop the key */}}
+        {{- if not (kindIs "invalid" .Values.redis.runAsUser) }}
+        runAsUser: {{ .Values.redis.runAsUser }}
+        {{- end }}
+      containers:
+        - name: redis
+          image: {{ include "platform.imageRef" (dict "image" .Values.redis.image "path" "redis.image") }}
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          {{- with .Values.redis.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

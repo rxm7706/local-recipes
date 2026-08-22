@@ -1,0 +1,24 @@
+# Story 12.1: the OCP value deltas for the CORE chart -- the other half of
+# the overlay (the Route itself is the sibling chart/ directory). Apply
+# with:
+#   helm install platform src/platform/deploy/charts/platform \
+#       -f src/platform/deploy/overlays/ocp/core-overrides.yaml
+#
+# OCP-only: applying this on vanilla K8s would leave the data services
+# unable to pass the kubelet's runAsNonRoot verification (the official
+# postgres/redis images declare a root USER, so vanilla needs the numeric
+# UIDs the core values default to).
+
+# The OCP edge is a Route (overlay chart), never an Ingress.
+ingress:
+  enabled: false
+
+# restricted-v2 assigns arbitrary UIDs at admission and forbids fixing
+# one: null the data services' vanilla-K8s UID pins so the SCC assigns
+# them. (The platform-image pods never had a UID to null -- the core
+# templates hardcode restricted-v2 with no runAsUser anywhere.)
+postgres:
+  runAsUser: null
+  fsGroup: null
+redis:
+  runAsUser: null

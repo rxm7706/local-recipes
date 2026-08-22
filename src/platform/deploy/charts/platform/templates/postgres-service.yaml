@@ -1,0 +1,42 @@
+# DNS name for DATABASE_URL (NOTES.txt prints it): the operator's
+# pre-created Secret carries the whole URL pointing at this Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "platform.postgres.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    {{- include "platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+---
+# HEADLESS governing Service for the StatefulSet (its `serviceName:`
+# points here) -- the textbook shape: clusterIP None gives each pod its
+# stable per-pod DNS identity (<pod>.<this-service>) for the controller,
+# while clients keep the ClusterIP Service above (DATABASE_URL unchanged).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "platform.postgres.headlessServiceName" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    {{- include "platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
