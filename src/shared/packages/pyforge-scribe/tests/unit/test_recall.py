@@ -132,6 +132,28 @@ def test_commit_citation_is_resolvable_if_well_formed_sha(repo_with_citation: Pa
     assert result.citation == "commit:abc1234"
 
 
+def test_transcript_citation_is_resolvable_if_well_formed(repo_with_citation: Path) -> None:
+    """A `<jsonl filename>:L<line>` transcript citation (Story 3.2) is
+    format-checked only, never re-resolved against a live file -- mirrors
+    `test_commit_citation_is_resolvable_if_well_formed_sha` exactly."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="transcript:session-a.jsonl:L1",
+            kind="transcript",
+            citation="session-a.jsonl:L1",
+            text="Dropped Kuzu, straight from a transcript.",
+        )
+    )
+    store.commit()
+
+    result = answer("why did we drop Kuzu?", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == "session-a.jsonl:L1"
+
+
 def test_determinism_two_independent_store_instances_same_file_same_answer(
     repo_with_citation: Path,
 ) -> None:

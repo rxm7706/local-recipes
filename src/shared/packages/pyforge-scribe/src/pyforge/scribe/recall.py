@@ -6,8 +6,9 @@ Story-2.2 source surface directly (Design Paradigm: "recall.py ... queries
 the compiled projection only"). Matching is pure deterministic lexical
 token-overlap scoring -- no LLM, no network call, matching AD-6's
 "no-LLM-required" v1 default (PRD Open Question 3). Every returned answer's
-citation is verified resolvable (a real file under `repo_root`, or a
-well-formed `commit:<sha>`) before being returned -- an unresolvable
+citation is verified resolvable (a real file under `repo_root`, a
+well-formed `commit:<sha>`, or a well-formed `<jsonl filename>:L<line>`
+transcript citation, Story 3.2) before being returned -- an unresolvable
 citation is treated as no match and never surfaces (AD-8: "No code path in
 recall.py may return synthesized prose without a resolvable citation
 attached"). A query with zero coverage, or whose only candidates all fail
@@ -40,6 +41,7 @@ _STOPWORDS = frozenset(
 )
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
+_TRANSCRIPT_CITATION_RE = re.compile(r".+\.jsonl:L\d+$")
 
 
 @dataclass(frozen=True)
@@ -99,4 +101,10 @@ def _citation_is_resolvable(citation: str, repo_root: Path) -> bool:
     if citation.startswith("commit:"):
         sha = citation.removeprefix("commit:")
         return bool(_COMMIT_SHA_RE.fullmatch(sha))
+    if _TRANSCRIPT_CITATION_RE.fullmatch(citation):
+        # A transcript citation (`<jsonl filename>:L<line>`) is format-checked
+        # only, never re-resolved against a live file: transcripts are
+        # per-user/local and can be pruned or rotated outside Scribe's
+        # control (Story 3.2), mirroring the `commit:<sha>` precedent above.
+        return True
     return (repo_root / citation).is_file()

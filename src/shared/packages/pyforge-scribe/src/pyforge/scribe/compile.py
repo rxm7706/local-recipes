@@ -2,11 +2,13 @@
 AD-1/AD-5/AD-6/AD-9).
 
 `compile_graph()` is the "compile" layer of the architecture's paradigm:
-event-sourced capture with a derived, rebuildable read-model. It reads five
+event-sourced capture with a derived, rebuildable read-model. It reads six
 named real-tool surfaces -- `.claude/memory/`, `.memlog.md` files, git
-history, retros, and CHANGELOGs (PRD Open Question 2, resolved here) -- and
-writes one `GraphNode` per source item through the `GraphStore` port (Story
-2.1), never a specific storage engine's client library directly (AD-5).
+history, retros, CHANGELOGs (PRD Open Question 2, resolved here), and
+un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
+as a compile source in Story 3.2) -- and writes one `GraphNode` per source
+item through the `GraphStore` port (Story 2.1), never a specific storage
+engine's client library directly (AD-5).
 
 Every run is a FULL rebuild, never an incremental patch: `store.reset()`
 clears the in-memory state, every surface is re-read from scratch, and
@@ -40,6 +42,11 @@ from pathlib import Path
 
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import CAPTURE_TYPES, GraphNode, GraphNodeKind, parse_capture_file
+from pyforge.scribe.transcripts import (
+    TranscriptCandidate,
+    default_transcript_root,
+    scan_transcripts,
+)
 
 #: Directories excluded from every repo-wide glob -- vendored, generated, or
 #: runtime-scratch trees that would otherwise dominate node count / cost.
@@ -89,14 +96,19 @@ def compile_graph(
     store_path: Path | None = None,
     nightly: bool = False,
     max_commits: int = _DEFAULT_MAX_COMMITS,
+    transcript_root: Path | None = None,
 ) -> CompileResult:
-    """Rebuild the compiled graph from scratch from the five named surfaces.
+    """Rebuild the compiled graph from scratch from the six named surfaces.
 
     `nightly` is accepted for CLI/scheduling clarity only -- compile is
     unattended-by-construction either way (no prompts in any code path).
     Raises `ValueError` if `memory_root` does not exist, before any read.
     Pass `store` directly (e.g. a `FlatFileGraphStore` under `tmp_path`) in
     tests instead of relying on `store_path`'s repo-relative default.
+    `transcript_root` defaults to `default_transcript_root()` when `None`
+    (production wiring), matching the `store`/`store_path` injection pattern
+    already used for testability -- pass an explicit, empty directory in
+    tests to avoid picking up a developer machine's real session transcripts.
     """
     if not memory_root.is_dir():
         raise ValueError(
@@ -126,6 +138,12 @@ def compile_graph(
         store.upsert_node(node)
 
     for node in _read_git_surface(repo_root, max_commits, warnings):
+        store.upsert_node(node)
+
+    resolved_transcript_root = (
+        transcript_root if transcript_root is not None else default_transcript_root()
+    )
+    for node in _read_transcript_surface(memory_root, resolved_transcript_root, warnings):
         store.upsert_node(node)
 
     invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
@@ -317,6 +335,68 @@ def _read_git_surface(repo_root: Path, max_commits: int, warnings: list[str]) ->
             )
         )
     return nodes
+
+
+# --- surface: session transcripts (Story 3.1's scanner, registered here as a
+# --- compile source per Story 3.2 / CAP-2) ------------------------------------
+
+
+def _read_transcript_surface(
+    memory_root: Path, transcript_root: Path, warnings: list[str]
+) -> list[GraphNode]:
+    """Registers Story 3.1's `scan_transcripts()` output as the sixth
+    compile source (CAP-2). All decision-marking/dedup logic lives in that
+    scanner -- no second implementation here (Epic 3's own Cross-Story
+    Dependencies). A missing/unreadable `transcript_root` (the common case:
+    transcripts are per-user/local, so most machines running a compile won't
+    have another user's) degrades to a warning and zero nodes, same as every
+    other optional surface -- it never aborts the compile.
+
+    A per-`(source_file, line_number)` occurrence counter disambiguates
+    multiple candidates on one transcript line into distinct ids:
+    `transcript:<file>:L<line>` for the first, `transcript:<file>:L<line>:1`,
+    `:2`, ... for repeats. Keying off the candidate's own file+line identity
+    (rather than a single global running index) keeps an already-assigned id
+    stable as new, unrelated transcript files accumulate over time.
+    """
+    try:
+        proposal = scan_transcripts(transcript_root, memory_root)
+    except ValueError as exc:
+        warnings.append(f"transcript surface unavailable -- skipping: {exc}")
+        return []
+
+    nodes: list[GraphNode] = []
+    occurrence: dict[tuple[Path, int], int] = {}
+    for candidate in proposal.candidates:
+        key = (candidate.source_file, candidate.line_number)
+        index = occurrence.get(key, 0)
+        occurrence[key] = index + 1
+        citation = f"{candidate.source_file.name}:L{candidate.line_number}"
+        node_id = f"transcript:{citation}" if index == 0 else f"transcript:{citation}:{index}"
+        nodes.append(
+            GraphNode(
+                id=node_id,
+                kind="transcript",
+                title=candidate.snippet,
+                text=candidate.text,
+                citation=citation,
+                valid_from=_transcript_valid_from(candidate),
+            )
+        )
+    return nodes
+
+
+def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
+    """`candidate.timestamp` parsed as ISO-8601 first; falling back to the
+    source file's own mtime -- deliberately NOT `datetime.now()` (unlike the
+    git-surface's unparseable-date fallback above), because `datetime.now()`
+    here would break `compile_graph()`'s own byte-identical-rerun guarantee
+    for any candidate lacking a parseable timestamp.
+    """
+    try:
+        return datetime.fromisoformat(candidate.timestamp)
+    except ValueError:
+        return datetime.fromtimestamp(candidate.source_file.stat().st_mtime, tz=timezone.utc)
 
 
 # --- supersession (Story 2.3) -------------------------------------------------

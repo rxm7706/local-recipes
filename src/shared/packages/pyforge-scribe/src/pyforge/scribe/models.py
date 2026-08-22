@@ -120,8 +120,8 @@ class CaptureRecord(BaseModel):
 
 
 #: What kind of real-tool surface a compiled `GraphNode` was read from
-#: (Story 2.2's named input surfaces).
-GraphNodeKind = Literal["memory", "memlog", "commit", "doc"]
+#: (Story 2.2's named input surfaces, plus Story 3.2's transcript surface).
+GraphNodeKind = Literal["memory", "memlog", "commit", "doc", "transcript"]
 
 
 class GraphNode(BaseModel):
@@ -135,7 +135,11 @@ class GraphNode(BaseModel):
     traceable (`query_by_citation()`), just no longer current.
 
     `citation` is always resolvable to a real repo artifact: a repo-relative
-    file path, or `"commit:<sha>"` for a git-history node (AD-8).
+    file path, `"commit:<sha>"` for a git-history node, or
+    `"<jsonl filename>:L<line>"` for a transcript node -- the last is
+    format-checked only, never re-resolved against a live file, since a
+    session transcript is per-user/local and can be pruned or rotated
+    outside Scribe's control (AD-8, Story 3.2).
     """
 
     id: str

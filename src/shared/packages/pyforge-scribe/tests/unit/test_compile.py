@@ -7,6 +7,7 @@ repo's `.claude/memory/`/`.git` state.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -50,10 +51,31 @@ def _init_git_repo_with_commits(repo_root: Path, count: int = 2) -> None:
         _git(repo_root, "commit", "-q", "-m", f"commit {i}")
 
 
+def _assistant_transcript_line(text: str, *, timestamp: str = "2026-08-20T12:00:00.000Z") -> str:
+    entry = {
+        "type": "assistant",
+        "timestamp": timestamp,
+        "message": {"content": [{"type": "text", "text": text}]},
+    }
+    return json.dumps(entry)
+
+
+def _write_transcript_jsonl(transcript_root: Path, filename: str, lines: list[str]) -> Path:
+    transcript_root.mkdir(parents=True, exist_ok=True)
+    path = transcript_root / filename
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
 def test_missing_memory_root_raises_before_any_write(tmp_path: Path) -> None:
     store = FlatFileGraphStore(tmp_path / "graph.json")
     with pytest.raises(ValueError, match="does not exist"):
-        compile_graph(memory_root=tmp_path / "nope", repo_root=tmp_path, store=store)
+        compile_graph(
+            memory_root=tmp_path / "nope",
+            repo_root=tmp_path,
+            store=store,
+            transcript_root=tmp_path / "no-transcripts",
+        )
     assert not (tmp_path / "graph.json").exists()
 
 
@@ -63,7 +85,12 @@ def test_happy_path_produces_traceable_nodes(tmp_path: Path, memory_root: Path) 
     _init_git_repo_with_commits(tmp_path, count=2)
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.node_count >= 1 + 1 + 2  # memory + memlog + 2 commits
     nodes = {n.id: n for n in store.iter_nodes()}
@@ -88,11 +115,22 @@ def test_rerun_with_no_source_activity_is_byte_identical(tmp_path: Path, memory_
     (tmp_path / ".memlog.md").write_text("session log entry\n", encoding="utf-8")
     _init_git_repo_with_commits(tmp_path, count=2)
     store_path = tmp_path / "graph.json"
+    no_transcripts = tmp_path / "no-transcripts"
 
-    compile_graph(memory_root=memory_root, repo_root=tmp_path, store=FlatFileGraphStore(store_path))
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=no_transcripts,
+    )
     first_bytes = store_path.read_bytes()
 
-    compile_graph(memory_root=memory_root, repo_root=tmp_path, store=FlatFileGraphStore(store_path))
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=no_transcripts,
+    )
     second_bytes = store_path.read_bytes()
 
     assert first_bytes == second_bytes
@@ -102,10 +140,17 @@ def test_no_optional_surfaces_present_still_succeeds(tmp_path: Path, memory_root
     capture(memory_root, "feedback", "Only memory content, nothing else.")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.node_count == 1
-    assert result.warnings == () or all("git" in w for w in result.warnings)
+    assert result.warnings == () or all(
+        ("git" in w or "transcript" in w) for w in result.warnings
+    )
 
 
 def test_git_absent_logs_warning_and_does_not_abort(
@@ -115,7 +160,12 @@ def test_git_absent_logs_warning_and_does_not_abort(
     monkeypatch.setattr("shutil.which", lambda name: None)
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.node_count == 1
     assert any("git" in w.lower() for w in result.warnings)
@@ -128,7 +178,12 @@ def test_malformed_memory_entry_is_skipped_with_warning_not_aborted(
     (memory_root / "feedback" / "broken.md").write_text("not frontmatter at all\n", encoding="utf-8")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.node_count == 1  # only the good entry
     assert any("broken.md" in w for w in result.warnings)
@@ -156,7 +211,12 @@ def test_non_utf8_commit_message_is_replaced_not_a_crash(tmp_path: Path, memory_
     )
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     commit_ids = [n.id for n in store.iter_nodes() if n.id.startswith("commit:")]
     assert len(commit_ids) == 1
@@ -187,7 +247,12 @@ def test_memory_file_removed_between_the_two_read_passes_is_skipped_not_a_crash(
     monkeypatch.setattr(compile_module, "parse_capture_file", _flaky_parse)
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.node_count == 1
     assert any("supersession" in w for w in result.warnings)
@@ -206,7 +271,12 @@ def test_data_named_directory_outside_dot_claude_is_not_excluded(
     (other_data_dir / "CHANGELOG.md").write_text("# Changes\n\nsomething\n", encoding="utf-8")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     doc_ids = [n.id for n in store.iter_nodes() if n.id.startswith("doc:")]
     assert doc_ids == ["doc:src/mypackage/data/CHANGELOG.md"]
@@ -221,4 +291,142 @@ def test_compile_never_prompts(tmp_path: Path, memory_root: Path, monkeypatch: p
 
     monkeypatch.setattr("builtins.input", _raise_on_input)
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)  # must not raise
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )  # must not raise
+
+
+# --- surface: session transcripts (Story 3.2, CAP-2) --------------------------
+
+
+def test_transcript_surface_happy_path_produces_one_node(tmp_path: Path, memory_root: Path) -> None:
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert len(transcript_nodes) == 1
+    node = transcript_nodes[0]
+    assert node.text == "We decided to use SQLite for the local cache."
+    assert node.citation == "session-a.jsonl:L1"
+    assert node.id == "transcript:session-a.jsonl:L1"
+
+
+def test_transcript_surface_curated_covered_content_is_not_double_indexed(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "project", "We decided to use SQLite for the local cache.")
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert transcript_nodes == []
+    memory_nodes = [n for n in store.iter_nodes() if n.kind == "memory"]
+    assert len(memory_nodes) == 1
+
+
+def test_transcript_surface_missing_root_warns_and_contributes_zero_nodes(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    capture(memory_root, "feedback", "content")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "does-not-exist",
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert transcript_nodes == []
+    assert result.node_count == 1  # only the memory entry
+    transcript_warnings = [w for w in result.warnings if "transcript" in w]
+    assert len(transcript_warnings) == 1
+
+
+def test_transcript_surface_two_candidates_on_one_line_get_distinct_ids(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [
+            _assistant_transcript_line(
+                "We decided to use SQLite for the local cache. "
+                "We chose to deprecate the legacy webhook retry queue entirely."
+            )
+        ],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert len(transcript_nodes) == 2
+    ids = {n.id for n in transcript_nodes}
+    assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-a.jsonl:L1:1"}
+    citations = {n.citation for n in transcript_nodes}
+    assert citations == {"session-a.jsonl:L1"}
+
+
+def test_transcript_surface_idempotent_rerun_is_byte_identical(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    store_path = tmp_path / "graph.json"
+
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=transcript_root,
+    )
+    first_bytes = store_path.read_bytes()
+
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=transcript_root,
+    )
+    second_bytes = store_path.read_bytes()
+
+    assert first_bytes == second_bytes
