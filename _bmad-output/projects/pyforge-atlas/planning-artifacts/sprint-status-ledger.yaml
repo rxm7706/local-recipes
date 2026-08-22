@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 87
+# stories: 89
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -37,9 +37,9 @@ development_status:
   15-2-identity-join-and-internal-flag: done
   15-3-kedro-pipeline-surfacing: done
   16-1-instance-deploy-definition: done
-  16-1-the-from-scratch-run-is-a-chartered-capability: backlog
-  16-2-handoffs-are-execution-ready: backlog
   16-2-httpx-opener-and-rehearsal: done
+  17-1-the-from-scratch-run-is-a-chartered-capability: done
+  17-2-handoffs-are-execution-ready: backlog
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done
   2-3-implement-incrementalparquetdataset-for-ttl-gating: done
@@ -85,6 +85,8 @@ development_status:
   epic-15-retrospective: optional
   epic-16: backlog
   epic-16-retrospective: optional
+  epic-17: backlog
+  epic-17-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
   epic-3: done

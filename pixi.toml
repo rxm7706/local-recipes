@@ -838,6 +838,10 @@ cmd = "python .claude/scripts/conda-forge-expert/cwe_catalog_fetcher.py"
 description = "Propose cwe_categories_seed.json entries by keyword-classifying MITRE CWEs currently bucketed 'Other' in the cwe_categories table — the mapping-gap sibling for the CWE seed. Fully offline (reads cwe_categories, populated by fetch-cwe-catalog). READ-ONLY: emits ready-to-paste seed lines with strong/weak confidence tiers + an 'Other-bucket affects N packages' headline; accept/reject stays with git review; the seed is never written. Pass --json / --limit N / --out FILE."
 cmd = "python .claude/scripts/conda-forge-expert/cwe_seed_gap.py"
 
+[feature.local-recipes.tasks.generate-failure-catalog]
+description = "Derive .claude/skills/conda-forge-expert/config/failure-catalog.yaml from SKILL.md's 'Recipe Authoring Gotchas' corpus (G1-G110) — Story 7.1. Deterministic: one row per gotcha with greppable symptom_signature tokens and an enforced_by pointer into recipe_optimizer.py's live check-code registry (or explicit null when no check enforces it yet — the null rows ARE the backlog). Pass --check to diff the committed catalog against a fresh regeneration without writing (exit non-zero on drift)."
+cmd = "python .claude/scripts/conda-forge-expert/failure_catalog_generator.py"
+
 [feature.local-recipes.tasks.spdx-schema-gap]
 description = "Propose spdx.schema.json enum additions by diffing the vendored SPDX enum against the upstream SPDX license list (spdx/license-list-data, GITHUB_RAW_BASE_URL-routable, TTL-7d cache), ranked by the licenses real packages carry (v_actionable_packages) — the mapping-gap sibling for the SPDX schema. READ-ONLY: add-to-schema (real upstream IDs on packages) vs non-standard (normalize) tiers; --drift for pure staleness; the schema is never written. Pass --json / --limit N / --out FILE / --source-file FILE (offline) / --drift."
 cmd = "python .claude/scripts/conda-forge-expert/spdx_schema_gap.py"
@@ -1875,6 +1879,7 @@ daphne = ">=4.2.3"                   # Story 13.6: the ASGI host `webhook_host.p
 playwright = ">=1.62.1"                  # CLI + browser driver
 playwright-python = ">=1.62.0"           # the `import playwright` bindings
 pillow = ">=12.3.0"                      # Pillow -- render_gate's contact-sheet compositing
+python-pptx = ">=1.0.2"                  # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-core (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as

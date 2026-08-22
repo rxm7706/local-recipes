@@ -294,12 +294,13 @@ spec discovery returning nothing it replaces the whole baseline with `{}`, exit 
 refuse (or gate behind a flag) when the live snapshot is empty and the existing baseline is
 not. Severity: low. Status: open. Relayed 2026-08-21.
 
-### DW-14-1-1: GitHub-releases fallback for the 6 npm-invisible bmad-suite packages
+### DW-14-1-1: GitHub-releases fallback for the 6 npm-invisible bmad-suite packages — RESOLVED
   origin: story-14-1 review (deferred, medium — carried in the story spec's 6.11-era frontmatter `deferred:` list)
   source_spec: `planning-artifacts/specs/spec-14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared.md`
   severity: medium
   reason: 6 of the 10 watched bmad-* pins (bmad-loop, bmad-labs-skills, bmad-manticore, bmad-method-wds-expansion, bmad-module-template, bmad-utility-skills) are GitHub-only and 404 on registry.npmjs.org, so CAP-4's live npm path is structurally blind to them — including bmad-loop, the package whose 0.9.0-vs-0.11.0 lag motivated CAP-4. The `packages_watched` (10) vs `packages_checked` (4) evidence keeps the gap operator-visible; the follow-on is a GitHub-releases fallback query through the same fail-open budget. Relayed here because the DW pipeline cannot yet read frontmatter `deferred:` lists (marshal DW-BL011-2).
-  status: open
+  status: closed — Story 15.1 landed 2026-08-22: `_gather_suite_findings` (`sources/bmad_method.py`) now falls back to GitHub releases/tags, keyed by each package's own tracked `recipes/<name>/recipe.yaml` github mapping, whenever the npm fetch misses — the DW-14-1-1 fixture (bmad-loop named from GitHub) passes. `bmad-labs-skills`/`bmad-module-template`/`bmad-utility-skills` still go unchecked (neither Releases nor tags exist upstream today) — a real, documented limit of the source data, not this fallback.
+  closed: 2026-08-22 — Story 15.1 (`spec-15-1-github-releases-unblind-the-npm-invisible-packages.md`) landed.
 
 ### DW-12-5-3: The spec-surface baseline write race RECURRED cross-process — scoped stamps from two live processes drop each other's entries
   origin: live recurrence 2026-08-22 (parent session + the Story 25.5 agent stamping concurrently)

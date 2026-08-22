@@ -1637,13 +1637,13 @@ is recorded as the attended session's acceptance checklist (per the spec's verif
 home open question) — executing the ATTENDED live bring-up stays out of scope.
 
 
-## Epic 16: The packaging-inventory intake engine, governed
+## Epic 17: The packaging-inventory intake engine, governed
 
 **Spec binding.** Decomposes `spec-conda-forge-packaging-inventory-operations` CAP-1..2 —
 chartering the quartet (runner/prompt/config/replay) that already runs allowlisted in
-scripts/+conf/; the allowlist's own delete-when-specced rule executes at 16.1.
+scripts/+conf/; the allowlist's own delete-when-specced rule executes at 17.1.
 
-### Story 16.1: The from-scratch run is a chartered capability
+### Story 17.1: The from-scratch run is a chartered capability
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-1
 **Given** a clean workspace **Then** the quartet regenerates the full inventory from the
 workbook + live indexes + curated feeds (Master Prompt v3.0 bound): PEP-503 identity +
@@ -1652,8 +1652,8 @@ append-only identity tabs, gist id via env — and the spec's `surface:` claims 
 with the allowlist lines DELETED. The parselmouth fold-placement question resolves here
 with a dated entry.
 
-### Story 16.2: Handoffs are execution-ready
-**Type:** feature • **Effort:** M • **Deps:** S-16.1 • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-2
+### Story 17.2: Handoffs are execution-ready
+**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-2
 **Given** a completed run **Then** the OpenTeams universe emits one `[Conda-Forge
 Packaging] {name}` issue per library + the dated Mason handoff tab (four dispositions),
 the AOSS-Free extra queue never expands the universe, and the three dashboard views render

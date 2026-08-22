@@ -23,7 +23,7 @@ development_status:
   2-2-nightly-compile-from-named-tool-surfaces: done
   2-3-fact-supersession-in-the-compiled-graph: done
   2-4-scribe-recall-grounded-cited-answers: done
-  3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: backlog
+  3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: backlog
   epic-1: done
   epic-1-retrospective: optional

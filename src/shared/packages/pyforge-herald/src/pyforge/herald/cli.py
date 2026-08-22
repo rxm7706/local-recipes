@@ -67,6 +67,7 @@ from . import (
     deck_qa,
     errors,
     notices,
+    pptx_pipeline,
     progress,
     scheduler,
 )
@@ -337,6 +338,49 @@ def _build_parser() -> _HeraldArgumentParser:
         type=Path,
         default=None,
         help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    pptx_spec = deck_subparsers.add_parser(
+        "pptx-spec",
+        help=(
+            "parse a .pptx/.potx template into spec.json -- layouts + "
+            "placeholders (Story 15.1, CAP-1)"
+        ),
+    )
+    pptx_spec.add_argument(
+        "--template",
+        type=Path,
+        default=None,
+        help="template path (default: PyForge's bundled default template)",
+    )
+    pptx_spec.add_argument(
+        "-o",
+        "--out",
+        dest="out_path",
+        type=Path,
+        default=None,
+        help="write spec.json here (default: print to stdout)",
+    )
+    pptx_fill = deck_subparsers.add_parser(
+        "pptx-fill",
+        help=(
+            "fill a content_plan.json into a .pptx/.potx template, "
+            "producing a genuinely editable deck (Story 15.1, CAP-1)"
+        ),
+    )
+    pptx_fill.add_argument("content_plan", type=Path, help="content_plan.json path")
+    pptx_fill.add_argument(
+        "--template",
+        type=Path,
+        default=None,
+        help="template path (default: PyForge's bundled default template)",
+    )
+    pptx_fill.add_argument(
+        "-o",
+        "--out",
+        dest="out_path",
+        type=Path,
+        required=True,
+        help="output .pptx path",
     )
 
     global_flags = _global_flags_parent()
@@ -719,6 +763,10 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_push(args)
     if args.command == "deck" and args.deck_command == "qa":
         return _run_deck_qa(args)
+    if args.command == "deck" and args.deck_command == "pptx-spec":
+        return _run_deck_pptx_spec(args)
+    if args.command == "deck" and args.deck_command == "pptx-fill":
+        return _run_deck_pptx_fill(args)
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
@@ -945,6 +993,44 @@ def _run_deck_qa(args: argparse.Namespace) -> int:
     def operation() -> None:
         report = deck_qa.run(slug=args.slug, repo_root=repo_root)
         print(json.dumps(deck_qa.to_dict(report)))
+
+    return dispatch(operation)
+
+
+def _run_deck_pptx_spec(args: argparse.Namespace) -> int:
+    """``herald deck pptx-spec [--template PATH] [-o out.json]`` (Story
+    15.1, CAP-1): parse a ``.pptx``/``.potx`` template into ``spec.json``
+    and print it (or write it with ``-o``). Fully local/offline, like
+    ``_run_deck_qa`` -- no ``McpTransport``, no ``bridge.run``: there is
+    nothing to reach Claude Design for when reading a template already on
+    disk."""
+    template_path = (
+        args.template if args.template is not None else pptx_pipeline.default_template_path()
+    )
+
+    def operation() -> None:
+        spec = pptx_pipeline.run_spec(template_path, out_path=args.out_path)
+        if args.out_path is not None:
+            print(f"wrote {args.out_path}")
+        else:
+            print(json.dumps(pptx_pipeline.spec_to_dict(spec)))
+
+    return dispatch(operation)
+
+
+def _run_deck_pptx_fill(args: argparse.Namespace) -> int:
+    """``herald deck pptx-fill <content-plan.json> [--template PATH] -o
+    out.pptx`` (Story 15.1, CAP-1): mechanically fill a content plan into a
+    template, producing a genuinely editable ``.pptx`` (Design Notes: real
+    ``text_frame``/``add_paragraph`` calls, never hand-written OOXML).
+    Fully local/offline, same rationale as ``_run_deck_pptx_spec``."""
+    template_path = (
+        args.template if args.template is not None else pptx_pipeline.default_template_path()
+    )
+
+    def operation() -> None:
+        pptx_pipeline.run_fill(template_path, args.content_plan, args.out_path)
+        print(f"wrote {args.out_path}")
 
     return dispatch(operation)
 

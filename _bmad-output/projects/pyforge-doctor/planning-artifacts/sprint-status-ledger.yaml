@@ -36,7 +36,7 @@ development_status:
   12-5-the-spec-surface-baseline-write-race-is-closed: done
   13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic: done
   14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared: done
-  15-1-github-releases-unblind-the-npm-invisible-packages: backlog
+  15-1-github-releases-unblind-the-npm-invisible-packages: done
   15-2-channel-and-recipe-staleness-are-ambient-findings: backlog
   16-1-the-shared-title-diff-is-an-ambient-finding: backlog
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done

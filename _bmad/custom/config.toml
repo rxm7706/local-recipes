@@ -6,15 +6,22 @@
 # [agents.bmad-agent-pm]
 # description = "Prefers short, bulleted PRDs over narrative drafts."
 
-# `communication_language` and (below) `user_skill_level` were never
-# migrated into the installer-managed _bmad/config.toml / _bmad/bmm's
-# module table (present only in the legacy _bmad/core/config.yaml and
-# _bmad/bmm/config.yaml, which render_skill.py's TOML config path does
-# not read) — every skill referencing {{.communication_language}} or
-# {{.user_skill_level}} halts with "missing config value" without this.
-# Backfilled here to match the legacy YAML values.
+# BMAD 6.11 upgrade (a7547d7c03) dropped `communication_language` and
+# `user_skill_level` from `_bmad/config.toml`'s [core] table (they now only
+# live in the bmm-module `_bmad/bmm/config.yaml`, which render_skill.py's
+# load_central_config() does not read — it merges only the four
+# `_bmad/config*.toml` / `_bmad/custom/config*.toml` layers). Skills that
+# render via render_skill.py (e.g. bmad-build-auto's workflow.md) HALT with
+# "missing config value `communication_language`" / `user_skill_level`
+# without this pin. Values mirror `_bmad/bmm/config.yaml`.
+#
+# NOTE: render_skill.py's `_find_config_values()` does a recursive scan for
+# the bare key name anywhere in the merged config tree and raises "ambiguous
+# config value" if it finds more than one match -- so `user_skill_level`
+# (or any of these keys) must be defined in exactly ONE place across all
+# six config layers. Keep both keys in this single [core] block; do not
+# also add a [modules.bmm] table defining user_skill_level here or in any
+# other layer.
 [core]
 communication_language = "English"
-
-[modules.bmm]
 user_skill_level = "intermediate"

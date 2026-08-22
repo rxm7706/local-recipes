@@ -83,10 +83,14 @@ capability-naming reason where helm/PyYAML are absent.
 
 ## Honest limitations
 
-- **No live-cluster verification in this repo.** Real deploys (Route
-  admission, SCC enforcement, registry/OIDC wiring) are AD-16 Tier 3 —
-  attended-only. This chart is verified by lint + render + parsed-manifest
-  invariants only.
+- **No OCP live-cluster verification in this repo.** OCP-specific behavior
+  (Route admission, SCC enforcement, registry/OIDC wiring) is AD-16 Tier 3 —
+  attended-only. Story 12.2's `gke-portability-smoke` CI job (`.github/
+  workflows/platform-ci.yml`) DOES deploy this same core chart onto a real
+  ephemeral `kind` cluster and curl it through a live `Ingress` +
+  ingress-nginx controller on every relevant PR/push — so the vanilla-K8s
+  path is live-verified; only the OCP overlay's own resources remain
+  parsed-manifest-only.
 - **Fresh installs have a transient migration window.** On a FIRST
   install the web pods go Ready before the post-install migrate Job has
   run: the `/ht/` readiness `Database` check is connectivity-only (a bare

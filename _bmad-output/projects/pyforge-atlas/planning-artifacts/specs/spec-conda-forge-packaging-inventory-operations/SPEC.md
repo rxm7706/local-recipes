@@ -1,13 +1,26 @@
 ---
 spec: conda-forge-packaging-inventory-operations
-status: ready
+status: in-progress   # CAP-1 (17.1) chartered; CAP-2 (17.2) still backlog
 owner-dream: docs/dreams/conda-forge-packaging-inventory-operations.md
-surface: []   # 16.1 claims the quartet + data files and DELETES their allowlist lines
-companions: []
+surface:            # 17.1 claims the quartet + data files (per-file, not a glob — a
+                     # scripts/conda-forge-packaging-inventory-operations* glob would
+                     # be the same invisible-by-construction breadth the 2026-08-08
+                     # scripts/ allowlist split removed; see spec_surface_allowlist.txt)
+  - scripts/conda-forge-packaging-inventory-operations_metrics.py
+  - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
+  - scripts/conda-forge-packaging-inventory-operations_priority.py
+  - scripts/openteams_identity_dashboards.py
+  - conf/conda-forge-packaging-inventory-operations.local.env.example
+  - conf/conda-forge-packaging-inventory-operations_curated_groups.json
+companions:          # the other two named quartet members ("prompt"/"replay" in
+                     # § Why); already covered separately by docs/reference/**'s own
+                     # blanket allowlist entry, listed here for spec-internal
+                     # cross-reference, not as a governance claim
+  - ../../../../../../docs/reference/conda-forge-packaging-inventory-operations_prompt.md
+  - ../../../../../../docs/reference/conda-forge-packaging-inventory-operations_replay.md
 sources:
   - ../../../../../../docs/dreams/conda-forge-packaging-inventory-operations.md
-open_questions:
-  - "parselmouth fold placement: the un-deferred mapping adoption naturally rides this chain's identity layer OR the core mapping_manager — decide at 16.1."
+open_questions: []   # parselmouth fold placement RESOLVED 2026-08-22 at 17.1 — see § Constraints
 ---
 
 # SPEC — The packaging-inventory intake engine, governed
@@ -42,7 +55,12 @@ consuming a previous consolidated inventory as input.
 Never consume a prior consolidated inventory; the quartet stays the ONE
 toolchain (no second engine); gist id never in git; p2cf's three heuristics
 (all-main-builds-broken, builds-from-PyPI-source, DoD auto-check) join as
-enrichment signals per the 2026-08-22 fold charter.
+enrichment signals per the 2026-08-22 fold charter. Parselmouth PyPI↔conda
+mapping fold placement (RESOLVED 2026-08-22, Story 17.1): the core
+pyforge-atlas `mapping_manager`/`name_resolver` chain is the fold target,
+not this quartet — `..._openteams_identity.py`'s existing direct
+purl-associator fetch (`ASSOCIATOR_URL`) is a separate, narrower join and
+stays as-is; no code in this quartet folds parselmouth.
 
 ## Non-goals
 The recipe work itself (Mason/CFE); the sibling org's issue-ledger

@@ -342,7 +342,12 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # legitimately absent on a fresh clone/CI, hence fail-open rather than
     # CAP-1/2's raise-then-degrade) -- still this one Source, still
     # WARN-or-OK only, riding the same two Story 10.3 dispatch surfaces
-    # with zero wiring changes.
+    # with zero wiring changes. Story 15.1 (Epic 15/DW-14-1-1) extends the
+    # same gather() once more: when the npm fetch misses for a suite
+    # package, a GitHub releases/tags fallback (keyed by that package's
+    # own `recipes/<name>/recipe.yaml` github mapping, never a hardcoded
+    # name->repo table) is tried before giving up on it -- still this one
+    # Source, still WARN-or-OK only, zero wiring changes here either.
     SourceRegistration(
         source=Source.BACKLOG_INTAKE,
         scope="repo",
