@@ -49,21 +49,6 @@ scripts/load-env.sh                   # shell env bootstrap
 scripts/offline-build.sh              # air-gapped build entry
 scripts/submit_pr.sh                  # staged-recipes submission helper
 scripts/sync-upstream-conda-forge.sh  # upstream sync helper
-# --- conda-forge packaging-inventory operations quartet --------------------------
-# Operator/reporting tooling for docs/dreams/conda-forge-packaging-inventory-operations.md
-# (status: dreamt, owner: atlas): source workbook -> identity rows -> priority ->
-# published GFM dashboards. None is a detector (no DETECTOR marker, no pixi task, never
-# gates) and none is station code. NOT ownership: that Dream has produced no Spec yet, and
-# spec_surface_check's SPEC_GLOB only discovers
-# _bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md, so no `surface:` can
-# claim these paths today. Delete each line as that Spec lands and declares the surface.
-# Per-file for the reason the block header above gives: a
-# `scripts/conda-forge-packaging-inventory-operations*` glob would be exactly the
-# invisible-by-construction breadth the 2026-08-08 split removed.
-scripts/conda-forge-packaging-inventory-operations_metrics.py             # the quartet's runner — parses the source workbook (xlsx tabs, curated groups) into the packaging inventory; its behavior/source/rule/metric/output changes are contract-bound to docs/reference/conda-forge-packaging-inventory-operations_replay.md in the same commit
-scripts/conda-forge-packaging-inventory-operations_openteams_identity.py  # builds the OpenTeams identity rows (PURL Associator join + inventory-minted PURLs, feedstock/staged-recipes/local-recipes location URLs) and publishes the row catalog + dashboards to the pinned secret gist
-scripts/conda-forge-packaging-inventory-operations_priority.py            # assigns Proposed_Priority/Packaging_Work on an identity tab (first-match P1–P10 hierarchy, 1..100 Priority_Score)
-scripts/openteams_identity_dashboards.py                                  # renders the GFM dashboards published beside the identity gist row catalog (P/work, issue gap, census, Artifactory map); called by the identity script's --gist-only
 tests/**                 # inherited staged-recipes lint tests (upstream-owned shape)
 _skf-learn/**            # vendored skill-forge learning corpus (upstream module docs)
 azure-pipelines.yml      # inherited staged-recipes CI entry (upstream-owned shape)
@@ -97,17 +82,6 @@ pixi.lock                # lockfile (derived from pixi.toml)
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
 src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
 conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage as above)
-# data for the packaging-inventory operations quartet in scripts/ above — same Dream
-# (docs/dreams/conda-forge-packaging-inventory-operations.md, status: dreamt, no Spec
-# yet), same NOT-ownership exemption, same delete-the-line-when-that-Spec-declares-the-
-# surface rule. The prototype pre-dates all of it: pushed straight to main on 2026-08-16
-# (0f0b75232e, 9de01865ce, 4397583a76), before story 10.4's baseline commit. All four
-# stations that landed a story afterwards then flagged the same set independently, each
-# while landing something unrelated — doctor 10.2, marshal 8.5, steward 10.4, mason 5.5
-# — which is what an ungoverned surface looks like from the inside. The four scripts are
-# already listed per-file above, so only their data files are added here.
-conf/conda-forge-packaging-inventory-operations.local.env.example    # template for the gitignored .local.env carrying OPENTEAMS_IDENTITY_GIST_ID — the secret-gist id must never be committed; read by ..._openteams_identity.py
-conf/conda-forge-packaging-inventory-operations_curated_groups.json  # curated-group sample fallback (per-vendor package lists, not membership truth) — ..._metrics.py's --curated-config default
 # --- pixi-version enforcement trio + verdict applier + rebuild guard (2026-08-21) ------
 # The pixi-version trio was built 2026-08-21 morning as direct repo tooling after the
 # 4th/5th pin-site drifts broke CI (see feedback_pixi_toml_pin_sites_dont_auto_propagate)
