@@ -22,8 +22,10 @@ Three claims, six tests:
 2. Pattern-A container-replacement statelessness, simulated in-process (real
    Postgres, no container -- AD-16 Tier 1, matches "in-process" story
    wording): two independent `_LifespanManager` cycles against Langflow's
-   real ASGI app -- a flow created+run in the first, re-fetched in a second,
-   fully independent one.
+   real ASGI app -- a flow created+run+API-keyed in the first; a second,
+   fully independent cycle re-fetches the flow AND re-runs it with cycle
+   1's API key, so flow, credential (the AC's "no session" clause), and
+   write-path state are all proven to survive the replacement.
 
 3. Pattern-B sidecar container-replacement statelessness: a real
    `docker compose kill`+`start` of the actual `dbgpt` service (AD-16 Tier
@@ -35,15 +37,21 @@ Three claims, six tests:
    pip-only CI `test` job. Its guard-removed companion is NOT gated -- it
    needs no docker/postgres and must always run.
 
-Requires the `langflow` package (`python-agent-platform`/`platform-dev`
-pixi env) for claim 1's real Alembic bootstrap and claim 2's ASGI cycles;
-gated the same way `test_asgi_seam.py`/`test_langflow_mount.py` gate their
-whole module.
+Claim 1's real Alembic bootstrap and claim 2's ASGI cycles require the
+`langflow` package (`python-agent-platform`/`platform-dev` pixi env) --
+gated PER TEST via `requires_langflow` below, deliberately NOT via the
+module-level `pytest.importorskip` that `test_asgi_seam.py`/
+`test_langflow_mount.py` use: a module-level skip would silently take the
+three guard-removed companions down with it in the pip-only CI `test` job
+(no langflow there -- review finding on this story), and the whole point
+of leaving the companions ungated is that the 9.6 discipline runs
+everywhere the suite is collected.
 """
 
 from __future__ import annotations
 
 import asyncio
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -51,12 +59,17 @@ import time
 from http import HTTPStatus
 from pathlib import Path
 
-import pytest
-
-pytest.importorskip("langflow")
-
 import psycopg
+import pytest
 from django.conf import settings
+
+requires_langflow = pytest.mark.skipif(
+    importlib.util.find_spec("langflow") is None,
+    reason=(
+        "requires the langflow package (python-agent-platform/platform-dev "
+        "pixi env) for the real Alembic bootstrap / ASGI lifespan cycles"
+    ),
+)
 
 # Same base-DSN-without-query-string rationale as langflow_integration/
 # tests.py's `_TEST_DSN` and dbgpt_integration/tests.py's own copy: both
@@ -172,6 +185,7 @@ async def _drive_langflow_alembic_bootstrap() -> None:
         pass
 
 
+@requires_langflow
 def test_each_engines_tables_are_confined_to_their_own_schema():
     """AC1: with Langflow's real Alembic bootstrap driven once and
     `dbgpt_schema` present, `public`/`langflow_schema`/`dbgpt_schema`
@@ -226,12 +240,12 @@ def _build_text_only_flow_data(seed_text: str) -> dict:
     return graph.dump(name="s11-4-pattern-a-probe")["data"]
 
 
-async def _cycle_one_create_and_run_flow() -> str:
+async def _cycle_one_create_and_run_flow() -> tuple[str, str]:
     """Cycle 1: enter a FRESH `_LifespanManager`, log in, create+run a flow,
-    return its id. This `async with` block exits before this coroutine
-    returns, genuinely tearing down Langflow's DB/cache services -- this IS
-    "kill the process/worker" (see `langflow_integration/asgi.py`'s module
-    docstring).
+    return its id and the API key that authorized the run. This `async
+    with` block exits before this coroutine returns, genuinely tearing down
+    Langflow's DB/cache services -- this IS "kill the process/worker" (see
+    `langflow_integration/asgi.py`'s module docstring).
     """
     from httpx import ASGITransport  # noqa: PLC0415
     from httpx import AsyncClient  # noqa: PLC0415
@@ -277,13 +291,28 @@ async def _cycle_one_create_and_run_flow() -> str:
             )
             assert run_resp.status_code == HTTPStatus.OK, run_resp.text
 
-    return flow_id
+    return flow_id, api_key
 
 
-async def _cycle_two_refetch_flow(flow_id: str) -> str | None:
+async def _cycle_two_refetch_and_rerun_flow(
+    flow_id: str,
+    api_key: str,
+) -> tuple[str | None, str | None, str]:
     """Cycle 2: a SECOND, fully independent `_LifespanManager` instance, a
-    fresh `auto_login`, and a `GET` for the same flow id. Returns the id if
-    the flow record survived cycle 1's teardown, `None` otherwise.
+    fresh `auto_login`, a `GET` for the same flow id, and a REAL re-run of
+    the flow authorized by CYCLE 1's API key (never a fresh one -- the
+    credential itself is the "no session" state under test). Returns
+    `(fetched_flow_id, rerun_authorized_key, rerun_evidence)`; the first
+    two are `None` when that piece of cycle-1 state did NOT survive cycle
+    1's teardown, and `rerun_evidence` carries the re-run's status + body
+    so a red run reports the actual server response, not just "key gone".
+
+    The `return` here sits INSIDE both `async with` blocks (unlike cycle
+    1's, whose teardown-before-return is the kill itself) -- that is fine
+    for the caller's post-cycle row-count read because both context
+    managers still unwind during return propagation, before `asyncio.run`
+    hands back control: cycle 2's lifespan shutdown (and any write-path
+    flush it implies) completes before the psycopg count that follows.
     """
     from httpx import ASGITransport  # noqa: PLC0415
     from httpx import AsyncClient  # noqa: PLC0415
@@ -300,9 +329,47 @@ async def _cycle_two_refetch_flow(flow_id: str) -> str | None:
             headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
             fetched = await client.get(f"/api/v1/flows/{flow_id}", headers=headers)
-            if fetched.status_code != HTTPStatus.OK:
-                return None
-            return fetched.json().get("id")
+            fetched_flow_id = (
+                fetched.json().get("id")
+                if fetched.status_code == HTTPStatus.OK
+                else None
+            )
+
+            run_payload = {
+                "input_value": "s11-4 pattern-a cycle-2 re-run",
+                "input_type": "text",
+                "output_type": "text",
+            }
+            rerun = await client.post(
+                f"/api/v1/run/{flow_id}",
+                json=run_payload,
+                headers={"x-api-key": api_key},
+            )
+            rerun_authorized_key = (
+                api_key if rerun.status_code == HTTPStatus.OK else None
+            )
+            rerun_evidence = f"HTTP {rerun.status_code}: {rerun.text[:300]}"
+
+            # Vacuousness guard (9.6 discipline, review finding): the
+            # credential proof above is only a proof if a WRONG key is
+            # actually rejected -- Langflow DB-validates a provided
+            # `x-api-key` even under `AUTO_LOGIN` (verified in its
+            # installed source: `_api_key_security_impl` ->
+            # `authenticate_api_key` -> `check_key`), and this assert
+            # keeps that from silently changing under a future upgrade.
+            # Runs AFTER the real re-run so a vacuous-auth bogus run's
+            # accidental writes can no longer distort the real result.
+            bogus = await client.post(
+                f"/api/v1/run/{flow_id}",
+                json=run_payload,
+                headers={"x-api-key": "sk-s11-4-deliberately-invalid"},
+            )
+            assert bogus.status_code != HTTPStatus.OK, (
+                "a deliberately invalid x-api-key was accepted -- key auth "
+                "is inert here, so the credential-survival proof above "
+                "would be vacuous"
+            )
+            return fetched_flow_id, rerun_authorized_key, rerun_evidence
 
 
 def _fetch_flow_write_path_rows(flow_id: str) -> dict[str, int]:
@@ -321,17 +388,22 @@ def _fetch_flow_write_path_rows(flow_id: str) -> dict[str, int]:
         counts = {}
         for table, query in queries.items():
             cursor.execute(query, (flow_id,))
-            counts[table] = cursor.fetchone()[0]
+            row = cursor.fetchone()
+            assert row is not None, f"count(*) returned no row for {table}"
+            counts[table] = row[0]
         return counts
 
 
+@requires_langflow
 def test_pattern_a_kill_and_fresh_start_loses_no_flow_state():
     """AC3: a flow created+run inside one `_LifespanManager` cycle survives
     that cycle exiting (simulating the process/pod being killed) -- a
-    second, independent cycle still sees the flow record and its unchanged
-    write-path row counts.
+    second, independent cycle still sees the flow record, cycle 1's API key
+    still authorizes a real re-run, and the write-path row counts exactly
+    DOUBLED (cycle-1 rows never lost -- not even partially -- AND cycle
+    2's re-run genuinely wrote).
     """
-    flow_id = asyncio.run(_cycle_one_create_and_run_flow())
+    flow_id, api_key = asyncio.run(_cycle_one_create_and_run_flow())
 
     counts_after_cycle_one = _fetch_flow_write_path_rows(flow_id)
     assert counts_after_cycle_one["vertex_build"] >= 1, (
@@ -343,15 +415,34 @@ def test_pattern_a_kill_and_fresh_start_loses_no_flow_state():
         "so this test would prove nothing"
     )
 
-    fetched_flow_id = asyncio.run(_cycle_two_refetch_flow(flow_id))
+    fetched_flow_id, rerun_key, rerun_evidence = asyncio.run(
+        _cycle_two_refetch_and_rerun_flow(flow_id, api_key),
+    )
     counts_after_cycle_two = _fetch_flow_write_path_rows(flow_id)
 
-    counts_unchanged = counts_after_cycle_two == counts_after_cycle_one
-    counts_survived = counts_after_cycle_two if counts_unchanged else None
+    # Exact doubling, not the old "counts unchanged" and not a bare
+    # "grew" (review finding): cycle 2 re-ran the SAME deterministic flow,
+    # so each table must hold exactly cycle 1's rows PLUS one more
+    # identical run's worth. Fewer means cycle-1 rows were lost (even
+    # strictly-greater would mask a PARTIAL loss behind the re-run's own
+    # writes); more means an unexpected extra write path. Both dicts ride
+    # in the failure message so a red run names the offending table and
+    # magnitudes.
+    counts_doubled = all(
+        counts_after_cycle_two[table] == 2 * count
+        for table, count in counts_after_cycle_one.items()
+    )
+    counts_survived = counts_after_cycle_two if counts_doubled else None
     _assert_state_survived_kill_and_restart(fetched_flow_id, "the flow record")
     _assert_state_survived_kill_and_restart(
+        rerun_key,
+        "cycle 1's API key (its authority for cycle 2's real re-run; "
+        f"cycle-2 re-run response was {rerun_evidence})",
+    )
+    _assert_state_survived_kill_and_restart(
         counts_survived,
-        "the flow's write-path row counts (vertex_build/transaction)",
+        "the flow's write-path row counts (expected exact doubling, got "
+        f"cycle-1 {counts_after_cycle_one} -> cycle-2 {counts_after_cycle_two})",
     )
 
 
@@ -369,7 +460,8 @@ def test_pattern_a_statelessness_check_fails_if_state_were_held_in_process_memor
 
     with pytest.raises(AssertionError):
         _assert_state_survived_kill_and_restart(
-            store.read("flow-id"), "the in-process-only store's value",
+            store.read("flow-id"),
+            "the in-process-only store's value",
         )
 
 
@@ -542,5 +634,6 @@ def test_pattern_b_statelessness_check_fails_if_state_were_tied_to_the_sidecar_c
 
     with pytest.raises(AssertionError):
         _assert_state_survived_kill_and_restart(
-            store.read("dbgpt-marker"), "the sidecar-local-only store's value",
+            store.read("dbgpt-marker"),
+            "the sidecar-local-only store's value",
         )
