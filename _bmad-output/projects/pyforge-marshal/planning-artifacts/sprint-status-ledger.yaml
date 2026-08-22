@@ -107,7 +107,7 @@ development_status:
   24-3-an-unsupervised-row-has-a-cheap-documented-double-check: backlog
   25-1-retired-skill-ids-are-purged-and-guarded: done
   25-2-bmad-loops-repo-skills-match-the-installed-package: done
-  25-3-every-spec-folder-accepts-a-6-11-bmad-spec-update: backlog
+  25-3-every-spec-folder-accepts-a-6-11-bmad-spec-update: done
   25-4-the-0-10-0-11-policy-knobs-are-governable: backlog
   25-5-marshal-speaks-the-0-11-status-vocabulary: backlog
   25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided: backlog
