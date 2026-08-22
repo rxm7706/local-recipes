@@ -229,12 +229,14 @@ def _minor_range(floor: str, ceiling: str) -> SpecifierSet:
 # safe". Each constant must byte-for-byte mirror `pixi.toml`'s
 # `[package.run-dependencies]` entry for the same engine -- enforced by
 # `tests/meta/test_engine_version_range_sync.py`. Evidence, live-verified in
-# this environment: pixi 0.76.2, twine 7.0.0, conda-lock 4.0.2, build
+# this environment: pixi 0.77.0 (2026-08-21 — build+ship self-hosting
+# integration tests green against it, after the workspace requires-pixi
+# bump exposed the stale 0.76.x range), twine 7.0.0, conda-lock 4.0.2, build
 # (`pyproject-build` binary, conda package `python-build`) 1.5.0, gh 2.97.0
 # (Story 3.7). These constants exist for that sync guard alone --
 # `require_engine` below does NOT consult them; see its own docstring for
 # why.
-PIXI_VERSION_RANGE = _minor_range("0.76.2", "0.77")
+PIXI_VERSION_RANGE = _minor_range("0.77.0", "0.78")
 TWINE_VERSION_RANGE = _minor_range("7.0.0", "7.1")
 CONDA_LOCK_VERSION_RANGE = _minor_range("4.0.2", "4.1")
 PYTHON_BUILD_VERSION_RANGE = _minor_range("1.5.0", "1.6")
