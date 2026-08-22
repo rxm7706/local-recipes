@@ -146,6 +146,15 @@ _PRUNED_DIR_NAMES = frozenset(
         "node_modules",
         ".pixi",
         "site-packages",
+        # Harness-managed git worktrees (.claude/worktrees/<agent> holds FULL
+        # repo copies — 18 of them measured 122,731 entries on 2026-08-21,
+        # 2.4x the whole cap, dying inside `.claude` before the walk ever
+        # reached `src/`) and the vendored macOS cross-compilation SDK
+        # (`SDKs/MacOSX11.0.sdk`, gitignored, ~39k entries). Neither holds
+        # first-party source; both re-truncated the walk exactly as the
+        # Story-6.1 regression test predicted.
+        "worktrees",
+        "SDKs",
         # Build output
         "build_artifacts",  # conda-build / rattler-build
         "build",

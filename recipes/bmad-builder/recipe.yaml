@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-builder
-  version: "2.1.0"
+  version: "2.2.1"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-builder/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 2cbd05ac049cd9c918a9cb15ca82bca868db29077e64cdbbc9a20883ce056b07
+  sha256: d62d8a810d909e807e8b49e279f7d585121c05ab8988bdc62f338bb469e2691b
 
 build:
   number: 0
@@ -29,6 +29,7 @@ tests:
           - test -d "${CONDA_PREFIX}/share/bmad-builder/skills"
           - test -f "${CONDA_PREFIX}/share/bmad-builder/skills/module.yaml"
           - test -d "${CONDA_PREFIX}/share/bmad-builder/skills/bmad-agent-builder"
+          - test -d "${CONDA_PREFIX}/share/bmad-builder/skills/bmad-eval-runner"
           - test -d "${CONDA_PREFIX}/share/bmad-builder/skills/bmad-module-builder"
           - test -d "${CONDA_PREFIX}/share/bmad-builder/skills/bmad-workflow-builder"
           - test -f "${CONDA_PREFIX}/share/bmad-builder/.claude-plugin/marketplace.json"
@@ -50,9 +51,9 @@ about:
     bmad-builder provides the complete pipeline to create and share AI modules
     and agents compatible with the Agent Skills open standard across 40+ AI tools.
 
-    It ships four skills (bmad-agent-builder, bmad-bmb-setup, bmad-module-builder,
-    bmad-workflow-builder) plus Python utility scripts for quality analysis and
-    validation that Claude Code invokes at runtime.
+    It ships five skills (bmad-agent-builder, bmad-bmb-setup, bmad-eval-runner,
+    bmad-module-builder, bmad-workflow-builder) plus Python utility scripts for
+    quality analysis and validation that Claude Code invokes at runtime.
 
     After installation, run ``bmad-builder-install`` in your project directory to
     copy the skills into ``.claude/skills/`` so Claude Code can discover them.
@@ -80,11 +81,11 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33123
-  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-last-checked: "2026-08-21T00:00:00Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T15:59:27Z"
+  cfe-local-build-datetime: "2026-08-21T00:00:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -92,4 +93,12 @@ extra:
 # Header:
 #    # Version bumped 1.6.0 -> 2.1.0 (latest upstream tag) in the
 #    # 2026-07-12 BMAD-recipe sweep.
+#    # Version bumped 2.1.0 -> 2.2.1 in the 2026-08-21 BMAD 6.11.0 sweep.
+#    # 2.2.x adds a fifth skill, bmad-eval-runner (test-asserted).
+# requirements:
+#    # 2.2.x converts the skills' resolver calls to `uv run`, but uv is
+#    # deliberately NOT declared as a run dep — mirrors the bmad-method
+#    # 6.11.0 recipe convention (skills are markdown instructions executed
+#    # by a coding agent; external tools are per-project prerequisites,
+#    # same stance as bmad-manticore's uv/ffmpeg/node/git).
 ####

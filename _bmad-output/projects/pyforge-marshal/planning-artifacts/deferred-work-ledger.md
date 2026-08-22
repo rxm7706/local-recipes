@@ -1060,3 +1060,17 @@ status: open
   promoted: 2026-08-20 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-10` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-10`.
   severity: low
   status: open
+
+### DW-BL011-1: loop-stall-check labels a bmad-loop 0.11 `awaiting-operator` parked run "stalled" — attention arrives, mislabeled
+  origin: bmad-loop-0.11-compat-audit (2026-08-21, the BMAD 6.11.0 upgrade session)
+  source_spec: `spec-bmad-loop-governance` (the detector's contract)
+  severity: low
+  reason: bmad-loop 0.11.0 adds an `awaiting-operator` phase (operator-parked stories, completed via `bmad-loop confirm`; park records in-commit at `.bmad-loop/operator/<key>.json`). `scripts/loop_stall_check.py`'s liveness test exempts only `finished`/`stopped`/`paused_reason`, so a parked run sitting deliberately still reads as a 15-minute stall. Benign in effect — a parked run WANTS operator attention — but the "stalled" label misdirects triage toward a wedged-session diagnosis. Fix shape: recognize the parked state in `_is_live` and report it as `awaiting-operator (run bmad-loop confirm)` instead of a stall. No live runs existed at audit time; first reproduction requires a 0.11 run that parks.
+  status: open
+
+### DW-BL011-2: the deferred-work pipeline's intake shape changes on the FIRST bmad-loop 0.11 run — Tier-3 `deferred-work.md` is no longer written; deferred findings live in spec frontmatter `deferred:` lists
+  origin: bmad-loop-0.11-compat-audit (2026-08-21, the BMAD 6.11.0 upgrade session)
+  source_spec: `spec-regenerable-factory` (deferred-work-check's contract)
+  severity: medium
+  reason: BMAD 6.11's build-auto contract (which bmad-loop 0.9.1+ dispatches via on-disk resolution, and 0.10.0 adopts as "the deferred-work contract of the 6.11 era") drops `implementation-artifacts/deferred-work.md` and `final_revision`; deferred findings are spec-frontmatter `deferred:` lists (items: summary, evidence, optional location, severity), and 0.11's own validate now FAILS (was warn) on an unreadable ledger. Consumers built on the old shape: `scripts/deferred_work_baseline.py`, `deferred_work_promote.py`, `normalize_deferred_ledgers.py`, `apply_verification_verdicts.py`, `scripts/deferred_work_check.py` (whose premise is "bmad-loop's damping refiles into gitignored deferred-work.md"), scribe's promote path, and the tracked-ledger promotion flow. Nothing is broken today (no live runs; existing ledgers remain readable); the first 0.11-era run produces findings these tools will not see. Fix shape: teach the promotion/check pipeline to ALSO read spec-frontmatter `deferred:` lists, keeping the legacy file as a still-honored source.
+  status: open

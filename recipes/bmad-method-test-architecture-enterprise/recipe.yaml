@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method-test-architecture-enterprise
-  version: "1.19.1"
+  version: "1.23.2"
 
 package:
   name: ${{ name }}
@@ -11,29 +11,36 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 9d3aaf09bba7ae31b7d0285729a3527cad4f6af018031b4f6b8faea6bc3c33d1
+  sha256: 6be283d208eb78925b18647db35f87d7d881b12b40f10f8e121905ebeca3ed96
 
 build:
   number: 0
   noarch: generic
 
 requirements:
+  build:
+    - nodejs >=20
   run:
     - python >=3.10
+    - nodejs >=20
 
 tests:
   - script:
       - if: not win
         then:
           - bmad-tea-install --help
+          - tea-test-review --help
           - test -d "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/agents/bmad-tea"
           - test -f "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/agents/bmad-tea/SKILL.md"
           - test -d "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/workflows"
+          - test -f "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/cli/test-review.js"
           - test -f "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/.claude-plugin/marketplace.json"
       - if: win
         then:
           - bmad-tea-install.bat --help
+          - tea-test-review.bat --help
           - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\agents\bmad-tea" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\cli\test-review.js" exit 1
           - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\.claude-plugin\marketplace.json" exit 1
 
 about:
@@ -77,11 +84,11 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33292
-  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-last-checked: "2026-08-21T00:00:00Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T15:59:35Z"
+  cfe-local-build-datetime: "2026-08-21T00:00:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -92,4 +99,20 @@ extra:
 #    # competing PR (G58/db-gpt precedent).
 #    # Version bumped 1.15.1 -> 1.19.0 (latest upstream tag) in the
 #    # 2026-07-12 BMAD-recipe sweep.
+#    # Version bumped 1.19.1 -> 1.23.2 in the 2026-08-21 BMAD 6.11.0 sweep.
+#    # Target is 1.23.2 (npm dist-tag `latest`), NOT the v1.23.3 tag —
+#    # that tag corresponds to the 1.23.3-next.0 prerelease only.
+# build:
+#    # Since 1.20.0 upstream ships a WORKING `tea-test-review` bin entry
+#    # (package.json bin -> cli/test-review.js; it was EMPTY {} in 1.19.1).
+#    # The build now vendors cli/ + prod node_modules (npm install
+#    # --omit=dev at build time — build-time network is allowed, G73) into
+#    # share/, strips node_modules/.bin symlinks (G6 — noarch symlink
+#    # check), and writes a dirname-relative sh wrapper (unix) / a
+#    # prefix-baked .bat shim (win, same pattern as bmad-tea-install.bat).
+# requirements:
+#    # nodejs >=20 mirrors upstream engines.node floor only — no ceiling
+#    # (G103: never copy npm engines caps into conda run deps). build:
+#    # nodejs provides npm for the vendoring step; run: nodejs runs the
+#    # tea-test-review CLI.
 ####

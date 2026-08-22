@@ -36,8 +36,9 @@ psutil = ">=7.2.2"
 jsonschema = ">=4.25"
 # Story 1.7: adapters/harness_bmadloop.py now lazily imports bmad_loop's own
 # multiplexer/profile/bmadconfig/sprintstatus modules -- see pyproject.toml's
-# matching entry for why the range is >=0.9.0,<0.10.
-bmad-loop = ">=0.9.0,<0.10"
+# matching entry for why the range is >=0.11.0,<0.12 (0.9.x hardcodes
+# /bmad-dev-auto and stalls unattended on BMAD >=6.11).
+bmad-loop = ">=0.11.0,<0.12"
 pyforge-core = { path = "../pyforge-core" }
 # Story 10.1: Genesis's template engine (architecture Stack table, AD-52).
 # Imported nowhere but seed/engine/copier.py (P-02, proven by

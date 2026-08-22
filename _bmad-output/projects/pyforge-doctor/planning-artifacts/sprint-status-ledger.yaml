@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 83
+# stories: 86
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -35,6 +35,7 @@ development_status:
   12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: done
   12-5-the-spec-surface-baseline-write-race-is-closed: done
   13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic: done
+  14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared: backlog
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
@@ -81,6 +82,8 @@ development_status:
   epic-12-retrospective: optional
   epic-13: done
   epic-13-retrospective: optional
+  epic-14: backlog
+  epic-14-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

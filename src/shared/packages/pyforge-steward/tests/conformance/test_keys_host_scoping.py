@@ -33,6 +33,28 @@ def _isolated_credential_environment(monkeypatch, tmp_path):
     for var in _CREDENTIAL_ENV_VARS:
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("NETRC", str(tmp_path / "netrc-does-not-exist"))
+    # Since the 2026-08-20 mason-5.5 CFE retro, `_http.py` double-gates the
+    # JFrog header: beyond steward's own allowlist decision (skip_auth), the
+    # host must ALSO be operator-configured — derived from any `*_BASE_URL`
+    # env var or the pixi mirror config. Declare the positive-case hosts the
+    # way production does, so these tests keep exercising steward's gate
+    # rather than silently failing _http.py's. Negative-case hosts
+    # (c.example.com, lookalike subdomains, 2001:db8::2, pypi.org) stay
+    # deliberately unconfigured AND out-of-allowlist.
+    monkeypatch.setenv(
+        "TEST_ARTIFACTORY_BASE_URL", "https://artifactory.example.com/artifactory"
+    )
+    monkeypatch.setenv("TEST_MIRROR_A_BASE_URL", "https://a.example.com/")
+    monkeypatch.setenv("TEST_MIRROR_B_BASE_URL", "https://b.example.com/")
+    monkeypatch.setenv("TEST_IPV6_MIRROR_BASE_URL", "https://[2001:db8::1]:8081/")
+    # `_http.py`'s configured-host set does not strip a trailing root dot the
+    # way steward's own `_canonical_host` does, so the dotted-FQDN positive
+    # case needs its exact host configured too. (Whether _http.py should
+    # canonicalize trailing dots itself is a CFE-side question, noted for its
+    # next retro — not resolved from steward's test suite.)
+    monkeypatch.setenv(
+        "TEST_ARTIFACTORY_DOT_BASE_URL", "https://artifactory.example.com./"
+    )
 
 
 def test_out_of_allowlist_host_returns_no_headers_even_with_env_var_set(monkeypatch):

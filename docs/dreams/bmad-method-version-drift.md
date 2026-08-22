@@ -2,7 +2,10 @@
 title: Doctor notices when BMAD-METHOD's own installed core falls behind upstream
 type: dream
 owner: doctor
-status: dreamt
+status: realized   # core CAPs 1-3 shipped as Epic 10 (10.1/10.2, 2026-08-16); suite extension
+                   # CAP-4 specced 2026-08-21 (spec-bmad-method-version-drift) → Epic 14 backlog,
+                   # from the live 6.10.0→6.11.0 upgrade session: bmad-loop sat 2 minors behind
+                   # (an unattended-run breaker) with zero ambient signal
 ---
 
 # Doctor notices when BMAD-METHOD's own installed core falls behind upstream

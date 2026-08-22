@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.9.0"
+  version: "0.11.0"
   python_min: "3.11"
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-loop/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: a309068cd21518222003054eaa5d11a6f28cf319d435e3ce6064374dfb89ec6d
+  sha256: 6ff2a606fb3e21308342ac1f8867d910c5750557daa165cf8da790084ef8d40d
 
 build:
   noarch: python
@@ -29,6 +29,7 @@ requirements:
   run:
     - python >=${{ python_min }}
     - pyyaml >=6.0
+    - regex >=2024.11.6
     - psutil >=7.2.2
     - textual >=8.0,<9
     - tomlkit >=0.13
@@ -45,6 +46,7 @@ tests:
   - script:
       - bmad-loop --version
       - bmad-loop --help
+      - bmad-loop adapters
 
 about:
   summary: Deterministic ralph-loop orchestrator for the BMAD implementation phase
@@ -83,11 +85,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-last-checked: "2026-08-21T00:00:00Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T16:00:14Z"
+  cfe-local-build-datetime: "2026-08-21T00:00:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -99,6 +101,13 @@ extra:
 #    # python_min 3.11 overrides the conda-forge 3.10 floor — upstream
 #    # pyproject declares requires-python >=3.11.
 # run:
+#    # regex >=2024.11.6 became a CORE upstream dep in 0.10.x/0.11.0 (the
+#    # #194 env-fault classifier needs the regex module's per-call timeout=;
+#    # stdlib re has none). On conda-forge as `regex` (compiled, all subdirs).
+#    # 0.11.0 adds an optional [opencode] extra (httpx >=0.28) for the
+#    # opencode-http adapter — NOT flattened into run (this repo does not
+#    # consume it; Simplicity First). psmux >=3.3.8 is an optional backend
+#    # requirement enforced at runtime selection — deliberately not a dep.
 #    # psutil is a win32-only marker dep upstream (linux stays dep-free);
 #    # noarch:python has one artifact for all platforms, so it is flattened
 #    # to an unconditional run dep (harmless on linux/macos, required for

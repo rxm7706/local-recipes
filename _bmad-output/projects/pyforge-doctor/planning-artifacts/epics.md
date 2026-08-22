@@ -1209,3 +1209,26 @@ acceptance criterion with its source ledger, entry id, and summary, for the draf
 accept, reject, or reword. Nothing is auto-written into the story/spec (CAP-1). **Deps:** —
 
 **Epic 13 clears to dispatch** — one story, no dependencies, concrete.
+
+## Epic 14: The bmad-suite's lag is as visible as the core's
+
+Decomposes `spec-bmad-method-version-drift` **CAP-4** (added 2026-08-21, superseding the
+former "core only" non-goal). Motivating evidence, from the live 6.10.0→6.11.0 upgrade
+session: `bmad-loop` sat at 0.9.0 against upstream 0.11.0 — 0.9.0 hardcodes
+`/bmad-dev-auto` and stalls every unattended session on BMAD ≥ 6.11 (upstream's 0.9.1 was
+an emergency hotfix for exactly this) — while TEA lagged 1.19.1 vs 1.23.2 (1.19.1's
+`tea-test-review` bin was published empty). None of it produced any ambient signal; Epic
+10's detector watched only the core, and the suite's coordinated ecosystem waves (skill
+rename, uv-run conversion, `persistent_facts`/AGENTS.md) went by invisibly until a human
+checked. Steward's `spec-bmad-method-core-upgrade` (Epic 14 there, same day) owns acting on
+the signal; this epic owns the signal.
+
+### Story 14.1: The bmad-suite is compared against upstream, derived not declared
+**Given** the `bmad-*` pins present in `pixi.toml` (the watched set is DERIVED from those
+pins — a hardcoded list omits exactly the newest tool) and the versions actually installed
+in the pixi environments **When** doctor's report or `fleet-picture` runs **Then** each
+suite package behind its latest upstream release yields a warn-only Finding naming both
+versions, through the same fail-open live-query exception Story 10.2's operator decision
+already granted (unreachable ⇒ no Finding, no error, never gating) and the same ambient
+surfaces as Story 10.3 — proven by a fixture of the 2026-08-21 pre-update state naming
+`bmad-loop 0.9.0 < 0.11.0` and `TEA 1.19.1 < 1.23.2` (CAP-4). **Deps:** —

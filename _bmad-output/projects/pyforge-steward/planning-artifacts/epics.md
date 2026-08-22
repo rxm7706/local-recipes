@@ -1010,3 +1010,58 @@ cost (dirty/clean, ahead/behind, merged?) that `ls` deliberately does not, and t
 RESOLVES the spec's two open questions with dated Spec Change Log entries: whether the Tier-3
 feed rsync-mirror step becomes its own verb or joins `start`, and whether `workspace update`
 exists at all — decisions recorded, not silently implemented.
+
+## Epic 14: The BMAD core upgrades repeatably
+
+**Spec binding.** Decomposes `spec-bmad-method-core-upgrade` (this station's specs/ dir;
+authored 2026-08-21 from `docs/dreams/bmad-method-core-upgrade.md`, grounded in that day's
+live 6.10.0→6.11.0 upgrade session — the second manual one-off, which re-hit the first's
+traps). Ownership resolved 2026-08-15 in the Dream: steward owns the mutating apply half;
+detection stays doctor's (shipped 10.1/10.2). The spec's `failure-modes.md` companion is
+the trap catalog every story's tests draw from. Report-only for foreign-station surfaces —
+steward reports, owners act.
+
+### Story 14.1: The pre-flight diff retrodicts a real upgrade
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-1
+**Surface:** `src/shared/packages/pyforge-steward/` (new upgrade duty), steward CLI
+**Given** the installed `_bmad/_config/manifest.yaml` and a target bmad-method release
+**Then** a report-only command lists skill adds/removes/renames (shim disposition +
+`removals.txt` deletions), upstream-touched files the repo has locally modified,
+`_bmad/custom/**` overrides that stop applying (the legacy-name unattended-halt trap), and
+new hard prerequisites — and pointed at the 6.10.0→6.11.0 pair it retrodicts the 2026-08-21
+findings (failure-modes.md traps 1–4, 9, 11) as a fixture test.
+
+### Story 14.2: Apply is deliberate, branched, and never clobbers custom
+**Type:** feature • **Effort:** M • **Deps:** S-14.1 • **FR/AD:** spec-bmad-method-core-upgrade CAP-2
+**Surface:** steward upgrade duty
+**Given** a clean tree and a CAP-1 report **Then** the wrapper snapshots/branches first, runs
+`bmad-method install --action update -y` non-interactively (the installer stays the only
+writer of `_bmad/bmm/**`/`_bmad/core/**`), refuses to start when legacy-name customization
+files would halt the shims, and lands the installer diff for review — never applied blind;
+`_bmad/custom/**` is byte-identical afterward or the run reports why not.
+
+### Story 14.3: Clobbered custom surfaces are caught and re-applied
+**Type:** feature • **Effort:** S • **Deps:** S-14.2 • **FR/AD:** spec-bmad-method-core-upgrade CAP-3
+**Surface:** steward upgrade duty
+**Given** a completed apply **Then** clobbered repo-custom surfaces are detected —
+`resolve_config.py`'s multi-project layers 5/6 as the named regression case (clobbered in
+BOTH manual upgrades) — and re-applied or flagged; success is `bmad-switch --current` AND a
+`BMAD_ACTIVE_PROJECT` override resolving all six layers post-apply, installer `.bak`s
+accounted for.
+
+### Story 14.4: The pin fan-out is enumerated, not discovered by red tests
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-4
+**Surface:** steward upgrade duty (report-only)
+**Given** a version change in bmad-method or bmad-loop **Then** every known pin site is
+enumerated with moved/not-moved status — root `pixi.toml` floors, marshal's pyproject +
+package `pixi.toml` + `HARNESS_VERSION_RANGE_TEXT` + seed manifest and its drift-test map,
+loop-home hook relays — exactly the sites the 2026-08-21 session had to touch (trap 5);
+foreign-station sites are reported, never edited.
+
+### Story 14.5: One command proves the upgrade landed
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-method-core-upgrade CAP-5
+**Surface:** steward upgrade duty
+**Given** any post-apply state **Then** one command runs the repo's own gates —
+bmad-drift-check integrity, CFE skill meta-tests, per-loop-home `bmad-loop init` relay
+refresh + `validate` — and reports a single verdict; the 2026-08-21 checklist (8/8 homes
+validate clean, zero warnings) is the reproduced worked example.

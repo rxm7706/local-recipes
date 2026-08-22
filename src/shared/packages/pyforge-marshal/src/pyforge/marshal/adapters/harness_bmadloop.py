@@ -625,9 +625,9 @@ def write_policy_document(doc: tomlkit.TOMLDocument, loop_home: Path) -> Path:
 # modules this module reads. Tuple comparison, not the ``packaging``
 # library -- this package has no dependency on it and the range is a
 # fixed, simple two-point interval.
-_HARNESS_MIN_VERSION: tuple[int, ...] = (0, 9, 0)
-_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 10)
-HARNESS_VERSION_RANGE_TEXT = ">=0.9.0,<0.10"
+_HARNESS_MIN_VERSION: tuple[int, ...] = (0, 11, 0)
+_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 12)
+HARNESS_VERSION_RANGE_TEXT = ">=0.11.0,<0.12"
 
 
 def harness_version_tuple(text: str) -> tuple[int, ...] | None:
