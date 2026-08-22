@@ -14,6 +14,14 @@
 # render via render_skill.py (e.g. bmad-build-auto's workflow.md) HALT with
 # "missing config value `communication_language`" / `user_skill_level`
 # without this pin. Values mirror `_bmad/bmm/config.yaml`.
+#
+# NOTE: render_skill.py's `_find_config_values()` does a recursive scan for
+# the bare key name anywhere in the merged config tree and raises "ambiguous
+# config value" if it finds more than one match -- so `user_skill_level`
+# (or any of these keys) must be defined in exactly ONE place across all
+# six config layers. Keep both keys in this single [core] block; do not
+# also add a [modules.bmm] table defining user_skill_level here or in any
+# other layer.
 [core]
 communication_language = "English"
 user_skill_level = "intermediate"
