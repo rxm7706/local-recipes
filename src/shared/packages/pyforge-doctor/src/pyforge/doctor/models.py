@@ -169,7 +169,12 @@ class Source(StrEnum):
     # gitignored `.pixi/envs/*/conda-meta/` filenames -- entirely fail-open
     # (that state is legitimately absent on a fresh clone/CI), still
     # warn-only, still this one Source, riding Story 10.3's existing
-    # surfaces unchanged.
+    # surfaces unchanged. Story 15.1 (Epic 15/DW-14-1-1) extends the suite
+    # pass once more: when the npm fetch misses for a suite package, a
+    # GitHub releases/tags fallback (keyed by that package's own
+    # `recipes/<name>/recipe.yaml` github mapping) is tried before giving
+    # up on it -- still this one Source, still warn-only, riding the same
+    # surfaces.
     BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
     # Story 13.1 (Epic 13/CAP-1): the closed taxonomy EXTENDED once more --
     # Doctor's verdict on which tracked deferred-work-ledger entries, fleet

@@ -1,17 +1,18 @@
 """Unit tests for ``pyforge.doctor.sources.bmad_method.gather`` (Story 10.1,
 Epic 10/CAP-1; Story 10.2, Epic 10/CAP-2; Story 14.1, Epic 14/CAP-4's suite
-pass) -- covers every row of the specs' I/O & Edge-Case Matrices against
-REAL tmp fixture trees (a written ``pixi.toml`` +
-``_bmad/_config/manifest.yaml``, plus ``.pixi/envs/*/conda-meta/`` filename
-markers for CAP-4), mirroring
+pass; Story 15.1, Epic 15/DW-14-1-1's GitHub-releases fallback) -- covers
+every row of the specs' I/O & Edge-Case Matrices against REAL tmp fixture
+trees (a written ``pixi.toml`` + ``_bmad/_config/manifest.yaml``, plus
+``.pixi/envs/*/conda-meta/`` filename markers for CAP-4 and
+``recipes/<name>/recipe.yaml`` fixtures for Story 15.1), mirroring
 ``test_sources_chain_due_for_verification.py``'s own real-fixture discipline.
 The exceptions are ``test_gather_degrades_on_unexpected_exception``, which
 deliberately monkeypatches ``_gather`` to force an exception shape no real
 fixture can produce -- proving the outer ``degrade_on_exception`` safety net
 itself, not the comparison logic (review finding: the prior wording claimed
-"no mocks" unconditionally) -- and CAP-2's own network-boundary tests, which
-monkeypatch ``_fetch_latest_upstream_version``/``urllib.request.urlopen``
-rather than making a live registry call.
+"no mocks" unconditionally) -- and CAP-2/Story 15.1's own network-boundary
+tests, which monkeypatch ``_fetch_latest_upstream_version``/
+``urllib.request.urlopen`` rather than making a live registry/GitHub call.
 
 The module-level ``_stub_upstream_fetch`` fixture below is ``autouse=True``
 so every CAP-1 test above it keeps asserting ``len(findings) == 1``
@@ -1211,3 +1212,391 @@ def test_fetch_latest_upstream_version_is_lenient_for_suite_strict_for_core(
     )
     assert _real_fetch_latest_upstream_version(package="bmad-loop") == (0, 12, 0)
     assert _real_fetch_latest_upstream_version() is None
+
+
+# --- GitHub-releases fallback for npm-invisible packages (Story 15.1, DW-14-1-1) ---
+
+
+def _write_recipe_yaml(target: Path, package: str, text: str) -> Path:
+    path = target / "recipes" / package / "recipe.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+#: The real 2026-08-21 shape of ``recipes/bmad-loop/recipe.yaml``'s
+#: ``extra`` block (DW-14-1-1's own fixture reference) -- see this file's
+#: module docstring/Code Map: tests write their own tmp-scoped copy rather
+#: than reading the real tracked file.
+_RECIPE_GITHUB_BMAD_LOOP = """
+extra:
+  recipe-maintainers:
+    - rxm7706
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-loop
+"""
+
+_RECIPE_NON_GITHUB = """
+extra:
+  recipe-maintainers:
+    - rxm7706
+  cfe-upstream-registry: npm
+  cfe-upstream-name: bmad-method
+"""
+
+_RECIPE_MALFORMED_YAML = "extra: [unterminated\n"
+
+_RECIPE_MISSING_EXTRA = """
+package:
+  name: bmad-loop
+"""
+
+
+# --- _github_owner_repo ----------------------------------------------------------
+
+
+def test_github_owner_repo_returns_the_mapping_on_a_github_hit(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+    assert (
+        bmad_method._github_owner_repo(tmp_path, "bmad-loop")
+        == "bmad-code-org/bmad-loop"
+    )
+
+
+def test_github_owner_repo_returns_none_for_a_non_github_registry(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-method", _RECIPE_NON_GITHUB)
+    assert bmad_method._github_owner_repo(tmp_path, "bmad-method") is None
+
+
+def test_github_owner_repo_returns_none_when_recipe_yaml_is_missing(
+    tmp_path: Path,
+) -> None:
+    assert bmad_method._github_owner_repo(tmp_path, "bmad-loop") is None
+
+
+def test_github_owner_repo_returns_none_on_malformed_yaml(tmp_path: Path) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_MALFORMED_YAML)
+    assert bmad_method._github_owner_repo(tmp_path, "bmad-loop") is None
+
+
+def test_github_owner_repo_returns_none_when_extra_block_is_missing(
+    tmp_path: Path,
+) -> None:
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_MISSING_EXTRA)
+    assert bmad_method._github_owner_repo(tmp_path, "bmad-loop") is None
+
+
+# --- _fetch_latest_github_release --------------------------------------------------
+
+
+def _stub_github_urlopen(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    releases: bytes | BaseException | None = None,
+    tags: bytes | BaseException | None = None,
+) -> None:
+    """Dispatches by URL shape: anything containing ``/releases/latest``
+    is answered with ``releases``, anything ending ``/tags`` with
+    ``tags``. A value that IS an exception instance is raised instead of
+    returned, so callers can simulate an HTTPError/URLError/etc. at
+    either endpoint. Calling an unstubbed (``None``) endpoint raises --
+    proving, for the 404-skips-tags tests, that ``/tags`` was never
+    queried at all."""
+
+    def _urlopen(url: str, timeout: float | None = None):
+        if "/releases/latest" in url:
+            response = releases
+        elif url.endswith("/tags"):
+            response = tags
+        else:
+            raise AssertionError(f"unexpected URL: {url}")
+        if isinstance(response, BaseException):
+            raise response
+        if response is None:
+            raise AssertionError(f"unstubbed endpoint called: {url}")
+        return _FakeUrlopenResponse(response)
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+
+
+def test_fetch_latest_github_release_returns_parsed_triple_on_a_releases_hit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(
+        monkeypatch, releases=json.dumps({"tag_name": "0.11.0"}).encode()
+    )
+    assert bmad_method._fetch_latest_github_release(
+        owner_repo="bmad-code-org/bmad-loop"
+    ) == (0, 11, 0)
+
+
+def test_fetch_latest_github_release_falls_back_to_tags_on_a_404(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(
+        monkeypatch,
+        releases=urllib.error.HTTPError(
+            "https://api.github.com", 404, "Not Found", email.message.Message(), None
+        ),
+        tags=json.dumps([{"name": "v0.10.0"}, {"name": "v0.11.0"}]).encode(),
+    )
+    assert bmad_method._fetch_latest_github_release(
+        owner_repo="bmad-code-org/bmad-loop"
+    ) == (0, 11, 0)
+
+
+def test_fetch_latest_github_release_a_non_404_http_error_skips_tags_entirely(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # `tags` deliberately left unstubbed (None) -- _stub_github_urlopen's
+    # own AssertionError proves /tags is never queried on a non-404.
+    _stub_github_urlopen(
+        monkeypatch,
+        releases=urllib.error.HTTPError(
+            "https://api.github.com", 500, "boom", email.message.Message(), None
+        ),
+    )
+    assert (
+        bmad_method._fetch_latest_github_release(owner_repo="bmad-code-org/bmad-loop")
+        is None
+    )
+
+
+def test_fetch_latest_github_release_strips_one_leading_v_or_capital_v(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(
+        monkeypatch, releases=json.dumps({"tag_name": "V0.11.0"}).encode()
+    )
+    assert bmad_method._fetch_latest_github_release(
+        owner_repo="bmad-code-org/bmad-loop"
+    ) == (0, 11, 0)
+
+
+def test_fetch_latest_github_release_empty_tags_list_returns_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(
+        monkeypatch,
+        releases=urllib.error.HTTPError(
+            "https://api.github.com", 404, "Not Found", email.message.Message(), None
+        ),
+        tags=json.dumps([]).encode(),
+    )
+    assert (
+        bmad_method._fetch_latest_github_release(owner_repo="bmad-labs/skills")
+        is None
+    )
+
+
+def test_fetch_latest_github_release_unparseable_tags_returns_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(
+        monkeypatch,
+        releases=urllib.error.HTTPError(
+            "https://api.github.com", 404, "Not Found", email.message.Message(), None
+        ),
+        tags=json.dumps([{"name": "garbage"}, {"name": "also-garbage"}]).encode(),
+    )
+    assert (
+        bmad_method._fetch_latest_github_release(owner_repo="bmad-labs/skills")
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        urllib.error.URLError("no route to host"),
+        http.client.BadStatusLine("garbage"),
+        OSError("connection refused"),
+        TimeoutError("timed out"),
+    ],
+)
+def test_fetch_latest_github_release_folds_every_network_failure_mode_to_none(
+    monkeypatch: pytest.MonkeyPatch, exc: BaseException
+) -> None:
+    def _raise(*args, **kwargs):
+        raise exc
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _raise)
+    assert (
+        bmad_method._fetch_latest_github_release(owner_repo="bmad-code-org/bmad-loop")
+        is None
+    )
+
+
+def test_fetch_latest_github_release_folds_malformed_json_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(monkeypatch, releases=b"not json")
+    assert (
+        bmad_method._fetch_latest_github_release(owner_repo="bmad-code-org/bmad-loop")
+        is None
+    )
+
+
+def test_fetch_latest_github_release_folds_missing_tag_name_field_to_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _stub_github_urlopen(
+        monkeypatch, releases=json.dumps({"name": "not-tag-name"}).encode()
+    )
+    assert (
+        bmad_method._fetch_latest_github_release(owner_repo="bmad-code-org/bmad-loop")
+        is None
+    )
+
+
+# --- THE DW-14-1-1 fixture: bmad-loop unblinded via GitHub ------------------------
+
+
+def test_dw_14_1_1_bmad_loop_npm_invisible_resolves_via_github(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # THE fixture named by DW-14-1-1: bmad-loop 404s on npm (as it does
+    # live) but its recipes/bmad-loop/recipe.yaml carries a real github
+    # mapping -- the fallback must resolve it and produce the SAME WARN
+    # shape CAP-4's own npm-sourced WARN already produces.
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_github_release", lambda **_: (0, 11, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    finding = suite[0]
+    assert finding.source is Source.BMAD_METHOD_VERSION_DRIFT
+    assert finding.status is DoctorStatus.WARN
+    assert "bmad-loop 0.9.0" in finding.message
+    assert "0.11.0" in finding.message
+    assert finding.evidence == {
+        "package": "bmad-loop",
+        "installed": "0.9.0",
+        "latest_upstream": "0.11.0",
+    }
+
+
+# --- integration: when the fallback fires (and does not) -------------------------
+
+
+def test_github_not_queried_when_npm_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+    _stub_fetch_by_package(
+        monkeypatch, {"bmad-method": (6, 11, 0), "bmad-loop": (0, 11, 0)}
+    )
+
+    def _unreachable(**_):
+        raise AssertionError("_fetch_latest_github_release must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_github_release", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    assert suite[0].status is DoctorStatus.OK
+
+
+def test_github_not_queried_when_no_recipe_yaml_mapping_exists(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # bmad-loop is npm-invisible AND has no recipes/bmad-loop/recipe.yaml
+    # anywhere under this fixture root -- the fallback must not fire, and
+    # bmad-loop stays unchecked exactly as it did before this story.
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0)})
+
+    def _unreachable(**_):
+        raise AssertionError("_fetch_latest_github_release must not be called")
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_github_release", _unreachable)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == [
+        "bmad-method-version-drift",
+        "bmad-method-upstream-drift",
+    ]
+
+
+def test_github_fallback_skipped_when_shared_budget_already_exhausted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # bmad-loop's own npm fetch (a miss) consumes the whole shared 5s
+    # budget -- the GitHub fallback must not be attempted for that same
+    # package (I/O matrix: "Shared budget exhausted before fallback").
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+
+    clock = _FakeClock()
+    monkeypatch.setattr(bmad_method, "time", clock)
+
+    def _npm_fetch(
+        *, package: str = bmad_method.DEPENDENCY_NAME, timeout: float | None = None
+    ) -> tuple[int, int, int] | None:
+        if package == "bmad-method":
+            return (6, 11, 0)
+        clock.now += 10.0  # blows straight past the 5s budget
+        return None
+
+    monkeypatch.setattr(bmad_method, "_fetch_latest_upstream_version", _npm_fetch)
+
+    def _unreachable_owner_repo(*args, **kwargs):
+        raise AssertionError("_github_owner_repo must not be called")
+
+    def _unreachable_fetch(**_):
+        raise AssertionError("_fetch_latest_github_release must not be called")
+
+    monkeypatch.setattr(bmad_method, "_github_owner_repo", _unreachable_owner_repo)
+    monkeypatch.setattr(bmad_method, "_fetch_latest_github_release", _unreachable_fetch)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == [
+        "bmad-method-version-drift",
+        "bmad-method-upstream-drift",
+    ]
+
+
+def test_packages_checked_rises_when_npm_invisible_package_resolves_via_github(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # bmad-loop is npm-invisible and resolves only via GitHub; TEA resolves
+    # via npm directly -- both current -- packages_checked must count BOTH,
+    # rising from the pre-story "1 checked of 2 watched" shape.
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
+    _write_conda_meta(tmp_path, "default", _TEA, "1.23.2")
+    _write_recipe_yaml(tmp_path, "bmad-loop", _RECIPE_GITHUB_BMAD_LOOP)
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 11, 0), _TEA: (1, 23, 2)})
+    monkeypatch.setattr(
+        bmad_method, "_fetch_latest_github_release", lambda **_: (0, 11, 0)
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    suite = [f for f in findings if f.check == "bmad-suite-upstream-drift"]
+    assert len(suite) == 1
+    assert suite[0].status is DoctorStatus.OK
+    assert "2 checked" in suite[0].message
+    assert suite[0].evidence == {"packages_checked": 2, "packages_watched": 2}
