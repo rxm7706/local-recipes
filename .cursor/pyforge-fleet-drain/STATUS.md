@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~16:55 CDT
+**Updated:** 2026-08-23 ~17:00 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -29,7 +29,8 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| _(none)_ | — | dispatch 20-8 + 16-5 next |
+| marshal | `20-8` | launching |
+| steward | `16-5` | launching (skip 12-7) |
 
 ## Operator skip
 
@@ -43,8 +44,6 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 |---------|-------|-----|
 | steward | `16-4` | [#693](https://github.com/rxm7706/local-recipes/pull/693) merge `b439626af4` ([Steward 16-4](cb73af2f-982d-4638-9f98-fda65b7ff656)) |
 | marshal | `20-7` | [#692](https://github.com/rxm7706/local-recipes/pull/692) merge `1a5f2d32c5` ([Marshal 20-7](8c9bd6f9-a33f-407d-8eef-6e4d8b67e3ca)) |
-| marshal | `20-6` | [#691](https://github.com/rxm7706/local-recipes/pull/691) |
-| steward | `16-3` | [#688](https://github.com/rxm7706/local-recipes/pull/688) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
