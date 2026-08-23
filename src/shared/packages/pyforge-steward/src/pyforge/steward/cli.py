@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
 from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
@@ -32,10 +32,12 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
-# The five duties — all real as of this story. `keys` (Epic 1), `deploy`
+# The six duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
-# `sync` (Epic 8, Story 8.1).
-DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget", "sync")
+# `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Story 13.1).
+DUTIES: tuple[str, ...] = (
+    "keys", "deploy", "provision", "budget", "sync", "workspace",
+)
 
 _HELP = {
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke",
@@ -46,6 +48,10 @@ _HELP = {
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
+    "workspace": (
+        "story-scoped scratch worktrees — start/ls/clean "
+        "(own-worktrees-only; archive-not-delete)"
+    ),
 }
 
 
@@ -68,6 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_budget_subparsers(duty_parser)
         elif name == "sync":
             _add_sync_subparsers(duty_parser)
+        elif name == "workspace":
+            _add_workspace_subparsers(duty_parser)
     return parser
 
 
@@ -351,14 +359,51 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None:
+    """Add `start`/`ls`/`clean` (Story 13.1 / CAP-1,2,4). No `status` (13.2)."""
+    workspace_subs = workspace_parser.add_subparsers(
+        dest="workspace_verb", metavar="{start,ls,clean}"
+    )
+
+    start = workspace_subs.add_parser(
+        "start", help="create a scratch worktree and record it in bookkeeping"
+    )
+    start.add_argument("slug", help="story/task slug (also the new branch name)")
+    start.add_argument(
+        "--from",
+        dest="from_ref",
+        default="origin/main",
+        metavar="BRANCH",
+        help="source ref to branch from (default: origin/main)",
+    )
+    start.add_argument("--json", action="store_true", help="emit JSON instead of the path")
+
+    ls = workspace_subs.add_parser(
+        "ls", help="list tool-created scratch worktrees (bookkeeping only; cheap)"
+    )
+    ls.add_argument("--json", action="store_true", help="emit JSON instead of a text table")
+
+    clean = workspace_subs.add_parser(
+        "clean",
+        help="archive-not-delete owned scratch worktrees (bmad-loop clean discipline)",
+    )
+    clean.add_argument(
+        "--merged-only",
+        action="store_true",
+        help="only archive worktrees whose branch is already merged into its source",
+    )
+    clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
+
+
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
     `keys` returns a real `KeysDuty` (Story 1.3); `deploy` returns a real
     `DeployDuty` (Story 2.1); `provision` returns a real `ProvisionDuty`
     (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1); `sync`
-    returns a real `SyncDuty` (Story 8.1). No duty is `NullDuty` any more —
-    the seam remains for a future sixth duty.
+    returns a real `SyncDuty` (Story 8.1); `workspace` returns a real
+    `WorkspaceDuty` (Story 13.1). No duty is `NullDuty` any more — the seam
+    remains for a future seventh duty.
     """
     if name == "keys":
         # Imported here, not at module top: keys.py resolves its `_http.py`
@@ -388,6 +433,10 @@ def resolve_duty(name: str) -> Duty:
         from .sync import SyncDuty
 
         return SyncDuty()
+    if name == "workspace":
+        from .workspace import WorkspaceDuty
+
+        return WorkspaceDuty()
     return NullDuty(name)
 
 

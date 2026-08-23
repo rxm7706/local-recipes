@@ -670,7 +670,7 @@ env = { PYTHONPATH = ".:../../shared/packages/pyforge-steward/src:../../shared/p
 
 [feature.python-agent-platform.tasks.github-metrics-dlt-test]
 description = "Tests for the github_metrics dlt ingest pipeline (Story 12.8)."
-cmd = "pytest -c /dev/null --rootdir=. src/platform/tests/test_github_metrics_dlt.py -q"
+cmd = "pytest -c /dev/null --rootdir=. src/platform/ingest/github_projects/test_github_metrics_dlt.py -q"
 env = { PYTHONPATH = "src/platform/ingest:src/shared/packages/pyforge-steward/src:src/shared/packages/pyforge-core/src" }
 
 [feature.local-recipes.activation]
