@@ -781,9 +781,17 @@ cmd = "python -m pyforge.doctor.sources dream-chain"
 description = "Detector: Dream-tier hygiene (Story 17-2 / FR-147) — per-Dream frontmatter validity (status vocab, owner in station/guild, title present), README table sync, realization-log presence for pitched+. Distinct from dream-chain-check INV-0..3. CLI spelling: dream-chain --dreams (chosen over folding into --inv). Warn-only."
 cmd = "python -m pyforge.doctor.sources dream-chain --dreams"
 
+[feature.local-recipes.tasks.chain-layers-audit-check]
+description = "Detector: per-project Dream-to-Code layer presence (Story 17-3 / FR-150 residual + FR-152). Seeded from docs/dashboard/generate.py FLEET_STAGES/_stage_globs/_resolve — never a second derivation. Distinct from chain-completeness-check INV-A..D and dreams-hygiene-check. CLI: chain-completeness --layers --project <slug>. Warn-only. Pass -- --project pyforge-marshal."
+cmd = "python -m pyforge.doctor.sources chain-completeness --layers"
+
 [feature.local-recipes.tasks.chain-completeness-check]
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"
+
+[feature.local-recipes.tasks.chain-layers-audit-check]
+description = "Detector: Story 17-3 / FR-150 residual + FR-152 — read-only per-project chain-layer presence audit. Reports which generate.py FLEET_STAGES layers exist vs missing for one named BMAD project. Seeded from docs/dashboard/generate.py (never a second derivation). Distinct from chain-completeness INV-A..D and dreams-hygiene. Pass -- --project <slug> (required). Warn-only."
+cmd = "python -m pyforge.doctor.sources chain-completeness --layers"
 
 [feature.local-recipes.tasks.ledger-regression-check]
 description = "Detector: no commit un-finishes a story in a tracked sprint ledger. The OUTERMOST of three guards on the same failure: promote_sprint_status.py refuses the write, --project bounds the blast radius, and this compares two TRACKED files across a revision range so it holds even when those are bypassed, hand-edited, or --allow-regression-ed. Reads only the tracked twin via git show, so it runs in bare CI where the gitignored Tier-3 feeds are invisible — the asymmetry that let one sync destroy 96 `done` markers across four stations on 2026-08-08 while printing success. `done` is the only guarded state; reopening a story is legitimate but must be its own commit. Compares origin/main..HEAD."

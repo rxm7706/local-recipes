@@ -85,6 +85,7 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
 # Finding gather. No other source has an equivalent ground-truth export.
 _GROUNDTRUTH_SOURCE = Source.BMAD_DRIFT.value
 _DREAMS_HYGIENE_SOURCE = Source.DREAM_CHAIN.value  # --dreams flag host
+_LAYERS_AUDIT_SOURCE = Source.CHAIN_COMPLETENESS.value  # --layers flag host
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -125,6 +126,25 @@ def _build_parser() -> argparse.ArgumentParser:
             "folding into --inv."
         ),
     )
+    parser.add_argument(
+        "--layers",
+        action="store_true",
+        help=(
+            f"valid only for source {_LAYERS_AUDIT_SOURCE!r}: run the "
+            "per-project chain-layer presence audit (seeded from "
+            "docs/dashboard/generate.py) instead of INV-A..D. Requires "
+            "--project. Story 17-3 / FR-150 residual + FR-152."
+        ),
+    )
+    parser.add_argument(
+        "--project",
+        metavar="SLUG",
+        default=None,
+        help=(
+            "BMAD project slug for --layers (e.g. pyforge-marshal). "
+            "Required with --layers; ignored otherwise."
+        ),
+    )
     return parser
 
 
@@ -144,8 +164,25 @@ def main(argv: list[str] | None = None) -> int:
             f"{_DREAMS_HYGIENE_SOURCE!r}, got {args.source!r}"
         )
 
+    if args.layers and args.source != _LAYERS_AUDIT_SOURCE:
+        parser.error(
+            f"argument --layers: only valid for source "
+            f"{_LAYERS_AUDIT_SOURCE!r}, got {args.source!r}"
+        )
+
+    if args.layers and not args.project:
+        parser.error("argument --layers: requires --project SLUG")
+
+    if args.project and not args.layers:
+        parser.error("argument --project: only valid together with --layers")
+
     if args.groundtruth and args.dreams:
         parser.error("argument --dreams: not valid together with --groundtruth")
+
+    if args.layers and (args.dreams or args.groundtruth):
+        parser.error(
+            "argument --layers: not valid together with --dreams or --groundtruth"
+        )
 
     target = Path(".")
 
@@ -164,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.dreams:
         findings = chain.gather_dreams_hygiene(target)
+    elif args.layers:
+        findings = board.gather_chain_layers_audit(target, args.project)
     else:
         findings = DISPATCH[args.source](target)
 

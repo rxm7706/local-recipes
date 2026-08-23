@@ -165,6 +165,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # verb, not a sweep dispatched by name.
     # Story 17.2 (Epic 17 / FR-147) added DREAMS_HYGIENE: Dream-tier
     # hygiene mode on the dream-chain surface (`dream-chain --dreams`).
+    # Story 17.3 (Epic 17 / FR-150 residual + FR-152) added
+    # CHAIN_LAYERS_AUDIT: per-project layer presence
+    # (`chain-completeness --layers --project <slug>`).
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -192,6 +195,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "backlog-intake",
         "sibling-dreams-drift",
         "dreams-hygiene",
+        "chain-layers-audit",
     }
 
 

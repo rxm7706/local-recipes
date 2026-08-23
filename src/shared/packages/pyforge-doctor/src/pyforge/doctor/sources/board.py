@@ -54,7 +54,12 @@ from pathlib import Path
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
-__all__ = ("gather_chain_completeness", "gather_check_layout", "gather_dashboard_drift")
+__all__ = (
+    "gather_chain_completeness",
+    "gather_chain_layers_audit",
+    "gather_check_layout",
+    "gather_dashboard_drift",
+)
 
 
 # === gather_chain_completeness ==============================================
@@ -789,6 +794,181 @@ def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
         Source.CHAIN_COMPLETENESS,
         "chain-completeness",
         lambda: _gather_chain_completeness(target),
+    )
+
+
+# === gather_chain_layers_audit ===============================================
+#
+# Story 17.3 / FR-150 residual + FR-152 — read-only layer-presence report for
+# ONE named project. Seeded from docs/dashboard/generate.py's FLEET_STAGES /
+# _stage_globs / _resolve (via _load_dashboard_generate) — never a second
+# derivation. Distinct from INV-A..D (gather_chain_completeness) and from
+# dreams-hygiene (--dreams). Invoked as:
+#   python -m pyforge.doctor.sources chain-completeness --layers --project <slug>
+
+
+def gather_chain_layers_audit(
+    target: Path, project: str
+) -> tuple[Finding, ...]:
+    """Report which Dream-to-Code layers exist for ``project`` (Story 17.3).
+
+    Warn-only; read-only; does not reimplement INV-A..D or dreams-hygiene.
+    ``project`` is the BMAD project slug (e.g. ``pyforge-marshal``).
+    """
+    return degrade_on_exception(
+        Source.CHAIN_LAYERS_AUDIT,
+        "chain-layers-audit",
+        lambda: _gather_chain_layers_audit(target, project),
+    )
+
+
+def _gather_chain_layers_audit(
+    target: Path, project: str
+) -> tuple[Finding, ...]:
+    gen_path = target / "docs" / "dashboard" / "generate.py"
+    if not gen_path.is_file():
+        return (
+            Finding(
+                source=Source.CHAIN_LAYERS_AUDIT,
+                check="chain-layers-audit-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    "docs/dashboard/generate.py missing — chain layer "
+                    "audit cannot be evaluated"
+                ),
+                evidence={
+                    "kind": "chain-layers-audit-unevaluable",
+                    "project": project,
+                    "detail": "generate.py missing",
+                    "subject": "docs/dashboard/generate.py",
+                },
+            ),
+        )
+
+    try:
+        gen = _load_dashboard_generate(target)
+    except Exception as exc:  # noqa: BLE001 -- unevaluable, never crash
+        return (
+            Finding(
+                source=Source.CHAIN_LAYERS_AUDIT,
+                check="chain-layers-audit-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"docs/dashboard/generate.py failed to load — "
+                    f"chain layer audit cannot be evaluated ({exc})"
+                ),
+                evidence={
+                    "kind": "chain-layers-audit-unevaluable",
+                    "project": project,
+                    "detail": str(exc),
+                    "subject": "docs/dashboard/generate.py",
+                },
+            ),
+        )
+
+    # Point generate.py's REPO_ROOT at *this* target so _resolve/_stage_globs
+    # seed the live or fixture tree without forking their glob tables
+    # (FR-152: never silently audit another checkout).
+    saved_root = getattr(gen, "REPO_ROOT", None)
+    saved_dreams = getattr(gen, "DREAMS_DIR", None)
+    saved_pixi = getattr(gen, "_PIXI_TASKS", None)
+    root = target.resolve()
+    try:
+        gen.REPO_ROOT = root
+        gen.DREAMS_DIR = root / "docs" / "dreams"
+        if hasattr(gen, "_PIXI_TASKS"):
+            gen._PIXI_TASKS = None
+        stages = tuple(gen.FLEET_STAGES)
+        na = set(gen.FLEET_NA.get(project, set()))
+        if project not in getattr(gen, "FLEET_UX", set()):
+            na |= {"ux"}
+        # Primary chain: slug == project (station's own chain). Only that
+        # project's globs are resolved — sibling project trees are never
+        # walked (FR-152).
+        globs = gen._stage_globs(project, project, primary=True)
+        layers: dict[str, bool] = {}
+        files: dict[str, list[str]] = {}
+        for st in stages:
+            if st == "verify":
+                # generate.py: not a file — a declared pixi gate. Prefer the
+                # same candidates; when pixi.toml is absent (fixtures), treat
+                # as absent rather than inventing a second rule.
+                try:
+                    tasks = gen._pixi_tasks()
+                except Exception:  # noqa: BLE001
+                    tasks = set()
+                candidates = [
+                    f"{project}-test",
+                    f"{project.removeprefix('pyforge-')}-test",
+                ] + list(getattr(gen, "FLEET_VERIFY_ALIAS", {}).get(project, ()))
+                gate = next((t for t in candidates if t in tasks), "")
+                layers[st] = bool(gate)
+                files[st] = [gate] if gate else []
+                continue
+            found = gen._resolve(globs.get(st, []))
+            files[st] = found
+            layers[st] = bool(found)
+    finally:
+        if saved_root is not None:
+            gen.REPO_ROOT = saved_root
+        if saved_dreams is not None:
+            gen.DREAMS_DIR = saved_dreams
+        if hasattr(gen, "_PIXI_TASKS"):
+            gen._PIXI_TASKS = saved_pixi
+
+    # A project with no planning-artifacts tree at all is unevaluable —
+    # distinguishes "all layers missing on a real station" from "typo slug".
+    pa = root / "_bmad-output" / "projects" / project / "planning-artifacts"
+    if not pa.is_dir():
+        return (
+            Finding(
+                source=Source.CHAIN_LAYERS_AUDIT,
+                check="chain-layers-audit-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"project {project!r} has no planning-artifacts tree — "
+                    "chain layer audit cannot be evaluated"
+                ),
+                evidence={
+                    "kind": "chain-layers-audit-unevaluable",
+                    "project": project,
+                    "detail": "planning-artifacts missing",
+                    "subject": str(
+                        Path("_bmad-output")
+                        / "projects"
+                        / project
+                        / "planning-artifacts"
+                    ),
+                },
+            ),
+        )
+
+    applicable = [s for s in stages if s not in na]
+    present = [s for s in applicable if layers[s]]
+    missing = [s for s in applicable if not layers[s]]
+    status = DoctorStatus.OK if not missing else DoctorStatus.WARN
+    message = (
+        f"project {project}: {len(present)}/{len(applicable)} chain layers "
+        f"present"
+        + (f"; missing: {', '.join(missing)}" if missing else "")
+    )
+    return (
+        Finding(
+            source=Source.CHAIN_LAYERS_AUDIT,
+            check="chain-layers-audit",
+            status=status,
+            message=message,
+            evidence={
+                "kind": "chain-layers-audit",
+                "project": project,
+                "layers": layers,
+                "files": files,
+                "na": sorted(na),
+                "present": present,
+                "missing": missing,
+                "stages": list(stages),
+            },
+        ),
     )
 
 
@@ -1650,3 +1830,4 @@ def _run_check_layout(target: Path, sync_playwright) -> tuple[Finding, ...]:
             for finding_text in raw_findings
         ),
     )
+

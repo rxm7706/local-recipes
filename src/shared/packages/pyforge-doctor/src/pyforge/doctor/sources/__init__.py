@@ -393,6 +393,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # realization-log presence), distinct from DREAM_CHAIN INV-0..3. Not a
     # DISPATCH name: invoked as `dream-chain --dreams` (CLI spelling chosen
     # over folding into `--inv`).
+    SourceRegistration(
+        source=Source.CHAIN_LAYERS_AUDIT,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 17.3 (Epic 17 / FR-150 residual, FR-152) --
+    # board.gather_chain_layers_audit. Layer presence/absence for one named
+    # project, seeded from docs/dashboard/generate.py. Not a DISPATCH name:
+    # invoked as `chain-completeness --layers --project <slug>`.
 )
 
 
