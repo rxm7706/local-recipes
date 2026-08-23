@@ -1592,6 +1592,10 @@ class BmadLoopHarness:
                         # Story 25.5: verbatim, unredacted -- a git ref
                         # (see `escalated_preserve_ref` above).
                         preserve_ref=task.preserve_ref,
+                        # Story 20.4: proactive intent-gap capture reads
+                        # these off every task each tick.
+                        worktree_path=task.worktree_path,
+                        baseline_commit=task.baseline_commit,
                     )
                 )
                 # `StrEnum` members compare equal to their own value, but a

@@ -371,6 +371,14 @@ from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.vcs import VcsPort
 from .durability import PushTrigger, classify_push_triggers
+from .intent_gap_preserve import (
+    AttemptSnapshot,
+    append_preserve_notice,
+    capture_attempt_snapshot,
+    looks_like_intent_gap,
+    park_preserve_artifact,
+    resolve_spec_path,
+)
 
 # Matches cli/spin.py's own _JOURNAL_FILENAME/_LAUNCH_KIND/_RESUME_KIND/
 # _LOG_FILENAME -- duplicated, not imported, per this module's own docstring
@@ -415,6 +423,7 @@ _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
 # already did.
 _STORY_DEFERRED_KIND = "story-deferred"
 _ESCALATION_DETECTED_KIND = "escalation-detected"
+_INTENT_GAP_PRESERVE_FAILED_KIND = "intent-gap-preserve-failed"
 
 # The durable escalation file marker's own filename, under the run
 # directory (the spec's own Always bullet: "writes <run_dir>/ESCALATION").
@@ -991,6 +1000,29 @@ def run_supervisor(
         # documents why a story missing from this mapping is read as "not
         # previously in that boundary state", not an error.
         previous_task_phases: dict[str, TaskPhaseSnapshot] = {}
+        # Story 20.4: the latest proactive capture per story key while the
+        # worktree was dirty or carried commits above baseline — keyed by
+        # bmad-loop's native ``story_key`` spelling (same as
+        # ``paused_story_key`` at escalation time).
+        attempt_snapshots: dict[str, AttemptSnapshot] = {}
+
+        def _capture_attempt_snapshots(status_snapshot: RunStatusSnapshot | None) -> None:
+            """Refresh ``attempt_snapshots`` from this tick's task population.
+
+            A clean tree (``capture_attempt_snapshot`` returns ``None``) drops
+            any prior entry so a later intent-gap escalation cannot park a
+            stale pre-revert snapshot after the attempt was discarded and
+            rebuilt clean.
+            """
+            if status_snapshot is None:
+                return
+            for task in status_snapshot.tasks:
+                captured = capture_attempt_snapshot(task)
+                if captured is not None:
+                    attempt_snapshots[task.story_key] = captured
+                else:
+                    attempt_snapshots.pop(task.story_key, None)
+
         # The monotonic reading of this run's last durability push attempt
         # (stage-boundary OR interval), seeded to attach time so the FIRST
         # interval-watcher expiry is measured from attach, not from an
@@ -1452,6 +1484,7 @@ def run_supervisor(
             if watched_alive and harness_run_id is not None:
                 tick_status_snapshot = harness.run_status_snapshot(home, harness_run_id)
                 _capture_deferrals(tick_status_snapshot)
+                _capture_attempt_snapshots(tick_status_snapshot)
                 _process_stage_pushes(tick_status_snapshot)
 
             # --- Story 3.8: interval-push watcher fallback (AD-46/FR-61) ----
@@ -2295,12 +2328,77 @@ def run_supervisor(
                     # `paused_story_key` is guaranteed non-None here --
                     # `EscalationStatus.UNRESOLVED`'s own definition requires
                     # it.
+                    spec_path = resolve_spec_path(home, status_snapshot.escalated_spec_file)
+                    auto_run_text: str | None = None
+                    if spec_path is not None:
+                        try:
+                            auto_run_text = spec_path.read_text(encoding="utf-8")
+                        except (OSError, UnicodeDecodeError):
+                            auto_run_text = None
+                    preserve_ref = status_snapshot.escalated_preserve_ref
+                    # Story 20.4: intent-gap preserve when bmad-loop left
+                    # ``preserve_ref`` empty (proactive snapshot taken each
+                    # live tick while the worktree was dirty). Treat "" like
+                    # None — an empty string is not a usable recovery pointer.
+                    if (
+                        not preserve_ref
+                        and looks_like_intent_gap(
+                            status_snapshot.paused_reason,
+                            auto_run_result_text=auto_run_text,
+                        )
+                    ):
+                        captured = attempt_snapshots.get(
+                            status_snapshot.paused_story_key
+                        )
+                        if captured is not None:
+                            bmad_run_dir = home / ".bmad-loop" / "runs" / harness_run_id
+                            parked = park_preserve_artifact(
+                                captured,
+                                harness_run_id=harness_run_id,
+                                bmad_run_dir=bmad_run_dir,
+                            )
+                            if parked is not None:
+                                preserve_ref = parked
+                            else:
+                                _append(
+                                    _INTENT_GAP_PRESERVE_FAILED_KIND,
+                                    {
+                                        "story_key": _feed_key_form(
+                                            status_snapshot.paused_story_key
+                                        ),
+                                    },
+                                )
                     escalation_payload: dict[str, object] = {
                         "story_key": _feed_key_form(status_snapshot.paused_story_key),
                         "reason": status_snapshot.paused_reason,
                         "spec_file": status_snapshot.escalated_spec_file,
                     }
+                    if preserve_ref:
+                        escalation_payload["preserve_ref"] = preserve_ref
                     _append(_ESCALATION_DETECTED_KIND, escalation_payload)
+
+                    if preserve_ref and spec_path is not None:
+                        try:
+                            if not append_preserve_notice(spec_path, preserve_ref):
+                                _append(
+                                    "intent-gap-preserve-notice-failed",
+                                    {
+                                        "story_key": _feed_key_form(
+                                            status_snapshot.paused_story_key
+                                        ),
+                                        "preserve_ref": preserve_ref,
+                                    },
+                                )
+                        except OSError:
+                            _append(
+                                "intent-gap-preserve-notice-failed",
+                                {
+                                    "story_key": _feed_key_form(
+                                        status_snapshot.paused_story_key
+                                    ),
+                                    "preserve_ref": preserve_ref,
+                                },
+                            )
 
                     # `to_redacted` treats any "*_key"-suffixed field NAME as
                     # secret-shaped (`core.policy.is_secret_key`) and
@@ -2312,13 +2410,14 @@ def run_supervisor(
                     # retrievability. The notify payload mirrors that
                     # rename; the JOURNAL entry above keeps "story_key"
                     # verbatim (the spec's own literal field name).
-                    notify_payload = to_redacted(
-                        {
-                            "story": escalation_payload["story_key"],
-                            "reason": escalation_payload["reason"],
-                            "spec_file": escalation_payload["spec_file"],
-                        }
-                    )
+                    notify_fields: dict[str, object] = {
+                        "story": escalation_payload["story_key"],
+                        "reason": escalation_payload["reason"],
+                        "spec_file": escalation_payload["spec_file"],
+                    }
+                    if preserve_ref:
+                        notify_fields["preserve_ref"] = preserve_ref
+                    notify_payload = to_redacted(notify_fields)
                     marker_path = run_dir / _ESCALATION_MARKER_FILENAME
                     # Mandatory: always attempted. A write failure is
                     # tolerated (MRS-SUPV-007, WARN) -- the detach must still
