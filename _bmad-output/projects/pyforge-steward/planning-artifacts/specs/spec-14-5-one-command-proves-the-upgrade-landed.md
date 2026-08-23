@@ -80,3 +80,7 @@ Files changed:
 Review: 2 patches applied; 1 deferred (trap 8 exclude cleanup); followup_review_recommended=false (score 3×1 medium + 1×1 low = 4 < 5).
 
 Verification: `pixi run --frozen -e pyforge-steward pytest …/test_upgrade_*.py` → 39 passed.
+
+PR: https://github.com/rxm7706/local-recipes/pull/672
+Merge SHA: 86a4ff49ef90d3dcb90642cfa6c21d9294648c65
+Tests: 39 upgrade unit tests passed; CI green on #672
