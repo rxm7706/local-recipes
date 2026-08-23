@@ -209,6 +209,13 @@ class Source(StrEnum):
     # the named sibling (OpenTeams mgmt-wf) on status/owner/content-hash.
     # Fleet subject; never FAIL; fail-open without token / when unreachable.
     SIBLING_DREAMS_DRIFT = "sibling-dreams-drift"
+    # Story 17.2 (Epic 17 / FR-147): Dream-tier hygiene mode on the
+    # dream-chain surface — frontmatter validity (status vocab, owner in
+    # station/`guild`, title present), README table sync, realization-log
+    # presence. Distinct from DREAM_CHAIN's INV-0..3. Invoked as
+    # `python -m pyforge.doctor.sources dream-chain --dreams` (CLI spelling
+    # chosen over folding into `--inv`). Warn-only; never mutates Dreams.
+    DREAMS_HYGIENE = "dreams-hygiene"
 
 
 class Partition(StrEnum):

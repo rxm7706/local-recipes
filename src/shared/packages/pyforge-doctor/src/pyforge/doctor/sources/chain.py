@@ -63,6 +63,7 @@ from . import degrade_on_exception
 
 __all__ = (
     "gather_dream_chain",
+    "gather_dreams_hygiene",
     "gather_deferred_work",
     "gather_spec_surface",
     "gather_due_for_verification",
@@ -90,7 +91,6 @@ GOVERNANCE_PROJECT = "docs/governance"
 
 _SATELLITE_RE = re.compile(r"^#{2,3}\s+Satellite:\s*(.+?)\s*$", re.MULTILINE)
 _NORMALIZE_RE = re.compile(r"[^a-z0-9 ]")
-
 
 def _normalize_title(title: str) -> str:
     """Lowercased, punctuation-stripped -- verbatim from the original, so a
@@ -730,6 +730,344 @@ def _gather_dream_chain(target: Path) -> tuple[Finding, ...]:
         )
         for item in raw
     )
+
+
+# === gather_dreams_hygiene ====================================================
+#
+# Story 17.2 / FR-147 — the `--dreams` hygiene mode promised by the 2026-07-23
+# restructure. Distinct from INV-0..3 above: this judges per-Dream-file
+# frontmatter validity + Phase-2b hygiene (vocab, README table sync,
+# realization-log presence), never chain completeness.
+
+_GUILD_ROSTER_REL = Path("docs") / "governance" / "guild-roster.json"
+_README_DREAM_ROW_RE = re.compile(
+    r"\|\s*\[`([^`]+?\.md)`\]\([^)]+\)\s*\|\s*([^|]+)\|",
+)
+_REALIZATION_LOG_RE = re.compile(
+    r"^##\s+(?:The\s+)?Realization(?:\s+[Ll]og)?\s*$",
+    re.MULTILINE,
+)
+#: Statuses that have completed an act beyond capture — Phase-2b expected a
+#: Realization log recording the evidence (dream inventory 2026-08-10).
+_STATUSES_REQUIRING_REALIZATION_LOG = frozenset(
+    {"pitched", "specified", "realized", "archived"}
+)
+
+
+def gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
+    """Judge Dream-tier hygiene (Story 17.2 / FR-147).
+
+    Invoked as ``python -m pyforge.doctor.sources dream-chain --dreams`` —
+    CLI spelling chosen over folding into ``--inv``. Warn-only; never
+    mutates the Dream tree. Does not reimplement INV-0..3.
+    """
+    return degrade_on_exception(
+        Source.DREAMS_HYGIENE,
+        "dreams-hygiene",
+        lambda: _gather_dreams_hygiene(target),
+    )
+
+
+def _load_dream_roster(
+    target: Path,
+) -> tuple[frozenset[str], frozenset[str], frozenset[str], dict | None]:
+    """Return ``(statuses, types, stations, error_finding_dict_or_None)``.
+
+    Vocabulary lives in ``docs/governance/guild-roster.json`` (same source
+    factory's ``check_dream_vocab`` / ``check_dream_owners`` read). A missing
+    or malformed roster degrades to one unevaluable WARN rather than
+    inventing a second hardcoded vocabulary.
+    """
+    path = target / _GUILD_ROSTER_REL
+    rel = _GUILD_ROSTER_REL.as_posix()
+    try:
+        found = _is_file(path)
+    except Exception:  # noqa: BLE001 -- unreadable ancestor
+        found = None
+    if not found:
+        return frozenset(), frozenset(), frozenset(), {
+            "kind": "dreams-hygiene-unevaluable",
+            "detail": f"{rel} missing — Dream hygiene vocabulary cannot be evaluated",
+            "subject": rel,
+        }
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return frozenset(), frozenset(), frozenset(), {
+            "kind": "dreams-hygiene-unevaluable",
+            "detail": f"{rel} is unreadable — Dream hygiene vocabulary cannot be evaluated",
+            "subject": rel,
+        }
+    if not isinstance(data, dict):
+        return frozenset(), frozenset(), frozenset(), {
+            "kind": "dreams-hygiene-unevaluable",
+            "detail": f"{rel} is not a mapping — Dream hygiene vocabulary cannot be evaluated",
+            "subject": rel,
+        }
+    try:
+        statuses = frozenset(str(s) for s in data["dream_statuses"])
+        types = frozenset(str(t) for t in data["dream_types"])
+        stations = frozenset(str(s) for s in data["stations"])
+    except (KeyError, TypeError):
+        return frozenset(), frozenset(), frozenset(), {
+            "kind": "dreams-hygiene-unevaluable",
+            "detail": (
+                f"{rel} missing dream_statuses/dream_types/stations — "
+                "Dream hygiene vocabulary cannot be evaluated"
+            ),
+            "subject": rel,
+        }
+    return statuses, types, stations, None
+
+
+def _parse_readme_dream_statuses(readme: Path) -> dict[str, str]:
+    """Slug → Status-column token from ``docs/dreams/README.md`` tables.
+
+    The Status cell may carry modifiers (``realized · perpetual``); only the
+    first whitespace/·-delimited token is compared to frontmatter ``status:``.
+    Dreams omitted from the curated map (archived satellites) are absent
+    here and are not treated as drift.
+    """
+    try:
+        text = readme.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    out: dict[str, str] = {}
+    for match in _README_DREAM_ROW_RE.finditer(text):
+        filename, status_cell = match.group(1), match.group(2)
+        slug = filename.removesuffix(".md")
+        token = status_cell.strip().split("·", 1)[0].strip().split()[0] if status_cell.strip() else ""
+        if slug and token:
+            out[slug] = token
+    return out
+
+
+def _gather_dreams_hygiene(target: Path) -> tuple[Finding, ...]:
+    findings: list[Finding] = []
+    dreams_dir = target / "docs" / "dreams"
+    try:
+        present = _is_dir(dreams_dir)
+    except Exception:  # noqa: BLE001
+        present = False
+    if not present:
+        return (
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check="dreams-hygiene-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"no docs/dreams/ under {target} — Dream-tier hygiene "
+                    f"cannot be evaluated here"
+                ),
+                evidence={"target": str(target)},
+            ),
+        )
+
+    statuses, types, stations, roster_err = _load_dream_roster(target)
+    if roster_err is not None:
+        return (
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check=roster_err["kind"],
+                status=DoctorStatus.WARN,
+                message=roster_err["detail"],
+                evidence={"subject": roster_err["subject"]},
+            ),
+        )
+
+    try:
+        entries = _listdir(dreams_dir)
+    except OSError as exc:
+        return (
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check="dreams-hygiene-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"docs/dreams/ could not be read here — "
+                    f"{type(exc).__name__}: {exc}"
+                ),
+                evidence={"target": str(dreams_dir)},
+            ),
+        )
+
+    readme_statuses = _parse_readme_dream_statuses(dreams_dir / "README.md")
+    dream_slugs: set[str] = set()
+    dream_count = 0
+
+    for path in entries:
+        if path.name == "README.md" or path.suffix != ".md":
+            continue
+        dream_count += 1
+        slug = path.stem
+        dream_slugs.add(slug)
+        fm, unparseable = _frontmatter_parse(path)
+        if unparseable:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="unparseable-frontmatter",
+                    status=DoctorStatus.WARN,
+                    message=f"Dream {slug!r} frontmatter is unparseable",
+                    evidence={"subject": slug},
+                )
+            )
+            continue
+
+        status = fm.get("status")
+        status_s = status.strip() if isinstance(status, str) else ""
+        if not status_s:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-vocab",
+                    status=DoctorStatus.WARN,
+                    message=f"Dream {slug!r} has no status: in frontmatter",
+                    evidence={"subject": slug, "field": "status"},
+                )
+            )
+        elif status_s not in statuses:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-vocab",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} status {status_s!r} is not one of "
+                        f"{'/'.join(sorted(statuses))}"
+                    ),
+                    evidence={"subject": slug, "status": status_s, "field": "status"},
+                )
+            )
+
+        dtype = fm.get("type")
+        if isinstance(dtype, str) and dtype.strip() and dtype.strip() not in types:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-vocab",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} type {dtype.strip()!r} is not one of "
+                        f"{'/'.join(sorted(types))}"
+                    ),
+                    evidence={"subject": slug, "type": dtype.strip(), "field": "type"},
+                )
+            )
+
+        owner = fm.get("owner")
+        owner_s = owner.strip() if isinstance(owner, str) else ""
+        if not owner_s:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-unowned",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} has no owner: in frontmatter — "
+                        f"name one of {', '.join(sorted(stations))} or guild"
+                    ),
+                    evidence={"subject": slug},
+                )
+            )
+        elif owner_s != "guild" and owner_s not in stations:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="dream-unowned",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} owner {owner_s!r} is not a known "
+                        f"station or guild"
+                    ),
+                    evidence={"subject": slug, "owner": owner_s},
+                )
+            )
+
+        title = fm.get("title")
+        if not isinstance(title, str) or not title.strip():
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="missing-title",
+                    status=DoctorStatus.WARN,
+                    message=f"Dream {slug!r} has no title: in frontmatter",
+                    evidence={"subject": slug},
+                )
+            )
+
+        if status_s in _STATUSES_REQUIRING_REALIZATION_LOG:
+            try:
+                body = path.read_text(encoding="utf-8")
+            except OSError:
+                body = ""
+            if not _REALIZATION_LOG_RE.search(body):
+                findings.append(
+                    Finding(
+                        source=Source.DREAMS_HYGIENE,
+                        check="realization-log-missing",
+                        status=DoctorStatus.WARN,
+                        message=(
+                            f"Dream {slug!r} status {status_s!r} has no "
+                            f"## Realization log section"
+                        ),
+                        evidence={"subject": slug, "status": status_s},
+                    )
+                )
+
+        if slug in readme_statuses and status_s and readme_statuses[slug] != status_s:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="readme-table-drift",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"Dream {slug!r} README table status "
+                        f"{readme_statuses[slug]!r} != frontmatter "
+                        f"{status_s!r}"
+                    ),
+                    evidence={
+                        "subject": slug,
+                        "readme_status": readme_statuses[slug],
+                        "frontmatter_status": status_s,
+                    },
+                )
+            )
+
+    # README rows that name a Dream file which does not exist — table orphan
+    # (Phase-2b table sync). Omitted satellites are fine; dangling links are not.
+    for slug, table_status in sorted(readme_statuses.items()):
+        if slug not in dream_slugs:
+            findings.append(
+                Finding(
+                    source=Source.DREAMS_HYGIENE,
+                    check="readme-table-orphan",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"README table lists Dream {slug!r} but "
+                        f"docs/dreams/{slug}.md is missing"
+                    ),
+                    evidence={
+                        "subject": slug,
+                        "readme_status": table_status,
+                    },
+                )
+            )
+
+    if not findings:
+        return (
+            Finding(
+                source=Source.DREAMS_HYGIENE,
+                check="dreams-hygiene",
+                status=DoctorStatus.OK,
+                message=(
+                    "every Dream passes frontmatter hygiene, README table "
+                    "sync, and realization-log presence"
+                ),
+                evidence={"dreams": dream_count},
+            ),
+        )
+    return tuple(findings)
 
 
 # === gather_spec_surface =======================================================

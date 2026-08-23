@@ -383,6 +383,16 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # shared Dream titles vs the named sibling tree; warn-only; fleet
     # subject (both local docs/dreams and the sibling). Opt-in via
     # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
+    SourceRegistration(
+        source=Source.DREAMS_HYGIENE,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 17.2 (Epic 17 / FR-147) -- chain.gather_dreams_hygiene.
+    # Dream-tier hygiene (frontmatter vocab/owner/title, README table sync,
+    # realization-log presence), distinct from DREAM_CHAIN INV-0..3. Not a
+    # DISPATCH name: invoked as `dream-chain --dreams` (CLI spelling chosen
+    # over folding into `--inv`).
 )
 
 

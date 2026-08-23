@@ -84,6 +84,7 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
 # live-fact keys (the `bmad-groundtruth` pixi task's replacement), not a
 # Finding gather. No other source has an equivalent ground-truth export.
 _GROUNDTRUTH_SOURCE = Source.BMAD_DRIFT.value
+_DREAMS_HYGIENE_SOURCE = Source.DREAM_CHAIN.value  # --dreams flag host
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -113,6 +114,17 @@ def _build_parser() -> argparse.ArgumentParser:
             "source (the bmad-groundtruth pixi task's replacement)"
         ),
     )
+    parser.add_argument(
+        "--dreams",
+        action="store_true",
+        help=(
+            f"valid only for source {_DREAMS_HYGIENE_SOURCE!r}: run the "
+            "Dream-tier hygiene mode (frontmatter validity, README table "
+            "sync, realization-log presence) instead of INV-0..3 chain "
+            "completeness. Story 17-2 / FR-147 — CLI spelling chosen over "
+            "folding into --inv."
+        ),
+    )
     return parser
 
 
@@ -125,6 +137,15 @@ def main(argv: list[str] | None = None) -> int:
             f"argument --groundtruth: only valid for source "
             f"{_GROUNDTRUTH_SOURCE!r}, got {args.source!r}"
         )
+
+    if args.dreams and args.source != _DREAMS_HYGIENE_SOURCE:
+        parser.error(
+            f"argument --dreams: only valid for source "
+            f"{_DREAMS_HYGIENE_SOURCE!r}, got {args.source!r}"
+        )
+
+    if args.groundtruth and args.dreams:
+        parser.error("argument --dreams: not valid together with --groundtruth")
 
     target = Path(".")
 
@@ -141,7 +162,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(gt, indent=2, sort_keys=True))
         return 0
 
-    findings = DISPATCH[args.source](target)
+    if args.dreams:
+        findings = chain.gather_dreams_hygiene(target)
+    else:
+        findings = DISPATCH[args.source](target)
 
     if args.json:
         print(json.dumps([finding.to_json_dict() for finding in findings], indent=2))

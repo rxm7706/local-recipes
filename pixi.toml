@@ -777,6 +777,10 @@ cmd = "python -m pyforge.doctor.sources spec-surface"
 description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
 cmd = "python -m pyforge.doctor.sources dream-chain"
 
+[feature.local-recipes.tasks.dreams-hygiene-check]
+description = "Detector: Dream-tier hygiene (Story 17-2 / FR-147) — per-Dream frontmatter validity (status vocab, owner in station/guild, title present), README table sync, realization-log presence for pitched+. Distinct from dream-chain-check INV-0..3. CLI spelling: dream-chain --dreams (chosen over folding into --inv). Warn-only."
+cmd = "python -m pyforge.doctor.sources dream-chain --dreams"
+
 [feature.local-recipes.tasks.chain-completeness-check]
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"
