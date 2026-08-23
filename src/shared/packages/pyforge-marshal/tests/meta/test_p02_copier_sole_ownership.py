@@ -1,8 +1,10 @@
-"""Meta test -- P-02's sole-import-site guard for `copier` (Story 10.1).
+"""Meta test -- P-02's sole-import-site guard for `copier` (Stories 10.1 / 12.4).
 Mirrors `tests/meta/test_ad7_verdict_sole_ownership.py`'s AST-scan-
 excluding-target-module technique exactly, scoped to a much narrower rule:
 `import copier` / `from copier import ...` (any alias) may appear in the
-installed package ONLY inside `seed/engine/copier.py`.
+installed package ONLY inside `seed/engine/copier.py`. Story 12.4 additionally
+bans private/deprecated ``copier._*`` imports anywhere, including that sole
+owner.
 
 AST-scan every module in the installed `pyforge.marshal` package EXCEPT
 `seed/engine/copier.py` and fail if any of them imports the `copier`
@@ -81,6 +83,37 @@ def _copier_import_violations(tree: ast.Module) -> list[str]:
     return violations
 
 
+def _is_private_or_deprecated_copier_module(dotted: str) -> bool:
+    """``True`` for ``copier._*`` private submodules (any depth).
+
+    Public top-level ``copier`` and documented public submodules such as
+    ``copier.errors`` are allowed *inside* ``seed/engine/copier.py`` only;
+    private ``copier._*`` names are forbidden everywhere, including that
+    sole-owner module (Story 12.4 / P-02).
+    """
+    parts = dotted.split(".")
+    return len(parts) >= 2 and parts[0] == "copier" and any(
+        part.startswith("_") for part in parts[1:]
+    )
+
+
+def _private_copier_import_violations(tree: ast.Module) -> list[str]:
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if _is_private_or_deprecated_copier_module(alias.name):
+                    violations.append(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            if (
+                node.level == 0
+                and node.module is not None
+                and _is_private_or_deprecated_copier_module(node.module)
+            ):
+                violations.append(node.module)
+    return violations
+
+
 def test_package_scan_surface_is_not_empty():
     modules = _non_copier_engine_modules()
     assert modules, "sole-ownership guard found no modules to scan"
@@ -127,3 +160,26 @@ def test_guard_is_alive_synthetic_violation_fires_and_copier_engine_module_impor
     assert _copier_import_violations(tree), (
         "seed/engine/copier.py must itself import copier -- the guard would be vacuous otherwise"
     )
+
+
+@pytest.mark.parametrize("module_path", _package_modules(), ids=_module_id)
+def test_no_private_copier_imports_anywhere(module_path: Path):
+    """P-02: even ``seed/engine/copier.py`` must not import ``copier._*``."""
+    violations = _private_copier_import_violations(_parse(module_path))
+    assert not violations, (
+        f"{_module_id(module_path)} imports private/deprecated Copier module(s) "
+        f"{violations} -- P-02 allows only public ``copier`` APIs via "
+        "seed/engine/copier.py"
+    )
+
+
+def test_private_copier_detector_is_alive():
+    assert _private_copier_import_violations(ast.parse("import copier._main\n")) == [
+        "copier._main"
+    ]
+    assert _private_copier_import_violations(
+        ast.parse("from copier._user_data import AnswersMap\n")
+    ) == ["copier._user_data"]
+    assert _private_copier_import_violations(ast.parse("import copier\n")) == []
+    assert _private_copier_import_violations(ast.parse("from copier.errors import CopierError\n")) == []
+    assert _private_copier_import_violations(ast.parse("import copier_private\n")) == []
