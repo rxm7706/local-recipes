@@ -2,7 +2,8 @@
 title: Every process speaks structlog + OTel
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
+shipped_ref: 'b0782c48b4430d474bf23d9da228fb3d9c45433d'
 updated: '2026-08-23'
 context: []
 warnings: []
