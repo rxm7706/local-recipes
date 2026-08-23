@@ -2,7 +2,8 @@
 title: Doctor consumes the grammar
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
+shipped_ref: 'PR #695 / 047eadf4b2'
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -43,3 +44,18 @@ baseline_revision: 6503b15991
 - Three false positives green locally
 - Unlanded story still hedged/fails as today
 - Doctor conformance tests pass (no pyforge.marshal import)
+
+## Auto Run Result
+
+Status: done
+
+PR: https://github.com/rxm7706/local-recipes/pull/695
+Merge SHA: 047eadf4b285a59c708354a3318fab8242b9d972
+Note: merged with `--admin` (Actions billing blocked CI; local verification green).
+
+Summary: `gather_story_status` routes 2 and 3 now consume `pyforge.core.landing_evidence` classifiers (merge shapes on `--all`, full grammar on `main` including SHA allowlist). Clears marshal 8-2, 10-1, mason 3-7 false positives with no per-story whitelist. Doctor does not import `pyforge.marshal`.
+
+Verification (local):
+- `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_story_status.py -q` → 31 passed
+- `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/ -q` → 1087 passed
+- `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_landing_evidence_conformance.py -q` → 13 passed
