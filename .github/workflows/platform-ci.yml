@@ -15,7 +15,8 @@ name: Platform CI
 # ARE factory trees, and they are in the filter because the build-time
 # secrets-scan env is built from them. Note also that `paths:` is
 # WORKFLOW-scoped, not job-scoped: any path below runs BOTH jobs, so a
-# pyforge-steward commit also pays for the pip-based `test` job. That cost
+# pyforge-steward commit also pays for the `test` job (pixi platform-ci-test by
+# default; legacy pip via PLATFORM_TEST_BACKEND=pip). That cost is accepted
 # is accepted deliberately here and recorded as deferred work; narrowing it
 # would mean splitting this file per job. `working-directory:
 # src/platform` on every run step keeps `manage.py`, `requirements/`, and
@@ -77,6 +78,7 @@ on:
       - 'src/shared/packages/pyforge-core/**'
       - 'src/platform/compose/dbgpt/**'
       - '.github/workflows/platform-ci.yml'
+      - '.github/actions/platform-test-setup/**'
   push:
     branches: [main]
     paths:
@@ -91,10 +93,22 @@ on:
       - 'src/shared/packages/pyforge-core/**'
       - 'src/platform/compose/dbgpt/**'
       - '.github/workflows/platform-ci.yml'
+      - '.github/actions/platform-test-setup/**'
   workflow_dispatch:
+    inputs:
+      platform_test_backend:
+        description: 'test job deps — pixi (slim platform-ci-test) or pip (requirements/local.txt legacy)'
+        type: choice
+        options: [pixi, pip]
+        default: pixi
 
 permissions:
   contents: read
+
+# platform-ci-test (pixi, default) vs pip install -r requirements/local.txt (legacy).
+# Override on pull_request/push: set repo variable PLATFORM_TEST_BACKEND=pip.
+env:
+  PLATFORM_TEST_BACKEND: ${{ github.event_name == 'workflow_dispatch' && inputs.platform_test_backend || vars.PLATFORM_TEST_BACKEND || 'pixi' }}
 
 concurrency:
   group: platform-ci-${{ github.ref }}
@@ -150,12 +164,12 @@ jobs:
         working-directory: .
         run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
 
-      - uses: actions/setup-python@v5
+      # Default: slim pixi env `platform-ci-test` (requirements/*.txt parity, cached).
+      # Legacy pip path: set PLATFORM_TEST_BACKEND=pip or workflow_dispatch input.
+      - name: Install test dependencies
+        uses: ./.github/actions/platform-test-setup
         with:
-          python-version: '3.12'
-
-      - name: Install requirements/local.txt
-        run: pip install -r requirements/local.txt
+          backend: ${{ env.PLATFORM_TEST_BACKEND }}
 
       - name: Django system checks (PostgreSQL + Redis, no other backing service)
         run: python manage.py check

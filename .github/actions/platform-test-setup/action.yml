@@ -1,0 +1,57 @@
+name: Platform test job dependencies
+description: >
+  Install Platform CI test-job dependencies. Default (pixi): slim platform-ci-test
+  env mirroring src/platform/requirements/{base,production,local}.txt with GHA
+  cache. Legacy (pip): actions/setup-python + pip install -r requirements/local.txt.
+  Select via backend input, PLATFORM_TEST_BACKEND repo variable, or workflow_dispatch.
+
+inputs:
+  backend:
+    description: 'pixi (platform-ci-test) or pip (requirements/local.txt legacy)'
+    required: false
+    default: pixi
+  working-directory:
+    description: 'Directory containing requirements/local.txt (pip backend only)'
+    required: false
+    default: src/platform
+
+runs:
+  using: composite
+  steps:
+    - name: Normalize backend selector
+      id: cfg
+      shell: bash
+      run: |
+        set -euo pipefail
+        backend="${{ inputs.backend }}"
+        backend="${backend,,}"
+        if [ "$backend" != "pixi" ] && [ "$backend" != "pip" ]; then
+          echo "::error::platform-test-setup backend must be 'pixi' or 'pip', got '${backend}'"
+          exit 1
+        fi
+        echo "backend=${backend}" >> "$GITHUB_OUTPUT"
+        echo "Using platform test backend: ${backend}"
+
+    - name: setup-pixi (platform-ci-test)
+      if: steps.cfg.outputs.backend == 'pixi'
+      uses: prefix-dev/setup-pixi@v0.10.0
+      with:
+        pixi-version: v0.77.0
+        environments: platform-ci-test
+        frozen: true
+        cache: true
+        cache-key: platform-ci-test-
+        cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+        activate-environment: platform-ci-test
+
+    - name: setup-python (legacy pip backend)
+      if: steps.cfg.outputs.backend == 'pip'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: pip install requirements/local.txt (legacy)
+      if: steps.cfg.outputs.backend == 'pip'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: pip install -r requirements/local.txt
