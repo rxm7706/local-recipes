@@ -493,6 +493,14 @@ def _render_update_plan_text(plan: Plan) -> str:
     return "\n".join(lines)
 
 
+def _render_referenced_dep_findings_text(findings: tuple) -> str:
+    """DRIFT-only referenced-dependency findings for ``marshal seed update``."""
+    lines = [f"referenced dependencies ({len(findings)} DRIFT finding(s)):"]
+    for finding in findings:
+        lines.append(f"  {finding.path}: {finding.message}")
+    return "\n".join(lines)
+
+
 def run_update(
     args: argparse.Namespace,
     *,
@@ -551,6 +559,8 @@ def run_update(
         return wrapped.exit_code
 
     print(_render_update_plan_text(result.plan))
+    if result.referenced_dep_findings:
+        print(_render_referenced_dep_findings_text(result.referenced_dep_findings))
     if result.declined:
         print("update: apply declined; nothing was applied.")
     elif result.applied is not None:

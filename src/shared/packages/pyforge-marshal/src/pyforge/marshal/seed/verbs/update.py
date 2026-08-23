@@ -181,6 +181,8 @@ from ..detect.inventory import (
     effective_never_write,
     writable_exemptions,
 )
+from ..detect.referenced_deps import referenced_dep_findings
+from ..detect.findings import Finding
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..migrate import registry as migrate_registry
@@ -234,6 +236,7 @@ class UpdateResult:
     plan: Plan
     applied: tuple[str, ...] | None
     declined: bool
+    referenced_dep_findings: tuple[Finding, ...] = ()
 
 
 def _git_status_porcelain(repo_root: Path, *extra_pathspec: str) -> str | None:
@@ -999,6 +1002,7 @@ def run_update(
     function otherwise enforces before merging (see the module docstring's
     own "Making the three sources ACTUALLY disjoint" Design Note)."""
     filtered_manifest = _manifest_for_update(manifest)
+    ref_findings = referenced_dep_findings(filtered_manifest, repo_root)
     state = read_state(repo_root)
     inventory = classify(filtered_manifest, repo_root)
 
@@ -1092,10 +1096,10 @@ def run_update(
     write_plan(plan, default_plan_path(repo_root))
 
     if not run:
-        return UpdateResult(plan=plan, applied=None, declined=False)
+        return UpdateResult(plan=plan, applied=None, declined=False, referenced_dep_findings=ref_findings)
 
     if not yes and not confirm():
-        return UpdateResult(plan=plan, applied=None, declined=True)
+        return UpdateResult(plan=plan, applied=None, declined=True, referenced_dep_findings=ref_findings)
 
     entries_by_id = {entry.id: entry for entry in filtered_manifest.entries}
 
@@ -1145,4 +1149,6 @@ def run_update(
         )
         write_state(new_state, repo_root=repo_root, never_write=never_write)
 
-    return UpdateResult(plan=plan, applied=result.applied, declined=False)
+    return UpdateResult(
+        plan=plan, applied=result.applied, declined=False, referenced_dep_findings=ref_findings
+    )
