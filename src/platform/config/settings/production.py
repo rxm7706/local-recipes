@@ -1,5 +1,8 @@
-# ruff: noqa: E501
 import sys
+
+from config.observability.logging import build_logging_config
+from config.startup import run_stage_one
+from config.startup.stage_one import refuse_required_settings
 
 from .base import *  # noqa: F403
 from .base import DATABASES
@@ -9,10 +12,6 @@ from .base import DJANGO_LOG_LEVEL
 from .base import INSTALLED_APPS
 from .base import REDIS_URL
 from .base import env
-
-from config.observability.logging import build_logging_config
-from config.startup import run_stage_one
-from config.startup.stage_one import refuse_required_settings
 
 # CAP-3 / steward 16.2: named required-env refusals *before* django-environ
 # raises an opaque ImproperlyConfigured on missing DJANGO_SECRET_KEY /

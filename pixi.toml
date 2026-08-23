@@ -369,14 +369,11 @@ crispy-bootstrap5 = "==2025.6"
 django-compressor = "==4.5.1"
 django-redis = "==6.0.0"
 django-anymail = "==13.0.1"
-# CAP-2 / steward 16.3 — observability layer for the image
-structlog = "==26.1.0"
+# CAP-2 / steward 16.3 — packages NOT already in python-agent-platform conda
+# (structlog / otel-api/sdk/exporter / instrumentation-asgi are conda-provided;
+# pip-layering them triggers the Containerfile uninstall guard).
 django-structlog = "==10.1.0"
-opentelemetry-api = "==1.44.0"
-opentelemetry-sdk = "==1.44.0"
-opentelemetry-exporter-otlp-proto-http = "==1.44.0"
 opentelemetry-instrumentation-django = "==0.65b0"
-opentelemetry-instrumentation-asgi = "==0.65b0"
 opentelemetry-instrumentation-celery = "==0.65b0"
 opentelemetry-instrumentation-psycopg = "==0.65b0"
 opentelemetry-instrumentation-redis = "==0.65b0"

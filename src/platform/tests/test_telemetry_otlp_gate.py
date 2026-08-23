@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-from opentelemetry.sdk.trace import TracerProvider
 
 from config.observability.telemetry import CONSOLE
 from config.observability.telemetry import NONE
@@ -15,6 +15,9 @@ from config.observability.telemetry import configure_telemetry
 from config.observability.telemetry import has_span_processor
 from config.observability.telemetry import reset_telemetry_for_testing
 from config.observability.telemetry import resolve_traces_exporter
+
+_MOCK = MagicMock()
+_TEL = "config.observability.telemetry"
 
 
 @pytest.fixture(autouse=True)
@@ -25,13 +28,13 @@ def _reset_telemetry():
 
 
 def _instrumentor_patches():
-    """Avoid double-instrumenting the live process when calling configure_telemetry."""
+    """Avoid double-instrumenting when calling configure_telemetry."""
     return (
-        patch("config.observability.telemetry.DjangoInstrumentor", return_value=MagicMock()),
-        patch("config.observability.telemetry.CeleryInstrumentor", return_value=MagicMock()),
-        patch("config.observability.telemetry.PsycopgInstrumentor", return_value=MagicMock()),
-        patch("config.observability.telemetry.RedisInstrumentor", return_value=MagicMock()),
-        patch("config.observability.telemetry.trace.set_tracer_provider"),
+        patch(f"{_TEL}.DjangoInstrumentor", return_value=_MOCK),
+        patch(f"{_TEL}.CeleryInstrumentor", return_value=_MOCK),
+        patch(f"{_TEL}.PsycopgInstrumentor", return_value=_MOCK),
+        patch(f"{_TEL}.RedisInstrumentor", return_value=_MOCK),
+        patch(f"{_TEL}.trace.set_tracer_provider"),
     )
 
 
@@ -81,9 +84,9 @@ class TestConfigureTelemetryGate:
         monkeypatch.delenv("OTEL_SDK_DISABLED", raising=False)
         assert resolve_traces_exporter() == NONE
 
-        captured: list[TracerProvider] = []
+        captured: list[Any] = []
 
-        def _capture(provider: TracerProvider) -> None:
+        def _capture(provider: Any) -> None:
             captured.append(provider)
 
         patches = _instrumentor_patches()
@@ -103,9 +106,9 @@ class TestConfigureTelemetryGate:
         monkeypatch.delenv("OTEL_SDK_DISABLED", raising=False)
         assert resolve_traces_exporter() == OTLP
 
-        captured: list[TracerProvider] = []
+        captured: list[Any] = []
 
-        def _capture(provider: TracerProvider) -> None:
+        def _capture(provider: Any) -> None:
             captured.append(provider)
 
         patches = _instrumentor_patches()

@@ -41,7 +41,8 @@ _configured = False
 
 def otel_sdk_is_disabled() -> bool:
     """Report whether this component has opted out of the OpenTelemetry SDK."""
-    return os.environ.get(OTEL_SDK_DISABLED_ENV_VAR, "").strip().lower() in _DISABLED_VALUES
+    raw = os.environ.get(OTEL_SDK_DISABLED_ENV_VAR, "")
+    return raw.strip().lower() in _DISABLED_VALUES
 
 
 def _has_otlp_endpoint() -> bool:

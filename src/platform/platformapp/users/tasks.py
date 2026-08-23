@@ -1,5 +1,5 @@
-from celery import shared_task
 import structlog
+from celery import shared_task
 
 from .models import User
 
