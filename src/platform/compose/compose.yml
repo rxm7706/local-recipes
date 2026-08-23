@@ -124,6 +124,9 @@ services:
       # `ENV`) -- not repeated here.
       DJANGO_SECRET_KEY: local-compose-placeholder-not-a-real-secret
       DJANGO_ADMIN_URL: admin/
+      # CAP-3: compose is local development even when the image defaults to
+      # production settings — keep stage-1/2 refusals disarmed here.
+      COMPONENT_RUNTIME: local
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,platform
       # No TLS terminator in this local stack -- SecurityMiddleware would
       # otherwise 301-redirect every request (including the /ht/ health
@@ -155,6 +158,7 @@ services:
     environment:
       DJANGO_SECRET_KEY: local-compose-placeholder-not-a-real-secret
       DJANGO_ADMIN_URL: admin/
+      COMPONENT_RUNTIME: local
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,platform
       DJANGO_SECURE_SSL_REDIRECT: "False"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform

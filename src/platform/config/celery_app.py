@@ -5,6 +5,11 @@ from celery.signals import setup_logging
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+# CAP-3 locality: celery's default leaf is local (same pairing as manage.py /
+# asgi.py). Production workers must set DJANGO_SETTINGS_MODULE=production and
+# leave COMPONENT_RUNTIME unset (fail-closed deployed).
+if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.local":
+    os.environ.setdefault("COMPONENT_RUNTIME", "local")
 
 app = Celery("platform")
 
