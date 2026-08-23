@@ -1153,8 +1153,9 @@ jobs:
       # GHA cache (P0): restore the mirror prefetch keyed on pixi.lock so
       # unchanged locks skip hundreds of HTTP GETs. The AD-13 proof still
       # runs live -- egress block, evicted env, mirror-only pixi install.
-      # build-pixi-mirror.py remains idempotent (sha256-valid files skip).
-      # Seed the cache on main pushes only; PRs read, never write.
+      # build-pixi-mirror.py remains idempotent (md5-valid cache hits skip;
+      # fresh downloads still verify sha256). PRs and main both save so
+      # steward iteration and post-merge runs warm the same pixi.lock key.
       - name: Restore ci-airgap-mirror cache
         id: airgap-mirror-cache
         uses: actions/cache/restore@v4
@@ -1174,10 +1175,9 @@ jobs:
             --environment platform-dev \
             --platform linux-64 \
             --dest "${{ github.workspace }}/ci-airgap-mirror" \
-            --workers 16
+            --workers 32
 
-      - name: Save ci-airgap-mirror cache (main only)
-        if: github.event_name == 'push' && github.ref_name == 'main'
+      - name: Save ci-airgap-mirror cache
         uses: actions/cache/save@v4
         with:
           path: ci-airgap-mirror

@@ -29,9 +29,12 @@ is its platform subdir (`linux-64`, `noarch`, ...) -- the exact shape
 `{"<original-channel-url>" = ["<mirror-url>", ...]}`, here rewritten to
 `file://<dest>/<channel>`).
 
-Idempotent: a destination file that already matches its lockfile sha256 is
-skipped, not re-downloaded, so re-running this script locally during a
-network-available dry run does not re-fetch everything each time.
+Idempotent: a destination file that already matches its lockfile md5 (skip
+path) or sha256 (post-download verify) is not re-downloaded, so re-running
+this script locally during a network-available dry run does not re-fetch
+everything each time. Warm GHA cache hits use md5-only checks (faster than
+sha256 over hundreds of multi-MiB artifacts); fresh downloads still verify
+sha256.
 
 Usage:
     python scripts/build-pixi-mirror.py \\
@@ -103,6 +106,7 @@ class MirrorTarget:
 
     url: str
     sha256: str
+    md5: str
     channel: str
     subdir: str
     filename: str
@@ -158,6 +162,11 @@ def parse_mirror_targets(
             raise MirrorBuildError(
                 f"{url} has no sha256 in pixi.lock -- cannot verify a mirrored download"
             )
+        md5 = catalog_entry.get("md5")
+        if not md5:
+            raise MirrorBuildError(
+                f"{url} has no md5 in pixi.lock -- cannot fast-skip cached mirror files"
+            )
 
         # https://conda.anaconda.org/<channel>/<subdir>/<filename>
         parts = urlparse(url).path.strip("/").split("/")
@@ -170,38 +179,51 @@ def parse_mirror_targets(
 
         targets.append(
             MirrorTarget(
-                url=url, sha256=sha256, channel=channel, subdir=subdir, filename=filename
+                url=url,
+                sha256=sha256,
+                md5=md5,
+                channel=channel,
+                subdir=subdir,
+                filename=filename,
             )
         )
 
     return targets
 
 
-def _sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
+def _digest_of(path: Path, algorithm: str) -> str:
+    digest = hashlib.new(algorithm)
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(CHUNK_SIZE), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
 
+def _sha256_of(path: Path) -> str:
+    return _digest_of(path, "sha256")
+
+
+def _md5_of(path: Path) -> str:
+    return _digest_of(path, "md5")
+
+
+def _already_valid_on_disk(dest_path: Path, target: MirrorTarget) -> bool:
+    """Cheap md5 check for warm-cache skips; sha256 remains the post-download gate."""
+    try:
+        return _md5_of(dest_path) == target.md5
+    except OSError:
+        # A stale directory at this path, a permission error, or anything
+        # else that stops us READING it -- fall through to download+verify.
+        return False
+
+
 def _download_one(target: MirrorTarget, dest_root: Path, timeout: int) -> str:
     """Download+verify one target into `dest_root`. Returns "downloaded" or
-    "skipped" (already present and sha256-valid). Raises MirrorBuildError
+    "skipped" (already present and md5-valid). Raises MirrorBuildError
     on any download or verification failure."""
     dest_path = dest_root / target.dest_relpath
-    if dest_path.exists():
-        try:
-            already_valid = _sha256_of(dest_path) == target.sha256
-        except OSError:
-            # A stale directory at this path, a permission error, or
-            # anything else that stops us READING it -- not proof the file
-            # is invalid, but also not something worth failing over: fall
-            # through and let the normal download-and-overwrite path below
-            # sort it out (or surface a clearer error from there).
-            already_valid = False
-        if already_valid:
-            return "skipped"
+    if dest_path.exists() and _already_valid_on_disk(dest_path, target):
+        return "skipped"
 
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = dest_path.with_name(dest_path.name + ".part")
@@ -348,7 +370,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--platform", required=True, help="pixi platform, e.g. linux-64")
     parser.add_argument("--dest", required=True, type=Path, help="Mirror destination directory")
     parser.add_argument(
-        "--workers", type=_positive_int, default=16, help="Concurrent downloads (default: 16)"
+        "--workers", type=_positive_int, default=32, help="Concurrent downloads (default: 32)"
     )
     parser.add_argument(
         "--timeout",
