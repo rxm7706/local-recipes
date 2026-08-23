@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 34
-    next: 18-2-parity-and-coverage-are-gated-numbers
+    remaining_count: 33
+    next: 19-1-one-generator-produces-every-stations-test-architecture
     queue:
-    - 18-2-parity-and-coverage-are-gated-numbers
     - 19-1-one-generator-produces-every-stations-test-architecture
     - 19-2-the-shared-test-support-kit
     - 19-3-coverage-gates-that-name-the-module

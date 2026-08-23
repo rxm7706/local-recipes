@@ -105,6 +105,9 @@ deferred:
 ## Auto Run Result
 
 Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/671
+Merge SHA: d6f562df4b42a945117eb9e975131f734dc88177
+Tests: `pixi run --frozen -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/meta src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py -q` — 1514 passed
 
 Summary: FR-155 CLI⇄tool parity is gated via `mcp/parity.py` + meta-tests (live pass + deliberate failure fixtures). FR-156 publishes Dream-six station tool-surface coverage as a number via `mcp/coverage.py` (`python -m pyforge.marshal.mcp.coverage`) without asserting 100%. Live coverage **3/6 (0.5)**.
 
