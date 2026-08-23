@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~11:35 CDT
+**Updated:** 2026-08-23 ~11:36 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -24,9 +24,10 @@
 
 ## In-flight (canonical only — do not duplicate)
 
-| Station | Story | Canonical PR / agent |
-|---------|-------|----------------------|
-| — | — | none (awaiting parent dispatch) |
+| Station | Story | Canonical agent |
+|---------|-------|-----------------|
+| marshal | `19-1` | [Marshal 19-1](4bbb6333-a1b5-4960-bb11-4371e149233a) — test-architecture generator |
+| steward | `14-5` | [Steward 14-5](e91a99ad-f418-4fa1-92e0-f0f27ad4e705) — prove upgrade landed (skip 12-7) |
 
 ## Operator skip
 
@@ -38,11 +39,10 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `18-2` | [#671](https://github.com/rxm7706/local-recipes/pull/671) |
-| steward | `14-3` | [#669](https://github.com/rxm7706/local-recipes/pull/669) merge `e7d2ead159` · finalize (this commit) ([Steward 14-3](dd93a8c7-9027-41b2-821f-f185afdc6992)) |
-| marshal | `18-1` | [#668](https://github.com/rxm7706/local-recipes/pull/668) merge `657c6bbe1e` · finalize `4ff73ba127` ([Marshal 18-1](b5923e5a-38cc-4e9c-a635-9a897c3e7d0e)) |
-| marshal | `17-4` | [#667](https://github.com/rxm7706/local-recipes/pull/667) |
-| steward | `14-2` | [#666](https://github.com/rxm7706/local-recipes/pull/666) |
+| marshal | `18-2` | [#671](https://github.com/rxm7706/local-recipes/pull/671) merge `d6f562df4b` · finalize `e163eb9216` ([Marshal 18-2](e4dc56cf-2ccc-46bd-b344-6d32050aed43)) |
+| steward | `14-4` | [#670](https://github.com/rxm7706/local-recipes/pull/670) merge `b9f1000a67` · finalize `667ed9003f` ([Steward 14-4](c2144c44-a067-4a28-84f4-21b0ae234a49)) |
+| steward | `14-3` | [#669](https://github.com/rxm7706/local-recipes/pull/669) |
+| marshal | `18-1` | [#668](https://github.com/rxm7706/local-recipes/pull/668) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
