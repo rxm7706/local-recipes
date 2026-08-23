@@ -60,7 +60,7 @@ development_status:
   7-2-the-pointers-lint-and-the-drift-gates: done
   8-1-the-convention-is-written-and-guarded: done
   9-1-the-repos-ci-is-consumable-via-workflow-call: done
-  9-2-the-air-gap-distribution-contract-has-a-socket: backlog
+  9-2-the-air-gap-distribution-contract-has-a-socket: done
   epic-1: done
   epic-1-retrospective: optional
   epic-2: backlog

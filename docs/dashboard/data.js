@@ -3247,12 +3247,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "46/47",
+            "47/47",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "0",
             "remaining",
             ""
           ]
@@ -3312,8 +3312,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "9.2"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -3600,7 +3600,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "9.2",
-              "pending",
+              "done",
               "The air-gap distribution contract has a socket"
             ]
           ]
@@ -5034,7 +5034,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-23 03:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-23 03:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8004,9 +8004,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-mason",
           "pkey": null,
           "stories": 38,
-          "state": "in-progress",
+          "state": "done",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 46,
+          "done": 47,
           "total": 47,
           "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
           "redirect": null
@@ -8657,7 +8657,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-02",
           "epics": "2026-08-02",
           "sprint": "2026-08-22",
-          "tea": "2026-08-21",
+          "tea": "2026-08-22",
           "gates": "2026-08-10",
           "code": "2026-08-14",
           "verify": "2026-08-14",
@@ -8751,7 +8751,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "46/47",
+        "progress": "47/47",
         "complete": 13,
         "of": 13
       },
@@ -20693,7 +20693,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "4 complete (atlas, doctor, herald, scribe); 4 building (marshal, mason, steward, warden)",
+        "gate": "5 complete (atlas, doctor, herald, mason, scribe); 3 building (marshal, steward, warden)",
         "stations": [
           {
             "name": "Herald",
@@ -21482,7 +21482,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "paused 9.2",
+        "line": "complete",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25397,8 +25397,8 @@ window.DASHBOARD_DATA = {
       "subject": "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-23 03:01 UTC",
-    "generatedEpoch": 1787454108
+    "generatedAt": "2026-08-23 03:11 UTC",
+    "generatedEpoch": 1787454673
   },
   "storySpecs": [
     {
@@ -25427,8 +25427,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 46,
-      "tracked": 17,
+      "done": 47,
+      "tracked": 18,
       "gap": 29
     },
     {
@@ -25671,45 +25671,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "mason",
-        "project": "pyforge-mason",
-        "epicsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-conda-forge-expert-rebuild",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
-          },
-          {
-            "slug": "spec-django-accelerator-framework",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework/SPEC.md"
-          },
-          {
-            "slug": "spec-machine-checked-recipe-knowledge",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-machine-checked-recipe-knowledge/SPEC.md"
-          },
-          {
-            "slug": "spec-pixi-container-image",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pixi-container-image/SPEC.md"
-          }
-        ],
-        "done": 46,
-        "backlog": 1,
-        "blocked": 0,
-        "total": 47,
-        "next": "9-2-the-air-gap-distribution-contract-has-a-socket",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "9-2-the-air-gap-distribution-contract-has-a-socket"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -25811,6 +25772,43 @@ window.DASHBOARD_DATA = {
         "state": "complete"
       },
       {
+        "station": "mason",
+        "project": "pyforge-mason",
+        "epicsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-conda-forge-expert-rebuild",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
+          },
+          {
+            "slug": "spec-django-accelerator-framework",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework/SPEC.md"
+          },
+          {
+            "slug": "spec-machine-checked-recipe-knowledge",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-machine-checked-recipe-knowledge/SPEC.md"
+          },
+          {
+            "slug": "spec-pixi-container-image",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pixi-container-image/SPEC.md"
+          }
+        ],
+        "done": 47,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 47,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      },
+      {
         "station": "scribe",
         "project": "pyforge-scribe",
         "epicsPath": "_bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md",
@@ -25834,8 +25832,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 432,
-      "backlog": 79,
+      "done": 433,
+      "backlog": 78,
       "blocked": 0,
       "total": 511
     }
@@ -25889,13 +25887,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 47,
-        "done": 46,
+        "done": 47,
         "blocked": 0,
         "epics": 9,
-        "epicsDone": 8,
-        "complete": false,
+        "epicsDone": 9,
+        "complete": true,
         "running": false,
-        "projected": 46
+        "projected": 47
       },
       {
         "key": "scribe",
@@ -25933,15 +25931,15 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 511,
-      "done": 432,
+      "done": 433,
       "blocked": 0,
       "epics": 109,
-      "epicsDone": 88
+      "epicsDone": 89
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 432
+      "projected": 433
     }
   }
 };
