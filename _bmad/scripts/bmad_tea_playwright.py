@@ -14,6 +14,8 @@ Usage:
     python _bmad/scripts/bmad_tea_playwright.py --all
     python _bmad/scripts/bmad_tea_playwright.py --project pyforge-scribe
     python _bmad/scripts/bmad_tea_playwright.py --all --scaffold   # opt-in scaffolds
+    python _bmad/scripts/bmad_tea_playwright.py --all --check      # CAP-5 story-id drift
+    python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal --check
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ STATIONS: tuple[str, ...] = (
 OUTPUT_NAME = "test-architecture.md"
 TBD_TOKEN = "TBD"
 GENERATOR_ID = "bmad_tea_playwright.py"
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "2.1.0"
 
 # Story headers: "### Story 1.2: Title" or "### Story A1: Title"
 _STORY_HEADER = re.compile(
@@ -58,6 +60,15 @@ _INLINE_ITEM = re.compile(
 # Epic sections for risk / grouping
 _EPIC_HEADER = re.compile(
     r"^##\s+Epic\s+(\d+)\s*:\s*(.+?)\s*$",
+    re.MULTILINE,
+)
+# On-disk Story Coverage Matrix (CAP-5 / Story 19.4 drift gate)
+_MATRIX_SECTION = re.compile(
+    r"^##\s+Story Coverage Matrix\s*\n+(.*?)(?=\n##\s|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+_MATRIX_STORY_ID = re.compile(
+    r"^\|\s*(\d+\.\d+|[A-Z]\d+)\s*\|",
     re.MULTILINE,
 )
 
@@ -96,6 +107,17 @@ class GenerateResult:
     bytes_written: int = 0
     story_count: int = 0
     test_file_count: int = 0
+
+
+@dataclass(frozen=True)
+class CheckResult:
+    project: str
+    ok: bool
+    output_path: Path
+    missing_ids: tuple[str, ...] = ()
+    missing_doc: bool = False
+    missing_matrix: bool = False
+    message: str = ""
 
 
 def resolve_repo_root(start: Path | None = None) -> Path:
@@ -387,12 +409,15 @@ def render_document(station: StationInputs, repo_root: Path) -> str:
             "| Integration coverage | ≥70% | Story 19.3 CI gate |",
             "| Forbidden placeholder token | zero occurrences | this generator (hard fail) |",
             "| Idempotent regen | byte-identical on unchanged tree | FR-132 |",
+            "| Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |",
             "",
             "## Regeneration",
             "",
             "```bash",
             f"python _bmad/scripts/{GENERATOR_ID} --project {station.project}",
             f"python _bmad/scripts/{GENERATOR_ID} --all",
+            f"python _bmad/scripts/{GENERATOR_ID} --project {station.project} --check",
+            f"python _bmad/scripts/{GENERATOR_ID} --all --check",
             "```",
             "",
         ]
@@ -479,11 +504,125 @@ def generate_all(
     return results
 
 
+def parse_matrix_story_ids(document: str) -> set[str] | None:
+    """Return story ids from the on-disk Story Coverage Matrix, or None if absent."""
+    match = _MATRIX_SECTION.search(document)
+    if not match:
+        return None
+    return {m.group(1) for m in _MATRIX_STORY_ID.finditer(match.group(1))}
+
+
+def check_station(repo_root: Path, project: str) -> CheckResult:
+    """Compare epic story ids to the on-disk Story Coverage Matrix (CAP-5).
+
+    Does not require full-document byte equality — only that every parsed
+    epic story id appears as a matrix row. TBD in the on-disk document is
+    a hard fail (same Always rule as generate).
+    """
+    station = load_station(repo_root, project)
+    out = station.planning_dir / OUTPUT_NAME
+    if not out.is_file():
+        msg = f"DRIFT {project}: missing {out}"
+        return CheckResult(
+            project=project,
+            ok=False,
+            output_path=out,
+            missing_doc=True,
+            message=msg,
+        )
+    try:
+        text = out.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        msg = f"DRIFT {project}: cannot read {out}: {exc}"
+        return CheckResult(
+            project=project,
+            ok=False,
+            output_path=out,
+            message=msg,
+        )
+    if TBD_TOKEN in text:
+        msg = f"DRIFT {project}: TBD in {out}"
+        return CheckResult(
+            project=project,
+            ok=False,
+            output_path=out,
+            message=msg,
+        )
+    matrix_ids = parse_matrix_story_ids(text)
+    if matrix_ids is None:
+        msg = f"DRIFT {project}: no Story Coverage Matrix in {out}"
+        return CheckResult(
+            project=project,
+            ok=False,
+            output_path=out,
+            missing_matrix=True,
+            message=msg,
+        )
+    expected = {s.id for s in station.stories}
+    missing = tuple(sorted(expected - matrix_ids, key=_story_id_sort_key))
+    if missing:
+        missing_list = ", ".join(missing)
+        msg = f"DRIFT {project}: missing story id(s) in matrix: {missing_list}"
+        return CheckResult(
+            project=project,
+            ok=False,
+            output_path=out,
+            missing_ids=missing,
+            message=msg,
+        )
+    return CheckResult(
+        project=project,
+        ok=True,
+        output_path=out,
+        message=f"OK {project}: {len(expected)} story ids covered",
+    )
+
+
+def _story_id_sort_key(sid: str) -> tuple:
+    if re.fullmatch(r"\d+\.\d+", sid):
+        major, minor = sid.split(".")
+        return (0, int(major), int(minor), sid)
+    return (1, 0, 0, sid)
+
+
+def check_all(
+    repo_root: Path,
+    *,
+    stations: Sequence[str] | None = None,
+) -> list[CheckResult]:
+    if stations is None:
+        stations = STATIONS
+    results: list[CheckResult] = []
+    for slug in stations:
+        project = project_name(slug)
+        try:
+            results.append(check_station(repo_root, project))
+        except (FileNotFoundError, ValueError, OSError) as exc:
+            out = (
+                repo_root
+                / "_bmad-output"
+                / "projects"
+                / project
+                / "planning-artifacts"
+                / OUTPUT_NAME
+            )
+            results.append(
+                CheckResult(
+                    project=project,
+                    ok=False,
+                    output_path=out,
+                    message=f"DRIFT {project}: {exc}",
+                )
+            )
+    return results
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Generate BMAD TEA test-architecture.md for PyForge stations "
-            "(FR-129 / FR-132). TBD in output is a hard failure."
+            "(FR-129 / FR-132). TBD in output is a hard failure. "
+            "Use --check for CAP-5 story-id drift against the on-disk matrix."
         )
     )
     group = parser.add_mutually_exclusive_group(required=True)
@@ -512,6 +651,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Render and validate without writing",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help=(
+            "Drift gate: exit 1 if any epic story id is absent from the on-disk "
+            "Story Coverage Matrix (or the doc/matrix is missing). Does not write."
+        ),
+    )
     # Legacy aliases kept so old call sites keep working
     parser.add_argument("--epics", help=argparse.SUPPRESS)
     parser.add_argument("--architecture", help=argparse.SUPPRESS)
@@ -528,6 +675,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.repo_root
             else resolve_repo_root()
         )
+        if args.check:
+            if args.all:
+                check_results = check_all(repo_root)
+            else:
+                project = project_name(station_slug(args.project))
+                check_results = [check_station(repo_root, project)]
+            exit_code = 0
+            for result in check_results:
+                if result.ok:
+                    print(result.message)
+                else:
+                    print(result.message, file=sys.stderr)
+                    exit_code = 1
+            return exit_code
+
         if args.all:
             results = generate_all(
                 repo_root, scaffold=args.scaffold, dry_run=args.dry_run

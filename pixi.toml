@@ -714,6 +714,10 @@ cmd = "bash scripts/ensure-bmad-preflight.sh"
 description = "Story 19.1 / FR-129: regenerate every station's planning-artifacts/test-architecture.md from epics + live test inventory. TBD in output is a hard fail. Idempotent on an unchanged tree."
 cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
 
+[feature.local-recipes.tasks.tea-playwright-check]
+description = "Story 19.4 / CAP-5: fail if any epic story id is absent from a station's on-disk Story Coverage Matrix (or the doc/matrix is missing). Does not write; cure with tea-playwright-all."
+cmd = "python _bmad/scripts/bmad_tea_playwright.py --all --check"
+
 [feature.local-recipes.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"
