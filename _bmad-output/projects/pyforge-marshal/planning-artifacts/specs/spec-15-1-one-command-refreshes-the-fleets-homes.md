@@ -14,30 +14,27 @@ baseline_revision: 52fbe2fac3
 
 ## Intent
 
-**Problem:** Operators refresh eight loop homes by hand — behind-counts, dirty trees, and harness policy re-render are easy to skip or do inconsistently (FR-133–FR-135, AD-21).
+**Problem:** Operators lack a single command to refresh all eight BMAD loop homes — behind-counts, fast-forward, and harness policy re-render must be one governed verb (FR-133..135, AD-21).
 
-**Approach:** Add one CLI command that reports each home's behind-count (unreadable homes reported, never skipped), fast-forwards clean trees only (dirty homes refused by name; push targets `loop/<slug>` only), and re-renders harness policy as a checked step — each step `done | skipped | failed`; FF-without-render reports the home incompletely refreshed.
+**Approach:** Add a fleet refresh command (`cli/factory.py` or `cli/refresh.py` + `core/context.py`) that reports each home's behind-count (unreadable homes reported, never skipped), fast-forwards clean trees only (dirty refused by name; push targets `loop/<slug>` only), and re-renders harness policy as a checked step — each step `done | skipped | failed`.
 
 ## Acceptance Criteria
 
-- One command enumerates all 8 loop homes and reports behind-count per home.
-- Unreadable homes are reported, never silently skipped.
-- Clean trees fast-forward; dirty homes refused by name.
-- Push targets `loop/<slug>` only.
-- Harness policy re-render is a checked step; each step is `done | skipped | failed`.
-- Fast-forward without successful render reports the home as incompletely refreshed.
+- One command reports behind-count for all 8 loop homes; unreadable homes reported, never skipped.
+- Fast-forwards clean trees only; dirty homes refused by name; push targets `loop/<slug>` only.
+- Re-renders harness policy as a checked step.
+- Each step reports `done | skipped | failed`; FF-without-render reports home incompletely refreshed.
 
 ## Boundaries & Constraints
 
-**Never:** Touch another station's artifacts. Never `scripts/bmad-switch`. Surface: `cli/factory.py` or new `cli/refresh.py`, `core/context.py`.
+**Never:** Force-push. Never touch dirty homes. Never `scripts/bmad-switch` from the verb. No Story 15.2 ledger promotion scope.
 
 </intent-contract>
 
 ## Code Map
 
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/` — refresh verb
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/context.py` — home enumeration
-- Tests under package `tests/`
+- `src/shared/packages/pyforge-marshal/cli/factory.py` or `cli/refresh.py`
+- `core/context.py`
 
 ## Verification
 
