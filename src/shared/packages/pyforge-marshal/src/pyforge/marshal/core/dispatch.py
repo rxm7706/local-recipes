@@ -12,6 +12,8 @@ from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
 
 KIND_DISPATCH_LAUNCH = "dispatch-launch"
+KIND_DISPATCH_SUPERVISOR_ATTACH = "dispatch-supervisor-attach"
+KIND_DISPATCH_COMPLETION = "dispatch-completion"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"
@@ -20,13 +22,16 @@ _DISPATCH_WORKTREE_PREFIX = "dispatch-"
 
 @dataclass(frozen=True)
 class DispatchJournalFacts:
-    """Facts recovered from a dispatch run's journal (Story 22.1)."""
+    """Facts recovered from a dispatch run's journal (Story 22.1/22.2)."""
 
     story_key: str | None
     session_pid: int | None
     model: str | None
     launched_at: datetime | None
     worktree_path: str | None
+    baseline_head_sha: str | None = None
+    supervisor_pid: int | None = None
+    completion_verdict: str | None = None
 
 
 def canonical_repo_root(repo_root: Path) -> Path:

@@ -1,0 +1,252 @@
+"""Dispatch completion supervisor entry point (Story 22.2)."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+from pyforge.core.process import PosixProcess, ProcessPort
+
+from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.vcs_git import GitVcs, VcsCommandError
+from ..core import dispatch as dispatch_core
+from ..core import promotion as promotion_core
+from ..core.dispatch_completion import (
+    DispatchCompletionInput,
+    DispatchGitFacts,
+    DispatchSessionVerdict,
+    judge_dispatch_completion,
+)
+from ..core.journal import JournalEntryId, Phase, build_entry, fold, prepare_for_write
+from ..core.identity import normalize
+from ..ports.fs import FsPort
+from ..ports.vcs import VcsPort
+
+_JOURNAL_FILENAME = "journal.jsonl"
+_TICK_SECONDS = 60
+_BASE_REF = "origin/main"
+_MERGE_INTO = "main"
+
+
+def _writer_id() -> str:
+    return f"dispatch-supervisor-{os.getpid()}"
+
+
+def _format_entry_ts(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
+    prepared = prepare_for_write(entry)
+    if prepared.sidecar_relative_path is not None:
+        fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
+    fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
+
+
+def gather_dispatch_git_facts(
+    vcs: VcsPort,
+    *,
+    repo_root: Path,
+    worktree: Path,
+    story_key: str,
+    project_slug: str,
+    baseline_head_sha: str,
+    merge_subject_template: str,
+) -> DispatchGitFacts:
+    current_head_sha = vcs.worktree_head_sha(worktree)
+    changed_paths = vcs.changed_files(repo_root, worktree, base=_BASE_REF)
+    branch = dispatch_core.dispatch_worktree_branch(story_key)
+    branch_merged = vcs.is_branch_merged(repo_root, branch, into=_MERGE_INTO)
+    subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
+    merged_keys = promotion_core.merged_story_keys(
+        subjects, merge_subject_template, project_slug
+    )
+    story_merged = normalize(story_key) in merged_keys
+    return DispatchGitFacts(
+        baseline_head_sha=baseline_head_sha,
+        current_head_sha=current_head_sha,
+        changed_paths=changed_paths,
+        branch_merged=branch_merged,
+        story_merged_on_main=story_merged,
+    )
+
+
+def run_dispatch_supervisor(
+    *,
+    repo_root: Path,
+    slug: str,
+    run_id: str,
+    session_pid: int,
+    worktree: Path,
+    story_key: str,
+    baseline_head_sha: str,
+    merge_subject_template: str,
+    fs: FsPort | None = None,
+    vcs: VcsPort | None = None,
+    process: ProcessPort | None = None,
+) -> int:
+    fs = fs if fs is not None else LocalFs()
+    vcs = vcs if vcs is not None else GitVcs()
+    process = process if process is not None else PosixProcess()
+    run_dir = dispatch_core.dispatch_run_dir(repo_root, slug, run_id)
+    journal_path = run_dir / _JOURNAL_FILENAME
+    text = fs.read_text(journal_path)
+    if text is None:
+        print(
+            f"dispatch supervisor: no journal at {journal_path!r}; exiting inert",
+            file=sys.stderr,
+        )
+        return 0
+    folded = fold(text.splitlines())
+    launch_entries = folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH)
+    if not any(
+        entry.run_id == run_id and entry.phase in (Phase.INTENT, Phase.OUTCOME)
+        for entry in launch_entries
+    ):
+        print(
+            f"dispatch supervisor: no dispatch-launch for run {run_id!r}; exiting inert",
+            file=sys.stderr,
+        )
+        return 0
+
+    writer_id = _writer_id()
+    counter = 0
+    attach_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH,
+        phase=Phase.OBSERVATION,
+        payload={
+            "pid": os.getpid(),
+            "session_pid": session_pid,
+            "baseline_head_sha": baseline_head_sha,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, attach_entry, fsync=True)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal attach for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+        return 1
+
+    while True:
+        try:
+            git_facts = gather_dispatch_git_facts(
+                vcs,
+                repo_root=repo_root,
+                worktree=worktree,
+                story_key=story_key,
+                project_slug=slug,
+                baseline_head_sha=baseline_head_sha,
+                merge_subject_template=merge_subject_template,
+            )
+        except (VcsCommandError, ValueError) as exc:
+            print(
+                f"dispatch supervisor: git fact gather failed: {exc}",
+                file=sys.stderr,
+            )
+            time.sleep(_TICK_SECONDS)
+            continue
+
+        session_alive = process.is_alive(session_pid)
+        verdict = judge_dispatch_completion(
+            DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+        )
+        if verdict == DispatchSessionVerdict.LIVE:
+            heartbeat = build_entry(
+                id=JournalEntryId(writer_id, counter),
+                ts=_format_entry_ts(_now_utc()),
+                run_id=run_id,
+                kind=dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH,
+                phase=Phase.OBSERVATION,
+                payload={
+                    "heartbeat": True,
+                    "session_alive": session_alive,
+                    "current_head_sha": git_facts.current_head_sha,
+                    "changed_path_count": len(git_facts.changed_paths),
+                },
+            )
+            counter += 1
+            try:
+                _append_entry(fs, run_dir, heartbeat, fsync=False)
+            except FsError:
+                pass
+            time.sleep(_TICK_SECONDS)
+            continue
+
+        intent_entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.INTENT,
+            payload={
+                "verdict": verdict.value,
+                "session_alive": session_alive,
+                "baseline_head_sha": git_facts.baseline_head_sha,
+                "current_head_sha": git_facts.current_head_sha,
+                "changed_paths": list(git_facts.changed_paths),
+                "branch_merged": git_facts.branch_merged,
+                "story_merged_on_main": git_facts.story_merged_on_main,
+            },
+        )
+        counter += 1
+        outcome_entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.OUTCOME,
+            intent_id=intent_entry.id,
+            payload={"verdict": verdict.value, "ok": True},
+        )
+        try:
+            _append_entry(fs, run_dir, intent_entry, fsync=True)
+            _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        except FsError as exc:
+            print(
+                f"dispatch supervisor: cannot journal completion for {run_id!r}: {exc}",
+                file=sys.stderr,
+            )
+            return 1
+        return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Dispatch completion supervisor (Story 22.2)")
+    parser.add_argument("repo_root")
+    parser.add_argument("slug")
+    parser.add_argument("run_id")
+    parser.add_argument("session_pid", type=int)
+    parser.add_argument("worktree_path")
+    parser.add_argument("story_key")
+    parser.add_argument("baseline_head_sha")
+    parser.add_argument("merge_subject_template")
+    parser.add_argument("log_path")
+    args = parser.parse_args(argv)
+    return run_dispatch_supervisor(
+        repo_root=Path(args.repo_root),
+        slug=args.slug,
+        run_id=args.run_id,
+        session_pid=args.session_pid,
+        worktree=Path(args.worktree_path),
+        story_key=args.story_key,
+        baseline_head_sha=args.baseline_head_sha,
+        merge_subject_template=args.merge_subject_template,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

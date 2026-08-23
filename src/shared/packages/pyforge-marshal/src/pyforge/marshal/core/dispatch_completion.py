@@ -1,0 +1,84 @@
+"""Dispatch session completion judgment (Story 22.2, FR-193 CAP-2, AD-33).
+
+Pure functions only: git facts (commits on the story branch, merge refs)
+plus process facts judge whether a dispatched session is live, completed,
+or failed. Harness notifications and self-reports are never verdict inputs.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+
+
+class DispatchSessionVerdict(StrEnum):
+    """Terminal and non-terminal completion states for a dispatch session."""
+
+    LIVE = "live"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True)
+class DispatchGitFacts:
+    """Repository facts gathered at judgment time (AD-33)."""
+
+    baseline_head_sha: str
+    current_head_sha: str
+    changed_paths: tuple[str, ...]
+    branch_merged: bool
+    story_merged_on_main: bool
+
+
+@dataclass(frozen=True)
+class DispatchCompletionInput:
+    """Inputs to the completion judge — process facts plus git facts."""
+
+    session_alive: bool
+    git: DispatchGitFacts
+  # Harness notification/self-report — recorded for diagnostics only, never
+  # used as a verdict input (CAP-2 Always bullet).
+    harness_reported_failure: bool = False
+
+
+def has_git_progress(git: DispatchGitFacts) -> bool:
+    """True when git shows work beyond the launch baseline."""
+    if git.current_head_sha != git.baseline_head_sha:
+        return True
+    return bool(git.changed_paths)
+
+
+def judge_dispatch_completion(inp: DispatchCompletionInput) -> DispatchSessionVerdict:
+    """Judge completion from git + process facts only."""
+    if inp.git.branch_merged or inp.git.story_merged_on_main:
+        return DispatchSessionVerdict.COMPLETED
+    if inp.session_alive or has_git_progress(inp.git):
+        return DispatchSessionVerdict.LIVE
+    return DispatchSessionVerdict.FAILED
+
+
+def zombie_redispatch_evidence(
+    *,
+    story_key: str,
+    verdict: DispatchSessionVerdict,
+    git: DispatchGitFacts,
+    session_alive: bool,
+    harness_reported_failure: bool,
+) -> str | None:
+    """When redispatch must be refused, return human-readable evidence."""
+    if verdict != DispatchSessionVerdict.LIVE:
+        return None
+    if session_alive:
+        return (
+            f"story {story_key!r} already has a live dispatch session "
+            f"(session process alive)"
+        )
+    parts = [
+        f"story {story_key!r} dispatch session is still live by git facts",
+        f"baseline {git.baseline_head_sha[:12]} -> current {git.current_head_sha[:12]}",
+    ]
+    if git.changed_paths:
+        parts.append(f"{len(git.changed_paths)} changed path(s) since baseline")
+    if harness_reported_failure:
+        parts.append("harness reported failure/killed but git progress contradicts")
+    return "; ".join(parts)

@@ -1497,6 +1497,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-008",
         "MRS-DISP-009",
         "MRS-DISP-010",
+        # Story 22.2 (factory dispatch completion, FR-193 CAP-2): 011 zombie/
+        # in-flight redispatch refused (ERROR); 012 baseline head read ERROR;
+        # 013 supervisor spawn WARN.
+        "MRS-DISP-011",
+        "MRS-DISP-012",
+        "MRS-DISP-013",
     }
 )
 

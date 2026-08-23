@@ -73,6 +73,9 @@ class FakeVcs:
         self.added.append((repo_root, home, branch, base))
         home.mkdir(parents=True, exist_ok=True)
 
+    def worktree_head_sha(self, _worktree: Path) -> str:
+        return "baseline0001"
+
 
 class FakeBuildHarness:
     def __init__(self, *, present: bool = True, pid: int = 4242) -> None:
@@ -99,6 +102,9 @@ class FakeProcess:
 
     def is_alive(self, _pid: int) -> bool:
         return self.alive
+
+    def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
+        return 4243
 
 
 def test_resolve_story_spec_path_finds_tracked_spec(tmp_path: Path) -> None:

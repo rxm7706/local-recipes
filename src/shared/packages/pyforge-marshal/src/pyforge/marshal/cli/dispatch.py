@@ -12,13 +12,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pyforge.core.process import PosixProcess, ProcessPort
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
 from ..core import policy
+from ..core.dispatch_completion import (
+    DispatchCompletionInput,
+    DispatchGitFacts,
+    DispatchSessionVerdict,
+    judge_dispatch_completion,
+    zombie_redispatch_evidence,
+)
+from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..core.identity import normalize, render_feed_key
 from ..core.journal import JournalEntryId, Phase, build_entry, fold, mint_run_id, prepare_for_write
 from ..core.model import Finding, Severity, build_envelope
@@ -38,6 +46,7 @@ if TYPE_CHECKING:
 
 _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "session.log"
+_SUPERVISOR_LOG_FILENAME = "dispatch-supervisor.log"
 _BASE_REF = "origin/main"
 
 
@@ -139,14 +148,18 @@ def _ensure_dispatch_worktree(
     return worktree
 
 
-def latest_dispatch_run_dir(repo_root: Path, slug: str) -> Path | None:
+def iter_dispatch_run_dirs(repo_root: Path, slug: str) -> tuple[Path, ...]:
     runs_parent = dispatch_core.dispatch_runs_dir(repo_root, slug)
     if not runs_parent.is_dir():
+        return ()
+    return tuple(sorted((p for p in runs_parent.iterdir() if p.is_dir()), key=lambda p: p.name))
+
+
+def latest_dispatch_run_dir(repo_root: Path, slug: str) -> Path | None:
+    dirs = iter_dispatch_run_dirs(repo_root, slug)
+    if not dirs:
         return None
-    candidates = [child for child in runs_parent.iterdir() if child.is_dir()]
-    if not candidates:
-        return None
-    return sorted(candidates, key=lambda p: p.name)[-1]
+    return dirs[-1]
 
 
 def gather_dispatch_journal_facts(
@@ -162,25 +175,27 @@ def gather_dispatch_journal_facts(
             launched_at=None,
             worktree_path=None,
         )
-    folded = fold(text.splitlines(), {})
+    folded = fold(text.splitlines())
     story_key: str | None = None
     session_pid: int | None = None
     model: str | None = None
     worktree_path: str | None = None
     launched_at: datetime | None = None
+    baseline_head_sha: str | None = None
+    supervisor_pid: int | None = None
+    completion_verdict: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
-            story_key = entry.payload.get("story_key")
-            if isinstance(story_key, str):
-                story_key = story_key
+            raw_story = entry.payload.get("story_key")
+            story_key = raw_story if isinstance(raw_story, str) else None
             model_val = entry.payload.get("model")
             model = model_val if isinstance(model_val, str) else None
             wt = entry.payload.get("worktree_path")
             worktree_path = wt if isinstance(wt, str) else None
+            baseline_val = entry.payload.get("baseline_head_sha")
+            baseline_head_sha = baseline_val if isinstance(baseline_val, str) else None
             try:
-                launched_at = datetime.fromisoformat(
-                    entry.ts.replace("Z", "+00:00")
-                )
+                launched_at = datetime.fromisoformat(entry.ts.replace("Z", "+00:00"))
             except ValueError:
                 launched_at = None
         elif entry.phase == Phase.OUTCOME:
@@ -189,13 +204,129 @@ def gather_dispatch_journal_facts(
                 session_pid = pid_val
             elif isinstance(pid_val, str) and pid_val.isdigit():
                 session_pid = int(pid_val)
+            sup_val = entry.payload.get("supervisor_pid")
+            if isinstance(sup_val, int):
+                supervisor_pid = sup_val
+            elif isinstance(sup_val, str) and sup_val.isdigit():
+                supervisor_pid = int(sup_val)
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_COMPLETION):
+        if entry.phase == Phase.OUTCOME:
+            verdict_val = entry.payload.get("verdict")
+            if isinstance(verdict_val, str):
+                completion_verdict = verdict_val
     return dispatch_core.DispatchJournalFacts(
-        story_key=story_key if isinstance(story_key, str) else None,
+        story_key=story_key,
         session_pid=session_pid,
         model=model,
         launched_at=launched_at,
         worktree_path=worktree_path,
+        baseline_head_sha=baseline_head_sha,
+        supervisor_pid=supervisor_pid,
+        completion_verdict=completion_verdict,
     )
+
+
+def resolve_dispatch_session_verdict(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    journal: dispatch_core.DispatchJournalFacts,
+    effective_policy: policy.EffectivePolicy,
+) -> DispatchSessionVerdict | None:
+    if journal.completion_verdict in {
+        DispatchSessionVerdict.COMPLETED.value,
+        DispatchSessionVerdict.FAILED.value,
+    }:
+        return DispatchSessionVerdict(journal.completion_verdict)
+    if journal.story_key is None or journal.worktree_path is None:
+        return None
+    if journal.baseline_head_sha is None:
+        return DispatchSessionVerdict.LIVE if (
+            journal.session_pid is not None and process.is_alive(journal.session_pid)
+        ) else None
+    session_alive = (
+        journal.session_pid is not None and process.is_alive(journal.session_pid)
+    )
+    try:
+        git_facts = gather_dispatch_git_facts(
+            vcs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+        )
+    except (VcsCommandError, ValueError):
+        return DispatchSessionVerdict.LIVE if session_alive else None
+    return judge_dispatch_completion(
+        DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+    )
+
+
+def live_dispatch_conflict(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    effective_policy: policy.EffectivePolicy,
+    harness_reported_failure: bool = False,
+) -> str | None:
+    feed_story = render_feed_key(normalize(story_key))
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key != feed_story:
+            continue
+        verdict = resolve_dispatch_session_verdict(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+        )
+        if verdict != DispatchSessionVerdict.LIVE:
+            continue
+        if journal.baseline_head_sha is None or journal.worktree_path is None:
+            return zombie_redispatch_evidence(
+                story_key=feed_story,
+                verdict=verdict,
+                git=DispatchGitFacts(
+                    baseline_head_sha="",
+                    current_head_sha="",
+                    changed_paths=(),
+                    branch_merged=False,
+                    story_merged_on_main=False,
+                ),
+                session_alive=journal.session_pid is not None
+                and process.is_alive(journal.session_pid),
+                harness_reported_failure=harness_reported_failure,
+            )
+        git_facts = gather_dispatch_git_facts(
+            vcs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+        )
+        return zombie_redispatch_evidence(
+            story_key=feed_story,
+            verdict=verdict,
+            git=git_facts,
+            session_alive=journal.session_pid is not None
+            and process.is_alive(journal.session_pid),
+            harness_reported_failure=harness_reported_failure,
+        )
+    return None
 
 
 def run_dispatch(
@@ -297,6 +428,25 @@ def run_dispatch(
     data["model"] = model
     data["budget_env"] = dict(budget_env)
 
+    conflict = live_dispatch_conflict(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=render_feed_key(story_key),
+        effective_policy=effective_policy,
+    )
+    if conflict is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-011",
+                severity=Severity.ERROR,
+                message=f"refusing redispatch: {conflict}",
+            )
+        )
+        return _emit(args, data, findings)
+
     try:
         worktree = _ensure_dispatch_worktree(vcs, repo_root, slug, render_feed_key(story_key))
     except VcsCommandError as exc:
@@ -309,6 +459,19 @@ def run_dispatch(
         )
         return _emit(args, data, findings)
     data["worktree_path"] = str(worktree)
+
+    try:
+        baseline_head_sha = vcs.worktree_head_sha(worktree)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-012",
+                severity=Severity.ERROR,
+                message=f"cannot read dispatch worktree baseline head: {exc}",
+            )
+        )
+        return _emit(args, data, findings)
+    data["baseline_head_sha"] = baseline_head_sha
 
     writer_id = _writer_id()
     mint_moment = _now_utc()
@@ -342,6 +505,7 @@ def run_dispatch(
             "model": model,
             "budget_env": dict(budget_env),
             "bmad_active_project": slug,
+            "baseline_head_sha": baseline_head_sha,
         },
     )
     try:
@@ -431,5 +595,54 @@ def run_dispatch(
                 ),
             )
         )
+
+    supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
+    data["supervisor_log"] = str(supervisor_log)
+    try:
+        supervisor_pid = process.spawn_detached(
+            [
+                sys.executable,
+                "-m",
+                "pyforge.marshal.dispatch_supervisor",
+                str(repo_root),
+                slug,
+                run_id,
+                str(launch.pid),
+                str(worktree),
+                render_feed_key(story_key),
+                baseline_head_sha,
+                effective_policy.merge_subject_template.value,
+                str(supervisor_log),
+            ],
+            cwd=repo_root,
+            log_path=supervisor_log,
+        )
+    except ProcessError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-013",
+                severity=Severity.WARN,
+                message=(
+                    f"session launched (pid {launch.pid}) but dispatch "
+                    f"completion supervisor could not be spawned: {exc} "
+                    f"(supervisor log: {str(supervisor_log)!r})"
+                ),
+            )
+        )
+    else:
+        data["supervisor_pid"] = supervisor_pid
+        supervisor_outcome = build_entry(
+            id=JournalEntryId(writer_id, 2),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.OUTCOME,
+            intent_id=intent_entry.id,
+            payload={"supervisor_pid": supervisor_pid},
+        )
+        try:
+            _append_entry(fs, run_dir, supervisor_outcome, fsync=False)
+        except FsError:
+            pass
 
     return _emit(args, data, findings)

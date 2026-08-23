@@ -972,13 +972,21 @@ class FleetHomeFacts:
     dispatch_engine_alive: bool = False
     dispatch_elapsed_seconds: float | None = None
     dispatch_run_id: str | None = None
+    # Story 22.2 (factory dispatch completion, FR-193 CAP-2): git+process
+    # verdict for the latest dispatch run — ``live`` keeps the station
+    # surfaced as running even when the session process is dead but git
+    # facts show progress (zombie refusal case).
+    dispatch_completion_verdict: str | None = None
 
 
 def _apply_dispatch_overlay(
     row: dict[str, object], facts: FleetHomeFacts
 ) -> dict[str, object]:
-    """Story 22.1: when a dispatch session is live, surface it in fleet status."""
-    if not (facts.dispatch_engine_alive and facts.dispatch_story):
+    """Story 22.1/22.2: when a dispatch session is live, surface it in fleet status."""
+    dispatch_live = facts.dispatch_completion_verdict == "live" or (
+        facts.dispatch_engine_alive and facts.dispatch_story
+    )
+    if not (dispatch_live and facts.dispatch_story):
         return row
     if row.get("state") in ("running", "paused-on-escalation", "awaiting-operator"):
         return row
@@ -989,6 +997,8 @@ def _apply_dispatch_overlay(
         patched["elapsed_seconds"] = facts.dispatch_elapsed_seconds
     if facts.dispatch_run_id is not None:
         patched["dispatch_run_id"] = facts.dispatch_run_id
+    if facts.dispatch_completion_verdict is not None:
+        patched["dispatch_completion_verdict"] = facts.dispatch_completion_verdict
     return patched
 
 
