@@ -1,6 +1,6 @@
 """The Duty contract (AD-7) — Steward's null-engine precedent, mirroring warden.
 
-A duty is a unit of platform work (the registered duties: keys, deploy, provision, budget, sync, workspace). It is a
+A duty is a unit of platform work (the registered duties: keys, deploy, provision, budget, sync, workspace, upgrade). It is a
 ``Protocol``, not a base class, so a duty never inherits behaviour it did not
 ask for and conformance is checked structurally.
 

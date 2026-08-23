@@ -32,11 +32,12 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
-# The six duties — all real as of this story. `keys` (Epic 1), `deploy`
+# The seven duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
-# `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2).
+# `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
+# `upgrade` (Epic 14, Story 14.1 — report-only bmad-core pre-flight).
 DUTIES: tuple[str, ...] = (
-    "keys", "deploy", "provision", "budget", "sync", "workspace",
+    "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
 )
 
 _HELP = {
@@ -51,6 +52,10 @@ _HELP = {
     "workspace": (
         "story-scoped scratch worktrees — start/ls/status/clean "
         "(single-repo or repo-set; own-worktrees-only; archive-not-delete)"
+    ),
+    "upgrade": (
+        "BMAD-METHOD core upgrade surfaces — bmad-core pre-flight is report-only "
+        "(Epic 14 / CAP-1); apply is Story 14.2+"
     ),
 }
 
@@ -76,6 +81,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_sync_subparsers(duty_parser)
         elif name == "workspace":
             _add_workspace_subparsers(duty_parser)
+        elif name == "upgrade":
+            _add_upgrade_subparsers(duty_parser)
     return parser
 
 
@@ -428,6 +435,58 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
 
+def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
+    """Add ``bmad-core`` (Story 14.1 / CAP-1 — report-only pre-flight)."""
+    upgrade_subs = upgrade_parser.add_subparsers(
+        dest="upgrade_verb", metavar="{bmad-core}"
+    )
+    bmad_core = upgrade_subs.add_parser(
+        "bmad-core",
+        help=(
+            "report-only pre-flight for a target bmad-method release "
+            "(skill adds/removes/renames, local mods, legacy custom, prerequisites)"
+        ),
+    )
+    bmad_core.add_argument(
+        "--target",
+        required=True,
+        metavar="X.Y.Z",
+        help="target bmad-method release version (requires a packaged catalog entry)",
+    )
+    bmad_core.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON instead of the human-readable report",
+    )
+    bmad_core.add_argument(
+        "--package-root",
+        default=None,
+        metavar="DIR",
+        help=(
+            "optional path to an unpacked bmad-method package "
+            "(reads removals.txt + upstream file copies; never installs)"
+        ),
+    )
+    bmad_core.add_argument(
+        "--catalog-dir",
+        default=None,
+        metavar="DIR",
+        help="override the packaged release-catalog directory (tests)",
+    )
+    bmad_core.add_argument(
+        "--repo-root",
+        default=None,
+        metavar="DIR",
+        help="override the repo root used for installed-state reads (tests)",
+    )
+    bmad_core.add_argument(
+        "--installed-version",
+        default=None,
+        metavar="X.Y.Z",
+        help="override manifest installation.version (tests / retrodiction)",
+    )
+
+
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
@@ -435,8 +494,9 @@ def resolve_duty(name: str) -> Duty:
     `DeployDuty` (Story 2.1); `provision` returns a real `ProvisionDuty`
     (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1); `sync`
     returns a real `SyncDuty` (Story 8.1); `workspace` returns a real
-    `WorkspaceDuty` (Story 13.1). No duty is `NullDuty` any more — the seam
-    remains for a future seventh duty.
+    `WorkspaceDuty` (Story 13.1); `upgrade` returns a real `UpgradeDuty`
+    (Story 14.1). No duty is `NullDuty` any more — the seam remains for a
+    future eighth duty.
     """
     if name == "keys":
         # Imported here, not at module top: keys.py resolves its `_http.py`
@@ -470,6 +530,10 @@ def resolve_duty(name: str) -> Duty:
         from .workspace import WorkspaceDuty
 
         return WorkspaceDuty()
+    if name == "upgrade":
+        from .upgrade import UpgradeDuty
+
+        return UpgradeDuty()
     return NullDuty(name)
 
 

@@ -1,0 +1,97 @@
+# Target-release catalog for CAP-1 pre-flight (Story 14.1).
+# Grounded in the live 2026-08-21 6.10.0→6.11.0 upgrade (failure-modes.md traps).
+version: "6.11.0"
+baseline_pair_from: "6.10.0"
+
+skill_renames:
+  - from: bmad-dev-auto
+    to: bmad-build-auto
+    shim_disposition: forward-with-legacy-custom-halt
+  - from: bmad-quick-dev
+    to: bmad-build
+    shim_disposition: forward-with-legacy-custom-halt
+  - from: bmad-create-prd
+    to: bmad-prd
+    shim_disposition: forward
+  - from: bmad-edit-prd
+    to: bmad-prd
+    shim_disposition: forward
+  - from: bmad-validate-prd
+    to: bmad-prd
+    shim_disposition: forward
+  - from: bmad-create-architecture
+    to: bmad-architecture
+    shim_disposition: forward
+  - from: bmad-market-research
+    to: bmad-deep-recon
+    shim_disposition: forward
+  - from: bmad-domain-research
+    to: bmad-deep-recon
+    shim_disposition: forward
+  - from: bmad-technical-research
+    to: bmad-deep-recon
+    shim_disposition: forward
+  - from: bmad-document-project
+    to: bmad-project-context
+    shim_disposition: forward
+  - from: bmad-generate-project-context
+    to: bmad-project-context
+    shim_disposition: forward
+  - from: bmad-sprint-status
+    to: bmad-sprint-planning
+    shim_disposition: forward
+
+# removals.txt deletions that land with this release (trap 3).
+removals:
+  - bmad-check-implementation-readiness
+  - bmad-agent-tech-writer
+  - bmad-index-docs
+  - bmad-shard-doc
+
+skill_adds:
+  # Net-new skill IDs that are NOT also rename targets (those appear only under skill_renames).
+  - bmad-review
+
+# Upstream installer rewrites these; repo-local edits are conflict surfaces (trap 1).
+upstream_touched_paths:
+  - _bmad/scripts/resolve_config.py
+
+# Local markers that prove resolve_config.py carries repo-custom layers 5/6.
+repo_custom_markers:
+  - BMAD_ACTIVE_PROJECT
+  - .active-project
+
+# Legacy customization basenames (without .toml) that halt deprecation shims (trap 2).
+legacy_custom_names:
+  - bmad-dev-auto
+  - bmad-dev-auto.user
+  - bmad-quick-dev
+  - bmad-quick-dev.user
+
+# New hard prerequisites introduced at this release (trap 4).
+hard_prerequisites:
+  - name: uv
+    severity: hard
+    notes: "bmad-build / bmad-build-auto halt if uv is unavailable"
+  - name: python
+    min_version: "3.11"
+    severity: hard
+    notes: "rendered skills require Python >= 3.11 via uv"
+
+# Forwarder / orchestrator contract changes (trap 9).
+forwarder_contract_changes:
+  - skill: bmad-dev-auto
+    forwards_to: bmad-build-auto
+    notes: >-
+      final_revision gone; Tier-3 deferred-work.md gone; halt strings changed.
+      Unattended orchestrators that hardcode the old contract stall.
+    suite_min_versions:
+      bmad-loop: "0.9.1"
+
+# Config-format migration staging (trap 11).
+config_migration:
+  status: migration-not-cutover
+  notes: >-
+    Four-layer TOML is the migration, not the cutover; _bmad/bmm/config.yaml
+    still ships (planning-artifacts symlink pattern depends on it) but is
+    slated to go — the cutover release must be flagged loudly.
