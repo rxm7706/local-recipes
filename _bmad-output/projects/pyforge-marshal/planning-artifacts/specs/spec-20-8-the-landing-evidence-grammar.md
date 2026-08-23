@@ -2,7 +2,7 @@
 title: The landing-evidence grammar
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -33,9 +33,16 @@ baseline_revision: 9b488aee70
 ## Code Map
 
 - Parent: `spec-landing-evidence-grammar/SPEC.md` (CAP-1)
-- Grammar home TBD (pyforge-core / shared artifact / contract module)
-- Conformance tests importable from doctor + marshal test suites
+- Grammar home: `pyforge-core` module `pyforge.core.landing_evidence` (Story 14.2 shared-spine precedent)
+- Conformance: `pyforge-core/tests/unit/test_landing_evidence.py` + doctor/marshal conformance suites
 - Recovery commits: `accc097e6a`, `5290c9bcd2`, `03d8fc8c86`
+
+## Design Notes
+
+- **Grammar placement:** `pyforge.core.landing_evidence` in `pyforge-core` (stdlib-only leaf; doctor never imports `pyforge.marshal`).
+- Shapes: templated merge subject, GitHub PR merge, bmad-loop merge, recovery commit subject (`recover <station> <epic>-<seq>`), story-direct commit (`Story <epic>.<seq>:`), branch grammars (`land/…`, `bmad-loop/…`, `<station>/…`), plus `PRE_CONVENTION_RECOVERY_COMMITS` SHA allowlist.
+- `conformance_fixtures()` is the shared matrix both packages import.
+- Consumers (`promotion.py`, `sources/marshal.py`) unchanged — Stories 20.9/20.10.
 
 ## Verification
 
