@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 20
-    next: 20-10-marshal-consumes-the-grammar
+    remaining_count: 19
+    next: 21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage
     queue:
-    - 20-10-marshal-consumes-the-grammar
     - 21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage
     - 21-2-orchestrated-chain-regeneration
     - 21-3-code-status-preservation
@@ -149,11 +148,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 3
+    remaining_count: 2
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 17-1-steward-init-shell-init-detect-and-prepare-the-machine
     - 17-2-steward-setup-initrepo-take-the-machine-to-green
   warden:
     project: pyforge-warden
