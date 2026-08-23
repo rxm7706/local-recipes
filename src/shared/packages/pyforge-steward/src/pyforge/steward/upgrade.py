@@ -16,7 +16,12 @@ a fixture-local ``.active-project`` marker. Never calls ``scripts/bmad-switch``.
 Story 14.4 / CAP-4: report-only pin fan-out enumeration for a bmad-method or
 bmad-loop version change — every known pin site with moved/not-moved status.
 Foreign-station sites (marshal, loop-home relays) are reported, never edited.
-Never implements CAP-5 prove-landed.
+
+Story 14.5 / CAP-5: post-apply prove-landed — one command runs bmad-drift
+integrity, CFE skill meta-tests, and per-loop-home ``bmad-loop init`` relay
+refresh + ``validate``, then reports a single verdict. The only foreign-tree
+mutation is the documented relay refresh (``bmad-loop init``); gates themselves
+are report-only.
 
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
@@ -39,7 +44,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from importlib import resources
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import yaml
 
@@ -57,8 +62,15 @@ TRAP_LEGACY_CUSTOM = 2
 TRAP_REMOVALS = 3
 TRAP_PREREQUISITES = 4
 TRAP_PIN_FANOUT = 5  # CAP-4 report surface (not a CAP-1 preflight trap)
+TRAP_LOOP_RELAY = 7  # CAP-5: stale hook relays → init + validate
 TRAP_FORWARDER = 9
 TRAP_CONFIG_MIGRATION = 11
+
+# 2026-08-21 worked example: eight loop homes validate clean, zero warnings.
+WORKED_EXAMPLE_LOOP_HOME_COUNT = 8
+_CFE_META_TEST_REL = Path(
+    ".claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py"
+)
 
 # Relative paths for the trap-5 pin fan-out catalog (2026-08-21 session).
 _MARSHAL_PKG = Path("src/shared/packages/pyforge-marshal")
@@ -1813,8 +1825,331 @@ def format_pin_fan_out(report: PinFanOutReport, *, as_json: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
+# ---------------------------------------------------------------------------
+# CAP-5 — post-apply prove-landed (single verdict)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GateResult:
+    """One gate in the CAP-5 prove-landed run."""
+
+    name: str
+    ok: bool
+    detail: str
+    exit_code: int | None = None
+    warnings: int = 0
+    mutated: bool = False  # True only for documented bmad-loop init relay refresh
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ProveLandedReport:
+    """Single-verdict outcome of the post-apply verification gate."""
+
+    verdict: str  # pass | fail
+    gates: tuple[GateResult, ...]
+    homes_ok: int
+    homes_total: int
+    trap_id: int = TRAP_LOOP_RELAY
+    notes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "verdict": self.verdict,
+            "gates": [g.to_dict() for g in self.gates],
+            "homes_ok": self.homes_ok,
+            "homes_total": self.homes_total,
+            "trap_id": self.trap_id,
+            "notes": list(self.notes),
+        }
+
+
+GateRunner = Callable[[], GateResult]
+LoopHomeRunner = Callable[[Path, bool], GateResult]
+
+
+def run_bmad_drift_integrity(repo: Path) -> GateResult:
+    """HARD/FAIL findings from ``factory.gather`` (= bmad-drift-check integrity)."""
+    try:
+        from pyforge.doctor.models import DoctorStatus
+        from pyforge.doctor.sources import factory as bmad_drift_factory
+    except ImportError as exc:
+        return GateResult(
+            name="bmad-drift-integrity",
+            ok=False,
+            detail=f"pyforge.doctor unavailable: {exc}",
+        )
+    try:
+        findings = bmad_drift_factory.gather(repo)
+    except Exception as exc:  # noqa: BLE001 — surface as gate failure
+        return GateResult(
+            name="bmad-drift-integrity",
+            ok=False,
+            detail=f"factory.gather raised: {exc}",
+        )
+    hard = [f for f in findings if f.status is DoctorStatus.FAIL]
+    if hard:
+        preview = "; ".join(f"[{f.check}] {f.message}" for f in hard[:5])
+        return GateResult(
+            name="bmad-drift-integrity",
+            ok=False,
+            detail=f"{len(hard)} HARD finding(s): {preview}",
+        )
+    return GateResult(
+        name="bmad-drift-integrity",
+        ok=True,
+        detail="no HARD/FAIL integrity findings",
+    )
+
+
+def run_cfe_meta_tests(
+    repo: Path,
+    *,
+    pytest_runner: Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
+    | None = None,
+) -> GateResult:
+    """CFE skill meta-test ``test_bmad_artifacts_in_sync`` (integrity class)."""
+    test_path = repo / _CFE_META_TEST_REL
+    if not test_path.is_file():
+        return GateResult(
+            name="cfe-meta-tests",
+            ok=False,
+            detail=f"missing meta test: {_CFE_META_TEST_REL}",
+        )
+
+    def _default(
+        argv: Sequence[str], cwd: Path
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            list(argv),
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    runner = pytest_runner or _default
+    argv = [
+        __import__("sys").executable,
+        "-m",
+        "pytest",
+        str(test_path),
+        "-q",
+        "--tb=line",
+    ]
+    result = runner(argv, repo)
+    ok = result.returncode == 0
+    tail = (result.stdout or result.stderr or "").strip().splitlines()
+    preview = tail[-3:] if tail else []
+    detail = (
+        "test_bmad_artifacts_in_sync green"
+        if ok
+        else f"pytest exit {result.returncode}: " + " | ".join(preview)[:400]
+    )
+    return GateResult(
+        name="cfe-meta-tests",
+        ok=ok,
+        detail=detail,
+        exit_code=int(result.returncode),
+    )
+
+
+def _list_loop_homes(loops_home: Path) -> list[Path]:
+    if not loops_home.is_dir():
+        return []
+    return sorted(p for p in loops_home.iterdir() if p.is_dir())
+
+
+def run_loop_home_gate(
+    home: Path,
+    *,
+    refresh_relays: bool,
+    loop_bin: str = "bmad-loop",
+    runner: Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
+    | None = None,
+) -> GateResult:
+    """``bmad-loop init`` (optional relay refresh) then ``validate`` for one home.
+
+    ``init`` is the only documented mutation of a foreign station tree.
+    """
+    name = f"loop-home:{home.name}"
+
+    def _default(
+        argv: Sequence[str], cwd: Path
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            list(argv),
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    run = runner or _default
+    mutated = False
+    if refresh_relays:
+        init = run([loop_bin, "init", "--project", str(home)], home)
+        mutated = True
+        if init.returncode != 0:
+            err = (init.stderr or init.stdout or "").strip()[:300]
+            return GateResult(
+                name=name,
+                ok=False,
+                detail=f"bmad-loop init failed (exit {init.returncode}): {err}",
+                exit_code=int(init.returncode),
+                mutated=True,
+            )
+
+    validate = run(
+        [loop_bin, "validate", "--project", str(home), "--json"], home
+    )
+    if validate.returncode != 0 and not (validate.stdout or "").strip():
+        err = (validate.stderr or "").strip()[:300]
+        return GateResult(
+            name=name,
+            ok=False,
+            detail=f"bmad-loop validate failed (exit {validate.returncode}): {err}",
+            exit_code=int(validate.returncode),
+            mutated=mutated,
+        )
+    try:
+        payload = json.loads(validate.stdout or "{}")
+    except json.JSONDecodeError as exc:
+        return GateResult(
+            name=name,
+            ok=False,
+            detail=f"validate JSON unreadable: {exc}",
+            exit_code=int(validate.returncode),
+            mutated=mutated,
+        )
+    counts = payload.get("counts") or {}
+    warnings = int(counts.get("warning") or 0)
+    problems = int(counts.get("problem") or 0)
+    ok_flag = bool(payload.get("ok")) and warnings == 0 and problems == 0
+    detail = (
+        f"validate clean (warnings={warnings}, problems={problems})"
+        if ok_flag
+        else (
+            f"validate not clean: ok={payload.get('ok')!r} "
+            f"warnings={warnings} problems={problems}"
+        )
+    )
+    return GateResult(
+        name=name,
+        ok=ok_flag,
+        detail=detail,
+        exit_code=int(validate.returncode),
+        warnings=warnings,
+        mutated=mutated,
+    )
+
+
+def build_prove_landed_report(
+    *,
+    repo: Path,
+    loops_home: Path | None = None,
+    refresh_relays: bool = True,
+    drift_runner: GateRunner | None = None,
+    cfe_runner: GateRunner | None = None,
+    loop_home_runner: LoopHomeRunner | None = None,
+) -> ProveLandedReport:
+    """Run CAP-5 gates and return a single pass/fail verdict.
+
+    Foreign-station trees are not edited beyond the documented ``bmad-loop
+    init`` relay refresh when *refresh_relays* is True.
+    """
+    home_root = loops_home if loops_home is not None else Path.home() / ".bmad-loops"
+    notes: list[str] = [
+        "CAP-5 prove-landed: single verdict over drift integrity + CFE meta + loop homes",
+        "foreign-tree mutation limited to documented bmad-loop init relay refresh",
+        f"trap {TRAP_LOOP_RELAY}: loop-home hook relay stale (2026-08-21 failure-modes)",
+    ]
+
+    gates: list[GateResult] = []
+    gates.append(
+        drift_runner() if drift_runner is not None else run_bmad_drift_integrity(repo)
+    )
+    gates.append(
+        cfe_runner() if cfe_runner is not None else run_cfe_meta_tests(repo)
+    )
+
+    homes = _list_loop_homes(home_root)
+    if not homes:
+        gates.append(
+            GateResult(
+                name="loop-homes",
+                ok=False,
+                detail=f"no loop homes under {home_root}",
+            )
+        )
+        notes.append(
+            f"worked-example target is {WORKED_EXAMPLE_LOOP_HOME_COUNT}/"
+            f"{WORKED_EXAMPLE_LOOP_HOME_COUNT} homes clean; found 0"
+        )
+    else:
+        for home in homes:
+            if loop_home_runner is not None:
+                gates.append(loop_home_runner(home, refresh_relays))
+            else:
+                gates.append(
+                    run_loop_home_gate(home, refresh_relays=refresh_relays)
+                )
+
+    loop_gates = [g for g in gates if g.name.startswith("loop-home:")]
+    homes_total = len(loop_gates)
+    homes_ok = sum(1 for g in loop_gates if g.ok)
+    if homes_total:
+        notes.append(
+            f"loop homes: {homes_ok}/{homes_total} clean "
+            f"(worked example shape: {WORKED_EXAMPLE_LOOP_HOME_COUNT}/"
+            f"{WORKED_EXAMPLE_LOOP_HOME_COUNT})"
+        )
+    mutated = [g.name for g in gates if g.mutated]
+    if mutated:
+        notes.append("relay refresh ran for: " + ", ".join(mutated))
+    elif refresh_relays and homes_total:
+        notes.append("refresh_relays requested but no loop-home gate recorded mutation")
+    elif not refresh_relays:
+        notes.append("--no-init: skipped relay refresh (validate-only)")
+
+    verdict = "pass" if all(g.ok for g in gates) else "fail"
+    return ProveLandedReport(
+        verdict=verdict,
+        gates=tuple(gates),
+        homes_ok=homes_ok,
+        homes_total=homes_total,
+        notes=tuple(notes),
+    )
+
+
+def format_prove_landed(report: ProveLandedReport, *, as_json: bool) -> str:
+    if as_json:
+        return json.dumps(report.to_dict(), indent=2, sort_keys=True)
+
+    lines: list[str] = [
+        "steward upgrade prove-landed — CAP-5 post-apply verification",
+        f"verdict:  {report.verdict.upper()}",
+        f"homes:    {report.homes_ok}/{report.homes_total} clean",
+        f"trap:     {report.trap_id}",
+        "",
+        "## Gates",
+    ]
+    for gate in report.gates:
+        mark = "ok" if gate.ok else "FAIL"
+        mut = " (relay refresh)" if gate.mutated else ""
+        lines.append(f"- [{mark}]{mut} {gate.name}: {gate.detail}")
+    if report.notes:
+        lines.extend(["", "## Notes"])
+        for note in report.notes:
+            lines.append(f"- {note}")
+    return "\n".join(lines) + "\n"
+
+
 class UpgradeDuty:
-    """``steward upgrade …`` — Epic 14 (14.1–14.4: preflight, apply, CAP-3, CAP-4)."""
+    """``steward upgrade …`` — Epic 14 (14.1–14.5: preflight through prove-landed)."""
 
     name = "upgrade"
 
@@ -1825,8 +2160,9 @@ class UpgradeDuty:
                 ok=True,
                 summary=(
                     "upgrade: available verbs are bmad-core "
-                    "(report-only pre-flight; pass --apply for CAP-2 deliberate apply) "
-                    "and pin-fan-out (CAP-4 report-only pin enumeration)"
+                    "(report-only pre-flight; pass --apply for CAP-2 deliberate apply), "
+                    "pin-fan-out (CAP-4 report-only pin enumeration), "
+                    "and prove-landed/verify (CAP-5 post-apply single-verdict gate)"
                 ),
             )
         try:
@@ -1834,11 +2170,31 @@ class UpgradeDuty:
                 return self._bmad_core(ns)
             if verb == "pin-fan-out":
                 return self._pin_fan_out(ns)
+            if verb == "prove-landed" or verb == "verify":
+                return self._prove_landed(ns)
             return DutyResult(ok=False, summary=f"upgrade: unknown verb {verb!r}")
         except UpgradeError as exc:
             return DutyResult(ok=False, summary=f"upgrade: {exc}")
         except (OSError, yaml.YAMLError, subprocess.SubprocessError) as exc:
             return DutyResult(ok=False, summary=f"upgrade: {exc}")
+
+    def _prove_landed(self, ns: argparse.Namespace) -> DutyResult:
+        repo = Path(ns.repo_root) if getattr(ns, "repo_root", None) else repo_root()
+        loops = (
+            Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
+        )
+        as_json = bool(getattr(ns, "json", False))
+        refresh = not bool(getattr(ns, "no_init", False))
+        report = build_prove_landed_report(
+            repo=repo,
+            loops_home=loops,
+            refresh_relays=refresh,
+        )
+        return DutyResult(
+            ok=report.verdict == "pass",
+            summary=format_prove_landed(report, as_json=as_json),
+            details={"report": report.to_dict(), "trap_id": TRAP_LOOP_RELAY},
+        )
 
     def _pin_fan_out(self, ns: argparse.Namespace) -> DutyResult:
         package = getattr(ns, "pin_package", None)

@@ -35,7 +35,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # The seven duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Stories 14.1–14.4 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out).
+# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed).
 DUTIES: tuple[str, ...] = (
     "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
 )
@@ -56,7 +56,9 @@ _HELP = {
     "upgrade": (
         "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1), "
         "deliberate --apply (CAP-2), CAP-3 clobber detect/re-apply, "
-        "pin-fan-out report (CAP-4); never edits foreign-station pin sites"
+        "pin-fan-out report (CAP-4), prove-landed single verdict (CAP-5); "
+        "never edits foreign-station pin sites beyond documented loop-home "
+        "relay refresh"
     ),
 }
 
@@ -437,9 +439,9 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
 
 def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
-    """Add ``bmad-core`` (14.1–14.3) and ``pin-fan-out`` (14.4 CAP-4)."""
+    """Add ``bmad-core`` (14.1–14.3), ``pin-fan-out`` (14.4), ``prove-landed`` (14.5)."""
     upgrade_subs = upgrade_parser.add_subparsers(
-        dest="upgrade_verb", metavar="{bmad-core,pin-fan-out}"
+        dest="upgrade_verb", metavar="{bmad-core,pin-fan-out,prove-landed,verify}"
     )
     bmad_core = upgrade_subs.add_parser(
         "bmad-core",
@@ -553,6 +555,72 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         help="override ~/.bmad-loops when reporting hook relays (tests)",
     )
     pin_fan.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON instead of the human-readable report",
+    )
+
+    prove = upgrade_subs.add_parser(
+        "prove-landed",
+        help=(
+            "CAP-5 post-apply gate: bmad-drift integrity + CFE meta-tests + "
+            "per-loop-home bmad-loop init (relay refresh) + validate; "
+            "reports one pass/fail verdict"
+        ),
+    )
+    prove.add_argument(
+        "--repo-root",
+        default=None,
+        metavar="DIR",
+        help="override the repo root used for drift + CFE gates (tests)",
+    )
+    prove.add_argument(
+        "--loops-home",
+        default=None,
+        metavar="DIR",
+        help="override ~/.bmad-loops when validating loop homes (tests)",
+    )
+    prove.add_argument(
+        "--no-init",
+        action="store_true",
+        help=(
+            "skip bmad-loop init relay refresh (validate-only); "
+            "default runs init — the only documented foreign-tree mutation"
+        ),
+    )
+    prove.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON instead of the human-readable report",
+    )
+
+    verify = upgrade_subs.add_parser(
+        "verify",
+        help=(
+            "alias for prove-landed (CAP-5 post-apply single-verdict gate)"
+        ),
+    )
+    verify.add_argument(
+        "--repo-root",
+        default=None,
+        metavar="DIR",
+        help="override the repo root used for drift + CFE gates (tests)",
+    )
+    verify.add_argument(
+        "--loops-home",
+        default=None,
+        metavar="DIR",
+        help="override ~/.bmad-loops when validating loop homes (tests)",
+    )
+    verify.add_argument(
+        "--no-init",
+        action="store_true",
+        help=(
+            "skip bmad-loop init relay refresh (validate-only); "
+            "default runs init — the only documented foreign-tree mutation"
+        ),
+    )
+    verify.add_argument(
         "--json",
         action="store_true",
         help="emit JSON instead of the human-readable report",
