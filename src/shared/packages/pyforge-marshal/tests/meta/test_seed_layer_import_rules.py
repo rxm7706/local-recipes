@@ -137,6 +137,11 @@ def _detect_modules() -> list[Path]:
     return sorted(detect_dir.rglob("*.py")) if detect_dir.is_dir() else []
 
 
+def test_layer_scan_surfaces_are_not_empty():
+    assert _lower_layer_modules(), "layer-import guard found no lower-layer modules to scan"
+    assert _detect_modules(), "layer-import guard found no detect modules to scan"
+
+
 @pytest.mark.parametrize("module_path", _lower_layer_modules(), ids=_module_id)
 def test_lower_layers_never_import_upward(module_path: Path):
     tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
