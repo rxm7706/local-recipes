@@ -72,6 +72,7 @@ def test_ad3_harness_seam_contract_shape():
     assert set(contract["source_modules"]) == {
         "pyforge.marshal.cli",
         "pyforge.marshal.core",
+        "pyforge.marshal.mcp",
         "pyforge.marshal.ports",
         "pyforge.marshal.seed",
         "pyforge.marshal.supervisor",
