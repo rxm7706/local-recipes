@@ -69,7 +69,7 @@ development_status:
   19-1-one-generator-produces-every-stations-test-architecture: done
   19-2-the-shared-test-support-kit: done
   19-3-coverage-gates-that-name-the-module: done
-  19-4-test-architecture-stays-current-as-stories-land: backlog
+  19-4-test-architecture-stays-current-as-stories-land: done
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
