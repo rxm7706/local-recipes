@@ -96,7 +96,7 @@ def configure_telemetry(service_version: str | None = None) -> bool:
     trace.set_tracer_provider(provider)
 
     DjangoInstrumentor().instrument()
-    CeleryInstrumentor().instrument()  # type: ignore[no-untyped-call]
+    CeleryInstrumentor().instrument()
     PsycopgInstrumentor().instrument()
     RedisInstrumentor().instrument()
 
