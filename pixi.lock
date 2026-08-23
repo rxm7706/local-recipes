@@ -10353,7 +10353,7 @@ environments:
       - conda_source: pyforge-core[a76fb117] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[b075c7a5] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-herald[4576ad63] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[f6ca959a] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-marshal[b3fc28eb] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-mason[568e1fa4] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[4a107d8c] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[00e1765d] @ src/shared/packages/pyforge-steward
@@ -10917,7 +10917,7 @@ environments:
       - conda_source: pyforge-core[b4be983e] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[41a208eb] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-herald[8b419e39] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[ab45d807] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-marshal[87510432] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-mason[40e67255] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[cfa985fa] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[b2035984] @ src/shared/packages/pyforge-steward
@@ -11469,7 +11469,7 @@ environments:
       - conda_source: pyforge-core[6d190b4e] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[b911290d] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-herald[922c4d6b] @ src/shared/packages/pyforge-herald
-      - conda_source: pyforge-marshal[4c35a343] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-marshal[1bacd20b] @ src/shared/packages/pyforge-marshal
       - conda_source: pyforge-mason[4ff1059f] @ src/shared/packages/pyforge-mason
       - conda_source: pyforge-scribe[36480115] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[9352d239] @ src/shared/packages/pyforge-steward
@@ -12423,7 +12423,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.8.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[a76fb117] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-marshal[f6ca959a] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-marshal[b3fc28eb] @ src/shared/packages/pyforge-marshal
       p1:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.0-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -12554,7 +12554,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314hd98292b_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b4be983e] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-marshal[ab45d807] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-marshal[87510432] @ src/shared/packages/pyforge-marshal
       win-64:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-loop-0.11.0-pyha7a566d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -12684,7 +12684,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - conda_source: pyforge-core[6d190b4e] @ src/shared/packages/pyforge-core
-      - conda_source: pyforge-marshal[4c35a343] @ src/shared/packages/pyforge-marshal
+      - conda_source: pyforge-marshal[1bacd20b] @ src/shared/packages/pyforge-marshal
   pyforge-mason:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -56479,7 +56479,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-marshal[4c35a343] @ src/shared/packages/pyforge-marshal
+- conda_source: pyforge-marshal[1bacd20b] @ src/shared/packages/pyforge-marshal
   variants:
     target_platform: noarch
   depends:
@@ -56492,6 +56492,7 @@ packages:
   - bmad-loop >=0.11.0,<0.12
   - pyforge-core
   - copier >=9.17,<10
+  - packaging >=24.0
   license: MIT
   source_depends:
     pyforge-core:
@@ -56524,7 +56525,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-marshal[ab45d807] @ src/shared/packages/pyforge-marshal
+- conda_source: pyforge-marshal[87510432] @ src/shared/packages/pyforge-marshal
   variants:
     target_platform: noarch
   depends:
@@ -56537,6 +56538,7 @@ packages:
   - bmad-loop >=0.11.0,<0.12
   - pyforge-core
   - copier >=9.17,<10
+  - packaging >=24.0
   license: MIT
   source_depends:
     pyforge-core:
@@ -56569,7 +56571,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.5-h58858c0_1.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-- conda_source: pyforge-marshal[f6ca959a] @ src/shared/packages/pyforge-marshal
+- conda_source: pyforge-marshal[b3fc28eb] @ src/shared/packages/pyforge-marshal
   variants:
     target_platform: noarch
   depends:
@@ -56582,6 +56584,7 @@ packages:
   - bmad-loop >=0.11.0,<0.12
   - pyforge-core
   - copier >=9.17,<10
+  - packaging >=24.0
   license: MIT
   source_depends:
     pyforge-core:
