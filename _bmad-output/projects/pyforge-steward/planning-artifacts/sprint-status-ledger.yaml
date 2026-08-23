@@ -45,7 +45,7 @@ development_status:
   13-4-the-set-reports-and-tears-down-safely: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
-  14-3-clobbered-custom-surfaces-are-caught-and-re-applied: backlog
+  14-3-clobbered-custom-surfaces-are-caught-and-re-applied: done
   14-4-the-pin-fan-out-is-enumerated-not-discovered-by-red-tests: backlog
   14-5-one-command-proves-the-upgrade-landed: backlog
   15-1-one-command-reports-the-whole-pipelines-truth: backlog
