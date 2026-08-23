@@ -7,9 +7,7 @@ surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
 sources:
   - ../../../../../../docs/dreams/scratch-worktree-lifecycle.md
-open_questions:
-  - "Whether the Tier-3 feed rsync-mirroring step (implementation-artifacts/ never exists in a fresh worktree) gets its own verb or joins `start` — Spec-time-deferred in the Dream; the five-step ritual includes it only when a story touches the gitignored feed."
-  - "`workspace update` (single-repo form: fast-forward the scratch branch from its source) — the one source feature the Dream's feature audit left 'Omitted, not ruled out'; nothing directly observed this session maps onto it."
+open_questions: []  # resolved 2026-08-23 — see Spec Change Log + story spec-13-2
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -107,8 +105,17 @@ repeated it a dozen-plus times. After this ships, the same landing pass is
 
 ## Open Questions
 
-- "Whether the Tier-3 feed rsync-mirroring step (`implementation-artifacts/` never exists in a
-  fresh worktree) gets its own verb or joins `start` — Spec-time-deferred in the Dream."
-- "`workspace update` (single-repo form: fast-forward the scratch branch from its source) — the
-  one source feature the Dream left 'Omitted, not ruled out'; include only if a real observed
-  need surfaces."
+_None remaining._ Resolved 2026-08-23 in Story 13.2
+(`spec-13-2-status-and-the-feed-mirror-decision.md` Spec Change Log): Tier-3 feed
+rsync-mirror → **own verb, deferred** (does not join `start`); `workspace update`
+→ **does not exist** until a real observed need surfaces.
+
+## Spec Change Log
+
+### 2026-08-23 — Story 13.2 closes CAP-3 open questions
+
+Canonical decision text lives in
+`../spec-13-2-status-and-the-feed-mirror-decision.md` § Spec Change Log.
+Summary: feed-mirror is its own future verb (not folded into `start`);
+`workspace update` is omitted (no). CAP-3 `status` ships in that story.
+
