@@ -109,6 +109,11 @@ on:
         type: choice
         options: [pixi, pip]
         default: pixi
+      jobs:
+        description: 'Run all Platform CI jobs or only build-platform-image + air-gap-parity (debug)'
+        type: choice
+        options: [all, air-gap-parity-only]
+        default: all
 
 permissions:
   contents: read
@@ -129,6 +134,7 @@ concurrency:
 
 jobs:
   test:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -198,6 +204,7 @@ jobs:
   # air-gap-parity only. container runs independent docker + podman builds
   # (spec 10.3 — both engines, both build paths).
   build-platform-image:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all' || inputs.jobs == 'air-gap-parity-only'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -242,6 +249,7 @@ jobs:
   # wiring -- see spec-10-3-one-image-both-engines.md's Design Notes for
   # the full investigation and evidence. Both steps are expected green.
   container:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
     strategy:
       fail-fast: false
       matrix:
@@ -599,6 +607,7 @@ jobs:
   # own top-of-file comment for why this image is built from a separate,
   # isolated `dbgpt-sidecar` pixi env in the first place.
   container-dbgpt:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
     strategy:
       fail-fast: false
       matrix:
@@ -753,6 +762,7 @@ jobs:
   # No `needs:` on `test`/`container-dbgpt` -- this job loads the shared
   # platform image from build-platform-image rather than rebuilding it.
   gke-portability-smoke:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
     needs: build-platform-image
     runs-on: ubuntu-latest
     # kind + ingress + helm; image build happens in build-platform-image.
@@ -998,6 +1008,7 @@ jobs:
   # No `needs:` on test/container-dbgpt. Loads the shared platform image
   # from build-platform-image (P1 fan-in) rather than rebuilding it.
   air-gap-parity:
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all' || inputs.jobs == 'air-gap-parity-only'
     needs: build-platform-image
     runs-on: ubuntu-latest
     # 60: mirror build (428 conda packages, network-limited) plus the same
@@ -1241,63 +1252,52 @@ jobs:
       # equivalent), or a runner with IPv6 connectivity could resolve
       # conda.anaconda.org over AAAA and sail straight past the IPv4-only
       # rules below -- a silent bypass of this story's own core AC.
-      # `-w 30` on every mutating call: Docker + kind both hold xtables.lock
-      # on GHA runners; bare `iptables` waits forever by default. Do NOT run
-      # `iptables -L -v` here -- listing Docker's OUTPUT chain graph can hang
-      # for minutes. The step below also waits for the lock, retries with per-
-      # rule log lines, and wraps each mutation in `timeout 45` so a stuck lock
-      # fails fast instead of sitting silent for the whole job timeout.
+      # `-w 30` on iptables-restore: Docker + kind both hold xtables.lock on
+      # GHA runners. Apply IPv4/IPv6 OUTPUT rules in one atomic restore each
+      # (not nine separate iptables calls — each one races the lock). Do NOT
+      # use `fuser /run/xtables.lock` — it can hang silently on GHA. Do NOT
+      # run `iptables -L -v` — listing Docker's OUTPUT graph hangs for minutes.
       - name: Block all non-private-network egress
-        timeout-minutes: 5
+        timeout-minutes: 3
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
-          _wait_xtables() {
-            local waited=0
-            while [ "$waited" -lt 120 ]; do
-              if [ ! -e /run/xtables.lock ] || ! fuser /run/xtables.lock >/dev/null 2>&1; then
-                return 0
-              fi
-              echo "  waiting for xtables.lock (${waited}s)..."
-              sleep 2
-              waited=$((waited + 2))
-            done
-            echo "::warning::xtables.lock still held after ${waited}s; proceeding anyway"
-          }
-
-          _ipt_retry() {
-            local tool=$1
-            shift
+          _apply_restore() {
+            local restore=$1
+            local label=$2
+            shift 2
             local attempt=1
-            while [ "$attempt" -le 10 ]; do
-              _wait_xtables
-              echo "+ ${tool} $* (attempt ${attempt})"
-              if timeout 45 sudo "${tool}" -w 30 "$@"; then
+            while [ "$attempt" -le 5 ]; do
+              echo "Applying ${label} egress block (attempt ${attempt}/5)..."
+              if printf '%s\n' "$@" | timeout 60 sudo "${restore}" -w 30 -n; then
+                echo "${label} egress block installed"
                 return 0
               fi
-              echo "::warning::${tool} failed (attempt ${attempt}), retrying in 3s..."
-              sleep 3
+              echo "::warning::${restore} failed (attempt ${attempt}), retrying in 5s..."
+              sleep 5
               attempt=$((attempt + 1))
             done
-            echo "::error::${tool} failed after 10 attempts: $*"
+            echo "::error::${restore} failed after 5 attempts"
             return 1
           }
 
-          echo "Installing IPv4 egress block..."
-          _ipt_retry iptables -I OUTPUT -o lo -j ACCEPT
-          _ipt_retry iptables -I OUTPUT -d 127.0.0.0/8 -j ACCEPT
-          _ipt_retry iptables -I OUTPUT -d 10.0.0.0/8 -j ACCEPT
-          _ipt_retry iptables -I OUTPUT -d 172.16.0.0/12 -j ACCEPT
-          _ipt_retry iptables -I OUTPUT -d 192.168.0.0/16 -j ACCEPT
-          _ipt_retry iptables -A OUTPUT -j DROP
-          echo "IPv4 egress block installed"
+          _apply_restore iptables-restore IPv4 \
+            '*filter' \
+            '-I OUTPUT -o lo -j ACCEPT' \
+            '-I OUTPUT -d 127.0.0.0/8 -j ACCEPT' \
+            '-I OUTPUT -d 10.0.0.0/8 -j ACCEPT' \
+            '-I OUTPUT -d 172.16.0.0/12 -j ACCEPT' \
+            '-I OUTPUT -d 192.168.0.0/16 -j ACCEPT' \
+            '-A OUTPUT -j DROP' \
+            'COMMIT'
 
-          echo "Installing IPv6 egress block..."
-          _ipt_retry ip6tables -I OUTPUT -o lo -j ACCEPT
-          _ipt_retry ip6tables -I OUTPUT -d ::1/128 -j ACCEPT
-          _ipt_retry ip6tables -I OUTPUT -d fc00::/7 -j ACCEPT
-          _ipt_retry ip6tables -A OUTPUT -j DROP
-          echo "IPv6 egress block installed"
+          _apply_restore ip6tables-restore IPv6 \
+            '*filter' \
+            '-I OUTPUT -o lo -j ACCEPT' \
+            '-I OUTPUT -d ::1/128 -j ACCEPT' \
+            '-I OUTPUT -d fc00::/7 -j ACCEPT' \
+            '-A OUTPUT -j DROP' \
+            'COMMIT'
 
       # THE core AD-13 proof (this story's first Acceptance Criterion):
       # cache evicted to empty, env prefix gone, egress blocked -- if this
