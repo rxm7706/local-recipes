@@ -5,8 +5,8 @@ the OCP overlay (`deploy/overlays/ocp/`) must stay a thin Route; the
 platform-image pods (web, worker, migrate) must carry the OCP
 `restricted-v2` contract with no fixed UID anywhere; and the namespace
 inventory must be exactly PostgreSQL + Redis + the platform image + the
-DB-GPT sidecar (AD-1, Story 12.5). This module makes those invariants tests over parsed `helm template`
-output rather than conventions.
+DB-GPT sidecar (AD-1, Story 12.5). This module makes those invariants
+tests over parsed `helm template` output rather than conventions.
 
 Story 9.6's discipline applies: every real proof's assertion logic lives
 in a shared helper, and each of the eight assertion-bearing helpers has at
