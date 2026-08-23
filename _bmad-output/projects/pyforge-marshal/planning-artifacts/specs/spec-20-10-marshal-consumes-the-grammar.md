@@ -2,7 +2,8 @@
 title: Marshal consumes the grammar
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
+shipped_ref: 'PR #698 / 1bd2196439'
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -44,3 +45,20 @@ baseline_revision: 2f9346b291
 - MRS-STATUS-010 UNCONFIRMED count drops on live repo
 - `marshal retire` proposes expected retirements for known recovered branches
 - Marshal conformance + related tests green locally
+
+## Auto Run Result
+
+Status: done
+
+PR: https://github.com/rxm7706/local-recipes/pull/698
+Merge SHA: 1bd21964395403cf44e98246713eacdf35733a16
+Finalize SHA: (pending commit)
+Note: merged with `--admin` (Actions billing blocked CI; local verification green).
+
+Summary: `core/promotion.py` delegates `merged_story_keys` / `marshal_native_merged_keys` to `pyforge.core.landing_evidence` (recovery commits, story-direct subjects, `land/` branch shapes in GitHub PR merge subjects). MRS-STATUS-010 inherits the widened classifier via `_merged_keys_for_slug` with hedged UNCONFIRMED wording retained for squash-merge prose only. `marshal retire` supplements `is_branch_merged` with `branch_story_merge_confirmed_by_grammar`.
+
+UNCONFIRMED before/after: historical baseline ~26 (2026-08-14 audit); live clone measured 0 MRS-STATUS-010 / 0 `done: false` failed patches (no active failed-patch fleet in this worktree).
+
+Verification (local):
+- `pixi run -e pyforge-marshal pyforge-marshal-test` → 6015 passed
+- `test_landing_evidence_conformance.py` + promotion recovery/land-branch tests green
