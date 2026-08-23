@@ -19,10 +19,22 @@ from ..core.dispatch_completion import (
     DispatchCompletionInput,
     DispatchGitFacts,
     DispatchSessionVerdict,
+    has_git_progress,
     judge_dispatch_completion,
 )
+from ..core.dispatch_verification import (
+    DispatchVerificationInput,
+    DispatchVerificationVerdict,
+    judge_dispatch_verification,
+    primary_gate_failure,
+)
 from ..core.journal import JournalEntryId, Phase, build_entry, fold, prepare_for_write
-from ..core.identity import normalize
+from ..core.identity import normalize, resolve_feed
+from ..dispatch_verify import (
+    compose_dispatch_policy,
+    evaluate_dispatch_verification,
+    resolve_spec_text_for_story,
+)
 from ..ports.fs import FsPort
 from ..ports.vcs import VcsPort
 
@@ -77,6 +89,99 @@ def gather_dispatch_git_facts(
         branch_merged=branch_merged,
         story_merged_on_main=story_merged,
     )
+
+
+def _verification_already_journaled(folded, run_id: str) -> bool:
+    return any(
+        entry.run_id == run_id and entry.phase == Phase.OUTCOME
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)
+    )
+
+
+def _session_awaits_verification(
+    session_alive: bool, git: DispatchGitFacts
+) -> bool:
+    return (
+        not session_alive
+        and has_git_progress(git)
+        and not git.branch_merged
+        and not git.story_merged_on_main
+    )
+
+
+def _run_and_journal_verification(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+) -> int:
+    """Run independent gate verification and journal the outcome (Story 22.3)."""
+    effective = compose_dispatch_policy(slug, repo_root)
+    resolution = resolve_feed([story_key])
+    if not resolution.resolved:
+        return counter
+    story_key_obj = resolution.resolved[0]
+    spec_text = resolve_spec_text_for_story(repo_root, slug, story_key_obj)
+    envelope = evaluate_dispatch_verification(
+        project_slug=slug,
+        story_key=story_key_obj,
+        worktree=worktree,
+        repo_root=repo_root,
+        effective=effective,
+        spec_text=spec_text,
+        process=process,
+        vcs=vcs,
+    )
+    verification_verdict = judge_dispatch_verification(
+        DispatchVerificationInput(findings=envelope.findings)
+    )
+    failed = primary_gate_failure(envelope.findings)
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+        phase=Phase.INTENT,
+        payload={
+            "verdict": verification_verdict.value,
+            "gate_verdict": envelope.verdict.value,
+            "failed_gate": failed.code if failed is not None else None,
+            "finding_count": len(envelope.findings),
+        },
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "verdict": verification_verdict.value,
+            "ok": verification_verdict == DispatchVerificationVerdict.VERIFIED,
+            "failed_gate": failed.code if failed is not None else None,
+            "failed_message": failed.message if failed is not None else None,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal verification for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
 
 
 def run_dispatch_supervisor(
@@ -165,6 +270,24 @@ def run_dispatch_supervisor(
             DispatchCompletionInput(session_alive=session_alive, git=git_facts)
         )
         if verdict == DispatchSessionVerdict.LIVE:
+            if _session_awaits_verification(session_alive, git_facts):
+                if not _verification_already_journaled(folded, run_id):
+                    counter = _run_and_journal_verification(
+                        fs=fs,
+                        vcs=vcs,
+                        process=process,
+                        run_dir=run_dir,
+                        run_id=run_id,
+                        writer_id=writer_id,
+                        counter=counter,
+                        repo_root=repo_root,
+                        slug=slug,
+                        story_key=story_key,
+                        worktree=worktree,
+                    )
+                    text = fs.read_text(journal_path)
+                    if text is not None:
+                        folded = fold(text.splitlines())
             heartbeat = build_entry(
                 id=JournalEntryId(writer_id, counter),
                 ts=_format_entry_ts(_now_utc()),

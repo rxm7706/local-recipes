@@ -977,6 +977,11 @@ class FleetHomeFacts:
     # surfaced as running even when the session process is dead but git
     # facts show progress (zombie refusal case).
     dispatch_completion_verdict: str | None = None
+    # Story 22.3 (factory dispatch verification, FR-193 CAP-3): independent
+    # gate verdict before landing — ``verified`` or ``refused`` with named
+    # failed gate; self-report is never the verdict input.
+    dispatch_verification_verdict: str | None = None
+    dispatch_verification_failed_gate: str | None = None
 
 
 def _apply_dispatch_overlay(
@@ -999,6 +1004,12 @@ def _apply_dispatch_overlay(
         patched["dispatch_run_id"] = facts.dispatch_run_id
     if facts.dispatch_completion_verdict is not None:
         patched["dispatch_completion_verdict"] = facts.dispatch_completion_verdict
+    if facts.dispatch_verification_verdict is not None:
+        patched["dispatch_verification_verdict"] = facts.dispatch_verification_verdict
+    if facts.dispatch_verification_failed_gate is not None:
+        patched["dispatch_verification_failed_gate"] = (
+            facts.dispatch_verification_failed_gate
+        )
     return patched
 
 

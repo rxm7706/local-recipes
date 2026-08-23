@@ -679,6 +679,8 @@ def _merge_dispatch_overlay(
         dispatch_elapsed_seconds=elapsed,
         dispatch_run_id=run_dir.name,
         dispatch_completion_verdict=completion_verdict,
+        dispatch_verification_verdict=journal.verification_verdict,
+        dispatch_verification_failed_gate=journal.verification_failed_gate,
     )
 
 
