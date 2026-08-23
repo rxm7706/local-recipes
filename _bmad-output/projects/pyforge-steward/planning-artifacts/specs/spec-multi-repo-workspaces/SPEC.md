@@ -7,7 +7,7 @@ companions: []
 sources:
   - ../../../../../../docs/dreams/multi-repo-workspaces.md
 open_questions:
-  - "Where the repo-set registry lives (steward config vs a tracked manifest) — decide at 13.3."
+  - "Where the repo-set registry lives (steward config vs a tracked manifest) — decided at 13.3: `.steward/repo-sets.yaml` (see Spec Change Log)."
 ---
 
 # SPEC — One workspace opens every repo a story touches
@@ -41,3 +41,16 @@ cross-repo atomic commits.
 ## Success signal
 A feature spanning three repos opens, reports, and tears down as one
 workspace, with every single-repo guarantee intact per member.
+
+## Spec Change Log
+
+### 2026-08-23 — Registry location (Story 13.3)
+
+- **Decision:** Tracked repo-root **`.steward/repo-sets.yaml`** with a top-level
+  `projects:` mapping (the `[projects.<slug>]` shape from the Dream). Example
+  shipped as `.steward/repo-sets.example.yaml`.
+- **Why:** Matches the established `.steward/` operational-config precedent
+  (budget, sync-config, keys-inventory) — survives bmad-switch, is reviewable in
+  git, and keeps registry paths operator-declared rather than inferred.
+- **Known-bad avoided:** Silently inventing a `pyforge.toml` file this repo does
+  not have; guessing clone locations for missing members.
