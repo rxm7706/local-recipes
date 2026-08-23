@@ -20,6 +20,7 @@ urlpatterns = [
     # User management
     path("users/", include("platformapp.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
+    path("compliance/", include("compliance_face.urls")),
     # K8s liveness/readiness probe target (Story 10.1). Deliberately
     # unauthenticated at the app layer -- standard for a kubelet-probed
     # endpoint; restricting it to cluster-internal traffic is a network/
