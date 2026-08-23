@@ -37,8 +37,14 @@ from pyforge.scribe.models import CAPTURE_TYPES, CaptureType, parse_capture_file
 #: Marker phrases (case-insensitive substring match against each split
 #: sentence) that mark a sentence as containing a decision or fact worth
 #: surfacing for human review. A bare substring match produces occasional
-#: false positives -- acceptable because every candidate still goes through
-#: the human confirm gate before anything is written.
+#: false positives. For `scribe capture --transcripts` that is absorbed by
+#: the human confirm gate, which still stands between every candidate and
+#: anything written to `.claude/memory/`. Story 3.2's compile surface has
+#: no such gate -- `compile.py::_read_transcript_surface()` registers this
+#: same candidate set unattended -- so there a false positive costs one
+#: low-overlap node in a derived, fully re-computable graph (AD-1), never a
+#: durable curated record (review finding: this note previously claimed the
+#: confirm gate as an unconditional property of every caller).
 _DECISION_MARKERS: tuple[str, ...] = (
     "we decided",
     "decided to",

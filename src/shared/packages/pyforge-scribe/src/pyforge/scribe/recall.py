@@ -46,8 +46,10 @@ _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
 #: literally: an earlier `.+` also admitted `nested/dir/x.jsonl:L1` and
 #: `../../../etc/passwd.jsonl:L1`, and because this branch short-circuits
 #: the `is_file()` check below, any such citation was declared resolvable
-#: without existing (review finding).
-_TRANSCRIPT_CITATION_RE = re.compile(r"[^/\\:]+\.jsonl:L\d+")
+#: without existing (review finding). `[0-9]` rather than `\d` for the same
+#: reason: `\d` also matches non-ASCII decimal digits, so `x.jsonl:L١٢`
+#: was likewise waved through without existing (review finding: reproduced).
+_TRANSCRIPT_CITATION_RE = re.compile(r"[^/\\:]+\.jsonl:L[0-9]+")
 
 
 @dataclass(frozen=True)

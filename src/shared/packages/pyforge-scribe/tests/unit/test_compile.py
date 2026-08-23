@@ -8,12 +8,16 @@ repo's `.claude/memory/`/`.git` state.
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
+from pyforge.scribe import compile as compile_module
 from pyforge.scribe.capture import _DESCRIPTION_MAX_LEN, _truncate, capture
 from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.graph_store import FlatFileGraphStore
@@ -587,6 +591,15 @@ def test_transcript_surface_naive_timestamp_is_normalized_to_utc(
     sorted(nodes, key=lambda n: n.valid_from)  # must not raise TypeError
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" or (hasattr(os, "geteuid") and os.geteuid() == 0),
+    reason=(
+        "chmod(0o000) does not deny listing to root (DAC is bypassed) and is "
+        "inert on Windows, so the unreadable-root condition cannot be staged "
+        "-- the surface would contribute a node and this test would red on a "
+        "root CI container rather than on a real regression (review finding)"
+    ),
+)
 def test_transcript_surface_unreadable_root_warns_and_contributes_zero_nodes(
     tmp_path: Path, memory_root: Path
 ) -> None:
@@ -677,3 +690,163 @@ def test_transcript_surface_ids_are_keyed_by_file_and_line_not_a_global_index(
 
     ids = {n.id for n in store.iter_nodes() if n.kind == "transcript"}
     assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-b.jsonl:L1"}
+
+
+def test_transcript_surface_citation_carries_the_real_line_number(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: every transcript fixture in this package put its
+    decision on line 1 of a one-line file, so the `:L<line>` component of
+    the citation and the id was entirely unpinned -- hardcoding
+    `f"{name}:L1"` in `compile.py` kept the whole suite green. Production
+    transcripts are long multi-turn sessions, and under that mutation every
+    decision after the first in a file collapses onto one id and is
+    silently overwritten by `upsert_node()` (node loss, not an error), while
+    `scribe recall`'s `[source: <file>:L<line>]` provenance points at the
+    wrong line and still passes the format-only resolvability check."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [
+            _assistant_transcript_line("Here is a summary of the current state."),
+            _assistant_transcript_line("Let me look at the failing test first."),
+            _assistant_transcript_line("We decided to use SQLite for the local cache."),
+            _assistant_transcript_line("We chose to deprecate the legacy webhook retry queue."),
+        ],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    # Both decisions survive as distinct nodes, each carrying its OWN line.
+    assert {n.citation for n in transcript_nodes} == {
+        "session-a.jsonl:L3",
+        "session-a.jsonl:L4",
+    }
+    assert {n.id for n in transcript_nodes} == {
+        "transcript:session-a.jsonl:L3",
+        "transcript:session-a.jsonl:L4",
+    }
+    # Two candidates on two DIFFERENT lines are not "repeats" -- neither may
+    # pick up the `:N` occurrence suffix reserved for same-line duplicates.
+    assert not any(n.id.endswith(":1") for n in transcript_nodes)
+
+
+def test_transcript_surface_source_file_rotated_before_stat_does_not_abort_compile(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: `_transcript_valid_from()`'s mtime `stat()` is
+    wrapped in `except (OSError, OverflowError)` precisely so a transcript
+    pruned or rotated between `scan_transcripts()` returning and the stat
+    cannot abort the whole compile -- but nothing exercised it. Narrowing
+    that clause to `except ():` kept the suite green, so the never-abort
+    contract for the transcript surface could be regressed back to the crash
+    an earlier pass patched."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        # No timestamp -> forces the mtime-fallback branch, which is the one
+        # that stats the (by then deleted) source file.
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.", timestamp=None)],
+    )
+
+    real_scan = compile_module.scan_transcripts
+
+    def scan_then_rotate(root: Path, curated_root: Path):
+        proposal = real_scan(root, curated_root)
+        for candidate in proposal.candidates:
+            candidate.source_file.unlink()
+        return proposal
+
+    monkeypatch.setattr(compile_module, "scan_transcripts", scan_then_rotate)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    before = datetime.now(timezone.utc)
+    result = compile_graph(  # must not raise FileNotFoundError
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert len(transcript_nodes) == 1
+    assert result.node_count == 1
+    # Dated by the final `datetime.now(timezone.utc)` fallback, still tz-aware.
+    assert transcript_nodes[0].valid_from.tzinfo is not None
+    assert before <= transcript_nodes[0].valid_from <= datetime.now(timezone.utc)
+
+
+def test_transcript_surface_scanned_candidates_survive_a_root_pruned_mid_compile(
+    tmp_path: Path, memory_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: the unreadable-root probe ran unconditionally AFTER
+    `scan_transcripts()`, so a root removed in between (the same
+    rotate-mid-compile race the mtime fallback guards) made
+    `iterdir()` raise, threw away candidates that had already been read
+    successfully, and reported them as "does not exist -- expected when this
+    machine has no session transcripts". Candidates are proof the root was
+    listable, so the probe now runs only when the scan came back empty."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+
+    real_scan = compile_module.scan_transcripts
+
+    def scan_then_prune(root: Path, curated_root: Path):
+        proposal = real_scan(root, curated_root)
+        shutil.rmtree(root)
+        return proposal
+
+    monkeypatch.setattr(compile_module, "scan_transcripts", scan_then_prune)
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert len(transcript_nodes) == 1
+    assert transcript_nodes[0].citation == "session-a.jsonl:L1"
+    # ...and no warning claiming the surface was unavailable, because it wasn't.
+    assert [w for w in result.warnings if "transcript" in w] == []
+
+
+def test_transcript_surface_root_that_is_a_regular_file_warns_as_not_a_directory(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: `_transcript_unavailable_warning()`'s
+    `is not a directory` branch was unexercised -- deleting it outright kept
+    the suite green, after which a regular file at `transcript_root` is
+    misreported as `is not readable (ValueError)`, sending an operator
+    looking at permissions instead of at the path they configured."""
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.write_text("not a directory\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    assert [n for n in store.iter_nodes() if n.kind == "transcript"] == []
+    transcript_warnings = [w for w in result.warnings if "transcript" in w]
+    assert len(transcript_warnings) == 1
+    assert "is not a directory" in transcript_warnings[0]
+    assert "is not readable" not in transcript_warnings[0]

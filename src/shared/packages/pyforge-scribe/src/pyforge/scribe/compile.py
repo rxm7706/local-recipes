@@ -386,11 +386,19 @@ def _read_transcript_surface(
     # "nothing decision-shaped was said" -- zero nodes AND zero warnings,
     # contradicting this story's own "missing/unreadable ... degrades to a
     # warning" contract (review finding). Probe the listing explicitly.
-    try:
-        next(transcript_root.iterdir(), None)
-    except OSError as exc:
-        warnings.append(_transcript_unavailable_warning(transcript_root, exc))
-        return []
+    #
+    # Only when the scan came back empty, though: candidates ARE proof the
+    # root was listable, and probing unconditionally meant a root pruned
+    # between the scan and the probe (the same rotate-mid-compile race
+    # `_transcript_valid_from()` guards) threw away real, already-computed
+    # nodes and mislabelled them "does not exist -- expected" (review
+    # finding: reproduced).
+    if not proposal.candidates:
+        try:
+            next(transcript_root.iterdir(), None)
+        except OSError as exc:
+            warnings.append(_transcript_unavailable_warning(transcript_root, exc))
+            return []
 
     nodes: list[GraphNode] = []
     occurrence: dict[tuple[Path, int], int] = {}

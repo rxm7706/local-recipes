@@ -162,6 +162,7 @@ def test_transcript_citation_is_resolvable_if_well_formed(repo_with_citation: Pa
         "session-a.jsonl:L",  # no line number
         "session-a.jsonl:L1x",
         "session-a.txt:L1",  # not a transcript at all
+        "session-a.jsonl:L١٢",  # `\d` matches non-ASCII digits; `[0-9]` must not
     ],
 )
 def test_malformed_transcript_citation_is_not_waved_through(
