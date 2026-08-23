@@ -27,7 +27,7 @@
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
 | marshal | `19-3` | [Marshal 19-3](042ec63d-ebc8-4319-843c-928fe42457fb) · [#677](https://github.com/rxm7706/local-recipes/pull/677) |
-| steward | `15-3` | launching (skip 12-7) |
+| steward | `15-3` | [Steward 15-3](acccef8b-ef1d-49fd-975f-b3a8e73ec953) (skip 12-7) |
 
 ## Operator skip
 
