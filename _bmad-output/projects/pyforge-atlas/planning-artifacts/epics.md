@@ -1524,7 +1524,7 @@ the Parquet catalog through the D1 BSL seam) is untouched — this lands as a se
 module under a non-colliding name, querying `cf_atlas.db` directly.
 
 ### Story 14.1: Static view catalog (CAP-1)
-**Effort:** M • **Deps:** — • **Status:** ready
+**Effort:** M • **Deps:** — • **Status:** done
 **Given** the live `cf_atlas.db` **When** a curated catalog view mirroring one of the 11
 query CLIs (`staleness-report`, `feedstock-health`, `whodepends`, …) renders **Then** it
 emits a self-contained HTML fragment whose rows agree with its CLI counterpart's output on
@@ -1532,7 +1532,7 @@ the same database snapshot **And** rendering a static view opens zero WebSocket
 connections — the lowest-risk mode ships first and stays the base layer.
 
 ### Story 14.2: Pluggable widget registry (CAP-3)
-**Effort:** S • **Deps:** S-14.1 • **Status:** ready
+**Effort:** S • **Deps:** S-14.1 • **Status:** done
 **Given** the view catalog **When** a view declares its query plus a widget-type NAME
 **Then** a small registry maps name → renderer for both the static-fragment and WebSocket
 modes **And** adding a new widget type is one registry entry plus one renderer with zero
@@ -1541,7 +1541,7 @@ CLIs' query shapes (spec open question 1), not the source dream's
 Tabulator/Perspective/PGWalker catalog.
 
 ### Story 14.3: Bokeh WebSocket interactivity (CAP-2)
-**Effort:** M • **Deps:** S-14.2 • **Status:** ready
+**Effort:** M • **Deps:** S-14.2 • **Status:** done
 **Given** the ASGI host chosen in this story's spec (the contract is "any ASGI host" —
 explicitly NOT contingent on DW-H3/Wagtail) **When** at least one catalog view runs live
 **Then** filter/drill/re-sort execute against `cf_atlas.db` over a Bokeh WebSocket
@@ -1549,7 +1549,7 @@ session **And** swapping the host touches mounting code only, never a view defin
 the static mode (S-14.1) survives unchanged underneath.
 
 ### Story 14.4: Air-gap asset rewriting (CAP-4)
-**Effort:** S • **Deps:** S-14.3 • **Status:** ready
+**Effort:** S • **Deps:** S-14.3 • **Status:** done
 **Given** the air-gapped render profile **When** any page — static fragment or WebSocket
 app — renders **Then** Bokeh/Panel asset URLs resolve to locally-served or mirrored
 assets and the emitted HTML contains zero references to external CDN hosts
@@ -1570,7 +1570,7 @@ public counterpart at all — built mock-first against an injectable transport (
 config, or tests; live bring-up is a separate, later, attended step outside this epic.
 
 ### Story 15.1: Injectable AQL adapter (CAP-1)
-**Effort:** M • **Deps:** — • **Status:** ready
+**Effort:** M • **Deps:** — • **Status:** done
 **Given** a mock AQL transport serving canned topology + download responses **When** the
 adapter runs **Then** it resolves virtual-repo topology to the backing repositories and
 returns name+version-aggregated download rows **And** constructing it without a transport
@@ -1579,7 +1579,7 @@ route only through `_http.py`'s existing truststore + JFrog chain — never a se
 bespoke credential path.
 
 ### Story 15.2: Identity join and internal flag (CAP-2, CAP-3)
-**Effort:** M • **Deps:** S-15.1 • **Status:** ready
+**Effort:** M • **Deps:** S-15.1 • **Status:** done
 **Given** adapter rows for a public package and a mock-only package **When** they join
 into the SAME identity space Phase C/C.5 maintain (parselmouth's
 `compressed_mapping.json` + atlas's source-URL extension) **Then** the public package
@@ -1588,7 +1588,7 @@ or conda-forge-crossref fetch path in the diff **And** exactly the mock-only pac
 carries the queryable internal/private flag; identity is enriched, never forked.
 
 ### Story 15.3: Kedro pipeline surfacing (CAP-4)
-**Effort:** S • **Deps:** S-15.2 • **Status:** ready
+**Effort:** S • **Deps:** S-15.2 • **Status:** done
 **Given** the adapter + join **When** the work registers as a new atlas Kedro pipeline
 following the established phase conventions (per-phase caching, env-var concurrency
 knobs, structured logging — `atlas-phase-engineering.md`) **Then** its rows land in the
@@ -1612,7 +1612,7 @@ citing the spec. `factory/lasuite.py` stays a read-only contract surface through
 (AC-2: no HTTP client enters package code).
 
 ### Story 16.1: Instance deploy definition (CAP-1)
-**Effort:** M • **Deps:** none (consumes Steward's deploy/credential verbs as the mechanism — Charter §5; atlas grows no deploy code) • **Status:** ready
+**Effort:** M • **Deps:** none (consumes Steward's deploy/credential verbs as the mechanism — Charter §5; atlas grows no deploy code) • **Status:** done
 **Given** `LaSuiteClient`'s frozen REST contract **When** the minimal-instance deploy
 definition lands (the substrate and DW-H1/SQLite open questions resolved in this story's
 spec) **Then** it specifies Bearer-token auth plus the four routes the client calls —
@@ -1625,7 +1625,7 @@ zero CDN references, endpoint + token via env/secret-mount — never a committed
 credential.
 
 ### Story 16.2: Httpx opener and rehearsal (CAP-2, CAP-3)
-**Effort:** M • **Deps:** S-16.1 • **Status:** ready
+**Effort:** M • **Deps:** S-16.1 • **Status:** done
 **Given** a locally-stood-up instance per the S-16.1 definition **When** a real
 httpx-backed `Opener` — constructed OUTSIDE package code (a bring-up script / the C1
 Dagster resource) — replaces `_unconfigured_opener` at the module's sole network seam
@@ -1644,7 +1644,7 @@ chartering the quartet (runner/prompt/config/replay) that already runs allowlist
 scripts/+conf/; the allowlist's own delete-when-specced rule executes at 17.1.
 
 ### Story 17.1: The from-scratch run is a chartered capability
-**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-1
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-1 • **Status:** done
 **Given** a clean workspace **Then** the quartet regenerates the full inventory from the
 workbook + live indexes + curated feeds (Master Prompt v3.0 bound): PEP-503 identity +
 provenance + timestamped verify per package, inspectable P1–P10/Score ranking, dated
@@ -1653,7 +1653,7 @@ with the allowlist lines DELETED. The parselmouth fold-placement question resolv
 with a dated entry.
 
 ### Story 17.2: Handoffs are execution-ready
-**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-2
+**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-conda-forge-packaging-inventory-operations CAP-2 • **Status:** done
 **Given** a completed run **Then** the OpenTeams universe emits one `[Conda-Forge
 Packaging] {name}` issue per library + the dated Mason handoff tab (four dispositions),
 the AOSS-Free extra queue never expands the universe, and the three dashboard views render
