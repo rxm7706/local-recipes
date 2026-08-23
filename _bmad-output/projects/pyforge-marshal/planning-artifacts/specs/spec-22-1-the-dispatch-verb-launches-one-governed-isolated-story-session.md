@@ -2,7 +2,7 @@
 title: The dispatch verb launches one governed, isolated story session
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -44,3 +44,19 @@ baseline_revision: 7d1e1e1a30
 - Unit/integration tests for dispatch launch path (worktree provision, journal row, status output)
 - `pixi run -e pyforge-marshal pyforge-marshal-test` green
 - Manual smoke: dispatch records a run without blocking the caller
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/701
+Merge: 94708563fd9d3d4fea867a67b6aac428506ff7a3
+Merge policy: admin merge (`gh pr merge 701 --merge --admin --repo rxm7706/local-recipes`) — GitHub Actions billing blocks CI; local tests green before merge.
+Summary: Added `marshal factory dispatch` (Story 22.1, FR-193 CAP-1): provisions an isolated worktree from `origin/main`, launches one detached `cursor agent` session via `BuildHarnessPort`/`BmadBuildHarness` with per-invocation `BMAD_ACTIVE_PROJECT` and physical artifact paths, journals `dispatch-launch` intent/outcome under Tier-3 `dispatch-runs/`, and surfaces live dispatch in `marshal status` / fleet-picture via dispatch overlay on `FleetHomeFacts`.
+Files:
+- `cli/dispatch.py`, `core/dispatch.py` — dispatch verb, path helpers, model/budget resolution
+- `ports/build_harness.py`, `adapters/harness_bmadbuild.py` — FR-52 second engine seam
+- `cli/spin.py`, `cli/status.py`, `core/status.py` — factory subcommand wiring + fleet overlay
+- `core/findings.py`, `core/verdict.py`, `core/egress.py` — MRS-DISP-001..010, BuildHarnessPort registry
+- `tests/unit/test_dispatch.py` — launch/journal/status unit coverage
+Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` — **6066 passed**, 12 deselected.
+Out of scope (Stories 22.2–22.6): completion detection, verification gate, landing, overlap guard, attach/resume.
