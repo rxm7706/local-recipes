@@ -32,7 +32,7 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_ten_duties():
+def test_there_are_exactly_thirteen_duties():
     assert DUTIES == (
         "keys",
         "deploy",
@@ -44,6 +44,9 @@ def test_there_are_exactly_ten_duties():
         "suite",
         "init",
         "shell-init",
+        "setup",
+        "initrepo",
+        "validate-fast",
     )
 
 
@@ -82,7 +85,14 @@ def test_sync_is_wired_into_help():
     assert "sync" in _HELP
 
 
-@pytest.mark.parametrize("duty", [d for d in DUTIES if d != "init"])
+def test_setup_initrepo_validate_fast_are_wired_into_help():
+    """Story 17.2 AC: bootstrap setup/initrepo/validate-fast verbs are registered."""
+    for duty in ("setup", "initrepo", "validate-fast"):
+        assert duty in DUTIES
+        assert duty in _HELP
+
+
+@pytest.mark.parametrize("duty", [d for d in DUTIES if d not in ("init", "setup", "initrepo", "validate-fast")])
 def test_each_duty_dispatches_and_succeeds(duty):
     assert main([duty]) == EXIT_OK
 
