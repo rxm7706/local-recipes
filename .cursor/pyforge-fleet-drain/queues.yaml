@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 29
-    next: 20-1-baseline-drift-detector-at-the-seam
+    remaining_count: 28
+    next: 20-2-baseline-drift-defers-get-loud
     queue:
-    - 20-1-baseline-drift-detector-at-the-seam
     - 20-2-baseline-drift-defers-get-loud
     - 20-3-the-gated-upstream-filing
     - 20-4-intent-gap-attempts-are-preserved

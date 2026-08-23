@@ -2,7 +2,9 @@
 title: Baseline-drift detector at the seam
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
+updated: '2026-08-23'
+shipped_ref: 'PR #680 / 3a4a7bd854'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -43,3 +45,11 @@ baseline_revision: 8c28d4ce8a
 - Fixture drift → named finding; clean → empty
 - `pixi run --frozen -e pyforge-marshal` (and/or doctor env if source lives there) related tests green
 - CI package tests; confirm not wired into detectors-ci
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/680
+Merge SHA: 3a4a7bd8540a3deda68a77de5a9429fdac63649e
+Placement: `scripts/bmad_loop_baseline_drift_check.py` (loop-stall-check precedent; not `pyforge.doctor.sources`)
+Tests: `pixi run --frozen -e local-recipes pytest tests/scripts/test_bmad_loop_baseline_drift_check.py -q` → 5 passed
