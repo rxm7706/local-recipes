@@ -2,7 +2,8 @@
 title: The landing-evidence grammar
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
+shipped_ref: 'PR #694 / 57ccfe94dc'
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -49,3 +50,20 @@ baseline_revision: 9b488aee70
 - Conformance matrix: known-good landing shapes parse; recovery commits recognized
 - Doctor-side test does not import pyforge.marshal
 - Related tests green locally
+
+## Auto Run Result
+
+Status: done
+
+PR: https://github.com/rxm7706/local-recipes/pull/694
+Merge SHA: 57ccfe94dc05edc0b404f03231d1263531879c64
+Note: merged with `--admin` (Actions billing blocked CI; local verification green).
+
+Grammar placement: `pyforge.core.landing_evidence` in `pyforge-core` (Story 14.2 shared-spine precedent).
+
+Summary: ONE shared landing-evidence grammar (merge subjects, branch names, recovery convention, pre-convention SHA allowlist). Cross-package conformance tests for doctor and marshal; consumers unchanged (20.9/20.10).
+
+Verification (local):
+- `pixi run -e pyforge-core pytest src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py -q` → 17 passed
+- `pixi run -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_landing_evidence_conformance.py -q` → 13 passed
+- `pixi run -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/contract/test_landing_evidence_conformance.py -q` → 12 passed
