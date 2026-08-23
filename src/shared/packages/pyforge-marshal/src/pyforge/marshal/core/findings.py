@@ -1217,6 +1217,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # there was nothing new to land this run) by the time this best-effort step
 # runs.
 #
+# Story 15.2 (landing promotes the ledger, FR-136/FR-139) adds an ELEVENTH
+# `MRS-LAND-*` code, `MRS-LAND-011`: `cli/land.py::_promote_sprint_ledger`
+# advances the tracked `sprint-status-ledger.yaml` under the same AD-42
+# advisory lock. Names lock contention, refused feed downgrade, or
+# write/commit failure — WARN, never blocking (wave already landed).
+#
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a
 # bare `Path.glob` over every currently-attached home's own
@@ -1446,6 +1452,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-014",
         "MRS-LAND-009",
         "MRS-LAND-010",
+        "MRS-LAND-011",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
         "MRS-DEPLOY-024",

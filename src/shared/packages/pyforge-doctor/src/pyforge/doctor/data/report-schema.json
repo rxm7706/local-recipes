@@ -64,6 +64,7 @@
             "adoption",
             "marshal-durability",
             "ledger-regression",
+            "ledger-direction",
             "story-status",
             "chain-completeness",
             "dashboard-drift",

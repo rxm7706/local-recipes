@@ -57,7 +57,7 @@ from pathlib import Path
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 
-__all__ = ("gather",)
+__all__ = ("gather", "gather_direction")
 
 PROJECTS_PREFIX = "_bmad-output/projects/"
 LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
@@ -417,3 +417,221 @@ def gather(
             )
         )
     return tuple(findings)
+
+
+# --- gather_direction (Story 15.2 / marshal FR-137, FR-138) ---------------
+#
+# Standalone check: tracked ledger vs. git merge history, WITH DIRECTION.
+# Never reads the Tier-3 sprint-status.yaml feed (FR-138). Independence:
+# never imports ``pyforge.marshal`` — merge-subject patterns are restated
+# here so Doctor keeps judging Marshal without Marshal's own code.
+
+_GITHUB_MERGE_SUBJECT_RE = re.compile(
+    r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$"
+)
+_BMADLOOP_MERGE_SUBJECT_RE = re.compile(
+    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$"
+)
+_STORY_ID_RE = re.compile(r"^(\d+)-(\d+[a-z]?)(?:-.*)?$")
+_STORY_DOT_RE = re.compile(r"^(\d+)\.(\d+[a-z]?)$")
+
+DIRECTION_LANDED_UNPROMOTED = "landed-but-unpromoted"
+DIRECTION_DONE_UNMERGED = "done-but-unmerged"
+
+
+def _story_id(token: str) -> str | None:
+    """Normalize a ledger key or merge-segment to ``<epic>-<seq>``."""
+    token = token.strip()
+    m = _STORY_ID_RE.match(token)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"
+    m = _STORY_DOT_RE.match(token)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"
+    return None
+
+
+def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
+    """Story ids durably named in ``subjects`` for ``project_slug``.
+
+    Covers GitHub PR-merge and bmad-loop native subjects, scoped to the
+    station short name / ``loop/<slug>`` target — the same two shapes that
+    catch the live landed-but-unpromoted incidents FR-137 exists for.
+    """
+    station = project_slug.removeprefix("pyforge-")
+    out: set[str] = set()
+    for subject in subjects:
+        gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
+        if gh is not None:
+            branch = gh.group("branch")
+            if station and branch.startswith(f"{station}/"):
+                segment = branch.rsplit("/", 1)[-1]
+                sid = _story_id(segment)
+                if sid:
+                    out.add(sid)
+            continue
+        bl = _BMADLOOP_MERGE_SUBJECT_RE.match(subject)
+        if bl is not None and bl.group("target") == f"loop/{project_slug}":
+            sid = _story_id(bl.group("key_slug"))
+            if sid:
+                out.add(sid)
+    return out
+
+
+def gather_direction(
+    target: Path, *, base_ref: str = "main"
+) -> tuple[Finding, ...]:
+    """Judge tracked-ledger vs. git merge-history drift WITH DIRECTION
+    (Story 15.2 / FR-137 / FR-138).
+
+    Per project that has a tracked ``sprint-status-ledger.yaml``:
+
+    * ``landed-but-unpromoted`` — a story id appears in ``main``'s merge
+      subjects for this station but is not ``done`` in the twin (FAIL).
+    * ``done-but-unmerged`` — a twin ``done`` key has no matching merge
+      subject (WARN; absence of a match is not proof of never-merged).
+
+    Never opens ``implementation-artifacts/sprint-status.yaml``. Degrades
+    to WARN when git is unavailable; OK when every twin agrees with git.
+    """
+    if _git(target, "rev-parse", "--git-dir") is None:
+        return (
+            Finding(
+                source=Source.LEDGER_DIRECTION,
+                check="ledger-direction",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"git is unavailable or {target} is not a repository — "
+                    "ledger-vs-git direction cannot be checked"
+                ),
+                evidence={"target": str(target)},
+            ),
+        )
+
+    subjects_raw = _git(target, "log", "--format=%s", base_ref)
+    if subjects_raw is None:
+        return (
+            Finding(
+                source=Source.LEDGER_DIRECTION,
+                check="ledger-direction",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"cannot read {base_ref!r} commit subjects — "
+                    "ledger-vs-git direction cannot be checked"
+                ),
+                evidence={"target": str(target), "base_ref": base_ref},
+            ),
+        )
+    subjects = subjects_raw.splitlines()
+
+    ledger_paths = sorted(
+        p
+        for p in target.glob(f"{PROJECTS_PREFIX}*/{LEDGER_SUFFIX}")
+        if p.is_file()
+    )
+    if not ledger_paths:
+        return (
+            Finding(
+                source=Source.LEDGER_DIRECTION,
+                check="ledger-direction",
+                status=DoctorStatus.OK,
+                message="no tracked sprint ledgers found — nothing to direction-check",
+                evidence={"audited": 0},
+            ),
+        )
+
+    findings: list[Finding] = []
+    audited = 0
+    for path in ledger_paths:
+        project = path.relative_to(target).parts[2]
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="ledger-direction",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}: tracked ledger unreadable — "
+                        "direction status unknown"
+                    ),
+                    evidence={"project": project, "path": str(path)},
+                )
+            )
+            continue
+
+        statuses = _parse_statuses(text)
+        audited += 1
+        done_ids: set[str] = set()
+        raw_by_id: dict[str, str] = {}
+        for raw_key, status in statuses.items():
+            sid = _story_id(raw_key)
+            if sid is None:
+                continue
+            raw_by_id.setdefault(sid, raw_key)
+            if status in TERMINAL:
+                done_ids.add(sid)
+
+        merged_ids = _merged_ids_for_project(subjects, project)
+
+        for sid in sorted(merged_ids - done_ids):
+            # A merged key absent from the twin entirely OR present but not
+            # done is landed-but-unpromoted.
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="ledger-direction",
+                    status=DoctorStatus.FAIL,
+                    message=(
+                        f"{project}/{raw_by_id.get(sid, sid)}: "
+                        f"{DIRECTION_LANDED_UNPROMOTED} — merge history "
+                        "names this story, but the tracked ledger is not "
+                        "done"
+                    ),
+                    evidence={
+                        "project": project,
+                        "story_id": sid,
+                        "key": raw_by_id.get(sid, sid),
+                        "direction": DIRECTION_LANDED_UNPROMOTED,
+                        "path": str(path.relative_to(target)),
+                    },
+                )
+            )
+
+        for sid in sorted(done_ids - merged_ids):
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_DIRECTION,
+                    check="ledger-direction",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}/{raw_by_id.get(sid, sid)}: "
+                        f"{DIRECTION_DONE_UNMERGED} — tracked ledger says "
+                        "done, but no scoped merge subject was found on "
+                        f"{base_ref!r}"
+                    ),
+                    evidence={
+                        "project": project,
+                        "story_id": sid,
+                        "key": raw_by_id.get(sid, sid),
+                        "direction": DIRECTION_DONE_UNMERGED,
+                        "path": str(path.relative_to(target)),
+                    },
+                )
+            )
+
+    if findings:
+        return tuple(findings)
+    return (
+        Finding(
+            source=Source.LEDGER_DIRECTION,
+            check="ledger-direction",
+            status=DoctorStatus.OK,
+            message=(
+                f"tracked ledgers agree with {base_ref!r} merge history "
+                f"({audited} ledger(s) audited)"
+            ),
+            evidence={"audited": audited, "base_ref": base_ref},
+        ),
+    )

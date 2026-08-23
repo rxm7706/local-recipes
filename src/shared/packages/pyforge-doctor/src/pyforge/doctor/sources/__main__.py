@@ -57,6 +57,7 @@ __all__ = ("main", "DISPATCH")
 # "which 10 sources does this cover" never becomes a second, driftable list.
 DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     Source.LEDGER_REGRESSION.value: ledger.gather,
+    Source.LEDGER_DIRECTION.value: ledger.gather_direction,
     Source.STORY_STATUS.value: marshal.gather_story_status,
     Source.CHAIN_COMPLETENESS.value: board.gather_chain_completeness,
     Source.DASHBOARD_DRIFT.value: board.gather_dashboard_drift,

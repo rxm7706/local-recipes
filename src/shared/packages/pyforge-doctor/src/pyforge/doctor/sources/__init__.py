@@ -208,6 +208,12 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         owning_station="doctor",
     ),  # Story 6.4 -- ported from scripts/ledger_regression_check.py
     SourceRegistration(
+        source=Source.LEDGER_DIRECTION,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 15.2 (marshal) -- ledger-vs-git drift with direction
+    SourceRegistration(
         source=Source.STORY_STATUS,
         scope="repo",
         subject_station="marshal",

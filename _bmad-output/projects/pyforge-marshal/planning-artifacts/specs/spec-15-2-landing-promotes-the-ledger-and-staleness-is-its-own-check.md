@@ -2,12 +2,12 @@
 title: Landing promotes the ledger, and staleness is its own check
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-review
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 10baa3dccf
+baseline_revision: 3ddd2f3cbdc4
 ---
 
 <intent-contract>
@@ -43,3 +43,16 @@ baseline_revision: 10baa3dccf
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
 - Relevant doctor source tests if ledger-direction lands there
+
+## Auto Run Result
+
+Status: in-review
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 5751 passed
+- doctor ledger-direction + registry + ledger unit — 41 passed
+- Full doctor suite (not slow) — passed
+Implemented:
+- `cli/land.py::_promote_sprint_ledger` (FR-136/FR-139) on already-landed + merge paths
+- `scripts/promote_sprint_status.py` advisory lock via LocalFs when importable
+- `pyforge.doctor.sources.ledger.gather_direction` (FR-137/FR-138)
+- Downgrade refusal regression-pinned in marshal unit tests

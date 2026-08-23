@@ -109,6 +109,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.MARSHAL_DURABILITY: "marshal.py",
     Source.ADOPTION: "atlas.py",
     Source.LEDGER_REGRESSION: "ledger.py",
+    Source.LEDGER_DIRECTION: "ledger.py",  # Story 15.2 (marshal FR-137/138)
     Source.STORY_STATUS: "marshal.py",
     Source.CHAIN_COMPLETENESS: "board.py",
     Source.DASHBOARD_DRIFT: "board.py",
