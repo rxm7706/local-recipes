@@ -2,11 +2,11 @@
 title: Both guards hard-fail on drift
 type: feature
 created: '2026-08-23'
-status: ready
+status: blocked
 updated: '2026-08-23'
 context: []
 warnings: []
-baseline_revision: 049c416ca6
+baseline_revision: 3f722545d5cd7a4225eda0ed22d4c7f6ca4d3cc4
 ---
 
 <intent-contract>
@@ -45,3 +45,34 @@ baseline_revision: 049c416ca6
 - Init with wrong agreed slug → refuse
 - Happy path still succeeds
 - Related marshal tests + CI green
+
+
+## Design Notes
+
+- Both guards import `pyforge.marshal.scope.verify_scope` (sole CAP-1 primitive).
+- `scripts/bmad-switch`: retired `desync_warning` / `read_link_slugs`; `--current` and `--list` hard-fail (exit 2) when `verify_scope(root, marker)` returns `ScopeDrift`.
+- `marshal init` MRS-INIT-003: `verify_scope(home, requested_slug)` + `_mrs_init_003_from_scope_drift` refuses unrecognized planning symlinks, internal desync, and marker+planning agreement on a wrong project; partial/empty homes still provision.
+- FsPort skip/write path retains `_slug_from_*` helpers (not a second triangle check). `core/status.py` homes reporting keeps its own parse helpers (out of CAP-2 guard scope).
+- DW-1-4-2 closed against this story.
+
+## Tasks & Acceptance
+
+- [x] Wire `bmad-switch --current` to `verify_scope` (hard-fail, named drift)
+- [x] Wire `marshal init` MRS-INIT-003 to `verify_scope` (refuse wrong-project agreement)
+- [x] Retire `desync_warning` body in `bmad-switch`
+- [x] Tests: desync → non-zero; wrong-project init refuse; happy path
+- [x] Close DW-1-4-2
+
+## Auto Run Result
+
+Status: blocked
+
+Blocking condition: GitHub Actions billing/spending-limit — jobs never start (`The job was not started because recent account payments have failed or your spending limit needs to be increased`). Local verification green; staged-recipes linter passes locally with `maintenance` label.
+
+PR: https://github.com/rxm7706/local-recipes/pull/692
+HEAD: 430a0f71f674f2fdcdb2be8bc990197afacda4d1
+
+Summary: Both guards consume sole `verify_scope`. `bmad-switch --current` exits 2 on drift; `marshal init` refuses wrong-project agreement; DW-1-4-2 closed in ledger. Merge + finalize deferred until CI can run.
+
+Verification (local): `pixi run -e pyforge-marshal pytest …/test_verify_scope.py …/test_init.py tests/scripts/test_bmad_switch_hard_fail.py -q` → 186 passed; `linter.py --pr-num=692` → excellent.
+
