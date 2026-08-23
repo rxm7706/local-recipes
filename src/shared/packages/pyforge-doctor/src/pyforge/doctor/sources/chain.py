@@ -99,29 +99,70 @@ def _normalize_title(title: str) -> str:
     return _NORMALIZE_RE.sub("", title.lower()).strip()
 
 
-def _frontmatter(path: Path) -> dict:
-    """The frontmatter block, parsed with ``yaml.safe_load`` -- already the
-    original's own parser (Boundaries), unlike ``sources/board.py``'s
-    deliberately hand-rolled reader.
+def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
+    """Parse a ``---``-fenced YAML frontmatter block.
 
-    Never raises: a missing file, an unreadable one, non-UTF-8 bytes, or
-    unparseable YAML all degrade to ``{}``, mirroring the original's own
-    ``except Exception: return {}``. One addition beyond the original: a
-    frontmatter block that parses to something OTHER than a mapping (a bare
-    scalar or a list -- valid YAML, wrong shape) also degrades to ``{}``
-    rather than raising ``AttributeError`` on the first ``.get()`` call a
-    caller makes -- the same "structurally wrong but valid" class
-    ``sources/board.py``'s own ``_board_lines`` already guards against.
+    Returns ``(fields, unparseable)``. ``unparseable`` is ``True`` when the
+    document signals frontmatter intent but it cannot be read as a mapping --
+    not for a plain prose file with no leading fence (that is simply absent
+    metadata, ``({}, False)``). Story 17-1 / FR-144 residual: the old
+    ``except: return {}`` path silently converted unparseable Spec frontmatter
+    into "no owner-dream", inflating INV-0.
     """
     try:
         text = path.read_text(encoding="utf-8")
-        if not text.startswith("---"):
-            return {}
-        data = yaml.safe_load(text.split("---")[1])
-    except Exception:  # noqa: BLE001 -- mirrors the original's own broad
-        # except (scripts/dream_chain_check.py's frontmatter()).
-        return {}
-    return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}, True
+
+    if not text.startswith("---"):
+        if "---" in text:
+            return {}, True
+        return {}, False
+
+    try:
+        parts = text.split("---", 2)
+        if len(parts) < 3:
+            return {}, True
+        data = yaml.safe_load(parts[1])
+    except Exception:
+        return {}, True
+
+    if data is None:
+        return {}, False
+    if not isinstance(data, dict):
+        return {}, True
+    return data, False
+
+
+def _frontmatter(path: Path) -> dict:
+    """Fields-only view of ``_frontmatter_parse`` for callers that already
+    surfaced unparseable as its own finding."""
+    data, _ = _frontmatter_parse(path)
+    return data
+
+
+def _unparseable_frontmatter_item(
+    *,
+    inv: str,
+    subject: str,
+    path: Path,
+    project: str = "",
+) -> dict:
+    """One WARN finding naming frontmatter that cannot be parsed as a mapping."""
+    where = f"{project}: " if project else ""
+    return {
+        "inv": inv,
+        "kind": "unparseable-frontmatter",
+        "subject": subject,
+        "owner": "",
+        "status": where + path.name,
+        "remedy": "fix the --- fenced YAML frontmatter block, then re-check",
+        "detail": (
+            f"{where}{subject}: frontmatter in {path.name} could not be parsed "
+            f"as a mapping — treating it as absent would hide a real chain link"
+        ),
+        "warn": True,
+    }
 
 
 def _satellite_titles(path: Path) -> set[str]:
@@ -265,7 +306,12 @@ def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
     for p in entries:
         if p.suffix != ".md" or p.name == "README.md":
             continue
-        fm = _frontmatter(p)
+        fm, unparseable = _frontmatter_parse(p)
+        if unparseable:
+            findings.append(_unparseable_frontmatter_item(
+                inv="INV-1", subject=p.stem, path=p,
+            ))
+            continue
         dreams[p.stem] = {
             "owner": str(fm.get("owner") or ""),
             "status": str(fm.get("status") or ""),
@@ -403,6 +449,15 @@ def _append_spec_entry(
     ``_collect_specs``'s two loops (project-owned, governance-owned) share
     one isolation site (see ``_collect_specs``'s own docstring for why this
     exists)."""
+    fm, unparseable = _frontmatter_parse(sp)
+    if unparseable:
+        findings.append(_unparseable_frontmatter_item(
+            inv="INV-0",
+            subject=sp.parent.name,
+            path=sp,
+            project=project,
+        ))
+        return
     try:
         specs.append(_spec_entry(sp, project, target))
     except Exception as exc:  # noqa: BLE001 -- one spec's malformed

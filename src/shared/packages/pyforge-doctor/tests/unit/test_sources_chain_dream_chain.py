@@ -358,29 +358,33 @@ def test_target_with_neither_input_tree_reports_unevaluable_warn(
 # --- Never raises ---------------------------------------------------------------
 
 
-def test_non_utf8_dream_frontmatter_never_raises(tmp_path: Path) -> None:
+def test_non_utf8_dream_frontmatter_surfaces_unparseable_finding(tmp_path: Path) -> None:
     dream = tmp_path / "docs" / "dreams" / "bad.md"
     dream.parent.mkdir(parents=True, exist_ok=True)
     dream.write_bytes(b"---\nowner: doctor\ntitle: caf\xe9\n---\n\nbody\n")
 
     findings = chain.gather_dream_chain(tmp_path)
 
-    assert findings  # returned rather than raised
+    assert findings
     assert all(f.source is Source.DREAM_CHAIN for f in findings)
+    unparsed = next(f for f in findings if f.check == "unparseable-frontmatter")
+    assert unparsed.status is DoctorStatus.WARN
+    assert unparsed.evidence["subject"] == "bad"
 
 
-def test_non_dict_frontmatter_never_raises(tmp_path: Path) -> None:
+def test_non_dict_frontmatter_surfaces_unparseable_finding(tmp_path: Path) -> None:
     """A frontmatter block that parses to a YAML list (structurally valid,
-    wrong shape) must degrade to ``{}`` rather than raising ``AttributeError``
-    on the first ``.get()`` call."""
+    wrong shape) must surface as ``unparseable-frontmatter``, never silently
+    degrade to absent metadata."""
     dream = tmp_path / "docs" / "dreams" / "listlike.md"
     dream.parent.mkdir(parents=True, exist_ok=True)
     dream.write_text("---\n- just\n- a\n- list\n---\n\nbody\n", encoding="utf-8")
 
     findings = chain.gather_dream_chain(tmp_path)
 
-    assert findings
-    assert all(f.source is Source.DREAM_CHAIN for f in findings)
+    unparsed = next(f for f in findings if f.check == "unparseable-frontmatter")
+    assert unparsed.status is DoctorStatus.WARN
+    assert unparsed.evidence["subject"] == "listlike"
 
 
 # --- Multi-project isolation: INV-3 -------------------------------------------
@@ -679,17 +683,12 @@ def test_satellite_heading_matches_across_punctuation_drift(tmp_path: Path) -> N
     )
 
 
-def test_markdown_without_a_frontmatter_fence_parses_to_no_metadata(
+def test_markdown_without_a_leading_frontmatter_fence_surfaces_unparseable(
     tmp_path: Path,
 ) -> None:
-    """``_frontmatter``'s ``startswith("---")`` guard.
-
-    The mutation only shows up when the document contains a ``---`` fence
-    somewhere OTHER than the very top: ``text.split("---")[1]`` then yields a
-    block that parses cleanly, so a metadata-looking passage in the BODY is
-    adopted as the Dream's real frontmatter. (A document with no ``---`` at
-    all raises ``IndexError`` into the same ``except`` and degrades either
-    way, which is why a naive fixture cannot kill this branch.)"""
+    """A ``---`` fence embedded in the body without a leading opener is
+    malformed frontmatter — Story 17-1 / FR-144: must not silently degrade to
+    ``owner: (none)`` on a ``dream-without-spec`` finding."""
     path = tmp_path / "docs" / "dreams" / "nofence.md"
     path.parent.mkdir(parents=True)
     path.write_text(
@@ -701,12 +700,35 @@ def test_markdown_without_a_frontmatter_fence_parses_to_no_metadata(
         encoding="utf-8",
     )
 
-    finding = next(f for f in chain.gather_dream_chain(tmp_path)
-                   if f.check == "dream-without-spec")
+    findings = chain.gather_dream_chain(tmp_path)
+    checks = {f.check for f in findings}
 
-    assert finding.evidence["owner"] == "(none)", (
-        f"body text was parsed as frontmatter: {finding.evidence}"
+    assert "unparseable-frontmatter" in checks
+    assert "dream-without-spec" not in checks
+    unparsed = next(f for f in findings if f.check == "unparseable-frontmatter")
+    assert unparsed.evidence["subject"] == "nofence"
+    assert unparsed.status is DoctorStatus.WARN
+
+
+def test_spec_unparseable_frontmatter_does_not_report_spec_without_owner_dream(
+    tmp_path: Path,
+) -> None:
+    """The 2026-07-28 INV-0 incident: unparseable Spec frontmatter must not
+    masquerade as a missing ``owner-dream:`` HARD finding."""
+    _write_dream(tmp_path, "host", "doctor")
+    spec = (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor"
+        / "planning-artifacts" / "specs" / "spec-broken" / "SPEC.md"
     )
+    spec.parent.mkdir(parents=True, exist_ok=True)
+    spec.write_text("---\n- not\n- a\n- mapping\n---\n", encoding="utf-8")
+    _write_sharded_project(tmp_path, "pyforge-doctor")
+
+    findings = chain.gather_dream_chain(tmp_path)
+    checks = {f.check for f in findings}
+
+    assert "unparseable-frontmatter" in checks
+    assert "spec-without-dream-link" not in checks
 
 
 # --- Unreadable input trees must not discard unrelated findings -------------------

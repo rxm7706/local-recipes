@@ -2,12 +2,12 @@
 title: The detectors' remaining blind spots are fixture-pinned, with an incident log
 type: test
 created: '2026-08-23'
-status: ready
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 7c126bc39d
+baseline_revision: 6929827150
 ---
 
 <intent-contract>

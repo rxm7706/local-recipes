@@ -266,39 +266,51 @@ def test_pin_behind_on_a_snapshot_doc_reports_ok(tmp_path: Path) -> None:
 # ---------------------------------------------------------- archive hygiene
 
 
-def test_archive_misplaced_and_stray_file_are_flagged(tmp_path: Path) -> None:
-    """A sprint-change-proposal at the planning-artifacts TOP LEVEL (not
-    change-history/), a retro at the implementation-artifacts TOP LEVEL (not
-    retros/), and a stray .bak file all report HARD/fixable -- verbatim from
-    the original. Both misplaced files are simultaneously ``uncovered``
-    (``classify()`` has no rule for the WRONG location, only the right one)
-    -- a real, deterministic cross-check the original script also exhibits,
-    asserted here rather than hidden."""
+def test_archive_misplaced_reports_fail(tmp_path: Path) -> None:
+    """Story 17-1 / FR-145: dedicated pin for ``archive-misplaced`` — a
+    sprint-change-proposal at the planning-artifacts TOP LEVEL (not
+    change-history/) and a retro at the implementation-artifacts TOP LEVEL
+    (not retros/) each report HARD/fixable."""
     repo = tmp_path / "repo"
     _bootstrap(repo)
     (factory._plan(repo) / "sprint-change-proposal-x.md").write_text("x\n", encoding="utf-8")
     impl = factory._impl(repo)
     impl.mkdir(parents=True, exist_ok=True)
     (impl / "retro-x.md").write_text("x\n", encoding="utf-8")
-    (impl / "scratch.bak").write_text("x\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
     by_check = {(f.check, f.evidence.get("subject")) for f in findings}
     assert ("archive-misplaced", "planning-artifacts/sprint-change-proposal-x.md") in by_check
     assert ("archive-misplaced", "implementation-artifacts/retro-x.md") in by_check
-    assert ("stray-file", "implementation-artifacts/scratch.bak") in by_check
-    # The cross-check the docstring claims: both misfiled .md files are ALSO
-    # `uncovered` (classify() has no rule for the wrong location), while the
-    # stray .bak is exempted (STRAY_SUFFIXES). Review pass (Story 6.8) found
-    # this claimed but unasserted.
+    # Both misfiled .md files are simultaneously ``uncovered`` (classify()
+    # has no rule for the WRONG location, only the right one).
     assert ("uncovered", "planning-artifacts/sprint-change-proposal-x.md") in by_check
     assert ("uncovered", "implementation-artifacts/retro-x.md") in by_check
-    assert ("uncovered", "implementation-artifacts/scratch.bak") not in by_check
     for f in findings:
-        if f.check in ("archive-misplaced", "stray-file"):
+        if f.check == "archive-misplaced":
             assert f.status is DoctorStatus.FAIL
             assert f.evidence["fixable"] is True
+
+
+def test_stray_file_reports_fail(tmp_path: Path) -> None:
+    """Story 17-1 / FR-145: dedicated pin for ``stray-file`` — a
+    ``STRAY_SUFFIXES`` match under implementation-artifacts reports
+    HARD/fixable and is exempt from ``uncovered``."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    (impl / "scratch.bak").write_text("x\n", encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    by_check = {(f.check, f.evidence.get("subject")) for f in findings}
+    assert ("stray-file", "implementation-artifacts/scratch.bak") in by_check
+    assert ("uncovered", "implementation-artifacts/scratch.bak") not in by_check
+    finding = _only(findings, "stray-file")
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["fixable"] is True
 
 
 # --------------------------------------------------------------- spec-status
