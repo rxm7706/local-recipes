@@ -253,7 +253,24 @@ postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
 - DB-GPT sidecar chart work → Story 12.5
 - Redis AUTH + NetworkPolicy → Story 12.6
 - Live Tier-3 verification record → Story 12.7
-- dlt Projects V2 pipeline → Story 12.8 (uses `github-pat-read-project`)
 - GKE/kind CI profiles → Stories 12.2 / 12.3 (unchanged)
 - `--docker-image` / host-socket deploy shortcuts → struck in
   `reconciliation-and-corrections.md`
+
+---
+
+## 12. GitHub Projects V2 → `github_metrics` (Story 12.8)
+
+After the platform Postgres pod is reachable (port-forward or in-cluster), load
+board data with the dlt pipeline documented in
+[`src/platform/ingest/github_projects/README.md`](../../../ingest/github_projects/README.md).
+
+Quick path:
+
+1. Create/link the board: `gh project create` + `gh project link … --repo rxm7706/local-recipes`
+2. Export a **classic** PAT with `read:project` as `GITHUB_TOKEN`
+3. Port-forward Postgres: `oc port-forward -n platform svc/platform-postgresql 5432:5432`
+4. Set `GITHUB_METRICS_DATABASE_URL=postgresql://…`
+5. Run: `pixi run -e python-agent-platform github-metrics-dlt -- PVT_yourProjectId`
+
+Dry-run first: add `--dry-run --max-pages 1` (no Postgres required).
