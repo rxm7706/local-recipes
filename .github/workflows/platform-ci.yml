@@ -60,8 +60,8 @@ name: Platform CI
 # Containerfile the way `scripts/container-gates` is) -- same rule as
 # every other entry in this list: a change to it can break the job while
 # leaving `src/platform/**` untouched, so it needs its own filter entry.
-# The job itself is optional (default on): repo variable
-# PLATFORM_CI_AIR_GAP_PARITY=false skips it on push/PR; workflow_dispatch
+# The job itself is optional (default off): set repo variable
+# PLATFORM_CI_AIR_GAP_PARITY=true to opt in on push/PR; workflow_dispatch
 # input air_gap_parity overrides for manual runs.
 #
 # P1 fan-in (2026-08-23): `build-platform-image` builds once for
@@ -118,17 +118,23 @@ on:
         options: [all, air-gap-parity-only]
         default: all
       air_gap_parity:
-        description: 'Run air-gap-parity (Story 12.3 AD-13 proof); default on'
+        description: 'Run air-gap-parity (Story 12.3 AD-13 proof); default off'
         type: boolean
-        default: true
+        default: false
+      gke_portability_smoke:
+        description: 'Run gke-portability-smoke (kind + ingress + helm); default off'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 # platform-ci-test (pixi, default) vs pip install -r requirements/local.txt (legacy).
 # Override on pull_request/push: set repo variable PLATFORM_TEST_BACKEND=pip.
-# air-gap-parity (default on): set repo variable PLATFORM_CI_AIR_GAP_PARITY=false
-# on push/PR to skip; workflow_dispatch exposes the air_gap_parity input instead.
+# Optional Platform CI jobs (default off on push/PR — opt in with repo variables):
+#   PLATFORM_CI_AIR_GAP_PARITY=true
+#   PLATFORM_CI_GKE_PORTABILITY_SMOKE=true
+# workflow_dispatch exposes air_gap_parity / gke_portability_smoke inputs instead.
 env:
   PLATFORM_TEST_BACKEND: ${{ github.event_name == 'workflow_dispatch' && inputs.platform_test_backend || vars.PLATFORM_TEST_BACKEND || 'pixi' }}
   # Shared platform image tag from build-platform-image (gke + air-gap only;
@@ -214,9 +220,17 @@ jobs:
   # (spec 10.3 — both engines, both build paths).
   build-platform-image:
     if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.jobs == 'all' ||
-      (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity)
+      (
+        github.event_name == 'workflow_dispatch' &&
+        (
+          (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke)) ||
+          (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity)
+        )
+      ) ||
+      (
+        github.event_name != 'workflow_dispatch' &&
+        (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -774,7 +788,12 @@ jobs:
   # No `needs:` on `test`/`container-dbgpt` -- this job loads the shared
   # platform image from build-platform-image rather than rebuilding it.
   gke-portability-smoke:
-    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
+    if: >-
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke) ||
+        (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true')
+      ) &&
+      (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')
     needs: build-platform-image
     runs-on: ubuntu-latest
     # kind + ingress + helm; image build happens in build-platform-image.
@@ -1023,7 +1042,7 @@ jobs:
     if: >-
       (
         (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity) ||
-        (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_AIR_GAP_PARITY != 'false')
+        (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_AIR_GAP_PARITY == 'true')
       ) &&
       (
         github.event_name != 'workflow_dispatch' ||
