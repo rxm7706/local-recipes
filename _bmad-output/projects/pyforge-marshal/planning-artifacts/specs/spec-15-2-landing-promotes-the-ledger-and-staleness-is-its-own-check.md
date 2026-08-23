@@ -2,7 +2,7 @@
 title: Landing promotes the ledger, and staleness is its own check
 type: feature
 created: '2026-08-23'
-status: in-review
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -46,7 +46,7 @@ baseline_revision: 3ddd2f3cbdc4
 
 ## Auto Run Result
 
-Status: in-review
+Status: done — merged PR #657 as 7c126bc39de
 Verification:
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 5751 passed
 - doctor ledger-direction + registry + ledger unit — 41 passed

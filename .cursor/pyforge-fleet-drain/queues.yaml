@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 40
-    next: 15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check
+    remaining_count: 39
+    next: 17-1-the-detectors-remaining-blind-spots-are-fixture-pinned-with-an-incident-log
     queue:
-    - 15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check
     - 17-1-the-detectors-remaining-blind-spots-are-fixture-pinned-with-an-incident-log
     - 17-2-the-dreams-hygiene-mode-exists
     - 17-3-chain-completeness-audit-mode-reports-layers
