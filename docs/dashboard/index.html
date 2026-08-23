@@ -1315,6 +1315,8 @@
           (r.archived ? '<span class="fmark bf" title="this Dream ended — kept on the wall so no chain is invisible, and excluded from the sound/gap tallies">archived</span>' : '') +
           (r.noDream ? '<span class="fmark bad" title="a Spec with no Dream of its own and no `owner-dream:` naming a parent — Dream-first says every effort starts as a Dream">no dream</span>' : '') +
           (r.gaps && r.gaps.length ? '<span class="fmark bad" title="stages missing BEFORE the furthest one reached — a hole in the chain, not merely unfinished: ' + esc(r.gaps.join(", ")) + '">' + r.gaps.length + ' gap' + (r.gaps.length > 1 ? 's' : '') + '</span>' : '') +
+          (r.chainAudit && r.chainAudit.verdict === 'fail' ? '<span class="fmark bad" title="CAP-3 chain audit fail — open row for checkpoint detail">audit fail</span>' : '') +
+          (r.chainAudit && r.chainAudit.verdict === 'pass' ? '<span class="fmark" title="CAP-3 chain audit pass (layers, coherence, staleness, orphans)">audit ✓</span>' : '') +
           (r.staleBy && r.staleBy.length ? '<span class="fmark ov" title="open the row for detail">' + r.staleBy.length + ' out of date</span>' : '') +
           (r.backfilled ? '<span class="fmark bf" title="stage dates do not ascend — the chain was retro-fitted after the fact (docs/dreams/README.md: realized is not exempt from the chain). True history, not an error.">backfilled</span>' : '') +
           (r.overtaken ? '<span class="fmark ov" title="the Spec still carries ' + r.openQuestions + ' unresolved open_questions while its PRD and architecture already exist — downstream has overtaken the contract">overtaken · ' + r.openQuestions + '</span>' : '') +

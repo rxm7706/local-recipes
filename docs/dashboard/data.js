@@ -2009,12 +2009,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "113/162",
+            "143/162",
             "stories complete",
             "var(--done)"
           ],
           [
-            "49",
+            "19",
             "remaining",
             ""
           ]
@@ -2102,7 +2102,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "11.5"
+        "at": "21.1"
       },
       "epics": [
         {
@@ -2651,12 +2651,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "11.5",
-              "pending",
+              "done",
               "Referenced-dependency verification and Doctor delegation"
             ],
             [
               "11.6",
-              "pending",
+              "done",
               "`marshal seed explain` and `marshal seed version`"
             ]
           ]
@@ -2667,32 +2667,32 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "12.1",
-              "pending",
+              "done",
               "Full pixi wiring, distribution, and repo-gate compliance"
             ],
             [
               "12.2",
-              "pending",
+              "done",
               "The `local-recipes` empty-plan oracle (CRITICAL)"
             ],
             [
               "12.3",
-              "pending",
+              "done",
               "Offline operation and the egress counter"
             ],
             [
               "12.4",
-              "pending",
+              "done",
               "Pattern meta-tests and the never-write proof"
             ],
             [
               "12.5",
-              "pending",
+              "done",
               "CLI contract, idempotence harness, and performance gates"
             ],
             [
               "12.6",
-              "pending",
+              "done",
               "README, adoption guide, and the finding→remedy reference"
             ]
           ]
@@ -2770,12 +2770,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "15.1",
-              "pending",
+              "done",
               "One command refreshes the fleet's homes"
             ],
             [
               "15.2",
-              "pending",
+              "done",
               "Landing promotes the ledger, and staleness is its own check"
             ]
           ]
@@ -2797,22 +2797,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "17.1",
-              "pending",
+              "done",
               "The detectors' remaining blind spots are fixture-pinned, with an incident log"
             ],
             [
               "17.2",
-              "pending",
+              "done",
               "The dreams hygiene mode exists"
             ],
             [
               "17.3",
-              "pending",
+              "done",
               "Chain-completeness audit mode reports layers"
             ],
             [
               "17.4",
-              "pending",
+              "done",
               "Orchestrated regeneration that cannot lose code status"
             ]
           ]
@@ -2823,12 +2823,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "18.1",
-              "pending",
+              "done",
               "Marshal's capabilities become named, typed tools"
             ],
             [
               "18.2",
-              "pending",
+              "done",
               "Parity and coverage are gated numbers"
             ]
           ]
@@ -2839,22 +2839,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "19.1",
-              "pending",
+              "done",
               "One generator produces every station's test architecture"
             ],
             [
               "19.2",
-              "pending",
+              "done",
               "The shared test-support kit"
             ],
             [
               "19.3",
-              "pending",
+              "done",
               "Coverage gates that name the module"
             ],
             [
               "19.4",
-              "pending",
+              "done",
               "Test architecture stays current as stories land"
             ]
           ]
@@ -2865,52 +2865,52 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "20.1",
-              "pending",
+              "done",
               "Baseline-drift detector at the seam"
             ],
             [
               "20.2",
-              "pending",
+              "done",
               "Baseline-drift defers get loud"
             ],
             [
               "20.3",
-              "pending",
+              "done",
               "The gated upstream filing"
             ],
             [
               "20.4",
-              "pending",
+              "done",
               "Intent-gap attempts are preserved"
             ],
             [
               "20.5",
-              "pending",
+              "done",
               "Missing-preserve detector"
             ],
             [
               "20.6",
-              "pending",
+              "done",
               "The verify_scope primitive"
             ],
             [
               "20.7",
-              "pending",
+              "done",
               "Both guards hard-fail on drift"
             ],
             [
               "20.8",
-              "pending",
+              "done",
               "The landing-evidence grammar"
             ],
             [
               "20.9",
-              "pending",
+              "done",
               "Doctor consumes the grammar"
             ],
             [
               "20.10",
-              "pending",
+              "done",
               "Marshal consumes the grammar"
             ]
           ]
@@ -3868,12 +3868,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "53/74",
+            "73/74",
             "stories complete",
             "var(--done)"
           ],
           [
-            "21",
+            "1",
             "remaining",
             ""
           ]
@@ -3915,7 +3915,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "12.3"
+        "at": "17.2"
       },
       "epics": [
         {
@@ -4255,7 +4255,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "12.3",
-              "pending",
+              "done",
               "Air-gap parity is a failing check"
             ]
           ]
@@ -4266,22 +4266,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "13.1",
-              "pending",
+              "done",
               "Workspace verbs over git worktree"
             ],
             [
               "13.2",
-              "pending",
+              "done",
               "Status and the feed-mirror decision"
             ],
             [
               "13.3",
-              "pending",
+              "done",
               "A repo set opens as one workspace"
             ],
             [
               "13.4",
-              "pending",
+              "done",
               "The set reports and tears down safely"
             ]
           ]
@@ -4292,27 +4292,27 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "14.1",
-              "pending",
+              "done",
               "The pre-flight diff retrodicts a real upgrade"
             ],
             [
               "14.2",
-              "pending",
+              "done",
               "Apply is deliberate, branched, and never clobbers custom"
             ],
             [
               "14.3",
-              "pending",
+              "done",
               "Clobbered custom surfaces are caught and re-applied"
             ],
             [
               "14.4",
-              "pending",
+              "done",
               "The pin fan-out is enumerated, not discovered by red tests"
             ],
             [
               "14.5",
-              "pending",
+              "done",
               "One command proves the upgrade landed"
             ]
           ]
@@ -4323,22 +4323,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "15.1",
-              "pending",
+              "done",
               "One command reports the whole pipeline's truth"
             ],
             [
               "15.2",
-              "pending",
+              "done",
               "One command advances a stale package end-to-end"
             ],
             [
               "15.3",
-              "pending",
+              "done",
               "Five modules wire through the provisioning verb"
             ],
             [
               "15.4",
-              "pending",
+              "done",
               "The upgrade gate spot-checks one native path per class"
             ]
           ]
@@ -4349,27 +4349,27 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "16.1",
-              "pending",
+              "done",
               "Dependencies are pixi-sourced, single-authority"
             ],
             [
               "16.2",
-              "pending",
+              "done",
               "Startup refuses misconfiguration, two-stage and named"
             ],
             [
               "16.3",
-              "pending",
+              "done",
               "Every process speaks structlog + OTel"
             ],
             [
               "16.4",
-              "pending",
+              "done",
               "Policy is a test suite"
             ],
             [
               "16.5",
-              "pending",
+              "done",
               "Identity is OIDC-delegated, no local passwords"
             ]
           ]
@@ -4380,7 +4380,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "17.1",
-              "pending",
+              "done",
               "steward init/shell-init detect and prepare the machine"
             ],
             [
@@ -5034,7 +5034,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-23 03:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-23 22:23 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5232,13 +5232,21 @@ window.DASHBOARD_DATA = {
     },
     {
       "slug": "bmad-suite-channel-product",
-      "title": "The SelfExplainML bmad-suite is a governed product — always latest, dual-path installable, modules provisioned",
+      "title": "The PrivateChannel bmad-suite is a governed product — always latest, dual-path installable, modules provisioned",
       "status": "specified   # 2026-08-22 — spec-bmad-suite-channel-product (5 CAPs + install-matrix.md); decomposed as steward Epic 15 (4 stories) + doctor Epic 15 (2 stories, CAP-5 relay); channel bmad-method refreshed to 6.11.0 same day",
       "owner": "steward",
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product"
       }
+    },
+    {
+      "slug": "bmad-suite-install-class-wiring",
+      "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
+      "status": "dreamt",
+      "owner": "steward",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "bmad-switch-scope-enforcement",
@@ -5705,6 +5713,14 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "ocp-as-a-portability-profile",
+      "title": "OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster",
+      "status": "specified   # 2026-08-23 — spec-12-9-ocp-as-a-portability-profile (Story 12.9)",
+      "owner": "steward",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "one-front-door",
       "title": "One front door — Marshal drives everything BMAD installs",
       "status": "archived",
@@ -6004,6 +6020,14 @@ window.DASHBOARD_DATA = {
         "project": "_bmad-output/projects/pyforge-warden",
         "program": "warden"
       }
+    },
+    {
+      "slug": "pyforge-web-surface-strategy",
+      "title": "One PyForge web surface strategy — portals, dashboards, and the Guildhall stop competing",
+      "status": "dreamt",
+      "owner": "herald",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "python-agent-platform",
@@ -6518,7 +6542,7 @@ window.DASHBOARD_DATA = {
       "title": "A story's orchestrator-recorded baseline can never *silently* drift out from under its own worktree",
       "caps": 3,
       "companions": 0,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "bmad-loop-baseline-drift",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift"
     },
@@ -6578,7 +6602,7 @@ window.DASHBOARD_DATA = {
       "title": "The BMAD switch has two divergent guards, and neither checks the slug the caller asked for",
       "caps": 3,
       "companions": 0,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "bmad-switch-scope-enforcement",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement"
     },
@@ -6726,9 +6750,9 @@ window.DASHBOARD_DATA = {
       "slug": "marshal-single-story-dispatch",
       "project": "pyforge-marshal",
       "title": "Single-story dispatch is a marshal verb, not a session's discipline",
-      "caps": 6,
-      "companions": 0,
-      "updated": "2026-08-22",
+      "caps": 7,
+      "companions": 1,
+      "updated": "2026-08-23",
       "dream": "marshal-single-story-dispatch",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch"
     },
@@ -7148,7 +7172,7 @@ window.DASHBOARD_DATA = {
       "title": "One workspace opens every repo a story touches",
       "caps": 2,
       "companions": 0,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "multi-repo-workspaces",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-multi-repo-workspaces"
     },
@@ -7198,7 +7222,7 @@ window.DASHBOARD_DATA = {
       "title": "Story-scoped scratch worktrees get a named lifecycle: `steward workspace start/ls/status/clean`",
       "caps": 5,
       "companions": 0,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "scratch-worktree-lifecycle",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle"
     },
@@ -7995,8 +8019,8 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "in-progress",
           "note": "next free slot",
-          "done": 53,
-          "total": 79,
+          "done": 78,
+          "total": 80,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8028,7 +8052,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 113,
+          "done": 143,
           "total": 162,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
@@ -8097,9 +8121,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 81,
+    "live": 84,
     "reached": 8,
-    "gaps": 80,
+    "gaps": 86,
     "findings": 25,
     "rows": [
       {
@@ -8224,13 +8248,59 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "57/57",
         "complete": 14,
-        "of": 14
+        "of": 14,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-07-25"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:38",
+                  "other": "2026-08-01"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "code",
+                  "than": "retro",
+                  "at": "2026-08-14",
+                  "other": "2026-08-02"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "doctor",
@@ -8268,7 +8338,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-15",
           "sprint": "2026-08-22",
-          "tea": "2026-08-22",
+          "tea": "2026-08-23",
           "gates": "2026-08-10",
           "code": "2026-08-13",
           "verify": "2026-08-13",
@@ -8354,13 +8424,59 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "61/61",
         "complete": 14,
-        "of": 14
+        "of": 14,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-07-25"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:38",
+                  "other": "2026-08-02"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "code",
+                  "than": "retro",
+                  "at": "2026-08-13",
+                  "other": "2026-08-08"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "herald",
@@ -8484,13 +8600,61 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "58/58",
         "complete": 14,
-        "of": 14
+        "of": 14,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-08-02"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:38",
+                  "other": "2026-08-02"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "code",
+                  "than": "retro",
+                  "at": "2026-08-22",
+                  "other": "2026-08-08"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "marshal",
@@ -8526,12 +8690,12 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-10",
           "context": "2026-06-20",
-          "epics": "2026-08-22",
-          "sprint": "2026-08-22",
-          "tea": "2026-08-22",
+          "epics": "2026-08-23",
+          "sprint": "2026-08-23",
+          "tea": "2026-08-23",
           "gates": "2026-08-10",
-          "code": "2026-08-21",
-          "verify": "2026-08-21",
+          "code": "2026-08-23",
+          "verify": "2026-08-23",
           "retro": ""
         },
         "sub": {
@@ -8613,13 +8777,59 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "113/162",
+        "progress": "143/162",
         "complete": 13,
-        "of": 13
+        "of": 13,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-08-02"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "prd",
+                  "than": "arch",
+                  "at": "2026-08-14",
+                  "other": "2026-08-10"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T07:48",
+                  "other": "2026-08-14"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "mason",
@@ -8747,13 +8957,64 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "47/47",
         "complete": 13,
-        "of": 13
+        "of": 13,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-07-25"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:39",
+                  "other": "2026-08-01"
+                },
+                {
+                  "kind": "behind-code",
+                  "stage": "prd",
+                  "at": "2026-08-01",
+                  "other": "2026-08-14"
+                },
+                {
+                  "kind": "behind-code",
+                  "stage": "arch",
+                  "at": "2026-08-02",
+                  "other": "2026-08-14"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "scribe",
@@ -8877,13 +9138,59 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "11/11",
         "complete": 14,
-        "of": 14
+        "of": 14,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-07-25"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:39",
+                  "other": "2026-08-01"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "code",
+                  "than": "retro",
+                  "at": "2026-08-12",
+                  "other": "2026-08-08"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "steward",
@@ -8920,11 +9227,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-15",
-          "sprint": "2026-08-22",
-          "tea": "2026-08-21",
+          "sprint": "2026-08-23",
+          "tea": "2026-08-23",
           "gates": "2026-08-10",
-          "code": "2026-08-21",
-          "verify": "2026-08-21",
+          "code": "2026-08-23",
+          "verify": "2026-08-23",
           "retro": "2026-08-08"
         },
         "sub": {
@@ -9002,18 +9309,66 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "code",
             "than": "retro",
-            "at": "2026-08-21",
+            "at": "2026-08-23",
             "other": "2026-08-08"
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "53/74",
+        "progress": "73/74",
         "complete": 14,
-        "of": 14
+        "of": 14,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-07-25"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:39",
+                  "other": "2026-08-01"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "code",
+                  "than": "retro",
+                  "at": "2026-08-23",
+                  "other": "2026-08-08"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "warden",
@@ -9137,13 +9492,59 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "36/36",
         "complete": 14,
-        "of": 14
+        "of": 14,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": true,
+              "gaps": [],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": false,
+              "staleBy": [
+                {
+                  "kind": "feeds",
+                  "stage": "research",
+                  "than": "brief",
+                  "at": "2026-08-08",
+                  "other": "2026-07-25"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "spec",
+                  "than": "prd",
+                  "at": "2026-08-22T05:39",
+                  "other": "2026-08-01"
+                },
+                {
+                  "kind": "feeds",
+                  "stage": "code",
+                  "than": "retro",
+                  "at": "2026-08-12",
+                  "other": "2026-08-08"
+                }
+              ]
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "artifactory-download-intelligence",
@@ -9243,13 +9644,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "atlas-query-dashboards",
@@ -9349,13 +9776,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "conda-forge-packaging-inventory-operations",
@@ -9455,13 +9908,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "enterprise-data-models-and-apis",
@@ -9561,13 +10040,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "kedro-org-tooling-adoption",
@@ -9667,13 +10172,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "microsoft-org-sweep",
@@ -9773,13 +10304,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "atlas-intelligence-platform",
@@ -9879,13 +10436,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "unity",
@@ -9978,13 +10561,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 4
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "upstream-discovery",
@@ -10084,13 +10693,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "wagtail-corporate-brain",
@@ -10190,13 +10825,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "wasm",
@@ -10289,13 +10950,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 4
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "backlog-intake-check",
@@ -10395,13 +11082,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-drift-new-artifact-shape",
@@ -10501,13 +11214,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-method-version-drift",
@@ -10607,13 +11346,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "deferred-work-audit-completeness",
@@ -10714,13 +11479,40 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "deferred-work-resolution-sweep",
@@ -10820,13 +11612,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "deferred-work-visibility",
@@ -10926,13 +11744,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "fleet-hygiene-verification-exemplar-program",
@@ -11032,13 +11876,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "doctor-dependency-health",
@@ -11138,13 +12008,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "sibling-dreams-drift",
@@ -11244,13 +12140,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "charter",
@@ -11357,12 +12279,38 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "spec",
         "updated": "2026-08-08",
-        "age": 14,
+        "age": 15,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 1,
-        "of": 2
+        "of": 2,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "deck-visual-qa",
@@ -11462,13 +12410,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "herald-moments-2-4-live-backend",
@@ -11568,13 +12544,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "herald-moments-2-4-missing-surface",
@@ -11674,13 +12678,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "herald-pitch",
@@ -11781,13 +12813,42 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "pptx-custom-shapes",
@@ -11887,13 +12948,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "pptx-deck-generation",
@@ -11993,13 +13082,177 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "label": "web-surface-strategy",
+        "slug": "pyforge-web-surface-strategy",
+        "project": "pyforge-herald",
+        "dream": "pyforge-web-surface-strategy",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-23",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "adaptive-model-tiering",
@@ -12099,13 +13352,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "agent-portability",
@@ -12205,13 +13484,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "agent-tool-surface",
@@ -12311,13 +13616,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "agentic-sdlc-autonomy",
@@ -12417,13 +13748,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "artifact-chain-reconciliation",
@@ -12523,13 +13880,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "artifact-console",
@@ -12629,13 +14012,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-611-era-alignment",
@@ -12735,13 +14144,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-loop-baseline-drift",
@@ -12768,9 +14203,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-14",
+          "dream": "2026-08-23",
           "deck": "",
-          "spec": "2026-08-22T05:39",
+          "spec": "2026-08-23",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -12824,7 +14259,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 3,
+        "openQuestions": 2,
         "overtaken": false,
         "na": [
           "dream",
@@ -12841,13 +14276,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-loop-forward-dependency-blindness",
@@ -12947,13 +14408,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-loop-governance",
@@ -13053,13 +14540,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-loop-intent-gap-work-preservation",
@@ -13086,7 +14599,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-14",
+          "dream": "2026-08-23",
           "deck": "",
           "spec": "2026-08-22T07:48",
           "research": "2026-08-08",
@@ -13159,13 +14672,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-loop-liveness-footgun",
@@ -13265,13 +14804,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-output-hygiene",
@@ -13371,13 +14936,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "bmad-switch-scope-enforcement",
@@ -13406,7 +14997,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-14",
           "deck": "",
-          "spec": "2026-08-22T05:39",
+          "spec": "2026-08-23",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -13460,7 +15051,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 2,
+        "openQuestions": 1,
         "overtaken": false,
         "na": [
           "dream",
@@ -13477,13 +15068,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "dashboard-project-path-derivation",
@@ -13583,13 +15200,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "dashboard-velocity-captures-hand-driven-work",
@@ -13689,13 +15332,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "dream-to-code-model-self-verification",
@@ -13795,13 +15464,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "durable-runs",
@@ -13901,13 +15596,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "factory-console",
@@ -14007,13 +15728,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "fidelity-enforcement",
@@ -14113,13 +15860,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "fleet-chain-completeness",
@@ -14219,13 +15992,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "fleet-status-supervisor-fallback",
@@ -14325,13 +16124,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "genesis-installer",
@@ -14432,13 +16257,40 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "genesis-installer-name-retirement",
@@ -14538,13 +16390,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "horizontal-run-concurrency",
@@ -14644,13 +16522,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "landing-evidence-grammar",
@@ -14750,13 +16654,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "loop-home-fleet-refresh",
@@ -14856,13 +16786,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "marshal-land-cross-project-story-key-collision",
@@ -14962,13 +16918,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "marshal-land-merge-subject",
@@ -15068,13 +17050,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "marshal-single-story-dispatch",
@@ -15101,9 +17109,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-21",
+          "dream": "2026-08-23",
           "deck": "",
-          "spec": "2026-08-22T05:39",
+          "spec": "2026-08-23",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -15174,13 +17182,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "marshal-status-harness-run-id-poisoning",
@@ -15280,13 +17314,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "multi-loop-isolation",
@@ -15386,13 +17446,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "one-front-door",
@@ -15492,13 +17578,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "pr-lifecycle",
@@ -15598,13 +17710,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "core",
@@ -15642,7 +17780,7 @@ window.DASHBOARD_DATA = {
           "context": "",
           "epics": "",
           "sprint": "",
-          "tea": "2026-08-13",
+          "tea": "2026-08-23",
           "gates": "",
           "code": "2026-08-12",
           "verify": "2026-08-12",
@@ -15721,13 +17859,46 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "verify",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 5,
-        "of": 13
+        "of": 13,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "brief",
+                "prd",
+                "arch",
+                "context",
+                "epics",
+                "sprint",
+                "gates"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "marshal-loop-orchestrator",
@@ -15827,13 +17998,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "testing-charter",
@@ -15933,13 +18130,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "quick-dev-reconciliation",
@@ -16039,13 +18262,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "regenerable-factory",
@@ -16150,13 +18399,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 4
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "risk-tiered-review-depth",
@@ -16256,13 +18531,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "sprint-status-auto-promote",
@@ -16362,13 +18663,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "surface-drift-reconciliation",
@@ -16468,13 +18795,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "conda-forge-expert-rebuild",
@@ -16574,13 +18927,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "copilot-cli-packaging",
@@ -16680,13 +19059,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "db-gpt-packaging",
@@ -16786,13 +19191,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "django-accelerator-framework",
@@ -16892,13 +19323,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "fleet-stewardship",
@@ -16998,13 +19455,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "machine-checked-recipe-knowledge",
@@ -17104,13 +19587,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "miniforge-installer",
@@ -17210,13 +19719,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "packaging-factory",
@@ -17316,13 +19851,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "pixi-container-image",
@@ -17422,13 +19983,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "presenton",
@@ -17530,13 +20117,44 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 4,
-        "of": 10
+        "of": 10,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "spec",
+                "brief",
+                "prd",
+                "ux",
+                "arch",
+                "context"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "mason-recipe-validator",
@@ -17636,13 +20254,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "reusable-cicd-workflows",
@@ -17742,13 +20386,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "scribe-team-memory",
@@ -17848,13 +20518,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "scribe-mines-raw-session-transcripts",
@@ -17954,13 +20650,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "sentinel",
@@ -18060,13 +20782,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "team-memory",
@@ -18166,13 +20914,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "asgi-multiplexer-monolith",
@@ -18272,13 +21046,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "bmad-method-core-upgrade",
@@ -18378,13 +21180,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "bmad-module-provisioning",
@@ -18484,13 +21314,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "bmad-suite-channel-product",
@@ -18517,7 +21375,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-22",
+          "dream": "2026-08-23",
           "deck": "",
           "spec": "2026-08-22T06:20",
           "research": "2026-08-08",
@@ -18590,13 +21448,177 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "label": "bmad-suite-install-class-wiring",
+        "slug": "bmad-suite-install-class-wiring",
+        "project": "pyforge-steward",
+        "dream": "bmad-suite-install-class-wiring",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-23",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "db-gpt-django-plugin",
@@ -18696,13 +21718,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "developer-machine-bootstrap",
@@ -18802,13 +21852,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "enterprise-airgap",
@@ -18908,13 +21986,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "enterprise-multi-agent-orchestration",
@@ -19014,13 +22120,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "jira-github-projects-sync",
@@ -19125,13 +22259,43 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 6
+        "of": 6,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "brief",
+                "prd"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "langflow-django-plugin",
@@ -19231,13 +22395,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "local-ocp-hybrid-environment",
@@ -19337,13 +22529,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "multi-repo-workspaces",
@@ -19372,7 +22592,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-22",
           "deck": "",
-          "spec": "2026-08-22T07:17",
+          "spec": "2026-08-23",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -19443,13 +22663,177 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "label": "ocp-as-a-portability-profile",
+        "slug": "ocp-as-a-portability-profile",
+        "project": "pyforge-steward",
+        "dream": "ocp-as-a-portability-profile",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-23",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "spec"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "platform-fifteen-factors",
@@ -19549,13 +22933,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "steward-feedstock-maintenance",
@@ -19655,13 +23067,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "python-agent-platform",
@@ -19761,13 +23201,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "scratch-worktree-lifecycle",
@@ -19796,7 +23264,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-14",
           "deck": "",
-          "spec": "2026-08-22T05:39",
+          "spec": "2026-08-23",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -19850,7 +23318,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 2,
+        "openQuestions": 0,
         "overtaken": false,
         "na": [
           "dream",
@@ -19867,13 +23335,41 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "secure-live-dashboards",
@@ -19978,13 +23474,43 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 6
+        "of": 6,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "brief",
+                "prd"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "unified-container",
@@ -20089,13 +23615,43 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 6
+        "of": 6,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck",
+                "brief",
+                "prd"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
       },
       {
         "label": "compliance-factory-web-face",
@@ -20195,13 +23751,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "package-inventory-eligibility",
@@ -20301,13 +23883,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       },
       {
         "label": "warden-compliance-gates",
@@ -20407,13 +24015,39 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-22",
+        "updated": "2026-08-23",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 3
+        "of": 3,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": true,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": true,
+              "kinds": []
+            }
+          }
+        }
       }
     ]
   },
@@ -20804,20 +24438,47 @@ window.DASHBOARD_DATA = {
         "task": "llms-full-check",
         "guards": "library catalog freshness",
         "state": "drift",
-        "findings": 51,
-        "verdict": "DRIFT: 51 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "findings": 255,
+        "verdict": "DRIFT: 255 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],
     "baseline": {
       "skill": "8.83.0",
       "head": "4708f15c25",
-      "deltas": [],
+      "deltas": [
+        {
+          "what": "skill",
+          "baseline": "8.83.0",
+          "live": "8.84.0"
+        },
+        {
+          "what": "pixi envs",
+          "baseline": "24",
+          "live": "26"
+        }
+      ],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
   },
   "backlog": {
     "rows": [
+      {
+        "slug": "bmad-suite-install-class-wiring",
+        "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
+        "status": "dreamt",
+        "owner": "steward",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "pyforge-web-surface-strategy",
+        "title": "One PyForge web surface strategy — portals, dashboards, and the Guildhall stop competing",
+        "status": "dreamt",
+        "owner": "herald",
+        "blockedOn": "",
+        "chain": {}
+      },
       {
         "slug": "deferred-work-audit-completeness",
         "title": "deferred-work-audit-completeness",
@@ -20879,9 +24540,10 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 0,
     "byOwner": {
+      "steward": 3,
+      "herald": 1,
       "doctor": 1,
       "marshal": 2,
-      "steward": 2,
       "atlas": 1
     },
     "practices": [
@@ -20957,9 +24619,9 @@ window.DASHBOARD_DATA = {
     "rows": [
       {
         "station": "herald",
-        "total": 7,
+        "total": 8,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 2,
           "realized": 1,
@@ -20967,7 +24629,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "complete",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -20981,6 +24643,13 @@ window.DASHBOARD_DATA = {
             "slug": "herald-pitch",
             "title": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-web-surface-strategy",
+            "title": "One PyForge web surface strategy — portals, dashboards, and the Guildhall stop competing",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -21032,7 +24701,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 11.5",
+        "line": "paused 21.1",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -21713,17 +25382,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "steward",
-        "total": 19,
+        "total": 21,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 4,
           "realized": 3,
           "archived": 1,
           "practice": 2
         },
-        "line": "paused 12.3",
-        "load": 2,
+        "line": "paused 17.2",
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -21758,6 +25427,13 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-suite-install-class-wiring",
+            "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -21826,7 +25502,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "slug": "bmad-suite-channel-product",
-            "title": "The SelfExplainML bmad-suite is a governed product — always latest, dual-path installable, modules provisioned",
+            "title": "The PrivateChannel bmad-suite is a governed product — always latest, dual-path installable, modules provisioned",
             "status": "specified   # 2026-08-22 — spec-bmad-suite-channel-product (5 CAPs + install-matrix.md); decomposed as steward Epic 15 (4 stories) + doctor Epic 15 (2 stories, CAP-5 relay); channel bmad-method refreshed to 6.11.0 same day",
             "type": "dream",
             "blockedOn": ""
@@ -21858,6 +25534,13 @@ window.DASHBOARD_DATA = {
             "status": "specified   # 2026-08-22 — spec-platform-fifteen-factors, decomposed into the station backlog same day",
             "type": "dream",
             "blockedOn": ""
+          },
+          {
+            "slug": "ocp-as-a-portability-profile",
+            "title": "OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster",
+            "status": "specified   # 2026-08-23 — spec-12-9-ocp-as-a-portability-profile (Story 12.9)",
+            "type": "dream",
+            "blockedOn": ""
           }
         ]
       }
@@ -21871,15 +25554,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 462,
-    "done": 28,
+    "open": 461,
+    "done": 29,
     "triaged": 145,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 19,
       "low": 48,
-      "unspecified": 394
+      "unspecified": 393
     },
     "projects": [
       {
@@ -22748,8 +26431,8 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 103,
-        "done": 11,
+        "open": 102,
+        "done": 12,
         "triaged": 25,
         "entries": [
           {
@@ -22965,9 +26648,9 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-1-4-2",
             "title": "The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_f…",
-            "status": "open",
+            "status": "done",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-1-4-3",
@@ -25387,18 +29070,18 @@ window.DASHBOARD_DATA = {
     ]
   },
   "status": {
-    "source": "sprint-status",
+    "source": "git",
     "running": [],
     "lastShipped": {
       "station": "marshal",
-      "story": "11.4",
-      "epoch": 1787441447,
-      "sha": "b7f89a2d4",
-      "subject": "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"
+      "story": "20.8",
+      "epoch": 1787522307,
+      "sha": "b6addf95e",
+      "subject": "feat(core): shared landing-evidence grammar (marshal story 20.8)"
     },
-    "runningAvailable": true,
-    "generatedAt": "2026-08-23 03:16 UTC",
-    "generatedEpoch": 1787454960
+    "runningAvailable": false,
+    "generatedAt": "2026-08-23 22:23 UTC",
+    "generatedEpoch": 1787523839
   },
   "storySpecs": [
     {
@@ -25421,9 +29104,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 113,
-      "tracked": 65,
-      "gap": 48
+      "done": 143,
+      "tracked": 96,
+      "gap": 47
     },
     {
       "station": "pyforge-mason",
@@ -25439,8 +29122,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 53,
-      "tracked": 25,
+      "done": 78,
+      "tracked": 50,
       "gap": 28
     },
     {
@@ -25545,21 +29228,21 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 113,
-        "backlog": 49,
+        "done": 143,
+        "backlog": 19,
         "blocked": 0,
         "total": 162,
-        "next": "11-5-referenced-dependency-verification-and-doctor-delegation",
+        "next": "21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage",
         "blockedKeys": [],
         "backlogKeys": [
-          "11-5-referenced-dependency-verification-and-doctor-delegation",
-          "11-6-marshal-seed-explain-and-version",
-          "12-1-full-pixi-wiring-distribution-and-repo-gate-compliance",
-          "12-2-the-local-recipes-empty-plan-oracle",
-          "12-3-offline-operation-and-the-egress-counter",
-          "12-4-pattern-meta-tests-and-the-never-write-proof",
-          "12-5-cli-contract-idempotence-harness-and-performance-gates",
-          "12-6-readme-adoption-guide-and-the-finding-remedy-reference"
+          "21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage",
+          "21-2-orchestrated-chain-regeneration",
+          "21-3-code-status-preservation",
+          "21-4-orphan-detection-with-review-gated-cleanup",
+          "21-5-configurable-per-project-invocation",
+          "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session",
+          "22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched",
+          "22-3-verification-is-the-product-no-landing-on-a-self-report"
         ],
         "state": "ready"
       },
@@ -25621,21 +29304,15 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 53,
-        "backlog": 26,
+        "done": 78,
+        "backlog": 2,
         "blocked": 0,
-        "total": 79,
-        "next": "12-3-air-gap-parity-is-a-failing-check",
+        "total": 80,
+        "next": "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
         "blockedKeys": [],
         "backlogKeys": [
-          "12-3-air-gap-parity-is-a-failing-check",
-          "12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined",
-          "12-5-the-db-gpt-sidecar-joins-the-chart",
-          "12-6-redis-is-hardened-still-ephemeral",
           "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
-          "12-8-github-projects-v2-lands-in-github-metrics-via-dlt",
-          "13-1-workspace-verbs-over-git-worktree",
-          "13-2-status-and-the-feed-mirror-decision"
+          "17-2-steward-setup-initrepo-take-the-machine-to-green"
         ],
         "state": "ready"
       },
@@ -25828,10 +29505,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 436,
-      "backlog": 75,
+      "done": 491,
+      "backlog": 21,
       "blocked": 0,
-      "total": 511
+      "total": 512
     }
   },
   "fleetProgress": {
@@ -25843,9 +29520,7 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 16,
         "epicsDone": 16,
-        "complete": true,
-        "running": false,
-        "projected": 57
+        "complete": true
       },
       {
         "key": "doctor",
@@ -25854,9 +29529,7 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 16,
         "epicsDone": 16,
-        "complete": true,
-        "running": false,
-        "projected": 61
+        "complete": true
       },
       {
         "key": "herald",
@@ -25865,20 +29538,16 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 15,
         "epicsDone": 15,
-        "complete": true,
-        "running": false,
-        "projected": 58
+        "complete": true
       },
       {
         "key": "marshal",
         "stories": 162,
-        "done": 113,
+        "done": 143,
         "blocked": 0,
         "epics": 25,
-        "epicsDone": 13,
-        "complete": false,
-        "running": false,
-        "projected": 113
+        "epicsDone": 20,
+        "complete": false
       },
       {
         "key": "mason",
@@ -25887,9 +29556,7 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 9,
         "epicsDone": 9,
-        "complete": true,
-        "running": false,
-        "projected": 47
+        "complete": true
       },
       {
         "key": "scribe",
@@ -25898,20 +29565,16 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 3,
         "epicsDone": 3,
-        "complete": true,
-        "running": false,
-        "projected": 11
+        "complete": true
       },
       {
         "key": "steward",
-        "stories": 79,
-        "done": 53,
+        "stories": 80,
+        "done": 78,
         "blocked": 0,
         "epics": 17,
-        "epicsDone": 11,
-        "complete": false,
-        "running": false,
-        "projected": 53
+        "epicsDone": 15,
+        "complete": false
       },
       {
         "key": "warden",
@@ -25920,22 +29583,16 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 8,
         "epicsDone": 8,
-        "complete": true,
-        "running": false,
-        "projected": 36
+        "complete": true
       }
     ],
     "total": {
-      "stories": 511,
-      "done": 436,
+      "stories": 512,
+      "done": 491,
       "blocked": 0,
       "epics": 109,
-      "epicsDone": 91
+      "epicsDone": 102
     },
-    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
-    "live": {
-      "running": [],
-      "projected": 436
-    }
+    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
   }
 };

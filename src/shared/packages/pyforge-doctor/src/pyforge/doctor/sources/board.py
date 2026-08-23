@@ -800,19 +800,55 @@ def gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
 # === gather_chain_layers_audit ===============================================
 #
 # Story 17.3 / FR-150 residual + FR-152 — read-only layer-presence report for
-# ONE named project. Seeded from docs/dashboard/generate.py's FLEET_STAGES /
-# _stage_globs / _resolve (via _load_dashboard_generate) — never a second
-# derivation. Distinct from INV-A..D (gather_chain_completeness) and from
-# dreams-hygiene (--dreams). Invoked as:
+# ONE named project. Story 21.1 / FR-192 CAP-3 extends this with coherence,
+# staleness, and orphan-freedom checkpoints (pass/fail per checkpoint), seeded
+# from docs/dashboard/generate.py's FLEET_STAGES / scan_fleet / _chain_audit_verdict
+# and dream_chain_orphan_index — never a second derivation or cached table.
+# Distinct from INV-A..D (gather_chain_completeness) and from dreams-hygiene
+# (--dreams). Invoked as:
 #   python -m pyforge.doctor.sources chain-completeness --layers --project <slug>
+
+_CHAIN_AUDIT_CHECKPOINTS = (
+    ("layers", "chain-audit-checkpoint-layers"),
+    ("coherence", "chain-audit-checkpoint-coherence"),
+    ("staleness", "chain-audit-checkpoint-staleness"),
+    ("orphans", "chain-audit-checkpoint-orphans"),
+)
+
+
+def _checkpoint_finding(
+    project: str,
+    name: str,
+    check: str,
+    passed: bool,
+    detail: dict,
+) -> Finding:
+    return Finding(
+        source=Source.CHAIN_LAYERS_AUDIT,
+        check=check,
+        status=DoctorStatus.OK if passed else DoctorStatus.FAIL,
+        message=(
+            f"project {project}: {name} checkpoint pass"
+            if passed
+            else f"project {project}: {name} checkpoint fail"
+        ),
+        evidence={
+            "kind": check,
+            "project": project,
+            "checkpoint": name,
+            "pass": passed,
+            **detail,
+        },
+    )
 
 
 def gather_chain_layers_audit(
     target: Path, project: str
 ) -> tuple[Finding, ...]:
-    """Report which Dream-to-Code layers exist for ``project`` (Story 17.3).
+    """CAP-3 chain audit for ``project`` (Stories 17.3 + 21.1).
 
-    Warn-only; read-only; does not reimplement INV-A..D or dreams-hygiene.
+    Read-only; pass/fail per checkpoint (layers, coherence, staleness,
+    orphans). Does not reimplement INV-A..D or dreams-hygiene.
     ``project`` is the BMAD project slug (e.g. ``pyforge-marshal``).
     """
     return degrade_on_exception(
@@ -946,18 +982,95 @@ def _gather_chain_layers_audit(
     applicable = [s for s in stages if s not in na]
     present = [s for s in applicable if layers[s]]
     missing = [s for s in applicable if not layers[s]]
-    status = DoctorStatus.OK if not missing else DoctorStatus.WARN
-    message = (
-        f"project {project}: {len(present)}/{len(applicable)} chain layers "
-        f"present"
-        + (f"; missing: {', '.join(missing)}" if missing else "")
+
+    # CAP-3 coherence/staleness: reuse scan_fleet's live row for this project.
+    fleet = gen.scan_fleet({}, None)
+    fleet_row = next(
+        (
+            r
+            for r in fleet.get("rows", [])
+            if r.get("project") == project and r.get("slug") == project
+        ),
+        None,
     )
-    return (
+    if fleet_row is None:
+        fleet_row = next(
+            (r for r in fleet.get("rows", []) if r.get("project") == project),
+            None,
+        )
+    if fleet_row is None:
+        return (
+            Finding(
+                source=Source.CHAIN_LAYERS_AUDIT,
+                check="chain-layers-audit-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"project {project!r} has no fleet chain row — "
+                    "CAP-3 audit cannot be evaluated"
+                ),
+                evidence={
+                    "kind": "chain-layers-audit-unevaluable",
+                    "project": project,
+                    "detail": "no fleet row",
+                },
+            ),
+        )
+
+    from . import chain as chain_sources
+
+    orphan_kinds = chain_sources.dream_chain_orphan_index(root).get(project, [])
+    chain_audit = gen._chain_audit_verdict(fleet_row, orphan_kinds)
+
+    findings: list[Finding] = []
+    for cp_name, check in _CHAIN_AUDIT_CHECKPOINTS:
+        cp = chain_audit["checkpoints"][cp_name]
+        findings.append(
+            _checkpoint_finding(
+                project,
+                cp_name,
+                check,
+                cp["pass"],
+                {k: v for k, v in cp.items() if k != "pass"},
+            )
+        )
+
+    verdict_pass = chain_audit["verdict"] == "pass"
+    findings.append(
+        Finding(
+            source=Source.CHAIN_LAYERS_AUDIT,
+            check="chain-audit-verdict",
+            status=DoctorStatus.OK if verdict_pass else DoctorStatus.FAIL,
+            message=(
+                f"project {project}: CAP-3 chain audit pass"
+                if verdict_pass
+                else f"project {project}: CAP-3 chain audit fail"
+            ),
+            evidence={
+                "kind": "chain-audit-verdict",
+                "project": project,
+                "verdict": chain_audit["verdict"],
+                "checkpoints": chain_audit["checkpoints"],
+                "layers": layers,
+                "files": files,
+                "na": sorted(na),
+                "present": present,
+                "missing": missing,
+                "stages": list(stages),
+            },
+        )
+    )
+
+    # Layer-presence summary retained for 17.3 continuity (warn-only detail).
+    findings.append(
         Finding(
             source=Source.CHAIN_LAYERS_AUDIT,
             check="chain-layers-audit",
-            status=status,
-            message=message,
+            status=DoctorStatus.OK if not missing else DoctorStatus.WARN,
+            message=(
+                f"project {project}: {len(present)}/{len(applicable)} chain layers "
+                f"present"
+                + (f"; missing: {', '.join(missing)}" if missing else "")
+            ),
             evidence={
                 "kind": "chain-layers-audit",
                 "project": project,
@@ -967,9 +1080,11 @@ def _gather_chain_layers_audit(
                 "present": present,
                 "missing": missing,
                 "stages": list(stages),
+                "chainAudit": chain_audit,
             },
-        ),
+        )
     )
+    return tuple(findings)
 
 
 def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:

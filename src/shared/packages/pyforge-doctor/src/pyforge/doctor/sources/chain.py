@@ -63,6 +63,7 @@ from . import degrade_on_exception
 
 __all__ = (
     "gather_dream_chain",
+    "dream_chain_orphan_index",
     "gather_dreams_hygiene",
     "gather_deferred_work",
     "gather_spec_surface",
@@ -651,6 +652,39 @@ def _check_dream_chain(
     _sharded_findings(target, findings)
 
     return findings
+
+
+def _projects_for_dream_chain_finding(finding: Finding) -> frozenset[str]:
+    """BMAD project slugs a ``dream-chain`` FAIL applies to (CAP-3 orphan scope)."""
+    ev = finding.evidence or {}
+    inv = ev.get("inv", "")
+    subj = ev.get("subject", "")
+    status = ev.get("status", "")
+    owner = ev.get("owner", "")
+    projs: set[str] = set()
+    if inv == "INV-3" and subj.startswith("pyforge-"):
+        projs.add(subj)
+    if status.startswith("in "):
+        projs.add(status.removeprefix("in ").strip())
+    if owner and owner not in ("guild", "(none)"):
+        projs.add(f"pyforge-{owner}")
+    if subj.startswith("pyforge-"):
+        projs.add(subj)
+    return frozenset(projs)
+
+
+def dream_chain_orphan_index(target: Path) -> dict[str, list[str]]:
+    """Map BMAD project slug -> failing ``dream-chain`` check kinds (CAP-3 orphans).
+
+    Computed live each call — never a cached per-station table (Story 21.1).
+    """
+    index: dict[str, list[str]] = {}
+    for finding in gather_dream_chain(target):
+        if finding.status is not DoctorStatus.FAIL:
+            continue
+        for proj in _projects_for_dream_chain_finding(finding):
+            index.setdefault(proj, []).append(finding.check)
+    return index
 
 
 def gather_dream_chain(target: Path) -> tuple[Finding, ...]:

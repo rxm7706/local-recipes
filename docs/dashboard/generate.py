@@ -2005,12 +2005,54 @@ def _subscore(stage: str, slug: str, project: str, primary: bool,
             "missing": sorted(k for k, v in have.items() if not v)}
 
 
+def _dream_chain_orphan_index() -> dict[str, list[str]]:
+    """Once-per-``scan_fleet`` map: project slug -> failing dream-chain kinds."""
+    try:
+        from pyforge.doctor.sources.chain import dream_chain_orphan_index
+
+        return dream_chain_orphan_index(REPO_ROOT)
+    except Exception as exc:  # noqa: BLE001 -- dashboard still renders
+        print(f"[fleet] WARN dream-chain orphan index unavailable: {exc}")
+        return {}
+
+
+def _chain_audit_verdict(row: dict, orphan_kinds: list[str]) -> dict:
+    """CAP-3 pass/fail per checkpoint — live row signals + dream-chain orphans.
+
+    Story 21.1 / FR-192 CAP-3: extends layer-presence (17.3) with
+    coherence, staleness, and orphan-freedom. Never a cached per-station table.
+    """
+    gaps = row.get("gaps") or []
+    partial = row.get("partial") or []
+    stale_by = row.get("staleBy") or []
+    layers_pass = not gaps and not partial
+    coherence_pass = (
+        not row.get("noDream") and not row.get("unowned") and not row.get("overtaken")
+    )
+    staleness_pass = not stale_by
+    orphans_pass = not orphan_kinds
+    checkpoints = {
+        "layers": {"pass": layers_pass, "gaps": gaps, "partial": partial},
+        "coherence": {
+            "pass": coherence_pass,
+            "noDream": bool(row.get("noDream")),
+            "unowned": bool(row.get("unowned")),
+            "overtaken": bool(row.get("overtaken")),
+        },
+        "staleness": {"pass": staleness_pass, "staleBy": stale_by},
+        "orphans": {"pass": orphans_pass, "kinds": sorted(set(orphan_kinds))},
+    }
+    verdict = all(cp["pass"] for cp in checkpoints.values())
+    return {"verdict": "pass" if verdict else "fail", "checkpoints": checkpoints}
+
+
 def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
     """Per-CHAIN Dream-to-Code state: stages, sub-scores, currency, gaps, version."""
     from datetime import date
     today = date.today()
     pitch = {c["slug"]: c for c in (pitch_cards or [])}
     tasks = _pixi_tasks()
+    orphan_index = _dream_chain_orphan_index()
     rows, unattributed = [], []
     for slug, project, owner, dstatus, parent in _fleet_chains():
         primary = (slug == project)
@@ -2073,7 +2115,7 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
                              realized=(dstatus == "realized"))
         if (sub.get("research") or {}).get("inherited"):
             unattributed.append(slug)
-        rows.append({
+        row = {
             "label": FLEET_LABELS.get(slug) or slug.removeprefix("pyforge-"),
             "slug": slug, "project": project, "dream": slug, "owner": owner,
             "stages": stages, "updatedAt": updated_at, "sub": sub,
@@ -2089,7 +2131,11 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
             "stale": isinstance(age, int) and age > _STALE_DAYS,
             "version": _pkg_version(project) if primary else "", "progress": prog,
             "complete": len(required) - len(gaps), "of": len(required),
-        })
+        }
+        row["chainAudit"] = _chain_audit_verdict(
+            row, orphan_index.get(project, []) if project else []
+        )
+        rows.append(row)
     live = [r for r in rows if not r["archived"]]
     sound = [r for r in live if not r["gaps"] and not r["partial"] and not r["staleBy"]]
     flags = {k: [r["slug"] for r in live if r[k]]
