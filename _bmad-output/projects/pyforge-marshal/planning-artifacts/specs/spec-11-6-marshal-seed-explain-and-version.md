@@ -1,0 +1,47 @@
+---
+title: marshal seed explain and marshal seed version
+type: feature
+created: '2026-08-23'
+status: ready
+review_loop_iteration: 0
+followup_review_recommended: false
+context: []
+warnings: []
+baseline_revision: f8c8df5469
+---
+
+<intent-contract>
+
+## Intent
+
+**Problem:** Genesis seed conventions (artifact classes, rationale, hybrid regions, version pairing) are only narrated in prose — agents cannot query the model programmatically (FR-125, FR-127).
+
+**Approach:** Add read-only CLI verbs `marshal seed explain <artifact>` and `marshal seed version` under `seed/verbs/`, wired through `cli/seed.py`. Explain resolves artifact id or repo path to a manifest entry and prints class, rationale, update behavior, and hybrid regions/anchors. Version prints CLI version, bundled model version, and adopted-repo model version when run inside an adopted tree.
+
+## Acceptance Criteria
+
+- Given an artifact id or path, when `marshal seed explain <artifact>` runs, then it prints class, manifest rationale, update behavior, and (for hybrid) regions and anchors; unknown artifacts get a helpful message with near matches.
+- Given `--json`, then explain emits the same data structurally.
+- When `marshal seed version` runs, then it prints CLI version and bundled model version, plus the adopted repo's model version when inside one (FR-125).
+- Both verbs are read-only (no writes, no network).
+
+## Boundaries & Constraints
+
+**Always:** argparse-only CLI (AD-51 — no typer/rich). Reuse manifest resolution patterns from existing seed verbs.
+
+**Never:** Mutating state, network I/O, or conda-forge recipe work.
+
+</intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/explain.py` — NEW
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/version.py` — NEW
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py` — register subcommands
+- `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_explain.py` — NEW
+- `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_version.py` — NEW
+
+## Verification
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
+- `pixi run --frozen -e pyforge-ci pytest tests/packaging/test_dependency_completeness.py -k pyforge-marshal`

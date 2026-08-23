@@ -13,23 +13,22 @@
 | Active stations | **marshal**, **steward** |
 | Drained (ledger) | atlas, doctor, herald, mason, scribe, warden |
 
-## In-flight dispatches (2026-08-23)
+## In-flight dispatches
 
-| Station | Story | Agent |
-|---------|-------|--------|
-| marshal | `11-5` | merge + finalize per PLAN Phase 3 when CI green |
+_None — both active stations idle; ready for next dispatch._
 
-## Recently merged (this session)
+## Recently merged (2026-08-23)
 
 | Station | Story | PR |
 |---------|-------|-----|
+| marshal | `11-5` | [#639](https://github.com/rxm7706/local-recipes/pull/639) — merge `899bdda78b`, finalize `f8c8df5469` |
 | steward | `12-4` | [#638](https://github.com/rxm7706/local-recipes/pull/638) — merge `3773229684` |
 
-## Next queue after in-flight land
+## Next queue
 
 | Station | Next | Remaining |
 |---------|------|-----------|
-| marshal | `11-6` (after 11-5) | 49 → 48 |
+| marshal | `11-6` | 48 |
 | steward | `12-5` | 24 |
 
 ## Operator commands
