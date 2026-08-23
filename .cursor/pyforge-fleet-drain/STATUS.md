@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~16:30 CDT
+**Updated:** 2026-08-23 ~16:45 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -26,8 +26,16 @@
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `20-7` | [Marshal 20-7](8c9bd6f9-a33f-407d-8eef-6e4d8b67e3ca) |
-| steward | `16-4` | [Steward 16-4](cb73af2f-982d-4638-9f98-fda65b7ff656) (skip 12-7) |
+| marshal | `20-7` | [Marshal 20-7](8c9bd6f9-a33f-407d-8eef-6e4d8b67e3ca) · **BLOCKED** · PR [#692](https://github.com/rxm7706/local-recipes/pull/692) OPEN |
+| steward | `16-4` | [Steward 16-4](cb73af2f-982d-4638-9f98-fda65b7ff656) (skip 12-7) · worktree WIP |
+
+## Blocked (operator action required)
+
+| Station | Story | Blocker | Unblock |
+|---------|-------|---------|---------|
+| marshal | `20-7` | GitHub Actions billing / spending limit — CI jobs fail immediately on [#692](https://github.com/rxm7706/local-recipes/pull/692) | Fix account billing → re-run checks → `gh pr merge 692 --merge` → marshal finalize (ledger + spec + queues). **Do not dispatch 20-8 until 20-7 lands.** |
+
+Code ready on branch `marshal/20-7-both-guards-hard-fail-on-drift` (`683dd4e095`); 186 local tests passed per [Marshal 20-7](8c9bd6f9-a33f-407d-8eef-6e4d8b67e3ca).
 
 ## Operator skip
 
@@ -46,4 +54,5 @@
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
 gh pr list --repo rxm7706/local-recipes --state open
+gh pr checks 692 --repo rxm7706/local-recipes
 ```
