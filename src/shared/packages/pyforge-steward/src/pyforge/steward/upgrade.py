@@ -23,6 +23,10 @@ refresh + ``validate``, then reports a single verdict. The only foreign-tree
 mutation is the documented relay refresh (``bmad-loop init``); gates themselves
 are report-only.
 
+Story 15.4 / CAP-4 dual-path orbit: prove-landed also advisory-spot-checks one
+cited native command per install-matrix class (dashboards = check-by-doc).
+Spot-check failures never flip CAP-5 ``verdict`` / ``DutyResult.ok``.
+
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
 share this surface and must not crowd Epic 3's provisioning flags.
@@ -70,6 +74,18 @@ TRAP_CONFIG_MIGRATION = 11
 WORKED_EXAMPLE_LOOP_HOME_COUNT = 8
 _CFE_META_TEST_REL = Path(
     ".claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py"
+)
+_INSTALL_MATRIX_REL = Path(
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
+    "spec-bmad-suite-channel-product/install-matrix.md"
+)
+# Matrix table native URL for bmad-loop (uv-from-git class).
+_BMAD_LOOP_UV_GIT_SPEC = (
+    "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"
+)
+# Matrix table custom-source URL for bmad-manticore.
+_MANTICORE_CUSTOM_SOURCE_URL = (
+    "https://github.com/bmad-code-org/bmad-manticore"
 )
 
 # Relative paths for the trap-5 pin fan-out catalog (2026-08-21 session).
@@ -1845,6 +1861,303 @@ class GateResult:
         return asdict(self)
 
 
+# ---------------------------------------------------------------------------
+# Story 15.4 — CAP-4 dual-path native-class advisory spot-checks (orbit CAP-5)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class NativePathClassDef:
+    """One install-matrix class and its cited gate spot-check candidate."""
+
+    class_id: str
+    mode: str  # executable | check-by-doc
+    argv: tuple[str, ...] | None
+    citation: str
+
+
+# Cited only from install-matrix.md Class → gate spot-check candidates.
+NATIVE_PATH_SPOT_CHECK_CATALOG: tuple[NativePathClassDef, ...] = (
+    NativePathClassDef(
+        class_id="npm-cli",
+        mode="executable",
+        argv=("npx", "bmad-method", "--version"),
+        citation="install-matrix.md Class → gate: npm CLI → npx bmad-method --version",
+    ),
+    NativePathClassDef(
+        class_id="own-npx",
+        mode="executable",
+        argv=("npx", "bmad-module-skill-forge", "--help"),
+        citation=(
+            "install-matrix.md Class → gate: own-npx → "
+            "npx bmad-module-skill-forge --help"
+        ),
+    ),
+    NativePathClassDef(
+        class_id="installer-selection",
+        mode="executable",
+        argv=("bmad-tea-install", "--help"),
+        citation=(
+            "install-matrix.md Class → gate: installer-selection → "
+            "TEA via bmad-tea-install (conda parity)"
+        ),
+    ),
+    NativePathClassDef(
+        class_id="custom-source",
+        mode="executable",
+        # Matrix table: npx bmad-method install --custom-source <manticore URL>.
+        # --help keeps the citation intact without mutating (dry-run surrogate).
+        argv=(
+            "npx",
+            "bmad-method",
+            "install",
+            "--custom-source",
+            _MANTICORE_CUSTOM_SOURCE_URL,
+            "--help",
+        ),
+        citation=(
+            "install-matrix.md Class → gate: custom-source → manticore dry-run "
+            f"(--custom-source {_MANTICORE_CUSTOM_SOURCE_URL})"
+        ),
+    ),
+    NativePathClassDef(
+        class_id="plugin-marketplace",
+        mode="executable",
+        argv=("npx", "skills", "add", "--help"),
+        citation=(
+            "install-matrix.md Class → gate: plugin-marketplace → "
+            "labs npx skills add --help"
+        ),
+    ),
+    NativePathClassDef(
+        class_id="uv-from-git",
+        mode="executable",
+        argv=(
+            "uv",
+            "tool",
+            "install",
+            "--dry-run",
+            _BMAD_LOOP_UV_GIT_SPEC,
+        ),
+        citation=(
+            "install-matrix.md Class → gate: uv-from-git → "
+            "uv tool install --dry-run bmad-loop@git+…"
+        ),
+    ),
+    NativePathClassDef(
+        class_id="build-from-source",
+        mode="check-by-doc",
+        argv=None,
+        citation=(
+            "install-matrix.md Class → gate: build-from-source → "
+            "dashboards excluded (check-by-doc)"
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class NativePathSpotCheck:
+    """Advisory result for one native-method class spot-check."""
+
+    class_id: str
+    mode: str  # executable | check-by-doc | advisory
+    ok: bool
+    status: str  # ok | fail | warn | check-by-doc | missing-matrix
+    detail: str
+    argv: tuple[str, ...] | None = None
+    exit_code: int | None = None
+    advisory: bool = True  # spot-checks never hard-gate CAP-5
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        if self.argv is not None:
+            payload["argv"] = list(self.argv)
+        return payload
+
+
+CommandRunner = Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
+
+
+_NATIVE_SPOT_CHECK_TIMEOUT_SEC = 60
+
+
+def _default_command_runner(
+    argv: Sequence[str], cwd: Path
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            list(argv),
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=_NATIVE_SPOT_CHECK_TIMEOUT_SEC,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(
+            list(argv),
+            124,
+            stdout=exc.stdout if isinstance(exc.stdout, str) else "",
+            stderr=(
+                (exc.stderr if isinstance(exc.stderr, str) else "")
+                or f"timeout after {_NATIVE_SPOT_CHECK_TIMEOUT_SEC}s"
+            ),
+        )
+
+
+def run_native_path_spot_checks(
+    repo: Path,
+    *,
+    command_runner: CommandRunner | None = None,
+    catalog: Sequence[NativePathClassDef] | None = None,
+) -> tuple[NativePathSpotCheck, ...]:
+    """Run ≥1 cited native command (or doc-check) per install-matrix class.
+
+    Failures are advisory only — callers must not fold them into CAP-5
+    ``verdict``. Commands are taken solely from
+    ``NATIVE_PATH_SPOT_CHECK_CATALOG`` (install-matrix citations).
+    """
+    entries = tuple(catalog) if catalog is not None else NATIVE_PATH_SPOT_CHECK_CATALOG
+    matrix_path = repo / _INSTALL_MATRIX_REL
+    if not matrix_path.is_file():
+        return (
+            NativePathSpotCheck(
+                class_id="(matrix)",
+                mode="advisory",
+                ok=False,
+                status="missing-matrix",
+                detail=f"missing citation source: {_INSTALL_MATRIX_REL}",
+                argv=None,
+                advisory=True,
+            ),
+        )
+
+    try:
+        matrix_text = matrix_path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return (
+            NativePathSpotCheck(
+                class_id="(matrix)",
+                mode="advisory",
+                ok=False,
+                status="missing-matrix",
+                detail=f"unreadable citation source {_INSTALL_MATRIX_REL}: {exc}",
+                argv=None,
+                advisory=True,
+            ),
+        )
+
+    runner = command_runner or _default_command_runner
+    results: list[NativePathSpotCheck] = []
+    for entry in entries:
+        if entry.mode == "check-by-doc":
+            # Dashboards: no build subprocess; require matrix still documents
+            # the check-by-doc / dashboards exclusion so doc-only is not a noop.
+            cited = (
+                "check-by-doc" in matrix_text.lower()
+                and "dashboard" in matrix_text.lower()
+            )
+            results.append(
+                NativePathSpotCheck(
+                    class_id=entry.class_id,
+                    mode="check-by-doc",
+                    ok=cited,
+                    status="check-by-doc" if cited else "warn",
+                    detail=(
+                        "dashboards: check-by-doc only (no build subprocess); "
+                        f"cited: {entry.citation}"
+                        if cited
+                        else (
+                            "advisory warn: matrix lacks dashboards/check-by-doc "
+                            f"citation — {entry.citation}"
+                        )
+                    ),
+                    argv=None,
+                    advisory=True,
+                )
+            )
+            continue
+        if entry.mode != "executable":
+            results.append(
+                NativePathSpotCheck(
+                    class_id=entry.class_id,
+                    mode=entry.mode,
+                    ok=False,
+                    status="warn",
+                    detail=f"unknown mode {entry.mode!r} — not executed",
+                    argv=entry.argv,
+                    advisory=True,
+                )
+            )
+            continue
+        if not entry.argv:
+            results.append(
+                NativePathSpotCheck(
+                    class_id=entry.class_id,
+                    mode=entry.mode,
+                    ok=False,
+                    status="warn",
+                    detail=(
+                        f"class {entry.class_id!r} has no cited argv — "
+                        "halt rather than invent (matrix citation required)"
+                    ),
+                    argv=None,
+                    advisory=True,
+                )
+            )
+            continue
+        try:
+            proc = runner(entry.argv, repo)
+        except (OSError, UnicodeDecodeError, ValueError, TypeError) as exc:
+            results.append(
+                NativePathSpotCheck(
+                    class_id=entry.class_id,
+                    mode="executable",
+                    ok=False,
+                    status="fail",
+                    detail=f"advisory: failed to launch {entry.argv[0]!r}: {exc}",
+                    argv=entry.argv,
+                    exit_code=None,
+                    advisory=True,
+                )
+            )
+            continue
+        code = proc.returncode if proc.returncode is not None else -1
+        ok = code == 0
+        # On failure prefer stderr so real errors are not hidden by empty stdout.
+        raw = (
+            (proc.stderr or proc.stdout or "")
+            if not ok
+            else (proc.stdout or proc.stderr or "")
+        )
+        preview = raw.strip().splitlines()
+        tail = " | ".join(preview[-2:])[:300] if preview else ""
+        if ok:
+            detail = f"advisory ok: {' '.join(entry.argv)}"
+            if tail:
+                detail += f" — {tail}"
+            status = "ok"
+        else:
+            detail = f"advisory fail (exit {code}): {' '.join(entry.argv)}"
+            if tail:
+                detail += f" — {tail}"
+            status = "fail"
+        results.append(
+            NativePathSpotCheck(
+                class_id=entry.class_id,
+                mode="executable",
+                ok=ok,
+                status=status,
+                detail=detail,
+                argv=entry.argv,
+                exit_code=int(code),
+                advisory=True,
+            )
+        )
+    return tuple(results)
+
+
 @dataclass(frozen=True)
 class ProveLandedReport:
     """Single-verdict outcome of the post-apply verification gate."""
@@ -1855,6 +2168,8 @@ class ProveLandedReport:
     homes_total: int
     trap_id: int = TRAP_LOOP_RELAY
     notes: tuple[str, ...] = ()
+    # Story 15.4: advisory only — never drives verdict / DutyResult.ok.
+    native_spot_checks: tuple[NativePathSpotCheck, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -1864,6 +2179,7 @@ class ProveLandedReport:
             "homes_total": self.homes_total,
             "trap_id": self.trap_id,
             "notes": list(self.notes),
+            "native_spot_checks": [s.to_dict() for s in self.native_spot_checks],
         }
 
 
@@ -2055,11 +2371,16 @@ def build_prove_landed_report(
     drift_runner: GateRunner | None = None,
     cfe_runner: GateRunner | None = None,
     loop_home_runner: LoopHomeRunner | None = None,
+    command_runner: CommandRunner | None = None,
+    skip_native_spot_checks: bool = False,
 ) -> ProveLandedReport:
     """Run CAP-5 gates and return a single pass/fail verdict.
 
     Foreign-station trees are not edited beyond the documented ``bmad-loop
     init`` relay refresh when *refresh_relays* is True.
+
+    Story 15.4: also runs advisory native-path spot-checks (install-matrix
+    Class → gate candidates). Spot-check failures never flip *verdict*.
     """
     home_root = loops_home if loops_home is not None else Path.home() / ".bmad-loops"
     notes: list[str] = [
@@ -2115,6 +2436,29 @@ def build_prove_landed_report(
     elif not refresh_relays:
         notes.append("--no-init: skipped relay refresh (validate-only)")
 
+    # Story 15.4 — advisory orbit only; never folded into verdict.
+    if skip_native_spot_checks:
+        native_spot_checks: tuple[NativePathSpotCheck, ...] = ()
+        notes.append("native path spot-checks: skipped")
+    else:
+        native_spot_checks = run_native_path_spot_checks(
+            repo, command_runner=command_runner
+        )
+        ok_n = sum(1 for s in native_spot_checks if s.ok)
+        total_n = len(native_spot_checks)
+        fail_n = total_n - ok_n
+        if fail_n:
+            notes.append(
+                f"native path spot-checks: {ok_n}/{total_n} ok, {fail_n} advisory "
+                "fail/warn (do not affect CAP-5 verdict)"
+            )
+        else:
+            notes.append(
+                f"native path spot-checks: {ok_n}/{total_n} ok "
+                "(advisory; not a hard gate)"
+            )
+
+    # Verdict follows Epic 14 hard gates only — never native spot-checks.
     verdict = "pass" if all(g.ok for g in gates) else "fail"
     return ProveLandedReport(
         verdict=verdict,
@@ -2122,6 +2466,7 @@ def build_prove_landed_report(
         homes_ok=homes_ok,
         homes_total=homes_total,
         notes=tuple(notes),
+        native_spot_checks=native_spot_checks,
     )
 
 
@@ -2141,6 +2486,16 @@ def format_prove_landed(report: ProveLandedReport, *, as_json: bool) -> str:
         mark = "ok" if gate.ok else "FAIL"
         mut = " (relay refresh)" if gate.mutated else ""
         lines.append(f"- [{mark}]{mut} {gate.name}: {gate.detail}")
+
+    lines.extend(["", "## Native path spot-checks (advisory)"])
+    if not report.native_spot_checks:
+        lines.append("(none)")
+    for spot in report.native_spot_checks:
+        mark = "ok" if spot.ok else spot.status
+        lines.append(
+            f"- [{mark}] {spot.class_id} ({spot.mode}): {spot.detail}"
+        )
+
     if report.notes:
         lines.extend(["", "## Notes"])
         for note in report.notes:
