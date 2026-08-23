@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~09:42 CDT  
+**Updated:** 2026-08-23 ~09:45 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -19,14 +19,13 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 39** · **steward 19** (**58 total**; 12-7 skipped) |
+| Backlog | **marshal 38** · **steward 19** (**57 total**; 12-7 skipped) |
 | Drained | atlas, doctor, herald, mason, scribe, warden |
 
 ## In-flight (canonical only — do not duplicate)
 
 | Station | Story | Canonical PR / agent |
 |---------|-------|----------------------|
-| marshal | `17-1` | [#661](https://github.com/rxm7706/local-recipes/pull/661) · [Marshal 17-1](36704e6f-3115-4629-a10d-904a76397362) — merge+finalize when CI green |
 | steward | `13-3` | [#660](https://github.com/rxm7706/local-recipes/pull/660) · [Steward 13-3](e202173d-b074-4fd8-ad77-61ea7a5179d0) — merge+finalize when CI green |
 
 **HALTed duplicates (do not resume):** [85301175](85301175-9153-4487-9999-574f2927bcd2), [f5c6ec2b](f5c6ec2b-37bf-4345-aca6-ed8522531c1b), [cf7d5e5c](cf7d5e5c-fd6e-4e36-b1f7-cf4f5cda3fc8).
@@ -42,6 +41,7 @@
 | Station | Story | PR |
 |---------|-------|-----|
 | steward | `13-2` | [#656](https://github.com/rxm7706/local-recipes/pull/656) |
+| marshal | `17-1` | [#661](https://github.com/rxm7706/local-recipes/pull/661) `208093926d3` |
 | marshal | `15-2` | [#657](https://github.com/rxm7706/local-recipes/pull/657) canonical · [#658](https://github.com/rxm7706/local-recipes/pull/658)/[#659](https://github.com/rxm7706/local-recipes/pull/659) closed as dups |
 | steward | `13-1` | [#650](https://github.com/rxm7706/local-recipes/pull/650) |
 | marshal | `15-1` | [#655](https://github.com/rxm7706/local-recipes/pull/655) |

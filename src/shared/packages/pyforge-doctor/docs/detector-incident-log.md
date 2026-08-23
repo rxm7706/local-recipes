@@ -33,7 +33,7 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | wrong claim | 21 Dreams without a Spec (INV-0/INV-1 backlog) |
 | true value | 11 — ten Specs lacked `owner-dream:`; one Spec had unparseable frontmatter silently treated as absent |
 | root cause | `frontmatter()` used `except Exception: return {}`, converting parse failures into "no metadata" |
-| fixing commit | *(Story 17-1 — lands with this entry)* |
+| fixing commit | `208093926d3` (PR #661) |
 | pinning fixture | `tests/unit/test_sources_chain_dream_chain.py::test_spec_unparseable_frontmatter_does_not_report_spec_without_owner_dream` |
 
 ### 2026-08-02 — bmad-drift coverage gap (PR #181)
@@ -69,5 +69,5 @@ commit, and pinning fixture. A detector fix without a log entry is incomplete.
 | wrong claim | `dream-without-spec` with `owner: (none)` for a Dream whose metadata sat behind a body-embedded `---` fence |
 | true value | Malformed frontmatter — metadata never readable from a non-leading fence |
 | root cause | `_frontmatter` returned `{}` when `text.startswith("---")` was false, even if a fence existed later in the body |
-| fixing commit | *(Story 17-1 — lands with this entry)* |
+| fixing commit | `208093926d3` (PR #661) |
 | pinning fixture | `tests/unit/test_sources_chain_dream_chain.py::test_markdown_without_a_leading_frontmatter_fence_surfaces_unparseable` |

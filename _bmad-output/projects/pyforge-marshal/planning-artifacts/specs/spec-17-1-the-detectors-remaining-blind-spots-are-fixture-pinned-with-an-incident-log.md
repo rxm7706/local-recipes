@@ -2,12 +2,12 @@
 title: The detectors' remaining blind spots are fixture-pinned, with an incident log
 type: test
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 7c126bc39d
+baseline_revision: c3e8af1f2b3
 ---
 
 <intent-contract>
@@ -42,3 +42,14 @@ baseline_revision: 7c126bc39d
 
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` (or established doctor test task)
 - Incident log entry present when a detector behaviour changes
+
+## Auto Run Result
+
+Status: done — merged PR #661 as 208093926d3
+Verification:
+- `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py src/shared/packages/pyforge-doctor/tests/unit/test_detector_incident_log.py -q` — 39 passed
+- CI detectors + linter green on PR #661
+Implemented:
+- `chain.py::_frontmatter_parse` surfaces `unparseable-frontmatter` WARN (FR-144 residual)
+- `docs/detector-incident-log.md` with mandatory-entry rule + four seed entries (FR-146)
+- `test_detector_incident_log.py` cross-checks FR-145 factory fixture pins
