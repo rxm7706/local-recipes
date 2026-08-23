@@ -1,11 +1,14 @@
-# ruff: noqa: E501
 import sys
 
+from config.observability.logging import build_logging_config
 from config.startup import run_stage_one
 from config.startup.stage_one import refuse_required_settings
 
 from .base import *  # noqa: F403
 from .base import DATABASES
+from .base import DEBUG
+from .base import DJANGO_LOG_FORMAT
+from .base import DJANGO_LOG_LEVEL
 from .base import INSTALLED_APPS
 from .base import REDIS_URL
 from .base import env
@@ -133,37 +136,20 @@ COMPRESS_FILTERS = {
     "js": ["compressor.filters.jsmin.JSMinFilter"],
 }
 
-# LOGGING
+# LOGGING (CAP-2 — structured; mail_admins retained for 500s)
 # ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#logging
-# See https://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {"require_debug_false": {"()": "django.utils.log.RequireDebugFalse"}},
-    "formatters": {
-        "verbose": {
-            "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
-        },
-    },
-    "handlers": {
+LOGGING = build_logging_config(
+    debug=DEBUG,
+    log_level=DJANGO_LOG_LEVEL,
+    log_format=DJANGO_LOG_FORMAT or None,
+    extra_handlers={
         "mail_admins": {
             "level": "ERROR",
             "filters": ["require_debug_false"],
             "class": "django.utils.log.AdminEmailHandler",
         },
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
     },
-    "root": {"level": "INFO", "handlers": ["console"]},
-    "loggers": {
+    extra_loggers={
         "django.request": {
             "handlers": ["mail_admins"],
             "level": "ERROR",
@@ -175,6 +161,10 @@ LOGGING = {
             "propagate": True,
         },
     },
+)
+# RequireDebugFalse filter used by mail_admins (dictConfig filter registry).
+LOGGING["filters"] = {
+    "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
 }
 
 

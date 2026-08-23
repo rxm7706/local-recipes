@@ -28,6 +28,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.local":
     os.environ.setdefault("COMPONENT_RUNTIME", "local")
 
+# CAP-2: configure before get_asgi_application so DjangoInstrumentor can insert
+# middleware into MIDDLEWARE before the handler stack is built.
+from config.observability import configure_observability  # noqa: E402
+
+configure_observability()
+
 # This application object is used by any ASGI server configured to use this file.
 django_application = get_asgi_application()
 
