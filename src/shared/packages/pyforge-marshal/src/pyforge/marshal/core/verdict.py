@@ -938,6 +938,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-012": Verdict.ERROR,
     "MRS-LAND-009": Verdict.WARN,
     "MRS-LAND-010": Verdict.WARN,
+    # Story 15.2: sprint-status-ledger promotion lock/write/commit failure.
+    "MRS-LAND-011": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
     "MRS-DEPLOY-024": Verdict.WARN,

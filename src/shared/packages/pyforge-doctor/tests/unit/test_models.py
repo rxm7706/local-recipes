@@ -188,6 +188,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "bmad-method-version-drift",
         "backlog-intake",
         "sibling-dreams-drift",
+        "ledger-staleness",
     }
 
 

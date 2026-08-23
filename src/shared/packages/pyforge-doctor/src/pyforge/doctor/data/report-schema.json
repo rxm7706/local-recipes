@@ -77,7 +77,8 @@
             "due-for-verification",
             "bmad-method-version-drift",
             "backlog-intake",
-            "sibling-dreams-drift"
+            "sibling-dreams-drift",
+            "ledger-staleness"
           ]
         },
         "check": { "type": "string" },

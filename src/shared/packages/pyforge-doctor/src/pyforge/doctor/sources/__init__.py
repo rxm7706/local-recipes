@@ -377,6 +377,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # shared Dream titles vs the named sibling tree; warn-only; fleet
     # subject (both local docs/dreams and the sibling). Opt-in via
     # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
+    SourceRegistration(
+        source=Source.LEDGER_STALENESS,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 15.2 (marshal Epic 15 / FR-137..138) -- sources/ledger.py
+    # gather_ledger_staleness: tracked ledger vs git merge history with
+    # direction; never the Tier-3 feed.
 )
 
 

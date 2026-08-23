@@ -153,6 +153,7 @@ _MRS_LAND_007 = "MRS-LAND-007"
 _MRS_LAND_008 = "MRS-LAND-008"
 _MRS_LAND_009 = "MRS-LAND-009"
 _MRS_LAND_010 = "MRS-LAND-010"
+_MRS_LAND_011 = "MRS-LAND-011"
 
 # This module's own journal kinds (AD-28: distinct writer namespaces, never
 # conflated with `cli/deploy.py`'s `_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`
@@ -170,6 +171,10 @@ _LAND_OBSERVATION_KIND = "land-observation"
 # namespace entirely per this module's own "distinct writer namespaces"
 # discipline above).
 _LAND_DEFERRED_WORK_KIND = "land-deferred-work-promotion"
+# Story 15.2 (FR-136/AD-71): sprint-status-ledger promotion on landing --
+# distinct from `_LAND_DEFERRED_WORK_KIND` (deferred-work ledger) and from
+# `cli/deploy.py`'_LEDGER_COMMIT_KIND` (reconcile-completions).
+_LAND_SPRINT_LEDGER_KIND = "land-sprint-ledger-promotion"
 
 # Story 4.13 (AD-42's own precedent, `cli/deploy.py::_PROMOTE_LOCK_TIMEOUT_S`):
 # how long `_promote_deferred_work` waits for a concurrent writer to release
@@ -178,6 +183,15 @@ _LAND_DEFERRED_WORK_KIND = "land-deferred-work-promotion"
 # just refusing and letting the next `land`/`deploy promote` invocation
 # retry.
 _LAND_DEFERRED_WORK_LOCK_TIMEOUT_S = 5.0
+# Story 15.2: same timeout for the sprint-status-ledger lock -- MUST be the
+# SAME resource `cli/deploy.py::run_reconcile_completions` locks
+# (`ledger_path.parent`), so concurrent land / reconcile-completions /
+# sprint-ledger-sync writers serialize on one flock (AD-42).
+_LAND_SPRINT_LEDGER_LOCK_TIMEOUT_S = 5.0
+_SPRINT_LEDGER_RELPATH = (
+    "_bmad-output/projects/{slug}/planning-artifacts/sprint-status-ledger.yaml"
+)
+_SPRINT_LEDGER_DONE = "done"
 
 
 def add_land_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -604,6 +618,11 @@ def run_land(
         )
         if promoted:
             data["deferred_work_promoted"] = list(promoted)
+        sprint_promoted = _promote_sprint_ledger(
+            fs, vcs, root, slug, wave_keys, deploy_run, findings
+        )
+        if sprint_promoted:
+            data["sprint_ledger_promoted"] = list(sprint_promoted)
         home_current = _resync_home_branch(
             vcs, resync_enabled, merge_strategy, git_repo_root, home, base, head_branch, findings
         )
@@ -1014,6 +1033,11 @@ def run_land(
     promoted = _promote_deferred_work(fs, vcs, root, slug, wave_keys, clock, deploy_run, findings)
     if promoted:
         data["deferred_work_promoted"] = list(promoted)
+    sprint_promoted = _promote_sprint_ledger(
+        fs, vcs, root, slug, wave_keys, deploy_run, findings
+    )
+    if sprint_promoted:
+        data["sprint_ledger_promoted"] = list(sprint_promoted)
 
     # One journal OBSERVATION entry recording checks required/passed, what
     # merged, and under whose authority (the story's own Always bullet) --
@@ -1259,6 +1283,195 @@ def _promote_deferred_work(
         fs.release_advisory_lock(lock)
 
 
+def _promote_sprint_ledger(
+    fs: FsPort,
+    vcs: VcsPort,
+    root: Path,
+    slug: str,
+    wave_keys: list[StoryKey],
+    deploy_run: "_DeployRun",
+    findings: list[Finding],
+) -> tuple[str, ...]:
+    """FR-136 (Story 15.2): advances each landing story's tracked
+    ``sprint-status-ledger.yaml`` row to ``done`` at the moment
+    ``wave_keys`` is confirmed landed -- the mechanical trigger that
+    replaces "remember to run sprint-ledger-sync." Reuses
+    ``core.status.render_ledger_advancements`` (Story 5.9) for the
+    targeted line rewrite and the SAME advisory lock resource
+    ``cli/deploy.py::run_reconcile_completions`` already takes
+    (``ledger_path.parent``, AD-42 -- never a second lock).
+
+    Never invents a ledger row (a wave key with no matching map entry is
+    skipped, never appended). Never downgrades a ``done`` row. A missing
+    ledger file, nothing to advance, or lock/write/commit failure returns
+    ``()`` with at most one ``MRS-LAND-011`` WARN -- never blocking
+    ``land``'s own exit (the wave already landed)."""
+    from ..core import status as status_core
+    from ..core.identity import MalformedStoryKeyError, normalize
+
+    ledger_path = root / _SPRINT_LEDGER_RELPATH.format(slug=slug)
+    text = fs.read_text(ledger_path)
+    if not text:
+        return ()
+
+    wave_dot = frozenset(str(key) for key in wave_keys)
+    raw_keys_to_advance: set[str] = set()
+    in_block = False
+    for raw in text.splitlines():
+        if raw.startswith("development_status:"):
+            in_block = True
+            continue
+        if not in_block:
+            continue
+        if raw and not raw.startswith((" ", "\t")):
+            break
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, sep, value = line.partition(":")
+        if not sep:
+            continue
+        raw_key = key.strip()
+        status_token = value.strip().split()[0] if value.strip() else ""
+        if status_token == _SPRINT_LEDGER_DONE:
+            continue
+        try:
+            if str(normalize(raw_key)) in wave_dot:
+                raw_keys_to_advance.add(raw_key)
+        except MalformedStoryKeyError:
+            continue
+
+    if not raw_keys_to_advance:
+        return ()
+
+    try:
+        lock = fs.acquire_advisory_lock(
+            ledger_path.parent, timeout_s=_LAND_SPRINT_LEDGER_LOCK_TIMEOUT_S
+        )
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_LAND_011,
+                severity=Severity.WARN,
+                message=(
+                    f"cannot acquire the sprint-status-ledger lock on "
+                    f"{str(ledger_path.parent)!r} within "
+                    f"{_LAND_SPRINT_LEDGER_LOCK_TIMEOUT_S}s -- another "
+                    f"land/reconcile-completions/sprint-ledger-sync is "
+                    f"plausibly running concurrently for {slug!r}; nothing "
+                    f"was promoted this run: {exc}"
+                ),
+            )
+        )
+        return ()
+
+    try:
+        fresh = fs.read_text(ledger_path)
+        if fresh is None:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_011,
+                    severity=Severity.WARN,
+                    message=(
+                        f"the tracked sprint-status ledger at "
+                        f"{str(ledger_path)!r} existed moments ago but is "
+                        "gone now -- skipping this run rather than writing "
+                        "stale pre-lock content"
+                    ),
+                )
+            )
+            return ()
+
+        # Re-filter under the lock (same TOCTOU close as deferred-work).
+        still: set[str] = set()
+        in_block = False
+        for raw in fresh.splitlines():
+            if raw.startswith("development_status:"):
+                in_block = True
+                continue
+            if not in_block:
+                continue
+            if raw and not raw.startswith((" ", "\t")):
+                break
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, sep, value = line.partition(":")
+            if not sep:
+                continue
+            raw_key = key.strip()
+            if raw_key not in raw_keys_to_advance:
+                continue
+            status_token = value.strip().split()[0] if value.strip() else ""
+            if status_token != _SPRINT_LEDGER_DONE:
+                still.add(raw_key)
+        if not still:
+            return ()
+
+        new_text, matched = status_core.render_ledger_advancements(
+            fresh, frozenset(still)
+        )
+        if not matched or new_text == fresh:
+            return ()
+
+        try:
+            fs.write_text_atomic(ledger_path, new_text)
+        except FsError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_011,
+                    severity=Severity.WARN,
+                    message=(
+                        f"cannot write sprint-status-ledger advancements "
+                        f"to {str(ledger_path)!r}: {exc}"
+                    ),
+                )
+            )
+            return ()
+
+        promoted = tuple(sorted(matched))
+        message = (
+            f"marshal: promote {len(promoted)} sprint-status-ledger "
+            f"entr{'y' if len(promoted) == 1 else 'ies'} for {slug!r}"
+        )
+        intent_id = deploy_run.write(
+            findings,
+            kind=_LAND_SPRINT_LEDGER_KIND,
+            phase=Phase.INTENT,
+            payload={"action": "commit_paths", "promoted": list(promoted)},
+        )
+        try:
+            vcs.commit_paths(root, (ledger_path,), message)
+        except VcsCommandError as exc:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_011,
+                    severity=Severity.WARN,
+                    message=(
+                        f"sprint-status-ledger entries {list(promoted)} "
+                        f"written to {str(ledger_path)!r} but could not be "
+                        f"committed: {exc}"
+                    ),
+                )
+            )
+            return ()
+        if intent_id is not None:
+            deploy_run.write(
+                findings,
+                kind=_LAND_SPRINT_LEDGER_KIND,
+                phase=Phase.OUTCOME,
+                payload={
+                    "action": "commit_paths",
+                    "promoted": list(promoted),
+                    "commit_message": message,
+                },
+                intent_id=intent_id,
+            )
+        return promoted
+    finally:
+        fs.release_advisory_lock(lock)
+
+
 def _resync_home_branch(
     vcs: VcsPort,
     resync_enabled: bool,
@@ -1446,6 +1659,9 @@ def _render_text_land(data: Mapping[str, object], findings: tuple[Finding, ...])
     if "deferred_work_promoted" in data:
         promoted = data["deferred_work_promoted"]
         lines.append(f"deferred work promoted: {', '.join(promoted)}")
+    if "sprint_ledger_promoted" in data:
+        promoted = data["sprint_ledger_promoted"]
+        lines.append(f"sprint ledger promoted: {', '.join(promoted)}")
     if findings:
         lines.append("findings:")
         for finding in findings:

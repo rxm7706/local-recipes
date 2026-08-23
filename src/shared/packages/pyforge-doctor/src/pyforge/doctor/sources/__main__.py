@@ -77,6 +77,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 16.1 (Epic 16/CAP-1) -- sibling Dream title drift; fail-open,
     # warn-only; fleet-picture ATTENTION probes this DISPATCH name.
     Source.SIBLING_DREAMS_DRIFT.value: sibling_dreams.gather,
+    # Story 15.2 (marshal Epic 15 / FR-137..138) -- ledger-vs-git drift
+    # WITH DIRECTION; reads merge history + tracked twin, never the feed.
+    Source.LEDGER_STALENESS.value: ledger.gather_ledger_staleness,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

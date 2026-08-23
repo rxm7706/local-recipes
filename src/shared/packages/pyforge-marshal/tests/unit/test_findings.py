@@ -211,6 +211,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-PREFLIGHT-014",
             "MRS-LAND-009",
             "MRS-LAND-010",
+            # Story 15.2 (landing promotes the ledger): sprint-ledger lock/write/commit.
+            "MRS-LAND-011",
             "MRS-STATUS-010",
             "MRS-STATUS-011",
             "MRS-DEPLOY-024",

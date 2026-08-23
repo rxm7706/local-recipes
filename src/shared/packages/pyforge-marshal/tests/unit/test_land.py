@@ -2220,3 +2220,106 @@ def test_promote_deferred_work_multiple_stories_in_one_wave(tmp_path, capsys, mo
     expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE)
     assert forge.merge_calls[0][-1] == expected_subject
     assert payload["data"]["subject"] == expected_subject
+
+
+# ---------------------------------------------------------------------------
+# Story 15.2: landing promotes the sprint-status ledger (FR-136)
+# ---------------------------------------------------------------------------
+
+_SPRINT_LEDGER_HEADER = """\
+# GENERATED — fixture
+development_status:
+  4-4-batch: backlog
+  9-9-unrelated: done
+"""
+
+
+def _write_sprint_ledger(tmp_path: Path, slug: str, text: str) -> Path:
+    path = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "planning-artifacts"
+        / "sprint-status-ledger.yaml"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_promote_sprint_ledger_on_merge_advances_wave_keys(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    ledger_path = _write_sprint_ledger(tmp_path, "acme", _SPRINT_LEDGER_HEADER)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["sprint_ledger_promoted"] == ["4-4-batch"]
+    assert "MRS-LAND-011" not in [f["code"] for f in payload["findings"]]
+    text = ledger_path.read_text(encoding="utf-8")
+    assert "4-4-batch: done" in text
+    assert "9-9-unrelated: done" in text
+    assert any("sprint-status-ledger" in msg for _, _, msg in vcs.commit_paths_calls)
+
+
+def test_promote_sprint_ledger_idempotent_when_already_done(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(
+        tmp_path,
+        "acme",
+        "# GENERATED\ndevelopment_status:\n  4-4-batch: done\n",
+    )
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=forge)
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "sprint_ledger_promoted" not in payload["data"]
+    assert vcs.commit_paths_calls == []
+
+
+def test_promote_sprint_ledger_lock_contention_reports_warn(
+    tmp_path, capsys, monkeypatch
+):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", _SPRINT_LEDGER_HEADER)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    class _ContendedFs(LocalFs):
+        def acquire_advisory_lock(self, path, *, timeout_s):
+            raise FsError("timed out acquiring lock (test)")
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=_ContendedFs(), forge=forge
+    )
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "sprint_ledger_promoted" not in payload["data"]
+    assert any(f["code"] == "MRS-LAND-011" for f in payload["findings"])

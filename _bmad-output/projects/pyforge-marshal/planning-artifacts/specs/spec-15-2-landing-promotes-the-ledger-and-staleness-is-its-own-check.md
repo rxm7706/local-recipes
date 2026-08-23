@@ -2,12 +2,12 @@
 title: Landing promotes the ledger, and staleness is its own check
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 10baa3dccf
+baseline_revision: 3cd7abf25bd60a1c4b714af152d45dbc95f31842
 ---
 
 <intent-contract>

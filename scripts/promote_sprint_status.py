@@ -45,6 +45,32 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GENERATE = REPO_ROOT / "docs" / "dashboard" / "generate.py"
 LEDGER_NAME = "sprint-status-ledger.yaml"
+# Story 15.2 (FR-139/AD-42): same lock resource land/reconcile-completions use
+# (`ledger_path.parent`). Timeout matches cli/deploy.py::_LEDGER_LOCK_TIMEOUT_S.
+_LEDGER_LOCK_TIMEOUT_S = 5.0
+
+
+def _local_fs():
+    """Reuse ``FsPort.acquire_advisory_lock`` (AD-42) — never a second flock.
+
+    Prefer the installed package; fall back to the checkout sources so this
+    script still serializes when run under ``local-recipes`` (no marshal env).
+    """
+    try:
+        from pyforge.marshal.adapters.fs_local import LocalFs
+
+        return LocalFs()
+    except ImportError:
+        for rel in (
+            "src/shared/packages/pyforge-core/src",
+            "src/shared/packages/pyforge-marshal/src",
+        ):
+            src = REPO_ROOT / rel
+            if str(src) not in sys.path:
+                sys.path.insert(0, str(src))
+        from pyforge.marshal.adapters.fs_local import LocalFs
+
+        return LocalFs()
 
 _HEADER = """\
 # GENERATED — do not hand-edit. Regenerate with:
@@ -263,8 +289,44 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  WARNING   {key}: --allow-regression, un-finishing "
                       f"{len(lost)} key(s): {detail}")
 
-        dest.write_text(text, encoding="utf-8")
-        wrote.append(f"{key} ({len(statuses)})")
+        # Story 15.2 (FR-139/AD-42): serialize with land / reconcile-completions
+        # on the SAME planning-artifacts directory lock — never a second flock.
+        fs = _local_fs()
+        from pyforge.marshal.adapters.fs_local import FsError
+
+        try:
+            lock = fs.acquire_advisory_lock(
+                dest.parent, timeout_s=_LEDGER_LOCK_TIMEOUT_S
+            )
+        except FsError as exc:
+            refused.append(
+                f"{key} — cannot acquire sprint-status-ledger lock on "
+                f"{dest.parent}: {exc}"
+            )
+            continue
+        try:
+            # Re-check under the lock: a concurrent land may have just
+            # advanced rows; refuse silently writing a stale full re-render
+            # that would undo those advancements unless --allow-regression.
+            if dest.is_file():
+                existing_now = gen.parse_sprint_status(dest)
+                lost_now = regressions(existing_now, statuses)
+                if lost_now and not args.allow_regression:
+                    detail = ", ".join(
+                        f"{k} ({old} -> {new})" for k, old, new in lost_now
+                    )
+                    refused.append(
+                        f"{key} — feed would un-finish {len(lost_now)} "
+                        f"key(s) (under lock): {detail}"
+                    )
+                    continue
+                if dest.read_text(encoding="utf-8") == text:
+                    unchanged.append(f"{key} ({len(statuses)})")
+                    continue
+            dest.write_text(text, encoding="utf-8")
+            wrote.append(f"{key} ({len(statuses)})")
+        finally:
+            fs.release_advisory_lock(lock)
 
     print(f"sprint-status ledger sync — wrote {len(wrote)}, unchanged {len(unchanged)}, "
           f"skipped {len(skipped)}, refused {len(refused)}")

@@ -1446,6 +1446,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-014",
         "MRS-LAND-009",
         "MRS-LAND-010",
+        # Story 15.2 (landing promotes the ledger, FR-136/AD-42): MRS-LAND-011
+        # names sprint-status-ledger promotion lock/write/commit failure
+        # (best-effort WARN, never blocking land's exit).
+        "MRS-LAND-011",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
         "MRS-DEPLOY-024",

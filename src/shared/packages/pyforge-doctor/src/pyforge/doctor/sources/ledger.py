@@ -57,7 +57,7 @@ from pathlib import Path
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 
-__all__ = ("gather",)
+__all__ = ("gather", "gather_ledger_staleness")
 
 PROJECTS_PREFIX = "_bmad-output/projects/"
 LEDGER_SUFFIX = "planning-artifacts/sprint-status-ledger.yaml"
@@ -67,6 +67,17 @@ TERMINAL = frozenset({"done"})
 # `<epic>-<num>[suffix]` or a legacy alias (`a1`, `b10`). The TAIL is what
 # survives a convention migration, so it is what identifies a story across one.
 _ID_PREFIX_RE = re.compile(r"^(?:\d+-\d+[a-z]?|[a-z]+\d+)-")
+_GITHUB_MERGE_RE = re.compile(
+    r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$"
+)
+_BMADLOOP_MERGE_RE = re.compile(
+    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$"
+)
+_TEMPLATED_MERGE_RE = re.compile(
+    # Require a kebab title after the id — bare "Merge 15-2 into main" is not
+    # a durable story landing (cross-project collision; live false-positive).
+    r"^Merge (?P<key_slug>\d+-\d+[a-z]?-\S+) into \S+"
+)
 
 
 def _tail(key: str) -> str:
@@ -417,3 +428,249 @@ def gather(
             )
         )
     return tuple(findings)
+
+
+# === gather_ledger_staleness (Story 15.2 / FR-137..FR-138) ==================
+#
+# Standalone ledger-vs-git drift WITH DIRECTION. Reads the TRACKED twin and
+# merge history only — never the Tier-3 feed (FR-138). Independence: no
+# ``pyforge.marshal`` import; merge-subject patterns restated here (Charter
+# §6) so this check keeps working when Marshal is absent/broken/lying.
+
+
+def _story_id_from_slug(key_slug: str) -> str | None:
+    """Leading ``<epic>-<seq>[suffix]`` from a merge-subject key segment."""
+    head = key_slug.split("-", 2)
+    if len(head) < 2:
+        return None
+    candidate = f"{head[0]}-{head[1]}"
+    # Include optional single-letter suffix glued to seq (e.g. ``6-1a``).
+    m = re.match(r"^(\d+)-(\d+[a-z]?)", candidate)
+    if m is None:
+        # try full key_slug start
+        m = re.match(r"^(\d+)-(\d+[a-z]?)", key_slug)
+    if m is None:
+        return None
+    return f"{m.group(1)}-{m.group(2)}"
+
+
+def _story_id_from_ledger_key(raw_key: str) -> str | None:
+    m = re.match(r"^(\d+)-(\d+[a-z]?)", raw_key)
+    return f"{m.group(1)}-{m.group(2)}" if m else None
+
+
+def _merged_ids_for_project(subjects: list[str], project_slug: str) -> set[str]:
+    """Story ids durably merged for ``project_slug`` (merge history only)."""
+    out: set[str] = set()
+    loop_target = f"loop/{project_slug}"
+    short = project_slug.removeprefix("pyforge-")
+    for subject in subjects:
+        m = _BMADLOOP_MERGE_RE.match(subject)
+        if m is not None:
+            if m.group("target") == loop_target:
+                sid = _story_id_from_slug(m.group("key_slug"))
+                if sid:
+                    out.add(sid)
+            continue
+        m = _GITHUB_MERGE_RE.match(subject)
+        if m is not None:
+            branch = m.group("branch")
+            if (
+                branch.startswith(f"{short}/")
+                or branch.startswith(f"{project_slug}/")
+                or branch.startswith(f"land/{short}-")
+                or branch.startswith(f"land/{project_slug}-")
+            ):
+                m2 = re.search(r"(\d+-\d+[a-z]?)", branch)
+                if m2 is not None:
+                    out.add(m2.group(1))
+            continue
+        m = _TEMPLATED_MERGE_RE.match(subject)
+        if m is not None:
+            sid = _story_id_from_slug(m.group("key_slug"))
+            if sid:
+                out.add(sid)
+            continue
+        low = subject.lower()
+        if short in low or project_slug in low:
+            m3 = re.search(r"\bstory\s+(\d+)\.(\d+[a-z]?)\b", low)
+            if m3 is not None:
+                out.add(f"{m3.group(1)}-{m3.group(2)}")
+    return out
+
+
+def gather_ledger_staleness(target: Path) -> tuple[Finding, ...]:
+    """Report ledger-vs-git drift per key WITH DIRECTION (FR-137/FR-138).
+
+    For each tracked ``sprint-status-ledger.yaml``:
+    - ``MERGED_NOT_DONE_IN_LEDGER`` (landed-but-unpromoted) → FAIL
+    - ``DONE_IN_LEDGER_NOT_MERGED`` → WARN (unconfirmed; squash-merge blind spot)
+
+    Never reads a Tier-3 ``sprint-status.yaml`` feed. Degrades to WARN when
+    git or ledgers are unevaluable.
+    """
+    projects = target / PROJECTS_PREFIX.rstrip("/")
+    if not projects.is_dir():
+        return (
+            Finding(
+                source=Source.LEDGER_STALENESS,
+                check="ledger-staleness",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"no {PROJECTS_PREFIX} tree — ledger-vs-git staleness "
+                    "cannot be evaluated"
+                ),
+                evidence={"target": str(target), "projects": 0},
+            ),
+        )
+
+    ledgers: list[Path] = []
+    try:
+        for p in sorted(projects.iterdir()):
+            cand = p / LEDGER_SUFFIX
+            if cand.is_file():
+                ledgers.append(cand)
+    except OSError:
+        ledgers = []
+
+    if not ledgers:
+        return (
+            Finding(
+                source=Source.LEDGER_STALENESS,
+                check="ledger-staleness",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"no tracked sprint ledger under {PROJECTS_PREFIX}*/"
+                    f"{LEDGER_SUFFIX} — staleness cannot be evaluated"
+                ),
+                evidence={"target": str(target), "ledgers": 0},
+            ),
+        )
+
+    if _git(target, "rev-parse", "--git-dir") is None:
+        return (
+            Finding(
+                source=Source.LEDGER_STALENESS,
+                check="ledger-staleness",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{len(ledgers)} tracked ledger(s) present but git is "
+                    f"unavailable or {target} is not a repository — "
+                    "staleness cannot be evaluated"
+                ),
+                evidence={"target": str(target), "ledgers": len(ledgers)},
+            ),
+        )
+
+    raw_subjects = _git(target, "log", "--format=%s", "main")
+    if raw_subjects is None:
+        # Fall back to HEAD history when local `main` is absent (PR checkout).
+        raw_subjects = _git(target, "log", "--format=%s", "HEAD")
+    if raw_subjects is None:
+        return (
+            Finding(
+                source=Source.LEDGER_STALENESS,
+                check="ledger-staleness",
+                status=DoctorStatus.WARN,
+                message=(
+                    "cannot read merge history (main/HEAD) — ledger-vs-git "
+                    "staleness cannot be evaluated"
+                ),
+                evidence={"target": str(target), "ledgers": len(ledgers)},
+            ),
+        )
+    subjects = raw_subjects.splitlines()
+
+    findings: list[Finding] = []
+    for ledger in ledgers:
+        project = ledger.relative_to(projects).parts[0]
+        try:
+            text = ledger.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_STALENESS,
+                    check="ledger-staleness",
+                    status=DoctorStatus.WARN,
+                    message=f"{project}: tracked ledger unreadable",
+                    evidence={"project": project, "path": str(ledger)},
+                )
+            )
+            continue
+
+        statuses = _parse_statuses(text)
+        ledger_done: set[str] = set()
+        ledger_all: set[str] = set()
+        raw_by_id: dict[str, str] = {}
+        for raw_key, status in statuses.items():
+            sid = _story_id_from_ledger_key(raw_key)
+            if sid is None:
+                continue
+            ledger_all.add(sid)
+            raw_by_id.setdefault(sid, raw_key)
+            token = status.split()[0] if status else ""
+            if token in TERMINAL:
+                ledger_done.add(sid)
+
+        merged = _merged_ids_for_project(subjects, project)
+        # Only keys present in THIS ledger: a merge for another station's
+        # colliding epic-seq must not convict this one. Absences (merged
+        # with no ledger row) stay out of FAIL — that is a different gap
+        # (ledger inventory), not "unpromoted status".
+        merged_here = merged & ledger_all
+        landed_unpromoted = sorted(merged_here - ledger_done)
+        done_unmerged = sorted(ledger_done - merged)
+
+        for sid in landed_unpromoted:
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_STALENESS,
+                    check="ledger-staleness",
+                    status=DoctorStatus.FAIL,
+                    message=(
+                        f"{project}/{raw_by_id.get(sid, sid)}: landed in "
+                        "merge history but not `done` in the tracked ledger "
+                        "(landed-but-unpromoted)"
+                    ),
+                    evidence={
+                        "project": project,
+                        "story_id": sid,
+                        "direction": "MERGED_NOT_DONE_IN_LEDGER",
+                        "confidence": "confirmed",
+                    },
+                )
+            )
+        for sid in done_unmerged:
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_STALENESS,
+                    check="ledger-staleness",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"{project}/{raw_by_id.get(sid, sid)}: `done` in the "
+                        "tracked ledger but no matching merge subject found "
+                        "(unconfirmed — squash-merge blind spot possible)"
+                    ),
+                    evidence={
+                        "project": project,
+                        "story_id": sid,
+                        "direction": "DONE_IN_LEDGER_NOT_MERGED",
+                        "confidence": "unconfirmed",
+                    },
+                )
+            )
+
+    if findings:
+        return tuple(findings)
+    return (
+        Finding(
+            source=Source.LEDGER_STALENESS,
+            check="ledger-staleness",
+            status=DoctorStatus.OK,
+            message=(
+                f"tracked ledger(s) agree with merge history "
+                f"({len(ledgers)} ledger(s) audited)"
+            ),
+            evidence={"ledgers": len(ledgers), "discrepancies": 0},
+        ),
+    )

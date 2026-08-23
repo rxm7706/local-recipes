@@ -51,6 +51,7 @@ _EXPECTED_DISPATCH = {
     "due-for-verification": chain.gather_due_for_verification,
     "bmad-method-version-drift": bmad_method.gather,
     "sibling-dreams-drift": sibling_dreams.gather,
+    "ledger-staleness": ledger.gather_ledger_staleness,
 }
 
 

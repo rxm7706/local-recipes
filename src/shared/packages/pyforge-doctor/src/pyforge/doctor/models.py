@@ -204,6 +204,12 @@ class Source(StrEnum):
     # the named sibling (OpenTeams mgmt-wf) on status/owner/content-hash.
     # Fleet subject; never FAIL; fail-open without token / when unreachable.
     SIBLING_DREAMS_DRIFT = "sibling-dreams-drift"
+    # Story 15.2 (marshal Epic 15 / FR-137..FR-138, AD-71): Doctor's
+    # standalone ledger-vs-git drift check WITH DIRECTION — reads merge
+    # history and the tracked sprint-status-ledger.yaml twin, never the
+    # Tier-3 feed. Covers the landed-but-unpromoted gap story-status does
+    # not. Judges a Marshal-produced artifact; see sources/ledger.py.
+    LEDGER_STALENESS = "ledger-staleness"
 
 
 class Partition(StrEnum):
