@@ -2,7 +2,8 @@
 title: Dependencies are pixi-sourced, single-authority
 type: chore
 created: '2026-08-23'
-status: in-progress
+status: done
+shipped_ref: 'bec9707bf87aed6a8c4c763e5390e9793d3ab0ff'
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -69,3 +70,11 @@ baseline_revision: 4d9c58ae85
 - `python -m pytest tests/scripts/test_platform_ci_test_requirements_check.py -q` — green
 - `python scripts/platform_image_pip_layer.py | head` — emits pins
 - Platform comment-touched tests as available in env
+
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/682
+Merge SHA: bec9707bf87aed6a8c4c763e5390e9793d3ab0ff
+Notes: pixi is sole platform dependency authority; requirements txts retired; CI/Containerfile/docs retargeted; suites green.

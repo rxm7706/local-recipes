@@ -157,11 +157,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 8
+    remaining_count: 7
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 16-1-dependencies-are-pixi-sourced-single-authority
     - 16-2-startup-refuses-misconfiguration-two-stage-and-named
     - 16-3-every-process-speaks-structlog-otel
     - 16-4-policy-is-a-test-suite
