@@ -211,6 +211,13 @@ jobs:
       - name: Mypy
         run: mypy platformapp config tests
 
+      # Steward 16.4 / CAP-4: named lane for the executable policy suite
+      # (dependency / credential-surface / typing / coverage). Also collected
+      # by the full pytest step below; this step keeps the suite visible as
+      # its own CI gate rather than an accidental collect.
+      - name: Policy suite
+        run: python -m pytest tests/policy -v
+
       - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v
 
