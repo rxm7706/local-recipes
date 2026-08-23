@@ -40,7 +40,7 @@ development_status:
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
   12-9-ocp-as-a-portability-profile: done
   13-1-workspace-verbs-over-git-worktree: done
-  13-2-status-and-the-feed-mirror-decision: backlog
+  13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: backlog
   13-4-the-set-reports-and-tears-down-safely: backlog
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: backlog
