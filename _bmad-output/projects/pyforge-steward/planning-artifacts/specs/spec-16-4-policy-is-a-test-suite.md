@@ -2,7 +2,8 @@
 title: Policy is a test suite
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
+shipped_ref: 'PR #693 / b439626af4'
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -42,3 +43,11 @@ baseline_revision: 0e1a41be0f
 - Intentional drift fixtures/examples → red; clean tree → green
 - CI lane invokes the policy suite
 - `pixi run --frozen` related pytest green; CI detectors/linter/package tests
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/693
+Merge SHA: b439626af427d784ae398728dfd2da34b161ea45
+Note: merged with `--admin` (Actions billing blocked CI; local verification green).
+Tests: `pytest tests/policy` → 28 passed

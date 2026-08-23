@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 23
-    next: 20-7-both-guards-hard-fail-on-drift
+    remaining_count: 22
+    next: 20-8-the-landing-evidence-grammar
     queue:
-    - 20-7-both-guards-hard-fail-on-drift
     - 20-8-the-landing-evidence-grammar
     - 20-9-doctor-consumes-the-grammar
     - 20-10-marshal-consumes-the-grammar
@@ -152,11 +151,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 5
+    remaining_count: 4
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 16-4-policy-is-a-test-suite
     - 16-5-identity-is-oidc-delegated-no-local-passwords
     - 17-1-steward-init-shell-init-detect-and-prepare-the-machine
     - 17-2-steward-setup-initrepo-take-the-machine-to-green

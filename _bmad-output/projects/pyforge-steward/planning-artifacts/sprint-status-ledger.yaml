@@ -55,7 +55,7 @@ development_status:
   16-1-dependencies-are-pixi-sourced-single-authority: done
   16-2-startup-refuses-misconfiguration-two-stage-and-named: done
   16-3-every-process-speaks-structlog-otel: done
-  16-4-policy-is-a-test-suite: backlog
+  16-4-policy-is-a-test-suite: done
   16-5-identity-is-oidc-delegated-no-local-passwords: backlog
   17-1-steward-init-shell-init-detect-and-prepare-the-machine: backlog
   17-2-steward-setup-initrepo-take-the-machine-to-green: backlog
