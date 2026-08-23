@@ -111,17 +111,16 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 16
-    next: 21-2-orchestrated-chain-regeneration
+    remaining_count: 15
+    next: 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
     queue:
+    - 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
+    - 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
+    - 22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal
     - 21-2-orchestrated-chain-regeneration
     - 21-3-code-status-preservation
     - 21-4-orphan-detection-with-review-gated-cleanup
     - 21-5-configurable-per-project-invocation
-    - 22-3-verification-is-the-product-no-landing-on-a-self-report
-    - 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
-    - 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
-    - 22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal
     - 23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields
     - 23-2-wall-clock-is-never-blended-with-active-compute
     - 23-3-the-coverage-caption-partitions-by-true-reason
