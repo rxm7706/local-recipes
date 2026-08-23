@@ -2925,6 +2925,7 @@ def _snapshot(
     paused_reason: str | None = None,
     escalated_spec_file: str | None = None,
     escalated_task_phase: str | None = None,
+    escalated_preserve_ref: str | None = None,
     deferred: tuple[DeferredStory, ...] = (),
     tasks: tuple[TaskPhaseSnapshot, ...] = (),
 ) -> RunStatusSnapshot:
@@ -2936,6 +2937,7 @@ def _snapshot(
         escalated_task_phase=escalated_task_phase,
         deferred=deferred,
         tasks=tasks,
+        escalated_preserve_ref=escalated_preserve_ref,
     )
 
 
@@ -2945,9 +2947,16 @@ def _task_phase(
     *,
     commit_sha: str | None = None,
     branch: str = "",
+    worktree_path: str = "",
+    baseline_commit: str | None = None,
 ) -> TaskPhaseSnapshot:
     return TaskPhaseSnapshot(
-        story_key=story_key, phase=phase, commit_sha=commit_sha, branch=branch
+        story_key=story_key,
+        phase=phase,
+        commit_sha=commit_sha,
+        branch=branch,
+        worktree_path=worktree_path,
+        baseline_commit=baseline_commit,
     )
 
 
@@ -3252,6 +3261,100 @@ def test_an_unresolved_escalation_journals_notifies_and_sets_the_detach_reason()
     }
     assert len(notify.notify_desktop_calls) == 1
     assert notify.notify_desktop_calls[0] is marker_payload
+
+
+def test_intent_gap_escalation_parks_and_names_preserve_ref(tmp_path, monkeypatch):
+    """Story 20.4 wire: proactive capture + intent-gap escalation names preserve_ref
+    in journal and ESCALATION marker (CAP-1 + CAP-2)."""
+    from pyforge.marshal.supervisor.intent_gap_preserve import AttemptSnapshot
+
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / ".bmad-loop" / "runs" / "acme-run-1").mkdir(parents=True)
+    spec = home / "spec-20-4.md"
+    spec.write_text(
+        "---\nstatus: blocked\n---\n\n# Spec\n\n"
+        "## Auto Run Result\n\nStatus: blocked\n\nintent gap\n",
+        encoding="utf-8",
+    )
+
+    fake_snap = AttemptSnapshot(
+        story_key="20-4-intent-gap",
+        worktree_path=str(home),
+        baseline_commit="baseline",
+        head_sha="deadbeefcafebabe",
+        commits_above_baseline=("deadbeefcafebabe",),
+    )
+    monkeypatch.setattr(
+        supervisor_main,
+        "capture_attempt_snapshot",
+        lambda task: fake_snap if task.story_key == "20-4-intent-gap" else None,
+    )
+    monkeypatch.setattr(
+        supervisor_main,
+        "park_preserve_artifact",
+        lambda *a, **k: "attempt-preserve/acme-run-1-deadbeef",
+    )
+
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    live = _snapshot(
+        tasks=(
+            _task_phase(
+                "20-4-intent-gap",
+                "dev-running",
+                worktree_path=str(home),
+                baseline_commit="baseline",
+            ),
+        )
+    )
+    escalated = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="20-4-intent-gap",
+        paused_reason="intent gap in the frozen contract",
+        escalated_spec_file="spec-20-4.md",
+        escalated_task_phase="escalated",
+        escalated_preserve_ref=None,
+        tasks=(
+            _task_phase(
+                "20-4-intent-gap",
+                "escalated",
+                worktree_path=str(home),
+                baseline_commit="baseline",
+            ),
+        ),
+    )
+    harness.run_status_snapshot_sequence = [live, live, escalated]
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        home, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    escalation_entries = [e for e in entries if e["kind"] == "escalation-detected"]
+    assert len(escalation_entries) == 1
+    assert (
+        escalation_entries[0]["payload"]["preserve_ref"]
+        == "attempt-preserve/acme-run-1-deadbeef"
+    )
+    marker_path, marker_payload = notify.notify_file_calls[0]
+    assert marker_path.name == "ESCALATION"
+    assert (
+        json.loads(marker_payload.text)["preserve_ref"]
+        == "attempt-preserve/acme-run-1-deadbeef"
+    )
+    assert "preserve_ref=attempt-preserve/acme-run-1-deadbeef" in spec.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_ordinary_finish_never_journals_an_escalation():
