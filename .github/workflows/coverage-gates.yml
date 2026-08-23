@@ -1,0 +1,75 @@
+name: Coverage gates
+
+# Story 19.3 / FR-131 — coverage gates that *name* the uncovered module.
+#
+# A PR that touches a pyforge-<station> package runs that station's unit
+# (>80%) and integration (>70%) suites under coverage, then fails naming
+# every touched source module below the station floor — never only an
+# aggregate percentage.
+#
+# Full package-wide evaluate (every module) lives on the pixi
+# `pyforge-*-test-coverage` tasks; this workflow is the PR path-filtered gate.
+
+on:
+  pull_request:
+    paths:
+      - 'src/shared/packages/pyforge-*/**'
+      - 'scripts/coverage_gates_ci.py'
+      - 'scripts/run_station_coverage_gate.py'
+      - '.github/workflows/coverage-gates.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/shared/packages/pyforge-*/**'
+      - 'scripts/coverage_gates_ci.py'
+      - 'scripts/run_station_coverage_gate.py'
+      - '.github/workflows/coverage-gates.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-gates-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  named-module-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          environments: pyforge-marshal
+          cache: true
+
+      - name: Named-module fixture proof
+        run: >
+          pixi run --frozen -e pyforge-marshal pytest
+          src/shared/packages/pyforge-marshal/tests/meta/test_coverage_gate_names_module.py
+          -q --tb=short
+
+      - name: Coverage gates for touched stations
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          # This job installs only pyforge-marshal; gate that station here.
+          # Other stations use their own pixi `*-test-coverage` tasks / future
+          # matrix expansion — never false-zero-fill N/A suites.
+          COVERAGE_GATES_STATIONS: marshal
+        run: |
+          set -euo pipefail
+          # Seed verbs + integration harnesses create commits; GHA runners
+          # have no git identity by default.
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${GITHUB_BASE_REF}"
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
+          fi
+          pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py \
+            --base "$BASE" --head HEAD --suites unit

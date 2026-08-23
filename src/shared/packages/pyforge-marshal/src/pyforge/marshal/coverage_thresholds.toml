@@ -1,0 +1,14 @@
+# Per-station coverage floors for Story 19.3 / FR-131.
+#
+# Fleet defaults (CAP-4): unit >80%, integration >70%.
+# Override a station under [stations.<slug>] only to document a deliberate
+# temporary floor; absent keys inherit [defaults].
+
+[defaults]
+unit = 80.0
+integration = 70.0
+
+# Example override shape (unused — defaults apply to every station today):
+# [stations.scribe]
+# unit = 80.0
+# integration = 70.0
