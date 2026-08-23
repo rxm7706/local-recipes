@@ -27,6 +27,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
+from typing import cast
 
 import pytest
 
@@ -990,7 +991,7 @@ def test_route_target_check_fails_on_a_mismatched_service_name_or_port():
 
 def test_redis_auth_check_fails_when_requirepass_is_missing():
     """A redis container without --requirepass wiring must raise."""
-    platform_env = [
+    platform_env: list[dict[str, Any]] = [
         {
             "name": "REDIS_PASSWORD",
             "valueFrom": {
@@ -1061,7 +1062,7 @@ def test_redis_auth_check_fails_when_requirepass_is_missing():
         platform_deployment("migrate"),
     ]
 
-    secret_ref = platform_env[0]["valueFrom"]["secretKeyRef"]
+    secret_ref = cast("dict[str, str]", platform_env[0]["valueFrom"]["secretKeyRef"])
     with pytest.raises(AssertionError, match="requirepass"):
         _assert_redis_uses_password_from_existing_secret(
             docs,
