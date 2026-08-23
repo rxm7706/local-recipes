@@ -35,7 +35,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # The seven duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Stories 14.1–14.2 — bmad-core pre-flight + --apply).
+# `upgrade` (Epic 14, Stories 14.1–14.3 — pre-flight + apply + CAP-3 reconcile).
 DUTIES: tuple[str, ...] = (
     "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
 )
@@ -54,8 +54,9 @@ _HELP = {
         "(single-repo or repo-set; own-worktrees-only; archive-not-delete)"
     ),
     "upgrade": (
-        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1) and "
-        "deliberate --apply (CAP-2); never clobbers _bmad/custom/**"
+        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1), "
+        "deliberate --apply (CAP-2), CAP-3 clobber detect/re-apply; "
+        "never silently leaves custom surfaces broken"
     ),
 }
 

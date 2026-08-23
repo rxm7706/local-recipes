@@ -2,7 +2,7 @@
 title: Clobbered custom surfaces are caught and re-applied
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -44,3 +44,12 @@ baseline_revision: 0c9c17ecb5
 - `pixi run --frozen -e pyforge-steward pytest …` green
 - Fixture covering layers 5/6 clobber → detect → re-apply/flag
 - CI: detectors, linter, package/platform tests as applicable
+
+
+## Implementation Notes
+
+- CAP-3 wired into `apply_bmad_core_upgrade` after the CAP-2 custom fingerprint check.
+- Surfaces snapshotted pre-apply; post-apply detect → restore from installer `.bak` (preferred) or snapshot; else flag.
+- Six-layer success via `BMAD_ACTIVE_PROJECT` and fixture-local `.active-project` (never `scripts/bmad-switch`).
+- Installer `.bak` paths are always listed in `ReconcileReport.bak_files_accounted`.
+- Tests: `tests/unit/test_upgrade_reconcile.py`.
