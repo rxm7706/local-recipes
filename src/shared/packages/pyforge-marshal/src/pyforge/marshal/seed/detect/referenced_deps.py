@@ -193,8 +193,11 @@ def _doctor_findings(repo_root: Path) -> tuple[Finding, ...] | None:
         return None
     if result.returncode not in (0, 1):
         return None
+    raw = result.stdout
+    if raw is None or not raw.strip():
+        return None
     try:
-        payload = json.loads(result.stdout or "[]")
+        payload = json.loads(raw)
     except json.JSONDecodeError:
         return None
     if not isinstance(payload, list):
