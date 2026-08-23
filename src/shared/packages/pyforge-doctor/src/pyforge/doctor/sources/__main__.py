@@ -131,9 +131,10 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             f"valid only for source {_LAYERS_AUDIT_SOURCE!r}: run the "
-            "per-project chain-layer presence audit (seeded from "
-            "docs/dashboard/generate.py) instead of INV-A..D. Requires "
-            "--project. Story 17-3 / FR-150 residual + FR-152."
+            "per-project CAP-3 chain audit (layer presence + coherence + "
+            "staleness + orphan-freedom checkpoints), seeded from "
+            "docs/dashboard/generate.py. Requires --project. "
+            "Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3."
         ),
     )
     parser.add_argument(

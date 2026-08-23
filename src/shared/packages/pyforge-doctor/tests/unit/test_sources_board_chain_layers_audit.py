@@ -93,10 +93,10 @@ def test_reports_present_and_missing_layers(tmp_path: Path) -> None:
         tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True
     )
     findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
-    assert len(findings) == 1
-    f = findings[0]
+    layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
+    assert len(layer_summary) == 1
+    f = layer_summary[0]
     assert f.source is Source.CHAIN_LAYERS_AUDIT
-    assert f.check == "chain-layers-audit"
     assert f.status is DoctorStatus.WARN  # many layers still missing
     assert "dream" in f.evidence["present"]
     assert "spec" in f.evidence["present"]
@@ -104,9 +104,16 @@ def test_reports_present_and_missing_layers(tmp_path: Path) -> None:
     assert "prd" in f.evidence["missing"]
     assert "arch" in f.evidence["missing"]
     assert "epics" in f.evidence["missing"]
-    # Layer names are generate.py's FLEET_STAGES — never a private list.
-    assert "dream" in f.evidence["stages"]
-    assert "epics" in f.evidence["stages"]
+    assert "chainAudit" in f.evidence
+    assert f.evidence["chainAudit"]["verdict"] == "fail"
+    # CAP-3 checkpoints emitted (Story 21.1).
+    checks = {f.check for f in findings}
+    assert "chain-audit-checkpoint-layers" in checks
+    assert "chain-audit-verdict" in checks
+    layers_cp = next(
+        f for f in findings if f.check == "chain-audit-checkpoint-layers"
+    )
+    assert layers_cp.status is DoctorStatus.FAIL
 
 
 def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
@@ -149,13 +156,15 @@ def test_full_applicable_layers_reports_ok(tmp_path: Path) -> None:
     )
 
     findings = board.gather_chain_layers_audit(tmp_path, project)
-    assert len(findings) == 1
-    # verify may still be missing if code+gate coupling differs; accept OK or
-    # WARN only for verify — assert core planning layers are present.
-    ev = findings[0].evidence
+    layer_summary = [f for f in findings if f.check == "chain-layers-audit"]
+    assert len(layer_summary) == 1
+    ev = layer_summary[0].evidence
     for layer in ("dream", "spec", "brief", "prd", "arch", "epics"):
         assert layer in ev["present"], layer
     assert "prd" not in ev["missing"]
+    verdict = next(f for f in findings if f.check == "chain-audit-verdict")
+    assert "layers" in verdict.evidence["checkpoints"]
+    assert "orphans" in verdict.evidence["checkpoints"]
 
 
 def test_isolation_does_not_credit_sibling_project_artifacts(
@@ -175,7 +184,7 @@ def test_isolation_does_not_credit_sibling_project_artifacts(
         epics=True,
     )
     findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
-    ev = findings[0].evidence
+    ev = next(f for f in findings if f.check == "chain-layers-audit").evidence
     assert "brief" in ev["missing"]
     assert "prd" in ev["missing"]
     # Files listed must stay under marshal (or shared dreams/presentations).
@@ -197,6 +206,26 @@ def test_unknown_project_is_unevaluable(tmp_path: Path) -> None:
     _install_generate(tmp_path)
     findings = board.gather_chain_layers_audit(tmp_path, "pyforge-no-such-station")
     assert findings[0].check == "chain-layers-audit-unevaluable"
+
+
+def test_cap3_checkpoint_findings_use_pass_fail(tmp_path: Path) -> None:
+    """Story 21.1: each CAP-3 checkpoint is OK or FAIL, not warn-only."""
+    _install_generate(tmp_path)
+    _write_project_skeleton(
+        tmp_path, "pyforge-marshal", dream=True, spec=True, brief=True
+    )
+    findings = board.gather_chain_layers_audit(tmp_path, "pyforge-marshal")
+    checkpoint_checks = {
+        "chain-audit-checkpoint-layers",
+        "chain-audit-checkpoint-coherence",
+        "chain-audit-checkpoint-staleness",
+        "chain-audit-checkpoint-orphans",
+        "chain-audit-verdict",
+    }
+    got = {f.check: f.status for f in findings if f.check in checkpoint_checks}
+    assert set(got) == checkpoint_checks
+    for status in got.values():
+        assert status in (DoctorStatus.OK, DoctorStatus.FAIL)
 
 
 def test_layers_cli_invokes_audit(

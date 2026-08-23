@@ -872,7 +872,7 @@ description = "Detector: a station's board tells the truth about what it OWNS an
 cmd = "python -m pyforge.doctor.sources chain-completeness"
 
 [feature.local-recipes.tasks.chain-layers-audit-check]
-description = "Detector: Story 17-3 / FR-150 residual + FR-152 — read-only per-project chain-layer presence audit. Reports which generate.py FLEET_STAGES layers exist vs missing for one named BMAD project. Seeded from docs/dashboard/generate.py (never a second derivation). Distinct from chain-completeness INV-A..D and dreams-hygiene. Pass -- --project <slug> (required). Warn-only. Not in the auto detectors suite (requires a project slug)."
+description = "Detector: Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3 — read-only per-project chain audit. Pass/fail per checkpoint (layers, coherence, staleness, orphan-freedom) seeded from docs/dashboard/generate.py + dream-chain (never a cached table). Distinct from chain-completeness INV-A..D and dreams-hygiene. Pass -- --project <slug> (required). Exit non-zero on checkpoint fail."
 cmd = "python -m pyforge.doctor.sources chain-completeness --layers"
 
 [feature.local-recipes.tasks.ledger-regression-check]
