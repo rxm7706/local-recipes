@@ -451,6 +451,7 @@ cmd = "pytest tests/scripts/test_container_volumes_roundtrip.py -q"
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: seed source re-exports the shared kit (test-time only; not a package run-dep)
 # Story 12.1 (NFR-C2): Genesis's template engine run-dep -- imported only in
 # seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
 # and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
@@ -614,6 +615,9 @@ pyforge-scribe = { features = ["pyforge-scribe"], no-default-feature = true }
 # excludes the fat default [dependencies], so this env carries only the
 # built pyforge-core package (stdlib only -- no third-party run-dep) + pytest.
 pyforge-core = { features = ["pyforge-core"], no-default-feature = true }
+# Lean testing-kit env (Story 19.2 / FR-130, pyforge-core mirror): own leaf
+# (Q-26), stdlib-only shared test mocks; no-default-feature keeps it lean.
+pyforge-testing-kit = { features = ["pyforge-testing-kit"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
@@ -1943,6 +1947,7 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.3, CAP-3/CAP-4: verdict.py's Lattice + __main__.py's compose(BASE_ENVELOPE_SCHEMA, ...) -- also a package run-dep (mirrors [feature.pyforge-warden.dependencies]'s identical edge)
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 19.2 / FR-130: first non-seed consumer station imports the shared kit (test-time only; not a package run-dep)
 mcp = ">=2.0.0"                         # MCP SDK -- Story 2.1's atlas Watch-axis transport (sources/atlas.py, mirrors [feature.pyforge-herald.dependencies]'s identical pin; also a package run-dep)
 pyyaml = ">=6.0.3"                        # PyYAML -- Story 6.6's sources/chain.py frontmatter parser (also a package run-dep; a library add, not a feature union)
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
@@ -2088,3 +2093,32 @@ cwd = "src/shared/packages/pyforge-core"
 [feature.pyforge-core.tasks.pyforge-core-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-core-build-conda", "pyforge-core-build-dist"]
+
+# --- pyforge-testing-kit (Story 19.2 / FR-130, pyforge-core mirror) --
+# Own leaf (Q-26): CLI-runner / page-object / DB-factory / auth-HTTP-time
+# mocks seeded from Marshal's four real mocks. Spec:
+# _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
+# spec-19-2-the-shared-test-support-kit.md
+[feature.pyforge-testing-kit.dependencies]
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # -> built conda pkg
+hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                       # test runner
+
+[feature.pyforge-testing-kit.tasks.pyforge-testing-kit-test]
+description = "Run the pyforge.testing_kit test suite"
+cmd = "pytest src/shared/packages/pyforge-testing-kit/tests -q"
+
+[feature.pyforge-testing-kit.tasks.pyforge-testing-kit-build-conda]
+description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-testing-kit"
+
+[feature.pyforge-testing-kit.tasks.pyforge-testing-kit-build-dist]
+description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-testing-kit"
+
+[feature.pyforge-testing-kit.tasks.pyforge-testing-kit-build]
+description = "Build all three artifacts: conda + wheel + sdist"
+depends-on = ["pyforge-testing-kit-build-conda", "pyforge-testing-kit-build-dist"]
