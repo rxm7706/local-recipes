@@ -48,7 +48,7 @@ development_status:
   7-1-sourcecontract-adapters-the-identity-api: done
   7-2-the-eligibility-union-carries-its-provenance: done
   7-3-cyclonedx-out-the-corpus-in: done
-  8-1-upload-runs-the-real-engines-async: backlog
+  8-1-upload-runs-the-real-engines-async: done
   8-2-results-render-with-derived-progress: backlog
   epic-1: done
   epic-1-retrospective: done
