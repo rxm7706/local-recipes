@@ -2,7 +2,7 @@
 title: steward init/shell-init detect and prepare the machine
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -42,3 +42,14 @@ baseline_revision: f17a8f704f
 - `steward init` / `shell-init` green locally
 - Prereq failure names remedy (not silent)
 - Idempotent re-run
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `steward init` (prereq detection for pixi/git/gh/podman with named remedies; pixi floor from `requires-pixi`) and `steward shell-init` (idempotent PATH/env/bash-completion snippet). Both support `--json`.
+
+Merge: PR #697 admin-merged at `551de2ecdd720dd26216cc647716ec17d72f1cbd` (GitHub Actions billing blocked CI runners; local tests green).
+
+Verification:
+- `pixi run -e pyforge-steward pyforge-steward-test` → 873 passed, 1 skipped
