@@ -1,0 +1,558 @@
+---
+title: PyForge Unifying Strategy — Hub-and-Spoke Enterprise Architecture across all 9 stations
+type: dream
+owner: herald
+status: dreamt
+---
+
+# PyForge Unifying Strategy
+
+## The Dream
+
+We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building 9 disconnected apps; we are building **one enterprise host (`pyforge_host`) that mounts 9 capability domains**, powered by **Pixi** as the unified package and environment manager.
+
+By placing a unified **Django + Wagtail/CodeRed CMS (CRX)** application at the center and delegating heavy lifting to **FastAPI / MCP microservices**, we achieve a flawless separation of concerns:
+- **The Host (`pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, and reverse-proxying.
+- **The Microservices & MCP Layer (`services/`):** Handles compute, long-running batch jobs, sandboxed builds, and AI agentic tool access via native Model Context Protocol (MCP).
+
+```mermaid
+graph TD
+    User["Developer / Operator / Human"] --> FrontDoor["Host: pyforge_host (The One Front Door)"]
+    
+    subgraph Host["Central Platform Host (Django + Wagtail/CRX)"]
+        FrontDoor --> Auth["Identity & Routing (django-allauth OIDC/SSO)"]
+        FrontDoor --> CMS["Wagtail + CodeRed CMS (CRX) — Lane 1 (/) Guildhall & Corporate Brain"]
+        FrontDoor --> Portals["Pluggable Station Portals — Lane 2 (/stations/{station}/)"]
+        FrontDoor --> AIEngines["Pluggable AI Flow Engines (Langflow & DB-GPT)"]
+    end
+    
+    subgraph Compute["Station Microservices & MCP (FastAPI Engine Room)"]
+        Portals -- "HTMX / JSON payload" --> Microservices["FastAPI Services (:800x)"]
+        Agents["AI Agents (Antigravity, Claude, Cursor, BMAD)"] -- "MCP Protocol" --> MCPServers["Station MCP Servers"]
+        CLI["pyforge <station> CLI"] -- "Direct API / MCP" --> Microservices
+    end
+    
+    subgraph Dashboards["Analytics Dashboards — Lane 3 (/analytics/{station}/)"]
+        FrontDoor -- "Reverse Proxy + Auth Headers" --> Vizro["Vizro / Panel / Bokeh Containers"]
+    end
+
+    subgraph AsyncAndData["Data, Task & Governance Foundation"]
+        Microservices --> Workers["Task Queue & Workers (Celery + Redis noeviction)"]
+        Microservices --> DataLayer["Multi-Model Data Layer (Postgres + pgvector / DuckDB / Scribe SQLite)"]
+        Microservices --> Governance["Governance & Diagnostics (Warden Gates + Doctor Health + OTel)"]
+    end
+```
+
+---
+
+## Django Reusable Apps & `django-lasuite` Design Principles
+
+PyForge adopts the battle-tested modularity of the **Django Reusable Apps specification** (Django 6.x) and the **`django-lasuite` / DINUM La Suite Numérique** architecture:
+
+```mermaid
+graph TD
+    subgraph Foundation["Shared Foundation Package: django-pyforge"]
+        AppSwitcher["Universal Guildhall App Switcher (Banner)"]
+        SSOMiddleware["OIDC / Keycloak SSO Middleware (idp_subject)"]
+        DesignSystem["Modernist Theme + WhiteNoise Assets + HTMX Helpers"]
+        BaseTemplate["pyforge/base.html (Master Layout)"]
+    end
+
+    subgraph ReusableApps["Station Reusable App Packages (portals/)"]
+        WardenApp["pyforge_warden_portal (AppConfig + client.py)"]
+        MarshalApp["pyforge_marshal_portal (AppConfig + client.py)"]
+        StewardApp["pyforge_steward_portal (AppConfig + client.py)"]
+        OtherApps["... remaining 6 station portal packages"]
+    end
+
+    subgraph CentralHost["Platform Project: pyforge_host"]
+        WagtailHost["Wagtail / CodeRed CMS (/)"]
+        SettingsConfig["INSTALLED_APPS += ['django_pyforge', 'pyforge_warden_portal', ...]"]
+    end
+
+    Foundation --> CentralHost
+    ReusableApps --> CentralHost
+    CentralHost --> AppSwitcher
+    AppSwitcher -- "Discovers via AppConfig metadata" --> ReusableApps
+```
+
+### 1. The Shared Foundation Package (`django-pyforge`)
+Analogous to `django-lasuite`, `django-pyforge` is the central reusable foundation package shared by all station portals:
+- **The Guildhall App Switcher Banner (`templates/pyforge/app_switcher.html`):** Renders the global cross-station header banner with active station indicators, user profile badges, and an instant dropdown menu to navigate between all 9 stations.
+- **Identity & SSO Middleware:** Intercepts Keycloak / OIDC tokens, extracting `idp_subject`, user profile, and dynamic group roles into `request.user`.
+- **Modernist Theme & Base Template:** Provides `templates/pyforge/base.html`, bundling Bootstrap 5.3 + HTMX + WhiteNoise with zero external CDN dependencies.
+- **Pluggable Settings Helper:** Standardized `PYFORGE_PLATFORM_CONFIG` setting resolution with environment variable overrides.
+
+### 2. Standalone Reusable Station App Packages (`portals/pyforge_<station>_portal`)
+Modeled after `suitenumerique` apps (`drive`, `meet`, `docs`), each station portal is a self-contained, distributable Python package:
+- **Zero Database Models:** Contains no domain database models. Domain data is fetched on-demand from the paired FastAPI microservice via `client.py` (`httpx`).
+- **Strict Namespace Isolation:** All views, URLconfs, templates (`templates/warden/`), and static assets (`static/warden/`) are strictly namespaced.
+- **Extends Base Layout:** Every station view extends `pyforge/base.html`, automatically inheriting the universal Guildhall App Switcher banner and auth context.
+
+### 3. Dynamic Station Discovery (`AppConfig` Metadata)
+Each station's `AppConfig` declares standardized suite metadata:
+```python
+from django.apps import AppConfig
+
+class WardenPortalConfig(AppConfig):
+    name = "pyforge_warden_portal"
+    verbose_name = "Warden Compliance"
+    station_name = "warden"
+    station_icon = "shield-check"
+    station_url_name = "warden:index"
+    station_description = "Compliance gates and recipe policy validation"
+```
+The central `django-pyforge` banner dynamically queries `apps.get_app_configs()` to automatically render the App Switcher menu without hardcoding station URLs!
+
+---
+
+## The Complete 10-Layer PyForge Platform Topology
+
+1. **Content & Presentation Layer (Lane 1):** Wagtail + CodeRed CMS (CRX) at root (`/`), hosting the Guildhall, Corporate Brain, and Herald presentation stages (`.dc.html`, Marp, PPTX, Vite).
+2. **Pluggable Web Portal Layer (Lane 2):** 9 Reusable Django Apps (`portals/`) rendering HTMX views, interactive forms, and approvals with zero domain database models.
+3. **Pluggable Analytics Layer (Lane 3):** Isolated Vizro / Panel containers (`dashboards/`) reverse-proxied with Steward row-level tenant isolation headers.
+4. **Host & Identity Gateway Layer:** Central Django platform host managing `django-allauth` (OIDC/SSO keyed on `idp_subject`), session state, WhiteNoise assets, and reverse-proxying.
+5. **Microservices Compute Layer:** 9 Paired FastAPI services (`services/`) executing business logic, recipe parsing, and sandboxed builds.
+6. **Agentic Tool & MCP Layer:** Server-Sent Events (SSE) Model Context Protocol servers on each microservice for autonomous tool calling by AI agents (Antigravity, Claude Code, Cursor, BMAD).
+7. **Asynchronous Task & Worker Queue Layer:** Celery + Redis workers (`noeviction` policy) executing long-running builds (Mason), batch audits (Warden), and memory compilations (Scribe) with real-time status streaming.
+8. **Multi-Model Data & Storage Layer:**
+   * **Relational & Vector Data:** PostgreSQL cluster with `pgvector` and schema isolation (`public`, `langflow_schema`, `dbgpt_schema`) + `django-simple-history` audit trail.
+   * **Analytical Graph:** DuckDB + Kedro pipelines for Atlas ecosystem graph.
+   * **Team Memory Graph:** Scribe `graphstore` + SQLite for session transcripts and compiled facts.
+   * **Distributed Cache & Broker:** Redis with strict `noeviction` policy.
+   * **Artifact Store:** Artifactory / MinIO / local mirror cache for wheels, conda packages, and deck exports.
+9. **Autonomous Loop & Orchestration Layer:** Marshal loop engine (`bmad-loop`, `bmad-build-auto`, detached workers, strand monitoring, cross-agent handoff orchestration).
+10. **Security, Governance, Observability & 15-Factor Baseline:**
+    * **15-Factor Hygiene:** Fail-fast two-stage startup misconfiguration refusals, `trace_id` on every log line via `structlog`/OpenTelemetry, and pixi-sourced dependencies.
+    * **Governance & Health:** Warden compliance gates, Doctor workspace health diagnostics and auto-remedy engines.
+    * **Air-Gap Boundary:** Zero CDN leakage (all assets local via WhiteNoise), internal mirror resolution for dependencies, runtime CA truststore (`_http.py`).
+
+---
+
+## The Estate Monorepo Structure (Aligned to `src/`)
+
+Pixi serves as the unified multi-environment package manager (conda-forge + PyPI) powering the entire estate. Rather than inventing artificial root directories, the architecture maps cleanly and directly onto the **existing `src/` layout** with minimal changes:
+
+```text
+local-recipes/ (PyForge Estate Monorepo)
+├── pixi.toml                     # Unified multi-environment manager (conda-forge & PyPI)
+├── pyproject.toml                # Root packaging metadata & workspace configuration
+├── docker-compose.yml            # Local developer substrate (Host, DB, Redis, Traefik, Keycloak)
+│
+├── src/
+│   ├── platform/                 # Layer 1 & 4: The Central Django Platform Host
+│   │   ├── manage.py
+│   │   ├── config/               # settings/ (split), urls.py, wsgi.py, asgi.py (Keycloak OIDC)
+│   │   ├── platformapp/          # Shared templates (base.html), static assets (WhiteNoise)
+│   │   ├── portals/              # Layer 2: Pluggable Station Apps (Thin UI Clients)
+│   │   │   ├── warden_portal/    # (formerly compliance_face) -> Reusable Django app
+│   │   │   ├── steward_portal/   # Infrastructure & Provisioning
+│   │   │   ├── marshal_portal/   # Loop Run Controls & Cockpit
+│   │   │   ├── atlas_portal/     # Package Query & Ingestion
+│   │   │   ├── scribe_portal/    # Team Memory Curation
+│   │   │   ├── herald_portal/    # Deck & Stage Studio
+│   │   │   ├── mason_portal/     # Visual Recipe Studio
+│   │   │   ├── doctor_portal/    # Diagnostic & Auto-Remedy Console
+│   │   │   └── core_portal/      # Platform Hub & Config Portal
+│   │   ├── langflow_integration/# Pluggable Langflow ASGI app mount
+│   │   ├── dbgpt_integration/   # Pluggable DB-GPT ASGI app mount
+│   │   ├── compose/              # Local Keycloak realm-as-code & DB-GPT services
+│   │   └── deploy/               # Helm charts & OpenShift restricted-v2 overlays
+│   │
+│   ├── shared/
+│   │   └── packages/             # Layer 5 & 6: The 9 Station Compute & Engine Packages
+│   │       ├── pyforge-core/     # Platform spine, registry & unified CLI dispatcher
+│   │       │   └── src/pyforge/core/
+│   │       │       ├── cli/      # Root `pyforge` CLI dispatcher (Typer)
+│   │       │       └── service/  # core_service FastAPI (:8000) + MCP
+│   │       ├── pyforge-warden/   # Compliance gate & policy engine
+│   │       │   └── src/pyforge/warden/
+│   │       │       ├── service/  # warden_service FastAPI (:8004) + MCP (main.py)
+│   │       │       └── rules/    # Rule engine, checks & recipe audits
+│   │       ├── pyforge-marshal/  # Loop orchestrator (FastAPI :8001 + MCP)
+│   │       ├── pyforge-steward/  # Infrastructure & deployment (FastAPI :8002 + MCP)
+│   │       ├── pyforge-atlas/    # Package graph intelligence (FastAPI :8003 + MCP)
+│   │       │   └── conf/         # Kedro pipeline configs & Vizro analytics
+│   │       ├── pyforge-scribe/   # Team memory & transcript mining (FastAPI :8005 + MCP)
+│   │       ├── pyforge-herald/   # Proclamations & deck engine (FastAPI :8006 + MCP)
+│   │       ├── pyforge-mason/    # Recipe builder & migration (FastAPI :8007 + MCP)
+│   │       ├── pyforge-doctor/   # Health diagnostics & auto-remedy (FastAPI :8008 + MCP)
+│   │       └── pyforge-testing-kit/ # Conformance fixtures & testing harnesses
+│   │
+│   └── sentinel/                 # Cross-station surveillance & knowledge bases
+│
+├── presentations/                # Station Decks (.dc.html, Marp, PPTX, Vite Stages)
+│   ├── pyforge-core/
+│   ├── pyforge-marshal/
+│   ├── pyforge-steward/
+│   ├── pyforge-atlas/
+│   ├── pyforge-warden/
+│   ├── pyforge-scribe/
+│   ├── pyforge-herald/
+│   ├── pyforge-mason/
+│   └── pyforge-doctor/
+│
+└── _bmad-output/                 # Tier-2 Specs & Tier-0 Dreams
+    └── projects/                 # BMAD planning and implementation artifacts
+```
+
+---
+
+## The Cohesive Unified CLI Strategy (`pyforge`)
+
+### 1. Universal Command Grammar (`pyforge <station> <noun> <verb>`)
+```bash
+# Universal Lifecycle Commands (Identical across all 9 stations)
+pyforge <station> status       # Check station service health, active jobs, and workers
+pyforge <station> info         # Print version, configuration, and registered capabilities
+pyforge <station> check        # Run station preflight and self-diagnostics
+pyforge <station> serve        # Start the station's paired FastAPI + MCP microservice
+pyforge <station> docs         # View, build, or open station docs and presentation decks
+```
+
+### 2. Standardized Output Formats (`--output` / `-o`)
+- **`--output text` (Default):** Human-optimized terminal output with Rich tables, colored badges (`[PASS]`, `[WARN]`, `[FAIL]`, `[INFO]`), and live progress bars.
+- **`--output json`:** Machine-readable JSON / NDJSON output for CI/CD scripting, piping, and AI subagent ingestion.
+- **`--output yaml`:** Clean YAML configuration and manifest exports.
+- **`--quiet` / `-q`:** Suppresses all visual UI elements, outputting only exit codes and stdout for shell scripts.
+
+### 3. Dual Execution Modes: Direct Local vs. Service Client (`--remote` / `--local`)
+* **Direct Mode (`--local`):** Directly imports and runs the station's Python logic locally in the active Pixi environment (zero network overhead).
+* **Remote Service Mode (`--remote`):** Dispatches an HTTP/JSON request to the running station microservice (`http://localhost:800x` or `https://platform.internal/api/v1/`).
+
+### 4. Automatic MCP Agent Discovery (`pyforge mcp`)
+```bash
+# Auto-configure Antigravity, Claude Code, Cursor, and Gemini to use PyForge MCP servers
+pyforge mcp install --all
+
+# List all discovered tools, prompts, and resources across all 9 stations
+pyforge mcp list
+```
+
+---
+
+## Dual Deployment Profiles (Local Workstation vs. Enterprise OCP)
+
+1. **Profile A: Local Workstation Development (Docker Compose + Pixi):**
+   * Local Keycloak container for OIDC realm-as-code testing (`devinfra` pattern).
+   * Local PostgreSQL (`pgvector`), Redis, and Traefik reverse proxy.
+   * Hot-reloading Django and FastAPI microservices in active Pixi environments.
+2. **Profile B: Enterprise Production (Red Hat OpenShift / Kubernetes + Helm):**
+   * Container images built from internal registries, running under `restricted-v2` Security Context Constraints (SCC).
+   * In-cluster PostgreSQL + Redis pods, OpenShift Ingress/Routes, and secret-mounted credentials.
+   * Central Artifactory mirror index resolution and WhiteNoise air-gapped asset bundling.
+
+---
+
+---
+
+## 1. Inter-Station Event Bus & Message Fabric
+
+To enable decoupled, asynchronous collaboration across all 9 stations (e.g. Warden compliance failure triggering Doctor auto-remedy and Mason recipe rebuild), PyForge implements an enterprise **Event Fabric over Redis Streams**:
+
+```mermaid
+flowchart LR
+    Producer["Station Service (e.g. Warden)"] -->|Publish Event| RedisStream["Redis Stream (pyforge:events)"]
+    RedisStream -->|Subscribe| Consumer["Consumer Services (Doctor / Mason / Scribe)"]
+    RedisStream -->|ASGI Consumer| DjangoHost["Django Platform Host"]
+    DjangoHost -->|HTMX SSE / WebSockets| Browser["Operator Browser (Live Toasts & Metrics)"]
+```
+
+### Event Specification (`CloudEvents` Compliant Pydantic Model)
+```python
+from datetime import datetime
+from uuid import UUID
+from pydantic import BaseModel, Field
+
+class PyForgeEvent(BaseModel):
+    event_id: UUID
+    station: str = Field(description="Originating station (e.g. 'warden', 'mason')")
+    event_type: str = Field(description="Dotted verb (e.g. 'recipe.audit.failed')")
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    correlation_id: str = Field(description="Distributed trace_id across microservices")
+    payload: dict = Field(default_factory=dict)
+```
+
+- **Live Browser Streaming:** The Django host mounts an ASGI SSE/WebSocket consumer (`/ws/events/`) that relays filtered Redis Stream events directly to HTMX frontend badges (`hx-ext="sse"` / `hx-ext="ws"`), giving operators real-time feedback without page reloads.
+
+---
+
+## 2. Keycloak RBAC & Unified Security Matrix
+
+PyForge enforces a strict, unified Role-Based Access Control (RBAC) model across human browser sessions, CLI operators, and autonomous AI agents:
+
+| Enterprise Persona | Keycloak Realm Role | Django Portal Access (Lane 2) | FastAPI / MCP Endpoint Scopes |
+| :--- | :--- | :--- | :--- |
+| **Platform Administrator** | `pyforge-admin` | Full read/write + Django Admin (`/admin/`) | Full access (`*`) + secret rotation |
+| **Station Maintainer** | `maintainer` | Station workflow triggers (Mason build, Marshal run) | `service:write`, `mcp:tools:execute` |
+| **Compliance Auditor** | `compliance-auditor` | Read-only inspection & Gate waivers | `warden:read`, `audit:export` |
+| **Developer / Viewer** | `viewer` | Read-only Guildhall docs, dashboards, and decks | `service:read` (Public queries only) |
+| **Autonomous AI Agent** | `agent-service-account` | Headless API access via Bearer Token / API Key | Leased MCP tool execution (`mcp:tools:*`) |
+
+- **Dynamic Group Mapping:** The `django-pyforge` authentication middleware parses Keycloak JWT claims (`resource_access.pyforge.roles`), dynamically updating the user's active Django permissions per-request without storing local passwords.
+- **FastAPI Scope Verification:** FastAPI microservice endpoints enforce OAuth2 scopes via `Security(verify_token, scopes=["mason:build"])`.
+
+---
+
+## 3. Guildhall Presentation Stage Embedding
+
+Each station's presentation assets (`presentations/<station>/`) are fully integrated into the central Wagtail/CodeRed CMS Guildhall:
+
+```mermaid
+graph TD
+    WagtailPage["Guildhall Station Overview (/stations/<station>/)"] --> DeckBlock["PresentationDeckBlock (Wagtail StreamField)"]
+    DeckBlock --> ModernistFrame["Sandboxed <iframe> (.dc.html Interactive Slides)"]
+    DeckBlock --> SourceLinks["Marp Markdown (.md) & PPTX Export Downloads"]
+    DeckBlock --> ViteBridge["Vite React Stage (/presentations/<station>/stage/)"]
+```
+
+- **Wagtail StreamField `PresentationDeckBlock`:** Station maintainers can embed interactive decks directly into documentation pages.
+- **Sandboxed Interactive Slides (`.dc.html`):** The Modernist design decks run in isolated iframes with full-screen, keyboard navigation, and embedded live code runner capabilities.
+- **Vite React Stage Bridge:** Compiled Vite stages in `presentations/<station>/dist/` are served statically by WhiteNoise at `/presentations/<station>/stage/`.
+
+---
+
+## 4. Scribe Knowledge Graph UI Integration
+
+Scribe compiles session transcripts, architectural decisions, and repository facts into an SQLite `graphstore`. The web portal and CLI surface this collective intelligence:
+
+- **Natural Language Memory Search (`/stations/scribe/`):** A unified search bar backed by `pgvector` semantic embeddings and Scribe's graph index, providing instant HTMX search results over past agent sessions and design rationales.
+- **Visual Decision Lineage:** Interactive visual graphs (Cytoscape.js) illustrating how **Dreams $\rightarrow$ Specs $\rightarrow$ Sprints $\rightarrow$ Pull Requests** evolved over time.
+- **Supersession & Intent Trails:** Highlights when a rule or architecture decision was deprecated or superseded by a newer Dream, preserving historical intent.
+- **CLI Recall Symmetry:** `pyforge scribe recall "why do we use Keycloak?"` delivers formatted historical summaries straight to developer terminals.
+
+---
+
+## 5. Shared Data Contracts & Client SDK (`pyforge.core.client`)
+
+To eliminate schema drift between the Django portals, FastAPI microservices, and the CLI, `pyforge-core` exports shared Pydantic V2 models and a type-safe HTTP client:
+
+```mermaid
+flowchart TD
+    CoreModels["pyforge.core.models (Pydantic V2 Domain Models)"]
+    ClientSDK["pyforge.core.client (Type-Safe Async HTTPX Client)"]
+    
+    CoreModels --> ClientSDK
+    ClientSDK --> DjangoPortals["src/platform/portals/<station>_portal/"]
+    ClientSDK --> CLICommands["src/shared/packages/pyforge-<station>/src/pyforge/<station>/cli.py"]
+    ClientSDK --> Subagents["Autonomous AI Agents (Antigravity, Claude, BMAD)"]
+```
+
+```python
+# Shared Type-Safe Client Pattern
+from pyforge.core.client import PyForgeStationClient
+from pyforge.core.models import ComplianceResult, RecipePayload
+
+client = PyForgeStationClient(station="warden", base_url="http://localhost:8004")
+
+# Used identically inside Django views and Typer CLI subcommands:
+result: ComplianceResult = await client.post("/api/v1/compliance/check", payload=RecipePayload(recipe_name="numpy"))
+```
+
+---
+
+---
+
+## The Station Planning Artifact Inventory & Upstream Grounding
+
+Each station in PyForge is already grounded in **one authoritative PRD spline** and **one primary Architecture spline** within the BMAD planning tier (`_bmad-output/projects/`):
+
+| Station | Capability Domain | Primary PRD Spline | Primary Architecture Spline | Satellite / Sub-chain Architecture Artifacts |
+| :--- | :--- | :--- | :--- | :--- |
+| **`pyforge-atlas`** | Package Graph Intelligence | `prd-pyforge-atlas-2026-07-17` | `architecture-pyforge-atlas-2026-07-17` | — |
+| **`pyforge-doctor`** | Health & Auto-Remedy | `prd-pyforge-doctor-2026-07-25` | `architecture-pyforge-doctor-2026-07-25` | — |
+| **`pyforge-herald`** | Proclamations & Stage | `prd-pyforge-herald-2026-08-01` | `architecture-pyforge-herald-2026-08-01` | — |
+| **`pyforge-marshal`** | Loop Orchestrator | `prd-pyforge-marshal-2026-07-25` | `architecture-pyforge-marshal-2026-07-25` | `integration-architecture.md`, `architecture-bmad-infra.md` |
+| **`pyforge-mason`** | Recipe Builder & Build | `prd-pyforge-mason-2026-07-25` | `architecture-pyforge-mason-2026-07-25` | — |
+| **`pyforge-scribe`** | Team Memory & Mining | `prd-pyforge-scribe-2026-07-25` | `architecture-pyforge-scribe-2026-07-25` | — |
+| **`pyforge-steward`** | Infrastructure & Deploy | `prd-pyforge-steward-2026-07-25` | `architecture-pyforge-steward-2026-07-25` | `secure-live-dashboards-2026-08-09`, `unified-container-2026-08-09`, `jira-github-projects-sync-2026-08-09` |
+| **`pyforge-warden`** | Compliance & Quality Gates | `prd-pyforge-warden-2026-07-14` | `architecture-pyforge-warden-2026-07-14` | — |
+| **`pyforge-core`** | Platform Spine & Registry | Governed by `pyforge-core.md` | Governed by `pyforge-charter.md` | Shared foundation package (`django-pyforge`) |
+
+### Why This Matters for the Unifying Layer
+Because each station already has a single authoritative **PRD + Architecture spline**, the Unifying Estate Strategy does **not** alter or reinvent their internal algorithms or domain models. 
+
+Instead, this Unifying Dream establishes the **standardized external surface contracts** that mount these 9 engines into one cohesive platform:
+1. **Lane 2 UI Portal:** `src/platform/portals/<station>_portal/` (Reusable Django App).
+2. **Compute & MCP Service:** `src/shared/packages/pyforge-<station>/src/pyforge/<station>/service/` (FastAPI + MCP over SSE).
+3. **Analytics Dashboard:** `dashboards/<station>_dashboard/` or Kedro/Vizro board (Lane 3).
+4. **Presentation Stage:** `presentations/pyforge-<station>/` (Interactive `.dc.html` + Vite Stage).
+5. **Unified CLI Command:** `pyforge <station>` (Typer command group).
+
+---
+
+---
+
+## Station-by-Station Adversarial Architecture Review & Course Corrections
+
+A critical cross-station audit reveals isolated assumptions made in earlier planning artifacts that must be **course-corrected** to achieve the unified estate topology:
+
+### 1. `pyforge-warden` (Compliance & Quality Gates)
+* **Legacy Assumption:** Conceived primarily as a local CLI tool parsing lockfiles via synchronous subprocesses (`deptry`, `osv-scanner`). Web face was a monolithic Django app (`compliance_face`).
+* **Adversarial Critique:** Running blocking CLI scans inside web requests leads to timeouts; zero agent tool access over standard protocols.
+* **Course Correction:**
+  * Extract rule audits into `warden_service` (FastAPI) with native MCP SSE tools for AI agents.
+  * Offload heavy bulk repo audits to Celery workers with live status streaming.
+  * Refactor `compliance_face` into a zero-model Reusable Django App (`src/platform/portals/warden_portal`).
+
+### 2. `pyforge-steward` (Platform Hosting & Gateway Controller)
+* **Legacy Assumption:** Fragmented across 4 separate architecture documents (1 main spine + 3 satellite sub-chains for dashboards, containers, and Jira sync).
+* **Adversarial Critique:** Architecture fragmentation obscures Steward's true role as the platform's infrastructure and gateway guardian.
+* **Course Correction:**
+  * Consolidate the satellite architectures under Steward's primary mandate: **Platform Ingress, OIDC Token Propagation, and OCP Deployment**.
+  * Enforce Steward's reverse-proxy middleware in `pyforge_host` to inject `X-Forwarded-User` and `X-Forwarded-Groups` for row-level tenant isolation across all Vizro boards.
+
+### 3. `pyforge-atlas` (Package Graph Intelligence)
+* **Legacy Assumption:** Heavy monolithic data science stack (Kedro + Dagster + DuckDB + Vizro) conceived as a standalone web application.
+* **Adversarial Critique:** Importing Kedro/Vizro inside the Django host would bloat container memory and create package version deadlocks.
+* **Course Correction:**
+  * Isolate Kedro/DuckDB analytics and Vizro dashboards into dedicated container pods (Lane 3).
+  * Expose an ultra-lightweight FastAPI query layer (`atlas_service` :8003 + MCP) allowing Warden, Doctor, Scribe, and AI agents to query graph facts via sub-millisecond REST/MCP calls instead of mounting raw DuckDB files.
+
+### 4. `pyforge-marshal` (Loop Orchestrator & Execution Cockpit)
+* **Legacy Assumption:** Pure headless CLI tool written for local terminals (`bmad-loop`), reading/writing exclusively to local `.marshal/seed-state.yml` and worktrees.
+* **Adversarial Critique:** Completely blind to web-driven execution—operators have no browser cockpit to view, start, or pause autonomous loops.
+* **Course Correction:**
+  * Wrap the loop decision core in `marshal_service` (FastAPI :8001 + MCP).
+  * Stream loop state transitions (`sprint.started`, `story.passed`, `loop.blocked`) to Redis Streams (`pyforge:events:marshal`).
+  * Build `marshal_portal` (Lane 2) providing a live HTMX web cockpit with sprint status, strand graphs, and execution controls.
+
+### 5. `pyforge-scribe` (Team Memory & Decision Mining)
+* **Legacy Assumption:** Isolated local SQLite `graphstore` mining transcripts from local developer disks.
+* **Adversarial Critique:** Memory is trapped on local developer machines; ephemeral CI runners and subagents cannot query historical decisions.
+* **Course Correction:**
+  * Migrate Scribe's storage backend to the central PostgreSQL `pgvector` cluster (`scribe_schema` isolation) or centralized object store.
+  * Expose `scribe_service` (:8005 + MCP) with semantic search tools (`recall_team_memory`, `search_decisions`) enabling fleet-wide collective intelligence.
+
+### 6. `pyforge-herald` (Proclamations, Deck Engine & Stage)
+* **Legacy Assumption:** Static Guildhall website generator and standalone Marp slide exporter.
+* **Adversarial Critique:** Static HTML cannot support dynamic Keycloak role-based permissions, search, or live CMS blocks.
+* **Course Correction:**
+  * Elevate Herald's Guildhall to the flagship **Lane 1 Wagtail/CodeRed CMS application at `/`**.
+  * Package presentation deck renderers as Wagtail StreamField blocks (`PresentationDeckBlock`) and an MCP tool for AI pitch deck generation.
+
+### 7. `pyforge-mason` (Conda-Forge Recipe Builder)
+* **Legacy Assumption:** Synchronous CLI builder running rattler-build / conda-build directly in terminal threads.
+* **Adversarial Critique:** Long-running builds block developer terminals; zero visual interface for inspecting recipe diffs or migration logs.
+* **Course Correction:**
+  * Offload build tasks to Celery workers backed by sandboxed container environments.
+  * Build `mason_portal` (Lane 2) for visual recipe authoring, diff visualization, and one-click builds.
+  * Provide `mason_service` (:8007 + MCP) for autonomous agent-driven recipe generation and patch evaluation.
+
+### 8. `pyforge-doctor` (Health Diagnostics & Auto-Remedy)
+* **Legacy Assumption:** Passive CLI bridge gathering diagnostics and printing terminal tables.
+* **Adversarial Critique:** Cannot trigger automated remedies proactively; disconnected from platform health probes.
+* **Course Correction:**
+  * Integrate Doctor directly into OpenTelemetry metrics and platform health check probes (`/healthz`, `/ht/`).
+  * Attach automated remedy listeners to Redis Streams to auto-heal environment drift.
+  * Build `doctor_portal` (Lane 2) featuring real-time health telemetry and one-click remedy triggers.
+
+### 9. `pyforge-core` (Platform Foundation Spine)
+* **Legacy Assumption:** Conceptual framework without concrete shared client libraries or unified CLI dispatcher.
+* **Course Correction:**
+  * Implement `django-pyforge` as the reusable Django foundation package (Guildhall App Switcher, Keycloak SSO middleware, Modernist base template).
+  * Implement `pyforge.core.client` as the shared async HTTPX SDK and Pydantic V2 domain model library.
+  * Implement the root `pyforge` Typer CLI dispatcher routing commands across all stations.
+
+---
+
+---
+
+## Station-by-Station Adversarial Product (PRD) Review & Product Course Corrections
+
+An adversarial review of each station's PRD reveals critical **product-level blindspots** where tooling was scoped purely as non-interactive CLI scripts or isolated data silos, ignoring human operators and autonomous IDE agent loops:
+
+### 1. `pyforge-warden` (Product & UX Scope)
+* **Legacy PRD Stance:** Declared `classification: cli_tool` with non-interactive focus, explicitly dropping the `developer_tool` label and deprioritizing interactive UX.
+* **Adversarial Critique:** Crippled compliance adoption. Human compliance officers had no web interface to inspect CVE trees, review licenses, or issue cryptographic waivers; developers in IDEs had no instant tool feedback before commit.
+* **Product Course Correction:** Evolve from a "headless CI script" to a **Dual-Surface Compliance Engine**:
+  - **`warden_portal`:** Interactive web portal for SBOM visualization, license compliance matrices, and waiver approvals.
+  - **`warden_service` MCP Server:** Real-time IDE tool allowing Antigravity, Claude, and Cursor to self-audit recipes as code is written.
+
+### 2. `pyforge-marshal` (Product & UX Scope)
+* **Legacy PRD Stance:** Defined jobs-to-be-done purely around local git worktree commands, terminal loops (`bmad-loop`), and terminal stdout.
+* **Adversarial Critique:** Complete lack of executive or team visibility into autonomous SDLC execution. Engineering managers cannot track loop velocity, agent status, or strand health without manual log inspection.
+* **Product Course Correction:** Expand product scope to include the **Autonomous Loop Cockpit (`marshal_portal`)**:
+  - Live Kanban boards reflecting sprint/story progress in real-time.
+  - Interactive strand graphs, execution heatmaps, and start/pause/resume web controls.
+  - Operator push notifications for approval gates and human-in-the-loop interventions.
+
+### 3. `pyforge-atlas` (Product & UX Scope)
+* **Legacy PRD Stance:** Conceived as a backend data pipeline writing to standalone DuckDB files and a segregated Vizro dashboard.
+* **Adversarial Critique:** Created an isolated data silo requiring separate ports and logins; failed to provide interactive package intelligence across other station workflows.
+* **Product Course Correction:** Reposition Atlas as the **Platform Intelligence Layer**:
+  - Seamlessly embed Atlas analytics under `/analytics/atlas/` within the central Django Host.
+  - Expose interactive autocomplete and package intelligence REST/MCP endpoints directly powering Warden and Mason workflows.
+
+### 4. `pyforge-scribe` (Product & UX Scope)
+* **Legacy PRD Stance:** Explicitly stated *"Scribe is not a general-purpose enterprise knowledge platform"* and scoped memory capture strictly to local workstation files.
+* **Adversarial Critique:** Fractured collective intelligence. If an engineer or subagent works in a container, remote worktree, or CI runner, past decisions and ADR rationale remain invisible.
+* **Product Course Correction:** Upgrade Scribe to **Enterprise Collective Memory**:
+  - Global semantic search web UI (`scribe_portal`) backed by PostgreSQL `pgvector`.
+  - Shared agent memory tool (`recall_team_memory`) enabling all AI subagents across the company to benefit from past architectural decisions.
+
+### 5. `pyforge-herald` (Product & UX Scope)
+* **Legacy PRD Stance:** Scoped as a pitch orchestration CLI and static HTML site generator for the Guildhall.
+* **Adversarial Critique:** Static HTML pages cannot support dynamic enterprise authentication, access control, or live corporate intranet editing.
+* **Product Course Correction:** Elevate Herald to the **Enterprise Corporate Brain (`/`)**:
+  - Powers the flagship Wagtail/CodeRed CMS application at the platform root.
+  - Provides the **Presentation Deck Studio Block** for interactive slide authoring and multi-format exports (.dc.html, Marp, PPTX).
+
+### 6. `pyforge-mason` (Product & UX Scope)
+* **Legacy PRD Stance:** Scoped purely as a terminal builder executing synchronous builds.
+* **Adversarial Critique:** High cognitive load for developers migrating hundreds of packages with no visual diffing, linting, or recipe migration wizards.
+* **Product Course Correction:** Expand to the **Visual Recipe Studio (`mason_portal`)**:
+  - Browser-based side-by-side recipe editor with real-time validation and build logs.
+  - Autonomous AI recipe patching tools over MCP.
+
+### 7. `pyforge-doctor` (Product & UX Scope)
+* **Legacy PRD Stance:** Scoped as a passive diagnostics reporter printing terminal summaries.
+* **Adversarial Critique:** Leaves the burden of fixing detected dependency conflicts entirely on the developer.
+* **Product Course Correction:** Upgrade to an **Active Fleet Health Console (`doctor_portal`)**:
+  - Real-time visual health scorecards and conflict visualizers.
+  - Interactive "One-Click Auto-Remedy" triggers executing self-healing tasks in the background.
+
+### 8. `pyforge-steward` (Product & UX Scope)
+* **Legacy PRD Stance:** Scoped around command-line provisioning and secret rotations.
+* **Adversarial Critique:** Operators lacked a single pane of glass to monitor cloud resource consumption, token life spans, and gateway ingress routes.
+* **Product Course Correction:** Broaden to the **Platform Operations Portal (`steward_portal`)**:
+  - Visual resource quota manager and environment provisioning dashboard.
+  - Keycloak realm and reverse-proxy gateway routing controls.
+
+---
+
+## Constraints / Non-goals
+
+- **Not a fragile monolithic SPA:** We use server-driven Django + HTMX + Wagtail CRX with pluggable reusable apps (`django-pyforge`) and reverse-proxied Vizro analytics containers rather than a fragile JavaScript monolith.
+- **Strict Lane Separation (Action vs. Analytics):** Do not force heavy graphing/pandas into Django HTML templates, and do not force transactional form validation or file uploads into Vizro. Lane 2 (Django/HTMX) owns actions and workflows; Lane 3 (Vizro) owns deep data visualization.
+- **Zero Heavy Compute in Django Views:** Django views never run blocking builds, batch graph scans, or heavy LLM inference in-process—all compute is dispatched asynchronously to paired FastAPI microservices and Celery workers.
+- **Zero Model Coupling in Portal Apps:** Station portal apps (`pyforge_<station>_portal`) declare zero domain database models. They are pure UI clients communicating via `client.py` (`httpx`) with their paired FastAPI/MCP services.
+- **Full 9-Station Symmetry:** We explicitly reject the legacy constraint of leaving stations CLI-only; every station earns its pluggable portal, paired FastAPI + MCP microservice, analytics board, presentation stage, and CLI command group.
+- **The Guildhall is the Central Front Door:** The Guildhall is realized as the central Lane 1 platform portal at `/` (powered by Wagtail CRX + `django-pyforge` App Switcher) orchestrating navigation and corporate memory across all 9 stations.
+
+---
+
+## Kinships
+
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine) · [[pyforge-steward]] (deploy & secure hosting) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine) · [[db-gpt-django-plugin]] (DB knowledge base)
+
+---
+
+## Realization log
+
+- **2026-08-23** — Dreamt after inventory of station web surfaces (steward Django kit, atlas Vizro, warden compliance_face, herald static Guildhall; four stations CLI-only) and the rename discussion for `compliance_face` → `warden_portal`. Strategy: three lanes + surface map + shared chrome/security, not one mega-app.
+- **2026-08-23** — Expanded to holistic 9-station estate strategy incorporating unified CLI surface (`pyforge <station>`), 3-tier hosting architecture (Platform Django, Steward-proxied Vizro, GitHub Pages), and documentation lifecycle.
+- **2026-08-23** — Cohesive estate refinement: fully embraced station symmetry across all 9 stations, defining dedicated Lane 2 action portals (`{station}_portal`) and Lane 3 analytics dashboards (`{station}.dashboard`) unified by shared chrome and the Guildhall.
+- **2026-08-23** — Hub-and-Spoke Enterprise Architecture Blueprint: formalized the platform host (`pyforge_host` on Django + Wagtail/CodeRed CRX) mounting 9 pluggable station portal Django apps, paired with 9 FastAPI + Model Context Protocol (MCP) compute microservices and isolated Vizro analytics containers.
+- **2026-08-23** — Pixi Monorepo Structure & Architectural Boundaries: established the definitive `pyforge-estate/` directory layout (`pyforge_host/`, `portals/`, `services/`, `dashboards/`, `cli/`, `presentations/`, `_bmad-output/`) governed by `pixi.toml`.
+- **2026-08-23** — Dual-Headed FastAPI Pattern: documented the dual-headed service architecture where a single FastAPI station microservice simultaneously exposes standard REST endpoints (`/api/v1/...`) for Django HTMX portals and Server-Sent Events (SSE) MCP servers (`/mcp/sse`) for AI agents.
+- **2026-08-23** — Complete 10-Layer Enterprise Topology: expanded architecture with Asynchronous Workers (Celery + Redis), Multi-Model Data Layer (Postgres, DuckDB, Scribe SQLite, MinIO), Autonomous Multi-Agent Loop Engine (Marshal), and Security/Observability (Warden + Doctor + OpenTelemetry).
+- **2026-08-23** — Unified CLI Strategy Standardization: codified universal CLI grammar (`pyforge <station> <noun> <verb>`), output format standardization (`--output text|json|yaml`), dual execution modes (Direct local vs. Remote service), Rich terminal styling, and `pyforge mcp install` agent integration.
+- **2026-08-23** — 15-Factor & Hybrid Deployment Integration: integrated 15-factor enterprise baseline (`platform-fifteen-factors`), OIDC-delegated identity via `idp_subject`, PostgreSQL + `pgvector` with multi-schema isolation (`langflow_schema`, `dbgpt_schema`), Redis `noeviction` policy, and dual deployment profiles (Local Compose vs. Red Hat OCP).
+- **2026-08-23** — Django Reusable Apps & `django-lasuite` Pattern: adopted La Suite Numérique architecture principles—creating `django-pyforge` as the shared foundation package (Guildhall App Switcher banner, OIDC SSO middleware, Modernist theme layout), packaging station portals as zero-model reusable Django apps with `AppConfig` discovery metadata, and integrating Wagtail/CodeRed CMS.
+- **2026-08-23** — Guardrail Modernization: superseded legacy constraints, formalizing full 9-station symmetry, strict Lane 2/3 separation of concerns, zero-model portal apps, and elevating the Guildhall to the flagship Lane 1 application at root (`/`).
+- **2026-08-23** — Deep 5-Pillar Architecture Expansion: codified Inter-Station Event Fabric (Redis Streams + SSE/WebSockets), Keycloak RBAC Matrix, Guildhall Presentation Deck embedding (`PresentationDeckBlock` + Vite bridge), Scribe Knowledge Graph UI & semantic search, and Shared Data Contract Client SDK (`pyforge.core.client`).
+- **2026-08-23** — Upstream Planning Artifact Grounding: mapped the authoritative 1-PRD and 1-Architecture spline per station across `_bmad-output/projects/`, establishing how the Unifying Estate Dream binds to existing domain architectures.
+- **2026-08-23** — Adversarial Architecture Review & Course Corrections: executed a station-by-station critique identifying legacy silos (blocking subprocesses, isolated SQLite files, static HTML generators, local terminal loops) and defined definitive course corrections for all 9 stations.
+- **2026-08-23** — Adversarial PRD & Product Review: audited legacy product definitions across all 8 station PRDs, overturning CLI-only and isolated-silo constraints to establish dual-surface product definitions (interactive web portals + agentic MCP tools) across the entire estate.
+- **2026-08-23** — Renamed to `pyforge-unifying-strategy.md`: elevated document scope to reflect the holistic unifying strategy encompassing product vision, web UI, compute microservices, MCP agent fabric, unified CLI, and cross-station architecture.
