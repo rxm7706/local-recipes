@@ -293,7 +293,7 @@ def test_merge_commit_naming_the_key_suppresses_the_false_green(
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
-    _commit(target, "Merge bmad-loop/run/1-1-foo into loop/pyforge-warden")
+    _commit(target, "Merge bmad-loop/run/1-1-foo into loop/pyforge-warden (bmad-loop)")
     _write_feed(target, "warden", ["1-1-foo"])
 
     loop_root = tmp_path / "loop_root"
@@ -343,7 +343,7 @@ def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
-    _commit(target, "warden: Story 1.1 — the scaffold lands")
+    _commit(target, "Story 1.1 — the scaffold lands")
     _write_feed(target, "warden", ["1-1-foo"])
 
     loop_root = tmp_path / "loop_root"
@@ -358,13 +358,12 @@ def test_hand_landed_commit_subject_on_main_suppresses_the_false_green(
     assert findings[0].status is DoctorStatus.OK
 
 
-def test_route3_requires_both_the_slug_and_the_story_phrase(tmp_path: Path) -> None:
-    """Naming the story number without the station slug (or vice versa) is NOT
-    evidence -- both must appear in the same subject."""
+def test_route3_requires_matching_story_ref_not_a_neighbour(tmp_path: Path) -> None:
+    """A commit naming a different story number must not launder this one."""
     target = tmp_path / "target"
     target.mkdir()
     _init_repo(target)
-    _commit(target, "mason: Story 1.1 — a different station's story 1.1")
+    _commit(target, "Story 2.2 — a neighbouring story")
     _write_feed(target, "warden", ["1-1-foo"])
 
     loop_root = tmp_path / "loop_root"
@@ -627,7 +626,7 @@ def test_a_missing_main_branch_does_not_convict_a_hand_landed_story(
     target.mkdir()
     _init_repo(target)
     _write_feed(target, "warden", ["1-1-foo"])
-    _commit(target, "warden: Story 1.1 - foo, landed by hand")
+    _commit(target, "Story 1.1 - foo, landed by hand")
 
     loop_root = tmp_path / "loop_root"
     _write_state(
@@ -804,6 +803,64 @@ def test_an_unreadable_feed_is_named_rather_than_silently_dropped(
     assert [f.status for f in findings] == [DoctorStatus.OK]
     assert "1 sprint feed(s) unreadable" in findings[0].message
     assert findings[0].evidence == {"audited": 1}  # only atlas's key was audited
+
+
+# --- Story 20.9: standing false positives go green via shared grammar ------
+
+
+@pytest.mark.parametrize(
+    ("slug", "key", "subject", "commit_sha"),
+    [
+        (
+            "marshal",
+            "8-2-region-parser",
+            "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
+            "accc097e6a",
+        ),
+        (
+            "marshal",
+            "10-1-copier-engine",
+            "recover marshal 10-1 (Copier engine wrapper — the single seam)",
+            "5290c9bcd2",
+        ),
+        (
+            "mason",
+            "3-7-asymmetric-receipts",
+            (
+                "recover mason 3.7 (asymmetric receipts, partial failure and idempotence) "
+                "from run 20260813-145934-3eb0's failed/ preserved patch"
+            ),
+            "03d8fc8c86",
+        ),
+    ],
+)
+def test_standing_false_positives_suppress_via_grammar(
+    tmp_path: Path,
+    slug: str,
+    key: str,
+    subject: str,
+    commit_sha: str,
+) -> None:
+    """Marshal 8-2, marshal 10-1, mason 3-7 -- live false positives before 20.9."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _git(target, "commit", "-q", "--allow-empty", "-m", subject)
+    _write_feed(target, slug, [key])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root,
+        slug,
+        "run1",
+        {key: {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    assert findings[0].evidence == {"audited": 1}
 
 
 # --- The documented loop_root default --------------------------------------

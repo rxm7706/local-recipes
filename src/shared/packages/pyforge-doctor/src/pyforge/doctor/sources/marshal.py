@@ -50,6 +50,15 @@ import json
 import re
 from pathlib import Path
 
+from pyforge.core.landing_evidence import (
+    StoryKeyRef,
+    classify_commit,
+    parse_bmadloop_merge_subject,
+    parse_github_pr_merge_subject,
+    parse_recovery_commit_subject,
+    parse_templated_merge_subject,
+)
+
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 
@@ -72,6 +81,59 @@ TERMINAL = frozenset({"done"})
 SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
 DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
+# AD-24 default template; shared with ``pyforge.core.landing_evidence`` conformance.
+_MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
+_FEED_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z])?-")
+
+
+def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
+    match = _FEED_KEY_RE.match(key)
+    if match is None:
+        return None
+    return StoryKeyRef(
+        epic=int(match.group(1)),
+        seq=int(match.group(2)),
+        suffix=match.group(3) or "",
+    )
+
+
+def _keys_from_merge_subjects(
+    subjects: tuple[str, ...],
+    *,
+    project_slug: str,
+) -> frozenset[StoryKeyRef]:
+    """Merge-shaped subjects on any ref (route 2) -- excludes story-direct."""
+    keys: set[StoryKeyRef] = set()
+    for subject in subjects:
+        for parser in (
+            lambda s: parse_templated_merge_subject(s, _MERGE_SUBJECT_TEMPLATE),
+            lambda s: parse_github_pr_merge_subject(s, project_slug),
+            lambda s: parse_bmadloop_merge_subject(s, project_slug),
+            lambda s: parse_recovery_commit_subject(s, project_slug),
+        ):
+            key = parser(subject)
+            if key is not None:
+                keys.add(key)
+                break
+    return frozenset(keys)
+
+
+def _keys_from_main_commits(
+    commits: list[tuple[str, str]],
+    *,
+    project_slug: str,
+) -> frozenset[StoryKeyRef]:
+    keys: set[StoryKeyRef] = set()
+    for sha, subject in commits:
+        match = classify_commit(
+            sha,
+            subject,
+            template=_MERGE_SUBJECT_TEMPLATE,
+            project_slug=project_slug,
+        )
+        if match is not None:
+            keys.add(match.key)
+    return frozenset(keys)
 
 
 def _git(target: Path, *args: str, timeout: float | None = None) -> str | None:
@@ -368,11 +430,12 @@ def gather_story_status(
     ``scripts/story_status_check.py``'s own ``main()``, minus the print/exit
     CLI surface.
 
-    A ``done`` story is confirmed landed if any of three routes holds: a
-    merge commit naming its key exists on any ref; the harness recorded a
-    ``commit_sha`` for it; or a commit reachable from ``main`` names it as
-    ``Story <epic>.<seq>`` (the hand-landed route). It is reported ONLY when
-    none of those hold AND the harness positively says the story is
+    A ``done`` story is confirmed landed if any of three routes holds: the
+    harness recorded a ``commit_sha`` for it; a merge commit on any ref matches
+    the shared landing-evidence grammar (FR-191 / Story 20.9); or a commit on
+    ``main`` matches the same grammar (recovery subjects, story-direct commits,
+    pre-convention allowlist, and the other sanctioned shapes). It is reported
+    ONLY when none of those hold AND the harness positively says the story is
     ``deferred``/``escalated``/``abandoned`` -- a story with no run record at
     all (hand-implemented, pre-loop) stays silent, since absence of evidence
     is not evidence of absence.
@@ -431,16 +494,14 @@ def gather_story_status(
             ),
         )
 
-    # Route 3 asks one question of `main`'s whole history, and the answer is
-    # identical for every key in every feed (`target` never changes mid-gather).
-    # Computed once, lazily, on the first key that actually reaches Route 3 --
-    # a full history walk per candidate key would be O(keys x history) shell-outs
-    # against Doctor's own NFR-4 wall-clock budget. `None` means "not computed
-    # yet"; the separate `_unavailable` flag means "computed, and the query
-    # FAILED" -- an empty list is a legitimate answer (a repo with no subjects)
-    # and must not be confused with either.
-    main_subjects: list[str] | None = None
-    main_subjects_unavailable = False
+    # Routes 2 and 3 ask git questions whose answers are identical for every
+    # key in every feed. Computed once, lazily -- a full history walk per
+    # candidate key would be O(keys x history) shell-outs against Doctor's
+    # NFR-4 wall-clock budget.
+    all_ref_subjects: tuple[str, ...] | None = None
+    all_ref_subjects_unavailable = False
+    main_commits: list[tuple[str, str]] | None = None
+    main_commits_unavailable = False
 
     false_greens: list[dict] = []
     audited = 0
@@ -486,42 +547,57 @@ def gather_story_status(
             if task.get("commit_sha"):
                 continue  # harness recorded a commit
 
-            # `_git` returns None on FAILURE and "" on "ran, found nothing".
-            # Collapsing the two would convict a story on evidence that was
-            # never gathered -- the one outcome this detector must never
-            # produce (the same rule the git-dir probe above enforces, applied
-            # per query rather than once).
-            merged = _git(
-                target, "log", "--oneline", "--all", "-F", f"--grep=/{key} into",
-                timeout=60.0,
-            )
-            if merged is None:
+            key_ref = _feed_key_to_ref(key)
+            project_slug = f"pyforge-{slug}"
+
+            # Route 2: commit subjects on any ref, via shared landing-evidence
+            # grammar (replaces the private ``/{key} into`` grep dialect).
+            if all_ref_subjects is None and not all_ref_subjects_unavailable:
+                raw = _git(
+                    target, "log", "--format=%s", "--all", timeout=60.0,
+                )
+                if raw is None:
+                    all_ref_subjects_unavailable = True
+                else:
+                    all_ref_subjects = tuple(raw.splitlines())
+            if all_ref_subjects_unavailable:
                 inconclusive += 1
                 continue
-            if merged:
-                continue  # merge commit found
+            if (
+                key_ref is not None
+                and all_ref_subjects is not None
+                and key_ref
+                in _keys_from_merge_subjects(
+                    all_ref_subjects, project_slug=project_slug
+                )
+            ):
+                continue  # merge evidence found
 
-            # Route 3: landed BY HAND, reachable from main -- see the source
-            # script's own docstring for why this must be a commit SUBJECT
-            # (not anywhere in the message) naming both the slug and the
-            # `Story <epic>.<seq>` phrase.
-            m = re.match(r"^(\d+)-(\d+)-", key)
-            if m:
-                needle = f"story {m.group(1)}.{m.group(2)}"
-                if main_subjects is None and not main_subjects_unavailable:
-                    raw = _git(target, "log", "--format=%s", "main", timeout=60.0)
+            # Route 3: commits reachable from ``main``, via the same grammar
+            # (replaces the private ``<slug>`` + ``story <e>.<s>`` subject
+            # needle dialect).
+            if key_ref is not None:
+                if main_commits is None and not main_commits_unavailable:
+                    raw = _git(
+                        target, "log", "--format=%H%x00%s", "main", timeout=60.0,
+                    )
                     if raw is None:
-                        # No local `main` (a PR checkout, a shallow clone, a
-                        # differently-named default branch) or a failed query.
-                        # Route 3 cannot run, so this key cannot be judged.
-                        main_subjects_unavailable = True
+                        main_commits_unavailable = True
                     else:
-                        main_subjects = raw.lower().splitlines()
-                if main_subjects_unavailable:
+                        main_commits = []
+                        for line in raw.splitlines():
+                            if not line:
+                                continue
+                            sha, _, subject = line.partition("\0")
+                            if sha and subject:
+                                main_commits.append((sha, subject))
+                if main_commits_unavailable:
                     inconclusive += 1
                     continue
-                if any(slug in s and needle in s for s in main_subjects or ()):
-                    continue  # hand-landed; named in a commit subject on main
+                if main_commits is not None and key_ref in _keys_from_main_commits(
+                    main_commits, project_slug=project_slug
+                ):
+                    continue  # hand-landed or recovery; grammar recognized
 
             phase = task.get("phase", "")
             # `phase in NOT_LANDED` HASHES `phase`, so a JSON record giving it a
