@@ -47,5 +47,5 @@ class NullDuty:
     def __init__(self, name: str) -> None:
         self.name = name
 
-    def run(self, ns: argparse.Namespace) -> DutyResult:   # noqa: ARG002
+    def run(self, ns: argparse.Namespace) -> DutyResult:
         return DutyResult(ok=True, summary=f"{self.name}: no verbs yet (Story 1.1)")
