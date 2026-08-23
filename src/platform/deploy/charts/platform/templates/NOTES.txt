@@ -9,6 +9,8 @@ REQUIRED PRE-CREATED SECRET (this chart never renders one -- AD-12):
                        postgres://{{ .Values.postgres.auth.username }}:<password>@{{ include "platform.postgres.fullname" . }}:5432/{{ .Values.postgres.auth.database }}
     POSTGRES_PASSWORD  The same <password>, consumed by the postgres
                        container itself.
+    REDIS_PASSWORD     Redis AUTH password (Story 12.6); wired into
+                       REDIS_URL for platform pods and --requirepass here.
 
 In-cluster service DNS names (compose DATABASE_URL from these):
   PostgreSQL  {{ include "platform.postgres.fullname" . }}:5432
