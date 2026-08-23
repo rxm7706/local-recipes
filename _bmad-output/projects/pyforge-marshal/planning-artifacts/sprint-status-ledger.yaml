@@ -66,7 +66,7 @@ development_status:
   17-4-orchestrated-regeneration-that-cannot-lose-code-status: done
   18-1-marshals-capabilities-become-named-typed-tools: done
   18-2-parity-and-coverage-are-gated-numbers: done
-  19-1-one-generator-produces-every-stations-test-architecture: backlog
+  19-1-one-generator-produces-every-stations-test-architecture: done
   19-2-the-shared-test-support-kit: backlog
   19-3-coverage-gates-that-name-the-module: backlog
   19-4-test-architecture-stays-current-as-stories-land: backlog

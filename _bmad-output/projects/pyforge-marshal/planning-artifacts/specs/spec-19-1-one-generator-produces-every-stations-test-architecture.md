@@ -2,7 +2,7 @@
 title: One generator produces every station's test architecture
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -42,3 +42,11 @@ baseline_revision: e163eb9216
 - Generator run green; no TBD tokens
 - Idempotent re-run on unchanged tree
 - CI: detectors, linter, relevant marshal/meta tests
+
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/673
+Merge SHA: 48423b19b790ff1a068ec882fcbda85f9d0167ad
+Tests: `pixi run -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py -q` — 6 passed; CI green on PR #673.

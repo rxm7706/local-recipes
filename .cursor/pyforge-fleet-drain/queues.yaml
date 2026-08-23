@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 33
-    next: 19-1-one-generator-produces-every-stations-test-architecture
+    remaining_count: 32
+    next: 19-2-the-shared-test-support-kit
     queue:
-    - 19-1-one-generator-produces-every-stations-test-architecture
     - 19-2-the-shared-test-support-kit
     - 19-3-coverage-gates-that-name-the-module
     - 19-4-test-architecture-stays-current-as-stories-land
