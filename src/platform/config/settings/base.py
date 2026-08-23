@@ -115,6 +115,9 @@ LOCAL_APPS = [
     # migrate` creates the schema; DB-GPT is Pattern B (its own sidecar
     # container, never an ASGI mount) -- see that app's own docstring.
     "dbgpt_integration",
+    # Warden Stories 8.1/8.2: compliance factory web face (upload → Celery
+    # → existing warden engines). Host decision 2026-08-22: platform-app.
+    "compliance_face",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
