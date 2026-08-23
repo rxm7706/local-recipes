@@ -449,6 +449,17 @@ def clean_repo_set(
     archived: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
     for item in opened:
+        # Re-check immediately before archive (TOCTOU): a member may have
+        # become dirty after the set-wide gate above.
+        st = status_of(item.record, root=item.root)
+        if st.error is not None:
+            raise WorkspaceError(
+                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
+            )
+        if st.dirty:
+            raise WorkspaceError(
+                f"repo set {feature!r}: refuse removal — dirty member(s): {item.name}"
+            )
         result = clean_workspaces(
             merged_only=merged_only,
             slug=item.record.slug,
@@ -934,9 +945,13 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
         return "workspace clean: nothing to do"
     lines: list[str] = []
     for item in archived:
-        lines.append(f"archived {item['slug']} -> {item['archive']}")
+        member = item.get("member")
+        prefix = f"archived {member}/" if member else "archived "
+        lines.append(f"{prefix}{item['slug']} -> {item['archive']}")
     for item in skipped:
-        lines.append(f"skipped {item['slug']} ({item.get('reason', '?')})")
+        member = item.get("member")
+        prefix = f"skipped {member}/" if member else "skipped "
+        lines.append(f"{prefix}{item['slug']} ({item.get('reason', '?')})")
     return "\n".join(lines)
 
 

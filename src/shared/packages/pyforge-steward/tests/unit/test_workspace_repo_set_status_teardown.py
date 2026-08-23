@@ -167,6 +167,31 @@ def test_clean_repo_set_merged_only_archives_per_member(
     assert not Path(members["primary"].record.path).exists()
     assert load_bookkeeping(primary / ".steward" / "workspaces.yaml") == ()
     assert len(load_bookkeeping(secondary / ".steward" / "workspaces.yaml")) == 1
+    # Partial teardown must keep the coordinated workspace file while a member
+    # remains open (only unlink when the set is fully closed).
+    ws_file = primary / ".steward" / "workspaces" / "f-fleet-feature.code-workspace"
+    assert ws_file.is_file()
+
+
+def test_clean_repo_set_refuses_unassessable_member(
+    open_set: tuple[Path, Path, Path],
+) -> None:
+    """Missing worktree path → status.error → clean must refuse, not archive."""
+    members = {m.name: m for m in open_repo_set_members("fleet-feature")}
+    gone = Path(members["secondary"].record.path)
+    # Remove the worktree directory but leave bookkeeping so status is unassessable.
+    import shutil
+
+    shutil.rmtree(gone)
+    assert not gone.exists()
+
+    with pytest.raises(WorkspaceError, match=r"cannot assess member ['\"]secondary['\"]"):
+        clean_repo_set("fleet-feature", merged_only=False, confirm=lambda _slug: True)
+
+    # Owned primary must still be open — no partial archive on assess failure.
+    still = open_repo_set_members("fleet-feature")
+    assert {m.name for m in still} == {"primary", "secondary"}
+    assert Path(members["primary"].record.path).is_dir()
 
 
 def test_clean_repo_set_archives_not_deletes_when_clean(
