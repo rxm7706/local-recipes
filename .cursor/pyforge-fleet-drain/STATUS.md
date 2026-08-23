@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~11:12 CDT  
+**Updated:** 2026-08-23 ~11:14 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -24,9 +24,10 @@
 
 ## In-flight (canonical only — do not duplicate)
 
-| Station | Story | Canonical agent |
-|---------|-------|-----------------|
-| steward | `14-3` | [Steward 14-3](dd93a8c7-9027-41b2-821f-f185afdc6992) — clobbered custom re-apply (skip 12-7) |
+| Station | Story | Canonical PR / agent |
+|---------|-------|----------------------|
+| marshal | `18-2` | [Marshal 18-2](e4dc56cf-2ccc-46bd-b344-6d32050aed43) — parity + coverage gates (spec `0cf306f9ed`) |
+| steward | `14-3` | [#669](https://github.com/rxm7706/local-recipes/pull/669) · [Steward 14-3](dd93a8c7-9027-41b2-821f-f185afdc6992) — CI green; merge-in-agent |
 
 ## Operator skip
 
@@ -38,11 +39,9 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `18-1` | [#668](https://github.com/rxm7706/local-recipes/pull/668) merge `657c6bbe1e` · finalize `4ff73ba127` |
-| marshal | `17-4` | [#667](https://github.com/rxm7706/local-recipes/pull/667) merge `7aa120fe86` · finalize `3dd4e0a277` ([Marshal 17-4](632da240-9d79-443e-987f-e78b82e17f93)) |
-| steward | `14-2` | [#666](https://github.com/rxm7706/local-recipes/pull/666) merge `3f58e30916` · finalize `76df1d3388` ([Steward 14-2](54c7190f-d6d1-4225-9eb5-a5864782d7fe)) |
-| marshal | `17-3` | [#665](https://github.com/rxm7706/local-recipes/pull/665) |
-| steward | `14-1` | [#664](https://github.com/rxm7706/local-recipes/pull/664) |
+| marshal | `18-1` | [#668](https://github.com/rxm7706/local-recipes/pull/668) merge `657c6bbe1e` · finalize `4ff73ba127` ([Marshal 18-1](b5923e5a-38cc-4e9c-a635-9a897c3e7d0e)) |
+| marshal | `17-4` | [#667](https://github.com/rxm7706/local-recipes/pull/667) |
+| steward | `14-2` | [#666](https://github.com/rxm7706/local-recipes/pull/666) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
