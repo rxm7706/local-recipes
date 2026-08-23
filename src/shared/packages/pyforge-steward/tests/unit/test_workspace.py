@@ -7,8 +7,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from pyforge.steward.cli import EXIT_OK, main
+from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
+    WorkspaceError,
     clean_workspaces,
     format_ls,
     list_workspaces,
@@ -256,7 +257,7 @@ def test_duplicate_start_refuses(repo: Path, tmp_path: Path):
     bookkeeping = repo / ".steward" / "workspaces.yaml"
     dest = tmp_path / "dup"
     start_workspace("dup", root=repo, bookkeeping=bookkeeping, path=dest)
-    with pytest.raises(Exception, match="already recorded"):
+    with pytest.raises(WorkspaceError, match="already recorded"):
         start_workspace(
             "dup", root=repo, bookkeeping=bookkeeping, path=tmp_path / "dup-2"
         )
@@ -273,3 +274,119 @@ def test_ls_json_via_cli_empty(repo: Path, monkeypatch, capsys):
 
     assert rc == EXIT_OK
     assert json.loads(capsys.readouterr().out) == []
+
+def test_clean_declined_confirm_skips_and_keeps_path(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    dest = tmp_path / "declined"
+    start_workspace(
+        "declined", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
+    )
+
+    result = clean_workspaces(
+        merged_only=False,
+        root=repo,
+        bookkeeping=bookkeeping,
+        archive_dir=archive_dir,
+        confirm=lambda slug: False,
+    )
+
+    assert result["archived"] == []
+    assert len(result["skipped"]) == 1
+    assert result["skipped"][0]["reason"] == "declined"
+    assert dest.is_dir()
+    assert len(load_bookkeeping(bookkeeping)) == 1
+
+
+def test_start_cli_from_ref_json(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "from-other"
+    # Create origin/other for --from
+    _git("branch", "other", cwd=repo)
+    _git("push", "origin", "other", cwd=repo)
+
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.scratch_path_for",
+        lambda slug, root=None: dest,
+    )
+
+    rc = main(["workspace", "start", "from-other", "--from", "origin/other", "--json"])
+
+    assert rc == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["source"] == "origin/other"
+    assert payload["slug"] == "from-other"
+    assert dest.is_dir()
+
+
+def test_duplicate_start_via_cli_exits_failed(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "cli-dup"
+    start_workspace("cli-dup", root=repo, bookkeeping=bookkeeping, path=dest)
+
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.scratch_path_for",
+        lambda slug, root=None: tmp_path / "cli-dup-2",
+    )
+
+    rc = main(["workspace", "start", "cli-dup", "--json"])
+
+    assert rc == EXIT_FAILED
+    captured = capsys.readouterr()
+    err = captured.out + captured.err
+    assert "already recorded" in err
+
+
+def test_start_cli_non_json_prints_exactly_path(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "plain-path"
+
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.scratch_path_for",
+        lambda slug, root=None: dest,
+    )
+
+    rc = main(["workspace", "start", "plain-path"])
+
+    assert rc == EXIT_OK
+    out = capsys.readouterr().out
+    assert out == str(dest.resolve()) + "\n"
+
+
+def test_start_after_clean_reuses_slug(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    archive_dir = tmp_path / "archive"
+    dest1 = tmp_path / "reuse-1"
+    dest2 = tmp_path / "reuse-2"
+    start_workspace(
+        "reuse", root=repo, bookkeeping=bookkeeping, path=dest1, from_ref="origin/main"
+    )
+
+    result = clean_workspaces(
+        merged_only=False,
+        root=repo,
+        bookkeeping=bookkeeping,
+        archive_dir=archive_dir,
+        confirm=lambda slug: True,
+    )
+    assert len(result["archived"]) == 1
+    assert load_bookkeeping(bookkeeping) == ()
+
+    # Same slug must succeed again — branch was deleted during archive.
+    record = start_workspace(
+        "reuse", root=repo, bookkeeping=bookkeeping, path=dest2, from_ref="origin/main"
+    )
+    assert record.slug == "reuse"
+    assert dest2.is_dir()

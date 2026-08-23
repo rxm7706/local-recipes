@@ -97,7 +97,14 @@ def load_bookkeeping(path: str | Path) -> tuple[WorkspaceRecord, ...]:
     path = Path(path)
     if not path.is_file():
         return ()
-    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise WorkspaceError(f"{path}: invalid YAML: {exc}") from exc
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise WorkspaceError(f"{path}: top-level YAML must be a mapping")
     entries = raw.get("workspaces") or []
     if not isinstance(entries, list):
         raise WorkspaceError(f"{path}: 'workspaces' must be a list")
@@ -184,7 +191,12 @@ def start_workspace(
         source=from_ref,
         created_at=datetime.now(timezone.utc).isoformat(),
     )
-    save_bookkeeping(bookkeeping, existing + (record,))
+    try:
+        save_bookkeeping(bookkeeping, existing + (record,))
+    except Exception:
+        # CAP-1: never leave an orphan worktree outside bookkeeping.
+        _git_ok("worktree", "remove", "--force", str(dest), cwd=root)
+        raise
     return record
 
 
@@ -200,7 +212,15 @@ def list_workspaces(
 def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     """True when ``branch`` is an ancestor of ``into`` (already merged)."""
     result = _git_ok("merge-base", "--is-ancestor", branch, into, cwd=root)
-    return result.returncode == 0
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    detail = (result.stderr or result.stdout or "").strip()
+    raise WorkspaceError(
+        f"git merge-base --is-ancestor {branch} {into} failed "
+        f"(exit {result.returncode}): {detail}"
+    )
 
 
 def _archive_worktree(
@@ -209,40 +229,50 @@ def _archive_worktree(
     root: Path,
     archive_dir: Path,
 ) -> Path:
-    """Archive-not-delete: tar the tree, then ``git worktree remove``."""
-    archive_dir.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    safe = record.slug.replace("/", "-")
-    wt = Path(record.path)
-    if wt.is_dir():
-        archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
-        with tarfile.open(archive_path, "w:gz") as tar:
-            tar.add(wt, arcname=wt.name)
-    else:
-        # Path already gone — still write a marker so clean is recoverable.
-        archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
-        archive_path.write_text(
-            f"workspace {record.slug!r} path missing at clean: {record.path}\n",
-            encoding="utf-8",
-        )
+    """Archive-not-delete: tar the tree, then ``git worktree remove``.
 
-    if wt.exists():
-        result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
-        if result.returncode != 0:
-            # Fall back: detach registration by prune after moving aside.
-            retired = archive_dir / f"{safe}-{stamp}-dir"
-            try:
-                shutil.move(str(wt), str(retired))
-            except OSError as exc:
-                raise WorkspaceError(
-                    f"could not archive {record.path}: git remove failed "
-                    f"({(result.stderr or '').strip()}) and move failed ({exc})"
-                ) from exc
+    After a successful remove/prune, also best-effort deletes the local branch
+    so a later ``start`` with the same slug can recreate ``-b`` cleanly. The
+    tar (or missing marker) is retained — archive-not-delete of tree content.
+    """
+    try:
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        safe = record.slug.replace("/", "-")
+        wt = Path(record.path)
+        if wt.is_dir():
+            archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
+            with tarfile.open(archive_path, "w:gz") as tar:
+                tar.add(wt, arcname=wt.name)
+        else:
+            # Path already gone — still write a marker so clean is recoverable.
+            archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
+            archive_path.write_text(
+                f"workspace {record.slug!r} path missing at clean: {record.path}\n",
+                encoding="utf-8",
+            )
+
+        if wt.exists():
+            result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
+            if result.returncode != 0:
+                # Fall back: detach registration by prune after moving aside.
+                retired = archive_dir / f"{safe}-{stamp}-dir"
+                try:
+                    shutil.move(str(wt), str(retired))
+                except OSError as exc:
+                    raise WorkspaceError(
+                        f"could not archive {record.path}: git remove failed "
+                        f"({(result.stderr or '').strip()}) and move failed ({exc})"
+                    ) from exc
+                _git_ok("worktree", "prune", cwd=root)
+        else:
             _git_ok("worktree", "prune", cwd=root)
-    else:
-        _git_ok("worktree", "prune", cwd=root)
 
-    return archive_path
+        # Branch may still exist after worktree remove; drop it so slug reuse works.
+        _git_ok("branch", "-D", record.branch, cwd=root)
+        return archive_path
+    except OSError as exc:
+        raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
 
 
 def _confirm_archive(slug: str) -> bool:
@@ -273,20 +303,26 @@ def clean_workspaces(
     archived: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
     remaining: list[WorkspaceRecord] = []
+    pending = list(records)
 
-    for record in records:
-        if merged_only and not _branch_merged_into(root, record.branch, record.source):
-            skipped.append({**record.to_dict(), "reason": "not-merged"})
-            remaining.append(record)
-            continue
-        if not merged_only and not confirm_fn(record.slug):
-            skipped.append({**record.to_dict(), "reason": "declined"})
-            remaining.append(record)
-            continue
-        archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
-        archived.append({**record.to_dict(), "archive": str(archive_path)})
+    try:
+        while pending:
+            record = pending.pop(0)
+            if merged_only and not _branch_merged_into(root, record.branch, record.source):
+                skipped.append({**record.to_dict(), "reason": "not-merged"})
+                remaining.append(record)
+                continue
+            if not merged_only and not confirm_fn(record.slug):
+                skipped.append({**record.to_dict(), "reason": "declined"})
+                remaining.append(record)
+                continue
+            archive_path = _archive_worktree(record, root=root, archive_dir=archive_dir)
+            archived.append({**record.to_dict(), "archive": str(archive_path)})
+    finally:
+        # Persist removals already archived even if a later record fails —
+        # otherwise archived trees stay listed in bookkeeping.
+        save_bookkeeping(bookkeeping, tuple(remaining + pending))
 
-    save_bookkeeping(bookkeeping, tuple(remaining))
     return {"archived": archived, "skipped": skipped}
 
 
@@ -347,6 +383,11 @@ class WorkspaceDuty:
             result = clean_workspaces(merged_only=bool(getattr(ns, "merged_only", False)))
             return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
         except WorkspaceError as exc:
+            return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
+        except RuntimeError as exc:
+            # e.g. repo_root() walk-up failure — duty-level, not an internal crash.
+            return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
+        except OSError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except subprocess.CalledProcessError as exc:
             detail = (exc.stderr or exc.stdout or str(exc)).strip()
