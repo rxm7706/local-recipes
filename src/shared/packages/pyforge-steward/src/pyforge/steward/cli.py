@@ -50,7 +50,7 @@ _HELP = {
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
     "workspace": (
         "story-scoped scratch worktrees — start/ls/status/clean "
-        "(own-worktrees-only; archive-not-delete)"
+        "(single-repo or repo-set; own-worktrees-only; archive-not-delete)"
     ),
 }
 
@@ -360,7 +360,7 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None:
-    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.2 / CAP-1..4)."""
+    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.4 / CAP-1..4 + set teardown)."""
     workspace_subs = workspace_parser.add_subparsers(
         dest="workspace_verb", metavar="{start,ls,status,clean}"
     )
@@ -393,20 +393,32 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
         "status",
         help=(
             "report dirty/clean, ahead/behind, merged? for owned worktrees "
-            "(pays per-worktree git cost; optional slug)"
+            "(pays per-worktree git cost; optional slug or repo-set feature)"
         ),
     )
     status.add_argument(
         "slug",
         nargs="?",
         default=None,
-        help="optional slug — when omitted, status every owned worktree",
+        help=(
+            "optional slug — owned worktree, or a repo-set feature "
+            "(reports dirty/unpushed across every open member)"
+        ),
     )
     status.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
     clean = workspace_subs.add_parser(
         "clean",
         help="archive-not-delete owned scratch worktrees (bmad-loop clean discipline)",
+    )
+    clean.add_argument(
+        "slug",
+        nargs="?",
+        default=None,
+        help=(
+            "optional slug — single owned worktree, or a repo-set feature "
+            "(refuses while any member is dirty; names the dirty member)"
+        ),
     )
     clean.add_argument(
         "--merged-only",
