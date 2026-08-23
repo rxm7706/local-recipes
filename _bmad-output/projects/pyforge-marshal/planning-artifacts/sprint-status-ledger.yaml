@@ -61,7 +61,7 @@ development_status:
   15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check: done
   16-1-one-resolver-derived-sources-loud-failures: done
   17-1-the-detectors-remaining-blind-spots-are-fixture-pinned-with-an-incident-log: done
-  17-2-the-dreams-hygiene-mode-exists: backlog
+  17-2-the-dreams-hygiene-mode-exists: done
   17-3-chain-completeness-audit-mode-reports-layers: backlog
   17-4-orchestrated-regeneration-that-cannot-lose-code-status: backlog
   18-1-marshals-capabilities-become-named-typed-tools: backlog

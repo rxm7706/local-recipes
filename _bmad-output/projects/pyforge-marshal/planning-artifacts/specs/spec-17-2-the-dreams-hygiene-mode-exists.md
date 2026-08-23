@@ -2,7 +2,7 @@
 title: The dreams hygiene mode exists
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 38
-    next: 17-2-the-dreams-hygiene-mode-exists
+    remaining_count: 37
+    next: 17-3-chain-completeness-audit-mode-reports-layers
     queue:
-    - 17-2-the-dreams-hygiene-mode-exists
     - 17-3-chain-completeness-audit-mode-reports-layers
     - 17-4-orchestrated-regeneration-that-cannot-lose-code-status
     - 18-1-marshals-capabilities-become-named-typed-tools

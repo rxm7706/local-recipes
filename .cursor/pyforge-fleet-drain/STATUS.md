@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~09:52 CDT  
+**Updated:** 2026-08-23 ~10:05 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -19,14 +19,13 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 38** · **steward 18** (**56 total**; 12-7 skipped) |
+| Backlog | **marshal 37** · **steward 18** (**55 total**; 12-7 skipped) |
 | Drained | atlas, doctor, herald, mason, scribe, warden |
 
 ## In-flight (canonical only — do not duplicate)
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `17-2` | [Marshal 17-2](1e8346b1-803f-4b53-9b06-e9944e3ec437) — dreams hygiene (doctor surface, marshal ledger) |
 | steward | `13-4` | [Steward 13-4](ea53abb8-7969-4281-9d05-ce542faab5c2) — set status + safe teardown |
 
 ## Operator skip
@@ -39,6 +38,7 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
+| marshal | `17-2` | [#663](https://github.com/rxm7706/local-recipes/pull/663) |
 | marshal | `17-1` | [#661](https://github.com/rxm7706/local-recipes/pull/661) |
 | steward | `13-3` | [#660](https://github.com/rxm7706/local-recipes/pull/660) |
 | steward | `13-2` | [#656](https://github.com/rxm7706/local-recipes/pull/656) |
