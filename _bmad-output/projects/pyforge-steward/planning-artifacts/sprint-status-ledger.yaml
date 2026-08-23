@@ -56,7 +56,7 @@ development_status:
   16-2-startup-refuses-misconfiguration-two-stage-and-named: done
   16-3-every-process-speaks-structlog-otel: done
   16-4-policy-is-a-test-suite: done
-  16-5-identity-is-oidc-delegated-no-local-passwords: backlog
+  16-5-identity-is-oidc-delegated-no-local-passwords: done
   17-1-steward-init-shell-init-detect-and-prepare-the-machine: backlog
   17-2-steward-setup-initrepo-take-the-machine-to-green: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
@@ -108,7 +108,7 @@ development_status:
   epic-14-retrospective: optional
   epic-15: done
   epic-15-retrospective: optional
-  epic-16: backlog
+  epic-16: done
   epic-16-retrospective: optional
   epic-17: backlog
   epic-17-retrospective: optional

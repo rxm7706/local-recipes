@@ -2,7 +2,7 @@
 title: Identity is OIDC-delegated, no local passwords
 type: feature
 created: '2026-08-23'
-status: ready
+status: shipped
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -44,3 +44,13 @@ baseline_revision: 9b488aee70
 - E2E or integration test: OIDC login locally
 - Unmatched groups ignored-and-logged
 - Related platform tests green locally
+
+## Auto Run Result
+
+Status: shipped
+PR: https://github.com/rxm7706/local-recipes/pull/696
+Merge SHA: eb3ab8c95dcb562e2ce0b1e25170acbaa4c73b2b
+CI: GitHub Actions billing blocked — admin merge after local tests green
+Tests: 57 passed (OIDC + policy + startup + health); 107 passed full `tests/` (langflow mount excluded)
+Finalize SHA: pending commit
+Blocking condition: none
