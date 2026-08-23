@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 26
-    next: 20-4-intent-gap-attempts-are-preserved
+    remaining_count: 25
+    next: 20-5-missing-preserve-detector
     queue:
-    - 20-4-intent-gap-attempts-are-preserved
     - 20-5-missing-preserve-detector
     - 20-6-the-verify-scope-primitive
     - 20-7-both-guards-hard-fail-on-drift
