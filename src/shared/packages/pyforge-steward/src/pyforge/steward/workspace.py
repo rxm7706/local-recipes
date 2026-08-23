@@ -1,14 +1,17 @@
-"""Steward's `workspace` duty — scratch worktrees (Stories 13.1–13.3).
+"""Steward's `workspace` duty — scratch worktrees (Stories 13.1–13.4).
 
 Wraps ``git worktree`` plus a bookkeeping file. CAP-5's own-worktrees-only
 rule is HARD: ``ls`` / ``status`` / ``clean`` operate only on entries this
 tool recorded — Marshal loop homes and hand-made worktrees are invisible by
-construction.
+construction. Story 13.4 extends that HARD rule set-wide across repo-set
+members.
 
 CAP-1 ``start`` (single-repo or repo-set), CAP-2 ``ls``, CAP-3 ``status``
 (pays per-worktree git cost), CAP-4 ``clean`` (archive-not-delete).
 Story 13.3 adds declarative ``[projects.<slug>]`` repo sets and coordinated
 multi-repo ``start`` with ``.code-workspace`` generation.
+Story 13.4 adds set-level ``status`` / ``clean`` (dirty refusal naming the
+member; ``--merged-only`` archive-not-delete per member).
 """
 
 from __future__ import annotations
@@ -147,6 +150,28 @@ class RepoSetStartResult:
     branch: str
     workspace_file: str
     members: tuple[WorkspaceRecord, ...]
+
+
+@dataclass(frozen=True)
+class RepoSetMemberOpen:
+    """One open (bookkeeping-recorded) member of a repo-set workspace."""
+
+    name: str
+    root: Path
+    record: WorkspaceRecord
+
+
+@dataclass(frozen=True)
+class RepoSetMemberStatus:
+    """CAP-2 (multi-repo): live status for one open set member."""
+
+    member: str
+    status: WorkspaceStatus
+
+    def to_dict(self) -> dict[str, object]:
+        out = self.status.to_dict()
+        out["member"] = self.member
+        return out
 
 
 def resolve_repo_path(declared: str, *, anchor: Path) -> Path:
@@ -315,6 +340,150 @@ def start_repo_set(
         workspace_file=str(workspace_file.resolve()),
         members=tuple(started),
     )
+
+
+def _resolve_member_root(
+    member: RepoSetMember,
+    *,
+    anchor: Path,
+) -> Path | None:
+    """Return the member checkout root if it exists as a git repo, else None."""
+    target = resolve_repo_path(member.declared_path, anchor=anchor)
+    if not target.is_dir() or not (target / ".git").exists():
+        return None
+    return target
+
+
+def open_repo_set_members(
+    feature: str,
+    *,
+    repo_sets_path: Path | None = None,
+    anchor: Path | None = None,
+) -> tuple[RepoSetMemberOpen, ...]:
+    """Story 13.4: bookkeeping-owned open members of a registered repo set.
+
+    Own-worktrees-only is HARD set-wide: only rows this tool recorded under
+    each member's ``.steward/workspaces.yaml`` for branch ``f-<feature>`` are
+    returned. Foreign / Marshal loop-home worktrees are never discovered.
+    """
+    _validate_slug(feature)
+    anchor = anchor if anchor is not None else repo_root()
+    sets = load_repo_sets(repo_sets_path)
+    repo_set = sets.get(feature)
+    if repo_set is None:
+        raise WorkspaceError(
+            f"repo set {feature!r} not found in "
+            f"{repo_sets_path or default_repo_sets_path()}"
+        )
+    branch = feature_branch_name(feature)
+    opened: list[RepoSetMemberOpen] = []
+    for member in repo_set.members:
+        member_root = _resolve_member_root(member, anchor=anchor)
+        if member_root is None:
+            continue
+        bookkeeping = _bookkeeping_for(member_root)
+        for record in load_bookkeeping(bookkeeping):
+            if record.slug == branch or record.branch == branch:
+                opened.append(
+                    RepoSetMemberOpen(name=member.name, root=member_root, record=record)
+                )
+                break
+    return tuple(opened)
+
+
+def status_repo_set(
+    feature: str,
+    *,
+    repo_sets_path: Path | None = None,
+    anchor: Path | None = None,
+) -> tuple[RepoSetMemberStatus, ...]:
+    """Story 13.4: dirty/unpushed across every open member of a repo set."""
+    opened = open_repo_set_members(
+        feature, repo_sets_path=repo_sets_path, anchor=anchor
+    )
+    return tuple(
+        RepoSetMemberStatus(
+            member=item.name,
+            status=status_of(item.record, root=item.root),
+        )
+        for item in opened
+    )
+
+
+def clean_repo_set(
+    feature: str,
+    *,
+    merged_only: bool = False,
+    repo_sets_path: Path | None = None,
+    anchor: Path | None = None,
+    confirm=None,
+) -> dict[str, list[dict[str, str]]]:
+    """Story 13.4: tear down an open repo set safely.
+
+    Refuses while any open member is dirty (names the dirty member). Otherwise
+    archives each member with 13.1 archive-not-delete discipline; ``--merged-only``
+    skips unmerged members per-repo. Own-worktrees-only: foreign trees ignored.
+    """
+    anchor = anchor if anchor is not None else repo_root()
+    opened = open_repo_set_members(
+        feature, repo_sets_path=repo_sets_path, anchor=anchor
+    )
+    if not opened:
+        return {"archived": [], "skipped": []}
+
+    dirty_names: list[str] = []
+    for item in opened:
+        st = status_of(item.record, root=item.root)
+        if st.error is not None:
+            raise WorkspaceError(
+                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
+            )
+        if st.dirty:
+            dirty_names.append(item.name)
+    if dirty_names:
+        named = ", ".join(sorted(dirty_names))
+        raise WorkspaceError(
+            f"repo set {feature!r}: refuse removal — dirty member(s): {named}"
+        )
+
+    archived: list[dict[str, str]] = []
+    skipped: list[dict[str, str]] = []
+    for item in opened:
+        # Re-check immediately before archive (TOCTOU): a member may have
+        # become dirty after the set-wide gate above.
+        st = status_of(item.record, root=item.root)
+        if st.error is not None:
+            raise WorkspaceError(
+                f"repo set {feature!r}: cannot assess member {item.name!r}: {st.error}"
+            )
+        if st.dirty:
+            raise WorkspaceError(
+                f"repo set {feature!r}: refuse removal — dirty member(s): {item.name}"
+            )
+        result = clean_workspaces(
+            merged_only=merged_only,
+            slug=item.record.slug,
+            root=item.root,
+            bookkeeping=_bookkeeping_for(item.root),
+            archive_dir=item.root / _ARCHIVE_RELATIVE_PATH,
+            confirm=confirm,
+        )
+        for row in result["archived"]:
+            archived.append({**row, "member": item.name})
+        for row in result["skipped"]:
+            skipped.append({**row, "member": item.name})
+
+    # Drop the coordinated .code-workspace when nothing remains open for the set.
+    still_open = open_repo_set_members(
+        feature, repo_sets_path=repo_sets_path, anchor=anchor
+    )
+    if not still_open:
+        branch = feature_branch_name(feature)
+        ws_file = anchor / _CODE_WORKSPACE_RELATIVE_DIR / f"{branch}.code-workspace"
+        if ws_file.is_file():
+            ws_file.unlink()
+
+    return {"archived": archived, "skipped": skipped}
 
 
 def scratch_path_for(slug: str, *, root: Path | None = None) -> Path:
@@ -640,21 +809,38 @@ def _confirm_archive(slug: str) -> bool:
 def clean_workspaces(
     *,
     merged_only: bool = False,
+    slug: str | None = None,
     root: Path | None = None,
     bookkeeping: Path | None = None,
     archive_dir: Path | None = None,
     confirm=None,
 ) -> dict[str, list[dict[str, str]]]:
-    """CAP-4: archive-not-delete owned worktrees; optional ``--merged-only``."""
+    """CAP-4: archive-not-delete owned worktrees; optional ``--merged-only`` / slug."""
     root = root if root is not None else repo_root()
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
     archive_dir = archive_dir if archive_dir is not None else default_archive_dir()
     confirm_fn = confirm if confirm is not None else _confirm_archive
 
     records = list(load_bookkeeping(bookkeeping))
+    if slug is not None:
+        if not slug:
+            raise WorkspaceError("invalid slug ''")
+        matches = [r for r in records if r.slug == slug]
+        if not matches:
+            raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
+        if len(matches) > 1:
+            raise WorkspaceError(
+                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
+            )
+        # Keep non-matching rows in remaining; only consider the match for archive.
+        others = [r for r in records if r.slug != slug]
+        records = matches
+    else:
+        others = []
+
     archived: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
-    remaining: list[WorkspaceRecord] = []
+    remaining: list[WorkspaceRecord] = list(others)
     pending = list(records)
 
     try:
@@ -726,6 +912,30 @@ def format_status(statuses: tuple[WorkspaceStatus, ...], *, as_json: bool) -> st
     return "\n".join(lines)
 
 
+def format_repo_set_status(
+    statuses: tuple[RepoSetMemberStatus, ...], *, as_json: bool
+) -> str:
+    if as_json:
+        return json.dumps([s.to_dict() for s in statuses], indent=2)
+    if not statuses:
+        return "workspace status: no open members for repo set"
+    lines: list[str] = []
+    for row in statuses:
+        s = row.status
+        if s.error is not None:
+            lines.append(f"{row.member}\t{s.slug}\terror\t{s.error}\t{s.path}")
+            continue
+        dirt = "dirty" if s.dirty else "clean"
+        unpushed = (s.ahead or 0) > 0
+        push = "unpushed" if unpushed else "pushed"
+        merged = "merged" if s.merged else "unmerged"
+        lines.append(
+            f"{row.member}\t{s.slug}\t{dirt}\t{push}\tahead={s.ahead}\t"
+            f"behind={s.behind}\t{merged}\t{s.path}"
+        )
+    return "\n".join(lines)
+
+
 def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> str:
     if as_json:
         return json.dumps(result, indent=2)
@@ -735,9 +945,13 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
         return "workspace clean: nothing to do"
     lines: list[str] = []
     for item in archived:
-        lines.append(f"archived {item['slug']} -> {item['archive']}")
+        member = item.get("member")
+        prefix = f"archived {member}/" if member else "archived "
+        lines.append(f"{prefix}{item['slug']} -> {item['archive']}")
     for item in skipped:
-        lines.append(f"skipped {item['slug']} ({item.get('reason', '?')})")
+        member = item.get("member")
+        prefix = f"skipped {member}/" if member else "skipped "
+        lines.append(f"{prefix}{item['slug']} ({item.get('reason', '?')})")
     return "\n".join(lines)
 
 
@@ -777,12 +991,24 @@ class WorkspaceDuty:
                 records = list_workspaces()
                 return DutyResult(ok=True, summary=format_ls(records, as_json=as_json))
             if verb == "status":
-                statuses = status_workspaces(getattr(ns, "slug", None))
+                slug = getattr(ns, "slug", None)
+                if slug is not None and slug in load_repo_sets():
+                    statuses = status_repo_set(slug)
+                    return DutyResult(
+                        ok=True,
+                        summary=format_repo_set_status(statuses, as_json=as_json),
+                    )
+                statuses = status_workspaces(slug)
                 return DutyResult(
                     ok=True, summary=format_status(statuses, as_json=as_json)
                 )
-            # clean
-            result = clean_workspaces(merged_only=bool(getattr(ns, "merged_only", False)))
+            # clean — optional slug targets a repo set or a single owned worktree
+            slug = getattr(ns, "slug", None)
+            merged_only = bool(getattr(ns, "merged_only", False))
+            if slug is not None and slug in load_repo_sets():
+                result = clean_repo_set(slug, merged_only=merged_only)
+                return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
+            result = clean_workspaces(merged_only=merged_only, slug=slug)
             return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))
         except WorkspaceError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
