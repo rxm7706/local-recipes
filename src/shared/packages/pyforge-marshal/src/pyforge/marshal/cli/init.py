@@ -240,11 +240,11 @@ from ..core.journal import (
     prepare_for_write,
 )
 from ..core.model import Finding, Severity, build_envelope
-from ..scope import UNRECOGNIZED, verify_scope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort, WorktreeEntry
+from ..scope import UNRECOGNIZED, verify_scope
 from . import deploy
 from .config import (
     PolicyIOError,

@@ -1,11 +1,10 @@
-"""Story 20.7 / FR-190 CAP-2+CAP-3: scripts/bmad-switch --current hard-fails on drift."""
+"""Story 20.7: scripts/bmad-switch --current hard-fails on scope drift."""
 from __future__ import annotations
 
 import importlib.util
 import sys
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
-
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "bmad-switch"
@@ -13,9 +12,6 @@ SCRIPT = REPO_ROOT / "scripts" / "bmad-switch"
 
 def _load():
     # scripts/bmad-switch has no .py suffix — SourceFileLoader is required.
-    import importlib.util
-    from importlib.machinery import SourceFileLoader
-
     loader = SourceFileLoader("bmad_switch_under_test", str(SCRIPT))
     spec = importlib.util.spec_from_loader(loader.name, loader)
     assert spec is not None
@@ -43,7 +39,6 @@ def _point_triangle(root: Path, slug: str) -> None:
 def test_current_synced_triangle_exits_zero(tmp_path: Path, capsys) -> None:
     mod = _load()
     _point_triangle(tmp_path, "alpha")
-    (tmp_path / "_bmad-output" / "projects" / "alpha").mkdir(parents=True, exist_ok=True)
     assert mod.cmd_current(tmp_path) == 0
     assert capsys.readouterr().out.strip() == "alpha"
 
@@ -53,7 +48,6 @@ def test_current_desynced_triangle_exits_nonzero_and_names_drift(
 ) -> None:
     mod = _load()
     _point_triangle(tmp_path, "alpha")
-    # Point both artifact links at beta while marker stays alpha.
     out = tmp_path / "_bmad-output"
     for name in ("planning-artifacts", "implementation-artifacts"):
         (out / "projects" / "beta" / name).mkdir(parents=True, exist_ok=True)
@@ -65,7 +59,7 @@ def test_current_desynced_triangle_exits_nonzero_and_names_drift(
     captured = capsys.readouterr()
     assert "alpha" in captured.out
     err = captured.err
-    assert "scope drift" in err or "drift" in err
+    assert "drift" in err
     assert "beta" in err
     assert "alpha" in err
 
