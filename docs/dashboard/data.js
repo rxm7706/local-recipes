@@ -4580,8 +4580,8 @@ window.DASHBOARD_DATA = {
         "total": 2264
       },
       "lineState": {
-        "state": "paused",
-        "at": "8.2"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -4807,7 +4807,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.2",
-              "pending",
+              "done",
               "Results render with derived progress"
             ]
           ]
@@ -5034,7 +5034,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-23 03:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-23 03:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -9141,7 +9141,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "35/36",
+        "progress": "36/36",
         "complete": 14,
         "of": 14
       },
@@ -20693,7 +20693,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "5 complete (atlas, doctor, herald, mason, scribe); 3 building (marshal, steward, warden)",
+        "gate": "6 complete (atlas, doctor, herald, mason, scribe, warden); 2 building (marshal, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -21437,7 +21437,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 8.2",
+        "line": "complete",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25397,8 +25397,8 @@ window.DASHBOARD_DATA = {
       "subject": "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-23 03:14 UTC",
-    "generatedEpoch": 1787454891
+    "generatedAt": "2026-08-23 03:16 UTC",
+    "generatedEpoch": 1787454960
   },
   "storySpecs": [
     {
@@ -25445,8 +25445,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-warden",
-      "done": 35,
-      "tracked": 35,
+      "done": 36,
+      "tracked": 36,
       "gap": 0
     }
   ],
@@ -25640,35 +25640,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "warden",
-        "project": "pyforge-warden",
-        "epicsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-compliance-factory-web-face",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face/SPEC.md"
-          },
-          {
-            "slug": "spec-package-inventory-eligibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md"
-          }
-        ],
-        "done": 35,
-        "backlog": 1,
-        "blocked": 0,
-        "total": 36,
-        "next": "8-2-results-render-with-derived-progress",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "8-2-results-render-with-derived-progress"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -25827,11 +25798,38 @@ window.DASHBOARD_DATA = {
         "blockedKeys": [],
         "backlogKeys": [],
         "state": "complete"
+      },
+      {
+        "station": "warden",
+        "project": "pyforge-warden",
+        "epicsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-compliance-factory-web-face",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face/SPEC.md"
+          },
+          {
+            "slug": "spec-package-inventory-eligibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md"
+          }
+        ],
+        "done": 36,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 36,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
       }
     ],
     "totals": {
-      "done": 435,
-      "backlog": 76,
+      "done": 436,
+      "backlog": 75,
       "blocked": 0,
       "total": 511
     }
@@ -25918,26 +25916,26 @@ window.DASHBOARD_DATA = {
       {
         "key": "warden",
         "stories": 36,
-        "done": 35,
+        "done": 36,
         "blocked": 0,
         "epics": 8,
-        "epicsDone": 7,
-        "complete": false,
+        "epicsDone": 8,
+        "complete": true,
         "running": false,
-        "projected": 35
+        "projected": 36
       }
     ],
     "total": {
       "stories": 511,
-      "done": 435,
+      "done": 436,
       "blocked": 0,
       "epics": 109,
-      "epicsDone": 90
+      "epicsDone": 91
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 435
+      "projected": 436
     }
   }
 };
