@@ -71,8 +71,12 @@ from ..seed.verbs.check import CheckReport
 from ..seed.verbs.check import run_check as _run_check_verb
 from ..seed.verbs.init import InitResult
 from ..seed.verbs.init import run_init as _run_init_verb
+from ..seed.verbs.explain import render_explain_text
+from ..seed.verbs.explain import run_explain as _run_explain_verb
 from ..seed.verbs.update import UpdateResult
 from ..seed.verbs.update import run_update as _run_update_verb
+from ..seed.verbs.version import render_version_text
+from ..seed.verbs.version import run_version as _run_version_verb
 
 # The severity groups a text report renders, in the fixed order the spec's
 # own "matching bmad_drift_check.py's report shape" bullet requires:
@@ -574,13 +578,82 @@ def run_update(
     return EXIT_OK
 
 
-def run_explain(args: argparse.Namespace) -> int:
-    print("marshal seed explain: not yet implemented")
+def run_explain(args: argparse.Namespace, *, manifest: Manifest | None = None) -> int:
+    """``marshal seed explain`` (Story 11.6): thin CLI plumbing over
+    ``seed.verbs.explain.run_explain`` -- read-only manifest lookup."""
+    try:
+        if manifest is None:
+            manifest = _load_packaged_manifest()
+        report = _run_explain_verb(manifest, args.artifact)
+    except ManifestError as exc:
+        wrapped = InternalError(
+            f"the packaged seed manifest could not be loaded: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the packaged manifest.yaml ships inside"
+                " the distribution and its absence or corruption is a broken"
+                " installation, not a problem with the query"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=args.json)
+        return wrapped.exit_code
+    except SeedError as exc:
+        _print_seed_error(exc, as_json=args.json)
+        return exc.exit_code
+    except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
+        wrapped = InternalError(
+            f"an unanticipated internal failure occurred: {exc}",
+            remedy=(
+                "this is unexpected -- please file a bug report against"
+                " pyforge-marshal with the full command and output"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=args.json)
+        return wrapped.exit_code
+
+    if args.json:
+        print(json.dumps(report.to_json_dict(), indent=2))
+    else:
+        print(render_explain_text(report))
     return EXIT_OK
 
 
-def run_version(args: argparse.Namespace) -> int:
-    print("marshal seed version: not yet implemented")
+def run_version(args: argparse.Namespace, *, manifest: Manifest | None = None) -> int:
+    """``marshal seed version`` (Story 11.6): thin CLI plumbing over
+    ``seed.verbs.version.run_version`` -- read-only version reporting."""
+    try:
+        repo_root = _resolve_repo_root(args.repo_root)
+        if manifest is None:
+            manifest = _load_packaged_manifest()
+        report = _run_version_verb(manifest, repo_root)
+    except ManifestError as exc:
+        wrapped = InternalError(
+            f"the packaged seed manifest could not be loaded: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the packaged manifest.yaml ships inside"
+                " the distribution and its absence or corruption is a broken"
+                " installation"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=args.json)
+        return wrapped.exit_code
+    except SeedError as exc:
+        _print_seed_error(exc, as_json=args.json)
+        return exc.exit_code
+    except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
+        wrapped = InternalError(
+            f"an unanticipated internal failure occurred: {exc}",
+            remedy=(
+                "this is unexpected -- please file a bug report against"
+                " pyforge-marshal with the full command and output"
+            ),
+        )
+        _print_seed_error(wrapped, as_json=args.json)
+        return wrapped.exit_code
+
+    if args.json:
+        print(json.dumps(report.to_json_dict(), indent=2))
+    else:
+        print(render_version_text(report))
     return EXIT_OK
 
 
@@ -594,9 +667,8 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Scaffold/adopt/check/update a project from Marshal's seed templates (AD-70).",
         description=(
             "The seed-installer noun group. `check` (Story 10.5), `adopt` "
-            "(Story 10.6), and `init` (Story 10.7) are real; `update`/`explain`/"
-            "`version` are still stubs from Story 7.1 -- their real logic lands "
-            "in Epics 11, 12."
+            "(Story 10.6), `init` (Story 10.7), `update` (Story 11.4), `explain`, and"
+            " `version` (Story 11.6) are real."
         ),
     )
     seed_subparsers = parser.add_subparsers(dest="seed_command", required=True)
@@ -767,14 +839,44 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
 
     explain_parser = seed_subparsers.add_parser(
         "explain",
-        help="Explain what a seed operation would do without applying it.",
-        description="Stub (Story 7.1) -- plan rationale rendering lands in a later story.",
+        help="Explain a manifest artifact's class, rationale, and update behavior.",
+        description=(
+            "Story 11.6: read-only lookup by artifact id or repo path; hybrid entries"
+            " include region names and anchors."
+        ),
+    )
+    explain_parser.add_argument(
+        "artifact",
+        metavar="ARTIFACT",
+        help="Manifest artifact id or repo-relative path (e.g. agents-md or AGENTS.md).",
+    )
+    explain_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Emit the explain payload as JSON instead of the text report.",
     )
     explain_parser.set_defaults(handler=run_explain)
 
     version_parser = seed_subparsers.add_parser(
         "version",
-        help="Report the seed templates' own version.",
-        description="Stub (Story 7.1) -- model-version reporting lands in a later story.",
+        help="Report CLI, bundled model, and adopted repo model versions.",
+        description=(
+            "Story 11.6: read-only version report (FR-125) -- CLI semver, bundled"
+            " manifest model_version, and adopted repo model_version when present."
+        ),
+    )
+    version_parser.add_argument(
+        "--repo-root",
+        dest="repo_root",
+        default=None,
+        metavar="PATH",
+        help="Repo whose adopted model version to read (default: cwd).",
+    )
+    version_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Emit the version payload as JSON instead of the text report.",
     )
     version_parser.set_defaults(handler=run_version)
