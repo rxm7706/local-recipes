@@ -1030,9 +1030,9 @@ def _merged_keys_for_slug(
     caller must respect (``core/status.py``'s own ``CONFIDENCE_CONFIRMED``/
     ``CONFIDENCE_UNCONFIRMED`` block carries the full rationale): a key
     PRESENT here is the STRONGER direction, while a key ABSENT proves
-    nothing -- ``promotion.merged_story_keys`` cannot parse a story key out
-    of a GitHub squash-merge's free-form prose subject, nor out of a
-    ``land/<station>-<epic>-<seq>`` merge subject.
+    nothing -- ``promotion.merged_story_keys`` (Story 20.10 / FR-191 CAP-3:
+    ``pyforge.core.landing_evidence``) still cannot parse a story key out of
+    a GitHub squash-merge's free-form prose subject.
 
     "Stronger", not "proof" (review finding, 2026-08-10, pass 4). The
     positive direction previously carried a known, VERIFIED contamination
@@ -1043,13 +1043,11 @@ def _merged_keys_for_slug(
     DIFFERENT station's PR-merge subject. Measured 2026-08-10 against
     ``main``'s 2,353 subjects, ``pyforge-mason``, ``pyforge-doctor`` and
     ``pyforge-scribe`` each returned ~30 keys, most of them another
-    station's. CLOSED 2026-08-15: ``extract_story_key_from_github_merge_
-    subject`` now requires and scopes on ``project_slug``, threaded through
+    station's. CLOSED 2026-08-15: grammar scoping now threads through
     automatically here via the ``slug`` already passed to
     ``merged_story_keys`` below. So the honest reading now: ABSENT still
-    proves nothing (the squash-merge and ``land/<slug>-<epic>-<seq>`` blind
-    spots below are unrelated and remain real), but PRESENT is no longer
-    cross-project blind."""
+    proves nothing (the squash-merge blind spot below remains real), but
+    PRESENT is no longer cross-project blind."""
     findings: list[Finding] = []
     project_data: Mapping[str, object] = {}
     if policy_core._is_valid_project_slug(slug):
@@ -1472,9 +1470,10 @@ def run_status(
         # The message states the UNCONFIRMED direction and WHY, never "has
         # not landed" as an established fact (review finding, 2026-08-10,
         # pass 2 -- the finding that reverted this story's first
-        # implementation): the classifier cannot read a GitHub squash-merge's
-        # free-form prose subject, nor a `land/<station>-<epic>-<seq>` merge
-        # subject, so on the real fleet 2 of 3 such WARNs were false. It
+        # implementation): Story 20.10 widened the classifier via
+        # ``pyforge.core.landing_evidence``, but a GitHub squash-merge's
+        # free-form prose subject remains unreadable, and a story-dir name
+        # that does not parse as a story key can never match at all. It
         # also names `run_id` alongside the story key -- repeated failed
         # attempts at ONE story across runs are otherwise distinguishable
         # only by a long absolute path (live: `pyforge-steward` carries
@@ -1494,9 +1493,8 @@ def run_status(
                             "confirming durable merge on "
                             f"{_MERGE_BASE_BRANCH!r} -- UNCONFIRMED, not "
                             "proof it never landed: the merge-subject "
-                            "classifier cannot read GitHub squash-merge "
-                            "prose or land/<station>-<epic>-<seq> branch "
-                            "merges, and a story-dir name that does not "
+                            "classifier still cannot read GitHub squash-merge "
+                            "prose, and a story-dir name that does not "
                             "parse as a story key can never match at all, "
                             "so verify before recovering or discarding "
                             "this patch"

@@ -18,28 +18,15 @@ module is already 1000+ lines covering the run journal's write protocol,
 fold, and frozen-surface accumulation, none of which this story's
 promotion concern touches.
 
-``merged_story_keys`` (AD-24, AD-33): the reachability predicate -- tries
-THREE merge-subject shapes per subject, in order:
-
-1. ``core.identity.parse_merge_subject(subject, template)`` -- the AD-24
-   templated form (``"Merge {key} into main"``), for a future
-   ``marshal land``-driven landing path. No landing path in THIS repo
-   writes this form today.
-2. ``extract_story_key_from_github_merge_subject`` (below) -- GitHub's own
-   PR-merge subject, ``"Merge pull request #N from <owner>/<branch>"``,
-   the shape every manually-branched story landing in this repo carries.
-3. ``extract_story_key_from_bmadloop_merge_subject`` (below) -- bmad-loop's
-   own native merge-commit shape, ``"Merge bmad-loop/<run-id>/<key>-<desc>
-   into <branch> (bmad-loop)"``. Added as a post-merge finding while
-   closing out Epic 2: five of its seven stories landed this way, via the
-   shared ``loop/pyforge-marshal`` branch, and matched neither pattern 1
-   nor 2 -- this repo (and every project in this factory) uses BOTH
-   landing paths, not just one.
-
-A subject that conforms to NEITHER pattern is skipped, never a hard
-failure for the whole scan -- most commit subjects in any real repository
-are not story merges (e.g. ``"fastmcp-v4"``, ``"pixi update requires-pixi
-= \">=0.75.0\""``).
+``merged_story_keys`` (AD-24, AD-33; Story 20.10 / FR-191 CAP-3): the
+reachability predicate -- classifies every subject via
+``pyforge.core.landing_evidence``'s shared grammar (templated merge subject,
+GitHub PR merge, bmad-loop merge, recovery commit, story-direct commit, and
+``land/<station>-<epic>-<seq>`` branch names embedded in GitHub PR merge
+subjects). A subject that matches none of those shapes is skipped, never a
+hard failure for the whole scan -- most commit subjects in any real
+repository are not story merges (e.g. ``"fastmcp-v4"``, ``"pixi update
+requires-pixi = \">=0.75.0\""``).
 
 ``marshal_native_merged_keys`` (Story 5.9, AD-5/AD-24/AD-33): the SAME
 reachability predicate narrowed to only the two Marshal-DRIVEN patterns
@@ -68,12 +55,20 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from pyforge.core.landing_evidence import (
+    LandingEvidenceShape,
+    StoryKeyRef,
+    classify_branch_name,
+    classify_commit,
+    classify_merge_subject,
+    parse_bmadloop_merge_subject,
+    parse_github_pr_merge_subject,
+)
+
 from .identity import (
     MalformedStoryKeyError,
-    MergeSubjectConformanceError,
     StoryKey,
     normalize,
-    parse_merge_subject,
     render_filename_slug,
 )
 from .model import Finding, Severity
@@ -81,171 +76,138 @@ from .model import Finding, Severity
 _MISSING_SPEC_CODE = "MRS-DEPLOY-001"
 _INVALID_SPEC_CODE = "MRS-DEPLOY-002"
 
-# GitHub's own PR-merge commit-subject shape -- "Merge pull request #N from
-# <owner>/<branch>" -- the shape every real merge commit in THIS repo's
-# history actually carries (verified live via `git log --merges` at the
-# spec-amendment that added this function). `\S+?` (non-greedy) for the
-# owner prefix before the captured `branch` group: the owner (a single
-# GitHub username, never containing `/`) is matched with the FEWEST
-# characters that still allow the overall match, so it stops at the FIRST
-# `/` -- meaning `branch` captures the FULL remainder, e.g.
-# "marshal/4-2-teardown-..." rather than just "4-2-teardown-...". A prior
-# greedy `\S+` backtracked to the LAST `/` instead, silently discarding
-# any project-identifying prefix segment before `extract_story_key_from_
-# github_merge_subject` ever saw it -- the live cross-project collision
-# that function's own docstring now documents.
+# GitHub PR-merge subject shape retained only to extract the ``branch``
+# token for ``land/<station>-<epic>-<seq>`` recovery landings whose merge
+# commit subject does not carry a station-prefixed branch segment --
+# ``pyforge.core.landing_evidence.parse_github_pr_merge_subject`` handles
+# the ordinary ``<station>/<key>-<desc>`` case inside the shared grammar.
 _GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$")
 
-# bmad-loop's own native merge-commit shape -- "Merge bmad-loop/<run-id>/
-# <key>-<description> into <branch> (bmad-loop)" -- the shape every
-# bmad-loop-driven story landing in this repo's history actually carries
-# (verified live, post-merge finding while closing out Epic 2: 2.1/2.2/
-# 2.4/2.5/2.6 all landed this way, via the shared `loop/pyforge-marshal`
-# branch, and matched NEITHER of the two patterns above -- this repo uses
-# both landing paths, manual `marshal/<key>-<desc>` branches AND bmad-loop
-# runs, not just one). This is bmad-loop's own convention across every
-# project in this factory (warden, herald, scribe, atlas all carry the
-# identical shape in their own history), not something local to marshal.
-_BMADLOOP_MERGE_SUBJECT_RE = re.compile(
-    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$"
+_MARSHAL_NATIVE_SHAPES = frozenset(
+    {
+        LandingEvidenceShape.TEMPLATED_MERGE_SUBJECT,
+        LandingEvidenceShape.BMAD_LOOP_MERGE_SUBJECT,
+    }
 )
+
+
+def _story_key_from_ref(ref: StoryKeyRef) -> StoryKey | None:
+    try:
+        return normalize(ref.dot_form())
+    except MalformedStoryKeyError:
+        return None
 
 
 def extract_story_key_from_bmadloop_merge_subject(
     subject: str, project_slug: str
 ) -> StoryKey | None:
-    """The third merge-subject pattern ``merged_story_keys`` tries: matches
-    bmad-loop's own native merge-commit shape and parses the story key from
-    the middle ``<key>-<description>`` segment (between the run-id and
-    ``into``).
+    """Delegate to ``pyforge.core.landing_evidence`` (Story 20.10).
 
-    ``project_slug`` is REQUIRED, not optional (live cross-project
-    collision, found running this for real against local-recipes: this one
-    repo hosts every BMAD project's loop-driven history in ONE shared `git
-    log`, and pyforge-warden's own Story 6.8 -- "Merge bmad-loop/.../6-8-
-    baseline-grandfathering into loop/pyforge-warden (bmad-loop)" -- was
-    silently misread as pyforge-MARSHAL's own Story 6.8, reporting a false
-    "merged but no spec" gap for a story that has nothing to do with this
-    project at all). The merge target must equal ``loop/<project_slug>``
-    -- this repo's own loop-home branch convention (confirmed live:
-    `loop/pyforge-marshal`, `loop/pyforge-warden`, `loop/pyforge-herald`,
-    `loop/pyforge-scribe` all follow it) -- or the subject is treated as
-    NOT belonging to this project, same as any other non-matching subject.
-
-    Same failure-tolerant shape as
-    ``extract_story_key_from_github_merge_subject``: returns ``None``,
-    never raises, for a non-matching subject, a wrong-project target, or a
-    key segment whose leading token isn't a parseable story key."""
-    match = _BMADLOOP_MERGE_SUBJECT_RE.match(subject)
-    if match is None:
+    Preserved as a public surface for callers and tests that already import
+    this name; returns ``None`` for any non-match, never raises."""
+    ref = parse_bmadloop_merge_subject(subject, project_slug)
+    if ref is None:
         return None
-    if match.group("target") != f"loop/{project_slug}":
-        return None
-    try:
-        return normalize(match.group("key_slug"))
-    except MalformedStoryKeyError:
-        return None
+    return _story_key_from_ref(ref)
 
 
 def extract_story_key_from_github_merge_subject(
     subject: str, project_slug: str
 ) -> StoryKey | None:
-    """The second merge-subject pattern ``merged_story_keys`` tries (Story
-    4.1's spec amendment, "TWO merge shapes, not one"): matches GitHub's own
-    PR-merge subject shape and attempts to parse a story key out of the
-    branch's final ``/``-separated path segment (this repo's own observed
-    convention, ``marshal/<epic>-<seq>-<description>``).
+    """Delegate to ``pyforge.core.landing_evidence`` (Story 20.10).
 
-    ``project_slug`` is REQUIRED, not optional (live cross-project
-    collision, found running this for real against local-recipes,
-    2026-08-15: PR #274's branch ``marshal/4-2-teardown-reachability-spec-
-    recovery`` -- a MARSHAL story -- was silently misread as pyforge-
-    MASON's own Story 4.2, making ``marshal land pyforge-mason`` falsely
-    report that story as already landed. The SAME live cross-project risk
-    ``extract_story_key_from_bmadloop_merge_subject``'s own docstring
-    already documents, now closed here too). The branch's leading path
-    segment must equal ``project_slug`` with any ``pyforge-`` prefix
-    stripped (every real ``project_slug`` this module receives is the CLI's
-    full ``pyforge-<name>`` form, but real branch prefixes use the short
-    station name -- confirmed live via ``git log --merges`` across every
-    station) -- or the subject is treated as NOT belonging to this project,
-    same as any other non-matching subject.
-
-    An empty ``station`` (``project_slug`` is ``""`` or exactly
-    ``"pyforge-"``) is ALSO treated as never-matching (review finding,
-    2026-08-15) rather than degrading to ``branch.startswith("/")`` -- an
-    empty prefix would otherwise accept a branch with an empty leading
-    segment (e.g. a subject containing ``"//4-2-evil"``), reopening a
-    narrow version of the exact collision this scoping exists to close.
-    No real project in this factory has an empty short name, so this is a
-    defensive floor, not a live case.
-
-    Returns ``None`` -- never raises -- for any failure mode: the subject
-    doesn't match the GitHub shape at all, the branch's leading segment
-    doesn't belong to ``project_slug``, or the extracted segment's leading
-    token isn't a parseable story key (``core.identity.normalize``'s
-    ``MalformedStoryKeyError``, e.g. a branch like
-    ``"marshal/refresh-dashboard-3-7"`` whose digits appear but not as the
-    segment's LEADING token -- ``normalize()`` matches only at position 0,
-    so this correctly does not extract ``3.7``). No new key-parsing logic:
-    the extracted segment is handed straight to ``core.identity.normalize``,
-    which already tolerates trailing descriptive text after the
-    ``<epic>-<seq>`` token."""
-    match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
-    if match is None:
+    Preserved as a public surface for callers and tests that already import
+    this name; returns ``None`` for any non-match, never raises."""
+    ref = parse_github_pr_merge_subject(subject, project_slug)
+    if ref is None:
         return None
-    branch = match.group("branch")
-    station = project_slug.removeprefix("pyforge-")
-    if not station or not branch.startswith(f"{station}/"):
-        return None
-    segment = branch.rsplit("/", 1)[-1]
-    try:
-        return normalize(segment)
-    except MalformedStoryKeyError:
-        return None
+    return _story_key_from_ref(ref)
 
 
 def _classify_merge_subject(subject: str, template: str, project_slug: str) -> StoryKey | None:
-    """Try all three merge-subject patterns ``merged_story_keys`` recognizes,
-    in order, returning the first match or ``None`` if none conform.
-    Factored out so ``merged_story_keys`` (deduplicated by key) and
-    ``count_conforming_subjects`` (a raw per-subject diagnostic count) share
-    one classification, never copies that could silently diverge.
-    ``project_slug`` scopes BOTH the GitHub PR-merge pattern and the
-    bmad-loop pattern (see each extractor's own docstring for the live
-    cross-project collision its own scoping prevents, in this
-    shared-history repo)."""
-    try:
-        return parse_merge_subject(subject, template)
-    except MergeSubjectConformanceError:
-        pass
-    key = extract_story_key_from_github_merge_subject(subject, project_slug)
-    if key is not None:
-        return key
-    return extract_story_key_from_bmadloop_merge_subject(subject, project_slug)
+    """Classify one commit subject via the shared landing-evidence grammar.
+
+    After the grammar's own merge-subject shapes, also tries branch-name
+    grammars on the branch token embedded in a GitHub PR merge subject --
+    recovery landings via ``land/<station>-<epic>-<seq>`` branches carry
+    that shape in the merge commit even though
+    ``parse_github_pr_merge_subject`` scopes on ``<station>/`` prefixes."""
+    match = classify_merge_subject(subject, template=template, project_slug=project_slug)
+    if match is not None:
+        return _story_key_from_ref(match.key)
+    gh_match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
+    if gh_match is not None:
+        branch_match = classify_branch_name(
+            gh_match.group("branch"), project_slug=project_slug
+        )
+        if branch_match is not None:
+            return _story_key_from_ref(branch_match.key)
+    return None
+
+
+def _classify_commit(sha: str, subject: str, template: str, project_slug: str) -> StoryKey | None:
+    """``classify_commit`` at the Marshal ``StoryKey`` boundary."""
+    match = classify_commit(sha, subject, template=template, project_slug=project_slug)
+    if match is None:
+        return None
+    return _story_key_from_ref(match.key)
 
 
 def merged_story_keys(
-    subjects: tuple[str, ...], template: str, project_slug: str
+    subjects: tuple[str, ...],
+    template: str,
+    project_slug: str,
+    *,
+    commits: tuple[tuple[str, str], ...] = (),
 ) -> frozenset[StoryKey]:
-    """Every ``StoryKey`` whose merge subject appears in ``subjects``
-    (AD-24, AD-33): each subject is classified via
-    ``_classify_merge_subject`` -- first the AD-24 templated form
-    (``core.identity.parse_merge_subject``), then, if that doesn't conform,
-    the GitHub PR-merge form, then bmad-loop's own native form -- BOTH of
-    the latter two scoped to ``project_slug`` (see each extractor's own
-    docstring for the live cross-project collision its own scoping
-    prevents). A subject matching NONE of the three is silently skipped,
-    never raised -- most of any real repository's commit history is not a
-    story merge for THIS project. Pure: no I/O, no ``VcsPort`` --
-    ``subjects`` is the caller's already-gathered
-    ``VcsPort.commit_subjects`` result."""
+    """Every ``StoryKey`` whose landing evidence appears in ``subjects`` or
+    ``commits`` (Story 20.10 / FR-191 CAP-3).
+
+    Each subject is classified via ``_classify_merge_subject``; each
+    ``(sha, subject)`` pair in ``commits`` is additionally classified via
+    ``pyforge.core.landing_evidence.classify_commit`` (the pre-convention
+    recovery SHA allowlist lives there). A non-matching entry is silently
+    skipped, never raised. Pure: no I/O, no ``VcsPort``."""
     keys: set[StoryKey] = set()
     for subject in subjects:
         key = _classify_merge_subject(subject, template, project_slug)
         if key is not None:
             keys.add(key)
+    for sha, subject in commits:
+        key = _classify_commit(sha, subject, template, project_slug)
+        if key is not None:
+            keys.add(key)
     return frozenset(keys)
+
+
+def branch_story_merge_confirmed_by_grammar(
+    branch: str,
+    story_key: StoryKey,
+    subjects: tuple[str, ...],
+    template: str,
+    project_slug: str,
+    *,
+    commits: tuple[tuple[str, str], ...] = (),
+) -> bool:
+    """Patch-id matching supplemented by the shared grammar (Story 20.10).
+
+    ``True`` when ``story_key`` is durably merged on ``main`` per
+    ``merged_story_keys`` AND ``branch`` names the same story via a
+    recognized branch grammar (``land/…``, ``bmad-loop/…``, or
+    ``<station>/…``). Used by ``marshal retire`` when
+    ``VcsPort.is_branch_merged`` alone cannot confirm a recovered branch
+    whose content-equivalence check fails but whose story demonstrably
+    landed via the recovery convention."""
+    merged = merged_story_keys(
+        subjects, template, project_slug, commits=commits
+    )
+    if story_key not in merged:
+        return False
+    branch_match = classify_branch_name(branch, project_slug=project_slug)
+    if branch_match is not None:
+        key = _story_key_from_ref(branch_match.key)
+        return key == story_key
+    return False
 
 
 def marshal_native_merged_keys(
@@ -307,10 +269,10 @@ def marshal_native_merged_keys(
     second git read)."""
     keys: set[StoryKey] = set()
     for subject in subjects:
-        try:
-            key: StoryKey | None = parse_merge_subject(subject, template)
-        except MergeSubjectConformanceError:
-            key = extract_story_key_from_bmadloop_merge_subject(subject, project_slug)
+        match = classify_merge_subject(subject, template=template, project_slug=project_slug)
+        if match is None or match.shape not in _MARSHAL_NATIVE_SHAPES:
+            continue
+        key = _story_key_from_ref(match.key)
         if key is not None:
             keys.add(key)
     return frozenset(keys)
