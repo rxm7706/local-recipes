@@ -8,8 +8,9 @@ surface:
 sources:
   - ../../../../../../docs/dreams/bmad-switch-scope-enforcement.md
 open_questions:
-  - "Where the shared primitive physically lives (a story-level design decision): scripts/bmad-switch is a standalone repo-root script while cli/init.py sits inside the pyforge-marshal package — single-source options (import path, or Genesis-delivered COPIED-MANAGED copy of one source) must still satisfy the never-two-parallel-copies constraint."
   - "Which write boundaries beyond bmad-switch and marshal init get the preflight wired first — the Dream wants it before every BMAD write-skill invocation, but the injection mechanism into skills is undecided."
+decisions:
+  - "Story 20.6 CAP-1: shared primitive lives at pyforge.marshal.scope (import path; stdlib-only body). never-two-parallel-copies — no Genesis twin in this repo; 20.7 consumers import this module."
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -108,10 +109,11 @@ point DW-1-4-2 (`deferred-work-ledger.md:385`) can be closed against this spec.
 
 ## Open Questions
 
-- "Where the shared primitive physically lives (a story-level design decision):
-  `scripts/bmad-switch` is a standalone repo-root script while `cli/init.py` sits inside the
-  pyforge-marshal package — single-source options (import path, or Genesis-delivered
-  COPIED·MANAGED copy of one source) must still satisfy the never-two-parallel-copies constraint."
 - "Which write boundaries beyond `bmad-switch` and `marshal init` get the preflight wired first —
   the Dream wants it before every BMAD write-skill invocation, but the injection mechanism into
   skills is undecided."
+
+## Decisions (Story 20.6)
+
+- Shared primitive home: `pyforge.marshal.scope` (import path; stdlib-only). never-two-parallel-copies
+  — no Genesis twin in this repo; story 20.7 callers import this module.
