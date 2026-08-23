@@ -73,3 +73,5 @@ baseline_revision: 0c5002f42f705b43582e677a1b0db5f1f7915cc1
 - **Follow-up review recommendation:** true (patched score 3×2 + 1×1 = 7 ≥ 5).
 - **Verification:** story tests 7 passed; full steward suite previously 765 passed; PR #662 CI green on pre-patch commit — re-check after this patch push.
 - **Residual risks:** set clean without `--merged-only` still requires interactive confirm per member (same as single-repo 13.1); concurrent bookkeeping races remain deferred from 13.1; missing registered members are omitted from the open set without an explicit warning.
+
+- **Merge SHA (coordinator rescue):** `a6ad8c4125653efbe9562b6448a84ffb99a43c45` (PR #662)

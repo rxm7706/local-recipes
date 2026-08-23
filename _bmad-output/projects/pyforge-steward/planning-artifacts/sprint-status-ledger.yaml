@@ -42,7 +42,7 @@ development_status:
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
-  13-4-the-set-reports-and-tears-down-safely: backlog
+  13-4-the-set-reports-and-tears-down-safely: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: backlog
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: backlog
   14-3-clobbered-custom-surfaces-are-caught-and-re-applied: backlog
@@ -102,7 +102,7 @@ development_status:
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional
-  epic-13: backlog
+  epic-13: done
   epic-13-retrospective: optional
   epic-14: backlog
   epic-14-retrospective: optional
