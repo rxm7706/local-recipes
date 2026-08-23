@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import pytest
-
 from pyforge.steward import __version__
 from pyforge.steward.cli import (
-    _HELP, DUTIES, EXIT_FAILED, EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_OK,
-    build_parser, main, resolve_duty,
+    _HELP,
+    DUTIES,
+    EXIT_FAILED,
+    EXIT_INTERNAL,
+    EXIT_INTERRUPTED,
+    EXIT_OK,
+    build_parser,
+    main,
 )
 from pyforge.steward.interfaces import DutyResult
 
@@ -60,7 +65,7 @@ def test_failing_duty_projects_to_exit_1(monkeypatch):
     class Failing:
         name = "keys"
 
-        def run(self, ns):        # noqa: ARG002
+        def run(self, ns):
             return DutyResult(ok=False, summary="nope")
 
     monkeypatch.setattr("pyforge.steward.cli.resolve_duty", lambda n: Failing())
@@ -78,7 +83,7 @@ def test_crash_never_returns_bare_1(monkeypatch):
     class Crashing:
         name = "keys"
 
-        def run(self, ns):        # noqa: ARG002
+        def run(self, ns):
             raise RuntimeError("boom")
 
     monkeypatch.setattr("pyforge.steward.cli.resolve_duty", lambda n: Crashing())
