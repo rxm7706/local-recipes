@@ -240,6 +240,7 @@ from ..core.journal import (
     prepare_for_write,
 )
 from ..core.model import Finding, Severity, build_envelope
+from ..scope import UNRECOGNIZED, verify_scope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -321,6 +322,84 @@ def _loop_home_root() -> Path:
 
 def _home_path(slug: str) -> Path:
     return _loop_home_root() / slug
+
+
+
+def _mrs_init_003_from_scope_drift(
+    home: Path,
+    slug: str,
+    drift: object,
+    planning_link: Path,
+) -> Finding | None:
+    """Map ``verify_scope`` drift to a blocking MRS-INIT-003, or None to allow.
+
+    Story 20.7 / FR-190 CAP-2+CAP-3: the sole triangle check is ``verify_scope``.
+    Init still allows *partial* homes (empty or only one corner set) so first
+    provision can converge; it refuses (1) unrecognized planning-symlink shapes
+    that already exist, (2) internal disagreement among recognized corners, and
+    (3) marker+planning agreement on a slug other than the one requested
+    (DW-1-4-2 blind spot (2) — no silent reconcile of a repurposed home).
+    """
+    marker = drift.marker  # type: ignore[attr-defined]
+    planning = drift.planning_artifacts  # type: ignore[attr-defined]
+    implementation = drift.implementation_artifacts  # type: ignore[attr-defined]
+
+    if planning == UNRECOGNIZED and planning_link.is_symlink():
+        try:
+            raw = planning_link.readlink()
+        except OSError:
+            raw = None
+        return Finding(
+            code="MRS-INIT-003",
+            severity=Severity.ERROR,
+            message=(
+                f"unrecognized planning-artifacts symlink target "
+                f"{str(raw)!r} in {home} -- expected "
+                "projects/<slug>/planning-artifacts; refusing to "
+                "repoint a link this command did not shape; resolve "
+                "by hand before re-running"
+            ),
+            path=str(planning_link),
+        )
+
+    recognized = [
+        value
+        for value in (marker, planning, implementation)
+        if value != UNRECOGNIZED
+    ]
+    if len(set(recognized)) > 1:
+        return Finding(
+            code="MRS-INIT-003",
+            severity=Severity.ERROR,
+            message=(
+                f"marker/symlink desync in {home}: marker={marker!r}, "
+                f"planning-artifacts={planning!r}, "
+                f"implementation-artifacts={implementation!r} "
+                f"(expected {slug!r}) -- a prior partial failure left them "
+                "disagreeing; resolve by hand before re-running"
+            ),
+            path=str(home),
+        )
+
+    if (
+        marker != UNRECOGNIZED
+        and planning != UNRECOGNIZED
+        and marker == planning
+        and marker != slug
+    ):
+        return Finding(
+            code="MRS-INIT-003",
+            severity=Severity.ERROR,
+            message=(
+                f"home {home} is scoped to {marker!r} (marker and "
+                "planning-artifacts agree) but init requested "
+                f"{slug!r} -- refusing to silently reconcile a "
+                "repurposed home; resolve by hand before re-running"
+            ),
+            path=str(home),
+        )
+
+    return None
 
 
 def _slug_from_marker(text: str | None) -> str | None:
@@ -714,54 +793,24 @@ def run_init(
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 
-    # --- desync check: BLOCKING, before any further write -------------------
+    # --- scope check: BLOCKING via sole verify_scope primitive (Story 20.7) ---
     marker_path = home / "_bmad" / "custom" / ".active-project"
     link_path = home / "_bmad-output" / "planning-artifacts"
 
+    drift = verify_scope(home, slug)
+    if drift is not None:
+        blocked = _mrs_init_003_from_scope_drift(home, slug, drift, link_path)
+        if blocked is not None:
+            findings.append(blocked)
+            return _emit(args, data, findings)
+
+    # FsPort reads still drive skip/write for this invocation's FakeFs/real seam.
     try:
         marker_slug = _slug_from_marker(fs.read_text(marker_path))
         raw_link_target = fs.read_symlink_target(link_path)
         link_slug = _slug_from_symlink_target(raw_link_target)
     except FsError as exc:
         findings.append(_op_failed_finding(f"reading marker/symlink state: {exc}"))
-        return _emit(args, data, findings)
-
-    if raw_link_target is not None and link_slug is None:
-        # A symlink that EXISTS but whose target this command never shaped
-        # (absolute path, wrong depth) is evidence of hand configuration,
-        # not partial convergence -- repointing it would be exactly the
-        # silent overwrite MRS-INIT-003 exists to refuse (review finding:
-        # the both-slugs-parse desync check below silently skipped this).
-        findings.append(
-            Finding(
-                code="MRS-INIT-003",
-                severity=Severity.ERROR,
-                message=(
-                    f"unrecognized planning-artifacts symlink target "
-                    f"{str(raw_link_target)!r} in {home} -- expected "
-                    "projects/<slug>/planning-artifacts; refusing to "
-                    "repoint a link this command did not shape; resolve "
-                    "by hand before re-running"
-                ),
-                path=str(link_path),
-            )
-        )
-        return _emit(args, data, findings)
-
-    if marker_slug is not None and link_slug is not None and marker_slug != link_slug:
-        findings.append(
-            Finding(
-                code="MRS-INIT-003",
-                severity=Severity.ERROR,
-                message=(
-                    f"marker/symlink desync in {home}: marker says "
-                    f"{marker_slug!r} but planning-artifacts symlink says "
-                    f"{link_slug!r} -- a prior partial failure left them "
-                    "disagreeing; resolve by hand before re-running"
-                ),
-                path=str(home),
-            )
-        )
         return _emit(args, data, findings)
 
     # --- step: symlink, written BEFORE the marker -----------------------------

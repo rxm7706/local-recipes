@@ -388,7 +388,10 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   summary: The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_from_symlink_target` only recognizes the exact shape `projects/<slug>/planning-artifacts` — any other shape (a target written by a different tool, an absolute path) parses to `None`, so a real desync hiding behind an unrecognized shape evades the check; (2) the guard only compares the marker and symlink to EACH OTHER, never to the actually-requested slug, so a home whose marker and symlink consistently agree on a DIFFERENT project than the one just requested is treated as "not a desync" and gets silently reconciled onto the new slug with no warning that it was repurposed.
   evidence: Found during Story 1.4's adversarial review (two related findings merged). Confirmed by code inspection of `cli/init.py::_slug_from_symlink_target` and the `MRS-INIT-003` condition (`marker_slug is not None and link_slug is not None and marker_slug != link_slug`). Given each loop home's path is keyed by its own slug (`<root>/<slug>`), (2) can only arise from external tooling repointing a home's own marker/symlink to a different project — an anomalous, unlikely-but-real operator scenario. Needs a product decision on whether a third cross-check (against the directory's own slug) belongs to this story or to Story 1.6 (isolation verification, FR-4), which is explicitly the "prove homes are genuinely isolated" surface.
 
-  status: open
+  status: closed
+
+  closed_by: Story 20.7 (spec-20-7-both-guards-hard-fail-on-drift)
+  closed_note: Both guards now consume the sole `verify_scope` primitive; `bmad-switch --current` hard-fails on drift; `marshal init` refuses homes whose marker/planning agree on a different project than requested (DW-1-4-2 blind spots (1) and (2)).
 
 ## DW-1-4-3 — `adapters/fs_local.py`'s two atomic-write helpers disagree on stale-temp-file ha…
 

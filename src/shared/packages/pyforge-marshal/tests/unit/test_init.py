@@ -38,6 +38,40 @@ _SCHEMA_PATH = (
 )
 
 
+
+def _seed_real_home_scope(
+    home: Path,
+    *,
+    marker: str | None = None,
+    planning_target: str | Path | None = None,
+    implementation_target: str | Path | None = None,
+) -> None:
+    """Write real marker/symlink files so ``verify_scope`` (stdlib Path I/O) sees them.
+
+    FakeFs drives skip/write via FsPort; Story 20.7's MRS-INIT-003 guard reads
+    the real filesystem through ``verify_scope``. Desync / wrong-project tests
+    must seed both.
+    """
+    home.mkdir(parents=True, exist_ok=True)
+    if marker is not None:
+        marker_path = home / "_bmad" / "custom" / ".active-project"
+        marker_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = marker if marker.endswith("\n") else marker + "\n"
+        marker_path.write_text(payload, encoding="utf-8")
+    out = home / "_bmad-output"
+    out.mkdir(parents=True, exist_ok=True)
+    if planning_target is not None:
+        link = out / "planning-artifacts"
+        if link.exists() or link.is_symlink():
+            link.unlink()
+        link.symlink_to(Path(planning_target))
+    if implementation_target is not None:
+        link = out / "implementation-artifacts"
+        if link.exists() or link.is_symlink():
+            link.unlink()
+        link.symlink_to(Path(implementation_target))
+
+
 class FakeVcs:
     def __init__(self, *, repo_root: Path, worktree_dirs: set[Path] | None = None) -> None:
         self.repo_root = repo_root
@@ -780,6 +814,11 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
         "projects/yet-another/planning-artifacts"
     )
+    _seed_real_home_scope(
+        home,
+        marker="other-project",
+        planning_target="projects/yet-another/planning-artifacts",
+    )
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
@@ -788,6 +827,35 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     assert fs.write_calls == []
     assert fs.repoint_calls == []
 
+
+
+
+def test_home_agreeing_on_wrong_project_is_refused(repo_root, tmp_path, capsys):
+    """DW-1-4-2 blind spot (2) / Story 20.7 CAP-3: marker+planning agree on a
+    different project than requested — refuse, do not silently reconcile."""
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
+    )
+    _converge_tier3(fs, repo_root, home, "acme")
+    fs.texts[home / "_bmad" / "custom" / ".active-project"] = "other-project\n"
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
+        "projects/other-project/planning-artifacts"
+    )
+    _seed_real_home_scope(
+        home,
+        marker="other-project",
+        planning_target="projects/other-project/planning-artifacts",
+    )
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-003" in out
+    assert "other-project" in out
+    assert fs.write_calls == []
+    assert fs.repoint_calls == []
 
 def test_marker_alone_with_no_symlink_is_not_a_desync(repo_root, tmp_path):
     """Only ONE of marker/symlink present is a partial (not-yet-converged)
@@ -940,6 +1008,10 @@ def test_unparseable_symlink_target_blocks_as_desync(repo_root, tmp_path, capsys
     _converge_tier3(fs, repo_root, home, "acme")
     fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
         "/somewhere/else/planning-artifacts"
+    )
+    _seed_real_home_scope(
+        home,
+        planning_target="/somewhere/else/planning-artifacts",
     )
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK

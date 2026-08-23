@@ -27,7 +27,7 @@ aborts before the marker can disagree with the links.
 Usage:
     bmad-switch <slug>          # set active project (marker + symlinks)
     bmad-switch --list          # list known projects under _bmad-output/projects/
-    bmad-switch --current       # print the active project (warns on marker/symlink desync)
+    bmad-switch --current       # print the active project (hard-fails on marker/symlink drift)
     bmad-switch --clear         # remove the marker (no active project)
 
 The slug must be lowercase alphanumeric + hyphens/underscores. The corresponding
@@ -40,6 +40,31 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _load_verify_scope(root: Path):
+    """Import the sole Story 20.6 primitive (never a local reimplementation)."""
+    try:
+        from pyforge.marshal.scope import ScopeDrift, verify_scope
+        return verify_scope, ScopeDrift
+    except ImportError:
+        src = root / "src" / "shared" / "packages" / "pyforge-marshal" / "src"
+        if src.is_dir() and str(src) not in sys.path:
+            sys.path.insert(0, str(src))
+        from pyforge.marshal.scope import ScopeDrift, verify_scope
+        return verify_scope, ScopeDrift
+
+
+def format_scope_drift(drift) -> str:
+    """Human-readable ScopeDrift for stderr (names found-vs-expected)."""
+    return (
+        "scope drift: "
+        f"expected {drift.expected!r} but "
+        f"marker={drift.marker!r}, "
+        f"planning-artifacts={drift.planning_artifacts!r}, "
+        f"implementation-artifacts={drift.implementation_artifacts!r}"
+    )
+
 
 _SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
@@ -114,44 +139,6 @@ def link_path(root: Path, name: str) -> Path:
     return root / "_bmad-output" / name
 
 
-def read_link_slugs(root: Path) -> dict[str, str | None]:
-    """Map each artifact symlink to the project slug it currently points at.
-
-    A value of None means the path is missing, is not a symlink, or points
-    somewhere that isn't `projects/<slug>/<name>`.
-    """
-    slugs: dict[str, str | None] = {}
-    for name in _ARTIFACT_LINKS:
-        path = link_path(root, name)
-        if not path.is_symlink():
-            slugs[name] = None
-            continue
-        parts = Path(os.readlink(path)).parts
-        # expected: ("projects", "<slug>", "<name>")
-        slugs[name] = parts[1] if len(parts) == 3 and parts[0] == "projects" else None
-    return slugs
-
-
-def link_slug(root: Path) -> str | None:
-    """The single slug all artifact symlinks agree on, else None."""
-    values = set(read_link_slugs(root).values())
-    return values.pop() if len(values) == 1 else None
-
-
-def desync_warning(root: Path) -> str | None:
-    """Describe a marker/symlink disagreement, or None when consistent."""
-    marker = read_marker(root)
-    links = read_link_slugs(root)
-    if all(slug == marker for slug in links.values()):
-        return None
-    detail = ", ".join(f"{name} -> {slug or '(unresolved)'}" for name, slug in links.items())
-    return (
-        f"marker says {marker or '(none)'} but symlinks point elsewhere: {detail}\n"
-        f"BMAD skills resolve planning artifacts THROUGH these symlinks, so a write-skill "
-        f"would target the wrong project. Re-run: bmad-switch {marker or '<slug>'}"
-    )
-
-
 def repoint_links(root: Path, slug: str) -> int:
     """Atomically re-point the artifact symlinks at `slug`.
 
@@ -209,9 +196,12 @@ def cmd_list(root: Path) -> int:
         print(f"\nactive: {current}")
     else:
         print("\nactive: (none)")
-    warning = desync_warning(root)
-    if warning:
-        sys.stderr.write(f"\nwarning: {warning}\n")
+    if current:
+        verify_scope, _ScopeDrift = _load_verify_scope(root)
+        drift = verify_scope(root, current)
+        if drift is not None:
+            sys.stderr.write(f"\nerror: {format_scope_drift(drift)}\n")
+            return 2
     return 0
 
 
@@ -229,16 +219,18 @@ def read_marker(root: Path) -> str | None:
 
 def cmd_current(root: Path) -> int:
     current = read_marker(root)
-    warning = desync_warning(root)
-    if current:
+    if not current:
+        sys.stderr.write("no active project (marker file empty or missing)\n")
+        return 1
+    verify_scope, _ScopeDrift = _load_verify_scope(root)
+    drift = verify_scope(root, current)
+    if drift is not None:
+        # Print claimed marker then hard-fail naming the drift (CAP-3).
         print(current)
-        if warning:
-            sys.stderr.write(f"warning: {warning}\n")
-        return 0
-    sys.stderr.write("no active project (marker file empty or missing)\n")
-    if warning:
-        sys.stderr.write(f"warning: {warning}\n")
-    return 1
+        sys.stderr.write(f"error: {format_scope_drift(drift)}\n")
+        return 2
+    print(current)
+    return 0
 
 
 def cmd_clear(root: Path) -> int:
