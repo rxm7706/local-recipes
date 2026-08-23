@@ -107,9 +107,15 @@ from pathlib import Path
 from typing import Any
 
 import copier
+from packaging.specifiers import SpecifierSet
 from pyforge.core.errors import PyforgeError
 
 from ..model.manifest import ArtifactClass, Manifest, load_manifest
+
+# NFR-C2: range-pinned, not exact-pinned -- the one source of truth the
+# pixi.toml / pyproject.toml pins mirror. Kept in sync by
+# tests/meta/test_engine_version_range_sync.py (Story 12.1).
+COPIER_VERSION_RANGE = SpecifierSet(">=9.17,<10")
 
 # The one path every run_copy/run_update/run_recopy call configures
 # explicitly (Spike-0 Finding 2) -- also the answers file's own entry in
