@@ -49,6 +49,11 @@ having to understand recovery-PR shape or commit-message conventions.
 EXIT
     0  no unrecovered baseline-drift defer found
     1  at least one unrecovered baseline-drift defer found
+
+``--json`` (Story 20.2 / CAP-2): stdout is a bare JSON list of unrecovered
+finding objects (keys: slug, run, story, real, drifted, refs). Exit codes
+are unchanged — exit 1 still means findings exist. Human banners are
+suppressed in this mode so fleet-picture can parse stdout safely.
 """
 from __future__ import annotations
 
@@ -56,6 +61,7 @@ from __future__ import annotations
 # state (gitignored Tier-3 sprint feeds, ~/.bmad-loops), so CI cannot run it.
 DETECTOR = {"scope": "runtime"}
 
+import argparse
 import json
 import re
 import subprocess
@@ -119,12 +125,17 @@ def find_defers(journal: Path) -> list[dict]:
     return out
 
 
-def main() -> int:
-    if not LOOP_ROOT.is_dir():
-        print(f"no loop homes at {LOOP_ROOT} -- nothing to check")
-        return 0
+def collect_findings() -> list[dict]:
+    """Unrecovered baseline-drift defers across every loop home.
 
-    findings = []
+    Pure collection for human stdout, ``--json``, and fleet-picture ATTENTION
+    (Story 20.2). Empty when ``LOOP_ROOT`` is missing or every defer is already
+    ``done`` in the tracked sprint-status ledger.
+    """
+    if not LOOP_ROOT.is_dir():
+        return []
+
+    findings: list[dict] = []
     for home in sorted(p for p in LOOP_ROOT.iterdir() if (p / ".git").exists()):
         slug = home.name.replace("pyforge-", "")
         status = tracked_status(slug)
@@ -142,6 +153,31 @@ def main() -> int:
                     "real": defer["real"], "drifted": defer["drifted"],
                     "refs": refs,
                 })
+    return findings
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        description=__doc__.split("\n")[0] if __doc__ else "baseline-drift-check"
+    )
+    ap.add_argument(
+        "--json",
+        action="store_true",
+        help="print unrecovered findings as a JSON list (machine-readable)",
+    )
+    # Default [] so programmatic callers (tests, importlib) never inherit
+    # the parent process's argv (e.g. pytest). CLI passes sys.argv[1:].
+    args = ap.parse_args([] if argv is None else argv)
+
+    findings = collect_findings()
+
+    if args.json:
+        print(json.dumps(findings))
+        return 1 if findings else 0
+
+    if not LOOP_ROOT.is_dir():
+        print(f"no loop homes at {LOOP_ROOT} -- nothing to check")
+        return 0
 
     print(f"baseline-drift-check -- {len(findings)} unrecovered defer(s)\n")
     if findings:
@@ -163,4 +199,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
