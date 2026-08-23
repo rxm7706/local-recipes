@@ -174,11 +174,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 22
+    remaining_count: 21
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 12-8-github-projects-v2-lands-in-github-metrics-via-dlt
     - 13-1-workspace-verbs-over-git-worktree
     - 13-2-status-and-the-feed-mirror-decision
     - 13-3-a-repo-set-opens-as-one-workspace

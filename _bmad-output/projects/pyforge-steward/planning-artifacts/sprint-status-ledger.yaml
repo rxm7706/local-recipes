@@ -37,7 +37,7 @@ development_status:
   12-5-the-db-gpt-sidecar-joins-the-chart: done
   12-6-redis-is-hardened-still-ephemeral: done
   12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: backlog
-  12-8-github-projects-v2-lands-in-github-metrics-via-dlt: backlog
+  12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
   13-1-workspace-verbs-over-git-worktree: backlog
   13-2-status-and-the-feed-mirror-decision: backlog
   13-3-a-repo-set-opens-as-one-workspace: backlog

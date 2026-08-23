@@ -2,13 +2,14 @@
 title: GitHub Projects V2 lands in github_metrics via dlt
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined.md'
 warnings: []
 baseline_revision: b3e069981e
+shipped_ref: '797d64517f31c4df8c41e71ba27d7bd429720921'
 ---
 
 <intent-contract>
@@ -69,3 +70,10 @@ baseline_revision: b3e069981e
 
 - Read-only ingest kin to `spec-jira-github-projects-sync` Mode B — never calls `steward sync reconcile` or Jira.
 - dlt lives on `python-agent-platform` (Python 3.12); repo-default `local-recipes` env stays py3.14 where dlt remains blocked.
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/646
+Merge SHA: 797d64517f31c4df8c41e71ba27d7bd429720921
+Verification: github-metrics-dlt-test (5 passed), pyforge-steward-test (730 passed)
