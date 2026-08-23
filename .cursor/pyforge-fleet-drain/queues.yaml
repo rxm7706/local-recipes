@@ -149,11 +149,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 4
+    remaining_count: 3
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 16-5-identity-is-oidc-delegated-no-local-passwords
     - 17-1-steward-init-shell-init-detect-and-prepare-the-machine
     - 17-2-steward-setup-initrepo-take-the-machine-to-green
   warden:
