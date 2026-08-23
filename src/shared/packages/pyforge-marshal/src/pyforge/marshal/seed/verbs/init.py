@@ -249,18 +249,16 @@ _GIT_TIMEOUT_S = 30.0
 @dataclass(frozen=True)
 class InitResult:
     """``run_init``'s whole return value -- a plain, inspectable shape,
-    matching ``AdoptResult``'s own convention but simpler: ``init`` never
-    dry-runs and never confirms, so there is no ``declined``/``None``-applied
-    state to distinguish here. ``applied`` is always a real tuple (possibly
-    ``()`` for a ``--force``'d target whose every filtered entry is already
-    conformant -- see the module docstring's own note on the ``--force``
-    row). ``slug`` is the RESOLVED value (never ``None``, whether or not
-    ``--slug`` was given) -- a caller rendering this result never has to
-    re-derive what ``run_init`` actually used."""
+    matching ``AdoptResult``'s own convention. ``applied`` is ``None`` for a
+    ``dry_run`` (Story 12.5 / FR-124: mutating verbs accept ``--dry-run``) and
+    a real tuple once apply runs (possibly ``()`` for a ``--force``'d target
+    whose every filtered entry is already conformant). ``slug`` is the
+    RESOLVED value (never ``None``, whether or not ``--slug`` was given)."""
 
     plan: Plan
-    applied: tuple[str, ...]
+    applied: tuple[str, ...] | None
     slug: str
+    dry_run: bool = False
 
 
 def _refuse_if_unsuitable(path: Path, *, force: bool) -> None:
@@ -449,6 +447,7 @@ def run_init(
     slug: str | None = None,
     agents: Sequence[str] = (),
     force: bool = False,
+    dry_run: bool = False,
     template_path: Path | str | None = None,
     commit: CommitAction | None = None,
 ) -> InitResult:
@@ -456,21 +455,12 @@ def run_init(
     then compose ``resolve -> detect -> plan -> preconditions -> apply ->
     state-write`` against it -- writing ``.marshal/plan.json``
     unconditionally and ``.marshal/seed-state.yml`` only after a successful,
-    non-empty apply. See the module docstring for the full ordering
-    rationale, the FR-78 refusal this function's own ``_refuse_if_
-    unsuitable`` implements, and the ``{{ slug }}`` resolution ``_manifest_
-    for_init`` implements.
+    non-empty apply (skipped entirely when ``dry_run=True``; Story 12.5 /
+    FR-124). See the module docstring for the full ordering rationale.
 
-    Unlike ``adopt``, there is no ``confirm`` parameter at all: ``init``
-    always executes (module docstring). ``template_path``/``commit`` are the
-    identical test-injection seams ``adopt.py::run_adopt`` already
-    establishes for the SAME reason: ``commit`` lets a test bypass ``engine.
-    copier.materialize`` entirely; ``template_path`` lets a test exercise the
-    REAL default ``commit`` builder (``adopt.py::_default_commit``, reused
-    directly) against a synthetic template tree without depending on the
-    packaged one's current, still-incomplete whole-file content (``adopt.py``'s
-    own module docstring, "known limitations" (1) -- unresolved by this
-    story either, since it is not this story's Boundaries to close).
+    Unlike ``adopt``, there is no ``confirm`` parameter: a non-dry-run
+    ``init`` always executes. ``template_path``/``commit`` are the identical
+    test-injection seams ``adopt.py::run_adopt`` already establishes.
 
     Raises whatever ``check_preconditions``/``run_apply`` raise, unchanged --
     this function adds no ``try``/``except`` of its own (mirroring
@@ -493,10 +483,18 @@ def run_init(
     # target, so rung 6 never fires regardless, and `managed=()` reflects
     # that -- `init` never reads a prior state to seed it from).
     check_preconditions(
-        plan, repo_root=path, never_write=never_write, managed=(), force=False, dry_run=False
+        plan,
+        repo_root=path,
+        never_write=never_write,
+        managed=(),
+        force=False,
+        dry_run=dry_run,
     )
 
     write_plan(plan, default_plan_path(path))
+
+    if dry_run:
+        return InitResult(plan=plan, applied=None, slug=resolved_slug, dry_run=True)
 
     entries_by_id = {entry.id: entry for entry in filtered_manifest.entries}
     parsed_agents = tuple(agents)
@@ -544,4 +542,4 @@ def run_init(
         )
         write_state(new_state, repo_root=path, never_write=never_write)
 
-    return InitResult(plan=plan, applied=result.applied, slug=resolved_slug)
+    return InitResult(plan=plan, applied=result.applied, slug=resolved_slug, dry_run=False)

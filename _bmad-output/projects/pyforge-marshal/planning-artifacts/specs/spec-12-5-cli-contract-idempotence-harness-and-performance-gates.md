@@ -2,12 +2,12 @@
 title: CLI contract, idempotence harness, and performance gates
 type: test
 created: '2026-08-23'
-status: ready
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 686de783c4
+baseline_revision: 8edb2923e9c548c4057000f088d10d05dd332791
 ---
 
 <intent-contract>
