@@ -80,7 +80,8 @@ reviewed work it produced becomes unrecoverable through git.
 
 [[bmad-loop-baseline-drift]] (the sibling Dream for a different `bmad-loop` work-loss failure mode
 — found the same session, both traced to gaps in how the orchestrator's dev-retry lifecycle
-handles an attempt that doesn't cleanly land; likely share an upstream-report path) ·
+handles an attempt that doesn't cleanly land; shared upstream report filed 2026-08-23 as
+https://github.com/bmad-code-org/bmad-loop/issues/701, register id `baseline-commit-midflight-drift`) ·
 [[pyforge-marshal]] (the estate; owns `bmad-loop` adoption)
 
 ## Realization log
@@ -90,3 +91,9 @@ handles an attempt that doesn't cleanly land; likely share an upstream-report pa
   spec-pyforge-marshal/.memlog.md` has the full recovery narrative), per the operator's explicit
   request to fix marshal/bmad-loop to prevent this class of loss going forward.
 - **2026-08-14** — Spec authored (spec-bmad-loop-intent-gap-work-preservation, pyforge-marshal) by the 2026-08-14 dream-backlog audit: Marshal-side preservation symmetry at the adapter seam; upstream evidence rides spec-bmad-loop-baseline-drift's gated report track.
+- **2026-08-23** — Story 20.3 shared upstream report path cleared both gates and filed
+  https://github.com/bmad-code-org/bmad-loop/issues/701 — body includes this Dream's Story 10.1
+  intent-gap evidence (revert with no `attempt-preserve/*` / `failed/*/changes.patch`) alongside
+  the baseline-drift mid-flight failure mode. Register entry
+  `baseline-commit-midflight-drift` in marshal `upstream-register.json`. Marshal-side preservation
+  for this mode remains Stories 20.4+; no `bmad_loop` package edits.

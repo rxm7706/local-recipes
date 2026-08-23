@@ -98,34 +98,35 @@ real compute per occurrence.
 
 ## Backlog: what's needed to report this upstream
 
-Not yet done — captured here so it isn't lost, per the operator's explicit 2026-08-14 request to
-track both an in-repo Dream/Spec AND a clear path to reporting this upstream:
+Per the operator's explicit 2026-08-14 request to track both an in-repo Dream/Spec AND a clear
+path to reporting this upstream. Items 1–2 + filing completed 2026-08-23 (Story 20.3):
 
-1. **Confirm repo access** — `https://github.com/bmad-code-org/bmad-loop` is the pinned source
-   (pixi.toml:1058); confirm whether the operator (or this project) has any existing relationship
-   with that org/maintainers before filing (issue vs. PR vs. discussion).
-2. **Check for an existing issue first** — the two code-level signals already IN the package
-   (`allow_ancestor_baseline`'s carve-out, `runs.py`'s resolve-path re-stamp with its own hazard
-   comments) suggest the maintainers may already be aware of an adjacent shape of this problem;
-   search before filing a duplicate.
-3. **Package the evidence** — this Dream's "What is real" section + `spec-pyforge-marshal`'s
-   `.memlog.md` root-cause note already have the journal excerpts, exact commit hashes, and
-   verify.py/engine.py/runs.py line citations an upstream maintainer would need; a filed issue
-   should link/attach these rather than re-deriving them.
-4. **Minimal repro, if requested** — the three live occurrences are entangled with this repo's own
-   multi-worktree fleet; an upstream-friendly minimal repro (a scripted two-story run against a
-   throwaway repo, reproducing the mid-flight `task.baseline_commit` drift) does not exist yet and
-   would need to be built if a maintainer asks for one.
-5. **Decide the interim mitigation independent of upstream's timeline** — this repo cannot block on
-   an external fix landing; the Spec derived from this Dream should design either the ancestor-
-   baseline carve-out extension or a loud-defer containment (mirroring `story-status-check`/
-   `loop-stall-check`'s precedent) as something this repo ships and owns regardless of what
-   upstream does.
+1. **Confirm repo access** — DONE 2026-08-23. Viewer `rxm7706` has `pull` only on
+   `bmad-code-org/bmad-loop` (no push/triage/maintain). Issues enabled; Discussions disabled.
+   Filing channel = **GitHub Issue** (not PR, not Discussion).
+2. **Check for an existing issue first** — DONE 2026-08-23. Searched `baseline_commit`,
+   orchestrator-recorded / mid-flight drift, `intent_gap` / `attempt-preserve` / `keep_failed`.
+   No duplicate of mid-flight `task.baseline_commit` overwrite during an in-flight automatic
+   retry, nor of intent-gap revert without preserve. Adjacent but distinct:
+   [bmad-loop#640](https://github.com/bmad-code-org/bmad-loop/issues/640) (`rearm_escalation`
+   advances task baseline without updating the spec's `baseline_revision`) — related shape on
+   the *re-arm* path only.
+3. **Package the evidence** — DONE 2026-08-23 (filed body includes journal timeline + source
+   citations). This Dream's "What is real" section + `spec-pyforge-marshal`'s `.memlog.md`
+   remain the in-repo archive.
+4. **Minimal repro, if requested** — still open. The three live occurrences are entangled with
+   this repo's multi-worktree fleet; an upstream-friendly minimal repro does not exist yet.
+5. **Decide the interim mitigation independent of upstream's timeline** — in progress in-repo
+   (Stories 20.1–20.2 shipped loud-defer containment; 20.4+ own intent-gap preservation). Never
+   edit the installed `bmad_loop` package.
 
-### Drafted issue text (DRAFT — NOT YET FILED)
+### Filed issue (was DRAFT — filed 2026-08-23)
 
-Prepared 2026-08-14 per the operator's request to draft further without filing. Copy-paste ready
-once items 1-2 above are done (repo-access check, duplicate search).
+**Upstream:** https://github.com/bmad-code-org/bmad-loop/issues/701
+
+Prepared 2026-08-14; filed 2026-08-23 after gates 1–2 cleared (Story 20.3). Coordinated body also
+carries Story 10.1 intent-gap evidence on the shared report path. Historical draft text retained
+below for the paper trail:
 
 > **Title:** `task.baseline_commit` can drift to a later commit while a story's dev session is
 > still running, permanently failing its own verify gate
@@ -220,3 +221,9 @@ recorded during the 2026-08-14 recovery of 8.1-9.5, 9.6, and — via the mason p
 - **2026-08-14** — Spec authored (spec-bmad-loop-baseline-drift, pyforge-marshal) by the 2026-08-14
   dream-backlog audit: Marshal-side loud-defer containment + the gated upstream-report track. The
   drafted issue stays unfiled pending repo-access + duplicate-search.
+- **2026-08-23** — Story 20.3 gated upstream filing: Gate (1) repo access → issue channel only
+  (`pull`, no push; Discussions off); Gate (2) duplicate search → no match (adjacent #640 noted).
+  Filed coordinated issue https://github.com/bmad-code-org/bmad-loop/issues/701 (baseline-drift +
+  Story 10.1 intent-gap evidence). Registered in
+  `_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json`
+  (`baseline-commit-midflight-drift`). No edits to the installed `bmad_loop` package.

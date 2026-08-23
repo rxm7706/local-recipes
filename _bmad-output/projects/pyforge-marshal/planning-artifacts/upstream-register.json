@@ -64,6 +64,14 @@
    "workaround": "core/policy.py's max_parallel seed key (Story 3.13, FR-184) lets a project's requested value compose and be recorded rather than tripping the generic unknown-key finding; MRS-POLICY-007 (Verdict.WARN) fires whenever the resolved value exceeds 1, naming the value and bmad_loop 0.9.0's own unbuilt Phase 5 scheduler as cause. The rendered policy.toml still writes the harness's own stock max_parallel = 1 -- that remains the only truthful effective value until the upstream scheduler ships.",
    "compensating_fr": "FR-184",
    "upstream_status": "open"
+  },
+  {
+   "id": "baseline-commit-midflight-drift",
+   "gap": "A story's isolated-worktree task.baseline_commit can silently drift to a later shared-branch tip while the story's own worktree never moved; _verify_shared_gates then permanently defers honest work (spec baseline does not match orchestrator-recorded baseline) and the dispatcher rolls on without escalating. Evidence: run 20260813-094919-bfcb story 9-6 (real 523e938c vs drifted 26102ea12c6d) plus prior recoveries PRs #482–#484. Sibling mode on the same coordinated report: an intent_gap halt correctly reverts but leaves no attempt-preserve/* / failed/*/changes.patch (Story 10.1; unlike scm.keep_failed on the deferred-story path).",
+   "workaround": "Marshal-side loud-defer containment already shipped (Stories 20.1–20.2 / FR-188: baseline-drift detector + fleet-picture ATTENTION). Intent-gap preservation planned at the adapter seam (Stories 20.4+ / FR-189) — not yet shipped; do not treat this entry's status as retiring FR-189. Never edit the installed bmad_loop package.",
+   "compensating_fr": "FR-188",
+   "upstream_status": "open",
+   "note": "Filed 2026-08-23 (Story 20.3) after Gate (1) repo access → issue channel and Gate (2) duplicate search. Upstream: https://github.com/bmad-code-org/bmad-loop/issues/701 (coordinated body also carries Story 10.1 / FR-189 evidence on the shared report path — status here tracks the coordinated issue, not independent FR-189 landing). Adjacent only: https://github.com/bmad-code-org/bmad-loop/issues/640 (rearm path)."
   }
  ]
 }
