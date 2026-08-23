@@ -2,7 +2,7 @@
 title: One command advances a stale package end-to-end
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -45,3 +45,9 @@ baseline_revision: 034588ccf6
 - Orchestration fixture covers stages; no auto-merge
 - CI: detectors, linter, package tests
 - If CFE skill touched: Rule-2 retro + CHANGELOG bump
+
+
+## Auto Run Result
+
+Status: done
+Summary: Shipped `steward suite advance` CAP-2 chain (autotick tag|head → build → test → publish → listing → reviewable PR, never auto-merged). CFE `github_updater --head` + Rule-2 retro to v8.84.0. Fixture tests cover orchestration.

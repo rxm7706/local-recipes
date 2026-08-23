@@ -64,7 +64,8 @@ _HELP = {
     "suite": (
         "bmad-suite channel product — pipeline-truth (CAP-1) reports "
         "upstream/recipe/channel/installed/wired for all 13 suite packages "
-        "with per-stage drift; fail-open probes"
+        "with per-stage drift and fail-open probes; advance (CAP-2) chains "
+        "autotick→build→test→publish→listing→reviewable PR (never auto-merged)"
     ),
 }
 
@@ -636,9 +637,9 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
-    """Add ``pipeline-truth`` (Story 15.1 / CAP-1). Story 15.2+ verbs stay out."""
+    """Add ``pipeline-truth`` (15.1) and ``advance`` (15.2). Story 15.3+ stay out."""
     suite_subs = suite_parser.add_subparsers(
-        dest="suite_verb", metavar="{pipeline-truth}"
+        dest="suite_verb", metavar="{pipeline-truth,advance}"
     )
     truth = suite_subs.add_parser(
         "pipeline-truth",
@@ -666,6 +667,44 @@ def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
         "--json",
         action="store_true",
         help="emit JSON instead of the human-readable report",
+    )
+    advance = suite_subs.add_parser(
+        "advance",
+        help=(
+            "CAP-2: advance one stale suite package end-to-end "
+            "(autotick tag|head → build → test → publish → listing → "
+            "reviewable PR; never auto-merged)"
+        ),
+    )
+    advance.add_argument(
+        "--package",
+        required=True,
+        metavar="NAME",
+        help="suite package name (must be one of the 13 bmad-suite packages)",
+    )
+    advance.add_argument(
+        "--repo-root",
+        default=None,
+        metavar="DIR",
+        help="override the repo root used for truth/recipe resolution (tests)",
+    )
+    advance.add_argument(
+        "--baseline",
+        action="store_true",
+        help=(
+            "resolve staleness from the recorded 2026-08-22 research matrix "
+            "instead of live probes (offline / fixtures)"
+        ),
+    )
+    advance.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="plan and validate the chain without writing recipes, publishing, or opening a PR",
+    )
+    advance.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON instead of the human-readable advance report",
     )
 
 
