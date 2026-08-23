@@ -231,14 +231,33 @@ pyforge mcp list
 
 ---
 
-## Dual Deployment Profiles (Local Workstation vs. Enterprise OCP)
+## Dual Deployment Profiles, Cross-Platform Guarantees & LocalStack Alignment
 
-1. **Profile A: Local Workstation Development (Docker Compose + Pixi):**
-   * Local Keycloak container for OIDC realm-as-code testing (`devinfra` pattern).
-   * Local PostgreSQL (`pgvector`), Redis, and Traefik reverse proxy.
-   * Hot-reloading Django and FastAPI microservices in active Pixi environments.
+### 1. The LocalStack Philosophy for Enterprise AI & SDLC Estates
+PyForge fundamentally embodies the core philosophy of **[LocalStack](https://github.com/localstack/localstack)** — acting as a **Local Enterprise Cloud Emulator**:
+* **The Entire 10-Layer Estate on a Laptop:** Rather than requiring live OpenShift/K8s clusters, remote Keycloak servers, and cloud databases, a developer or AI agent boots the entire multi-station platform (FastAPI microservices, Django Host, Wagtail CMS, Keycloak OIDC, PostgreSQL `pgvector`, Redis) locally with zero cloud dependencies and zero cloud bills.
+* **100% Offline & Air-Gapped:** Zero external CDN calls (WhiteNoise asset bundling), OS native truststore bindings for enterprise TLS, and local Pixi package resolution.
+* **Sub-Millisecond Inner Loops:** Autonomous AI agents (Antigravity, Claude, Cursor, BMAD) and human developers execute preflight checks, recipe builds, and compliance audits with zero latency.
+* **Strict Local-to-OCP Environment Parity (15-Factor):** Identical Pydantic models, Keycloak JWT claims (`idp_subject`), and Celery queues run seamlessly on a local workstation and in Red Hat OpenShift production under `restricted-v2` SCC pods.
+
+### 2. Cross-Platform Guarantees (Linux, macOS, Windows via Pixi)
+Governed by `pixi.toml` and locked in `pixi.lock`, the entire PyForge codebase runs natively across all three major operating systems:
+
+| Operating System | Architecture | Pixi Platform Key | Native Local Runtime |
+| :--- | :--- | :--- | :---: |
+| **Linux** | `x86_64` | `linux-64` | ✅ **100% Native** |
+| **macOS (Apple Silicon)** | `M1 / M2 / M3 / M4` | `osx-arm64-min` (macOS 14.5+) | ✅ **100% Native** |
+| **Windows** | `x86_64` | `win-64` | ✅ **100% Native** (PowerShell, CMD, or WSL2) |
+
+* **Self-Contained C/Rust Binaries:** Pixi provisions Python 3.14, Node.js 24 LTS, `git`, `rattler`, `duckdb`, and `uvicorn` isolated from host system packages.
+* **Unified Pathing:** Universal use of `pathlib.Path` across `pyforge.core` guarantees complete path cross-compatibility between Windows `C:\` and POSIX `/`.
+
+### 3. Deployment Profiles
+1. **Profile A: Local Workstation Development (Pixi + Optional Docker Compose):**
+   * Pure Pixi mode for zero-container fast inner-loop development.
+   * Local Compose mode for Keycloak realm-as-code testing, PostgreSQL `pgvector`, and Redis.
 2. **Profile B: Enterprise Production (Red Hat OpenShift / Kubernetes + Helm):**
-   * Container images built from internal registries, running under `restricted-v2` Security Context Constraints (SCC).
+   * Container images running under `restricted-v2` Security Context Constraints (SCC).
    * In-cluster PostgreSQL + Redis pods, OpenShift Ingress/Routes, and secret-mounted credentials.
    * Central Artifactory mirror index resolution and WhiteNoise air-gapped asset bundling.
 
@@ -556,3 +575,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Adversarial Architecture Review & Course Corrections: executed a station-by-station critique identifying legacy silos (blocking subprocesses, isolated SQLite files, static HTML generators, local terminal loops) and defined definitive course corrections for all 9 stations.
 - **2026-08-23** — Adversarial PRD & Product Review: audited legacy product definitions across all 8 station PRDs, overturning CLI-only and isolated-silo constraints to establish dual-surface product definitions (interactive web portals + agentic MCP tools) across the entire estate.
 - **2026-08-23** — Renamed to `pyforge-unifying-strategy.md`: elevated document scope to reflect the holistic unifying strategy encompassing product vision, web UI, compute microservices, MCP agent fabric, unified CLI, and cross-station architecture.
+- **2026-08-23** — LocalStack Philosophy & Cross-Platform Guarantees: codified 100% native Linux/macOS/Windows execution guarantees via Pixi (`linux-64`, `win-64`, `osx-arm64-min`) and articulated PyForge's design alignment with the LocalStack emulator model (100% offline, zero cloud bills, sub-millisecond agent inner loops, and strict local-to-OCP 15-Factor environment parity).
