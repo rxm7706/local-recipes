@@ -41,7 +41,7 @@ development_status:
   12-9-ocp-as-a-portability-profile: done
   13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: done
-  13-3-a-repo-set-opens-as-one-workspace: backlog
+  13-3-a-repo-set-opens-as-one-workspace: done
   13-4-the-set-reports-and-tears-down-safely: backlog
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: backlog
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: backlog

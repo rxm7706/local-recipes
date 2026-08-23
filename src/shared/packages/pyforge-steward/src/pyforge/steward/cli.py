@@ -368,7 +368,13 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     start = workspace_subs.add_parser(
         "start", help="create a scratch worktree and record it in bookkeeping"
     )
-    start.add_argument("slug", help="story/task slug (also the new branch name)")
+    start.add_argument(
+        "slug",
+        help=(
+            "story/task slug (single-repo branch name) or a repo-set feature "
+            "slug from .steward/repo-sets.yaml projects.<slug>"
+        ),
+    )
     start.add_argument(
         "--from",
         dest="from_ref",

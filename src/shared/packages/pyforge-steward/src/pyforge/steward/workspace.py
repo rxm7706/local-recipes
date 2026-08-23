@@ -1,12 +1,14 @@
-"""Steward's `workspace` duty — story-scoped scratch worktrees (Stories 13.1–13.2).
+"""Steward's `workspace` duty — scratch worktrees (Stories 13.1–13.3).
 
 Wraps ``git worktree`` plus a bookkeeping file. CAP-5's own-worktrees-only
 rule is HARD: ``ls`` / ``status`` / ``clean`` operate only on entries this
 tool recorded — Marshal loop homes and hand-made worktrees are invisible by
 construction.
 
-CAP-1 ``start``, CAP-2 ``ls``, CAP-3 ``status`` (pays per-worktree git cost),
-CAP-4 ``clean`` (archive-not-delete).
+CAP-1 ``start`` (single-repo or repo-set), CAP-2 ``ls``, CAP-3 ``status``
+(pays per-worktree git cost), CAP-4 ``clean`` (archive-not-delete).
+Story 13.3 adds declarative ``[projects.<slug>]`` repo sets and coordinated
+multi-repo ``start`` with ``.code-workspace`` generation.
 """
 
 from __future__ import annotations
@@ -30,7 +32,10 @@ from .interfaces import DutyResult
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _BOOKKEEPING_RELATIVE_PATH = Path(".steward/workspaces.yaml")
 _ARCHIVE_RELATIVE_PATH = Path(".steward/workspace-archive")
+_REPO_SETS_RELATIVE_PATH = Path(".steward/repo-sets.yaml")
+_CODE_WORKSPACE_RELATIVE_DIR = Path(".steward/workspaces")
 _DEFAULT_FROM = "origin/main"
+_FEATURE_BRANCH_PREFIX = "f-"
 _SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 
 
@@ -112,6 +117,204 @@ def default_bookkeeping_path() -> Path:
 
 def default_archive_dir() -> Path:
     return repo_root() / _ARCHIVE_RELATIVE_PATH
+
+
+def default_repo_sets_path() -> Path:
+    return repo_root() / _REPO_SETS_RELATIVE_PATH
+
+
+@dataclass(frozen=True)
+class RepoSetMember:
+    """One registered repo in a declarative ``[projects.<slug>]`` set."""
+
+    name: str
+    declared_path: str
+
+
+@dataclass(frozen=True)
+class RepoSet:
+    """A named multi-repo feature set from ``.steward/repo-sets.yaml``."""
+
+    feature: str
+    members: tuple[RepoSetMember, ...]
+
+
+@dataclass(frozen=True)
+class RepoSetStartResult:
+    """Outcome of coordinated multi-repo ``workspace start`` (Story 13.3)."""
+
+    feature: str
+    branch: str
+    workspace_file: str
+    members: tuple[WorkspaceRecord, ...]
+
+
+def resolve_repo_path(declared: str, *, anchor: Path) -> Path:
+    """Expand ``~`` and resolve relative paths against *anchor*."""
+    expanded = Path(declared).expanduser()
+    if expanded.is_absolute():
+        return expanded.resolve()
+    return (anchor / expanded).resolve()
+
+
+def load_repo_sets(path: str | Path | None = None) -> dict[str, RepoSet]:
+    """Load declarative repo sets. Missing file → empty mapping."""
+    path = Path(path) if path is not None else default_repo_sets_path()
+    if not path.is_file():
+        return {}
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise WorkspaceError(f"{path}: invalid YAML: {exc}") from exc
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise WorkspaceError(f"{path}: top-level YAML must be a mapping")
+    projects = raw.get("projects") or {}
+    if not isinstance(projects, dict):
+        raise WorkspaceError(f"{path}: 'projects' must be a mapping")
+    out: dict[str, RepoSet] = {}
+    for feature, body in projects.items():
+        if not isinstance(body, dict):
+            raise WorkspaceError(
+                f"{path}: projects[{feature!r}] must be a mapping"
+            )
+        repos = body.get("repos") or {}
+        if not isinstance(repos, dict):
+            raise WorkspaceError(
+                f"{path}: projects[{feature!r}].repos must be a mapping"
+            )
+        members: list[RepoSetMember] = []
+        for name, repo_body in repos.items():
+            if not isinstance(repo_body, dict):
+                raise WorkspaceError(
+                    f"{path}: projects[{feature!r}].repos[{name!r}] must be a mapping"
+                )
+            try:
+                declared = str(repo_body["path"])
+            except KeyError as exc:
+                raise WorkspaceError(
+                    f"{path}: projects[{feature!r}].repos[{name!r}] missing path"
+                ) from exc
+            members.append(RepoSetMember(name=str(name), declared_path=declared))
+        out[str(feature)] = RepoSet(feature=str(feature), members=tuple(members))
+    return out
+
+
+def feature_branch_name(feature: str) -> str:
+    """Shared branch name for a repo-set feature."""
+    _validate_slug(feature)
+    return f"{_FEATURE_BRANCH_PREFIX}{feature}"
+
+
+def _bookkeeping_for(root: Path) -> Path:
+    return root / _BOOKKEEPING_RELATIVE_PATH
+
+
+def _write_code_workspace(
+    *,
+    workspace_file: Path,
+    folder_paths: tuple[str, ...],
+    feature: str,
+) -> None:
+    workspace_file.parent.mkdir(parents=True, exist_ok=True)
+    document = {
+        "folders": [{"name": Path(p).name, "path": p} for p in folder_paths],
+        "settings": {},
+    }
+    workspace_file.write_text(
+        json.dumps(document, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _rollback_repo_set_starts(
+    records: tuple[WorkspaceRecord, ...],
+    *,
+    roots_by_path: dict[str, Path],
+) -> None:
+    """Best-effort undo of partial multi-repo start."""
+    for record in reversed(records):
+        wt_root = roots_by_path.get(record.path)
+        if wt_root is None:
+            continue
+        wt = Path(record.path)
+        if wt.exists():
+            _git_ok("worktree", "remove", "--force", str(wt), cwd=wt_root)
+        bookkeeping = _bookkeeping_for(wt_root)
+        remaining = tuple(
+            r for r in load_bookkeeping(bookkeeping) if r.slug != record.slug
+        )
+        save_bookkeeping(bookkeeping, remaining)
+        _git_ok("branch", "-D", record.branch, cwd=wt_root)
+
+
+def start_repo_set(
+    feature: str,
+    *,
+    from_ref: str = _DEFAULT_FROM,
+    repo_sets_path: Path | None = None,
+    anchor: Path | None = None,
+) -> RepoSetStartResult:
+    """Story 13.3: one worktree per registered repo on ``f-<feature>``."""
+    _validate_slug(feature)
+    anchor = anchor if anchor is not None else repo_root()
+    sets = load_repo_sets(repo_sets_path)
+    repo_set = sets.get(feature)
+    if repo_set is None:
+        raise WorkspaceError(
+            f"repo set {feature!r} not found in "
+            f"{repo_sets_path or default_repo_sets_path()}"
+        )
+    if not repo_set.members:
+        raise WorkspaceError(f"repo set {feature!r} has no registered repos")
+
+    branch = feature_branch_name(feature)
+    missing: list[str] = []
+    resolved: list[tuple[RepoSetMember, Path]] = []
+    for member in repo_set.members:
+        target = resolve_repo_path(member.declared_path, anchor=anchor)
+        if not target.is_dir() or not (target / ".git").exists():
+            missing.append(member.name)
+        else:
+            resolved.append((member, target))
+
+    if missing:
+        names = ", ".join(sorted(missing))
+        raise WorkspaceError(
+            f"repo set {feature!r}: missing local repos (not guessed): {names}"
+        )
+
+    started: list[WorkspaceRecord] = []
+    roots_by_path: dict[str, Path] = {}
+    try:
+        for member, member_root in resolved:
+            dest = scratch_path_for(branch, root=member_root)
+            record = start_workspace(
+                branch,
+                from_ref=from_ref,
+                root=member_root,
+                bookkeeping=_bookkeeping_for(member_root),
+                path=dest,
+            )
+            started.append(record)
+            roots_by_path[record.path] = member_root
+    except Exception:
+        _rollback_repo_set_starts(tuple(started), roots_by_path=roots_by_path)
+        raise
+
+    workspace_file = anchor / _CODE_WORKSPACE_RELATIVE_DIR / f"{branch}.code-workspace"
+    _write_code_workspace(
+        workspace_file=workspace_file,
+        folder_paths=tuple(r.path for r in started),
+        feature=feature,
+    )
+    return RepoSetStartResult(
+        feature=feature,
+        branch=branch,
+        workspace_file=str(workspace_file.resolve()),
+        members=tuple(started),
+    )
 
 
 def scratch_path_for(slug: str, *, root: Path | None = None) -> Path:
@@ -481,6 +684,21 @@ def format_start(record: WorkspaceRecord, *, as_json: bool) -> str:
     return record.path
 
 
+def format_repo_set_start(result: RepoSetStartResult, *, as_json: bool) -> str:
+    if as_json:
+        payload = {
+            "feature": result.feature,
+            "branch": result.branch,
+            "workspace_file": result.workspace_file,
+            "members": [r.to_dict() for r in result.members],
+        }
+        return json.dumps(payload, indent=2)
+    lines = [result.workspace_file]
+    for record in result.members:
+        lines.append(f"{record.path}\t{record.branch}")
+    return "\n".join(lines)
+
+
 def format_ls(records: tuple[WorkspaceRecord, ...], *, as_json: bool) -> str:
     if as_json:
         return json.dumps([r.to_dict() for r in records], indent=2)
@@ -541,7 +759,19 @@ class WorkspaceDuty:
         as_json = bool(getattr(ns, "json", False))
         try:
             if verb == "start":
-                record = start_workspace(ns.slug, from_ref=ns.from_ref or _DEFAULT_FROM)
+                feature = ns.slug
+                repo_sets = load_repo_sets()
+                if feature in repo_sets:
+                    result = start_repo_set(
+                        feature, from_ref=ns.from_ref or _DEFAULT_FROM
+                    )
+                    return DutyResult(
+                        ok=True,
+                        summary=format_repo_set_start(result, as_json=as_json),
+                    )
+                record = start_workspace(
+                    feature, from_ref=ns.from_ref or _DEFAULT_FROM
+                )
                 return DutyResult(ok=True, summary=format_start(record, as_json=as_json))
             if verb == "ls":
                 records = list_workspaces()

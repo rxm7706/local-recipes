@@ -1,0 +1,15 @@
+# Steward repo-set registry (Epic 13, Story 13.3) — declarative
+# `[projects.<slug>]` sets for multi-repo workspace start.
+#
+# Copy to `.steward/repo-sets.yaml` and adjust paths for your machine.
+# Paths may be absolute, ~-expanded, or relative to the local-recipes root.
+# NEVER guess missing repos — `steward workspace start <feature>` names any
+# member whose path is absent instead of cloning or inventing a location.
+
+projects:
+  conda-forge-packaging:
+    repos:
+      local-recipes:
+        path: .
+      conda-forge-tracker:
+        path: ../conda-forge-tracker
