@@ -51,7 +51,7 @@ development_status:
   15-1-one-command-reports-the-whole-pipelines-truth: done
   15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: done
-  15-4-the-upgrade-gate-spot-checks-one-native-path-per-class: backlog
+  15-4-the-upgrade-gate-spot-checks-one-native-path-per-class: done
   16-1-dependencies-are-pixi-sourced-single-authority: backlog
   16-2-startup-refuses-misconfiguration-two-stage-and-named: backlog
   16-3-every-process-speaks-structlog-otel: backlog
@@ -106,7 +106,7 @@ development_status:
   epic-13-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
-  epic-15: backlog
+  epic-15: done
   epic-15-retrospective: optional
   epic-16: backlog
   epic-16-retrospective: optional
