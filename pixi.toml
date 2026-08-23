@@ -447,6 +447,10 @@ cmd = "pytest tests/scripts/test_container_volumes_roundtrip.py -q"
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
+# Story 12.1 (NFR-C2): Genesis's template engine run-dep -- imported only in
+# seed/engine/copier.py (P-02). Mirrors the member's [package.run-dependencies]
+# and pyproject.toml pin; kept in sync by test_engine_version_range_sync.py.
+copier = ">=9.17,<10"
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
