@@ -1453,6 +1453,19 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-026",
         "MRS-DEPLOY-027",
         "MRS-SPIN-016",
+        # Story 15.1 (fleet homes refresh, FR-133..FR-135, AD-21):
+        # MRS-REFRESH-001 enumerate/fetch/repo-root failure (ERROR);
+        # 002 unreadable / dirt-probe (WARN); 003 dirty refuse (WARN);
+        # 004 fast-forward failure (WARN); 005 push failure (WARN);
+        # 006 harness-policy re-render failure (WARN);
+        # 007 FF-without-render incomplete (WARN).
+        "MRS-REFRESH-001",
+        "MRS-REFRESH-002",
+        "MRS-REFRESH-003",
+        "MRS-REFRESH-004",
+        "MRS-REFRESH-005",
+        "MRS-REFRESH-006",
+        "MRS-REFRESH-007",
     }
 )
 

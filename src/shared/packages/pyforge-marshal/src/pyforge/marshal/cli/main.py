@@ -129,6 +129,7 @@ from . import deploy as deploy_cli
 from . import gate as gate_cli
 from . import init as init_cli
 from . import land as land_cli
+from . import refresh as refresh_cli
 from . import retire as retire_cli
 from . import seed as seed_cli
 from . import spin as spin_cli
@@ -261,6 +262,7 @@ def _build_parser() -> argparse.ArgumentParser:
     adapters_cli.add_adapters_subparser(subparsers)
     upstream_cli.add_upstream_subparser(subparsers)
     seed_cli.add_seed_subparser(subparsers)
+    refresh_cli.add_refresh_subparser(subparsers)
     return parser
 
 

@@ -945,6 +945,17 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-026": Verdict.WARN,
     "MRS-DEPLOY-027": Verdict.WARN,
     "MRS-SPIN-016": Verdict.WARN,
+    # Story 15.1 (fleet homes refresh, FR-133..FR-135, AD-21):
+    # MRS-REFRESH-001 (enumerate/fetch/repo-root) at ERROR -- the sweep
+    # cannot proceed. 002..007 at WARN -- per-home degradations, reported
+    # never silently skipped (FR-133); FF-without-render is 007 (FR-135).
+    "MRS-REFRESH-001": Verdict.ERROR,
+    "MRS-REFRESH-002": Verdict.WARN,
+    "MRS-REFRESH-003": Verdict.WARN,
+    "MRS-REFRESH-004": Verdict.WARN,
+    "MRS-REFRESH-005": Verdict.WARN,
+    "MRS-REFRESH-006": Verdict.WARN,
+    "MRS-REFRESH-007": Verdict.WARN,
 }
 
 

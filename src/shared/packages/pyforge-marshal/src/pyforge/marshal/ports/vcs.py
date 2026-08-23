@@ -415,3 +415,13 @@ class VcsPort(Protocol):
         treats that as a reportable, non-blocking condition, never a
         history-rewriting fallback."""
         ...
+
+    def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
+        """Story 15.1 (FR-133): ``git rev-list --count HEAD..<tip_ref>``
+        run inside ``worktree_path`` -- how many commits on ``tip_ref`` are
+        not reachable from the worktree's current HEAD (the home's
+        behind-count vs ``main`` after a fetch). Read-only. Raises
+        ``VcsCommandError`` if either ref is unresolvable or on any other
+        git failure -- the caller reports the home as unreadable rather
+        than inventing a count."""
+        ...

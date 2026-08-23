@@ -1036,3 +1036,24 @@ class GitVcs:
                 f"fast-forwarding to {ref}: {rev_result.stderr.strip()}"
             )
         return rev_result.stdout.strip()
+
+    def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
+        """Story 15.1 (FR-133): ``git rev-list --count HEAD..<tip_ref>``
+        inside ``worktree_path`` -- the home's behind-count vs ``tip_ref``
+        (typically ``origin/main`` after ``fetch``). Read-only."""
+        result = _run(
+            ["git", "-C", str(worktree_path), "rev-list", "--count", f"HEAD..{tip_ref}"],
+        )
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git rev-list --count HEAD..{tip_ref} failed in "
+                f"{worktree_path}: {result.stderr.strip()}"
+            )
+        raw = result.stdout.strip()
+        try:
+            return int(raw)
+        except ValueError as exc:
+            raise VcsCommandError(
+                f"git rev-list --count returned non-integer {raw!r} in "
+                f"{worktree_path}"
+            ) from exc
