@@ -84,7 +84,7 @@ development_status:
   20-3-the-gated-upstream-filing: done
   20-4-intent-gap-attempts-are-preserved: done
   20-5-missing-preserve-detector: done
-  20-6-the-verify-scope-primitive: backlog
+  20-6-the-verify-scope-primitive: done
   20-7-both-guards-hard-fail-on-drift: backlog
   20-8-the-landing-evidence-grammar: backlog
   20-9-doctor-consumes-the-grammar: backlog
