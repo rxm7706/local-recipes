@@ -15,19 +15,22 @@
 
 ## In-flight dispatches (2026-08-23)
 
-Launched under prior "no merge" prompt — **resume with merge-in-agent finalize** if still open:
-
 | Station | Story | Agent |
 |---------|-------|--------|
 | marshal | `11-5` | merge + finalize per PLAN Phase 3 when CI green |
-| steward | `12-4` | same |
+
+## Recently merged (this session)
+
+| Station | Story | PR |
+|---------|-------|-----|
+| steward | `12-4` | [#638](https://github.com/rxm7706/local-recipes/pull/638) — merge `3773229684` |
 
 ## Next queue after in-flight land
 
 | Station | Next | Remaining |
 |---------|------|-----------|
 | marshal | `11-6` (after 11-5) | 49 → 48 |
-| steward | `12-5` (after 12-4) | 25 |
+| steward | `12-5` | 24 |
 
 ## Operator commands
 

@@ -178,10 +178,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 25
-    next: 12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined
+    remaining_count: 24
+    next: 12-5-the-db-gpt-sidecar-joins-the-chart
     queue:
-    - 12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined
     - 12-5-the-db-gpt-sidecar-joins-the-chart
     - 12-6-redis-is-hardened-still-ephemeral
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster

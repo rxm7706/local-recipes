@@ -33,7 +33,7 @@ development_status:
   12-1-the-vanilla-chart-with-an-ocp-overlay: done
   12-2-gke-as-a-portability-profile: done
   12-3-air-gap-parity-is-a-failing-check: done
-  12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined: backlog
+  12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined: done
   12-5-the-db-gpt-sidecar-joins-the-chart: backlog
   12-6-redis-is-hardened-still-ephemeral: backlog
   12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: backlog
