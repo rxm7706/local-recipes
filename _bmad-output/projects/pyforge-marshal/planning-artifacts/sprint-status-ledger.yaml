@@ -88,7 +88,7 @@ development_status:
   20-7-both-guards-hard-fail-on-drift: done
   20-8-the-landing-evidence-grammar: done
   20-9-doctor-consumes-the-grammar: done
-  21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage: backlog
+  21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage: done
   21-2-orchestrated-chain-regeneration: backlog
   21-3-code-status-preservation: backlog
   21-4-orphan-detection-with-review-gated-cleanup: backlog
