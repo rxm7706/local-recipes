@@ -70,5 +70,7 @@ baseline_revision: 0c5002f42f705b43582e677a1b0db5f1f7915cc1
 ## Auto Run Result
 
 Status: done
-CLI spelling: `dream-chain --dreams` (not --inv).
-Verification: unit + meta independence PASS; live INV path unchanged; hygiene reports Dream-tier findings only.
+PR: https://github.com/rxm7706/local-recipes/pull/663
+Merge: 14b8c061784ad6b0cf73b6b825779f48de97ad6a
+CLI spelling: `dream-chain --dreams` (not `--inv`).
+Verification: unit + meta independence PASS; CI green on #663; INV path unchanged.
