@@ -269,22 +269,20 @@ dbgpt-app = ">=0.8.1"  # the FastAPI server app (webserver CLI + AgenticData tex
 psycopg2 = ">=2.9.12"  # matches python-agent-platform's own floor (pixi.toml line ~177) -- no reason to diverge
 
 [feature.platform-ci-test]
-# --- platform-ci-test (Platform CI `test` job, slim pip-parity env) ---
-# Mirrors src/platform/requirements/{base,production,local}.txt exactly via
-# PyPI pins -- NOT platform-dev / python-agent-platform (no langflow, dbgpt,
-# factory tooling). Keeps Story 10.1's platform-host boundary and the pip-
-# oracle the `test` job was written against, but installable through pixi with
-# GHA cache. Revert to legacy pip with PLATFORM_TEST_BACKEND=pip (repo
-# variable) or workflow_dispatch platform_test_backend=pip.
-# Drift guard: pixi run -e local-recipes platform-ci-test-requirements-check
-# Reconciler: pixi run -e local-recipes fix-platform-ci-test-requirements
+# --- platform-ci-test (Platform CI `test` job, slim PyPI env) ---
+# SOLE authority for Platform CI `test` job Python deps (steward Story 16.1 /
+# CAP-5). NOT platform-dev / python-agent-platform (no langflow, dbgpt, factory
+# tooling). Install: `pixi install -e platform-ci-test` (CI uses setup-pixi).
+# The former src/platform/requirements/{base,production,local}.txt chain is
+# retired — do not resurrect it. Guard:
+#   pixi run -e local-recipes platform-ci-test-requirements-check
 platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
 python = "3.12.*"
 
 [feature.platform-ci-test.pypi-dependencies]
-# base.txt
+# formerly requirements/base.txt (now pixi-owned)
 python-slugify = "==8.0.4"
 pillow = "==11.3.0"
 rcssmin = "==1.1.2"
@@ -306,10 +304,10 @@ django-crispy-forms = "==2.4"
 crispy-bootstrap5 = "==2025.6"
 django-compressor = "==4.5.1"
 django-redis = "==6.0.0"
-# production.txt (on top of base)
+# formerly requirements/production.txt (now pixi-owned)
 gunicorn = "==23.0.0"
 django-anymail = "==13.0.1"
-# local.txt (on top of production)
+# formerly requirements/local.txt (now pixi-owned)
 werkzeug = { version = "==3.1.3", extras = ["watchdog"] }
 ipdb = "==0.13.13"
 psycopg = { version = "==3.2.9", extras = ["binary"] }
@@ -331,6 +329,45 @@ django-debug-toolbar = "==5.2.0"
 django-extensions = "==4.1"
 django-coverage-plugin = "==3.1.1"
 pytest-django = "==4.11.1"
+
+
+[feature.platform-image-pip]
+# --- platform-image-pip (Containerfile --no-deps pip layer) ---
+# SOLE authority for the pip packages layered onto the python-agent-platform
+# conda env in src/platform/Containerfile (steward Story 16.1 / CAP-5).
+# Not composed into an environment — scripts/platform_image_pip_layer.py reads
+# this table at image build time. Pins = (platform-ci-test base∪production
+# minus conda-provided packages) + image-only transitive extras. Edit here,
+# not in the Containerfile.
+platforms = ["linux-64"]
+
+[feature.platform-image-pip.dependencies]
+python = "3.12.*"
+
+[feature.platform-image-pip.pypi-dependencies]
+python-slugify = "==8.0.4"
+rcssmin = "==1.1.2"
+whitenoise = "==6.9.0"
+hiredis = "==3.2.1"
+django-celery-beat = "==2.8.1"
+django-environ = "==0.12.0"
+django-model-utils = "==5.0.0"
+django-allauth = { version = "==65.10.0", extras = ["mfa"] }
+django-crispy-forms = "==2.4"
+crispy-bootstrap5 = "==2025.6"
+django-compressor = "==4.5.1"
+django-redis = "==6.0.0"
+django-anymail = "==13.0.1"
+# image-only transitive extras (previously hard-coded in Containerfile)
+django-timezone-field = "==7.2.2"
+python-crontab = "==3.3.0"
+cron-descriptor = "==2.1.0"
+django-appconf = "==1.2.0"
+rjsmin = "==1.2.2"
+text-unidecode = "==1.3"
+fido2 = "==2.2.1"
+qrcode = "==8.2"
+uvicorn-worker = "==0.4.0"
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
@@ -664,8 +701,11 @@ platform-dev = { features = ["python-agent-platform", "platform-dev"], no-defaul
 dbgpt-sidecar = { features = ["dbgpt-sidecar"], no-default-feature = true }
 # platform-ci-test: slim PyPI-parity env for Platform CI's `test` job only --
 # mirrors requirements/{base,production,local}.txt; toggle pip fallback via
-# PLATFORM_TEST_BACKEND=pip or workflow_dispatch platform_test_backend.
+# (Story 16.1: legacy pip backend removed — pixi platform-ci-test only.)
 platform-ci-test = { features = ["platform-ci-test"], no-default-feature = true }
+# Story 16.1: Containerfile --no-deps pip layer authority (resolved for lock hygiene;
+# not installed by CI — scripts/platform_image_pip_layer.py reads the feature table).
+platform-image-pip = { features = ["platform-image-pip"], no-default-feature = true }
 
 [environments.python-agent-platform]
 features = ["python-agent-platform"]
@@ -735,12 +775,9 @@ description = "Detector: report drift between docs/reference/library-llms-full.m
 cmd = "python scripts/llms_full_check.py"
 
 [feature.local-recipes.tasks.platform-ci-test-requirements-check]
-description = "Detector: [feature.platform-ci-test.pypi-dependencies] matches the merged src/platform/requirements/{base,production,local}.txt chain (name, == pin, extras). Exits non-zero on drift. Pass -- --json for machine output."
+description = "Detector (Story 16.1 / CAP-5): src/platform/requirements/{base,local,production}.txt stay retired — pixi.toml is the sole platform dep authority. Exits non-zero if those files are resurrected. Pass -- --json for machine output."
 cmd = "python scripts/platform_ci_test_requirements_check.py"
 
-[feature.local-recipes.tasks.fix-platform-ci-test-requirements]
-description = "Mutator: rewrite [feature.platform-ci-test.pypi-dependencies] from the merged requirements chain, then re-run platform-ci-test-requirements-check to confirm convergence. Run pixi lock afterward if pins changed."
-cmd = "python scripts/platform_ci_test_requirements_check.py --fix"
 
 [feature.local-recipes.tasks.pixi-version-check]
 description = "Detector: every pixi-version pin site (CI workflows, both Containerfiles, environment.yaml, pixi.toml's own feature floors) agrees with pixi.toml's requires-pixi floor. Registry lives in scripts/pixi_version_registry.py, not a hand-maintained comment — that comment drifted three times before this existed, most recently 2026-08-21 when a pixi upgrade left 10 external sites stale and one (src/platform/compose/dbgpt/Containerfile) unregistered entirely, breaking container-dbgpt CI. Reconciler: bump-pixi-version. Pass -- --json for machine output."
