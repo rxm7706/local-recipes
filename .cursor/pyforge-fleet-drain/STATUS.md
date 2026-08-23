@@ -1,7 +1,7 @@
 # PyForge fleet drain — status snapshot
 
 **Updated:** 2026-08-23  
-**Playbook:** [PLAN.md](./PLAN.md)  
+**Playbook:** [PLAN.md](./PLAN.md) — **merge-in-agent** fleet-wide (dispatch agent merges when CI green + finalizes own station)  
 **Queues:** [queues.yaml](./queues.yaml) (regenerate with `generate-queues.py`)
 
 ## Campaign
@@ -9,38 +9,29 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` |
+| Merge | **`merge_in_agent: true`** (all stations) |
 | Active stations | **marshal**, **steward** |
 | Drained (ledger) | atlas, doctor, herald, mason, scribe, warden |
 
-## 2026-08-22 → 2026-08-23 closeout
+## In-flight dispatches (2026-08-23)
 
-Doctor, mason, and warden reached **zero backlog** on tracked ledgers (warden through `8-2`, mason through `9-2`, doctor through `16-1`). The 2026-08-22 pause queue for those three stations is **complete**.
+Launched under prior "no merge" prompt — **resume with merge-in-agent finalize** if still open:
 
-## Known ledger lag
+| Station | Story | Agent |
+|---------|-------|--------|
+| marshal | `11-5` | merge + finalize per PLAN Phase 3 when CI green |
+| steward | `12-4` | same |
 
-Run `pixi run -e local-recipes sprint-ledger-sync --project steward` after confirming merges on main:
+## Next queue after in-flight land
 
-- `12-3-air-gap-parity` — merged via PR #622; ledger may still read `backlog`
-- `12-2-gke-as-a-portability-profile` — done on ledger
-
-## Next dispatch (preflight first)
-
-| Station | Next story | Notes |
-|---------|------------|--------|
-| **marshal** | `11-5-referenced-dependency-verification-and-doctor-delegation` | 49-story queue; Epic 22 productizes this playbook |
-| **steward** | `12-3-air-gap-parity-is-a-failing-check` | Skip ledger sync if already on main; then `12-4` … `12-9` (new OCP CI spec seeded) |
-
-## In-flight / open branches
-
-Stale remote branches may exist from prior waves (`git ls-remote --heads origin 'marshal/*' 'steward/*'`). Preflight per PLAN.md before each dispatch — do not duplicate work.
+| Station | Next | Remaining |
+|---------|------|-----------|
+| marshal | `11-6` (after 11-5) | 49 → 48 |
+| steward | `12-5` (after 12-4) | 25 |
 
 ## Operator commands
 
 ```bash
-# Refresh queues from ledgers
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
-
-# After each merge
-pixi run -e local-recipes sprint-ledger-sync --project <station>
-python3 .cursor/pyforge-fleet-drain/generate-queues.py
+pixi run -e local-recipes fleet-picture
 ```

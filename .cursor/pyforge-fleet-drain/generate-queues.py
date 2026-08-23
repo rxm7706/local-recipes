@@ -172,6 +172,7 @@ def main() -> int:
     ]
     campaign = existing.get("campaign") or {
         "mode": "drain_to_zero",
+        "merge_in_agent": True,
         "updated": "2026-08-23",
         "coordinator": "cursor-hand-driven",
     }

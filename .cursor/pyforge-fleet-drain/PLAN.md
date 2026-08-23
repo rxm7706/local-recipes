@@ -4,7 +4,7 @@
 
 **Purpose:** drain each station's story backlog using the **single-story, worktree-isolated, non-fork** `bmad-build-auto` pattern — **not** `bmad-loop`, **not** marshal factory spin. One story in flight per station; stations run in parallel with each other.
 
-**Canonical prior art:** Claude session pause [`project_session_pause_2026-08-22_fleet_queue_restart.md`](file:///home/rxm7706/.claude/projects/-home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/memory/project_session_pause_2026-08-22_fleet_queue_restart.md) (2026-08-22 eight-station wave). This document generalizes that handoff into a **repeatable operator playbook** stored in-repo under `.cursor/` (Tier-3 working output — not a BMAD spec).
+**Merge policy (fleet-wide, since 2026-08-23):** dispatch agents **merge their own PR** when CI is green, then **finalize** (ledger sync, spec promotion, queue regen). The coordinating session preflights and monitors; it only intervenes on blocked/failed runs. Supersedes the 2026-08-22 "never merge" split documented in the pause handoff.
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Path | Use when |
 |------|----------|
-| **This playbook (`bmad-build-auto`, worktree, coordinating session merges)** | Hand-driven fleet drain; one story per station; you want PR review between merges; marshal Epic 22 dispatch verb does not exist yet |
+| **This playbook (`bmad-build-auto`, worktree, merge-in-agent)** | Hand-driven fleet drain; one story per station; dispatch agent merges when CI is green and finalizes its own station; marshal Epic 22 dispatch verb does not exist yet |
 | `bmad-build` (quick-dev) | Single story, interactive, no review loop |
 | `bmad-loop` / marshal factory | Unattended multi-story runs with marshal run state — **explicitly out of scope here** |
 
@@ -86,41 +86,68 @@ Spec: _bmad-output/projects/pyforge-<s>/planning-artifacts/specs/spec-<epic>-<st
 Run bmad-build-auto for this single story only:
 1. Work in an isolated git worktree (fresh checkout from origin/main).
 2. export BMAD_ACTIVE_PROJECT=pyforge-<s> — do NOT run scripts/bmad-switch on shared repo.
-3. Invoke bmad-build-auto skill; dev + review + open PR. Never merge.
+3. Invoke bmad-build-auto skill; dev + review + open PR.
 4. Branch: <s>/<epic>-<story>-<short-slug>
 5. Non-recipes/ changes → gh pr edit --add-label maintenance
-6. pixi.toml changed → regenerate environment.yaml and commit
-7. Do NOT edit sprint-status-ledger.yaml — coordinating session finalizes after merge.
-8. On blocked: push branch, HALT blocked with reason, do not restart from scratch.
-9. Verify implementation-artifacts is a SYMLINK not a directory before spec promotion.
+6. pixi.toml changed → regenerate environment.yaml and commit on the PR branch before merge
+7. When CI is green: gh pr merge <n> --merge (NEVER --squash). git pull origin main in worktree.
+8. Finalize THIS STATION ONLY (see Phase 3 below) — then report PR URL + merge commit.
+9. On blocked: push branch, HALT blocked with reason, do not restart from scratch.
+10. Verify implementation-artifacts is a SYMLINK not a directory before spec promotion.
 ```
 
 **AD-16 / config:** ensure worktree has `_bmad/custom/config.toml` with `[core] communication_language` + `user_skill_level` (only one definition fleet-wide — see pause memory).
 
-### Phase 3 — Coordinating session: merge gate
+### Phase 3 — Merge + finalize (dispatch agent, **after CI green**)
 
-When agent reports PR URL (trust only explicit PR URL or "Clean HALT, status done" — not interim task notifications):
-
-1. Review diff + CI (`gh pr checks`, Platform CI / detectors as applicable).
-2. Confirm `maintenance` label if needed.
-3. Merge: `gh pr merge <n> --merge` (**never `--squash`** — breaks subject-based merge detection).
-4. If `pixi.toml` changed on main and agent missed export: `pixi project export conda-environment -e build > environment.yaml` + commit.
-
-### Phase 4 — Finalize (coordinating session, **after every merge**)
+The dispatch agent owns merge-through-finalize for its station. Parallel stations are safe because each agent only mutates **its own project's** Tier-2/Tier-3 paths plus the **tracked ledger row for that project** — never another station's `_bmad-output/projects/<other>/`.
 
 ```bash
-# Flip Tier-3 sprint-status + regenerate tracked ledger + dashboard inputs
+# 1. Merge (agent)
+gh pr checks <n> --repo rxm7706/local-recipes   # all required green
+gh pr merge <n> --merge --repo rxm7706/local-recipes   # NEVER --squash
+git pull origin main
+
+# 2. Mark story done in Tier-3 feed (gitignored — local to worktree/main checkout)
+#    Edit _bmad-output/projects/pyforge-<s>/implementation-artifacts/sprint-status.yaml
+#    Set development_status[<story-key>]: done
+
+# 3. Promote tracked ledger (agent — this station only)
 pixi run -e local-recipes sprint-ledger-sync --project <s>
+git add _bmad-output/projects/pyforge-<s>/planning-artifacts/sprint-status-ledger.yaml
+# Also commit promoted story spec under planning-artifacts/specs/ if bmad-build-auto wrote scratch
 
-# Promote story spec from implementation-artifacts scratch → planning-artifacts/specs/ if needed
-# (bmad-build-auto may write scratch first; promotion is post-merge convention)
+# 4. Regenerate fleet queues (read-only merge of all ledgers — safe concurrently)
+python3 .cursor/pyforge-fleet-drain/generate-queues.py
+git add .cursor/pyforge-fleet-drain/queues.yaml .cursor/pyforge-fleet-drain/STATUS.md  # if updated
 
-# Close deferred-work ledger entries referenced in spec/PR if applicable
-# Regenerate dashboard if your closeout includes it:
-# pixi run -e local-recipes dashboard-gen  # when station closeout requires it
+# 5. Push finalize commit(s) directly to main ONLY if policy allows; otherwise open a tiny
+#    maintenance PR for ledger/spec promotion. Prefer: merge story PR first, then a second
+#    commit on main from a fast-forwarded worktree for ledger+spec (same agent session).
 ```
 
-Update `.cursor/pyforge-fleet-drain/STATUS.md` and re-run `generate-queues.py`.
+**Parallel finalize rules (HARD):**
+
+| OK | NOT OK |
+|----|--------|
+| `sprint-ledger-sync --project marshal` while steward syncs `--project steward` | Two agents both editing `_bmad/custom/config.toml` on main without rebasing |
+| Each agent promotes spec under its own `planning-artifacts/specs/` | Agent A running `sprint-ledger-sync` without `--project` (all stations) |
+| `generate-queues.py` after merge (regenerates whole file; last writer wins — re-run if conflict) | Force-pushing main |
+
+**Shared-root files** (`pixi.toml`, `environment.yaml`, `_bmad/custom/config.toml`, `.github/workflows/`): if the story PR touches them, merge that PR before any other agent rebases onto main. If CI missed `environment.yaml` after `pixi.toml` change: export and push a follow-up commit before merge.
+
+**Spec promotion:** if `implementation-artifacts/` became a real directory, `diff -rq` against main before copying the story spec into `planning-artifacts/specs/`.
+
+### Phase 4 — Coordinating session (monitor + rescue only)
+
+Use when the dispatch agent HALTs, CI stays red, or finalize push fails:
+
+1. Review open PR / worktree diff manually.
+2. Merge with `gh pr merge --merge` if agent did not.
+3. Run Phase 3 finalize commands for the affected `<s>`.
+4. Nudge/resume stuck agents (see Recovery playbooks).
+
+Update `.cursor/pyforge-fleet-drain/STATUS.md` when intervening.
 
 ### Phase 5 — Chain next story
 
@@ -134,7 +161,9 @@ If station queue non-empty and mode is `drain_to_zero`, return to Phase 0 for ne
 |-------------|-----------------|
 | Different stations at the same time (marshal + steward + …) | Two stories same station |
 | Preflight on station B while station A agent runs | `scripts/bmad-switch` from two agents on same worktree |
-| Finalize station A while station B agent runs | Merging without CI green |
+| Finalize station A while station B agent runs | Two stories same station |
+| Coordinator merges when agent already did | Merging without CI green |
+| `generate-queues.py` last-writer without re-run after conflict | Force-pushing main |
 
 **Suggested wave sizing:** 2–4 stations concurrently on a coordinating session with enough context budget; 8-station fan-out only when operators can monitor nudges/recoveries.
 
