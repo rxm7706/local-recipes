@@ -2,12 +2,12 @@
 title: README, adoption guide, and the finding→remedy reference
 type: docs
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 8b1c76cccc
+baseline_revision: 98feec0d412
 ---
 
 <intent-contract>
