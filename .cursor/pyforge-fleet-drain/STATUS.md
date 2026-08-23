@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~15:20 CDT
+**Updated:** 2026-08-23 ~15:25 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -27,6 +27,7 @@
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
 | marshal | `20-4` | [Marshal 20-4](8c2b060b-7b3f-4176-949c-e61337a5959d) |
+| steward | `16-3` | launching (skip 12-7) |
 
 ## Operator skip
 
@@ -38,8 +39,8 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| steward | `16-2` | [#686](https://github.com/rxm7706/local-recipes/pull/686) merge `6e157b892b` |
-| marshal | `20-3` | [#684](https://github.com/rxm7706/local-recipes/pull/684) merge `b0c10436ec` · finalize [#685](https://github.com/rxm7706/local-recipes/pull/685) `68687966e1` · upstream [bmad-loop#701](https://github.com/bmad-code-org/bmad-loop/issues/701) ([Marshal 20-3](369a274f-e5e1-407e-949a-6603a1215b29)) |
+| steward | `16-2` | [#686](https://github.com/rxm7706/local-recipes/pull/686) merge `6e157b892b` · finalize `40a7bf666b` ([Steward 16-2](320ec42e-8ae9-4950-861c-41b8e7e2c336)) |
+| marshal | `20-3` | [#684](https://github.com/rxm7706/local-recipes/pull/684) · finalize [#685](https://github.com/rxm7706/local-recipes/pull/685) · upstream [bmad-loop#701](https://github.com/bmad-code-org/bmad-loop/issues/701) |
 | marshal | `20-2` | [#683](https://github.com/rxm7706/local-recipes/pull/683) |
 | steward | `16-1` | [#682](https://github.com/rxm7706/local-recipes/pull/682) |
 
