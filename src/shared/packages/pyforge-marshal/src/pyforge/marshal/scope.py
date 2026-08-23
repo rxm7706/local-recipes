@@ -21,6 +21,7 @@ vs ``expected_slug`` check. Placement decision (Story 20.6):
 
 Contract: three reads + string compares; no subprocess; unrecognized symlink
 target shapes report the literal ``"unrecognized"`` (never inferred agreement).
+The fail-closed token ``UNRECOGNIZED`` is never a successful ``expected_slug``.
 """
 
 from __future__ import annotations
@@ -33,6 +34,7 @@ from pathlib import Path
 UNRECOGNIZED = "unrecognized"
 
 _MARKER_REL = Path("_bmad") / "custom" / ".active-project"
+_DOT_SEGMENTS = frozenset({".", ".."})
 
 
 @dataclass(frozen=True)
@@ -55,7 +57,7 @@ def _read_marker_slug(root: Path) -> str:
     path = root / _MARKER_REL
     try:
         text = path.read_text(encoding="utf-8").strip()
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return UNRECOGNIZED
     return text if text else UNRECOGNIZED
 
@@ -64,11 +66,15 @@ def _slug_from_artifact_link(root: Path, name: str) -> str:
     """Parse ``projects/<slug>/<name>`` relative to ``_bmad-output/``.
 
     Any other shape (missing path, non-symlink, absolute target, wrong depth,
-    wrong leaf name) is ``UNRECOGNIZED`` — never ``None`` / never inferred
-    agreement (DW-1-4-2 blind spot (1)).
+    wrong leaf name, ``.``/``..`` slug) is ``UNRECOGNIZED`` — never ``None`` /
+    never inferred agreement (DW-1-4-2 blind spot (1)).
     """
     path = root / "_bmad-output" / name
-    if not path.is_symlink():
+    try:
+        is_link = path.is_symlink()
+    except OSError:
+        return UNRECOGNIZED
+    if not is_link:
         return UNRECOGNIZED
     try:
         target = path.readlink()
@@ -77,7 +83,8 @@ def _slug_from_artifact_link(root: Path, name: str) -> str:
     parts = target.parts
     if len(parts) == 3 and parts[0] == "projects" and parts[2] == name:
         slug = parts[1]
-        return slug if slug else UNRECOGNIZED
+        if slug and slug not in _DOT_SEGMENTS:
+            return slug
     return UNRECOGNIZED
 
 
@@ -87,12 +94,16 @@ def verify_scope(root: Path, expected_slug: str) -> ScopeDrift | None:
     Otherwise return a ``ScopeDrift`` naming found-vs-expected for every corner
     of the triangle. A home whose three corners agree with each other on slug B
     but not with ``expected_slug`` ``"A"`` is drift (DW-1-4-2 blind spot (2)).
+
+    ``expected_slug`` equal to the fail-closed token ``UNRECOGNIZED`` never
+    counts as agreement — that string is reserved for found-side reporting.
     """
     marker = _read_marker_slug(root)
     planning = _slug_from_artifact_link(root, "planning-artifacts")
     implementation = _slug_from_artifact_link(root, "implementation-artifacts")
     if (
-        marker == expected_slug
+        expected_slug != UNRECOGNIZED
+        and marker == expected_slug
         and planning == expected_slug
         and implementation == expected_slug
     ):

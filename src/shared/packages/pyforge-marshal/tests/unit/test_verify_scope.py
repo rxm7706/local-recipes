@@ -104,6 +104,56 @@ def test_missing_triangle_corners_are_unrecognized_not_match(tmp_path: Path) -> 
     assert drift.implementation_artifacts == UNRECOGNIZED
 
 
+def test_expected_slug_unrecognized_token_never_agrees(tmp_path: Path) -> None:
+    """Fail-closed token must never be a successful expected_slug (false pass)."""
+    drift = verify_scope(tmp_path, UNRECOGNIZED)
+    assert isinstance(drift, ScopeDrift)
+    assert drift.expected == UNRECOGNIZED
+    assert drift.marker == UNRECOGNIZED
+    assert drift.planning_artifacts == UNRECOGNIZED
+    assert drift.implementation_artifacts == UNRECOGNIZED
+
+
+def test_empty_marker_with_valid_links_is_unrecognized(tmp_path: Path) -> None:
+    _point_triangle(tmp_path, "ok-slug")
+    marker = tmp_path / "_bmad" / "custom" / ".active-project"
+    marker.write_text("   \n", encoding="utf-8")
+    drift = verify_scope(tmp_path, "ok-slug")
+    assert isinstance(drift, ScopeDrift)
+    assert drift.marker == UNRECOGNIZED
+    assert drift.planning_artifacts == "ok-slug"
+    assert drift.implementation_artifacts == "ok-slug"
+
+
+def test_non_symlink_occupant_is_unrecognized(tmp_path: Path) -> None:
+    _point_triangle(tmp_path, "ok-slug")
+    link = tmp_path / "_bmad-output" / "planning-artifacts"
+    link.unlink()
+    link.mkdir()
+    drift = verify_scope(tmp_path, "ok-slug")
+    assert isinstance(drift, ScopeDrift)
+    assert drift.planning_artifacts == UNRECOGNIZED
+
+
+def test_dot_segment_symlink_slug_is_unrecognized(tmp_path: Path) -> None:
+    _point_triangle(tmp_path, "ok-slug")
+    link = tmp_path / "_bmad-output" / "planning-artifacts"
+    link.unlink()
+    link.symlink_to(Path("projects") / ".." / "planning-artifacts")
+    drift = verify_scope(tmp_path, "ok-slug")
+    assert isinstance(drift, ScopeDrift)
+    assert drift.planning_artifacts == UNRECOGNIZED
+
+
+def test_non_utf8_marker_is_unrecognized(tmp_path: Path) -> None:
+    _point_triangle(tmp_path, "ok-slug")
+    marker = tmp_path / "_bmad" / "custom" / ".active-project"
+    marker.write_bytes(b"\xff\xfe not utf-8")
+    drift = verify_scope(tmp_path, "ok-slug")
+    assert isinstance(drift, ScopeDrift)
+    assert drift.marker == UNRECOGNIZED
+
+
 def test_verify_scope_source_has_no_subprocess() -> None:
     """CAP-1: three file reads + string compares; no subprocess."""
     tree = ast.parse(_SCOPE_SRC.read_text(encoding="utf-8"))
