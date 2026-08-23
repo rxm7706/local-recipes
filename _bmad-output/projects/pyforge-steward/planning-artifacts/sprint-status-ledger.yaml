@@ -58,7 +58,7 @@ development_status:
   16-4-policy-is-a-test-suite: done
   16-5-identity-is-oidc-delegated-no-local-passwords: done
   17-1-steward-init-shell-init-detect-and-prepare-the-machine: done
-  17-2-steward-setup-initrepo-take-the-machine-to-green: backlog
+  17-2-steward-setup-initrepo-take-the-machine-to-green: done
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
@@ -110,7 +110,7 @@ development_status:
   epic-15-retrospective: optional
   epic-16: done
   epic-16-retrospective: optional
-  epic-17: backlog
+  epic-17: done
   epic-17-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional

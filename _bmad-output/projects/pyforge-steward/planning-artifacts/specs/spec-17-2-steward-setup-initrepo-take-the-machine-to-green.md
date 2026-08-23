@@ -2,7 +2,7 @@
 title: steward setup/initrepo take the machine to green
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -41,3 +41,14 @@ baseline_revision: d1c30b5286
 
 - validate-fast passes after documented bootstrap sequence
 - Container or documented clean-env reproduction
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `steward setup` (clone when missing, `pixi install -e local-recipes`, pre-commit hooks), `steward initrepo` (scaffold `pyforge.toml` when absent, materialize env, validate-fast), and `steward validate-fast` (prereqs + `environment.yaml` sync + `steward --version`). All support `--json`. Conformance test proves init → setup → initrepo → validate-fast with zero improvised steps.
+
+Merge: PR #700 admin-merged at `84d6fb3ad3174a76cab0c27fbad270b643f48add` (feature `99c1c6f54d`; GitHub Actions billing blocked CI runners; local tests green).
+
+Verification:
+- `pixi run -e pyforge-steward pyforge-steward-test` → 884 passed, 1 skipped
