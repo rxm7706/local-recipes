@@ -41,6 +41,10 @@ dependencies = [
 
 [project.scripts]
 marshal = "pyforge.marshal.cli.main:main"
+# Story 18.1 (FR-153/FR-154): PATH-relative MCP server for per-home
+# `.mcp.json` registration via policy `mcp_servers` (AD-43). Never an
+# absolute path — `marshal init` renders the basename into the home.
+marshal-mcp = "pyforge.marshal.mcp.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
@@ -78,6 +82,7 @@ type = "forbidden"
 source_modules = [
     "pyforge.marshal.cli",
     "pyforge.marshal.core",
+    "pyforge.marshal.mcp",
     "pyforge.marshal.ports",
     "pyforge.marshal.seed",
     "pyforge.marshal.supervisor",
@@ -96,6 +101,8 @@ forbidden_modules = ["bmad_loop"]
 # flag makes the contract's enforcement match its stated intent rather than
 # loosen it: cli/core/ports/seed/supervisor still may never themselves write
 # `import bmad_loop`.
+# Story 18.1: mcp/ added to source_modules — the FastMCP surface must not
+# import bmad_loop either (thin CLI wrappers only).
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]

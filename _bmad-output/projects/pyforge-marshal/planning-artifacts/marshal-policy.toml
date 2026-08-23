@@ -109,6 +109,13 @@ trigger_mode = "include"
 required_check = "linter"
 ungated = true
 
+# mcp_servers (Story 18.1 / FR-153+FR-154, AD-43): Marshal's own FastMCP
+# surface. PATH-relative command only — `marshal init` renders this into the
+# loop home's `.mcp.json` (seed-not-overwrite). Never a machine-absolute path.
+[mcp_servers.marshal]
+command = "marshal-mcp"
+args = []
+
 # model_tier_map (FR-51, Story 3.11): DIFFICULTY CLASS -> {stage: model}. Must stay
 # the LAST thing in this file -- see the comment block above. "heavy"/"easy" reuse
 # Story 6.1's own test-fixture vocabulary (`test_spin.py::_model_tier_map_policy_path`)
