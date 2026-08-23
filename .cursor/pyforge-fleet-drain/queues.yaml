@@ -128,14 +128,13 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 17
+    remaining_count: 16
     next: 21-2-orchestrated-chain-regeneration
     queue:
     - 21-2-orchestrated-chain-regeneration
     - 21-3-code-status-preservation
     - 21-4-orphan-detection-with-review-gated-cleanup
     - 21-5-configurable-per-project-invocation
-    - 22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched
     - 22-3-verification-is-the-product-no-landing-on-a-self-report
     - 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
     - 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud

@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~18:00 CDT
+**Updated:** 2026-08-23 ~18:15 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 17** · steward **12-7 only** (skipped) — **marshal-only drain** |
+| Backlog | **marshal 16** · steward **12-7 only** (skipped) — **marshal-only drain** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,19 +29,20 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `22-2` | [f4ff3d89-6bd2-4a8a-bc7a-0a513a591bd7](f4ff3d89-6bd2-4a8a-bc7a-0a513a591bd7) |
+| marshal | `22-3` | launching |
 
 ## Operator skip
 
 | Story | Reason |
 |-------|--------|
 | steward `12-7` | Live OCP — permanently `skip_on_blocked` until CRC available |
-| marshal `21-2`…`21-5` | `spec-fleet-chain-completeness` Q1–Q4 need operator decisions; dispatch **22-2** next |
+| marshal `21-2`…`21-5` | `spec-fleet-chain-completeness` Q1–Q4 need operator decisions; dispatch **22-3** next |
 
 ## Recently merged (admin merge, no CI)
 
 | Station | Story | PR |
 |---------|-------|-----|
+| marshal | `22-2` | [#702](https://github.com/rxm7706/local-recipes/pull/702) merge `91c4e5244a` ([Marshal 22-2](f4ff3d89-6bd2-4a8a-bc7a-0a513a591bd7)) · CAP-2 completion judge |
 | marshal | `22-1` | [#701](https://github.com/rxm7706/local-recipes/pull/701) merge `94708563fd` ([Marshal 22-1](4aca90fd-684b-4f22-9fa0-d83a43b91fea)) · `marshal factory dispatch` |
 | steward | `17-2` | [#700](https://github.com/rxm7706/local-recipes/pull/700) merge `84d6fb3ad3` ([Steward 17-2](6e832704-9d4f-4aea-8c42-ed5f96f6d300)) · **Epic 17 done · steward drained** |
 | marshal | `21-1` | [#699](https://github.com/rxm7706/local-recipes/pull/699) merge `2a854b86c7` ([Marshal 21-1](addb4c0e-f017-4e3c-b652-2394f4c7088f)) · Epic 21 CAP-3 done |
