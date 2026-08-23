@@ -263,3 +263,86 @@ def test_resolve_spec_path_relative_absolute_and_escape(tmp_path):
     outside = tmp_path / "outside.md"
     outside.write_text("x\n", encoding="utf-8")
     assert resolve_spec_path(home, "../outside.md") is None
+
+
+def test_capture_returns_none_without_worktree_or_baseline(tmp_path):
+    repo = _init_repo(tmp_path)
+    bare = TaskPhaseSnapshot(
+        story_key="20-4",
+        phase="dev-running",
+        commit_sha=None,
+        worktree_path="",
+        baseline_commit=_baseline(repo),
+    )
+    assert capture_attempt_snapshot(bare) is None
+    missing = TaskPhaseSnapshot(
+        story_key="20-4",
+        phase="dev-running",
+        commit_sha=None,
+        worktree_path=str(tmp_path / "nope"),
+        baseline_commit=_baseline(repo),
+    )
+    assert capture_attempt_snapshot(missing) is None
+    no_base = TaskPhaseSnapshot(
+        story_key="20-4",
+        phase="dev-running",
+        commit_sha=None,
+        worktree_path=str(repo),
+        baseline_commit=None,
+    )
+    assert capture_attempt_snapshot(no_base) is None
+
+
+def test_capture_returns_none_on_git_error(tmp_path, monkeypatch):
+    import pyforge.marshal.supervisor.intent_gap_preserve as mod
+
+    repo = _init_repo(tmp_path)
+
+    def boom(*a, **k):
+        raise mod.GitPreserveError("boom")
+
+    monkeypatch.setattr(mod, "_rev_parse_head", boom)
+    assert capture_attempt_snapshot(_task(repo)) is None
+
+
+def test_park_falls_back_to_patch_when_branch_fails(tmp_path, monkeypatch):
+    import pyforge.marshal.supervisor.intent_gap_preserve as mod
+
+    repo = _init_repo(tmp_path)
+    baseline = _baseline(repo)
+    head = _baseline(repo)
+    snap = AttemptSnapshot(
+        story_key="20-4-intent-gap",
+        worktree_path=str(repo),
+        baseline_commit=baseline,
+        head_sha=head,
+        commits_above_baseline=(head,),
+        dirty_patch="diff --git a/x b/x\n",
+    )
+
+    def fail_branch(*a, **k):
+        raise mod.GitPreserveError("branch failed")
+
+    monkeypatch.setattr(mod, "_preserve_commits", fail_branch)
+    run_dir = tmp_path / "run"
+    ref = park_preserve_artifact(snap, harness_run_id="run1", bmad_run_dir=run_dir)
+    assert ref is not None
+    assert ref.endswith("changes.patch")
+
+
+def test_append_preserve_notice_missing_and_binary(tmp_path):
+    missing = tmp_path / "nope.md"
+    assert append_preserve_notice(missing, "attempt-preserve/x") is False
+    binary = tmp_path / "bin.md"
+    binary.write_bytes(b"\xff\xfe## Auto Run Result\n")
+    assert append_preserve_notice(binary, "attempt-preserve/x") is False
+
+
+def test_safe_segment_sanitizes_illegal_chars():
+    from pyforge.marshal.supervisor.intent_gap_preserve import (
+        _safe_ref_segment,
+        _safe_segment,
+    )
+
+    assert "/" not in _safe_segment('a/b:c*?"')
+    assert _safe_ref_segment("..weird@{ref}") != "..weird@{ref}"

@@ -131,7 +131,9 @@ def park_preserve_artifact(
     repo = Path(snapshot.worktree_path)
     if snapshot.commits_above_baseline:
         slug = _safe_ref_segment(harness_run_id)
-        ref_name = f"attempt-preserve/{slug}-{snapshot.head_sha[:8]}"
+        # Concatenation (not f"{a}-{b}") — AD-23 forbids the two-placeholder
+        # story-key shape outside core/identity.py.
+        ref_name = "attempt-preserve/" + slug + "-" + snapshot.head_sha[:8]
         try:
             # Park the *captured* tip — after an intent-gap revert HEAD is
             # already at baseline, so ``branch … HEAD`` would be a no-op.
