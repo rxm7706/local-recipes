@@ -171,3 +171,10 @@ name = "Story 10.1: the platform host never imports pyforge.* (factory/platform 
 type = "forbidden"
 source_modules = ["config", "platformapp", "tests"]
 forbidden_modules = ["pyforge"]
+# Story 12.8 github_metrics dlt tests intentionally use steward keys/sync helpers;
+# they are ignored at pytest collect time in platform-ci-test and run under
+# python-agent-platform (github-metrics-dlt-test). Keep the file analyzable but
+# carve this one edge out of the host boundary contract.
+ignore_imports = [
+    "tests.test_github_metrics_dlt -> pyforge",
+]
