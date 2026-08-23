@@ -2,7 +2,7 @@
 title: Clobbered custom surfaces are caught and re-applied
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -53,3 +53,12 @@ baseline_revision: 0c9c17ecb5
 - Six-layer success via `BMAD_ACTIVE_PROJECT` and fixture-local `.active-project` (never `scripts/bmad-switch`).
 - Installer `.bak` paths are always listed in `ReconcileReport.bak_files_accounted`.
 - Tests: `tests/unit/test_upgrade_reconcile.py`.
+
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/669
+Merge SHA: e7d2ead159c59e974f44d600da2312d431433063
+Finalize: 10d6c1149324ec6cf6324acc667bb6862fe1fc9f
+Tests: 27 passed locally (reconcile+apply+preflight); CI green
