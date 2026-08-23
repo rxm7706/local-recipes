@@ -2,12 +2,12 @@
 title: Workspace verbs over git worktree
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-review
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: fa1436585c
+baseline_revision: 686de783c4cf20a8c1edd71b36e802b523c87265
 ---
 
 <intent-contract>
