@@ -49,7 +49,7 @@ development_status:
   14-4-the-pin-fan-out-is-enumerated-not-discovered-by-red-tests: done
   14-5-one-command-proves-the-upgrade-landed: done
   15-1-one-command-reports-the-whole-pipelines-truth: done
-  15-2-one-command-advances-a-stale-package-end-to-end: backlog
+  15-2-one-command-advances-a-stale-package-end-to-end: done
   15-3-five-modules-wire-through-the-provisioning-verb: backlog
   15-4-the-upgrade-gate-spot-checks-one-native-path-per-class: backlog
   16-1-dependencies-are-pixi-sourced-single-authority: backlog
