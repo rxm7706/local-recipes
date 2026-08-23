@@ -1241,28 +1241,62 @@ jobs:
       # equivalent), or a runner with IPv6 connectivity could resolve
       # conda.anaconda.org over AAAA and sail straight past the IPv4-only
       # rules below -- a silent bypass of this story's own core AC.
-      # `-w 30` on every mutating/list call: Docker + kind both hold
-      # xtables.lock on GHA runners; bare `iptables` waits forever by
-      # default. Do NOT run `iptables -L -v` here -- listing Docker's
-      # OUTPUT chain graph can hang for minutes and proves nothing for AD-13.
+      # `-w 30` on every mutating call: Docker + kind both hold xtables.lock
+      # on GHA runners; bare `iptables` waits forever by default. Do NOT run
+      # `iptables -L -v` here -- listing Docker's OUTPUT chain graph can hang
+      # for minutes. The step below also waits for the lock, retries with per-
+      # rule log lines, and wraps each mutation in `timeout 45` so a stuck lock
+      # fails fast instead of sitting silent for the whole job timeout.
       - name: Block all non-private-network egress
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           set -euxo pipefail
-          IPT="iptables -w 30"
-          IP6T="ip6tables -w 30"
-          sudo $IPT -I OUTPUT -o lo -j ACCEPT
-          sudo $IPT -I OUTPUT -d 127.0.0.0/8 -j ACCEPT
-          sudo $IPT -I OUTPUT -d 10.0.0.0/8 -j ACCEPT
-          sudo $IPT -I OUTPUT -d 172.16.0.0/12 -j ACCEPT
-          sudo $IPT -I OUTPUT -d 192.168.0.0/16 -j ACCEPT
-          sudo $IPT -A OUTPUT -j DROP
+
+          _wait_xtables() {
+            local waited=0
+            while [ "$waited" -lt 120 ]; do
+              if [ ! -e /run/xtables.lock ] || ! fuser /run/xtables.lock >/dev/null 2>&1; then
+                return 0
+              fi
+              echo "  waiting for xtables.lock (${waited}s)..."
+              sleep 2
+              waited=$((waited + 2))
+            done
+            echo "::warning::xtables.lock still held after ${waited}s; proceeding anyway"
+          }
+
+          _ipt_retry() {
+            local tool=$1
+            shift
+            local attempt=1
+            while [ "$attempt" -le 10 ]; do
+              _wait_xtables
+              echo "+ ${tool} $* (attempt ${attempt})"
+              if timeout 45 sudo "${tool}" -w 30 "$@"; then
+                return 0
+              fi
+              echo "::warning::${tool} failed (attempt ${attempt}), retrying in 3s..."
+              sleep 3
+              attempt=$((attempt + 1))
+            done
+            echo "::error::${tool} failed after 10 attempts: $*"
+            return 1
+          }
+
+          echo "Installing IPv4 egress block..."
+          _ipt_retry iptables -I OUTPUT -o lo -j ACCEPT
+          _ipt_retry iptables -I OUTPUT -d 127.0.0.0/8 -j ACCEPT
+          _ipt_retry iptables -I OUTPUT -d 10.0.0.0/8 -j ACCEPT
+          _ipt_retry iptables -I OUTPUT -d 172.16.0.0/12 -j ACCEPT
+          _ipt_retry iptables -I OUTPUT -d 192.168.0.0/16 -j ACCEPT
+          _ipt_retry iptables -A OUTPUT -j DROP
           echo "IPv4 egress block installed"
 
-          sudo $IP6T -I OUTPUT -o lo -j ACCEPT
-          sudo $IP6T -I OUTPUT -d ::1/128 -j ACCEPT
-          sudo $IP6T -I OUTPUT -d fc00::/7 -j ACCEPT
-          sudo $IP6T -A OUTPUT -j DROP
+          echo "Installing IPv6 egress block..."
+          _ipt_retry ip6tables -I OUTPUT -o lo -j ACCEPT
+          _ipt_retry ip6tables -I OUTPUT -d ::1/128 -j ACCEPT
+          _ipt_retry ip6tables -I OUTPUT -d fc00::/7 -j ACCEPT
+          _ipt_retry ip6tables -A OUTPUT -j DROP
           echo "IPv6 egress block installed"
 
       # THE core AD-13 proof (this story's first Acceptance Criterion):
@@ -1279,13 +1313,25 @@ jobs:
       # so hitting the bound at all is itself a failure signal, not a
       # false negative on a slow-but-honest run.
       - name: Prove pixi install --frozen resolves from the mirror alone (egress blocked)
+        timeout-minutes: 6
         env:
           PIXI_CACHE_DIR: ${{ runner.temp }}/pixi-cache-proof-empty
         run: |
+          echo "Starting mirror-only pixi install (egress blocked) at $(date -u +%H:%M:%S)"
+          (
+            while true; do
+              sleep 30
+              echo "  ... pixi install still running ($(date -u +%H:%M:%S))"
+            done
+          ) &
+          hb=$!
+          trap 'kill "$hb" 2>/dev/null || true' EXIT
           timeout 300 pixi install --frozen -e platform-dev || {
             echo "::error::pixi install --frozen -e platform-dev failed to resolve from the mirror-only config under blocked egress (or hit the 300s bound -- a hang here means a real network attempt, not a mirror-only resolve)"
             exit 1
           }
+          kill "$hb" 2>/dev/null || true
+          echo "Mirror-only pixi install finished at $(date -u +%H:%M:%S)"
 
       # Only scalar --set overrides, never a second chart/overlay/values
       # file -- same AD-11 discipline as `gke-portability-smoke`'s own
