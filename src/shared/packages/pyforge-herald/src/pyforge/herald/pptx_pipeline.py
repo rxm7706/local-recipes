@@ -33,7 +33,7 @@ output ``spec.json``/``.pptx``) around the pure-computation
 ``extract_spec``/``fill_template`` functions, which take/return in-memory
 objects only.
 
-**Story 15.2 (CAP-2, spec-pptx-custom-shapes) adds four directly-callable
+**Story 15.2 (spec-pptx-custom-shapes CAP-1) adds four directly-callable
 shape functions** -- :func:`add_card`/:func:`add_metric_box`/
 :func:`add_table`/:func:`add_section_label` -- rendering real, editable
 python-pptx objects at caller-given EMU geometry for dense content no
@@ -60,6 +60,7 @@ from PIL import ImageFont
 from pptx import Presentation
 from pptx.enum.dml import MSO_THEME_COLOR
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN
 from pptx.util import Emu, Pt
 
 from pyforge.core.atomic_write import atomic_write, atomic_write_text
@@ -287,6 +288,25 @@ def _set_placeholder_text(placeholder: Any, value: str | list[str]) -> None:
 # auto-fit-at-open-time behavior (Boundaries & Constraints).
 
 
+_EMU_PER_PT = 12700
+"""EMU per point (``pptx.util.Pt(1) == 12700``) -- the single conversion
+constant every box-geometry-to-points calculation in the autofit engine
+shares, so the table path and the per-text path can never drift apart."""
+
+_FIT_SAFETY = 0.9
+"""The fraction of a box's real width/height the autofit search is
+allowed to fill (Design Notes: "Unit conversion + safety margin"). The
+10% margin absorbs the gap between Aileron's metrics and whatever font
+PowerPoint substitutes at open time -- and, on the width axis, the extra
+advance of the bold faces used for card titles, metric values, and table
+headers, which are measured with Pillow's regular face."""
+
+_LINE_HEIGHT = 1.2
+"""The line-height multiple every height budget is computed against --
+shared so a change here can never apply to one shape path and not the
+other."""
+
+
 @dataclass(frozen=True)
 class FittedText:
     """One :func:`fit_text` result: the largest font size (points) at
@@ -361,26 +381,52 @@ def _rebalance_orphan(lines: list[str], font_size_pt: int, width_pt: float) -> l
     return [*lines[:-2], " ".join(prior_words[:-1]), merged_last]
 
 
+def _wrap_at_size(text: str, font_size_pt: int, width_budget_pt: float) -> list[str]:
+    """``text`` word-wrapped and orphan-rebalanced at ``font_size_pt`` --
+    the one wrapping pipeline both the sizing search and every render
+    path go through, so the lines a size was chosen for are exactly the
+    lines that get written."""
+    return _rebalance_orphan(
+        _wrap_words(text, font_size_pt, width_budget_pt), font_size_pt, width_budget_pt
+    )
+
+
+def _wrapped_fits(
+    text: str, font_size_pt: int, width_budget_pt: float, height_budget_pt: float
+) -> list[str] | None:
+    """``text``'s wrapped lines at ``font_size_pt`` when they fit BOTH
+    budgets, else ``None``.
+
+    The width half is not redundant with :func:`_wrap_words`: a single
+    word wider than the box is deliberately left alone on its own line
+    (word-level wrapping never splits a word), so a size can produce few
+    enough lines to clear the height budget while a line still runs past
+    the box's right edge. Checking both axes is what makes a returned
+    size mean "fits" rather than "fits vertically"."""
+    lines = _wrap_at_size(text, font_size_pt, width_budget_pt)
+    if len(lines) * font_size_pt * _LINE_HEIGHT > height_budget_pt:
+        return None
+    if not all(_fits_at_size(line, font_size_pt, width_budget_pt) for line in lines):
+        return None
+    return lines
+
+
 def fit_text(
     text: str, width_emu: int, height_emu: int, *, max_pt: int, min_pt: int
 ) -> FittedText:
     """The autofit search (Design Notes): the largest font size in
     ``range(max_pt, min_pt - 1, -1)`` at which ``text``, word-wrapped and
-    orphan-rebalanced at that size, fits 90% of ``height_emu`` (the 10%
-    margin absorbs the gap between Aileron's metrics and whatever font
-    PowerPoint substitutes at open time) -- or ``min_pt``, best-effort,
+    orphan-rebalanced at that size, fits 90% of BOTH ``width_emu`` and
+    ``height_emu`` (:data:`_FIT_SAFETY`) -- or ``min_pt``, best-effort,
     when no size in range fits (I/O matrix's "Extreme overflow": always
     renders something, never raises)."""
-    width_pt = width_emu / 12700
-    height_budget_pt = (height_emu / 12700) * 0.9
+    width_budget_pt = (width_emu / _EMU_PER_PT) * _FIT_SAFETY
+    height_budget_pt = (height_emu / _EMU_PER_PT) * _FIT_SAFETY
     for font_size_pt in range(max_pt, min_pt - 1, -1):
-        lines = _rebalance_orphan(
-            _wrap_words(text, font_size_pt, width_pt), font_size_pt, width_pt
-        )
-        if len(lines) * font_size_pt * 1.2 <= height_budget_pt:
+        lines = _wrapped_fits(text, font_size_pt, width_budget_pt, height_budget_pt)
+        if lines is not None:
             return FittedText(font_size_pt, tuple(lines))
-    lines = _rebalance_orphan(_wrap_words(text, min_pt, width_pt), min_pt, width_pt)
-    return FittedText(min_pt, tuple(lines))
+    return FittedText(min_pt, tuple(_wrap_at_size(text, min_pt, width_budget_pt)))
 
 
 def _lines_height_emu(fitted: FittedText) -> int:
@@ -389,7 +435,7 @@ def _lines_height_emu(fitted: FittedText) -> int:
     budgets against) -- used by the card/metric-box adaptive split to
     learn how much of a height-budget *cap* the title/value line
     genuinely needed, so the unused remainder can go to the body/label."""
-    return round(len(fitted.lines) * fitted.font_size_pt * 1.2 * 12700)
+    return round(len(fitted.lines) * fitted.font_size_pt * _LINE_HEIGHT * _EMU_PER_PT)
 
 
 def _reset_margins(text_frame: Any) -> None:
@@ -405,7 +451,12 @@ def _reset_margins(text_frame: Any) -> None:
 
 
 def _write_fitted_lines(
-    paragraph: Any, fitted: FittedText, *, bold: bool, theme_color: MSO_THEME_COLOR
+    paragraph: Any,
+    fitted: FittedText,
+    *,
+    bold: bool,
+    theme_color: MSO_THEME_COLOR,
+    alignment: PP_ALIGN,
 ) -> None:
     """Materialize ``fitted``'s literal wrapped lines into ``paragraph``
     as their own runs, joined by explicit ``add_line_break()`` calls
@@ -422,10 +473,14 @@ def _write_fitted_lines(
     inter-paragraph spacing -- explicitly pinned here (rather than left
     to theme inheritance) so a template swap can never silently inflate
     the actual rendered height past what the autofit search accounted
-    for."""
+    for. ``alignment`` is pinned for the same reason: python-pptx's
+    autoshape template ships a centered first paragraph while every
+    paragraph added after it inherits the theme default, so a shape's
+    title and body would otherwise disagree on alignment."""
     paragraph.space_before = Pt(0)
     paragraph.space_after = Pt(0)
     paragraph.line_spacing = 1.0
+    paragraph.alignment = alignment
     for index, line in enumerate(fitted.lines):
         if index > 0:
             paragraph.add_line_break()
@@ -537,7 +592,10 @@ def add_card(
     bold title and a body paragraph, each independently autofit. The
     title's height-budget is capped at 45% of the card's height so it
     can never starve the body -- the body gets whatever the title didn't
-    use (Design Notes: "Card / metric-box adaptive split")."""
+    use (Design Notes: "Card / metric-box adaptive split"). The body's
+    own search ceiling is additionally clamped to the size the title
+    settled on, so a long title that shrinks can never end up rendering
+    smaller than the body beneath it."""
     shape = slide.shapes.add_shape(
         MSO_SHAPE.ROUNDED_RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height)
     )
@@ -551,18 +609,30 @@ def add_card(
     )
     title_used_emu = min(title_cap_emu, _lines_height_emu(title_fit))
     body_fit = fit_text(
-        body, width, height - title_used_emu, max_pt=_CARD_BODY_MAX_PT, min_pt=_MIN_PT
+        body,
+        width,
+        height - title_used_emu,
+        max_pt=min(_CARD_BODY_MAX_PT, title_fit.font_size_pt),
+        min_pt=_MIN_PT,
     )
 
     text_frame = shape.text_frame
     _reset_margins(text_frame)
     text_frame.word_wrap = True
     _write_fitted_lines(
-        text_frame.paragraphs[0], title_fit, bold=True, theme_color=MSO_THEME_COLOR.TEXT_1
+        text_frame.paragraphs[0],
+        title_fit,
+        bold=True,
+        theme_color=MSO_THEME_COLOR.TEXT_1,
+        alignment=PP_ALIGN.LEFT,
     )
     body_paragraph = text_frame.add_paragraph()
     _write_fitted_lines(
-        body_paragraph, body_fit, bold=False, theme_color=MSO_THEME_COLOR.TEXT_1
+        body_paragraph,
+        body_fit,
+        bold=False,
+        theme_color=MSO_THEME_COLOR.TEXT_1,
+        alignment=PP_ALIGN.LEFT,
     )
     return shape
 
@@ -573,7 +643,9 @@ def add_metric_box(
     """A rectangle metric box at ``(left, top, width, height)`` EMU: a
     large value line and a small label line below it, each independently
     autofit -- the same adaptive-split principle as :func:`add_card`,
-    capped at 75% of the box's height for the value."""
+    capped at 75% of the box's height for the value, and the label's
+    search ceiling likewise clamped to the value's settled size so the
+    label can never render larger than the value it annotates."""
     shape = slide.shapes.add_shape(
         MSO_SHAPE.RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height)
     )
@@ -587,7 +659,11 @@ def add_metric_box(
     )
     value_used_emu = min(value_cap_emu, _lines_height_emu(value_fit))
     label_fit = fit_text(
-        label, width, height - value_used_emu, max_pt=_METRIC_LABEL_MAX_PT, min_pt=_MIN_PT
+        label,
+        width,
+        height - value_used_emu,
+        max_pt=min(_METRIC_LABEL_MAX_PT, value_fit.font_size_pt),
+        min_pt=_MIN_PT,
     )
 
     text_frame = shape.text_frame
@@ -598,10 +674,15 @@ def add_metric_box(
         value_fit,
         bold=True,
         theme_color=MSO_THEME_COLOR.ACCENT_1,
+        alignment=PP_ALIGN.CENTER,
     )
     label_paragraph = text_frame.add_paragraph()
     _write_fitted_lines(
-        label_paragraph, label_fit, bold=False, theme_color=MSO_THEME_COLOR.TEXT_1
+        label_paragraph,
+        label_fit,
+        bold=False,
+        theme_color=MSO_THEME_COLOR.TEXT_1,
+        alignment=PP_ALIGN.CENTER,
     )
     return shape
 
@@ -613,13 +694,15 @@ def _table_font_size(
     column-width/row-height budget fits (Design Notes: "Table: one
     global size") -- the same descending search :func:`fit_text` runs
     per-text, run here across every cell simultaneously so the whole
-    table shares one consistent size instead of a per-cell jumble."""
-    width_pt = cell_width_emu / 12700
-    height_budget_pt = (cell_height_emu / 12700) * 0.9
+    table shares one consistent size instead of a per-cell jumble. Shares
+    :func:`_wrapped_fits` with :func:`fit_text`, so both axes and both
+    safety margins stay identical across the two paths."""
+    width_budget_pt = (cell_width_emu / _EMU_PER_PT) * _FIT_SAFETY
+    height_budget_pt = (cell_height_emu / _EMU_PER_PT) * _FIT_SAFETY
     for font_size_pt in range(_TABLE_MAX_PT, _MIN_PT - 1, -1):
         if all(
-            len(_wrap_words(cell, font_size_pt, width_pt)) * font_size_pt * 1.2
-            <= height_budget_pt
+            _wrapped_fits(cell, font_size_pt, width_budget_pt, height_budget_pt)
+            is not None
             for row in rows
             for cell in row
         ):
@@ -649,7 +732,7 @@ def add_table(
     cell_width_emu = width / num_cols
     cell_height_emu = height / num_rows
     font_size_pt = _table_font_size(rows, cell_width_emu, cell_height_emu)
-    width_pt = cell_width_emu / 12700
+    width_budget_pt = (cell_width_emu / _EMU_PER_PT) * _FIT_SAFETY
     has_header = num_rows > 1
 
     for row_index, row in enumerate(rows):
@@ -664,14 +747,13 @@ def add_table(
             if is_header:
                 cell.fill.solid()
                 cell.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
-            lines = _rebalance_orphan(
-                _wrap_words(cell_text, font_size_pt, width_pt), font_size_pt, width_pt
-            )
+            lines = _wrap_at_size(cell_text, font_size_pt, width_budget_pt)
             _write_fitted_lines(
                 cell.text_frame.paragraphs[0],
                 FittedText(font_size_pt, tuple(lines)),
                 bold=is_header,
                 theme_color=text_theme_color,
+                alignment=PP_ALIGN.LEFT,
             )
     return graphic_frame
 
@@ -689,7 +771,11 @@ def add_section_label(
     text_frame.word_wrap = True
     fitted = fit_text(text, width, height, max_pt=_SECTION_LABEL_MAX_PT, min_pt=_MIN_PT)
     _write_fitted_lines(
-        text_frame.paragraphs[0], fitted, bold=True, theme_color=MSO_THEME_COLOR.ACCENT_1
+        text_frame.paragraphs[0],
+        fitted,
+        bold=True,
+        theme_color=MSO_THEME_COLOR.ACCENT_1,
+        alignment=PP_ALIGN.LEFT,
     )
     return textbox
 
