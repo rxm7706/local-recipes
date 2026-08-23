@@ -4581,7 +4581,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "8.1"
+        "at": "8.2"
       },
       "epics": [
         {
@@ -4802,7 +4802,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "8.1",
-              "pending",
+              "done",
               "Upload runs the real engines, async"
             ],
             [
@@ -5034,7 +5034,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-23 03:12 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-23 03:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -9141,7 +9141,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "34/36",
+        "progress": "35/36",
         "complete": 14,
         "of": 14
       },
@@ -21437,7 +21437,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 8.1",
+        "line": "paused 8.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25397,8 +25397,8 @@ window.DASHBOARD_DATA = {
       "subject": "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-23 03:12 UTC",
-    "generatedEpoch": 1787454756
+    "generatedAt": "2026-08-23 03:14 UTC",
+    "generatedEpoch": 1787454891
   },
   "storySpecs": [
     {
@@ -25445,8 +25445,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-warden",
-      "done": 34,
-      "tracked": 34,
+      "done": 35,
+      "tracked": 35,
       "gap": 0
     }
   ],
@@ -25657,14 +25657,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md"
           }
         ],
-        "done": 34,
-        "backlog": 2,
+        "done": 35,
+        "backlog": 1,
         "blocked": 0,
         "total": 36,
-        "next": "8-1-upload-runs-the-real-engines-async",
+        "next": "8-2-results-render-with-derived-progress",
         "blockedKeys": [],
         "backlogKeys": [
-          "8-1-upload-runs-the-real-engines-async",
           "8-2-results-render-with-derived-progress"
         ],
         "state": "ready"
@@ -25831,8 +25830,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 434,
-      "backlog": 77,
+      "done": 435,
+      "backlog": 76,
       "blocked": 0,
       "total": 511
     }
@@ -25919,18 +25918,18 @@ window.DASHBOARD_DATA = {
       {
         "key": "warden",
         "stories": 36,
-        "done": 34,
+        "done": 35,
         "blocked": 0,
         "epics": 8,
         "epicsDone": 7,
         "complete": false,
         "running": false,
-        "projected": 34
+        "projected": 35
       }
     ],
     "total": {
       "stories": 511,
-      "done": 434,
+      "done": 435,
       "blocked": 0,
       "epics": 109,
       "epicsDone": 90
@@ -25938,7 +25937,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 434
+      "projected": 435
     }
   }
 };
