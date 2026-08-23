@@ -1,0 +1,33 @@
+# Same-repo selftest for the reusable staged-recipes linter wrapper (mason 9.1).
+# Proves the workflow_call contract via a relative `uses:` against a real PR here.
+
+name: reusable-staged-recipes-linter-selftest
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr-num:
+        description: "Open PR number in this repo to lint"
+        required: true
+        type: number
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  issues: read
+  pull-requests: read
+  statuses: read
+
+jobs:
+  call-reusable-linter:
+    uses: ./.github/workflows/reusable-staged-recipes-linter.yml
+    with:
+      pr-num: ${{ inputs.pr-num }}
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+      pull-requests: read
+      statuses: read
