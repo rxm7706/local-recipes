@@ -32,26 +32,47 @@ they resolve real paths on disk (a template, a ``content_plan.json``, an
 output ``spec.json``/``.pptx``) around the pure-computation
 ``extract_spec``/``fill_template`` functions, which take/return in-memory
 objects only.
+
+**Story 15.2 (spec-pptx-custom-shapes CAP-1) adds four directly-callable
+shape functions** -- :func:`add_card`/:func:`add_metric_box`/
+:func:`add_table`/:func:`add_section_label` -- rendering real, editable
+python-pptx objects at caller-given EMU geometry for dense content no
+template placeholder anticipates (persona cards, metric boxes, tables,
+section labels). Sizing comes from :func:`fit_text`, a Pillow
+``ImageFont``-measured autofit engine (wrap, shrink, orphan rebalancing)
+instead of a guess. ``content_plan.json``'s per-slide schema gains an
+optional ``"shapes"`` list (:func:`_resolve_shapes`) so
+:func:`fill_template` reaches them -- no new CLI surface, no new
+dependency (Pillow is already a direct dependency since Story 14.2).
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from functools import cache
 from importlib import resources
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from PIL import ImageFont
 from pptx import Presentation
+from pptx.enum.dml import MSO_THEME_COLOR
+from pptx.enum.shapes import MSO_SHAPE
+from pptx.enum.text import PP_ALIGN
+from pptx.util import Emu, Pt
 
 from pyforge.core.atomic_write import atomic_write, atomic_write_text
 
 from . import errors
 
 if TYPE_CHECKING:
+    from PIL.ImageFont import FreeTypeFont
     from pptx.presentation import Presentation as PptxPresentation
-    from pptx.slide import SlideLayout
+    from pptx.shapes.autoshape import Shape
+    from pptx.shapes.graphfrm import GraphicFrame
+    from pptx.slide import Slide, SlideLayout
 
 
 @dataclass(frozen=True)
@@ -259,18 +280,706 @@ def _set_placeholder_text(placeholder: Any, value: str | list[str]) -> None:
         placeholder.text_frame.add_paragraph().text = line
 
 
+# === Story 15.2: autofit engine ==============================================
+#
+# Font size and line-wrap decisions come from Pillow ``ImageFont``
+# measurement of the exact text that gets written to a run -- never a
+# hardcoded/guessed size, and never left to PowerPoint's own
+# auto-fit-at-open-time behavior (Boundaries & Constraints).
+
+
+_EMU_PER_PT = 12700
+"""EMU per point (``pptx.util.Pt(1) == 12700``) -- the single conversion
+constant every box-geometry-to-points calculation in the autofit engine
+shares, so the table path and the per-text path can never drift apart."""
+
+_FIT_SAFETY = 0.9
+"""The fraction of a box's real width/height the autofit search is
+allowed to fill (Design Notes: "Unit conversion + safety margin"). The
+10% margin absorbs the gap between Aileron's metrics and whatever font
+PowerPoint substitutes at open time -- and, on the width axis, the extra
+advance of the bold faces used for card titles, metric values, and table
+headers, which are measured with Pillow's regular face."""
+
+_LINE_HEIGHT = 1.2
+"""The line-height multiple every height budget is computed against --
+shared so a change here can never apply to one shape path and not the
+other."""
+
+
+@dataclass(frozen=True)
+class FittedText:
+    """One :func:`fit_text` result: the largest font size (points) at
+    which ``lines`` -- the literal, pre-wrapped text -- fits its target
+    box, plus the wrapped lines themselves. ``lines`` are materialized as
+    their own runs joined by explicit line breaks (Design Notes:
+    "Literal line breaks, not word_wrap reliance"), never left to
+    PowerPoint's own re-flow at open time."""
+
+    font_size_pt: int
+    lines: tuple[str, ...]
+
+
+@cache
+def _load_font(font_size_pt: int) -> FreeTypeFont:
+    """Pillow's own bundled scalable default font (Aileron, Pillow
+    >=10.1) at ``font_size_pt`` -- real glyph metrics, zero new
+    dependency, zero font-file-path resolution (Design Notes: "Font
+    measurement source"). Cached per integer size: :func:`fit_text`'s
+    descending search reloads the same handful of sizes across every
+    shape on a slide."""
+    return ImageFont.load_default(size=font_size_pt)
+
+
+def _fits_at_size(line: str, font_size_pt: int, width_pt: float) -> bool:
+    """Does ``line``, rendered at ``font_size_pt``, fit within
+    ``width_pt``? The low-level width primitive :func:`_wrap_words` and
+    :func:`_rebalance_orphan` both build on -- Pillow's real glyph-metric
+    measurement, not a character-count guess."""
+    return _load_font(font_size_pt).getlength(line) <= width_pt
+
+
+def _wrap_words(text: str, font_size_pt: int, width_pt: float) -> list[str]:
+    """Greedy word-wrap ``text`` at ``font_size_pt`` into lines that each
+    fit ``width_pt``, measured with the real font. A single word wider
+    than ``width_pt`` is still placed alone on its own line -- word-level
+    wrapping never splits a word."""
+    words = text.split()
+    if not words:
+        return [""]
+    lines: list[str] = []
+    current = words[0]
+    for word in words[1:]:
+        candidate = f"{current} {word}"
+        if _fits_at_size(candidate, font_size_pt, width_pt):
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
+def _rebalance_orphan(lines: list[str], font_size_pt: int, width_pt: float) -> list[str]:
+    """When :func:`_wrap_words`'s last line is a single orphaned word and
+    the line before it has more than one word, pull that prior line's
+    last word down onto the orphan -- only when the merge still fits
+    ``width_pt`` (Design Notes: "Orphan rebalancing"). A no-op for fewer
+    than two lines, a multi-word last line, or a single-word prior line
+    (nothing left to donate)."""
+    if len(lines) < 2:
+        return lines
+    last_line = lines[-1]
+    if " " in last_line:
+        return lines
+    prior_words = lines[-2].split()
+    if len(prior_words) <= 1:
+        return lines
+    merged_last = f"{prior_words[-1]} {last_line}"
+    if not _fits_at_size(merged_last, font_size_pt, width_pt):
+        return lines
+    return [*lines[:-2], " ".join(prior_words[:-1]), merged_last]
+
+
+def _wrap_at_size(text: str, font_size_pt: int, width_budget_pt: float) -> list[str]:
+    """``text`` word-wrapped and orphan-rebalanced at ``font_size_pt`` --
+    the one wrapping pipeline both the sizing search and every render
+    path go through, so the lines a size was chosen for are exactly the
+    lines that get written."""
+    return _rebalance_orphan(
+        _wrap_words(text, font_size_pt, width_budget_pt), font_size_pt, width_budget_pt
+    )
+
+
+def _wrapped_fits(
+    text: str, font_size_pt: int, width_budget_pt: float, height_budget_pt: float
+) -> list[str] | None:
+    """``text``'s wrapped lines at ``font_size_pt`` when they fit BOTH
+    budgets, else ``None``.
+
+    The width half is not redundant with :func:`_wrap_words`: a single
+    word wider than the box is deliberately left alone on its own line
+    (word-level wrapping never splits a word), so a size can produce few
+    enough lines to clear the height budget while a line still runs past
+    the box's right edge. Checking both axes is what makes a returned
+    size mean "fits" rather than "fits vertically"."""
+    lines = _wrap_at_size(text, font_size_pt, width_budget_pt)
+    if len(lines) * font_size_pt * _LINE_HEIGHT > height_budget_pt:
+        return None
+    if not all(_fits_at_size(line, font_size_pt, width_budget_pt) for line in lines):
+        return None
+    return lines
+
+
+def fit_text(
+    text: str, width_emu: int, height_emu: int, *, max_pt: int, min_pt: int
+) -> FittedText:
+    """The autofit search (Design Notes): the largest font size in
+    ``range(max_pt, min_pt - 1, -1)`` at which ``text``, word-wrapped and
+    orphan-rebalanced at that size, fits 90% of BOTH ``width_emu`` and
+    ``height_emu`` (:data:`_FIT_SAFETY`) -- or ``min_pt``, best-effort,
+    when no size in range fits (I/O matrix's "Extreme overflow": always
+    renders something, never raises)."""
+    width_budget_pt = (width_emu / _EMU_PER_PT) * _FIT_SAFETY
+    height_budget_pt = (height_emu / _EMU_PER_PT) * _FIT_SAFETY
+    for font_size_pt in range(max_pt, min_pt - 1, -1):
+        lines = _wrapped_fits(text, font_size_pt, width_budget_pt, height_budget_pt)
+        if lines is not None:
+            return FittedText(font_size_pt, tuple(lines))
+    return FittedText(min_pt, tuple(_wrap_at_size(text, min_pt, width_budget_pt)))
+
+
+def _lines_height_emu(fitted: FittedText) -> int:
+    """The actual EMU height ``fitted``'s lines consume at their chosen
+    size (line-height 1.2x, the same ratio :func:`fit_text`'s own search
+    budgets against) -- used by the card/metric-box adaptive split to
+    learn how much of a height-budget *cap* the title/value line
+    genuinely needed, so the unused remainder can go to the body/label."""
+    return round(len(fitted.lines) * fitted.font_size_pt * _LINE_HEIGHT * _EMU_PER_PT)
+
+
+def _reset_margins(text_frame: Any) -> None:
+    """Zero every internal margin so a caller's ``width_emu``/
+    ``height_emu`` box IS the text area -- python-pptx's default
+    text-frame margins (0.1in sides, 0.05in top/bottom) would otherwise
+    silently eat into space :func:`fit_text`'s search already accounted
+    for."""
+    text_frame.margin_left = 0
+    text_frame.margin_right = 0
+    text_frame.margin_top = 0
+    text_frame.margin_bottom = 0
+
+
+def _write_fitted_lines(
+    paragraph: Any,
+    fitted: FittedText,
+    *,
+    bold: bool,
+    theme_color: MSO_THEME_COLOR,
+    alignment: PP_ALIGN,
+) -> None:
+    """Materialize ``fitted``'s literal wrapped lines into ``paragraph``
+    as their own runs, joined by explicit ``add_line_break()`` calls
+    (Design Notes: "Literal line breaks, not word_wrap reliance") --
+    the primary line-break source, not PowerPoint's own re-flow at open
+    time, since a substituted font could re-wrap our measured breaks
+    differently. (Every ``add_*`` function still sets ``word_wrap = True``
+    as a passive safety net only, per Design Notes -- these literal breaks
+    are what actually determines layout in the common case.) Every run's
+    color is a theme color reference, never a hardcoded RGB (Boundaries &
+    Constraints).
+
+    ``fit_text``'s height budget assumes a 1.2x line-height with zero
+    inter-paragraph spacing -- explicitly pinned here (rather than left
+    to theme inheritance) so a template swap can never silently inflate
+    the actual rendered height past what the autofit search accounted
+    for. ``alignment`` is pinned for the same reason: python-pptx's
+    autoshape template ships a centered first paragraph while every
+    paragraph added after it inherits the theme default, so a shape's
+    title and body would otherwise disagree on alignment."""
+    paragraph.space_before = Pt(0)
+    paragraph.space_after = Pt(0)
+    paragraph.line_spacing = 1.0
+    paragraph.alignment = alignment
+    for index, line in enumerate(fitted.lines):
+        if index > 0:
+            paragraph.add_line_break()
+        run = paragraph.add_run()
+        run.text = line
+        run.font.size = Pt(fitted.font_size_pt)
+        run.font.bold = bold
+        run.font.color.theme_color = theme_color
+
+
+_MIN_PT = 6
+"""Shared floor for every shape's descending font-size search -- below
+this, a shape still renders (I/O matrix's "Extreme overflow" row), just
+unreadably small; every shape type uses this same best-effort floor."""
+
+_CARD_TITLE_MAX_PT = 20
+_CARD_BODY_MAX_PT = 14
+_CARD_TITLE_HEIGHT_CAP_FRACTION = 0.45
+"""A card title's height-budget *cap* -- 45% of the card's height
+(Design Notes: "Card / metric-box adaptive split") -- so it can never
+starve the body, but only consumes what it actually needs below the cap."""
+
+_METRIC_VALUE_MAX_PT = 54
+_METRIC_LABEL_MAX_PT = 14
+_METRIC_VALUE_HEIGHT_CAP_FRACTION = 0.75
+"""A metric box's value height-budget cap -- the same adaptive-split
+principle as the card title, at 75%."""
+
+_SECTION_LABEL_MAX_PT = 28
+
+_TABLE_MAX_PT = 18
+
+
+# === Story 15.2: shape dataclasses ============================================
+#
+# content_plan.json's internal representation for one ``"shapes"`` list
+# entry, mirroring :class:`TemplatePlaceholder`'s existing style.
+
+
+@dataclass(frozen=True)
+class CardShape:
+    """A titled/bodied card: content_plan.json's ``{"type": "card", ...}``
+    entry, resolved -- geometry (EMU) plus the two text fields
+    :func:`add_card` autofits independently."""
+
+    left: int
+    top: int
+    width: int
+    height: int
+    title: str
+    body: str
+
+
+@dataclass(frozen=True)
+class MetricBoxShape:
+    """A large-value/small-label metric box: content_plan.json's
+    ``{"type": "metric_box", ...}`` entry, resolved."""
+
+    left: int
+    top: int
+    width: int
+    height: int
+    value: str
+    label: str
+
+
+@dataclass(frozen=True)
+class TableShape:
+    """A real ``GraphicFrame`` table: content_plan.json's
+    ``{"type": "table", "rows": [[...], ...]}`` entry, resolved. ``rows``
+    is already validated rectangular (every row the same column count)
+    by :func:`_resolve_table_rows`."""
+
+    left: int
+    top: int
+    width: int
+    height: int
+    rows: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True)
+class SectionLabelShape:
+    """A single autofit-sized textbox label: content_plan.json's
+    ``{"type": "section_label", "text": ...}`` entry, resolved."""
+
+    left: int
+    top: int
+    width: int
+    height: int
+    text: str
+
+
+ResolvedShape = CardShape | MetricBoxShape | TableShape | SectionLabelShape
+"""Every shape type content_plan.json's ``"shapes"`` list can resolve to
+-- the union :func:`_resolve_one_shape` returns and :func:`_add_shapes`
+dispatches on."""
+
+
+# === Story 15.2: the public shape API =========================================
+#
+# Operate directly on a python-pptx ``Slide`` -- the "reachable enough"
+# hook Story 15.1 deliberately left (its own Design Notes).
+
+
+def add_card(
+    slide: Slide, left: int, top: int, width: int, height: int, title: str, body: str
+) -> Shape:
+    """A rounded-rectangle card at ``(left, top, width, height)`` EMU: a
+    bold title and a body paragraph, each independently autofit. The
+    title's height-budget is capped at 45% of the card's height so it
+    can never starve the body -- the body gets whatever the title didn't
+    use (Design Notes: "Card / metric-box adaptive split"). The body's
+    own search ceiling is additionally clamped to the size the title
+    settled on, so a long title that shrinks can never end up rendering
+    smaller than the body beneath it."""
+    shape = slide.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height)
+    )
+    shape.fill.solid()
+    shape.fill.fore_color.theme_color = MSO_THEME_COLOR.BACKGROUND_2
+    shape.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
+
+    title_cap_emu = int(height * _CARD_TITLE_HEIGHT_CAP_FRACTION)
+    title_fit = fit_text(
+        title, width, title_cap_emu, max_pt=_CARD_TITLE_MAX_PT, min_pt=_MIN_PT
+    )
+    title_used_emu = min(title_cap_emu, _lines_height_emu(title_fit))
+    body_fit = fit_text(
+        body,
+        width,
+        height - title_used_emu,
+        max_pt=min(_CARD_BODY_MAX_PT, title_fit.font_size_pt),
+        min_pt=_MIN_PT,
+    )
+
+    text_frame = shape.text_frame
+    _reset_margins(text_frame)
+    text_frame.word_wrap = True
+    _write_fitted_lines(
+        text_frame.paragraphs[0],
+        title_fit,
+        bold=True,
+        theme_color=MSO_THEME_COLOR.TEXT_1,
+        alignment=PP_ALIGN.LEFT,
+    )
+    body_paragraph = text_frame.add_paragraph()
+    _write_fitted_lines(
+        body_paragraph,
+        body_fit,
+        bold=False,
+        theme_color=MSO_THEME_COLOR.TEXT_1,
+        alignment=PP_ALIGN.LEFT,
+    )
+    return shape
+
+
+def add_metric_box(
+    slide: Slide, left: int, top: int, width: int, height: int, value: str, label: str
+) -> Shape:
+    """A rectangle metric box at ``(left, top, width, height)`` EMU: a
+    large value line and a small label line below it, each independently
+    autofit -- the same adaptive-split principle as :func:`add_card`,
+    capped at 75% of the box's height for the value, and the label's
+    search ceiling likewise clamped to the value's settled size so the
+    label can never render larger than the value it annotates."""
+    shape = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE, Emu(left), Emu(top), Emu(width), Emu(height)
+    )
+    shape.fill.solid()
+    shape.fill.fore_color.theme_color = MSO_THEME_COLOR.BACKGROUND_2
+    shape.line.color.theme_color = MSO_THEME_COLOR.ACCENT_1
+
+    value_cap_emu = int(height * _METRIC_VALUE_HEIGHT_CAP_FRACTION)
+    value_fit = fit_text(
+        value, width, value_cap_emu, max_pt=_METRIC_VALUE_MAX_PT, min_pt=_MIN_PT
+    )
+    value_used_emu = min(value_cap_emu, _lines_height_emu(value_fit))
+    label_fit = fit_text(
+        label,
+        width,
+        height - value_used_emu,
+        max_pt=min(_METRIC_LABEL_MAX_PT, value_fit.font_size_pt),
+        min_pt=_MIN_PT,
+    )
+
+    text_frame = shape.text_frame
+    _reset_margins(text_frame)
+    text_frame.word_wrap = True
+    _write_fitted_lines(
+        text_frame.paragraphs[0],
+        value_fit,
+        bold=True,
+        theme_color=MSO_THEME_COLOR.ACCENT_1,
+        alignment=PP_ALIGN.CENTER,
+    )
+    label_paragraph = text_frame.add_paragraph()
+    _write_fitted_lines(
+        label_paragraph,
+        label_fit,
+        bold=False,
+        theme_color=MSO_THEME_COLOR.TEXT_1,
+        alignment=PP_ALIGN.CENTER,
+    )
+    return shape
+
+
+def _table_font_size(
+    rows: tuple[tuple[str, ...], ...], cell_width_emu: float, cell_height_emu: float
+) -> int:
+    """The largest single font size at which EVERY cell's own
+    column-width/row-height budget fits (Design Notes: "Table: one
+    global size") -- the same descending search :func:`fit_text` runs
+    per-text, run here across every cell simultaneously so the whole
+    table shares one consistent size instead of a per-cell jumble. Shares
+    :func:`_wrapped_fits` with :func:`fit_text`, so both axes and both
+    safety margins stay identical across the two paths."""
+    width_budget_pt = (cell_width_emu / _EMU_PER_PT) * _FIT_SAFETY
+    height_budget_pt = (cell_height_emu / _EMU_PER_PT) * _FIT_SAFETY
+    for font_size_pt in range(_TABLE_MAX_PT, _MIN_PT - 1, -1):
+        if all(
+            _wrapped_fits(cell, font_size_pt, width_budget_pt, height_budget_pt)
+            is not None
+            for row in rows
+            for cell in row
+        ):
+            return font_size_pt
+    return _MIN_PT
+
+
+def add_table(
+    slide: Slide,
+    left: int,
+    top: int,
+    width: int,
+    height: int,
+    rows: tuple[tuple[str, ...], ...],
+) -> GraphicFrame:
+    """A real ``GraphicFrame`` table at ``(left, top, width, height)``
+    EMU: one font size shared by every cell (:func:`_table_font_size`),
+    row 0 bold with an ``ACCENT_1`` fill whenever more than one row is
+    given (Design Notes: "Table: one global size")."""
+    num_rows = len(rows)
+    num_cols = len(rows[0])
+    graphic_frame = slide.shapes.add_table(
+        num_rows, num_cols, Emu(left), Emu(top), Emu(width), Emu(height)
+    )
+    table = graphic_frame.table
+
+    cell_width_emu = width / num_cols
+    cell_height_emu = height / num_rows
+    font_size_pt = _table_font_size(rows, cell_width_emu, cell_height_emu)
+    width_budget_pt = (cell_width_emu / _EMU_PER_PT) * _FIT_SAFETY
+    has_header = num_rows > 1
+
+    for row_index, row in enumerate(rows):
+        is_header = has_header and row_index == 0
+        text_theme_color = (
+            MSO_THEME_COLOR.BACKGROUND_1 if is_header else MSO_THEME_COLOR.TEXT_1
+        )
+        for col_index, cell_text in enumerate(row):
+            cell = table.cell(row_index, col_index)
+            _reset_margins(cell.text_frame)
+            cell.text_frame.word_wrap = True
+            if is_header:
+                cell.fill.solid()
+                cell.fill.fore_color.theme_color = MSO_THEME_COLOR.ACCENT_1
+            lines = _wrap_at_size(cell_text, font_size_pt, width_budget_pt)
+            _write_fitted_lines(
+                cell.text_frame.paragraphs[0],
+                FittedText(font_size_pt, tuple(lines)),
+                bold=is_header,
+                theme_color=text_theme_color,
+                alignment=PP_ALIGN.LEFT,
+            )
+    return graphic_frame
+
+
+def add_section_label(
+    slide: Slide, left: int, top: int, width: int, height: int, text: str
+) -> Shape:
+    """A textbox at ``(left, top, width, height)`` EMU holding a single
+    autofit-sized, theme-colored run (or, for text long enough to need
+    it, the same literal word-wrapped lines every other shape type
+    produces)."""
+    textbox = slide.shapes.add_textbox(Emu(left), Emu(top), Emu(width), Emu(height))
+    text_frame = textbox.text_frame
+    _reset_margins(text_frame)
+    text_frame.word_wrap = True
+    fitted = fit_text(text, width, height, max_pt=_SECTION_LABEL_MAX_PT, min_pt=_MIN_PT)
+    _write_fitted_lines(
+        text_frame.paragraphs[0],
+        fitted,
+        bold=True,
+        theme_color=MSO_THEME_COLOR.ACCENT_1,
+        alignment=PP_ALIGN.LEFT,
+    )
+    return textbox
+
+
+# === Story 15.2: content_plan.json "shapes" validation ========================
+#
+# Following :func:`_resolve_placeholder_values`'s existing
+# validate-before-materialize style: every failure here raises
+# :class:`errors.InvalidContentPlanError` before :func:`fill_template`
+# materializes anything (I/O matrix: "No file written").
+
+_SHAPE_TYPES = ("card", "metric_box", "table", "section_label")
+
+
+def _require_str_field(
+    raw_shape: Mapping[str, Any], field_name: str, slide_index: int, shape_index: int
+) -> str:
+    """``raw_shape[field_name]`` as a validated ``str`` -- raises
+    :class:`errors.InvalidContentPlanError` (I/O matrix's "Missing
+    required field" row) when it is absent or the wrong type."""
+    value = raw_shape.get(field_name)
+    if not isinstance(value, str):
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index}: missing or "
+            f"non-string {field_name!r}"
+        )
+    return value
+
+
+def _resolve_shape_geometry(
+    raw_shape: Mapping[str, Any], slide_index: int, shape_index: int
+) -> tuple[int, int, int, int]:
+    """``raw_shape``'s ``left``/``top``/``width``/``height`` as validated
+    positive-geometry EMU ints (I/O matrix's "Non-positive geometry"
+    row) -- ``bool`` is rejected explicitly, the same discipline as
+    :func:`_resolve_layout`'s layout-reference check."""
+    geometry: dict[str, int] = {}
+    for key in ("left", "top", "width", "height"):
+        raw_value = raw_shape.get(key)
+        if isinstance(raw_value, bool) or not isinstance(raw_value, int):
+            raise errors.InvalidContentPlanError(
+                f"slide #{slide_index} shape #{shape_index}: {key!r} must "
+                f"be an int EMU value, got {raw_value!r}"
+            )
+        geometry[key] = raw_value
+    if geometry["width"] <= 0 or geometry["height"] <= 0:
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index}: 'width' and "
+            f"'height' must be positive"
+        )
+    if geometry["left"] < 0 or geometry["top"] < 0:
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index}: 'left' and 'top' "
+            f"must be non-negative"
+        )
+    return geometry["left"], geometry["top"], geometry["width"], geometry["height"]
+
+
+def _resolve_table_rows(
+    raw_rows: object, slide_index: int, shape_index: int
+) -> tuple[tuple[str, ...], ...]:
+    """A table shape's ``"rows"`` field -> a validated, rectangular tuple
+    of tuples of strings (every row the same column count -- a
+    ``GraphicFrame`` table has a fixed column count, and
+    :func:`_table_font_size`'s per-column budget assumes it)."""
+    if not isinstance(raw_rows, list) or not raw_rows:
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index}: 'rows' must be a "
+            f"non-empty JSON array"
+        )
+    num_cols: int | None = None
+    resolved: list[tuple[str, ...]] = []
+    for row in raw_rows:
+        if (
+            not isinstance(row, list)
+            or not row
+            or not all(isinstance(cell, str) for cell in row)
+        ):
+            raise errors.InvalidContentPlanError(
+                f"slide #{slide_index} shape #{shape_index}: each table "
+                f"row must be a non-empty array of strings"
+            )
+        if num_cols is None:
+            num_cols = len(row)
+        elif len(row) != num_cols:
+            raise errors.InvalidContentPlanError(
+                f"slide #{slide_index} shape #{shape_index}: every table "
+                f"row must have the same number of columns"
+            )
+        resolved.append(tuple(row))
+    return tuple(resolved)
+
+
+def _resolve_one_shape(
+    raw_shape: object, slide_index: int, shape_index: int
+) -> ResolvedShape:
+    """One ``content_plan.json`` ``"shapes"`` entry -> its typed,
+    geometry-validated :data:`ResolvedShape`. Raises
+    :class:`errors.InvalidContentPlanError` for an unknown ``"type"``
+    (I/O matrix's "Unknown shape type" row) or any missing/malformed
+    type-specific field, before any slide is materialized."""
+    if not isinstance(raw_shape, Mapping):
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index} is not a JSON object"
+        )
+    if "type" not in raw_shape:
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index} is missing 'type'"
+        )
+    shape_type = raw_shape.get("type")
+    if shape_type not in _SHAPE_TYPES:
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index} shape #{shape_index}: unknown shape "
+            f"type {shape_type!r}"
+        )
+    left, top, width, height = _resolve_shape_geometry(raw_shape, slide_index, shape_index)
+    if shape_type == "card":
+        title = _require_str_field(raw_shape, "title", slide_index, shape_index)
+        body = _require_str_field(raw_shape, "body", slide_index, shape_index)
+        return CardShape(left, top, width, height, title, body)
+    if shape_type == "metric_box":
+        value = _require_str_field(raw_shape, "value", slide_index, shape_index)
+        label = _require_str_field(raw_shape, "label", slide_index, shape_index)
+        return MetricBoxShape(left, top, width, height, value, label)
+    if shape_type == "table":
+        rows = _resolve_table_rows(raw_shape.get("rows"), slide_index, shape_index)
+        return TableShape(left, top, width, height, rows)
+    text = _require_str_field(raw_shape, "text", slide_index, shape_index)
+    return SectionLabelShape(left, top, width, height, text)
+
+
+def _resolve_shapes(entry: Mapping[str, Any], slide_index: int) -> list[ResolvedShape]:
+    """A slide entry's optional ``"shapes"`` list -> validated
+    :data:`ResolvedShape` objects, following
+    ``_resolve_placeholder_values``'s existing validate-before-materialize
+    style. Absent entirely (I/O matrix's 'No "shapes" key' row -- an
+    existing Story 15.1-shaped plan) resolves to an empty list, leaving
+    :func:`fill_template`'s prior behavior unchanged."""
+    raw_shapes = entry.get("shapes", [])
+    if not isinstance(raw_shapes, list):
+        raise errors.InvalidContentPlanError(
+            f"slide #{slide_index}: 'shapes' must be a JSON array"
+        )
+    return [
+        _resolve_one_shape(raw_shape, slide_index, shape_index)
+        for shape_index, raw_shape in enumerate(raw_shapes)
+    ]
+
+
+def _add_shapes(slide: Slide, shapes: Sequence[ResolvedShape]) -> None:
+    """Dispatch each resolved shape to its ``add_*`` function, in plan
+    order. The final branch checks ``SectionLabelShape`` explicitly (rather
+    than assuming it as an ``else`` fallthrough) so a future
+    :data:`ResolvedShape` variant added without updating this function fails
+    loudly instead of silently mis-rendering as a section label."""
+    for shape in shapes:
+        if isinstance(shape, CardShape):
+            add_card(
+                slide,
+                shape.left,
+                shape.top,
+                shape.width,
+                shape.height,
+                shape.title,
+                shape.body,
+            )
+        elif isinstance(shape, MetricBoxShape):
+            add_metric_box(
+                slide,
+                shape.left,
+                shape.top,
+                shape.width,
+                shape.height,
+                shape.value,
+                shape.label,
+            )
+        elif isinstance(shape, TableShape):
+            add_table(
+                slide, shape.left, shape.top, shape.width, shape.height, shape.rows
+            )
+        elif isinstance(shape, SectionLabelShape):
+            add_section_label(
+                slide, shape.left, shape.top, shape.width, shape.height, shape.text
+            )
+        else:
+            raise AssertionError(f"unhandled ResolvedShape variant: {type(shape)!r}")
+
+
 def fill_template(template_path: Path, content_plan: object) -> PptxPresentation:
     """Fill ``content_plan`` into ``template_path``, mechanically, via
     python-pptx's high-level object model only (Boundaries & Constraints --
     never hand-written OOXML): one slide per plan entry, each named
-    placeholder's text set through :func:`_set_placeholder_text`.
+    placeholder's text set through :func:`_set_placeholder_text`, plus
+    (Story 15.2) each entry's optional ``"shapes"`` list materialized
+    through :func:`_add_shapes` -- additive to, never a replacement for,
+    the placeholder fill.
 
     Every slide entry is resolved and validated BEFORE any slide is
     materialized, so a plan with one bad entry (unknown layout, unknown
-    placeholder idx, malformed value) raises with the in-memory
-    ``Presentation`` never having gained a single slide -- ``run_fill``
-    only writes a file once this function returns successfully (I/O
-    matrix's "No file written" rows).
+    placeholder idx, malformed placeholder value, unknown shape type,
+    missing shape field, non-positive shape geometry) raises with the
+    in-memory ``Presentation`` never having gained a single slide --
+    ``run_fill`` only writes a file once this function returns
+    successfully (I/O matrix's "No file written" rows).
 
     Raises :class:`errors.PptxTemplateError` on a bad template path, and
     :class:`errors.InvalidContentPlanError` on any malformed/unresolvable
@@ -282,7 +991,9 @@ def fill_template(template_path: Path, content_plan: object) -> PptxPresentation
     if not isinstance(slides, list):
         raise errors.InvalidContentPlanError("content plan must have a 'slides' list")
 
-    resolved_slides: list[tuple[SlideLayout, dict[int, str | list[str]]]] = []
+    resolved_slides: list[
+        tuple[SlideLayout, dict[int, str | list[str]], list[ResolvedShape]]
+    ] = []
     for index, entry in enumerate(slides):
         if not isinstance(entry, Mapping):
             raise errors.InvalidContentPlanError(f"slide #{index} is not a JSON object")
@@ -292,12 +1003,14 @@ def fill_template(template_path: Path, content_plan: object) -> PptxPresentation
         placeholder_values = _resolve_placeholder_values(
             layout, entry.get("placeholders", {}), index
         )
-        resolved_slides.append((layout, placeholder_values))
+        shapes = _resolve_shapes(entry, index)
+        resolved_slides.append((layout, placeholder_values, shapes))
 
-    for layout, placeholder_values in resolved_slides:
+    for layout, placeholder_values, shapes in resolved_slides:
         slide = prs.slides.add_slide(layout)
         for idx, value in placeholder_values.items():
             _set_placeholder_text(slide.placeholders[idx], value)
+        _add_shapes(slide, shapes)
     return prs
 
 
