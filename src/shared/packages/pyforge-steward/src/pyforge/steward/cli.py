@@ -36,9 +36,19 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
 # `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
-# `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report).
+# `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
+# `init`/`shell-init` (Epic 17, Story 17.1 — machine bootstrap prereqs + shell).
 DUTIES: tuple[str, ...] = (
-    "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade", "suite",
+    "keys",
+    "deploy",
+    "provision",
+    "budget",
+    "sync",
+    "workspace",
+    "upgrade",
+    "suite",
+    "init",
+    "shell-init",
 )
 
 _HELP = {
@@ -66,6 +76,14 @@ _HELP = {
         "upstream/recipe/channel/installed/wired for all 13 suite packages "
         "with per-stage drift and fail-open probes; advance (CAP-2) chains "
         "autotick→build→test→publish→listing→reviewable PR (never auto-merged)"
+    ),
+    "init": (
+        "machine bootstrap — report pixi/git/gh/podman prereqs with named "
+        "remedies; pixi floor from pixi_version_registry (Story 17.1)"
+    ),
+    "shell-init": (
+        "emit idempotent PATH/completions/env shell snippet to stdout for eval "
+        "(Story 17.1)"
     ),
 }
 
@@ -95,6 +113,12 @@ def build_parser() -> argparse.ArgumentParser:
             _add_upgrade_subparsers(duty_parser)
         elif name == "suite":
             _add_suite_subparsers(duty_parser)
+        elif name in ("init", "shell-init"):
+            duty_parser.add_argument(
+                "--json",
+                action="store_true",
+                help="emit JSON instead of human-readable text",
+            )
     return parser
 
 
@@ -765,6 +789,14 @@ def resolve_duty(name: str) -> Duty:
         from .suite import SuiteDuty
 
         return SuiteDuty()
+    if name == "init":
+        from .bootstrap import InitDuty
+
+        return InitDuty()
+    if name == "shell-init":
+        from .bootstrap import ShellInitDuty
+
+        return ShellInitDuty()
     return NullDuty(name)
 
 
