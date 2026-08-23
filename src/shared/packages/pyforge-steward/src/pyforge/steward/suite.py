@@ -880,7 +880,7 @@ def _fmt_stage(stage: StageProbe) -> str:
 
 
 class SuiteDuty:
-    """``steward suite …`` — Epic 15 CAP-1 pipeline-truth (15.2+ not here)."""
+    """``steward suite …`` — Epic 15 CAP-1 pipeline-truth + CAP-2 advance."""
 
     name = "suite"
 
@@ -891,13 +891,18 @@ class SuiteDuty:
                 ok=True,
                 summary=(
                     "suite: available verbs are pipeline-truth "
-                    "(CAP-1 report-only whole-pipeline truth across the 13 "
-                    "bmad-suite packages)"
+                    "(CAP-1 report-only whole-pipeline truth) and advance "
+                    "(CAP-2 one-command stale-package advance → reviewable PR, "
+                    "never auto-merged)"
                 ),
             )
         try:
             if verb == "pipeline-truth":
                 return self._pipeline_truth(ns)
+            if verb == "advance":
+                from .suite_advance import advance_from_namespace
+
+                return advance_from_namespace(ns)
             return DutyResult(ok=False, summary=f"suite: unknown verb {verb!r}")
         except SuiteError as exc:
             return DutyResult(ok=False, summary=f"suite: {exc}")
