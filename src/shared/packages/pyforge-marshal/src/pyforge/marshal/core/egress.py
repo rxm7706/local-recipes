@@ -200,6 +200,9 @@ EGRESS_PORTS: Mapping[str, bool] = {
     "SessionObserverPort": False,
     "NotifyPort": True,
     "ForgePort": True,
+    # Story 22.1 (factory dispatch, FR-52 second engine): local session harness
+    # launch only -- no network egress from marshal itself.
+    "BuildHarnessPort": False,
 }
 
 

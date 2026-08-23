@@ -1481,6 +1481,22 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-CHAIN-002",
         "MRS-CHAIN-003",
         "MRS-CHAIN-004",
+        # Story 22.1 (factory dispatch, FR-193 CAP-1):
+        # MRS-DISP-001 malformed slug (ERROR); 002 malformed story (ERROR);
+        # 003 harness missing (ERROR); 004 repo root (ERROR); 005 spec
+        # missing/unreadable (ERROR); 006 worktree (ERROR); 007 run dir/journal
+        # (ERROR); 008 launch (ERROR); 009 outcome journal (WARN); 010 dead-pid
+        # (WARN).
+        "MRS-DISP-001",
+        "MRS-DISP-002",
+        "MRS-DISP-003",
+        "MRS-DISP-004",
+        "MRS-DISP-005",
+        "MRS-DISP-006",
+        "MRS-DISP-007",
+        "MRS-DISP-008",
+        "MRS-DISP-009",
+        "MRS-DISP-010",
     }
 )
 

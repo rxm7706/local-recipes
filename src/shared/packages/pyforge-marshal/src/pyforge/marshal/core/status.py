@@ -961,6 +961,35 @@ class FleetHomeFacts:
     # misattribution is no longer one of them. Both directions of this signal
     # are best-effort; only their failure modes differ (noise vs. silence).
     failed_patches: tuple[dict[str, object], ...] = ()
+    # Story 22.1 (factory dispatch, FR-193 CAP-1): an in-flight single-story
+    # session launched via ``marshal factory dispatch``, gathered from the
+    # canonical Tier-3 ``dispatch-runs/`` store (physical path, never the loop
+    # home symlink). ``dispatch_engine_alive`` is
+    # ``ProcessPort.is_alive(session_pid)``; when ``True`` and
+    # ``dispatch_story`` is set, ``build_fleet_row`` surfaces the station
+    # as ``"running"`` even when no bmad-loop run is active.
+    dispatch_story: str | None = None
+    dispatch_engine_alive: bool = False
+    dispatch_elapsed_seconds: float | None = None
+    dispatch_run_id: str | None = None
+
+
+def _apply_dispatch_overlay(
+    row: dict[str, object], facts: FleetHomeFacts
+) -> dict[str, object]:
+    """Story 22.1: when a dispatch session is live, surface it in fleet status."""
+    if not (facts.dispatch_engine_alive and facts.dispatch_story):
+        return row
+    if row.get("state") in ("running", "paused-on-escalation", "awaiting-operator"):
+        return row
+    patched = dict(row)
+    patched["state"] = "running"
+    patched["current_story"] = facts.dispatch_story
+    if facts.dispatch_elapsed_seconds is not None:
+        patched["elapsed_seconds"] = facts.dispatch_elapsed_seconds
+    if facts.dispatch_run_id is not None:
+        patched["dispatch_run_id"] = facts.dispatch_run_id
+    return patched
 
 
 def is_run_live(facts: FleetHomeFacts) -> bool:
@@ -1047,7 +1076,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             ),
             path=facts.slug,
         )
-        return row, finding
+        return _apply_dispatch_overlay(row, facts), finding
 
     if not facts.has_run:
         row = {
@@ -1064,7 +1093,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
             "unpushed_work": facts.unpushed_work,
             "failed_patches": facts.failed_patches,
         }
-        return row, None
+        return _apply_dispatch_overlay(row, facts), None
 
     state = derive_home_state(
         finished=facts.finished,
@@ -1144,7 +1173,7 @@ def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding |
         # failed_patches`'s own docstring above).
         "failed_patches": facts.failed_patches,
     }
-    return row, None
+    return _apply_dispatch_overlay(row, facts), None
 
 
 def sort_fleet_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
