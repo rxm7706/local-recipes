@@ -68,17 +68,13 @@ def _graphql_response(project_id: str, *, has_next: bool = False) -> bytes:
 
 
 def _fake_transport(project_id: str):
-    calls = {"count": 0}
-
     def transport(request):
-        calls["count"] += 1
         body = json.loads(request.data)
         assert body["variables"]["projectId"] == project_id
         page_size = body["variables"].get("pageSize", DEFAULT_PAGE_SIZE)
         assert 1 <= page_size <= DEFAULT_PAGE_SIZE
         return TransportResponse(status=200, body=_graphql_response(project_id, has_next=False))
 
-    transport.calls = calls
     return transport
 
 
