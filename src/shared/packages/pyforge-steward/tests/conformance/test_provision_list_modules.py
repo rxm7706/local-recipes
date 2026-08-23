@@ -9,6 +9,10 @@ all-`available`), a read-only guard, and a precedence test mirroring
 `test_provision_module_takes_precedence_over_verify_and_list` shape. This
 is a pure filesystem read — no subprocess is ever exercised here, unlike
 `--module`.
+
+Story 15.3 grew `_SUPPORTED_MODULES` to five names; every "all available"
+assertion below expects that full set. WDS is skip-only and must never
+appear.
 """
 
 from __future__ import annotations
@@ -22,9 +26,14 @@ import yaml
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.provision import (
     ProvisionDuty,
+    _SKIPPED_MODULES,
+    _SUPPORTED_MODULES,
     format_module_states,
     module_install_states,
 )
+
+_ALL_AVAILABLE = {name: "available" for name in _SUPPORTED_MODULES}
+_WIRED_NAMES = frozenset(_SUPPORTED_MODULES)
 
 
 def _full_namespace(**overrides):
@@ -54,7 +63,8 @@ def _write_bmad_config(tmp_path, text):
 def test_module_install_states_reports_available_when_config_yaml_is_absent(tmp_path):
     states = module_install_states(cwd=tmp_path)
 
-    assert states == {"bmb": "available"}
+    assert states == _ALL_AVAILABLE
+    assert "wds" not in states
 
 
 def test_module_install_states_reports_installed_when_the_module_key_is_present(tmp_path):
@@ -62,7 +72,8 @@ def test_module_install_states_reports_installed_when_the_module_key_is_present(
 
     states = module_install_states(cwd=tmp_path)
 
-    assert states == {"bmb": "installed"}
+    assert states["bmb"] == "installed"
+    assert all(states[n] == "available" for n in _WIRED_NAMES if n != "bmb")
 
 
 def test_module_install_states_ignores_unrelated_top_level_keys(tmp_path):
@@ -70,7 +81,7 @@ def test_module_install_states_ignores_unrelated_top_level_keys(tmp_path):
 
     states = module_install_states(cwd=tmp_path)
 
-    assert states == {"bmb": "available"}
+    assert states == _ALL_AVAILABLE
 
 
 def test_module_install_states_non_mapping_config_yaml_degrades_to_all_available(tmp_path):
@@ -78,7 +89,7 @@ def test_module_install_states_non_mapping_config_yaml_degrades_to_all_available
 
     states = module_install_states(cwd=tmp_path)
 
-    assert states == {"bmb": "available"}
+    assert states == _ALL_AVAILABLE
 
 
 def test_module_install_states_malformed_config_yaml_raises_yaml_error(tmp_path):
@@ -96,7 +107,7 @@ def test_module_install_states_empty_config_yaml_degrades_to_all_available(tmp_p
 
     states = module_install_states(cwd=tmp_path)
 
-    assert states == {"bmb": "available"}
+    assert states == _ALL_AVAILABLE
 
 
 def test_module_install_states_unreadable_encoding_raises_unicode_decode_error(tmp_path):
@@ -110,6 +121,21 @@ def test_module_install_states_unreadable_encoding_raises_unicode_decode_error(t
 
     with pytest.raises(UnicodeDecodeError):
         module_install_states(cwd=tmp_path)
+
+
+def test_supported_modules_are_exactly_the_five_wire_decided_names():
+    """Story 15.3 / CAP-3: registry is {bmb, tea, cis, utility-skills,
+    manticore}; WDS stays skip-only."""
+    assert set(_SUPPORTED_MODULES) == {
+        "bmb",
+        "tea",
+        "cis",
+        "utility-skills",
+        "manticore",
+    }
+    assert "wds" not in _SUPPORTED_MODULES
+    assert "wds" in _SKIPPED_MODULES
+    assert "deprecated" in _SKIPPED_MODULES["wds"].lower()
 
 
 # ── format_module_states (primitive) ─────────────────────────────────────
@@ -165,8 +191,10 @@ def test_provision_list_modules_via_cli_reports_available_with_no_config_yaml(
 
     assert rc == EXIT_OK
     out = capsys.readouterr().out
-    assert "bmb" in out
-    assert "available" in out
+    for name in sorted(_WIRED_NAMES):
+        assert name in out
+        assert "available" in out
+    assert "wds" not in out
 
 
 def test_provision_list_modules_via_cli_reports_installed_when_bmb_key_present(
@@ -179,35 +207,32 @@ def test_provision_list_modules_via_cli_reports_installed_when_bmb_key_present(
 
     assert rc == EXIT_OK
     out = capsys.readouterr().out
-    assert "bmb" in out
-    assert "installed" in out
+    assert "bmb" in out and "installed" in out
 
 
 def test_provision_list_modules_json_via_cli_emits_valid_json(tmp_path, monkeypatch, capsys):
-    _write_bmad_config(tmp_path, "bmb:\n  output_folder: skills\n")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
 
     rc = main(["provision", "--list-modules", "--json"])
 
     assert rc == EXIT_OK
-    data = json.loads(capsys.readouterr().out)
-    assert data == {"bmb": "installed"}
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == _ALL_AVAILABLE
+    assert "wds" not in payload
 
 
 def test_provision_list_modules_json_on_malformed_config_yaml_still_emits_valid_json(
     tmp_path, monkeypatch, capsys
 ):
-    """Mirrors `test_provision_list_json_on_malformed_pixi_toml_still_emits_
-    valid_json`: an error raised on `--list-modules`'s own path must honor
-    `--json` too, matching `--list --json`'s existing precedent."""
+    """An error raised on `--list-modules`'s own path must honor `--json`."""
     _write_bmad_config(tmp_path, "bmb: [unterminated\n")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
 
     rc = main(["provision", "--list-modules", "--json"])
 
     assert rc == EXIT_FAILED
-    data = json.loads(capsys.readouterr().err)
-    assert "error" in data
+    payload = json.loads(capsys.readouterr().err)
+    assert "error" in payload
 
 
 def test_provision_list_modules_non_mapping_config_yaml_via_cli_degrades_to_all_available(
@@ -219,19 +244,12 @@ def test_provision_list_modules_non_mapping_config_yaml_via_cli_degrades_to_all_
     rc = main(["provision", "--list-modules", "--json"])
 
     assert rc == EXIT_OK
-    data = json.loads(capsys.readouterr().out)
-    assert data == {"bmb": "available"}
+    assert json.loads(capsys.readouterr().out) == _ALL_AVAILABLE
 
 
 def test_provision_list_modules_json_on_unreadable_encoding_still_emits_valid_json(
     tmp_path, monkeypatch, capsys
 ):
-    """Review finding: `UnicodeDecodeError` from an invalid-UTF-8
-    `_bmad/config.yaml` used to propagate past `ProvisionDuty.run()`'s
-    exception boundary uncaught, crashing to a raw traceback / EXIT_INTERNAL
-    instead of a clean `DutyResult` -- breaking `--json`'s contract exactly
-    like the malformed-`pixi.toml`/malformed-`module.yaml` regressions this
-    codebase already guards against for other error types."""
     bmad_dir = tmp_path / "_bmad"
     bmad_dir.mkdir(parents=True)
     (bmad_dir / "config.yaml").write_bytes(b"bmb: \xff\xfe invalid utf8\n")
@@ -240,18 +258,18 @@ def test_provision_list_modules_json_on_unreadable_encoding_still_emits_valid_js
     rc = main(["provision", "--list-modules", "--json"])
 
     assert rc == EXIT_FAILED
-    data = json.loads(capsys.readouterr().err)
-    assert "error" in data
+    payload = json.loads(capsys.readouterr().err)
+    assert "error" in payload
 
 
 def test_provision_list_modules_never_writes_to_config_yaml(tmp_path, monkeypatch):
-    config_path = _write_bmad_config(tmp_path, "bmb:\n  output_folder: skills\n")
+    config = _write_bmad_config(tmp_path, "bmb:\n  output_folder: skills\n")
+    before = config.read_text(encoding="utf-8")
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
-    before = config_path.read_text(encoding="utf-8")
 
     main(["provision", "--list-modules"])
 
-    assert config_path.read_text(encoding="utf-8") == before
+    assert config.read_text(encoding="utf-8") == before
 
 
 def test_provision_list_modules_never_creates_config_yaml_when_absent(tmp_path, monkeypatch):
@@ -264,13 +282,12 @@ def test_provision_list_modules_never_creates_config_yaml_when_absent(tmp_path, 
 
 def test_provision_list_modules_takes_precedence_over_everything_else(tmp_path, monkeypatch):
     """`--list-modules` is the new first precedence check, ahead of
-    `--module`/`--verify`/`--list`/`--runner`/`--env` (mirrors
+    `--module` / `--verify` / `--list` — mirrors
     `test_provision_module_takes_precedence_over_verify_and_list`'s own
-    shape for `--module`)."""
+    shape."""
     monkeypatch.setattr("pyforge.steward.provision.repo_root", lambda: tmp_path)
-    duty = ProvisionDuty()
 
-    result = duty.run(
+    result = ProvisionDuty().run(
         _full_namespace(
             list_modules=True,
             module="nope",
@@ -284,3 +301,4 @@ def test_provision_list_modules_takes_precedence_over_everything_else(tmp_path, 
     assert result.ok is True
     assert "bmb" in result.summary  # --list-modules's own handling ran
     assert "nope" not in result.summary  # never reached --module's handling
+    assert "wds" not in result.summary
