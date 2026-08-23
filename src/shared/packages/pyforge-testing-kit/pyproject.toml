@@ -1,0 +1,22 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-testing-kit"
+version = "0.1.0"
+description = "Shared test-support kit for PyForge stations: CLI-runner, page-object, DB-factory, and auth/HTTP/time mock primitives (FR-130 / Story 19.2)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# Test-support only — stdlib leaf. Never a station runtime dependency.
+# Q-26 (Story 19.2): own leaf, not pyforge.core.testing, so test fixtures
+# do not couple into every station's runtime install of pyforge-core.
+dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]
+
+[tool.pytest.ini_options]
+markers = ["unit: unit tests (fast)"]

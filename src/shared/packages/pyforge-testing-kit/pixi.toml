@@ -1,0 +1,27 @@
+# pyforge-testing-kit — pixi build workspace member (pyforge-core mirror, Story 19.2).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-testing-kit.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# Own leaf (Q-26): test-support primitives only; zero third-party run-deps.
+# Spec: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/
+#       spec-19-2-the-shared-test-support-kit.md
+
+[package]
+name = "pyforge-testing-kit"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.12"
