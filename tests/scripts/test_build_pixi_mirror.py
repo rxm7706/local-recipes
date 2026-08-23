@@ -4,7 +4,7 @@ spec-12-3-air-gap-parity-is-a-failing-check).
 Only the two pieces of PURE logic the story's own Tasks & Acceptance names
 are covered here: URL-to-mirror-path derivation (`parse_mirror_targets`)
 and sha256 verification (`_sha256_of`/`_download_one`). No real network is
-used -- `requests.get` is monkeypatched wherever a download is exercised,
+used -- `_http_session().get` is monkeypatched wherever a download is exercised,
 matching the story's own "a small fixture lockfile, no real network needed
 for the test itself" instruction. The CI job's own live mirror-then-block
 proof is NOT exercised here (no sandboxed iptables/kind access -- see the
@@ -176,6 +176,16 @@ def _make_target(url: str = "https://conda.anaconda.org/conda-forge/linux-64/foo
     return target, content
 
 
+def _patch_session_get(monkeypatch, handler):
+    """Route fake HTTP responses through `_http_session()` (keep-alive path)."""
+
+    class _Session:
+        def get(self, *args, **kwargs):
+            return handler(*args, **kwargs)
+
+    monkeypatch.setattr(bpm, "_http_session", lambda: _Session())
+
+
 class TestDownloadAndVerify:
     def test_already_valid_file_is_skipped_without_a_network_call(self, tmp_path, monkeypatch):
         target, content = _make_target()
@@ -184,9 +194,9 @@ class TestDownloadAndVerify:
         dest_path.write_bytes(content)
 
         def _fail_if_called(*args, **kwargs):
-            raise AssertionError("requests.get must not be called for an already-valid file")
+            raise AssertionError("session.get must not be called for an already-valid file")
 
-        monkeypatch.setattr(bpm.requests, "get", _fail_if_called)
+        _patch_session_get(monkeypatch, _fail_if_called)
 
         result = bpm._download_one(target, tmp_path, timeout=5)
 
@@ -199,7 +209,7 @@ class TestDownloadAndVerify:
         dest_path.parent.mkdir(parents=True)
         dest_path.write_bytes(b"stale-wrong-bytes")
 
-        monkeypatch.setattr(bpm.requests, "get", lambda *a, **k: _FakeResponse(content))
+        _patch_session_get(monkeypatch, lambda *a, **k: _FakeResponse(content))
 
         result = bpm._download_one(target, tmp_path, timeout=5)
 
@@ -210,7 +220,7 @@ class TestDownloadAndVerify:
         self, tmp_path, monkeypatch
     ):
         target, content = _make_target()
-        monkeypatch.setattr(bpm.requests, "get", lambda *a, **k: _FakeResponse(content))
+        _patch_session_get(monkeypatch, lambda *a, **k: _FakeResponse(content))
 
         result = bpm._download_one(target, tmp_path, timeout=5)
 
@@ -222,7 +232,7 @@ class TestDownloadAndVerify:
 
     def test_sha256_mismatch_raises_and_leaves_no_partial_file(self, tmp_path, monkeypatch):
         target, _content = _make_target()
-        monkeypatch.setattr(bpm.requests, "get", lambda *a, **k: _FakeResponse(b"wrong-bytes"))
+        _patch_session_get(monkeypatch, lambda *a, **k: _FakeResponse(b"wrong-bytes"))
 
         with pytest.raises(bpm.MirrorBuildError, match="sha256 mismatch"):
             bpm._download_one(target, tmp_path, timeout=5)
@@ -237,7 +247,7 @@ class TestDownloadAndVerify:
         def _raise(*args, **kwargs):
             raise bpm.requests.RequestException("connection refused")
 
-        monkeypatch.setattr(bpm.requests, "get", _raise)
+        _patch_session_get(monkeypatch, _raise)
 
         with pytest.raises(bpm.MirrorBuildError, match="download failed"):
             bpm._download_one(target, tmp_path, timeout=5)
@@ -265,7 +275,7 @@ class TestDownloadAndVerify:
             return real_sha256_of(path)
 
         monkeypatch.setattr(bpm, "_sha256_of", _flaky_sha256_of)
-        monkeypatch.setattr(bpm.requests, "get", lambda *a, **k: _FakeResponse(content))
+        _patch_session_get(monkeypatch, lambda *a, **k: _FakeResponse(content))
 
         result = bpm._download_one(target, tmp_path, timeout=5)
 
@@ -296,7 +306,7 @@ class TestBuildMirrorDedupAndProgress:
             call_count += 1
             return _FakeResponse(content)
 
-        monkeypatch.setattr(bpm.requests, "get", _counted_get)
+        _patch_session_get(monkeypatch, _counted_get)
 
         downloaded, skipped = bpm.build_mirror([target, duplicate], tmp_path, workers=4, timeout=5)
 
@@ -328,7 +338,7 @@ class TestBuildMirrorDedupAndProgress:
             i = body.removeprefix("pkg")
             return _FakeResponse(f"content-{i}".encode())
 
-        monkeypatch.setattr(bpm.requests, "get", _get_for_url)
+        _patch_session_get(monkeypatch, _get_for_url)
 
         downloaded, skipped = bpm.build_mirror(targets, tmp_path, workers=4, timeout=5)
 

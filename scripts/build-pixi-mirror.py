@@ -52,8 +52,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
-from requests.adapters import HTTPAdapter
 import yaml
+from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1 << 20  # 1 MiB
 _THREAD_LOCAL = threading.local()
