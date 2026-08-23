@@ -65,8 +65,13 @@ itself**:
   `bmad-dev-auto` with `BMAD_ACTIVE_PROJECT` passed per-invocation and
   physical artifact paths (never `bmad-switch` from a parallel agent);
   independent verification before every landing; `gh pr merge --merge`;
-  story-spec promotion to tracked `planning-artifacts/specs/`; scoped
+  - story-spec promotion to tracked `planning-artifacts/specs/`; scoped
   `sprint-ledger-sync` + `story-status-check` in the same commit.
+- **Fleet drain playbook (2026-08-22/23):** eight-station campaign documented in
+  `spec-marshal-single-story-dispatch/fleet-drain-playbook.md` (marshal-owned companion);
+  interim runner at `.cursor/pyforge-fleet-drain/`. Merge-in-agent fleet-wide since
+  2026-08-23. Six stations drained; marshal + steward backlog remain — the playbook is
+  the acceptance oracle for Epic 22 CAP-7 until `marshal factory dispatch --fleet` ships.
 
 What does **not** exist: any marshal verb that launches, awaits, or judges a
 single-story dev-auto session. `marshal factory` today is `spin`/`attach`/

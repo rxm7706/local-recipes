@@ -4,6 +4,8 @@
 
 **Purpose:** drain each station's story backlog using the **single-story, worktree-isolated, non-fork** `bmad-build-auto` pattern — **not** `bmad-loop`, **not** marshal factory spin. One story in flight per station; stations run in parallel with each other.
 
+**Marshal home (Tier 2):** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/` — `SPEC.md` (CAP-1..CAP-7) + `fleet-drain-playbook.md`. This folder is the **interim runner** until Epic 22 Stories 22.1–22.6 land as `marshal factory dispatch` / `marshal drain` verbs.
+
 **Merge policy (fleet-wide, since 2026-08-23):** dispatch agents **merge their own PR** when CI is green, then **finalize** (ledger sync, spec promotion, queue regen). The coordinating session preflights and monitors; it only intervenes on blocked/failed runs. Supersedes the 2026-08-22 "never merge" split documented in the pause handoff.
 
 ---
@@ -12,11 +14,11 @@
 
 | Path | Use when |
 |------|----------|
-| **This playbook (`bmad-build-auto`, worktree, merge-in-agent)** | Hand-driven fleet drain; one story per station; dispatch agent merges when CI is green and finalizes its own station; marshal Epic 22 dispatch verb does not exist yet |
+| **This playbook (`bmad-build-auto`, worktree, merge-in-agent)** | Interim runner until `marshal factory dispatch` / `marshal drain` (Epic 22, CAP-7) ships — see `spec-marshal-single-story-dispatch/fleet-drain-playbook.md` |
 | `bmad-build` (quick-dev) | Single story, interactive, no review loop |
 | `bmad-loop` / marshal factory | Unattended multi-story runs with marshal run state — **explicitly out of scope here** |
 
-Marshal story `22-1`…`22-6` will eventually **productize** this playbook. Until then, this folder is the manual implementation of `22-5` ("one story in flight per station").
+Marshal story `22-1`…`22-6` + **CAP-7** productize this playbook as marshal verbs. Until then, this folder is the interim runner (companion: `spec-marshal-single-story-dispatch/fleet-drain-playbook.md`).
 
 ---
 

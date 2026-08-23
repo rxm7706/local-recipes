@@ -3466,7 +3466,9 @@ baseline→final revisions — making dispatch the at-source producer of the eff
 Epic 23 renders (E23 consumes; neither depends on the other landing first).
 
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
-22.4 needs both; 22.5/22.6 need only their named deps. The Spec's remaining open questions
+22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** (companion
+`spec-marshal-single-story-dispatch/fleet-drain-playbook.md`, validated 2026-08-22/23) is
+the acceptance oracle for the full eight-station campaign. The Spec's remaining open questions
 (enforceable budget signal; advisory's comparison basis; dedicated sidecar vs generalized
 supervisor) are story-level design decisions inside 22.1/22.5/22.2 respectively, not
 operator blockers.

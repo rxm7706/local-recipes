@@ -8,7 +8,8 @@ surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/
-companions: []
+companions:
+  - fleet-drain-playbook.md
 sources:
   - ../../../../../../docs/dreams/marshal-single-story-dispatch.md
 related:
@@ -101,7 +102,9 @@ mode beside `spin`, never a replacement.**
   - **intent:** A verified story lands through the existing Epic 4 machinery — `marshal
     land`/`deploy land-story` semantics, FR-187's detectable merge subject, Story 4.1 spec
     promotion, Epic 15's ledger promotion — composition of shipped verbs, never a second
-    landing/promotion path.
+    landing/promotion path. **Merge-in-agent (2026-08-23):** the dispatch driver (or
+    coordinating finalize step) merges with `gh pr merge --merge` when CI is green, then
+    scoped `sprint-ledger-sync --project <station>` and spec promotion — never `--squash`.
   - **success:** A dispatch-landed story is classified marshal-native by
     `marshal_native_merged_keys` (it never falls into FR-186's `not-loop-native` bucket), its
     spec is durably promoted, and its ledger key advances — with zero new landing or
@@ -131,6 +134,17 @@ mode beside `spin`, never a replacement.**
     recovers supervision; a story that completed while unsupervised is reconciled from git
     facts rather than lost; the journal carries per-story timing a downstream consumer can
     read without new instrumentation.
+- **CAP-7**
+  - **intent:** Fleet-wide drain across all eight pyforge stations is a marshal-orchestrated
+    mode: read per-station ordered backlogs (from tracked ledgers + optional overrides),
+    apply campaign mode (`drain_to_zero`, `leave_one`, `skip_on_blocked` policies), preflight
+    each dispatch (CAP-2 zombie refusal), launch one story per station in parallel (CAP-5),
+    and chain the next story when merge-through-finalize completes (CAP-4 with merge-in-agent:
+    merge when CI green, scoped `sprint-ledger-sync`, spec promotion, queue regen).
+  - **success:** An operator runs one documented command (provisional: `marshal factory
+    dispatch --fleet` or `marshal drain`) and the eight-station 2026-08-22/23 hand ritual
+    replays without session discipline; interim acceptance oracle is
+    `fleet-drain-playbook.md` + `.cursor/pyforge-fleet-drain/` until the verb ships.
 
 ## Constraints
 
@@ -176,6 +190,11 @@ promoted spec, and advanced ledger — while a story that self-reports shipped w
 gates is loudly refused. Killing the operator's terminal mid-run orphans nothing: the runs
 survive, report, and reconcile. The ritual's rigor no longer depends on which session
 remembers it.
+
+**Fleet drain (2026-08-22/23):** the eight-station campaign (marshal + steward backlog drain;
+six stations already at zero) validated CAP-7 operational semantics in
+`fleet-drain-playbook.md`. Epic 22.1+ must subsume `.cursor/pyforge-fleet-drain/` as marshal
+verbs and in-repo queue state under `pyforge-marshal` (not session-local `.cursor/`).
 
 ## Assumptions
 
