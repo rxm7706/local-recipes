@@ -380,6 +380,7 @@ jobs:
             -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
             -e DJANGO_SECRET_KEY=ci-placeholder-not-a-real-secret \
             -e DJANGO_ADMIN_URL=admin/ \
+            -e COMPONENT_RUNTIME=local \
             platform-ci-${{ matrix.engine }} \
             python manage.py migrate --noinput || {
             echo "::error::migrate failed (${{ matrix.engine }})"
@@ -397,6 +398,7 @@ jobs:
             -p 8000:8000 \
             -e DJANGO_SECRET_KEY=ci-placeholder-not-a-real-secret \
             -e DJANGO_ADMIN_URL=admin/ \
+            -e COMPONENT_RUNTIME=local \
             -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
             -e DJANGO_SECURE_SSL_REDIRECT=False \
             -e DATABASE_URL=postgres://platform:platform@platform-ci-postgres-${{ matrix.engine }}:5432/platform \

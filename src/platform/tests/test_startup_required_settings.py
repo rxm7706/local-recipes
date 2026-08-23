@@ -11,6 +11,7 @@ locality fails closed (absent == deployed).
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import ModuleType
 
 import pytest
@@ -131,8 +132,6 @@ def test_required_settings_registry_covers_production_keys() -> None:
 
 def test_production_leaf_source_wires_stage_one() -> None:
     """Regression: production.py must call both CAP-3 stage-1 entry points."""
-    from pathlib import Path
-
     source = Path(__file__).resolve().parents[1].joinpath(
         "config/settings/production.py",
     ).read_text(encoding="utf-8")
