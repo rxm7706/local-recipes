@@ -1,11 +1,12 @@
-"""Steward's `workspace` duty — story-scoped scratch worktrees (Story 13.1).
+"""Steward's `workspace` duty — story-scoped scratch worktrees (Stories 13.1–13.2).
 
 Wraps ``git worktree`` plus a bookkeeping file. CAP-5's own-worktrees-only
-rule is HARD: ``ls`` / ``clean`` operate only on entries this tool recorded —
-Marshal loop homes and hand-made worktrees are invisible by construction.
+rule is HARD: ``ls`` / ``status`` / ``clean`` operate only on entries this
+tool recorded — Marshal loop homes and hand-made worktrees are invisible by
+construction.
 
-CAP-1 ``start``, CAP-2 ``ls``, CAP-4 ``clean`` (archive-not-delete). CAP-3
-``status`` is Story 13.2 — deliberately absent here.
+CAP-1 ``start``, CAP-2 ``ls``, CAP-3 ``status`` (pays per-worktree git cost),
+CAP-4 ``clean`` (archive-not-delete).
 """
 
 from __future__ import annotations
@@ -55,6 +56,41 @@ class WorkspaceRecord:
             "source": self.source,
             "created_at": self.created_at,
         }
+
+
+@dataclass(frozen=True)
+class WorkspaceStatus:
+    """CAP-3 live git health for one owned worktree.
+
+    When the path is missing or per-worktree git fails, ``error`` is set and
+    the health fields are ``None`` (JSON null) so consumers cannot confuse an
+    unreachable row with a clean equal-tip report. Other rows still list.
+    """
+
+    slug: str
+    path: str
+    branch: str
+    source: str
+    dirty: bool | None
+    ahead: int | None
+    behind: int | None
+    merged: bool | None
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        out: dict[str, object] = {
+            "slug": self.slug,
+            "path": self.path,
+            "branch": self.branch,
+            "source": self.source,
+            "dirty": self.dirty,
+            "ahead": self.ahead,
+            "behind": self.behind,
+            "merged": self.merged,
+        }
+        if self.error is not None:
+            out["error"] = self.error
+        return out
 
 
 def repo_root() -> Path:
@@ -209,6 +245,119 @@ def list_workspaces(
     return load_bookkeeping(bookkeeping)
 
 
+def _worktree_dirty(wt: Path) -> bool:
+    result = _git_ok("status", "--porcelain", cwd=wt)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise WorkspaceError(
+            f"git status --porcelain failed in {wt} "
+            f"(exit {result.returncode}): {detail}"
+        )
+    return bool((result.stdout or "").strip())
+
+
+def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:
+    """Return (ahead, behind) of *branch* vs *source* via ``rev-list --left-right``.
+
+    ``git rev-list --left-right --count <source>...<branch>``: left = behind,
+    right = ahead (commits on branch not in source).
+    """
+    range_spec = f"{source}...{branch}"
+    result = _git_ok("rev-list", "--left-right", "--count", range_spec, cwd=wt)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise WorkspaceError(
+            f"git rev-list --left-right --count {range_spec} failed in {wt} "
+            f"(exit {result.returncode}): {detail}"
+        )
+    parts = (result.stdout or "").strip().split()
+    if len(parts) != 2:
+        raise WorkspaceError(
+            f"unexpected rev-list output in {wt}: {result.stdout!r}"
+        )
+    # left = commits reachable from source not in branch → behind
+    # right = commits reachable from branch not in source → ahead
+    try:
+        behind, ahead = int(parts[0]), int(parts[1])
+    except ValueError as exc:
+        raise WorkspaceError(
+            f"unexpected rev-list counts in {wt}: {parts!r}"
+        ) from exc
+    return ahead, behind
+
+
+def _unreachable_status(record: WorkspaceRecord, message: str) -> WorkspaceStatus:
+    return WorkspaceStatus(
+        slug=record.slug,
+        path=record.path,
+        branch=record.branch,
+        source=record.source,
+        dirty=None,
+        ahead=None,
+        behind=None,
+        merged=None,
+        error=message,
+    )
+
+
+def status_of(record: WorkspaceRecord, *, root: Path) -> WorkspaceStatus:
+    """CAP-3: live dirty / ahead / behind / merged for one owned record.
+
+    Missing path / git failure → ``error`` set (never raises) so a multi-row
+    ``status`` can still report reachable siblings.
+    """
+    wt = Path(record.path)
+    try:
+        is_dir = wt.is_dir()
+    except OSError as exc:
+        return _unreachable_status(record, str(exc))
+    if not is_dir:
+        return _unreachable_status(
+            record,
+            f"path missing or not a directory: {record.path}",
+        )
+    try:
+        dirty = _worktree_dirty(wt)
+        ahead, behind = _ahead_behind(wt, record.source, record.branch)
+        merged = _branch_merged_into(root, record.branch, record.source)
+    except WorkspaceError as exc:
+        return _unreachable_status(record, str(exc))
+    return WorkspaceStatus(
+        slug=record.slug,
+        path=record.path,
+        branch=record.branch,
+        source=record.source,
+        dirty=dirty,
+        ahead=ahead,
+        behind=behind,
+        merged=merged,
+    )
+
+
+def status_workspaces(
+    slug: str | None = None,
+    *,
+    root: Path | None = None,
+    bookkeeping: Path | None = None,
+) -> tuple[WorkspaceStatus, ...]:
+    """CAP-3: pay per-worktree git cost for owned worktrees (optional slug filter)."""
+    root = root if root is not None else repo_root()
+    bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
+    records = list_workspaces(bookkeeping=bookkeeping)
+    if slug is not None:
+        if not slug:
+            raise WorkspaceError("invalid slug ''")
+        matches = [r for r in records if r.slug == slug]
+        if not matches:
+            raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
+        if len(matches) > 1:
+            raise WorkspaceError(
+                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
+            )
+        records = tuple(matches)
+    return tuple(status_of(r, root=root) for r in records)
+
+
 def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     """True when ``branch`` is an ancestor of ``into`` (already merged)."""
     result = _git_ok("merge-base", "--is-ancestor", branch, into, cwd=root)
@@ -341,6 +490,24 @@ def format_ls(records: tuple[WorkspaceRecord, ...], *, as_json: bool) -> str:
     return "\n".join(lines)
 
 
+def format_status(statuses: tuple[WorkspaceStatus, ...], *, as_json: bool) -> str:
+    if as_json:
+        return json.dumps([s.to_dict() for s in statuses], indent=2)
+    if not statuses:
+        return "workspace status: no scratch workspaces open"
+    lines: list[str] = []
+    for s in statuses:
+        if s.error is not None:
+            lines.append(f"{s.slug}\terror\t{s.error}\t{s.path}")
+            continue
+        dirt = "dirty" if s.dirty else "clean"
+        merged = "merged" if s.merged else "unmerged"
+        lines.append(
+            f"{s.slug}\t{dirt}\tahead={s.ahead}\tbehind={s.behind}\t{merged}\t{s.path}"
+        )
+    return "\n".join(lines)
+
+
 def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> str:
     if as_json:
         return json.dumps(result, indent=2)
@@ -356,11 +523,11 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
     return "\n".join(lines)
 
 
-_WORKSPACE_VERBS: tuple[str, ...] = ("start", "ls", "clean")
+_WORKSPACE_VERBS: tuple[str, ...] = ("start", "ls", "status", "clean")
 
 
 class WorkspaceDuty:
-    """Duty adapter for ``steward workspace start|ls|clean``."""
+    """Duty adapter for ``steward workspace start|ls|status|clean``."""
 
     name = "workspace"
 
@@ -379,6 +546,11 @@ class WorkspaceDuty:
             if verb == "ls":
                 records = list_workspaces()
                 return DutyResult(ok=True, summary=format_ls(records, as_json=as_json))
+            if verb == "status":
+                statuses = status_workspaces(getattr(ns, "slug", None))
+                return DutyResult(
+                    ok=True, summary=format_status(statuses, as_json=as_json)
+                )
             # clean
             result = clean_workspaces(merged_only=bool(getattr(ns, "merged_only", False)))
             return DutyResult(ok=True, summary=format_clean(result, as_json=as_json))

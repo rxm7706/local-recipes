@@ -1,4 +1,4 @@
-"""Story 13.1 — `steward workspace start|ls|clean` + own-worktrees-only HARD."""
+"""Story 13.1–13.2 — `steward workspace start|ls|status|clean` + own-worktrees-only HARD."""
 
 from __future__ import annotations
 
@@ -10,12 +10,16 @@ import pytest
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, main
 from pyforge.steward.workspace import (
     WorkspaceError,
+    WorkspaceRecord,
     clean_workspaces,
     format_ls,
+    format_status,
     list_workspaces,
     load_bookkeeping,
+    save_bookkeeping,
     scratch_path_for,
     start_workspace,
+    status_workspaces,
 )
 
 
@@ -390,3 +394,223 @@ def test_start_after_clean_reuses_slug(repo: Path, tmp_path: Path):
     )
     assert record.slug == "reuse"
     assert dest2.is_dir()
+
+
+# --- Story 13.2 / CAP-3: status ---
+
+
+def test_status_reports_clean_ahead_behind_merged(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "status-a"
+    start_workspace(
+        "status-a", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
+    )
+
+    # Fresh equal tip: clean, ahead=0, behind=0, merged into source.
+    fresh = status_workspaces(root=repo, bookkeeping=bookkeeping)
+    assert len(fresh) == 1
+    assert fresh[0].slug == "status-a"
+    assert fresh[0].dirty is False
+    assert fresh[0].ahead == 0
+    assert fresh[0].behind == 0
+    assert fresh[0].merged is True
+
+    # Dirty + ahead.
+    (dest / "dirty.txt").write_text("x\n", encoding="utf-8")
+    _git("add", "dirty.txt", cwd=dest)
+    _git("commit", "-m", "ahead commit", cwd=dest)
+    (dest / "untracked.txt").write_text("y\n", encoding="utf-8")
+
+    after = status_workspaces("status-a", root=repo, bookkeeping=bookkeeping)
+    assert len(after) == 1
+    assert after[0].dirty is True
+    assert after[0].ahead == 1
+    assert after[0].behind == 0
+    assert after[0].merged is False
+
+    # Behind: advance origin/main without merging status-a.
+    _git("checkout", "main", cwd=repo)
+    _git("commit", "--allow-empty", "-m", "main moves", cwd=repo)
+    _git("push", "origin", "main", cwd=repo)
+
+    behind = status_workspaces("status-a", root=repo, bookkeeping=bookkeeping)[0]
+    assert behind.ahead == 1
+    assert behind.behind == 1
+    assert behind.merged is False
+
+
+def test_status_foreign_loop_home_invisible(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    owned = tmp_path / "owned-status"
+    start_workspace(
+        "owned-status",
+        root=repo,
+        bookkeeping=bookkeeping,
+        path=owned,
+        from_ref="origin/main",
+    )
+
+    foreign = tmp_path / "loop-homes" / "pyforge-marshal"
+    foreign.parent.mkdir(parents=True)
+    _git(
+        "worktree",
+        "add",
+        str(foreign),
+        "-b",
+        "loop/pyforge-marshal",
+        "origin/main",
+        cwd=repo,
+    )
+
+    statuses = status_workspaces(root=repo, bookkeeping=bookkeeping)
+    payload = json.loads(format_status(statuses, as_json=True))
+    assert [s["slug"] for s in payload] == ["owned-status"]
+    assert "loop/pyforge-marshal" not in json.dumps(payload)
+    assert str(foreign) not in json.dumps(payload)
+    assert foreign.is_dir()
+
+
+def test_status_unknown_slug_errors(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "known"
+    start_workspace(
+        "known", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
+    )
+    with pytest.raises(WorkspaceError, match="not in bookkeeping"):
+        status_workspaces("missing", root=repo, bookkeeping=bookkeeping)
+
+
+def test_status_json_via_cli(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "cli-status"
+    start_workspace(
+        "cli-status", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main"
+    )
+
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+
+    rc = main(["workspace", "status", "cli-status", "--json"])
+
+    assert rc == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert len(payload) == 1
+    assert payload[0]["slug"] == "cli-status"
+    assert payload[0]["dirty"] is False
+    assert payload[0]["ahead"] == 0
+    assert payload[0]["behind"] == 0
+    assert payload[0]["merged"] is True
+    assert "path" in payload[0]
+
+
+def test_status_cli_all_and_human(repo: Path, tmp_path: Path, monkeypatch, capsys):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "human-status"
+    start_workspace(
+        "human-status",
+        root=repo,
+        bookkeeping=bookkeeping,
+        path=dest,
+        from_ref="origin/main",
+    )
+
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+
+    rc = main(["workspace", "status"])
+    assert rc == EXIT_OK
+    out = capsys.readouterr().out
+    assert "human-status" in out
+    assert "clean" in out
+    assert "ahead=0" in out
+    assert "merged" in out
+
+
+def test_status_missing_path_per_row_error_keeps_siblings(
+    repo: Path, tmp_path: Path, monkeypatch, capsys
+):
+    """Missing bookkeeping path → per-row error; other rows still reported; duty ok."""
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    good = tmp_path / "status-good"
+    start_workspace(
+        "status-good",
+        root=repo,
+        bookkeeping=bookkeeping,
+        path=good,
+        from_ref="origin/main",
+    )
+    # Inject a stale bookkeeping row whose path was deleted (never discovered via git).
+    gone = tmp_path / "status-gone"
+    existing = load_bookkeeping(bookkeeping)
+    save_bookkeeping(
+        bookkeeping,
+        existing
+        + (
+            WorkspaceRecord(
+                slug="status-gone",
+                path=str(gone),
+                branch="status-gone",
+                source="origin/main",
+                created_at="2026-08-23T00:00:00+00:00",
+            ),
+        ),
+    )
+    assert not gone.exists()
+
+    statuses = status_workspaces(root=repo, bookkeeping=bookkeeping)
+    assert len(statuses) == 2
+    by_slug = {s.slug: s for s in statuses}
+    assert by_slug["status-good"].error is None
+    assert by_slug["status-good"].dirty is False
+    assert by_slug["status-gone"].error is not None
+    assert "missing" in by_slug["status-gone"].error.lower()
+    assert by_slug["status-gone"].dirty is None
+    assert by_slug["status-gone"].ahead is None
+    assert by_slug["status-gone"].behind is None
+    assert by_slug["status-gone"].merged is None
+
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+    rc = main(["workspace", "status", "--json"])
+    assert rc == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert {row["slug"] for row in payload} == {"status-good", "status-gone"}
+    gone_row = next(r for r in payload if r["slug"] == "status-gone")
+    assert "error" in gone_row
+    assert gone_row["dirty"] is None
+    assert gone_row["ahead"] is None
+    assert gone_row["behind"] is None
+    assert gone_row["merged"] is None
+    good_row = next(r for r in payload if r["slug"] == "status-good")
+    assert "error" not in good_row
+
+    rc = main(["workspace", "status"])
+    assert rc == EXIT_OK
+    human = capsys.readouterr().out
+    assert "status-gone\terror\t" in human
+    assert "status-good" in human
+    assert "clean" in human
+
+
+def test_status_unknown_slug_via_cli_exits_failed(repo: Path, monkeypatch, capsys):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: bookkeeping
+    )
+
+    rc = main(["workspace", "status", "no-such-slug", "--json"])
+
+    assert rc == EXIT_FAILED
+    err = json.loads(capsys.readouterr().err)
+    assert "not in bookkeeping" in err["error"]
+
+
+
+
