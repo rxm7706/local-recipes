@@ -42,7 +42,12 @@ def test_superseded_record_stays_present_and_marked_ended(tmp_path: Path, memory
     )
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.invalidated_count == 1
     nodes = {n.id: n for n in store.iter_nodes()}
@@ -66,7 +71,12 @@ def test_query_by_citation_resolves_superseded_record_distinguishing_current(
     capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     old_citation = ".claude/memory/project/plan-x.md"
     matches = store.query_by_citation(old_citation)
@@ -83,7 +93,12 @@ def test_dangling_supersedes_reference_is_skipped_not_raised(tmp_path: Path, mem
     capture(memory_root, "project", "Stands alone.", slug="standalone", supersedes="project/ghost")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.invalidated_count == 0
     assert any("ghost" in w for w in result.warnings)
@@ -95,11 +110,22 @@ def test_recompile_after_supersession_is_still_idempotent(tmp_path: Path, memory
     capture(memory_root, "project", "Original plan.", slug="plan-x")
     capture(memory_root, "project", "Revised plan.", slug="plan-y", supersedes="project/plan-x")
     store_path = tmp_path / "graph.json"
+    no_transcripts = tmp_path / "no-transcripts"
 
-    compile_graph(memory_root=memory_root, repo_root=tmp_path, store=FlatFileGraphStore(store_path))
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=no_transcripts,
+    )
     first_bytes = store_path.read_bytes()
 
-    compile_graph(memory_root=memory_root, repo_root=tmp_path, store=FlatFileGraphStore(store_path))
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=no_transcripts,
+    )
     second_bytes = store_path.read_bytes()
 
     assert first_bytes == second_bytes
@@ -113,7 +139,12 @@ def test_chained_supersession_each_hop_has_its_own_distinct_pointer(
     capture(memory_root, "project", "Plan C.", slug="plan-c", supersedes="project/plan-b")
 
     store = FlatFileGraphStore(tmp_path / "graph.json")
-    result = compile_graph(memory_root=memory_root, repo_root=tmp_path, store=store)
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
 
     assert result.invalidated_count == 2
     nodes = {n.id: n for n in store.iter_nodes()}
