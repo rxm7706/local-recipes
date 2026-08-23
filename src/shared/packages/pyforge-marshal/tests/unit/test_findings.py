@@ -226,6 +226,10 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-REFRESH-005",
             "MRS-REFRESH-006",
             "MRS-REFRESH-007",
+            "MRS-CHAIN-001",
+            "MRS-CHAIN-002",
+            "MRS-CHAIN-003",
+            "MRS-CHAIN-004",
         }
     )
 

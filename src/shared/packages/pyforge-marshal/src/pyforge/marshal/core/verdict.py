@@ -962,6 +962,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-REFRESH-005": Verdict.WARN,
     "MRS-REFRESH-006": Verdict.WARN,
     "MRS-REFRESH-007": Verdict.WARN,
+    # Story 17.4 (chain regenerate, FR-148/149/151):
+    # 001 missing planning tree → UNEVALUABLE; 002 phase fail ERROR;
+    # 003 done-key refuse ERROR; 004 orphan report WARN.
+    "MRS-CHAIN-001": Verdict.UNEVALUABLE,
+    "MRS-CHAIN-002": Verdict.ERROR,
+    "MRS-CHAIN-003": Verdict.ERROR,
+    "MRS-CHAIN-004": Verdict.WARN,
 }
 
 
