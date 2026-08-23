@@ -2,7 +2,7 @@
 title: Orchestrated regeneration that cannot lose code status
 type: feature
 created: '2026-08-23'
-status: in-review
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -96,6 +96,8 @@ baseline_revision: a38a2dbdfb
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/667
+Merge SHA: 7aa120fe86084d5590366ce5b8538636dae403c0
 Tests: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 5786 passed, 12 deselected
-Layers audit: `python -m pyforge.doctor.sources chain-completeness --layers --project pyforge-marshal --json` — still runs (17.3 intact)
+Layers audit: Story 17.3 `chain-completeness --layers` unchanged / still runnable
