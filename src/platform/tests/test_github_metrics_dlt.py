@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 
-import dlt
 import pytest
+
+dlt = pytest.importorskip("dlt")
 from pyforge.steward.keys import HostScopedCredential
 from pyforge.steward.sync import TransportResponse
 
