@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 45
-    next: 12-3-offline-operation-and-the-egress-counter
+    remaining_count: 44
+    next: 12-4-pattern-meta-tests-and-the-never-write-proof
     queue:
-    - 12-3-offline-operation-and-the-egress-counter
     - 12-4-pattern-meta-tests-and-the-never-write-proof
     - 12-5-cli-contract-idempotence-harness-and-performance-gates
     - 12-6-readme-adoption-guide-and-the-finding-remedy-reference
