@@ -13,6 +13,16 @@ class User(AbstractUser):
 
     # First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)
+    # CAP-1 / steward 16.5: sole identity key (AD-11). Nullable so existing rows
+    # survive until their next OIDC authentication.
+    idp_subject = CharField(
+        _("IdP subject"),
+        max_length=255,
+        unique=True,
+        null=True,
+        blank=True,
+        default=None,
+    )
     first_name = None  # type: ignore[assignment]
     last_name = None  # type: ignore[assignment]
 

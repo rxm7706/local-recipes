@@ -134,11 +134,45 @@ services:
       DJANGO_SECURE_SSL_REDIRECT: "False"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform
       REDIS_URL: redis://redis:6379/0
+      # CAP-1 / steward 16.5: OIDC-delegated identity (Keycloak local substrate).
+      COMPONENT_IDENTITY_CLAIM: sub
+      COMPONENT_GROUP_CLAIM: groups
+      COMPONENT_STAFF_GROUP: platform-staff
+      COMPONENT_SUPERUSER_GROUP: platform-superuser
+      COMPONENT_OIDC_ISSUER: http://keycloak:8080/realms/platform
+      COMPONENT_OIDC_CLIENT_ID: platform-web
+      COMPONENT_OIDC_CLIENT_SECRET: local-compose-keycloak-secret-not-real
+      COMPONENT_OIDC_AUDIENCE: platform-web
+      COMPONENT_OIDC_PROVIDER_NAME: Platform Keycloak
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  # CAP-1 / steward 16.5: Keycloak realm-as-code local substrate (devinfra pattern).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "exec 3<>/dev/tcp/127.0.0.1/8080"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
 
   # Story 11.3 (CAP-4): the Celery worker process itself -- `config/
   # celery_app.py` and `CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` (derived
@@ -163,13 +197,21 @@ services:
       DJANGO_SECURE_SSL_REDIRECT: "False"
       DATABASE_URL: postgres://platform:platform@postgres:5432/platform
       REDIS_URL: redis://redis:6379/0
+      COMPONENT_IDENTITY_CLAIM: sub
+      COMPONENT_GROUP_CLAIM: groups
+      COMPONENT_STAFF_GROUP: platform-staff
+      COMPONENT_SUPERUSER_GROUP: platform-superuser
+      COMPONENT_OIDC_ISSUER: http://keycloak:8080/realms/platform
+      COMPONENT_OIDC_CLIENT_ID: platform-web
+      COMPONENT_OIDC_CLIENT_SECRET: local-compose-keycloak-secret-not-real
+      COMPONENT_OIDC_AUDIENCE: platform-web
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-
-  # Story 10.5 (AD-14 Pattern B): DB-GPT's own model-worker + FastAPI
+      keycloak:
+        condition: service_healthy
   # webserver, run as its own container -- see this file's own top-of-file
   # comment for why (disjoint `fastapi` ranges vs. the shared
   # `python-agent-platform` env `platform` builds from). Deliberately no

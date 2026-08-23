@@ -13,13 +13,24 @@ Moved to [settings](https://cookiecutter-django.readthedocs.io/en/latest/1-getti
 
 ### Setting Up Your Users
 
-- To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "Verify Your E-mail Address" page. Go to your console to see a simulated email verification message. Copy the link into your browser. Now the user's email should be verified and ready to go.
+Identity is OIDC-delegated (CAP-1). There is no local password login and no
+`createsuperuser` path — staff and superuser derive from IdP group claims on
+each authentication.
 
-- To create a **superuser account**, use this command:
+**Local development without Keycloak:** mint a persona JWT and exercise the
+mapper-backed flows:
 
-      $ python manage.py createsuperuser
+    $ cd src/platform
+    $ COMPONENT_RUNTIME=local python -m config.local_dev.mint staff
 
-For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
+**Local development with Keycloak:** start the compose stack (includes a
+realm-as-code Keycloak import) and sign in through the IdP:
+
+    $ docker compose -f src/platform/compose/compose.yml up keycloak platform
+
+Configure OIDC via `COMPONENT_OIDC_*` environment variables (see
+`config/settings/base.py`). Default local claim names: identity `sub`, groups
+`groups`, staff group `platform-staff`, superuser group `platform-superuser`.
 
 ### Type checks
 
