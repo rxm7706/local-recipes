@@ -64,7 +64,7 @@ development_status:
   17-2-the-dreams-hygiene-mode-exists: done
   17-3-chain-completeness-audit-mode-reports-layers: done
   17-4-orchestrated-regeneration-that-cannot-lose-code-status: done
-  18-1-marshals-capabilities-become-named-typed-tools: backlog
+  18-1-marshals-capabilities-become-named-typed-tools: done
   18-2-parity-and-coverage-are-gated-numbers: backlog
   19-1-one-generator-produces-every-stations-test-architecture: backlog
   19-2-the-shared-test-support-kit: backlog

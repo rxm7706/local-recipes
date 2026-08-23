@@ -2,7 +2,7 @@
 title: Marshal's capabilities become named, typed tools
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -41,3 +41,10 @@ baseline_revision: 0c9c17ecb5
 - `pixi run --frozen -e pyforge-marshal` relevant unit/meta tests green
 - Tool registration survives clone pattern (fixture)
 - CI: detectors, linter, package tests
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/668
+Merge SHA: 657c6bbe1ea80539805633808057a67b48d62968
+Tests: `pixi run --frozen -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests -q -m "not slow"` — 5840 passed, 12 deselected

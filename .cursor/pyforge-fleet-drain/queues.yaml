@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 35
-    next: 18-1-marshals-capabilities-become-named-typed-tools
+    remaining_count: 34
+    next: 18-2-parity-and-coverage-are-gated-numbers
     queue:
-    - 18-1-marshals-capabilities-become-named-typed-tools
     - 18-2-parity-and-coverage-are-gated-numbers
     - 19-1-one-generator-produces-every-stations-test-architecture
     - 19-2-the-shared-test-support-kit
