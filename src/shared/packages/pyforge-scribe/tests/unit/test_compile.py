@@ -169,9 +169,12 @@ def test_no_optional_surfaces_present_still_succeeds(tmp_path: Path, memory_root
     )
 
     assert result.node_count == 1
-    assert result.warnings == () or all(
-        ("git" in w or "transcript" in w) for w in result.warnings
-    )
+    # Pin each optional surface's warning count exactly, rather than the
+    # weaker `all("git" in w or "transcript" in w)` shape: that predicate
+    # holds for essentially any warning either surface could emit, so it
+    # would stay green through a real regression in one of them.
+    assert len([w for w in result.warnings if "transcript" in w]) == 1
+    assert all(("git" in w or "transcript" in w) for w in result.warnings)
 
 
 def test_git_absent_logs_warning_and_does_not_abort(
@@ -362,6 +365,17 @@ def test_transcript_surface_happy_path_produces_one_node(tmp_path: Path, memory_
     assert node.title != node.text
     assert node.citation == "session-a.jsonl:L1"
     assert node.id == "transcript:session-a.jsonl:L1"
+    # Pin the PRIMARY `_transcript_valid_from()` branch -- the entry's own
+    # ISO-8601 timestamp, not the file's mtime. Without this, killing the
+    # `fromisoformat()` branch outright left the whole suite green (review
+    # finding): the only two `valid_from` assertions both *expect* the mtime
+    # fallback, and the fixture's mtime is "now", so every transcript node
+    # could silently be dated by its session file instead of by the moment
+    # the decision was stated.
+    assert node.valid_from == datetime(2026, 8, 20, 12, 0, tzinfo=timezone.utc)
+    assert node.valid_from != datetime.fromtimestamp(
+        (transcript_root / "session-a.jsonl").stat().st_mtime, tz=timezone.utc
+    )
 
 
 def test_transcript_surface_missing_timestamp_falls_back_to_file_mtime(
@@ -534,3 +548,132 @@ def test_transcript_surface_idempotent_rerun_is_byte_identical(
     second_bytes = store_path.read_bytes()
 
     assert first_bytes == second_bytes
+
+
+def test_transcript_surface_naive_timestamp_is_normalized_to_utc(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: a transcript timestamp with no UTC offset parses to a
+    NAIVE datetime, while every other surface's `valid_from` is tz-aware
+    UTC. Mixing the two on one graph made any cross-node comparison raise
+    `TypeError: can't compare offset-naive and offset-aware datetimes` --
+    reproduced directly before the fix."""
+    capture(memory_root, "feedback", "Some curated content, for a tz-aware node.")
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [
+            _assistant_transcript_line(
+                "We decided to use SQLite for the local cache.",
+                timestamp="2026-08-20T12:00:00",  # no offset -> naive
+            )
+        ],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    nodes = list(store.iter_nodes())
+    transcript_nodes = [n for n in nodes if n.kind == "transcript"]
+    assert len(transcript_nodes) == 1
+    assert transcript_nodes[0].valid_from == datetime(2026, 8, 20, 12, 0, tzinfo=timezone.utc)
+    assert all(n.valid_from.tzinfo is not None for n in nodes)
+    sorted(nodes, key=lambda n: n.valid_from)  # must not raise TypeError
+
+
+def test_transcript_surface_unreadable_root_warns_and_contributes_zero_nodes(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: this story's contract says a "missing/UNREADABLE"
+    transcript root degrades to a warning and zero nodes, but
+    `scan_transcripts()` swallows the `OSError` from its own glob -- so an
+    existing-but-unreadable root produced zero nodes AND zero warnings,
+    indistinguishable from "nothing decision-shaped was said"."""
+    capture(memory_root, "feedback", "content")
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    transcript_root.chmod(0o000)
+    try:
+        store = FlatFileGraphStore(tmp_path / "graph.json")
+        result = compile_graph(
+            memory_root=memory_root,
+            repo_root=tmp_path,
+            store=store,
+            transcript_root=transcript_root,
+        )
+    finally:
+        transcript_root.chmod(0o700)
+
+    assert [n for n in store.iter_nodes() if n.kind == "transcript"] == []
+    assert result.node_count == 1  # only the memory entry
+    transcript_warnings = [w for w in result.warnings if "transcript" in w]
+    assert len(transcript_warnings) == 1
+    assert "is not readable" in transcript_warnings[0]
+
+
+def test_transcript_surface_warning_does_not_advertise_a_flag_compile_lacks(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: the warning forwarded `scan_transcripts()`'s own
+    `ValueError`, whose text ends "pass --source to point at the correct
+    user-local session-transcript directory". `--source` exists on `scribe
+    capture --transcripts`, NOT on `scribe graph compile` (which this
+    story's contract forbids giving one), so the unattended path told
+    operators to reach for a flag that command does not accept."""
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "does-not-exist",
+    )
+
+    transcript_warnings = [w for w in result.warnings if "transcript" in w]
+    assert len(transcript_warnings) == 1
+    assert "--source" not in transcript_warnings[0]
+    # still diagnosable: names the root and why it was unusable
+    assert "does-not-exist" in transcript_warnings[0]
+    assert "does not exist" in transcript_warnings[0]
+
+
+def test_transcript_surface_ids_are_keyed_by_file_and_line_not_a_global_index(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Review finding: every existing id test used ONE file with ONE line,
+    for which a global running index (`enumerate(proposal.candidates)`)
+    yields identical ids -- so the documented `(source_file, line_number)`
+    keying was unpinned, and that mutation kept the whole suite green. With
+    two files, a global index would mint `transcript:session-b.jsonl:L1:1`
+    -- a spurious duplicate suffix for a non-duplicate."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-b.jsonl",
+        [_assistant_transcript_line("We chose to deprecate the legacy webhook retry queue.")],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    ids = {n.id for n in store.iter_nodes() if n.kind == "transcript"}
+    assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-b.jsonl:L1"}

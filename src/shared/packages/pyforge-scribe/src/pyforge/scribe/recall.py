@@ -41,7 +41,13 @@ _STOPWORDS = frozenset(
 )
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
-_TRANSCRIPT_CITATION_RE = re.compile(r".+\.jsonl:L\d+$")
+#: A transcript citation is a BARE `<jsonl filename>:L<line>` -- Story 3.2's
+#: own format contract is "no directory path". `[^/\\:]+` enforces that
+#: literally: an earlier `.+` also admitted `nested/dir/x.jsonl:L1` and
+#: `../../../etc/passwd.jsonl:L1`, and because this branch short-circuits
+#: the `is_file()` check below, any such citation was declared resolvable
+#: without existing (review finding).
+_TRANSCRIPT_CITATION_RE = re.compile(r"[^/\\:]+\.jsonl:L\d+")
 
 
 @dataclass(frozen=True)
