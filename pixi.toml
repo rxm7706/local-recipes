@@ -203,6 +203,10 @@ elevenlabs = ">=1.52.0,<2.0.0"     # langflow.api.v1.voice_mode hard-imports ele
 # whole fix; psycopg 3 supports SQLAlchemy's async engine natively.
 psycopg = ">=3.3.4"
 httpx = ">=0.28.1"                 # Story 11.2 (AD-17 Pattern B): dbgpt_integration/tasks.py's Celery task drives the DB-GPT sidecar's REST API over HTTP -- explicit pin documents intent even though it likely also arrives transitively
+dlt = ">=1.30.0,<2"                # Story 12.8: GitHub Projects V2 → github_metrics ingest (blocked on repo-default py3.14 — lives here)
+pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
+pytest = ">=8.0"                   # Story 12.8: github_metrics dlt ingest tests
+duckdb = ">=1.5.5,<2"              # Story 12.8: dry-run destination for github-metrics-dlt --dry-run
 
 [feature.platform-dev]
 # --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
@@ -636,11 +640,6 @@ pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
 # copied pins), so this tracks each station's deps automatically; it does
 # not curate or split any feature -- it only composes what already exists.
 pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe"], no-default-feature = true }
-# python-agent-platform (CAP-5, Story 10.2, "one factory-sourced environment"):
-# no-default-feature keeps the fat default [dependencies] (python 3.14 + pixi
-# + conda + pip + uv) out, so this env pins python 3.12 env-scoped only --
-# every other environment in this file stays on its own declared floor.
-python-agent-platform = { features = ["python-agent-platform"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
@@ -658,6 +657,21 @@ dbgpt-sidecar = { features = ["dbgpt-sidecar"], no-default-feature = true }
 # mirrors requirements/{base,production,local}.txt; toggle pip fallback via
 # PLATFORM_TEST_BACKEND=pip or workflow_dispatch platform_test_backend.
 platform-ci-test = { features = ["platform-ci-test"], no-default-feature = true }
+
+[environments.python-agent-platform]
+features = ["python-agent-platform"]
+no-default-feature = true
+
+[feature.python-agent-platform.tasks.github-metrics-dlt]
+description = "Run the GitHub Projects V2 → github_metrics dlt pipeline (Story 12.8)."
+cmd = "python -m github_projects.pipeline"
+cwd = "src/platform/ingest"
+env = { PYTHONPATH = ".:../../shared/packages/pyforge-steward/src:../../shared/packages/pyforge-core/src" }
+
+[feature.python-agent-platform.tasks.github-metrics-dlt-test]
+description = "Tests for the github_metrics dlt ingest pipeline (Story 12.8)."
+cmd = "pytest -c /dev/null --rootdir=. src/platform/tests/test_github_metrics_dlt.py -q"
+env = { PYTHONPATH = "src/platform/ingest:src/shared/packages/pyforge-steward/src:src/shared/packages/pyforge-core/src" }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
