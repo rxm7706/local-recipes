@@ -570,6 +570,8 @@ def test_status_missing_path_per_row_error_keeps_siblings(
     assert "missing" in by_slug["status-gone"].error.lower()
     assert by_slug["status-gone"].dirty is None
     assert by_slug["status-gone"].ahead is None
+    assert by_slug["status-gone"].behind is None
+    assert by_slug["status-gone"].merged is None
 
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
     monkeypatch.setattr(
@@ -581,8 +583,19 @@ def test_status_missing_path_per_row_error_keeps_siblings(
     assert {row["slug"] for row in payload} == {"status-good", "status-gone"}
     gone_row = next(r for r in payload if r["slug"] == "status-gone")
     assert "error" in gone_row
+    assert gone_row["dirty"] is None
+    assert gone_row["ahead"] is None
+    assert gone_row["behind"] is None
+    assert gone_row["merged"] is None
     good_row = next(r for r in payload if r["slug"] == "status-good")
     assert "error" not in good_row
+
+    rc = main(["workspace", "status"])
+    assert rc == EXIT_OK
+    human = capsys.readouterr().out
+    assert "status-gone\terror\t" in human
+    assert "status-good" in human
+    assert "clean" in human
 
 
 def test_status_unknown_slug_via_cli_exits_failed(repo: Path, monkeypatch, capsys):

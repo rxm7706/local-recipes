@@ -253,7 +253,7 @@ def _worktree_dirty(wt: Path) -> bool:
             f"git status --porcelain failed in {wt} "
             f"(exit {result.returncode}): {detail}"
         )
-    return bool(result.stdout.strip())
+    return bool((result.stdout or "").strip())
 
 
 def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:
@@ -270,14 +270,19 @@ def _ahead_behind(wt: Path, source: str, branch: str) -> tuple[int, int]:
             f"git rev-list --left-right --count {range_spec} failed in {wt} "
             f"(exit {result.returncode}): {detail}"
         )
-    parts = result.stdout.strip().split()
+    parts = (result.stdout or "").strip().split()
     if len(parts) != 2:
         raise WorkspaceError(
             f"unexpected rev-list output in {wt}: {result.stdout!r}"
         )
     # left = commits reachable from source not in branch → behind
     # right = commits reachable from branch not in source → ahead
-    behind, ahead = int(parts[0]), int(parts[1])
+    try:
+        behind, ahead = int(parts[0]), int(parts[1])
+    except ValueError as exc:
+        raise WorkspaceError(
+            f"unexpected rev-list counts in {wt}: {parts!r}"
+        ) from exc
     return ahead, behind
 
 
@@ -302,7 +307,11 @@ def status_of(record: WorkspaceRecord, *, root: Path) -> WorkspaceStatus:
     ``status`` can still report reachable siblings.
     """
     wt = Path(record.path)
-    if not wt.is_dir():
+    try:
+        is_dir = wt.is_dir()
+    except OSError as exc:
+        return _unreachable_status(record, str(exc))
+    if not is_dir:
         return _unreachable_status(
             record,
             f"path missing or not a directory: {record.path}",
@@ -336,9 +345,15 @@ def status_workspaces(
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
     records = list_workspaces(bookkeeping=bookkeeping)
     if slug is not None:
+        if not slug:
+            raise WorkspaceError("invalid slug ''")
         matches = [r for r in records if r.slug == slug]
         if not matches:
             raise WorkspaceError(f"workspace {slug!r} not in bookkeeping")
+        if len(matches) > 1:
+            raise WorkspaceError(
+                f"ambiguous slug {slug!r}: {len(matches)} bookkeeping rows"
+            )
         records = tuple(matches)
     return tuple(status_of(r, root=root) for r in records)
 
@@ -532,7 +547,7 @@ class WorkspaceDuty:
                 records = list_workspaces()
                 return DutyResult(ok=True, summary=format_ls(records, as_json=as_json))
             if verb == "status":
-                statuses = status_workspaces(getattr(ns, "slug", None) or None)
+                statuses = status_workspaces(getattr(ns, "slug", None))
                 return DutyResult(
                     ok=True, summary=format_status(statuses, as_json=as_json)
                 )
