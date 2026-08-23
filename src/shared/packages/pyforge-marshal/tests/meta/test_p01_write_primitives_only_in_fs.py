@@ -61,8 +61,38 @@ def _is_write_open_mode(mode: str | None) -> bool:
     return any(ch in mode for ch in _WRITE_MODES)
 
 
+_OS_WRITE_NAMES = frozenset({"remove", "rename", "replace", "unlink"})
+_SHUTIL_COPY_PREFIX = "copy"
+
+
 def _write_primitive_violations(tree: ast.Module) -> list[str]:
+    """Detect forbidden write shapes, including ``from os import remove`` aliases."""
     violations: list[str] = []
+    os_aliases: set[str] = {"os"}
+    shutil_aliases: set[str] = {"shutil"}
+    bare_write_names: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                bound = alias.asname or alias.name.split(".")[0]
+                if alias.name == "os" or alias.name.startswith("os."):
+                    os_aliases.add(bound)
+                if alias.name == "shutil" or alias.name.startswith("shutil."):
+                    shutil_aliases.add(bound)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level != 0 or node.module is None:
+                continue
+            if node.module == "os":
+                for alias in node.names:
+                    name = alias.name if alias.name != "*" else None
+                    if name in _OS_WRITE_NAMES:
+                        bare_write_names.add(alias.asname or name)
+            if node.module == "shutil":
+                for alias in node.names:
+                    name = alias.name if alias.name != "*" else None
+                    if name is not None and name.startswith(_SHUTIL_COPY_PREFIX):
+                        bare_write_names.add(alias.asname or name)
 
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -81,14 +111,17 @@ def _write_primitive_violations(tree: ast.Module) -> list[str]:
             if _is_write_open_mode(mode):
                 violations.append(f"open(..., {mode!r}) at line {node.lineno}")
 
+        if isinstance(func, ast.Name) and func.id in bare_write_names:
+            violations.append(f"{func.id}(...) at line {node.lineno}")
+
         if isinstance(func, ast.Attribute):
             if func.attr in {"write_text", "write_bytes"}:
                 violations.append(f".{func.attr} at line {node.lineno}")
             if isinstance(func.value, ast.Name):
-                if func.value.id == "os" and func.attr in {"remove", "rename", "replace"}:
-                    violations.append(f"os.{func.attr} at line {node.lineno}")
-                if func.value.id == "shutil" and func.attr.startswith("copy"):
-                    violations.append(f"shutil.{func.attr} at line {node.lineno}")
+                if func.value.id in os_aliases and func.attr in _OS_WRITE_NAMES:
+                    violations.append(f"{func.value.id}.{func.attr} at line {node.lineno}")
+                if func.value.id in shutil_aliases and func.attr.startswith(_SHUTIL_COPY_PREFIX):
+                    violations.append(f"{func.value.id}.{func.attr} at line {node.lineno}")
 
     return violations
 
@@ -114,6 +147,9 @@ def test_guard_is_alive_on_synthetic_violations():
     assert _write_primitive_violations(ast.parse("from pathlib import Path\nPath('x').write_text('')\n"))
     assert _write_primitive_violations(ast.parse("import shutil\nshutil.copy2('a', 'b')\n"))
     assert _write_primitive_violations(ast.parse("import os\nos.remove('x')\n"))
+    assert _write_primitive_violations(ast.parse("from os import remove\nremove('x')\n"))
+    assert _write_primitive_violations(ast.parse("from shutil import copy2\ncopy2('a', 'b')\n"))
+    assert _write_primitive_violations(ast.parse("import os as filesystem\nfilesystem.rename('a', 'b')\n"))
     assert _write_primitive_violations(ast.parse("open('x', 'r')\n")) == []
     assert _write_primitive_violations(ast.parse("import shutil\nshutil.rmtree('x')\n")) == []
 

@@ -105,12 +105,15 @@ def _private_copier_import_violations(tree: ast.Module) -> list[str]:
                 if _is_private_or_deprecated_copier_module(alias.name):
                     violations.append(alias.name)
         elif isinstance(node, ast.ImportFrom):
-            if (
-                node.level == 0
-                and node.module is not None
-                and _is_private_or_deprecated_copier_module(node.module)
-            ):
+            if node.level != 0 or node.module is None:
+                continue
+            if _is_private_or_deprecated_copier_module(node.module):
                 violations.append(node.module)
+            # ``from copier import _main`` — private name on a public module.
+            if node.module == "copier" or node.module.startswith("copier."):
+                for alias in node.names:
+                    if alias.name.startswith("_"):
+                        violations.append(f"{node.module}.{alias.name}")
     return violations
 
 
@@ -180,6 +183,9 @@ def test_private_copier_detector_is_alive():
     assert _private_copier_import_violations(
         ast.parse("from copier._user_data import AnswersMap\n")
     ) == ["copier._user_data"]
+    assert _private_copier_import_violations(ast.parse("from copier import _main\n")) == [
+        "copier._main"
+    ]
     assert _private_copier_import_violations(ast.parse("import copier\n")) == []
     assert _private_copier_import_violations(ast.parse("from copier.errors import CopierError\n")) == []
     assert _private_copier_import_violations(ast.parse("import copier_private\n")) == []
