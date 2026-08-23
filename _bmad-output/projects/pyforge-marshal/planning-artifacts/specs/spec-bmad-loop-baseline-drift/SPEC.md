@@ -9,9 +9,10 @@ surface:
 sources:
   - ../../../../../../docs/dreams/bmad-loop-baseline-drift.md
 open_questions:
-  - "Detector home (a story-level design decision): a scripts/*.py invoked directly (loop-stall-check precedent) or a pyforge.doctor.sources module behind the dispatcher (story-status-check precedent)."
   - "Detection posture: post-hoc journal-signature match only, or also a live mid-flight comparison of task.baseline_commit against the worktree's real basis — the latter catches drift BEFORE a deferred attempt burns hours."
   - "Whether pause/escalate can be actuated from outside the package (a bmad-loop CLI surface vs report-only) — unsolicited tmux send-keys is against standing policy, so actuation may reduce to loud reporting."
+decisions:
+  - "Detector home (Story 20.1): scripts/bmad_loop_baseline_drift_check.py via baseline-drift-check pixi task (loop-stall-check precedent), not pyforge.doctor.sources."
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
