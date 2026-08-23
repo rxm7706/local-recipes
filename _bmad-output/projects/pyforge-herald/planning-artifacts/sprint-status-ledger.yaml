@@ -44,7 +44,7 @@ development_status:
   14-2-headless-render-gate: done
   14-3-image-slot-scan: done
   15-1-template-parse-then-fill-produces-a-genuinely-editable-deck: done
-  15-2-dense-content-renders-as-shapes-that-fit: backlog
+  15-2-dense-content-renders-as-shapes-that-fit: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
@@ -80,11 +80,11 @@ development_status:
   epic-11-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
-  epic-13: backlog
+  epic-13: done
   epic-13-retrospective: optional
-  epic-14: backlog
+  epic-14: done
   epic-14-retrospective: optional
-  epic-15: backlog
+  epic-15: done
   epic-15-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
