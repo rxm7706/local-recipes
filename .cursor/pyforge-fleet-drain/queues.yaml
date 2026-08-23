@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 46
-    next: 12-2-the-local-recipes-empty-plan-oracle
+    remaining_count: 45
+    next: 12-3-offline-operation-and-the-egress-counter
     queue:
-    - 12-2-the-local-recipes-empty-plan-oracle
     - 12-3-offline-operation-and-the-egress-counter
     - 12-4-pattern-meta-tests-and-the-never-write-proof
     - 12-5-cli-contract-idempotence-harness-and-performance-gates
