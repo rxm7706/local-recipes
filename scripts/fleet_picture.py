@@ -159,6 +159,22 @@ def bmad_core_drift_findings(
     return [f for f in findings if f.get("status") == "warn"]
 
 
+def sibling_dreams_drift_findings(
+    repo: pathlib.Path = REPO, timeout: int = 20
+) -> list[dict]:
+    """WARN Findings from ``pyforge.doctor``'s sibling-dreams-drift source
+    (Story 16.1 / CAP-1). Same subprocess discipline as
+    ``bmad_core_drift_findings``; raises on failure so ATTENTION can degrade.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources",
+         "sibling-dreams-drift", "--json"],
+        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def verification_staleness_findings(
     repo: pathlib.Path = REPO, timeout: int = 90
     # 90s, not `bmad_core_drift_findings`'s 25s: measured live against this
@@ -511,6 +527,14 @@ def main() -> int:
         # on the normal any-gap path, which is exit 2 with valid JSON (see
         # dream_chain_gap_findings' docstring).
         watch.append("could not check dream-chain gaps")
+
+    try:
+        for finding in sibling_dreams_drift_findings():
+            check = finding.get("check", "sibling-dreams-drift")
+            message = finding.get("message", "sibling dream drift").split(chr(10))[0][:110]
+            watch.append(f"{check}: {message}")
+    except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
+        watch.append("could not check sibling-dreams drift")
 
     print("\nATTENTION:")
     if needs:
