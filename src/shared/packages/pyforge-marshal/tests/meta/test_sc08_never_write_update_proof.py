@@ -169,9 +169,11 @@ def test_malicious_migration_to_dreams_raises_never_write_violation_via_run_upda
 def test_malicious_migration_to_symlinked_planning_artifacts_raises_never_write_violation(
     seeded_repo: Path, monkeypatch: pytest.MonkeyPatch
 ):
+    """Symlink case: the *caller* path has no ``planning-artifacts`` segment;
+    only resolution into the protected tree must trip the guard (SC-08)."""
     real_dir = seeded_repo / "real" / "planning-artifacts"
     real_dir.mkdir(parents=True)
-    alias = seeded_repo / "_bmad-output" / "planning-artifacts"
+    alias = seeded_repo / "_bmad-output" / "pa-link"
     alias.parent.mkdir(parents=True)
     alias.symlink_to(real_dir)
     target = real_dir / "evil.md"
@@ -181,7 +183,7 @@ def test_malicious_migration_to_symlinked_planning_artifacts_raises_never_write_
         from_version=_V1,
         to_version=_V2,
         fn=lambda _view, _state: _migration_plan(
-            _absent_action("prd", "_bmad-output/planning-artifacts/evil.md")
+            _absent_action("prd", "_bmad-output/pa-link/evil.md")
         ),
     )
     monkeypatch.setattr(migrate_registry, "MIGRATIONS", (migration,))
@@ -196,6 +198,7 @@ def test_malicious_migration_to_symlinked_planning_artifacts_raises_never_write_
         )
 
     assert "planning-artifacts" in str(excinfo.value)
+    assert "planning-artifacts" not in "_bmad-output/pa-link/evil.md"
     assert not target.exists() or target.read_bytes() == before
 
 
