@@ -49,7 +49,7 @@ _HELP = {
     "budget": "cost budgeting and enforcement",
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
     "workspace": (
-        "story-scoped scratch worktrees — start/ls/clean "
+        "story-scoped scratch worktrees — start/ls/status/clean "
         "(own-worktrees-only; archive-not-delete)"
     ),
 }
@@ -360,9 +360,9 @@ def _add_sync_subparsers(sync_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None:
-    """Add `start`/`ls`/`clean` (Story 13.1 / CAP-1,2,4). No `status` (13.2)."""
+    """Add `start`/`ls`/`status`/`clean` (Stories 13.1–13.2 / CAP-1..4)."""
     workspace_subs = workspace_parser.add_subparsers(
-        dest="workspace_verb", metavar="{start,ls,clean}"
+        dest="workspace_verb", metavar="{start,ls,status,clean}"
     )
 
     start = workspace_subs.add_parser(
@@ -382,6 +382,21 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
         "ls", help="list tool-created scratch worktrees (bookkeeping only; cheap)"
     )
     ls.add_argument("--json", action="store_true", help="emit JSON instead of a text table")
+
+    status = workspace_subs.add_parser(
+        "status",
+        help=(
+            "report dirty/clean, ahead/behind, merged? for owned worktrees "
+            "(pays per-worktree git cost; optional slug)"
+        ),
+    )
+    status.add_argument(
+        "slug",
+        nargs="?",
+        default=None,
+        help="optional slug — when omitted, status every owned worktree",
+    )
+    status.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
     clean = workspace_subs.add_parser(
         "clean",
