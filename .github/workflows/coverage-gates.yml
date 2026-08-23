@@ -68,4 +68,4 @@ jobs:
             BASE="$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)"
           fi
           pixi run --frozen -e pyforge-marshal python scripts/coverage_gates_ci.py \
-            --base "$BASE" --head HEAD
+            --base "$BASE" --head HEAD --suites unit

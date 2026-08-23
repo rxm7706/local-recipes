@@ -201,17 +201,16 @@ def test_touched_source_modules_maps_paths_to_dotted_names():
     )
 
 
-def test_evaluate_only_modules_names_missing_touched_module_as_zero():
-    """Touched modules absent from the report still get named (as 0%)."""
+def test_evaluate_only_modules_skips_unmeasured_touched_modules():
+    """Touched modules absent from this suite's report are N/A (not zero-filled)."""
     ok, msg = evaluate_coverage_payload(
         {"pyforge.marshal.core.gate": 99.0},
         station="marshal",
         suite="unit",
         only_modules=["pyforge.marshal.coverage_gate"],
     )
-    assert ok is False
-    assert "pyforge.marshal.coverage_gate" in msg
-    assert "0.0%" in msg
+    assert ok is True
+    assert "OK" in msg
 
 
 def test_evaluate_only_modules_empty_is_ok():

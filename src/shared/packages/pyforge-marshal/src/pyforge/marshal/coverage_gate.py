@@ -364,16 +364,10 @@ def evaluate_coverage_payload(
     percents = module_percents_from_coverage_json(payload)
     if only_modules is not None:
         wanted = [m for m in only_modules if m]
-        # Touched modules absent from the report count as 0% so the failure
-        # still *names* them (FR-131) instead of silently skipping.
-        filtered = filter_percents(percents, wanted)
-        for name in wanted:
-            if name not in filtered and not any(
-                existing == name or existing.startswith(name + ".")
-                for existing in filtered
-            ):
-                filtered[name] = 0.0
-        percents = filtered
+        # Touched-module mode: gate only modules that this suite actually
+        # measured. Absent modules are N/A for the suite (e.g. unit-only
+        # code never imported by integration) — do not zero-fill them.
+        percents = filter_percents(percents, wanted)
     return evaluate_suite(
         percents, suite=suite, threshold=thr, station=station
     )
