@@ -160,11 +160,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 12
+    remaining_count: 11
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 15-1-one-command-reports-the-whole-pipelines-truth
     - 15-2-one-command-advances-a-stale-package-end-to-end
     - 15-3-five-modules-wire-through-the-provisioning-verb
     - 15-4-the-upgrade-gate-spot-checks-one-native-path-per-class
