@@ -2,7 +2,7 @@
 title: Pattern meta-tests and the never-write proof
 type: test
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
