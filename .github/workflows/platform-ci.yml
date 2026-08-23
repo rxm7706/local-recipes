@@ -1008,14 +1008,16 @@ jobs:
             exit 1
           }
 
-      # The ORM-backed assertion: `/admin/login/` reads `django_site`, so
-      # this proves the migrate Job actually ran through the Ingress path,
+      # The ORM-backed assertion: `/platform-admin/login/` reads `django_site`,
+      # so this proves the migrate Job actually ran through the Ingress path,
       # not just that the app process answers a bare connectivity probe.
-      - name: Smoke-test /admin/login/ through the Ingress (proves the ORM round-trip)
+      # CAP-3 / steward 16.2: chart default adminUrl is `platform-admin/`
+      # (stage-1 refuses the cookiecutter placeholder `admin/`).
+      - name: Smoke-test /platform-admin/login/ through the Ingress (proves the ORM round-trip)
         run: |
-          code="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: platform.internal' http://127.0.0.1/admin/login/ || true)"
+          code="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: platform.internal' http://127.0.0.1/platform-admin/login/ || true)"
           if [ "$code" != "200" ]; then
-            echo "::error::/admin/login/ through the Ingress returned $code, expected 200"
+            echo "::error::/platform-admin/login/ through the Ingress returned $code, expected 200"
             kubectl get pods,events -n platform-smoke || true
             kubectl logs -n platform-smoke -l app.kubernetes.io/component=web --tail=200 || true
             exit 1
