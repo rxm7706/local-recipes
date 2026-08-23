@@ -13,7 +13,10 @@ installer ``.bak`` or a pre-apply snapshot, or flag — never leave broken
 silently. Success: six-layer resolution via ``BMAD_ACTIVE_PROJECT`` and via
 a fixture-local ``.active-project`` marker. Never calls ``scripts/bmad-switch``.
 
-Never implements CAP-4 pin fan-out or CAP-5 verify.
+Story 14.4 / CAP-4: report-only pin fan-out enumeration for a bmad-method or
+bmad-loop version change — every known pin site with moved/not-moved status.
+Foreign-station sites (marshal, loop-home relays) are reported, never edited.
+Never implements CAP-5 prove-landed.
 
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
@@ -53,8 +56,33 @@ TRAP_LOCAL_MOD = 1
 TRAP_LEGACY_CUSTOM = 2
 TRAP_REMOVALS = 3
 TRAP_PREREQUISITES = 4
+TRAP_PIN_FANOUT = 5  # CAP-4 report surface (not a CAP-1 preflight trap)
 TRAP_FORWARDER = 9
 TRAP_CONFIG_MIGRATION = 11
+
+# Relative paths for the trap-5 pin fan-out catalog (2026-08-21 session).
+_MARSHAL_PKG = Path("src/shared/packages/pyforge-marshal")
+_PIN_ROOT_PIXI = Path("pixi.toml")
+_PIN_MARSHAL_PYPROJECT = _MARSHAL_PKG / "pyproject.toml"
+_PIN_MARSHAL_PIXI = _MARSHAL_PKG / "pixi.toml"
+_PIN_HARNESS = (
+    _MARSHAL_PKG / "src" / "pyforge" / "marshal" / "adapters" / "harness_bmadloop.py"
+)
+_PIN_SEED_MANIFEST = (
+    _MARSHAL_PKG / "src" / "pyforge" / "marshal" / "seed" / "templates" / "manifest.yaml"
+)
+_PIN_DRIFT_TEST = (
+    _MARSHAL_PKG / "tests" / "unit" / "test_seed_templates_manifest.py"
+)
+_HOOK_SCRIPT_REL = Path(".bmad-loop") / "bmad_loop_hook.py"
+_VERSION_CORE_RE = re.compile(r"(\d+\.\d+\.\d+)")
+_PIN_LOWER_RE = re.compile(r">=\s*(\d+\.\d+\.\d+)")
+_HARNESS_RANGE_RE = re.compile(
+    r"""HARNESS_VERSION_RANGE_TEXT\s*=\s*["']([^"']+)["']"""
+)
+_DRIFT_MAP_ENTRY_RE = re.compile(
+    r"""["'](?P<id>bmad-(?:loop|method|installed-skills))["']\s*:\s*["'](?P<pin>[^"']+)["']"""
+)
 
 
 class UpgradeError(RuntimeError):
@@ -1228,8 +1256,565 @@ def format_apply(report: ApplyReport, *, as_json: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
+# ---------------------------------------------------------------------------
+# CAP-4 — pin fan-out report (report-only; foreign sites never edited)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PinSiteDef:
+    """One enumerated pin site from the 2026-08-21 trap-5 inventory."""
+
+    site_id: str
+    package: str  # bmad-loop | bmad-method
+    path: str
+    kind: str
+    foreign: bool
+
+
+# Exact trap-5 site list the report must name (fixtures assert this set).
+# Loop-home relays are dynamic (one row per home) under site_id prefix
+# ``loop-home-relay:``.
+KNOWN_PIN_SITES: tuple[PinSiteDef, ...] = (
+    PinSiteDef(
+        site_id="root-pixi-floor:bmad-loop",
+        package="bmad-loop",
+        path=str(_PIN_ROOT_PIXI),
+        kind="pixi_floor",
+        foreign=False,
+    ),
+    PinSiteDef(
+        site_id="root-pixi-floor:bmad-method",
+        package="bmad-method",
+        path=str(_PIN_ROOT_PIXI),
+        kind="pixi_floor",
+        foreign=False,
+    ),
+    PinSiteDef(
+        site_id="marshal-pyproject:bmad-loop",
+        package="bmad-loop",
+        path=str(_PIN_MARSHAL_PYPROJECT),
+        kind="pyproject_dep",
+        foreign=True,
+    ),
+    PinSiteDef(
+        site_id="marshal-pixi:bmad-loop",
+        package="bmad-loop",
+        path=str(_PIN_MARSHAL_PIXI),
+        kind="pixi_run_dep",
+        foreign=True,
+    ),
+    PinSiteDef(
+        site_id="harness-version-range:bmad-loop",
+        package="bmad-loop",
+        path=str(_PIN_HARNESS),
+        kind="harness_constant",
+        foreign=True,
+    ),
+    PinSiteDef(
+        site_id="seed-manifest:bmad-loop",
+        package="bmad-loop",
+        path=str(_PIN_SEED_MANIFEST),
+        kind="seed_manifest",
+        foreign=True,
+    ),
+    PinSiteDef(
+        site_id="seed-manifest:bmad-method",
+        package="bmad-method",
+        path=str(_PIN_SEED_MANIFEST),
+        kind="seed_manifest",
+        foreign=True,
+    ),
+    PinSiteDef(
+        site_id="drift-test-map:bmad-loop",
+        package="bmad-loop",
+        path=str(_PIN_DRIFT_TEST),
+        kind="drift_test_map",
+        foreign=True,
+    ),
+    PinSiteDef(
+        site_id="drift-test-map:bmad-method",
+        package="bmad-method",
+        path=str(_PIN_DRIFT_TEST),
+        kind="drift_test_map",
+        foreign=True,
+    ),
+)
+
+
+@dataclass(frozen=True)
+class PinSiteStatus:
+    """Moved / not-moved status for one known pin site."""
+
+    site_id: str
+    path: str
+    kind: str
+    package: str
+    foreign: bool
+    current_value: str | None
+    status: str  # moved | not_moved | missing | unknown | stale | current
+    detail: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class PinFanOutReport:
+    """Report-only enumeration of pin sites for a version change."""
+
+    package: str
+    from_version: str
+    to_version: str
+    sites: tuple[PinSiteStatus, ...]
+    trap_id: int = TRAP_PIN_FANOUT
+    notes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "package": self.package,
+            "from_version": self.from_version,
+            "to_version": self.to_version,
+            "trap_id": self.trap_id,
+            "sites": [s.to_dict() for s in self.sites],
+            "notes": list(self.notes),
+        }
+
+
+def _parse_version_tuple(version: str) -> tuple[int, int, int] | None:
+    match = _VERSION_CORE_RE.search(version.strip())
+    if not match:
+        return None
+    parts = match.group(1).split(".")
+    try:
+        return int(parts[0]), int(parts[1]), int(parts[2])
+    except (ValueError, IndexError):
+        return None
+
+
+def _pin_lower_bound(pin: str) -> str | None:
+    match = _PIN_LOWER_RE.search(pin)
+    return match.group(1) if match else None
+
+
+def _classify_pin_value(
+    current: str | None, *, from_version: str, to_version: str
+) -> tuple[str, str]:
+    """Return ``(status, detail)`` for a version-floor pin string."""
+    if current is None:
+        return "missing", "pin site not found or unreadable"
+    lower = _pin_lower_bound(current)
+    if lower is None:
+        return "unknown", f"could not parse lower bound from {current!r}"
+    to_t = _parse_version_tuple(to_version)
+    from_t = _parse_version_tuple(from_version)
+    lower_t = _parse_version_tuple(lower)
+    if to_t is None or lower_t is None:
+        return "unknown", f"unparseable versions lower={lower!r} to={to_version!r}"
+    if lower_t >= to_t:
+        return "moved", f"lower bound {lower} reflects target {to_version}"
+    if from_t is not None and lower_t == from_t:
+        return "not_moved", f"still at from-version floor {lower}"
+    return "not_moved", f"lower bound {lower} is behind target {to_version}"
+
+
+def _read_pixi_dep(path: Path, package: str) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # pragma: no cover
+        return None
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+
+    # Root pixi: feature/dependency tables; package pixi: package.run-dependencies.
+    candidates: list[Any] = []
+    deps = data.get("dependencies")
+    if isinstance(deps, dict) and package in deps:
+        candidates.append(deps[package])
+    pkg = data.get("package")
+    if isinstance(pkg, dict):
+        run_deps = pkg.get("run-dependencies")
+        if isinstance(run_deps, dict) and package in run_deps:
+            candidates.append(run_deps[package])
+    for feature in (data.get("feature") or {}).values():
+        if not isinstance(feature, dict):
+            continue
+        fdeps = feature.get("dependencies")
+        if isinstance(fdeps, dict) and package in fdeps:
+            candidates.append(fdeps[package])
+
+    for raw in candidates:
+        if isinstance(raw, str):
+            return raw
+        if isinstance(raw, dict) and "version" in raw:
+            return str(raw["version"])
+    return None
+
+
+def _read_pyproject_dep(path: Path, package: str) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # pragma: no cover
+        return None
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    reqs = (data.get("project") or {}).get("dependencies") or []
+    if not isinstance(reqs, list):
+        return None
+    needle = package.lower()
+    for req in reqs:
+        if not isinstance(req, str):
+            continue
+        name, _, rest = req.partition(">")
+        # Also split on ==, <, etc. when no >
+        if name.lower().strip() == needle or req.lower().startswith(needle):
+            # Return the specifier tail if present, else whole string.
+            match = re.match(rf"^{re.escape(package)}\s*(.*)$", req, re.IGNORECASE)
+            if match:
+                spec = match.group(1).strip()
+                return spec or req
+            return req
+    return None
+
+
+def _read_harness_range(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = _HARNESS_RANGE_RE.search(text)
+    return match.group(1) if match else None
+
+
+def _read_seed_manifest_pin(path: Path, entry_id: str) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return None
+    entries = data.get("entries") or data.get("artifacts") or []
+    if not isinstance(entries, list):
+        # Some manifests nest under a top-level key; fall back to scanning.
+        for value in data.values() if isinstance(data, dict) else ():
+            if isinstance(value, list):
+                entries = value
+                break
+    for entry in entries if isinstance(entries, list) else ():
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("id", "")) == entry_id:
+            pin = entry.get("pin")
+            return str(pin) if pin is not None else None
+    return None
+
+
+def _read_drift_test_map_pin(path: Path, entry_id: str) -> str | None:
+    if not path.is_file():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for match in _DRIFT_MAP_ENTRY_RE.finditer(text):
+        if match.group("id") == entry_id:
+            return match.group("pin")
+    return None
+
+
+def _read_site_value(repo: Path, site: PinSiteDef) -> str | None:
+    path = repo / site.path
+    if site.kind == "pixi_floor":
+        return _read_pixi_dep(path, site.package)
+    if site.kind == "pixi_run_dep":
+        return _read_pixi_dep(path, site.package)
+    if site.kind == "pyproject_dep":
+        return _read_pyproject_dep(path, site.package)
+    if site.kind == "harness_constant":
+        return _read_harness_range(path)
+    if site.kind == "seed_manifest":
+        return _read_seed_manifest_pin(path, site.package)
+    if site.kind == "drift_test_map":
+        return _read_drift_test_map_pin(path, site.package)
+    return None
+
+
+def _packaged_hook_text(*, repo: Path | None = None) -> str | None:
+    """Return the wheel's canonical hook relay text, if discoverable.
+
+    Steward's own pixi env does not always install ``bmad-loop``; fall back to
+    any ``bmad_loop.data`` copy under the repo's ``.pixi/envs/*/`` trees so
+    loop-home rows can still classify as moved/not_moved.
+    """
+    try:
+        return (
+            resources.files("bmad_loop.data")
+            .joinpath("bmad_loop_hook.py")
+            .read_text(encoding="utf-8")
+        )
+    except (OSError, ModuleNotFoundError, AttributeError, TypeError, ValueError):
+        pass
+    try:
+        import bmad_loop
+
+        data = Path(bmad_loop.__file__).resolve().parent / "data" / "bmad_loop_hook.py"
+        if data.is_file():
+            return data.read_text(encoding="utf-8")
+    except (ImportError, OSError, TypeError):
+        pass
+    if repo is not None:
+        search_roots = [repo, *repo.resolve().parents]
+        seen: set[Path] = set()
+        for root in search_roots:
+            if root in seen:
+                continue
+            seen.add(root)
+            pattern = ".pixi/envs/*/lib/python*/site-packages/bmad_loop/data/bmad_loop_hook.py"
+            matches = sorted(root.glob(pattern))
+            for candidate in matches:
+                try:
+                    return candidate.read_text(encoding="utf-8")
+                except OSError:
+                    continue
+            # Stop once we have walked past a checkout that already has pixi envs
+            # but none contain bmad_loop — avoid scanning the entire filesystem.
+            if (root / ".pixi" / "envs").is_dir() and root != repo:
+                break
+    return None
+
+
+def _enumerate_loop_home_relays(
+    *,
+    package: str,
+    loops_home: Path | None,
+    from_version: str,
+    to_version: str,
+    repo: Path | None = None,
+) -> list[PinSiteStatus]:
+    """Report each loop-home hook relay (bmad-loop upgrades only)."""
+    if package != "bmad-loop":
+        return []
+    home = loops_home if loops_home is not None else Path.home() / ".bmad-loops"
+    if not home.is_dir():
+        return [
+            PinSiteStatus(
+                site_id="loop-home-relay:(none)",
+                path=str(home),
+                kind="loop_home_relay",
+                package=package,
+                foreign=True,
+                current_value=None,
+                status="missing",
+                detail=f"loops home not found: {home}",
+            )
+        ]
+    packaged = _packaged_hook_text(repo=repo)
+    rows: list[PinSiteStatus] = []
+    for child in sorted(p for p in home.iterdir() if p.is_dir()):
+        relay = child / _HOOK_SCRIPT_REL
+        site_id = f"loop-home-relay:{child.name}"
+        if not relay.is_file():
+            rows.append(
+                PinSiteStatus(
+                    site_id=site_id,
+                    path=str(relay),
+                    kind="loop_home_relay",
+                    package=package,
+                    foreign=True,
+                    current_value=None,
+                    status="missing",
+                    detail="hook relay missing — run bmad-loop init",
+                )
+            )
+            continue
+        try:
+            installed = relay.read_text(encoding="utf-8")
+        except OSError as exc:
+            rows.append(
+                PinSiteStatus(
+                    site_id=site_id,
+                    path=str(relay),
+                    kind="loop_home_relay",
+                    package=package,
+                    foreign=True,
+                    current_value=None,
+                    status="unknown",
+                    detail=f"unreadable: {exc}",
+                )
+            )
+            continue
+        if packaged is None:
+            rows.append(
+                PinSiteStatus(
+                    site_id=site_id,
+                    path=str(relay),
+                    kind="loop_home_relay",
+                    package=package,
+                    foreign=True,
+                    current_value="(present)",
+                    status="unknown",
+                    detail=(
+                        f"relay present; packaged bmad_loop.data source "
+                        f"unavailable to compare (from={from_version} to={to_version})"
+                    ),
+                )
+            )
+            continue
+        if installed == packaged:
+            rows.append(
+                PinSiteStatus(
+                    site_id=site_id,
+                    path=str(relay),
+                    kind="loop_home_relay",
+                    package=package,
+                    foreign=True,
+                    current_value="(matches packaged wheel)",
+                    status="moved",
+                    detail="relay matches installed bmad-loop wheel (refreshed)",
+                )
+            )
+        else:
+            rows.append(
+                PinSiteStatus(
+                    site_id=site_id,
+                    path=str(relay),
+                    kind="loop_home_relay",
+                    package=package,
+                    foreign=True,
+                    current_value="(diverges from packaged wheel)",
+                    status="not_moved",
+                    detail=(
+                        "relay stale vs installed bmad-loop — "
+                        "run bmad-loop init (foreign; steward never edits)"
+                    ),
+                )
+            )
+    if not rows:
+        rows.append(
+            PinSiteStatus(
+                site_id="loop-home-relay:(empty)",
+                path=str(home),
+                kind="loop_home_relay",
+                package=package,
+                foreign=True,
+                current_value=None,
+                status="missing",
+                detail=f"no loop homes under {home}",
+            )
+        )
+    return rows
+
+
+def catalog_site_ids_for(package: str) -> tuple[str, ...]:
+    """Static catalog ids for *package* (excludes dynamic loop-home rows)."""
+    return tuple(s.site_id for s in KNOWN_PIN_SITES if s.package == package)
+
+
+def build_pin_fan_out_report(
+    *,
+    repo: Path,
+    package: str,
+    from_version: str,
+    to_version: str,
+    loops_home: Path | None = None,
+) -> PinFanOutReport:
+    """Enumerate known pin sites with moved/not-moved — never edits anything."""
+    if package not in {"bmad-loop", "bmad-method"}:
+        raise UpgradeError(
+            f"pin-fan-out package must be bmad-loop or bmad-method, got {package!r}"
+        )
+    if not _VERSION_RE.match(from_version) or not _VERSION_RE.match(to_version):
+        raise UpgradeError(
+            f"pin-fan-out versions must be X.Y.Z "
+            f"(from={from_version!r} to={to_version!r})"
+        )
+
+    notes: list[str] = [
+        "CAP-4 report-only: foreign-station sites are never edited by steward",
+        f"trap {TRAP_PIN_FANOUT}: pin fan-out (2026-08-21 failure-modes)",
+    ]
+    sites: list[PinSiteStatus] = []
+    for site in KNOWN_PIN_SITES:
+        if site.package != package:
+            continue
+        current = _read_site_value(repo, site)
+        status, detail = _classify_pin_value(
+            current, from_version=from_version, to_version=to_version
+        )
+        if site.foreign and status == "not_moved":
+            detail = f"{detail} (foreign; steward never edits)"
+        sites.append(
+            PinSiteStatus(
+                site_id=site.site_id,
+                path=site.path,
+                kind=site.kind,
+                package=site.package,
+                foreign=site.foreign,
+                current_value=current,
+                status=status,
+                detail=detail,
+            )
+        )
+
+    sites.extend(
+        _enumerate_loop_home_relays(
+            package=package,
+            loops_home=loops_home,
+            from_version=from_version,
+            to_version=to_version,
+            repo=repo,
+        )
+    )
+
+    return PinFanOutReport(
+        package=package,
+        from_version=from_version,
+        to_version=to_version,
+        sites=tuple(sites),
+        notes=tuple(notes),
+    )
+
+
+def format_pin_fan_out(report: PinFanOutReport, *, as_json: bool) -> str:
+    if as_json:
+        return json.dumps(report.to_dict(), indent=2, sort_keys=True)
+
+    lines: list[str] = [
+        "steward upgrade pin-fan-out — CAP-4 report-only",
+        f"package: {report.package}",
+        f"from:    {report.from_version}",
+        f"to:      {report.to_version}",
+        f"trap:    {report.trap_id}",
+        "",
+        "## Pin sites",
+    ]
+    if not report.sites:
+        lines.append("(none)")
+    for site in report.sites:
+        foreign = " foreign" if site.foreign else ""
+        value = site.current_value if site.current_value is not None else "(missing)"
+        lines.append(
+            f"- [{site.status}]{foreign} {site.site_id}: {value} — {site.detail}"
+        )
+    if report.notes:
+        lines.extend(["", "## Notes"])
+        for note in report.notes:
+            lines.append(f"- {note}")
+    return "\n".join(lines) + "\n"
+
+
 class UpgradeDuty:
-    """``steward upgrade …`` — Epic 14 (14.1–14.3: preflight, apply, CAP-3 reconcile)."""
+    """``steward upgrade …`` — Epic 14 (14.1–14.4: preflight, apply, CAP-3, CAP-4)."""
 
     name = "upgrade"
 
@@ -1240,17 +1825,49 @@ class UpgradeDuty:
                 ok=True,
                 summary=(
                     "upgrade: available verbs are bmad-core "
-                    "(report-only pre-flight; pass --apply for CAP-2 deliberate apply)"
+                    "(report-only pre-flight; pass --apply for CAP-2 deliberate apply) "
+                    "and pin-fan-out (CAP-4 report-only pin enumeration)"
                 ),
             )
         try:
             if verb == "bmad-core":
                 return self._bmad_core(ns)
+            if verb == "pin-fan-out":
+                return self._pin_fan_out(ns)
             return DutyResult(ok=False, summary=f"upgrade: unknown verb {verb!r}")
         except UpgradeError as exc:
             return DutyResult(ok=False, summary=f"upgrade: {exc}")
         except (OSError, yaml.YAMLError, subprocess.SubprocessError) as exc:
             return DutyResult(ok=False, summary=f"upgrade: {exc}")
+
+    def _pin_fan_out(self, ns: argparse.Namespace) -> DutyResult:
+        package = getattr(ns, "pin_package", None)
+        from_version = getattr(ns, "from_version", None)
+        to_version = getattr(ns, "to_version", None)
+        if not package or not from_version or not to_version:
+            return DutyResult(
+                ok=False,
+                summary=(
+                    "upgrade pin-fan-out: --package, --from, and --to are required"
+                ),
+            )
+        repo = Path(ns.repo_root) if getattr(ns, "repo_root", None) else repo_root()
+        loops = (
+            Path(ns.loops_home) if getattr(ns, "loops_home", None) else None
+        )
+        as_json = bool(getattr(ns, "json", False))
+        report = build_pin_fan_out_report(
+            repo=repo,
+            package=package,
+            from_version=from_version,
+            to_version=to_version,
+            loops_home=loops,
+        )
+        return DutyResult(
+            ok=True,
+            summary=format_pin_fan_out(report, as_json=as_json),
+            details={"report": report.to_dict(), "trap_id": TRAP_PIN_FANOUT},
+        )
 
     def _bmad_core(self, ns: argparse.Namespace) -> DutyResult:
         target = getattr(ns, "target", None)

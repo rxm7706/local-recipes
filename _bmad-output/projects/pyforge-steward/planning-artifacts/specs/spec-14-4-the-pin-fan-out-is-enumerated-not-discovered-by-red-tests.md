@@ -2,12 +2,12 @@
 title: The pin fan-out is enumerated, not discovered by red tests
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 8ee0c179d7
+baseline_revision: ed2b1fe6c05d1ef870d452b757f82fd53ae39aed
 ---
 
 <intent-contract>

@@ -35,7 +35,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # The seven duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Stories 14.1–14.3 — pre-flight + apply + CAP-3 reconcile).
+# `upgrade` (Epic 14, Stories 14.1–14.4 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out).
 DUTIES: tuple[str, ...] = (
     "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
 )
@@ -55,8 +55,8 @@ _HELP = {
     ),
     "upgrade": (
         "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1), "
-        "deliberate --apply (CAP-2), CAP-3 clobber detect/re-apply; "
-        "never silently leaves custom surfaces broken"
+        "deliberate --apply (CAP-2), CAP-3 clobber detect/re-apply, "
+        "pin-fan-out report (CAP-4); never edits foreign-station pin sites"
     ),
 }
 
@@ -437,9 +437,9 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
 
 def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
-    """Add ``bmad-core`` (Story 14.1 CAP-1 pre-flight + Story 14.2 CAP-2 --apply)."""
+    """Add ``bmad-core`` (14.1–14.3) and ``pin-fan-out`` (14.4 CAP-4)."""
     upgrade_subs = upgrade_parser.add_subparsers(
-        dest="upgrade_verb", metavar="{bmad-core}"
+        dest="upgrade_verb", metavar="{bmad-core,pin-fan-out}"
     )
     bmad_core = upgrade_subs.add_parser(
         "bmad-core",
@@ -509,6 +509,53 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="X.Y.Z",
         help="override manifest installation.version (tests / retrodiction)",
+    )
+
+    pin_fan = upgrade_subs.add_parser(
+        "pin-fan-out",
+        help=(
+            "CAP-4 report-only: enumerate known pin sites for a bmad-loop or "
+            "bmad-method version change with moved/not-moved status; "
+            "foreign-station sites are never edited"
+        ),
+    )
+    pin_fan.add_argument(
+        "--package",
+        dest="pin_package",
+        required=True,
+        choices=("bmad-loop", "bmad-method"),
+        help="which tool's pin fan-out to enumerate",
+    )
+    pin_fan.add_argument(
+        "--from",
+        dest="from_version",
+        required=True,
+        metavar="X.Y.Z",
+        help="previous version (the floor still present on not-moved sites)",
+    )
+    pin_fan.add_argument(
+        "--to",
+        dest="to_version",
+        required=True,
+        metavar="X.Y.Z",
+        help="target version (moved sites already reflect this floor)",
+    )
+    pin_fan.add_argument(
+        "--repo-root",
+        default=None,
+        metavar="DIR",
+        help="override the repo root used for pin-site reads (tests)",
+    )
+    pin_fan.add_argument(
+        "--loops-home",
+        default=None,
+        metavar="DIR",
+        help="override ~/.bmad-loops when reporting hook relays (tests)",
+    )
+    pin_fan.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON instead of the human-readable report",
     )
 
 
