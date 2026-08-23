@@ -32,12 +32,13 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
-# The seven duties — all real as of this story. `keys` (Epic 1), `deploy`
+# The eight duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed).
+# `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
+# `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report).
 DUTIES: tuple[str, ...] = (
-    "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
+    "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade", "suite",
 )
 
 _HELP = {
@@ -59,6 +60,11 @@ _HELP = {
         "pin-fan-out report (CAP-4), prove-landed single verdict (CAP-5); "
         "never edits foreign-station pin sites beyond documented loop-home "
         "relay refresh"
+    ),
+    "suite": (
+        "bmad-suite channel product — pipeline-truth (CAP-1) reports "
+        "upstream/recipe/channel/installed/wired for all 13 suite packages "
+        "with per-stage drift; fail-open probes"
     ),
 }
 
@@ -86,6 +92,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_workspace_subparsers(duty_parser)
         elif name == "upgrade":
             _add_upgrade_subparsers(duty_parser)
+        elif name == "suite":
+            _add_suite_subparsers(duty_parser)
     return parser
 
 
@@ -627,6 +635,40 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_suite_subparsers(suite_parser: argparse.ArgumentParser) -> None:
+    """Add ``pipeline-truth`` (Story 15.1 / CAP-1). Story 15.2+ verbs stay out."""
+    suite_subs = suite_parser.add_subparsers(
+        dest="suite_verb", metavar="{pipeline-truth}"
+    )
+    truth = suite_subs.add_parser(
+        "pipeline-truth",
+        help=(
+            "CAP-1: report upstream (npm/GitHub), recipe, channel, installed, "
+            "and wired-or-not for all 13 bmad-suite packages — drift named "
+            "per stage; every probe fail-open"
+        ),
+    )
+    truth.add_argument(
+        "--repo-root",
+        default=None,
+        metavar="DIR",
+        help="override the repo root used for recipe/installed/wired probes (tests)",
+    )
+    truth.add_argument(
+        "--baseline",
+        action="store_true",
+        help=(
+            "without this flag the command live-probes the network; with it, "
+            "replay the recorded 2026-08-22 research matrix offline (no network)"
+        ),
+    )
+    truth.add_argument(
+        "--json",
+        action="store_true",
+        help="emit JSON instead of the human-readable report",
+    )
+
+
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
@@ -635,8 +677,8 @@ def resolve_duty(name: str) -> Duty:
     (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1); `sync`
     returns a real `SyncDuty` (Story 8.1); `workspace` returns a real
     `WorkspaceDuty` (Story 13.1); `upgrade` returns a real `UpgradeDuty`
-    (Stories 14.1–14.2). No duty is `NullDuty` any more — the seam remains for a
-    future eighth duty.
+    (Stories 14.1–14.2); `suite` returns a real `SuiteDuty` (Story 15.1).
+    No duty is `NullDuty` any more — the seam remains for a future ninth duty.
     """
     if name == "keys":
         # Imported here, not at module top: keys.py resolves its `_http.py`
@@ -674,6 +716,10 @@ def resolve_duty(name: str) -> Duty:
         from .upgrade import UpgradeDuty
 
         return UpgradeDuty()
+    if name == "suite":
+        from .suite import SuiteDuty
+
+        return SuiteDuty()
     return NullDuty(name)
 
 

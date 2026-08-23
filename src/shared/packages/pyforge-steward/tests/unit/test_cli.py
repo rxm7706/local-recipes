@@ -24,7 +24,7 @@ def test_version_exits_zero(capsys):
     assert __version__ in capsys.readouterr().out
 
 
-def test_help_lists_all_seven_duties(capsys):
+def test_help_lists_all_duties(capsys):
     with pytest.raises(SystemExit):
         build_parser().parse_args(["--help"])
     out = capsys.readouterr().out
@@ -32,14 +32,20 @@ def test_help_lists_all_seven_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_seven_duties():
+def test_there_are_exactly_eight_duties():
     assert DUTIES == (
-        "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
+        "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade", "suite",
     )
 
 
+def test_suite_is_wired_into_help():
+    """Story 15.1 AC: `suite` is an eighth duty."""
+    assert "suite" in DUTIES
+    assert "suite" in _HELP
+
+
 def test_upgrade_is_wired_into_help():
-    """Story 14.1 AC: `upgrade` is a seventh duty."""
+    """Story 14.1 AC: `upgrade` is a registered duty (was seventh when added)."""
     assert "upgrade" in DUTIES
     assert "upgrade" in _HELP
 
