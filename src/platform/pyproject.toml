@@ -1,7 +1,11 @@
 # ==== pytest ====
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib"
+# Ignore Story 12.8 github_metrics dlt tests here: they need dlt/duckdb from
+# feature.python-agent-platform, not the slim platform-ci-test env. Covered by
+# pixi task github-metrics-dlt-test (pytest -c /dev/null, so this ignore does
+# not apply there). Without this, Platform CI has been red since #646/#648.
+addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib --ignore=tests/test_github_metrics_dlt.py"
 python_files = [
     "tests.py",
     "test_*.py",
