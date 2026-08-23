@@ -2,13 +2,14 @@
 title: Redis is hardened, still ephemeral
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-1-the-vanilla-chart-with-an-ocp-overlay.md'
 warnings: []
 baseline_revision: 88be2d2e07
+final_revision: b33964096f7bd2d2428fac45bf9caf3f8a88423d
 ---
 
 <intent-contract>
