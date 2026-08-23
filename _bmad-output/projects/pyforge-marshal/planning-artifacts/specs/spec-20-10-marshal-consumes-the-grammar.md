@@ -52,7 +52,7 @@ Status: done
 
 PR: https://github.com/rxm7706/local-recipes/pull/698
 Merge SHA: 1bd21964395403cf44e98246713eacdf35733a16
-Finalize SHA: (pending commit)
+Finalize SHA: d188560d2f
 Note: merged with `--admin` (Actions billing blocked CI; local verification green).
 
 Summary: `core/promotion.py` delegates `merged_story_keys` / `marshal_native_merged_keys` to `pyforge.core.landing_evidence` (recovery commits, story-direct subjects, `land/` branch shapes in GitHub PR merge subjects). MRS-STATUS-010 inherits the widened classifier via `_merged_keys_for_slug` with hedged UNCONFIRMED wording retained for squash-merge prose only. `marshal retire` supplements `is_branch_merged` with `branch_story_merge_confirmed_by_grammar`.
