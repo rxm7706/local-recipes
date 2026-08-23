@@ -156,6 +156,48 @@ def test_groundtruth_on_a_non_bmad_drift_source_is_a_usage_error(
     assert "bmad-drift" in err
 
 
+# --- --dreams hygiene mode (Story 17.2 / FR-147) --------------------------------
+
+
+def test_dreams_flag_on_dream_chain_invokes_hygiene_gather(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    hygiene_ok = (
+        Finding(
+            source=Source.DREAMS_HYGIENE,
+            check="dreams-hygiene",
+            status=DoctorStatus.OK,
+            message="clean",
+            evidence={"dreams": 0},
+        ),
+    )
+    monkeypatch.setattr(chain, "gather_dreams_hygiene", lambda target: hygiene_ok)
+    # Default gather must NOT run when --dreams is set.
+    monkeypatch.setitem(
+        dispatch.DISPATCH,
+        "dream-chain",
+        lambda target: (_ for _ in ()).throw(AssertionError("INV gather ran")),
+    )
+
+    exit_code = dispatch.main(["dream-chain", "--dreams", "--json"])
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out) == [
+        f.to_json_dict() for f in hygiene_ok
+    ]
+
+
+def test_dreams_flag_on_non_dream_chain_source_is_a_usage_error(
+    capsys: pytest.CaptureFixture[str],
+):
+    with pytest.raises(SystemExit) as exc:
+        dispatch.main(["ledger-regression", "--dreams"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--dreams" in err
+    assert "dream-chain" in err
+
+
 # --- --json output shape --------------------------------------------------------
 
 

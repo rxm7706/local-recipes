@@ -78,7 +78,8 @@
             "due-for-verification",
             "bmad-method-version-drift",
             "backlog-intake",
-            "sibling-dreams-drift"
+            "sibling-dreams-drift",
+            "dreams-hygiene"
           ]
         },
         "check": { "type": "string" },

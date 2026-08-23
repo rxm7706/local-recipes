@@ -163,6 +163,8 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # deferred-work-ledger entries, fleet wide, precisely name a caller-
     # supplied epic/story -- wired as its own `doctor backlog-intake`
     # verb, not a sweep dispatched by name.
+    # Story 17.2 (Epic 17 / FR-147) added DREAMS_HYGIENE: Dream-tier
+    # hygiene mode on the dream-chain surface (`dream-chain --dreams`).
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -189,6 +191,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "bmad-method-version-drift",
         "backlog-intake",
         "sibling-dreams-drift",
+        "dreams-hygiene",
     }
 
 
