@@ -35,7 +35,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # The seven duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
-# `upgrade` (Epic 14, Story 14.1 — report-only bmad-core pre-flight).
+# `upgrade` (Epic 14, Stories 14.1–14.2 — bmad-core pre-flight + --apply).
 DUTIES: tuple[str, ...] = (
     "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade",
 )
@@ -54,8 +54,8 @@ _HELP = {
         "(single-repo or repo-set; own-worktrees-only; archive-not-delete)"
     ),
     "upgrade": (
-        "BMAD-METHOD core upgrade surfaces — bmad-core pre-flight is report-only "
-        "(Epic 14 / CAP-1); apply is Story 14.2+"
+        "BMAD-METHOD core upgrade — bmad-core pre-flight (CAP-1) and "
+        "deliberate --apply (CAP-2); never clobbers _bmad/custom/**"
     ),
 }
 
@@ -436,15 +436,15 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
 
 def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
-    """Add ``bmad-core`` (Story 14.1 / CAP-1 — report-only pre-flight)."""
+    """Add ``bmad-core`` (Story 14.1 CAP-1 pre-flight + Story 14.2 CAP-2 --apply)."""
     upgrade_subs = upgrade_parser.add_subparsers(
         dest="upgrade_verb", metavar="{bmad-core}"
     )
     bmad_core = upgrade_subs.add_parser(
         "bmad-core",
         help=(
-            "report-only pre-flight for a target bmad-method release "
-            "(skill adds/removes/renames, local mods, legacy custom, prerequisites)"
+            "pre-flight (default) or deliberate --apply for a target bmad-method "
+            "release; installer stays sole writer of _bmad/bmm/** and _bmad/core/**"
         ),
     )
     bmad_core.add_argument(
@@ -452,6 +452,30 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         required=True,
         metavar="X.Y.Z",
         help="target bmad-method release version (requires a packaged catalog entry)",
+    )
+    bmad_core.add_argument(
+        "--apply",
+        action="store_true",
+        help=(
+            "CAP-2 deliberate apply: require clean tree, consume CAP-1 pre-flight, "
+            "create review branch, run `bmad-method install --action update -y`, "
+            "verify _bmad/custom/** byte-identical (or report why not)"
+        ),
+    )
+    bmad_core.add_argument(
+        "--branch",
+        default=None,
+        metavar="NAME",
+        help=(
+            "review branch for --apply "
+            "(default: steward/bmad-core-upgrade-<target>)"
+        ),
+    )
+    bmad_core.add_argument(
+        "--installer",
+        default=None,
+        metavar="BIN",
+        help="override the bmad-method binary invoked by --apply (tests)",
     )
     bmad_core.add_argument(
         "--json",
@@ -464,7 +488,7 @@ def _add_upgrade_subparsers(upgrade_parser: argparse.ArgumentParser) -> None:
         metavar="DIR",
         help=(
             "optional path to an unpacked bmad-method package "
-            "(reads removals.txt + upstream file copies; never installs)"
+            "(reads removals.txt + upstream file copies; never installs from it)"
         ),
     )
     bmad_core.add_argument(
@@ -495,7 +519,7 @@ def resolve_duty(name: str) -> Duty:
     (Story 3.1); `budget` returns a real `BudgetDuty` (Story 4.1); `sync`
     returns a real `SyncDuty` (Story 8.1); `workspace` returns a real
     `WorkspaceDuty` (Story 13.1); `upgrade` returns a real `UpgradeDuty`
-    (Story 14.1). No duty is `NullDuty` any more — the seam remains for a
+    (Stories 14.1–14.2). No duty is `NullDuty` any more — the seam remains for a
     future eighth duty.
     """
     if name == "keys":

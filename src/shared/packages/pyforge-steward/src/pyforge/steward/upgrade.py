@@ -1,24 +1,32 @@
 """Steward's ``upgrade`` duty — BMAD-METHOD core upgrade surfaces (Epic 14).
 
 Story 14.1 / CAP-1: report-only pre-flight for a target bmad-method release.
-Never applies, never mutates ``_bmad/`` or custom surfaces. Apply lands in
-Story 14.2+.
+Story 14.2 / CAP-2: deliberate ``--apply`` — clean tree + CAP-1 gate, branch
+first, run ``bmad-method install --action update -y`` (installer remains the
+only writer of ``_bmad/bmm/**`` / ``_bmad/core/**``), refuse on legacy-name
+custom that would halt shims, land the installer diff on a review branch,
+and prove ``_bmad/custom/**`` byte-identical (or name why not).
+
+Never implements CAP-3 re-apply, CAP-4 pin fan-out, or CAP-5 verify.
+Never calls ``scripts/bmad-switch``.
 
 Verb naming (SPEC open question): a dedicated ``steward upgrade bmad-core``
 duty — not an extension of ``provision`` — because Epic 14's later CAPs
-(apply, reconcile, pin fan-out, verify) share this surface and must not
-crowd Epic 3's environment/module provisioning flags.
+share this surface and must not crowd Epic 3's provisioning flags.
 
 Detection of ambient "you're behind" stays doctor's
 (``bmad-method-version-drift``); this module is the deliberate pre-flight
-report an operator runs before apply.
+and apply surface an operator runs.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import subprocess
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from importlib import resources
 from pathlib import Path
@@ -138,6 +146,39 @@ class PreflightReport:
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         return payload
+
+
+@dataclass(frozen=True)
+class ApplyReport:
+    """Outcome of a deliberate CAP-2 apply (review branch + custom check)."""
+
+    preflight: PreflightReport
+    branch: str
+    snapshot_sha: str
+    installer_cmd: tuple[str, ...]
+    installer_exit: int
+    custom_identical: bool
+    custom_differs: tuple[str, ...]
+    custom_failure_reason: str | None
+    changed_paths: tuple[str, ...]
+    notes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "preflight": self.preflight.to_dict(),
+            "branch": self.branch,
+            "snapshot_sha": self.snapshot_sha,
+            "installer_cmd": list(self.installer_cmd),
+            "installer_exit": self.installer_exit,
+            "custom_identical": self.custom_identical,
+            "custom_differs": list(self.custom_differs),
+            "custom_failure_reason": self.custom_failure_reason,
+            "changed_paths": list(self.changed_paths),
+            "notes": list(self.notes),
+        }
+
+
+InstallerRunner = Callable[[Path, Sequence[str]], subprocess.CompletedProcess[str]]
 
 
 def catalog_dir() -> Path:
@@ -564,8 +605,276 @@ def format_preflight(report: PreflightReport, *, as_json: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
+# ── Story 14.2 / CAP-2 — deliberate apply ──────────────────────────────────
+
+
+def default_apply_branch(target_version: str) -> str:
+    """Review-branch name for a deliberate apply of *target_version*."""
+    return f"steward/bmad-core-upgrade-{target_version}"
+
+
+def _git(
+    *args: str,
+    cwd: Path,
+    check: bool = True,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        check=check,
+        capture_output=True,
+        text=True,
+    )
+
+
+def assert_clean_tree(repo: Path) -> None:
+    """Refuse apply when the working tree is dirty (uncommitted changes)."""
+    if not (repo / ".git").exists() and not (repo / ".git").is_file():
+        # Bare fixtures without git are only allowed via injected runners in tests;
+        # production apply always requires a git checkout.
+        raise UpgradeError(
+            "apply requires a git checkout (no .git found) — refuse to mutate in place"
+        )
+    status = _git("status", "--porcelain", cwd=repo)
+    dirty = status.stdout.strip()
+    if dirty:
+        preview = "\n".join(dirty.splitlines()[:20])
+        raise UpgradeError(
+            "apply requires a clean working tree; refuse to start with dirty paths:\n"
+            f"{preview}"
+        )
+
+
+def fingerprint_custom_tree(repo: Path) -> dict[str, str]:
+    """Return ``{relative_path: sha256-hex}`` for every file under ``_bmad/custom/**``."""
+    custom = repo / _CUSTOM_RELATIVE_PATH
+    if not custom.is_dir():
+        return {}
+    out: dict[str, str] = {}
+    for path in sorted(custom.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = str(path.relative_to(repo)).replace("\\", "/")
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        out[rel] = digest
+    return out
+
+
+def compare_custom_fingerprints(
+    before: Mapping[str, str],
+    after: Mapping[str, str],
+) -> tuple[bool, tuple[str, ...], str | None]:
+    """Return ``(identical, differing_paths, reason_or_none)``."""
+    before_keys = set(before)
+    after_keys = set(after)
+    differs: list[str] = []
+    for path in sorted(before_keys | after_keys):
+        if path not in before:
+            differs.append(f"{path} (added)")
+        elif path not in after:
+            differs.append(f"{path} (removed)")
+        elif before[path] != after[path]:
+            differs.append(f"{path} (content changed)")
+    if not differs:
+        return True, (), None
+    reason = (
+        "_bmad/custom/** is NOT byte-identical after apply — "
+        "installer or side effect touched custom; named paths: "
+        + ", ".join(differs)
+    )
+    return False, tuple(differs), reason
+
+
+def refuse_legacy_custom(preflight: PreflightReport) -> None:
+    """CAP-2: refuse to start when legacy-name custom would halt shims."""
+    if not preflight.legacy_custom:
+        return
+    named = ", ".join(
+        f"{item.path} (legacy {item.legacy_name}"
+        + (f" → {item.successor}" if item.successor else "")
+        + ")"
+        for item in preflight.legacy_custom
+    )
+    raise UpgradeError(
+        "refuse to start apply: legacy-name _bmad/custom/** files would halt "
+        f"deprecation shims (trap {TRAP_LEGACY_CUSTOM}): {named}"
+    )
+
+
+def create_review_branch(repo: Path, branch: str) -> str:
+    """Create and check out *branch* from HEAD; return the snapshot SHA.
+
+    Refuses if *branch* already exists — never clobber an existing review branch.
+    """
+    head = _git("rev-parse", "HEAD", cwd=repo).stdout.strip()
+    exists = _git(
+        "show-ref",
+        "--verify",
+        "--quiet",
+        f"refs/heads/{branch}",
+        cwd=repo,
+        check=False,
+    )
+    if exists.returncode == 0:
+        raise UpgradeError(
+            f"review branch {branch!r} already exists — refuse to clobber; "
+            "choose --branch or delete the stale branch after review"
+        )
+    _git("checkout", "-b", branch, cwd=repo)
+    return head
+
+
+def list_changed_paths(repo: Path) -> tuple[str, ...]:
+    """Porcelain paths after the installer ran (the reviewable installer diff)."""
+    status = _git("status", "--porcelain", cwd=repo, check=False)
+    paths: list[str] = []
+    for line in status.stdout.splitlines():
+        if not line.strip():
+            continue
+        # porcelain: XY PATH or XY ORIG -> PATH
+        rest = line[3:] if len(line) > 3 else line.strip()
+        if " -> " in rest:
+            rest = rest.split(" -> ", 1)[1]
+        paths.append(rest.strip())
+    return tuple(paths)
+
+
+def default_installer_runner(
+    repo: Path, cmd: Sequence[str]
+) -> subprocess.CompletedProcess[str]:
+    """Invoke the real installer; steward never writes ``_bmad/bmm/**`` / ``_bmad/core/**``."""
+    return subprocess.run(
+        list(cmd),
+        cwd=repo,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def apply_bmad_core_upgrade(
+    *,
+    repo: Path,
+    target_version: str,
+    branch: str | None = None,
+    installed_version: str | None = None,
+    catalog_directory: Path | None = None,
+    package_root: Path | None = None,
+    installer_bin: str = "bmad-method",
+    installer_runner: InstallerRunner | None = None,
+) -> ApplyReport:
+    """CAP-2 deliberate apply: preflight gate → branch → installer → custom check.
+
+    The installer command is always ``bmad-method install --action update -y``
+    (or *installer_bin* override). Steward never reimplements writing
+    ``_bmad/bmm/**`` or ``_bmad/core/**``.
+    """
+    assert_clean_tree(repo)
+
+    preflight = build_preflight_report(
+        repo=repo,
+        target_version=target_version,
+        installed_version=installed_version,
+        catalog_directory=catalog_directory,
+        package_root=package_root,
+    )
+    refuse_legacy_custom(preflight)
+
+    review_branch = branch or default_apply_branch(target_version)
+    custom_before = fingerprint_custom_tree(repo)
+    snapshot_sha = create_review_branch(repo, review_branch)
+
+    installer_cmd = (installer_bin, "install", "--action", "update", "-y")
+    runner = installer_runner or default_installer_runner
+    result = runner(repo, installer_cmd)
+
+    notes: list[str] = [
+        "deliberate apply — installer diff left on review branch for human review "
+        "(never merged/applied blind)",
+        "steward did not write _bmad/bmm/** or _bmad/core/** — installer is sole writer",
+    ]
+    if result.stdout and result.stdout.strip():
+        notes.append(f"installer stdout (truncated): {result.stdout.strip()[:500]}")
+    if result.stderr and result.stderr.strip():
+        notes.append(f"installer stderr (truncated): {result.stderr.strip()[:500]}")
+
+    if result.returncode != 0:
+        notes.append(
+            f"installer exited {result.returncode} — review branch {review_branch} "
+            "still holds any partial diff; custom check follows"
+        )
+
+    custom_after = fingerprint_custom_tree(repo)
+    identical, differs, reason = compare_custom_fingerprints(custom_before, custom_after)
+    if identical:
+        notes.append("_bmad/custom/** byte-identical after apply (sha256 per file)")
+    elif reason:
+        notes.append(reason)
+
+    changed = list_changed_paths(repo)
+    if changed:
+        notes.append(
+            f"installer diff on branch {review_branch} ({len(changed)} path(s)) — "
+            "review before merge"
+        )
+    else:
+        notes.append("installer produced no working-tree changes")
+
+    return ApplyReport(
+        preflight=preflight,
+        branch=review_branch,
+        snapshot_sha=snapshot_sha,
+        installer_cmd=tuple(installer_cmd),
+        installer_exit=int(result.returncode),
+        custom_identical=identical,
+        custom_differs=differs,
+        custom_failure_reason=reason,
+        changed_paths=changed,
+        notes=tuple(notes),
+    )
+
+
+def format_apply(report: ApplyReport, *, as_json: bool) -> str:
+    if as_json:
+        return json.dumps(report.to_dict(), indent=2, sort_keys=True)
+
+    lines: list[str] = [
+        "steward upgrade bmad-core — deliberate apply (CAP-2)",
+        f"installed: {report.preflight.installed_version}",
+        f"target:    {report.preflight.target_version}",
+        f"branch:    {report.branch}",
+        f"snapshot:  {report.snapshot_sha}",
+        f"installer: {' '.join(report.installer_cmd)} (exit {report.installer_exit})",
+        f"custom:    {'byte-identical' if report.custom_identical else 'CHANGED — see below'}",
+        "",
+        "## Review surface (installer diff paths)",
+    ]
+    if not report.changed_paths:
+        lines.append("(none)")
+    for path in report.changed_paths:
+        lines.append(f"- {path}")
+
+    lines.extend(["", "## _bmad/custom/** preservation"])
+    if report.custom_identical:
+        lines.append("byte-identical (ok)")
+    else:
+        lines.append(report.custom_failure_reason or "custom changed (unnamed)")
+        for path in report.custom_differs:
+            lines.append(f"- {path}")
+
+    if report.notes:
+        lines.extend(["", "## Notes"])
+        for note in report.notes:
+            lines.append(f"- {note}")
+
+    # Include the CAP-1 preflight body for the review checklist.
+    lines.extend(["", "--- CAP-1 preflight consumed by this apply ---", ""])
+    lines.append(format_preflight(report.preflight, as_json=False).rstrip())
+    return "\n".join(lines) + "\n"
+
+
 class UpgradeDuty:
-    """``steward upgrade …`` — Epic 14 upgrade surfaces (14.1 = bmad-core pre-flight)."""
+    """``steward upgrade …`` — Epic 14 (14.1 preflight + 14.2 --apply)."""
 
     name = "upgrade"
 
@@ -574,7 +883,10 @@ class UpgradeDuty:
         if not verb:
             return DutyResult(
                 ok=True,
-                summary="upgrade: available verbs are bmad-core (report-only pre-flight)",
+                summary=(
+                    "upgrade: available verbs are bmad-core "
+                    "(report-only pre-flight; pass --apply for CAP-2 deliberate apply)"
+                ),
             )
         try:
             if verb == "bmad-core":
@@ -582,7 +894,7 @@ class UpgradeDuty:
             return DutyResult(ok=False, summary=f"upgrade: unknown verb {verb!r}")
         except UpgradeError as exc:
             return DutyResult(ok=False, summary=f"upgrade: {exc}")
-        except (OSError, yaml.YAMLError) as exc:
+        except (OSError, yaml.YAMLError, subprocess.SubprocessError) as exc:
             return DutyResult(ok=False, summary=f"upgrade: {exc}")
 
     def _bmad_core(self, ns: argparse.Namespace) -> DutyResult:
@@ -590,7 +902,7 @@ class UpgradeDuty:
         if not target:
             return DutyResult(
                 ok=False,
-                summary="upgrade bmad-core: --target X.Y.Z is required (report-only)",
+                summary="upgrade bmad-core: --target X.Y.Z is required",
             )
         repo = Path(ns.repo_root) if getattr(ns, "repo_root", None) else repo_root()
         package_root = Path(ns.package_root) if getattr(ns, "package_root", None) else None
@@ -598,16 +910,40 @@ class UpgradeDuty:
             Path(ns.catalog_dir) if getattr(ns, "catalog_dir", None) else None
         )
         installed_override = getattr(ns, "installed_version", None)
-        report = build_preflight_report(
+        as_json = bool(getattr(ns, "json", False))
+        do_apply = bool(getattr(ns, "apply", False))
+
+        if not do_apply:
+            report = build_preflight_report(
+                repo=repo,
+                target_version=target,
+                installed_version=installed_override,
+                catalog_directory=catalog_directory,
+                package_root=package_root,
+            )
+            return DutyResult(
+                ok=True,
+                summary=format_preflight(report, as_json=as_json),
+                details={"report": report.to_dict(), "trap_ids": list(report.trap_ids)},
+            )
+
+        installer_bin = getattr(ns, "installer", None) or "bmad-method"
+        branch = getattr(ns, "branch", None) or None
+        apply_report = apply_bmad_core_upgrade(
             repo=repo,
             target_version=target,
+            branch=branch,
             installed_version=installed_override,
             catalog_directory=catalog_directory,
             package_root=package_root,
+            installer_bin=installer_bin,
         )
-        as_json = bool(getattr(ns, "json", False))
+        ok = apply_report.installer_exit == 0 and apply_report.custom_identical
         return DutyResult(
-            ok=True,
-            summary=format_preflight(report, as_json=as_json),
-            details={"report": report.to_dict(), "trap_ids": list(report.trap_ids)},
+            ok=ok,
+            summary=format_apply(apply_report, as_json=as_json),
+            details={
+                "apply": apply_report.to_dict(),
+                "trap_ids": list(apply_report.preflight.trap_ids),
+            },
         )
