@@ -3,6 +3,7 @@ title: Baseline-drift defers get loud
 type: feature
 created: '2026-08-23'
 status: done
+shipped_ref: 'PR #683 / d12779380c'
 updated: '2026-08-23'
 context: []
 warnings: []
