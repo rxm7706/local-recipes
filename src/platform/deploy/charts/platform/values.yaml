@@ -137,3 +137,30 @@ redis:
   runAsUser: 999
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
+
+# DB-GPT sidecar (Story 10.5 image, Story 12.5 chart membership).
+# Pattern B: Celery/REST from platform pods, never an ASGI mount. The
+# sidecar's OWN metadata store stays on SQLite at metadataMountPath
+# (compose.yml + dbgpt Containerfile contract — PostgreSQL wiring is
+# structurally impossible upstream; see dbgpt_integration/apps.py).
+sidecar:
+  image:
+    registry: ""
+    repository: platform-dbgpt-sidecar
+    tag: latest
+    pullPolicy: IfNotPresent
+  # DB-GPT resolves `[service.web.database].path` against
+  # $HOME/.dbgpt/workspace — with HOME=/app/.home that lands here
+  # (compose/dbgpt/Containerfile + compose.yml volume mount).
+  metadataMountPath: /app/.home/.dbgpt/workspace/pilot/meta_data
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+  # Optional LLM provider passthrough (bare keys mirror compose.yml's
+  # dbgpt service — unset keys fall through to the image's TOML defaults).
+  llm:
+    modelName: ""
+    modelProvider: ""
+    apiBase: ""
+    apiKeySecretKey: ""
+  resources: {}

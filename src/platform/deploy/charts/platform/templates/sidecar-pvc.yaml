@@ -1,0 +1,19 @@
+# Dedicated SQLite PVC for DB-GPT's own metadata store (AD-6 bounded
+# exception). The mount path matches compose.yml's dbgpt_sqlite_data volume
+# target — see sidecar.metadataMountPath in values.yaml.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "platform.dbgpt.pvcName" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dbgpt
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sidecar.persistence.size | quote }}
+  {{- with .Values.sidecar.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}

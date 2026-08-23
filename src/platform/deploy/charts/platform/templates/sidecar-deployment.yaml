@@ -1,0 +1,92 @@
+# DB-GPT sidecar Deployment (Story 10.5 image, Story 12.5 chart).
+# Singleton semantics: replicas 1 + Recreate strategy so only one pod
+# ever mounts the SQLite PVC (ReadWriteOnce). Same restricted-v2 contract
+# as platform-image pods — the sidecar Containerfile's USER 1001:0 +
+# group-writable /app/.home covers vanilla K8s; OCP assigns UIDs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.dbgpt.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: dbgpt
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: dbgpt
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: dbgpt
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: dbgpt
+          image: {{ include "platform.imageRef" (dict "image" .Values.sidecar.image "path" "sidecar.image") }}
+          imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.sidecar.image }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 5670
+              protocol: TCP
+          env:
+            {{- with .Values.sidecar.llm.modelName }}
+            - name: DBGPT_LLM_MODEL_NAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.sidecar.llm.modelProvider }}
+            - name: DBGPT_LLM_MODEL_PROVIDER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.sidecar.llm.apiBase }}
+            - name: DBGPT_LLM_API_BASE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.sidecar.llm.apiKeySecretKey }}
+            - name: DBGPT_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform.existingSecretName" $ | quote }}
+                  key: {{ . | quote }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- with .Values.sidecar.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: {{ .Values.sidecar.metadataMountPath | quote }}
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: {{ include "platform.dbgpt.pvcName" . }}
