@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 27
-    next: 20-3-the-gated-upstream-filing
+    remaining_count: 26
+    next: 20-4-intent-gap-attempts-are-preserved
     queue:
-    - 20-3-the-gated-upstream-filing
     - 20-4-intent-gap-attempts-are-preserved
     - 20-5-missing-preserve-detector
     - 20-6-the-verify-scope-primitive

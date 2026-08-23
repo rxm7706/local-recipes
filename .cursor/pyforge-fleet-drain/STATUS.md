@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~14:40 CDT
+**Updated:** 2026-08-23 ~15:05 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -19,15 +19,15 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 27** · **steward 7** (**34 total**; 12-7 skipped forever) |
+| Backlog | **marshal 26** · **steward 7** (**33 total**; 12-7 skipped forever) |
 | Drained | atlas, doctor, herald, mason, scribe, warden |
 
 ## In-flight (canonical only — do not duplicate)
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `20-3` | [Marshal 20-3](369a274f-e5e1-407e-949a-6603a1215b29) |
-| steward | `16-2` | [Steward 16-2](320ec42e-8ae9-4950-861c-41b8e7e2c336) (skip 12-7) |
+| marshal | `20-4` | launching |
+| steward | `16-2` | [Steward 16-2](320ec42e-8ae9-4950-861c-41b8e7e2c336) (skip 12-7) · PR [#686](https://github.com/rxm7706/local-recipes/pull/686) OPEN |
 
 ## Operator skip
 
@@ -39,10 +39,9 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `20-2` | [#683](https://github.com/rxm7706/local-recipes/pull/683) merge `d12779380c` · finalize `96c0678145` ([Marshal 20-2](cac55d3b-b3aa-446a-b852-5916494676b8)) |
-| steward | `16-1` | [#682](https://github.com/rxm7706/local-recipes/pull/682) merge `bec9707bf8` · finalize `6044d2bef4` ([Steward 16-1](348b627d-3cea-42ad-b97c-e63cc04e877f)) |
-| steward | `15-4` | [#681](https://github.com/rxm7706/local-recipes/pull/681) |
-| marshal | `20-1` | [#680](https://github.com/rxm7706/local-recipes/pull/680) |
+| marshal | `20-3` | [#684](https://github.com/rxm7706/local-recipes/pull/684) merge `b0c10436ec` · finalize [#685](https://github.com/rxm7706/local-recipes/pull/685) `68687966e1` · upstream [bmad-loop#701](https://github.com/bmad-code-org/bmad-loop/issues/701) ([Marshal 20-3](369a274f-e5e1-407e-949a-6603a1215b29)) |
+| marshal | `20-2` | [#683](https://github.com/rxm7706/local-recipes/pull/683) |
+| steward | `16-1` | [#682](https://github.com/rxm7706/local-recipes/pull/682) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
