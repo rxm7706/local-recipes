@@ -2,13 +2,22 @@
 title: The local-recipes empty-plan oracle
 type: test
 created: '2026-08-23'
-status: ready
-review_loop_iteration: 0
-followup_review_recommended: false
+status: done
+review_loop_iteration: 1
+followup_review_recommended: true
 context:
   - '{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md'
 warnings: []
-baseline_revision: 80c5856446
+deferred:
+  - summary: >-
+      K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21
+      filtered actions (managed regions absent, no seed-state, first-claim
+      pending). Slow oracle fails until bootstrap adopt lands.
+    evidence: |-
+      pixi run --frozen -e pyforge-marshal pyforge-marshal-test-slow -k
+      test_local_recipes → AssertionError, 21 actions (claude-skills excluded).
+    severity: high
+baseline_revision: 52989ec5545eed357a86101e94d94b8ed640aac7
 ---
 
 <intent-contract>
@@ -46,4 +55,19 @@ baseline_revision: 80c5856446
 
 ## Review Triage Log
 
-_(empty — first dispatch)_
+### 2026-08-23 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 0
+- defer: 1: (high 1)
+- reject: 0
+- addressed_findings:
+  - none
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `tests/oracle/test_local_recipes_empty_plan.py` (SC-02): unit tests for explicit `unclassified-deferred` exclusion and readable plan diff; `@pytest.mark.slow` integration test runs `run_adopt` dry-run against the monorepo root. Default `pyforge-marshal-test`: 5312 passed. Slow oracle: **fails K-02** — 21 filtered actions until local-recipes genesis bootstrap.
+
+**Verification:** `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` → 5312 passed, 10 deselected. `pyforge-marshal-test-slow -k test_local_recipes` → fails (21 actions; K-02 deferred).
