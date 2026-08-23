@@ -32,10 +32,27 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_eight_duties():
+def test_there_are_exactly_ten_duties():
     assert DUTIES == (
-        "keys", "deploy", "provision", "budget", "sync", "workspace", "upgrade", "suite",
+        "keys",
+        "deploy",
+        "provision",
+        "budget",
+        "sync",
+        "workspace",
+        "upgrade",
+        "suite",
+        "init",
+        "shell-init",
     )
+
+
+def test_init_and_shell_init_are_wired_into_help():
+    """Story 17.1 AC: bootstrap verbs are registered duties."""
+    assert "init" in DUTIES
+    assert "shell-init" in DUTIES
+    assert "init" in _HELP
+    assert "shell-init" in _HELP
 
 
 def test_suite_is_wired_into_help():
@@ -65,7 +82,7 @@ def test_sync_is_wired_into_help():
     assert "sync" in _HELP
 
 
-@pytest.mark.parametrize("duty", DUTIES)
+@pytest.mark.parametrize("duty", [d for d in DUTIES if d != "init"])
 def test_each_duty_dispatches_and_succeeds(duty):
     assert main([duty]) == EXIT_OK
 
