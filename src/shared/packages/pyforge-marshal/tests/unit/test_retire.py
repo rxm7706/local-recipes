@@ -152,6 +152,9 @@ class _FakeVcs:
             raise VcsCommandError("git worktree list failed")
         return self.worktrees
 
+    def commit_subjects(self, repo_root, ref):
+        return ()
+
     def is_branch_merged(self, repo_root, branch, *, into):
         self.merged_calls.append(branch)
         if branch in self.merged_raises_for:

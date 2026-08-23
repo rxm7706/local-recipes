@@ -223,14 +223,46 @@ def test_merged_story_keys_does_not_leak_another_projects_story_into_mason():
     assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(4, 2)})
 
 
-def test_merged_story_keys_land_slug_branch_shape_stays_a_noop():
-    """The OTHER real branch shape (`land/<slug>-<epic>-<seq>`) was already
-    harmless before this fix -- its extracted segment's leading token is
-    the slug name, not a digit, so `normalize()` already rejects it. This
-    fix must not change that outcome for any project."""
+def test_merged_story_keys_land_slug_branch_shape_recognized_for_owning_station():
+    """Story 20.10: ``land/<station>-<epic>-<seq>`` recovery branches embedded
+    in GitHub PR merge subjects are recognized via
+    ``classify_branch_name`` at the grammar boundary."""
     subject = "Merge pull request #516 from rxm7706/land/mason-4-4"
-    assert merged_story_keys((subject,), _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset()
+    assert merged_story_keys((subject,), _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset(
+        {StoryKey(4, 4)}
+    )
     assert merged_story_keys((subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
+def test_merged_story_keys_recognizes_recovery_and_story_direct_subjects():
+    subjects = (
+        "recover marshal 10-1 (Copier engine wrapper — the single seam)",
+        "Story 8.2: region parser -- span discovery, nesting rejection, fence awareness",
+    )
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
+        {StoryKey(10, 1), StoryKey(8, 2)}
+    )
+
+
+def test_branch_story_merge_confirmed_by_grammar_when_patch_id_alone_fails():
+    branch = "land/marshal-10-1-recovery"
+    subjects = ("recover marshal 10-1 (Copier engine wrapper — the single seam)",)
+    from pyforge.marshal.core.promotion import branch_story_merge_confirmed_by_grammar
+
+    assert branch_story_merge_confirmed_by_grammar(
+        branch,
+        StoryKey(10, 1),
+        subjects,
+        _TEMPLATE,
+        _PROJECT_SLUG,
+    )
+    assert not branch_story_merge_confirmed_by_grammar(
+        branch,
+        StoryKey(10, 1),
+        subjects,
+        _TEMPLATE,
+        _MASON_PROJECT_SLUG,
+    )
 
 
 def test_merged_story_keys_deduplicates_repeated_subjects():

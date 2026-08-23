@@ -62,6 +62,7 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy
+from ..core import promotion as promotion_core
 from ..core.identity import MalformedStoryKeyError
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
 from ..core.model import Finding, Severity, build_envelope
@@ -296,6 +297,17 @@ def run_retire(
     proposals: list[RetirementProposal] = []
     insufficient: list[InsufficientEvidence] = []
     deleted: list[dict[str, object]] = []
+    subjects_by_base: dict[str, tuple[str, ...]] = {}
+
+    def _subjects_for_base(base_branch: str) -> tuple[str, ...]:
+        if base_branch not in subjects_by_base:
+            try:
+                subjects_by_base[base_branch] = vcs.commit_subjects(
+                    git_repo_root, base_branch
+                )
+            except VcsCommandError:
+                subjects_by_base[base_branch] = ()
+        return subjects_by_base[base_branch]
 
     for slug, home in fleet:
         project_data: Mapping[str, object] = {}
@@ -315,6 +327,8 @@ def run_retire(
         )
         findings.extend(policy_findings)
         base = effective.landing_base_branch.value
+        template = effective.merge_subject_template.value
+        main_subjects = _subjects_for_base(base)
 
         run_dir = _latest_run_dir(home, slug)
         if run_dir is None:
@@ -380,6 +394,15 @@ def run_retire(
                     )
                 )
                 merged_by_patch_id = False
+
+            if not merged_by_patch_id:
+                merged_by_patch_id = promotion_core.branch_story_merge_confirmed_by_grammar(
+                    branch,
+                    story_key,
+                    main_subjects,
+                    template,
+                    slug,
+                )
 
             try:
                 worktree_path = vcs.worktree_path_for_branch(git_repo_root, branch)
