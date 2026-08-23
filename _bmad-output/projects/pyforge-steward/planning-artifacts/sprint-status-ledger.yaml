@@ -39,7 +39,7 @@ development_status:
   12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: backlog
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
   12-9-ocp-as-a-portability-profile: done
-  13-1-workspace-verbs-over-git-worktree: backlog
+  13-1-workspace-verbs-over-git-worktree: done
   13-2-status-and-the-feed-mirror-decision: backlog
   13-3-a-repo-set-opens-as-one-workspace: backlog
   13-4-the-set-reports-and-tears-down-safely: backlog
