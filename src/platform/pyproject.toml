@@ -149,7 +149,7 @@ force-single-line = true
   "TC002", "TC003", "TRY003", "TRY004", "UP035",
 ]
 "tests/test_github_metrics_dlt.py" = [
-  "COM812", "E501", "I001", "PLR2004",
+  "COM812", "E501", "E402", "I001", "PLR2004",
 ]
 
 # ==== import-linter ====
