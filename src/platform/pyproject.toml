@@ -1,11 +1,10 @@
 # ==== pytest ====
 [tool.pytest.ini_options]
 minversion = "6.0"
-# Ignore Story 12.8 github_metrics dlt tests here: they need dlt/duckdb from
-# feature.python-agent-platform, not the slim platform-ci-test env. Covered by
-# pixi task github-metrics-dlt-test (pytest -c /dev/null, so this ignore does
-# not apply there). Without this, Platform CI has been red since #646/#648.
-addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib --ignore=tests/test_github_metrics_dlt.py"
+# Story 12.8 github_metrics dlt tests live under ingest/github_projects/ (not
+# tests/) so import-linter's tests→pyforge forbidden contract stays intact.
+# Covered by pixi task github-metrics-dlt-test against python-agent-platform.
+addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib"
 python_files = [
     "tests.py",
     "test_*.py",
@@ -148,7 +147,7 @@ force-single-line = true
   "COM812", "E501", "EM101", "EM102", "F402", "I001", "PLR0913", "T201",
   "TC002", "TC003", "TRY003", "TRY004", "UP035",
 ]
-"tests/test_github_metrics_dlt.py" = [
+"ingest/github_projects/test_github_metrics_dlt.py" = [
   "COM812", "E501", "E402", "I001", "PLR2004",
 ]
 
@@ -171,10 +170,3 @@ name = "Story 10.1: the platform host never imports pyforge.* (factory/platform 
 type = "forbidden"
 source_modules = ["config", "platformapp", "tests"]
 forbidden_modules = ["pyforge"]
-# Story 12.8 github_metrics dlt tests intentionally use steward keys/sync helpers;
-# they are ignored at pytest collect time in platform-ci-test and run under
-# python-agent-platform (github-metrics-dlt-test). Keep the file analyzable but
-# carve this one edge out of the host boundary contract.
-ignore_imports = [
-    "tests.test_github_metrics_dlt -> pyforge",
-]
