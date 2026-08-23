@@ -3,6 +3,7 @@ title: Startup refuses misconfiguration, two-stage and named
 type: feature
 created: '2026-08-23'
 status: done
+shipped_ref: '6e157b892b55f6dd7aa54b48b27f30cb237bbca4'
 updated: '2026-08-23'
 context: []
 warnings: []
