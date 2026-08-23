@@ -10,6 +10,23 @@ skip_policies:
   story: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
   action: skip_on_blocked
   reason: Requires live OCP cluster; dispatch 12-8 next and report skip to operator.
+- station: marshal
+  story: 21-2-orchestrated-chain-regeneration
+  action: skip_on_blocked
+  reason: spec-fleet-chain-completeness Q1/Q2 unresolved — operator decision required
+    before Epic 21.2.
+- station: marshal
+  story: 21-3-code-status-preservation
+  action: skip_on_blocked
+  reason: Transitively blocked on S-21.2 (Epic 21).
+- station: marshal
+  story: 21-4-orphan-detection-with-review-gated-cleanup
+  action: skip_on_blocked
+  reason: Blocked on S-21.2 + Q3 (Phase 8 git integration shape).
+- station: marshal
+  story: 21-5-configurable-per-project-invocation
+  action: skip_on_blocked
+  reason: Transitively blocked on S-21.2 (Epic 21).
 order_overrides:
   marshal:
   - 11-5-referenced-dependency-verification-and-doctor-delegation
@@ -111,10 +128,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 19
-    next: 21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage
+    remaining_count: 18
+    next: 21-2-orchestrated-chain-regeneration
     queue:
-    - 21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage
     - 21-2-orchestrated-chain-regeneration
     - 21-3-code-status-preservation
     - 21-4-orphan-detection-with-review-gated-cleanup
