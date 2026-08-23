@@ -16,8 +16,6 @@ from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.instrumentation.django import DjangoInstrumentor
-from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor
-from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -25,6 +23,16 @@ from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from config.locality import is_local
+
+try:
+    from opentelemetry.instrumentation.psycopg import PsycopgInstrumentor
+except ImportError:  # pragma: no cover - image/conda namespace gaps
+    PsycopgInstrumentor = None  # type: ignore[misc, assignment]
+
+try:
+    from opentelemetry.instrumentation.redis import RedisInstrumentor
+except ImportError:  # pragma: no cover
+    RedisInstrumentor = None  # type: ignore[misc, assignment]
 
 DEFAULT_SERVICE_NAME = "python-agent-platform"
 
@@ -97,8 +105,10 @@ def configure_telemetry(service_version: str | None = None) -> bool:
 
     DjangoInstrumentor().instrument()
     CeleryInstrumentor().instrument()
-    PsycopgInstrumentor().instrument()
-    RedisInstrumentor().instrument()
+    if PsycopgInstrumentor is not None:
+        PsycopgInstrumentor().instrument()
+    if RedisInstrumentor is not None:
+        RedisInstrumentor().instrument()
 
     _configured = True
     return True

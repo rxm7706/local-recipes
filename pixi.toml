@@ -377,8 +377,8 @@ django-structlog = "==10.1.0"
 opentelemetry-instrumentation-django = "==0.65b0"
 opentelemetry-instrumentation-wsgi = "==0.65b0"
 opentelemetry-instrumentation-celery = "==0.65b0"
-opentelemetry-instrumentation-psycopg = "==0.65b0"
-opentelemetry-instrumentation-redis = "==0.65b0"
+# psycopg/redis instrumentors omitted from the image layer: pip --no-deps onto
+# the conda opentelemetry-instrumentation namespace breaks `dbapi` imports.
 # image-only transitive extras (previously hard-coded in Containerfile)
 django-timezone-field = "==7.2.2"
 python-crontab = "==3.3.0"
