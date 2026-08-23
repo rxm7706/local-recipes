@@ -7,37 +7,38 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 686de783c4
+baseline_revision: 7e8631433f
 ---
 
 <intent-contract>
 
 ## Intent
 
-**Problem:** Genesis verbs need machine-stable flags, exit codes, idempotence proofs, and bounded runtimes so unattended and interactive use stay predictable (FR-123/124/126, NFR-P1–P3, SC-03/SC-09).
+**Problem:** Genesis seed verbs lack a locked CLI contract (flags, JSON schema, exit codes), idempotence proof, and runtime gates — unattended use is unpredictable (FR-123/124/126, NFR-P1–P3, AD-51/60).
 
-**Approach:** Add an integration contract suite under `tests/integration/` (and CLI surface in `cli/seed.py`) that asserts `--json`/`--quiet`/`--dry-run` contracts, exit-code taxonomy, argparse-only (no typer/rich), AD-60 idempotence harness across init/adopt/update, and performance gates on a local-recipes-sized fixture.
+**Approach:** Integration/contract suite under `tests/integration/` plus CLI assertions: `--json`/`--quiet` on all verbs; mutating verbs `--dry-run` (adopt/update default dry-run); exit-code taxonomy per S-7.2; zero typer/rich imports; AD-60 idempotence harness (run → detect+plan → zero actions) for init/adopt/update; performance gates check <5s, adopt --dry-run <10s, init <5min on local-recipes-sized fixture.
 
 ## Acceptance Criteria
 
-- Every verb accepts `--json` and `--quiet`; `--json` schema-stable across verbs (FR-123, NFR-12).
-- Mutating verbs accept `--dry-run`; `adopt` / `update` default to dry-run (FR-124).
-- Exit codes match S-7.2 taxonomy for every failure mode (FR-126).
-- Import test: zero `typer`/`rich` imports under `src/` (AD-51 amended).
-- Idempotence harness (AD-60): run → detect+plan → zero actions for `init`, `adopt` (SC-03), `update`.
-- Performance: `check` < 5 s (NFR-P1); `adopt --dry-run` < 10 s (NFR-P2); `init` e2e < 5 min (NFR-P3, SC-09) on local-recipes-sized fixture.
+- All verbs accept `--json` and `--quiet`; `--json` schema-stable across verbs.
+- Mutating verbs accept `--dry-run`; `adopt`/`update` default to dry-run.
+- Exit codes match S-7.2 taxonomy case by case.
+- Import test: zero `typer`/`rich` under `src/`.
+- Idempotence harness covers `init`, `adopt`, `update`.
+- Performance: `check` < 5 s; `adopt --dry-run` < 10 s; `init` < 5 min (fixture-sized).
 
 ## Boundaries & Constraints
 
-**Never:** Reintroduce typer/rich. Do not weaken never-write / offline gates from Stories 12-3/12-4.
+**Never:** Reintroduce typer/rich (AD-51). No docs story (12.6).
 
 </intent-contract>
 
 ## Code Map
 
-- `src/shared/packages/pyforge-marshal/tests/integration/`
-- `src/shared/packages/pyforge-marshal/` CLI (`cli/seed.py` and related)
+- `src/shared/packages/pyforge-marshal/tests/integration/` — contract + idempotence + perf
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py` — flags if gaps
 
 ## Verification
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
+- Integration/slow markers as established for perf gates
