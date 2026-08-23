@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -51,9 +52,30 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from requests.adapters import HTTPAdapter
 import yaml
 
 CHUNK_SIZE = 1 << 20  # 1 MiB
+_THREAD_LOCAL = threading.local()
+
+
+def _http_session() -> requests.Session:
+    """One keep-alive session per worker thread (Session is not thread-safe)."""
+    session = getattr(_THREAD_LOCAL, "session", None)
+    if session is None:
+        session = requests.Session()
+        adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=3)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        _THREAD_LOCAL.session = session
+    return session
+
+
+def _request_timeout(total_seconds: int) -> tuple[int, int]:
+    """Split connect vs read so a dead TCP peer cannot stall a worker for the
+    full read budget (CI mirror builds issue hundreds of parallel GETs)."""
+    connect = min(30, total_seconds)
+    return connect, total_seconds
 
 
 def _positive_int(value: str) -> int:
@@ -184,7 +206,9 @@ def _download_one(target: MirrorTarget, dest_root: Path, timeout: int) -> str:
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = dest_path.with_name(dest_path.name + ".part")
     try:
-        with requests.get(target.url, stream=True, timeout=timeout) as response:
+        with _http_session().get(
+            target.url, stream=True, timeout=_request_timeout(timeout)
+        ) as response:
             response.raise_for_status()
             with tmp_path.open("wb") as f:
                 for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
@@ -255,7 +279,8 @@ def build_mirror(
             if completed % 20 == 0 or completed == total or (now - last_progress_at) >= 60:
                 print(
                     f"  ... {completed}/{total} ({downloaded} downloaded, "
-                    f"{skipped} skipped, {len(errors)} failed)"
+                    f"{skipped} skipped, {len(errors)} failed)",
+                    flush=True,
                 )
                 last_progress_at = now
 
@@ -276,10 +301,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--platform", required=True, help="pixi platform, e.g. linux-64")
     parser.add_argument("--dest", required=True, type=Path, help="Mirror destination directory")
     parser.add_argument(
-        "--workers", type=_positive_int, default=8, help="Concurrent downloads (default: 8)"
+        "--workers", type=_positive_int, default=16, help="Concurrent downloads (default: 16)"
     )
     parser.add_argument(
-        "--timeout", type=int, default=300, help="Per-request timeout in seconds (default: 300)"
+        "--timeout",
+        type=int,
+        default=120,
+        help="Per-request read timeout in seconds (connect capped at 30; default: 120)",
     )
     args = parser.parse_args(argv)
 
@@ -303,7 +331,8 @@ def main(argv: list[str] | None = None) -> int:
     args.dest.mkdir(parents=True, exist_ok=True)
     print(
         f"Mirroring {len(targets)} packages from {args.environment}/{args.platform} "
-        f"into {args.dest}"
+        f"into {args.dest}",
+        flush=True,
     )
 
     try:
@@ -314,7 +343,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"Mirror complete: {downloaded} downloaded, {skipped} already valid (skipped), "
-        f"{len(targets)} total"
+        f"{len(targets)} total",
+        flush=True,
     )
     return 0
 

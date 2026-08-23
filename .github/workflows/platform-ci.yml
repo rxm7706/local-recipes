@@ -964,11 +964,11 @@ jobs:
   # reusing one that's already been torn down by the time it would run.
   air-gap-parity:
     runs-on: ubuntu-latest
-    # 40: builds the same 395-package image `gke-portability-smoke` does
-    # (45 min budget there) MINUS the ingress-nginx install/wait this job
-    # doesn't do, plus the mirror build (428 packages, network-limited, not
-    # CPU-bound) and the blocked-egress reinstall proof.
-    timeout-minutes: 40
+    # 60: mirror build (428 conda packages, network-limited) plus the same
+    # 395-package image `gke-portability-smoke` builds, minus ingress-nginx
+    # but plus blocked-egress reinstall + helm/port-forward proof. Prior 40m
+    # budget timed out on the mirror step alone on GHA (2026-08-23, PR #622).
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v7
@@ -1128,12 +1128,16 @@ jobs:
       # at CI-runtime, never committed. Deliberately AFTER the image is
       # already built and kind-loaded -- see that step's own comment.
       - name: Build the local pixi mirror from pixi.lock (network still on)
+        timeout-minutes: 45
+        env:
+          PYTHONUNBUFFERED: "1"
         run: |
-          python scripts/build-pixi-mirror.py \
+          python -u scripts/build-pixi-mirror.py \
             --lockfile pixi.lock \
             --environment platform-dev \
             --platform linux-64 \
-            --dest "${{ github.workspace }}/ci-airgap-mirror"
+            --dest "${{ github.workspace }}/ci-airgap-mirror" \
+            --workers 16
 
       # Appends to THIS CHECKOUT'S OWN `.pixi/config.toml` only -- never
       # committed (no `git add`/`git commit` anywhere in this job). The
