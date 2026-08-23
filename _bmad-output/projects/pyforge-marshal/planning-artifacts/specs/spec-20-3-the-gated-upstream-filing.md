@@ -2,11 +2,22 @@
 title: The gated upstream filing
 type: chore
 created: '2026-08-23'
-status: ready
+status: done
+shipped_ref: 'PR #684 / b0c10436ec'
 updated: '2026-08-23'
 context: []
 warnings: []
-baseline_revision: 96c0678145
+baseline_revision: 936b47178a0d62e49e40a87fa8db706ff88921c8
+followup_review_recommended: true
+deferred:
+  - summary: >-
+      Parent Spec CAP-3 memlog/SPEC success oracle still describes the draft as unfiled; sync on a later docs pass if needed.
+    evidence: |-
+      Blind-hunter finding: spec-bmad-loop-baseline-drift CAP-3 text may still say gated/unfiled; outside this chore's Code Map surfaces.
+  - summary: >-
+      If #701 closes only one half of the coordinated report, split or re-note the register entry so FR-189 is not silently retired.
+    evidence: |-
+      Edge-case hunter: single upstream_status on a dual-mode coordinated filing.
 ---
 
 <intent-contract>
@@ -33,13 +44,57 @@ baseline_revision: 96c0678145
 
 ## Code Map
 
-- `docs/dreams/bmad-loop-baseline-drift.md` — drafted issue + Realization log + backlog gates
+- `docs/dreams/bmad-loop-baseline-drift.md` — gates + filed URL + Realization log
 - `docs/dreams/bmad-loop-intent-gap-work-preservation.md` — shared report Realization log
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json`
-- Evidence from Story 10.1 / PRs #482–#484 as needed for the filing body
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json` — `baseline-commit-midflight-drift`
 
 ## Verification
 
-- Gates documented; URL present (filed or duplicate)
+- Gates documented; URL present (filed or duplicate): https://github.com/bmad-code-org/bmad-loop/issues/701
 - Register + Realization logs updated
-- No `bmad_loop` package mutations in the PR
+- No `bmad_loop` package mutations in the PR (`git diff` excludes site-packages / package source)
+
+## Gate evidence (Story 20.3)
+
+### Gate (1) — repo access / org relationship
+
+- Viewer: `rxm7706` (token scopes include `repo`)
+- `bmad-code-org/bmad-loop` permissions: `pull=true`, `push=false`, `triage=false`, `maintain=false`, `admin=false`
+- `has_issues=true`, `has_discussions=false`
+- **Channel decision:** GitHub Issue (cannot push a PR to upstream; Discussions disabled)
+
+### Gate (2) — duplicate search
+
+- Searched: `baseline_commit`, orchestrator-recorded / mid-flight, `intent_gap` / `attempt-preserve` / `keep_failed`
+- No duplicate of mid-flight automatic-retry drift or intent-gap-without-preserve
+- Adjacent only: https://github.com/bmad-code-org/bmad-loop/issues/640 (`rearm_escalation` baseline vs `baseline_revision` — re-arm path)
+
+### Outcome
+
+Filed: https://github.com/bmad-code-org/bmad-loop/issues/701
+
+## Review Triage Log
+
+### 2026-08-23 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 1, medium 2, low 1)
+- defer: 2: (medium 2)
+- reject: count absorbed (epics/ledger done-signal belongs to finalize; Dream frontmatter status; abbreviated review CONTENT; SPEC/memlog CAP-3 oracle sync beyond this chore's Code Map; splitting the coordinated issue into two register rows against the shared-report intent)
+- addressed_findings:
+  - `[high]` `[patch]` Removed non-schema `upstream_url` key; put full #701 URL in `note` so `parse_register` / `marshal upstream` retain it
+  - `[medium]` `[patch]` `compensating_fr` → `FR-188` primary; note clarifies FR-189 evidence rides the coordinated issue without dual-status conflation
+  - `[medium]` `[patch]` Gap/workaround prose adds occurrence evidence + maturity split (20.1–20.2 shipped vs 20.4+ planned)
+  - `[low]` `[patch]` Intent-gap Dream Kinships updated from "likely share" to filed #701 / register id
+  - deferred (not patched here): parent Spec CAP-3 memlog oracle sync; future partial-close of #701 requiring register split — tracked in note
+
+## Auto Run Result
+
+Status: done
+
+Summary: Gates recorded; coordinated upstream issue #701 filed; both Dreams' Realization logs updated; `upstream-register.json` entry `baseline-commit-midflight-drift` added (URL in `note` per UpstreamGapEntry schema). No `bmad_loop` package edits; 20.4–20.10 untouched.
+
+Files changed:
+- `docs/dreams/bmad-loop-baseline-drift.md`
+- `docs/dreams/bmad-loop-intent-gap-work-preservation.md`
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json`
