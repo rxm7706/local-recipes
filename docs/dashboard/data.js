@@ -766,12 +766,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "60/61",
+            "61/61",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "0",
             "remaining",
             ""
           ]
@@ -824,8 +824,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "16.1"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -1224,7 +1224,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "16.1",
-              "pending",
+              "done",
               "The shared-title diff is an ambient finding"
             ]
           ]
@@ -3247,12 +3247,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "45/47",
+            "46/47",
             "stories complete",
             "var(--done)"
           ],
           [
-            "2",
+            "1",
             "remaining",
             ""
           ]
@@ -3313,7 +3313,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "9.1"
+        "at": "9.2"
       },
       "epics": [
         {
@@ -3595,7 +3595,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "9.1",
-              "pending",
+              "done",
               "The repo's CI is consumable via workflow_call"
             ],
             [
@@ -4581,7 +4581,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "7.2"
+        "at": "7.3"
       },
       "epics": [
         {
@@ -4786,7 +4786,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "7.2",
-              "pending",
+              "done",
               "The eligibility union carries its provenance"
             ],
             [
@@ -5034,7 +5034,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-23 02:06 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-23 03:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -7971,9 +7971,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "in-progress",
+          "state": "done",
           "note": "line 2 — consolidative wrap",
-          "done": 60,
+          "done": 61,
           "total": 61,
           "epics_path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
           "redirect": null
@@ -8006,7 +8006,7 @@ window.DASHBOARD_DATA = {
           "stories": 38,
           "state": "in-progress",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 45,
+          "done": 46,
           "total": 47,
           "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
           "redirect": null
@@ -8358,7 +8358,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "60/61",
+        "progress": "61/61",
         "complete": 14,
         "of": 14
       },
@@ -8751,7 +8751,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "45/47",
+        "progress": "46/47",
         "complete": 13,
         "of": 13
       },
@@ -9141,7 +9141,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "32/36",
+        "progress": "33/36",
         "complete": 14,
         "of": 14
       },
@@ -20693,7 +20693,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "3 complete (atlas, herald, scribe); 5 building (doctor, marshal, mason, steward, warden)",
+        "gate": "4 complete (atlas, doctor, herald, scribe); 4 building (marshal, mason, steward, warden)",
         "stations": [
           {
             "name": "Herald",
@@ -21437,7 +21437,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 7.2",
+        "line": "paused 7.3",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -21482,7 +21482,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "paused 9.1",
+        "line": "paused 9.2",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -21590,7 +21590,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 16.1",
+        "line": "complete",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -25397,8 +25397,8 @@ window.DASHBOARD_DATA = {
       "subject": "reconcile spec-surface drift for marshal Story 11.4 (verification repair)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-23 02:06 UTC",
-    "generatedEpoch": 1787450771
+    "generatedAt": "2026-08-23 03:01 UTC",
+    "generatedEpoch": 1787454108
   },
   "storySpecs": [
     {
@@ -25409,8 +25409,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 60,
-      "tracked": 49,
+      "done": 61,
+      "tracked": 50,
       "gap": 11
     },
     {
@@ -25427,8 +25427,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 45,
-      "tracked": 16,
+      "done": 46,
+      "tracked": 17,
       "gap": 29
     },
     {
@@ -25445,8 +25445,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-warden",
-      "done": 32,
-      "tracked": 32,
+      "done": 33,
+      "tracked": 33,
       "gap": 0
     }
   ],
@@ -25657,14 +25657,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md"
           }
         ],
-        "done": 32,
-        "backlog": 4,
+        "done": 33,
+        "backlog": 3,
         "blocked": 0,
         "total": 36,
-        "next": "7-2-the-eligibility-union-carries-its-provenance",
+        "next": "7-3-cyclonedx-out-the-corpus-in",
         "blockedKeys": [],
         "backlogKeys": [
-          "7-2-the-eligibility-union-carries-its-provenance",
           "7-3-cyclonedx-out-the-corpus-in",
           "8-1-upload-runs-the-real-engines-async",
           "8-2-results-render-with-derived-progress"
@@ -25699,44 +25698,14 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pixi-container-image/SPEC.md"
           }
         ],
-        "done": 45,
-        "backlog": 2,
-        "blocked": 0,
-        "total": 47,
-        "next": "9-1-the-repos-ci-is-consumable-via-workflow-call",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "9-1-the-repos-ci-is-consumable-via-workflow-call",
-          "9-2-the-air-gap-distribution-contract-has-a-socket"
-        ],
-        "state": "ready"
-      },
-      {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "in-progress",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          },
-          {
-            "slug": "spec-sibling-dreams-drift",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-sibling-dreams-drift/SPEC.md"
-          }
-        ],
-        "done": 60,
+        "done": 46,
         "backlog": 1,
         "blocked": 0,
-        "total": 61,
-        "next": "16-1-the-shared-title-diff-is-an-ambient-finding",
+        "total": 47,
+        "next": "9-2-the-air-gap-distribution-contract-has-a-socket",
         "blockedKeys": [],
         "backlogKeys": [
-          "16-1-the-shared-title-diff-is-an-ambient-finding"
+          "9-2-the-air-gap-distribution-contract-has-a-socket"
         ],
         "state": "ready"
       },
@@ -25772,6 +25741,33 @@ window.DASHBOARD_DATA = {
         "backlog": 0,
         "blocked": 0,
         "total": 57,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      },
+      {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          },
+          {
+            "slug": "spec-sibling-dreams-drift",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-sibling-dreams-drift/SPEC.md"
+          }
+        ],
+        "done": 61,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 61,
         "next": "",
         "blockedKeys": [],
         "backlogKeys": [],
@@ -25838,8 +25834,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 429,
-      "backlog": 82,
+      "done": 432,
+      "backlog": 79,
       "blocked": 0,
       "total": 511
     }
@@ -25860,13 +25856,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 61,
-        "done": 60,
+        "done": 61,
         "blocked": 0,
         "epics": 16,
-        "epicsDone": 15,
-        "complete": false,
+        "epicsDone": 16,
+        "complete": true,
         "running": false,
-        "projected": 60
+        "projected": 61
       },
       {
         "key": "herald",
@@ -25893,13 +25889,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 47,
-        "done": 45,
+        "done": 46,
         "blocked": 0,
         "epics": 9,
         "epicsDone": 8,
         "complete": false,
         "running": false,
-        "projected": 45
+        "projected": 46
       },
       {
         "key": "scribe",
@@ -25926,26 +25922,26 @@ window.DASHBOARD_DATA = {
       {
         "key": "warden",
         "stories": 36,
-        "done": 32,
+        "done": 33,
         "blocked": 0,
         "epics": 8,
         "epicsDone": 6,
         "complete": false,
         "running": false,
-        "projected": 32
+        "projected": 33
       }
     ],
     "total": {
       "stories": 511,
-      "done": 429,
+      "done": 432,
       "blocked": 0,
       "epics": 109,
-      "epicsDone": 87
+      "epicsDone": 88
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 429
+      "projected": 432
     }
   }
 };
