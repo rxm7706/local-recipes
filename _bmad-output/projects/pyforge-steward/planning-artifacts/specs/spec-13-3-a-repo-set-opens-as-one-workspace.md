@@ -7,37 +7,37 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 89724f0a70
+baseline_revision: 16cef86c06
 ---
 
 <intent-contract>
 
 ## Intent
 
-**Problem:** Fleet work spans multiple repos but workspace verbs (13.1/13.2) are single-repo. Operators need one command to open every repo a feature touches on a coordinated branch with a generated `.code-workspace`.
+**Problem:** Multi-repo features still require hand-cut worktrees per repo; there is no declarative set that opens as one workspace (spec-multi-repo-workspaces CAP-1).
 
-**Approach:** Implement declarative `[projects.<slug>]` repo sets per `spec-multi-repo-workspaces` CAP-1. `steward workspace start <feature>` cuts one worktree per registered repo on branch `f-<feature>`, generates `.code-workspace`, names missing members (never guesses). Resolve the registry-location open question with a dated Spec Change Log entry.
+**Approach:** Extend steward workspace so `steward workspace start <feature>` against a declarative `[projects.<slug>]` repo set cuts one worktree per registered repo on branch `f-<feature>`, generates a `.code-workspace`, names missing members (never guesses), and records a dated Spec Change Log entry resolving the registry-location open question.
 
 ## Acceptance Criteria
 
-- Declarative repo-set registry (location decided and logged — not silently invented).
+- Declarative `[projects.<slug>]` repo set supported.
 - `steward workspace start <feature>` creates one worktree per registered repo on `f-<feature>`.
-- Generates a `.code-workspace` binding the set.
-- Missing/unregistered members are named explicitly — never guessed.
-- Own-worktrees-only HARD rule still holds (foreign loop homes invisible).
+- Generates a `.code-workspace` file.
+- Missing members are named, never guessed.
+- Registry-location open question resolved with a dated Spec Change Log entry.
 
 ## Boundaries & Constraints
 
-**Never:** Multi-repo teardown/status (13.4). Never `scripts/bmad-switch`. Do not implement 12-7 (live OCP skip). Substrate: 13.1/13.2 single-repo verbs must remain intact.
+**Never:** Implement 13.4 teardown/reporting. Own-worktrees-only HARD rule still holds. Never `scripts/bmad-switch`.
 
 </intent-contract>
 
 ## Code Map
 
-- `src/shared/packages/pyforge-steward/` — workspace duty, CLI, repo-set registry
-- `spec-multi-repo-workspaces/SPEC.md` — CAP-1 binding + Spec Change Log entry for registry location
+- `src/shared/packages/pyforge-steward/` workspace duty + CLI
+- Registry config for `[projects.<slug>]`
 
 ## Verification
 
-- Unit/integration tests for start across a fixture repo set (missing member named)
+- Unit/integration tests for multi-repo start + missing-member naming
 - `pixi run --frozen -e pyforge-steward` (or established package test task)
