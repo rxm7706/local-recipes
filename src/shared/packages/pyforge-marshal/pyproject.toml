@@ -89,6 +89,7 @@ source_modules = [
     "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131 named-module coverage gates
     "pyforge.marshal.mcp",
     "pyforge.marshal.ports",
+    "pyforge.marshal.scope",  # Story 20.6 / FR-190 CAP-1 verify_scope primitive
     "pyforge.marshal.seed",
     "pyforge.marshal.supervisor",
 ]

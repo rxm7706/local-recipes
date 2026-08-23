@@ -75,6 +75,7 @@ def test_ad3_harness_seam_contract_shape():
         "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131
         "pyforge.marshal.mcp",
         "pyforge.marshal.ports",
+        "pyforge.marshal.scope",  # Story 20.6 / FR-190 CAP-1
         "pyforge.marshal.seed",
         "pyforge.marshal.supervisor",
     }
