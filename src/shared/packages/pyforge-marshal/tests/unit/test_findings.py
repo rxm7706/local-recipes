@@ -230,6 +230,16 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-CHAIN-002",
             "MRS-CHAIN-003",
             "MRS-CHAIN-004",
+            "MRS-DISP-001",
+            "MRS-DISP-002",
+            "MRS-DISP-003",
+            "MRS-DISP-004",
+            "MRS-DISP-005",
+            "MRS-DISP-006",
+            "MRS-DISP-007",
+            "MRS-DISP-008",
+            "MRS-DISP-009",
+            "MRS-DISP-010",
         }
     )
 

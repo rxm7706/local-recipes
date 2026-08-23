@@ -629,6 +629,37 @@ def _discover_harness_run_id_by_filesystem(
     return best_name
 
 
+def _merge_dispatch_overlay(
+    *,
+    fs: FsPort,
+    process: ProcessPort,
+    clock: ClockPort,
+    repo_root: Path,
+    slug: str,
+    facts: status_core.FleetHomeFacts,
+) -> status_core.FleetHomeFacts:
+    """Story 22.1: overlay in-flight ``marshal factory dispatch`` sessions."""
+    from .dispatch import gather_dispatch_journal_facts, latest_dispatch_run_dir
+
+    run_dir = latest_dispatch_run_dir(repo_root, slug)
+    if run_dir is None:
+        return facts
+    journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+    if journal.session_pid is None:
+        return facts
+    alive = process.is_alive(journal.session_pid)
+    elapsed: float | None = None
+    if journal.launched_at is not None:
+        elapsed = (clock.now() - journal.launched_at).total_seconds()
+    return replace(
+        facts,
+        dispatch_story=journal.story_key,
+        dispatch_engine_alive=alive,
+        dispatch_elapsed_seconds=elapsed,
+        dispatch_run_id=run_dir.name,
+    )
+
+
 def _gather_home_facts(
     *,
     fs: FsPort,
@@ -1252,6 +1283,14 @@ def run_status(
             branch=f"loop/{slug}",
             latest_run_dir=_latest_run_dir,
             resolve_harness_run_id=_resolve_harness_run_id_for_resume,
+        )
+        facts = _merge_dispatch_overlay(
+            fs=fs,
+            process=process,
+            clock=clock,
+            repo_root=git_repo_root,
+            slug=slug,
+            facts=facts,
         )
         if unpushed_by_ref:
             matched = unpushed_by_ref.get(facts.branch)

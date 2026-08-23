@@ -969,6 +969,20 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-CHAIN-002": Verdict.ERROR,
     "MRS-CHAIN-003": Verdict.ERROR,
     "MRS-CHAIN-004": Verdict.WARN,
+    # Story 22.1 (factory dispatch, FR-193 CAP-1): 001 malformed slug ERROR;
+    # 002 malformed story ERROR; 003 harness missing ERROR; 004 repo root ERROR;
+    # 005 spec missing/unreadable ERROR; 006 worktree ERROR; 007 run dir/journal
+    # ERROR; 008 launch ERROR; 009 outcome journal WARN; 010 dead-pid WARN.
+    "MRS-DISP-001": Verdict.ERROR,
+    "MRS-DISP-002": Verdict.ERROR,
+    "MRS-DISP-003": Verdict.ERROR,
+    "MRS-DISP-004": Verdict.ERROR,
+    "MRS-DISP-005": Verdict.ERROR,
+    "MRS-DISP-006": Verdict.ERROR,
+    "MRS-DISP-007": Verdict.ERROR,
+    "MRS-DISP-008": Verdict.ERROR,
+    "MRS-DISP-009": Verdict.WARN,
+    "MRS-DISP-010": Verdict.WARN,
 }
 
 
