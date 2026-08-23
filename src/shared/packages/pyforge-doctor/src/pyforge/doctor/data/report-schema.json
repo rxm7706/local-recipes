@@ -79,7 +79,8 @@
             "bmad-method-version-drift",
             "backlog-intake",
             "sibling-dreams-drift",
-            "dreams-hygiene"
+            "dreams-hygiene",
+            "chain-layers-audit"
           ]
         },
         "check": { "type": "string" },
