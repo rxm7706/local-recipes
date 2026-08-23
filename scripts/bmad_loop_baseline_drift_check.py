@@ -3,6 +3,17 @@
 baseline-drift bug (docs/dreams/bmad-loop-baseline-drift.md,
 spec-bmad-loop-baseline-drift, CAP-1/CAP-2) and not yet recovered.
 
+PLACEMENT (Story 20.1 — closes parent SPEC open question)
+---------------------------------------------------------
+Lives as ``scripts/bmad_loop_baseline_drift_check.py``, invoked via the
+``baseline-drift-check`` pixi task — same shape as ``loop-stall-check``.
+Rationale: it observes ``~/.bmad-loops`` host feeds (runtime scope), is
+already self-registered via ``DETECTOR`` + ``*_check.py`` discovery, and
+does **not** need the doctor dispatcher / ``pyforge.doctor.sources``
+packaging surface (story-status-check's home). Keep it here; do not move
+it into ``pyforge.doctor.sources`` — placement is decided; later stories
+own loudness/ATTENTION (20.2) and upstream filing (20.3), not re-homing.
+
 THE BUG (not ours to fix -- bmad_loop ships git-pinned via pixi, editing
 site-packages is wiped on the next `pixi install` and would be a live edit
 under a run importing it mid-flight). `task.baseline_commit`, stamped once
@@ -30,6 +41,10 @@ same source of truth `fleet-picture` itself reads, so a hand-landed recovery
 (a `land/<slug>-<story>` PR, same shape as PRs #482-484/#510) silences the
 finding the moment `sprint-ledger-sync` picks it up, without this detector
 having to understand recovery-PR shape or commit-message conventions.
+
+``LOOP_ROOT`` and ``REPO`` are module-level so tests can monkeypatch them
+(loop-stall-check meta-test precedent); the detector never imports
+``bmad_loop``.
 
 EXIT
     0  no unrecovered baseline-drift defer found
