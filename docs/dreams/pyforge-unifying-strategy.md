@@ -252,14 +252,63 @@ Governed by `pixi.toml` and locked in `pixi.lock`, the entire PyForge codebase r
 * **Self-Contained C/Rust Binaries:** Pixi provisions Python 3.14, Node.js 24 LTS, `git`, `rattler`, `duckdb`, and `uvicorn` isolated from host system packages.
 * **Unified Pathing:** Universal use of `pathlib.Path` across `pyforge.core` guarantees complete path cross-compatibility between Windows `C:\` and POSIX `/`.
 
-### 3. Deployment Profiles
-1. **Profile A: Local Workstation Development (Pixi + Optional Docker Compose):**
-   * Pure Pixi mode for zero-container fast inner-loop development.
-   * Local Compose mode for Keycloak realm-as-code testing, PostgreSQL `pgvector`, and Redis.
-2. **Profile B: Enterprise Production (Red Hat OpenShift / Kubernetes + Helm):**
-   * Container images running under `restricted-v2` Security Context Constraints (SCC).
-   * In-cluster PostgreSQL + Redis pods, OpenShift Ingress/Routes, and secret-mounted credentials.
-   * Central Artifactory mirror index resolution and WhiteNoise air-gapped asset bundling.
+### 3. Container Packaging & Delivery Modes (Single Container vs. Podman Pods vs. Multi-Container OCP)
+
+PyForge achieves total deployment flexibility through **one unified container image (`pyforge-container`)** built via Pixi (`pixi-build` / `Containerfile`), supporting three distinct operational topologies:
+
+```mermaid
+graph TD
+    UnifiedImg["Unified Container Image: pyforge-container (Built via Pixi)"]
+    
+    subgraph Mode1["1. Single All-in-One Podman Container"]
+        UnifiedImg --> SingleBox["Single Container (All 9 Stations + Django + CLI + SQLite)"]
+    end
+    
+    subgraph Mode2["2. Local Podman Pod (LocalStack Model)"]
+        UnifiedImg --> Pod["podman pod (pyforge-estate)"]
+        Pod --> PlatformC["pyforge-host Container"]
+        Pod --> DB["postgres-pgvector Container"]
+        Pod --> Redis["redis-noeviction Container"]
+        Pod --> Keycloak["keycloak Container"]
+    end
+    
+    subgraph Mode3["3. Multi-Container OpenShift / K8s (Enterprise Scale)"]
+        UnifiedImg --> WebPods["Django Web Pods (Lane 1 & 2)"]
+        UnifiedImg --> ComputePods["FastAPI Station Service Pods (:800x)"]
+        UnifiedImg --> WorkerPods["Celery Async Worker Pods"]
+        UnifiedImg --> DashPods["Vizro Analytics Pods (Lane 3)"]
+    end
+```
+
+#### Mode A: Single All-in-One Container (Edge / Demos / Ephemeral CI)
+* **Execution:** A single standalone container boots the entire platform using SQLite and in-memory brokers.
+* **Invocation:**
+  ```bash
+  podman run -d --name pyforge -p 8000:8000 -p 8001-8009:8001-8009 pyforge-container
+  ```
+* **Best for:** Portable zero-dependency demonstrations, offline air-gapped field laptops, or ephemeral CI/CD test runners.
+
+#### Mode B: Local Podman Pod (`podman pod`) — *The LocalStack Topology*
+* **Execution:** Podman groups the platform container, PostgreSQL (`pgvector`), Redis, and Keycloak into a single unified Kubernetes-style local **Pod** sharing `localhost` networking and IPC.
+* **Invocation:**
+  ```bash
+  # Create local pod
+  podman pod create --name pyforge-pod -p 8000:8000 -p 8080:8080 -p 5432:5432
+
+  # Launch platform host + services into the shared pod
+  podman run -d --pod pyforge-pod --name pyforge-host pyforge-platform
+  podman run -d --pod pyforge-pod --name pyforge-db postgres:16-pgvector
+  podman run -d --pod pyforge-pod --name pyforge-auth keycloak:24.0
+  ```
+* **Best for:** Full enterprise-fidelity local development with real Keycloak SSO and PostgreSQL without Kubernetes cluster overhead.
+
+#### Mode C: Multi-Container Distributed Topology (Red Hat OpenShift / Kubernetes)
+* **Execution:** The **exact same container image** is deployed across specialized Kubernetes pod controllers with distinct entrypoint arguments:
+  * `pyforge-platform` web pods (`python manage.py runserver` / Gunicorn)
+  * `pyforge-<station>-service` compute pods (`pyforge <station> serve`)
+  * `pyforge-worker` async task pods (`celery -A pyforge worker`)
+  * `pyforge-<station>-dashboard` analytics pods (Vizro / Panel)
+* **Security Compliance:** Fully compliant with OpenShift `restricted-v2` Security Context Constraints (non-root UID, read-only root filesystems, zero elevated capabilities).
 
 ---
 
@@ -576,3 +625,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Adversarial PRD & Product Review: audited legacy product definitions across all 8 station PRDs, overturning CLI-only and isolated-silo constraints to establish dual-surface product definitions (interactive web portals + agentic MCP tools) across the entire estate.
 - **2026-08-23** — Renamed to `pyforge-unifying-strategy.md`: elevated document scope to reflect the holistic unifying strategy encompassing product vision, web UI, compute microservices, MCP agent fabric, unified CLI, and cross-station architecture.
 - **2026-08-23** — LocalStack Philosophy & Cross-Platform Guarantees: codified 100% native Linux/macOS/Windows execution guarantees via Pixi (`linux-64`, `win-64`, `osx-arm64-min`) and articulated PyForge's design alignment with the LocalStack emulator model (100% offline, zero cloud bills, sub-millisecond agent inner loops, and strict local-to-OCP 15-Factor environment parity).
+- **2026-08-23** — Container Delivery Modes Formalization: codified the 3 deployment topologies powered by a single Pixi-built container image (`pyforge-container`): Mode A (Single All-in-One Podman Container), Mode B (Local Podman Pod with `pgvector` and Keycloak), and Mode C (Multi-Container Distributed OpenShift/K8s).
