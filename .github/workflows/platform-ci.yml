@@ -1183,21 +1183,29 @@ jobs:
       # equivalent), or a runner with IPv6 connectivity could resolve
       # conda.anaconda.org over AAAA and sail straight past the IPv4-only
       # rules below -- a silent bypass of this story's own core AC.
+      # `-w 30` on every mutating/list call: Docker + kind both hold
+      # xtables.lock on GHA runners; bare `iptables` waits forever by
+      # default. Do NOT run `iptables -L -v` here -- listing Docker's
+      # OUTPUT chain graph can hang for minutes and proves nothing for AD-13.
       - name: Block all non-private-network egress
+        timeout-minutes: 3
         run: |
-          sudo iptables -I OUTPUT -o lo -j ACCEPT
-          sudo iptables -I OUTPUT -d 127.0.0.0/8 -j ACCEPT
-          sudo iptables -I OUTPUT -d 10.0.0.0/8 -j ACCEPT
-          sudo iptables -I OUTPUT -d 172.16.0.0/12 -j ACCEPT
-          sudo iptables -I OUTPUT -d 192.168.0.0/16 -j ACCEPT
-          sudo iptables -A OUTPUT -j DROP
-          sudo iptables -L OUTPUT -n -v
+          set -euxo pipefail
+          IPT="iptables -w 30"
+          IP6T="ip6tables -w 30"
+          sudo $IPT -I OUTPUT -o lo -j ACCEPT
+          sudo $IPT -I OUTPUT -d 127.0.0.0/8 -j ACCEPT
+          sudo $IPT -I OUTPUT -d 10.0.0.0/8 -j ACCEPT
+          sudo $IPT -I OUTPUT -d 172.16.0.0/12 -j ACCEPT
+          sudo $IPT -I OUTPUT -d 192.168.0.0/16 -j ACCEPT
+          sudo $IPT -A OUTPUT -j DROP
+          echo "IPv4 egress block installed"
 
-          sudo ip6tables -I OUTPUT -o lo -j ACCEPT
-          sudo ip6tables -I OUTPUT -d ::1/128 -j ACCEPT
-          sudo ip6tables -I OUTPUT -d fc00::/7 -j ACCEPT
-          sudo ip6tables -A OUTPUT -j DROP
-          sudo ip6tables -L OUTPUT -n -v
+          sudo $IP6T -I OUTPUT -o lo -j ACCEPT
+          sudo $IP6T -I OUTPUT -d ::1/128 -j ACCEPT
+          sudo $IP6T -I OUTPUT -d fc00::/7 -j ACCEPT
+          sudo $IP6T -A OUTPUT -j DROP
+          echo "IPv6 egress block installed"
 
       # THE core AD-13 proof (this story's first Acceptance Criterion):
       # cache evicted to empty, env prefix gone, egress blocked -- if this
