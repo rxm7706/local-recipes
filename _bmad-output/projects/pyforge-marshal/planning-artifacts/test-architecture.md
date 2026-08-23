@@ -1,438 +1,386 @@
 ---
 title: "Test Architecture — pyforge-marshal"
 type: test-architecture
-date: 2026-08-02
-version: 1.0.0
-status: draft
-scope: "All 50 stories (E1–E6), 3 test levels, pytest + playwright framework"
-target_coverage: "Unit ≥80%, Integration ≥70%, E2E happy-path + critical flows"
+generator: bmad_tea_playwright.py
+generator_version: 2.0.0
+status: generated
+station: marshal
+source_fingerprint: ae8187aa03934241
+story_count: 162
+test_file_count: 129
+coverage_target_unit: ">=80%"
+coverage_target_integration: ">=70%"
 ---
 
 # Test Architecture — PyForge Marshal
 
+This document is **machine-generated** by `bmad_tea_playwright.py` (v2.0.0). Do not hand-edit; re-run the generator after epics or tests change.
+
 ## Executive Summary
 
-**Marshal** is a deterministic, offline-by-default loop orchestrator with 50 stories across 6 epics. This test architecture specifies coverage strategy for:
-- **Unit tests (UT)**: Core logic (verdict lattice, policy composition, gate evaluation)
-- **Integration tests (IT)**: Story-level workflows (provision → supervise → land)
-- **End-to-end (E2E)**: Critical paths (launch loop → run story → land PR)
-- **Meta-tests**: Verify invariants (AD-3/4 determinism, AD-14 envelope, AD-15 finding codes)
+- **Station:** `pyforge-marshal`
+- **Stories parsed:** 162
+- **Epics parsed:** 31
+- **Test files inventoried:** 129 under `src/shared/packages/pyforge-marshal/tests/`
+- **Frameworks:** pytest (unit/integration/meta) + Playwright where present
+- **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
+- **Source fingerprint:** `ae8187aa03934241`
 
-**Coverage Target**: 43+ of 50 stories (≥80%) with UT or IT; 6+ with E2E happy-path.
+## Risk Assessment
 
----
+### High-risk epics
 
-## Test Strategy by Epic
+- Epic 2: Gates you can run
+- Epic 20: The loop cannot lose work, and a landing is always recognizable
+- Epic 2: Gates you can run
 
-### Epic 1: Provisioned, Verified Loop Homes (10 stories)
+### Medium-risk epics
 
-**Scope**: Loop home provisioning, isolation, preflight, teardown, packaging.
-**Dependencies**: 1.1 (verdict lattice) blocks all others; 1.4 (provision) must pass before E2E tests can run on other epics.
+- Epic 1: Provisioned, verified loop homes
+- Epic 3: Supervised unattended runs
+- Epic 4: Landing with a durable paper trail
+- Epic 5: Fleet visibility
+- Epic 6: Portability proven
+- Epic 7: Foundation & the Write Guard
+- Epic 8: The Managed-Region Engine
+- Epic 9: Detect & Plan
+- Epic 10: Materialize & the Core Verbs
+- Epic 12: Packaging, Oracle & Hardening
+- Epic 13: Surface drift reconciliation — a gate that can be cleared, a signal that can be trusted
+- Epic 14: The shared floor — pyforge-core
+- Epic 15: Fleet operations run themselves
+- Epic 16: The board derives truth
+- Epic 17: Instruments verified, chains regenerable
+- Epic 18: The governed tool surface
+- Epic 19: The testing charter, enforced
+- Epic 21: The planning chain regenerates itself, and audits whether it's coherent
+- Epic 22: Single-story dispatch is a marshal verb, not a session's discipline
+- Epic 23: Velocity captures hand-driven work
+- Epic 1: Provisioned, verified loop homes
+- Epic 3: Supervised unattended runs
+- Epic 4: Landing with a durable paper trail
+- Epic 5: Fleet visibility
+- Epic 6: Portability proven
 
-| Story | Title | UT | IT | E2E | Fixtures | Coverage |
-|-------|-------|:--:|:--:|:---:|----------|----------|
-| **1.1** | Package spine, verdict lattice, findings registry, meta-tests | ✅ | ✅ | — | `verdict_lattice`, `finding_codes` | Core; AD-3/4 invariants |
-| **1.2** | Story identity, merge-subject rendering, feed completeness | ✅ | ✅ | — | `story_identity`, `feed_schema` | Feed protocol (AD-14, AD-39) |
-| **1.3** | Layered policy composition with provenance and validation | ✅ | ✅ | — | `policy_layers`, `policy_validator` | Policy layers (FR-49..53) |
-| **1.4** | Provision a loop home | ✅ | ✅ | ✅ | `loop_home_fixture`, `worktree` | Worktree lifecycle |
-| **1.5** | Single-sourced Tier-3 store via backlink | ✅ | ✅ | — | `tier3_store`, `backlink` | Durability (FR-3, AD-29) |
-| **1.6** | Isolation verification and home enumeration | ✅ | ✅ | — | `isolation_context`, `enum_homes` | Isolation (FR-4, AD-25) |
-| **1.7** | Preflight, adapter config seeding, first-run acknowledgement | ✅ | ✅ | — | `preflight_checks`, `adapter_config` | Preflight (FR-5, FR-7) |
-| **1.8** | Teardown that refuses to destroy work | ✅ | ✅ | — | `teardown_safety`, `work_protection` | Safety (FR-6, NFR-6) |
-| **1.9** | Packaging, distribution, and version reporting | ✅ | ✅ | — | `package_manifest`, `version_schema` | Package (FR-55..58) |
-| **1.10** | Render the harness policy from EffectivePolicy | ✅ | ✅ | — | `effective_policy`, `policy_render` | Policy render (FR-54, AD-35) |
+### Low-risk epics
 
-**Acceptance**: All 10 stories UT + IT. Critical path 1.1 → 1.4 → 1.5 includes E2E.
+- Epic 11: Derive, Migrate & Update
+- Epic 24: Liveness is one command
+- Epic 25: Aligned to the installed BMAD era
 
-**Implementation Notes:**
-- **1.1 (Lattice)**: Test the closed lattice with 3+ verdict states (ERROR, WARNING, PASS); verify no invalid transitions; check finding-code registry completeness
-- **1.4 (Provision)**: E2E test creates real worktree, runs preflight, verifies isolation; cleanup in teardown
-- **1.5 (Store)**: Test that Tier-3 edits survive loop home restart; verify backlink resolves correctly
-- **Meta-tests**: Run post-1.1 to ensure verdict machinery passes determinism + envelope checks
+## Test Inventory
 
----
+| Relative path | Level | Linked stories |
+|---------------|-------|----------------|
+| `src/shared/packages/pyforge-marshal/tests/integration/test_cli_contract.py` | integration | none observed |
+| `src/shared/packages/pyforge-marshal/tests/integration/test_idempotence_harness.py` | integration | none observed |
+| `src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py` | integration | none observed |
+| `src/shared/packages/pyforge-marshal/tests/integration/test_performance_gates.py` | integration | none observed |
+| `src/shared/packages/pyforge-marshal/tests/integration/test_seed_egress_counter.py` | integration | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad11_write_boundary.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad19_no_adapter_branch.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad23_inline_key_format_guard.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad26_seed_field_access_guard.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad31_conformance_check_can_genuinely_fail.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad34_egress_registry_completeness.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad36_projection_mechanism_table.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad39_envelope_consistency.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad3_ad4_import_linter.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad51_no_typer_rich.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad65_default_template_never_remote.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad65_lean_env_conda_forge.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad65_no_network_stack_imports.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad7_verdict_sole_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_ad9_supervisor_no_control_channel.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_cli_tool_parity.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_finding_remedy_reference_sync.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_manifest_sync.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_p01_write_primitives_only_in_fs.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_p02_copier_sole_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_p03_detect_is_pure.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_p07_no_hash_comparison_in_apply.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_probe_json_contract.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_regions_no_manifest_import.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_rendered_policy_untracked.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_sc08_never_write_update_proof.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_seed_layer_import_rules.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_seed_no_bare_exception.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_supervisor_run_path_agreement.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_tool_surface_coverage.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/oracle/test_local_recipes_empty_plan.py` | oracle | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_adapters_cli.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_bmad_loop_status_vocabulary.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_check.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_cli.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_clock_system.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_conformance.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_conformance_schema.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_context.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_durability.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_egress.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_fold.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_fs_local.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_gate.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_preflight.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_probe.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_run_status_snapshot.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_smoke.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_spin.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_stop_resume.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_usage_snapshot.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_identity.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_init.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_journal.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_land.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_landing.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_model.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_notify_file_desktop.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_observer_mux.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_policy.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_retire.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_scope.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_apply_run.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_adopt.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_check.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_init.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_update.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_derive_adapters.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_derive_projects_index.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_findings.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_hashes.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_inventory.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_optout.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_referenced_deps.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_engine_copier.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_errors.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_fs.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_integration_adopt_prd_j2.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_migrate_registry.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_artifact.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_manifest.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_version.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_plan_build.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_plan_types.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_apply.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_markers.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_parse.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_scaffold.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_state_store.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_templates_manifest.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_adopt.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_check.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_explain.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_init.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_preconditions.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_skips.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_update.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_version.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_skill_projection.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_spec_binding.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_spec_difficulty.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_spec_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_spin.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_supervise.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_supervisor.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_upstream.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py` | unit | none observed |
 
-### Epic 2: Gates You Can Run (7 stories)
+## Story Coverage Matrix
 
-**Scope**: Standalone gate evaluation, verdict aggregation, frozen surface checks, evidence records.
+| Story | Title | Linked test files |
+|-------|-------|-------------------|
+| 1.1 | Package spine, verdict lattice, findings registry, and the meta-tests that en... | none observed |
+| 1.2 | Story identity, merge-subject rendering, and feed completeness | none observed |
+| 1.3 | Layered policy composition with provenance and validation | none observed |
+| 1.4 | Provision a loop home | none observed |
+| 1.5 | Single-sourced Tier-3 store via backlink | none observed |
+| 1.6 | Isolation verification and home enumeration | none observed |
+| 1.7 | Preflight, adapter config seeding, and first-run acknowledgement | none observed |
+| 1.8 | Teardown that refuses to destroy work | none observed |
+| 1.9 | Packaging, distribution, and version reporting | none observed |
+| 1.10 | Render the harness policy from the canonical EffectivePolicy | none observed |
+| 1.11 | A loop agent cannot mutate repo-wide git state *(added 2026-08-09 — FR-178)* | none observed |
+| 1.12 | A stale loop home cannot be spun *(added 2026-08-09 — FR-180)* | none observed |
+| 2.1 | Standalone verify-command runner, project-scoped | none observed |
+| 2.2 | Verdict aggregation that never false-greens | none observed |
+| 2.3 | Frozen-surface scope check, narrowing only | none observed |
+| 2.4 | Doc-only story classification | none observed |
+| 2.5 | Gate mode ladder with autonomy labels | none observed |
+| 2.6 | Gate evidence record with redaction at egress | none observed |
+| 2.7 | A gate binds to the spec's Success signal *(added 2026-08-01 — FR-64 / AD-49)* | none observed |
+| 2.8 | A low-risk story's review runs lighter, never absent *(added 2026-08-11 — FR-... | none observed |
+| 3.1 | Run identity and the journal writer | none observed |
+| 3.2 | The journal fold — one producer for accumulating run state | none observed |
+| 3.3 | Detached launch with scoped story selection | none observed |
+| 3.4 | Supervisor process lifecycle | none observed |
+| 3.5 | Idle-strand detection | none observed |
+| 3.6 | Budget ceilings and the heaviest-story advisory | none observed |
+| 3.7 | Escalation, deferral, and resume | none observed |
+| 3.8 | Stage-bound durability, and fleet-launch wiring *(added 2026-08-01 — FR-61 / ... | none observed |
+| 3.9 | A retired story branch is not a push failure | none observed |
+| 3.10 | Unpushed work is measured by tip, never by name | none observed |
+| 3.11 | A story's declared difficulty actually picks its model *(added 2026-08-11 — F... | none observed |
+| 3.12 | A struggling retry runs under a stronger model *(added 2026-08-11 — FR-183)* | none observed |
+| 3.13 | The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-11 — FR-184)* | none observed |
+| 4.1 | Story-spec promotion with a durability predicate | none observed |
+| 4.2 | Teardown reachability and spec-recovery assistance | none observed |
+| 4.3 | Merge-subject conformance and review-cap landing | none observed |
+| 4.4 | Batch pull request with hygiene preflight | none observed |
+| 4.5 | Feed refresh with truth partitioned by domain | none observed |
+| 4.6 | Deploy idempotence and reconciliation of open intents | none observed |
+| 4.7 | Landing rules as declared policy *(added 2026-08-01 — FR-59 / CAP-9)* | none observed |
+| 4.8 | `marshal land` — the last mile lands itself *(added 2026-08-01 — FR-60 / CAP-9)* | none observed |
+| 4.9 | Derived surfaces regenerate on main; the shared store takes a lock *(added 20... | none observed |
+| 4.10 | Fleet-wide branch retirement *(added 2026-08-01 — FR-63 / AD-47)* | none observed |
+| 4.11 | `marshal land` refuses while a run is in flight *(added 2026-08-09 — FR-172)* | none observed |
+| 4.12 | A landing leaves the loop home current with `main` *(added 2026-08-09 — FR-173)* | none observed |
+| 4.13 | The loop's deferred work reaches the tracked ledger *(added 2026-08-09 — FR-1... | none observed |
+| 4.14 | The failed-story safety net is reported *(added 2026-08-09 — FR-176)* | none observed |
+| 4.15 | One pusher, not two *(added 2026-08-09 — FR-177)* | none observed |
+| 5.1 | Fleet view | none observed |
+| 5.2 | Per-run detail | none observed |
+| 5.3 | Escalation queue | none observed |
+| 5.4 | Ledger-vs-git reconciliation and the versioned status contract | none observed |
+| 5.5 | Durability as a reported fleet-status dimension *(added 2026-08-01 — FR-62 / ... | none observed |
+| 5.6 | `marshal check` — the detector registry through the front door *(added 2026-0... | none observed |
+| 5.7 | The board answers "how much is left" *(added 2026-08-09 — FR-179)* | none observed |
+| 5.8 | A dead supervisor sidecar doesn't hide a live engine *(added 2026-08-11 — FR-... | none observed |
+| 5.9 | A story finished by hand isn't invisible to the ledger *(added 2026-08-11 — F... | none observed |
+| 5.10 | `marshal land` renders a detectable merge subject *(added 2026-08-12 — FR-187... | none observed |
+| 6.1 | Profile-driven adapter selection, project-scoped | none observed |
+| 6.2 | Skill-tree projection | none observed |
+| 6.3 | Projection drift detection that can actually fail | none observed |
+| 6.4 | Adapter probe with a machine-scoped record | none observed |
+| 6.5 | Conformance smoke in an ephemeral home | none observed |
+| 6.6 | The conformance matrix | none observed |
+| 6.7 | Entry-file family drift check, detect-only | none observed |
+| 6.8 | Upstream contribution register | none observed |
+| 6.9 | Tool-surface rendering and preflight probe *(added 2026-08-01 — AD-43 / the Q... | none observed |
+| 7.1 | The seed module tree inside pyforge-marshal | none observed |
+| 7.2 | Error taxonomy and exit codes | none observed |
+| 7.3 | The `fs` write primitive and the never-write guard | none observed |
+| 7.4 | Manifest schema, loader, and model-version ranges | none observed |
+| 7.5 | The V1 extraction manifest (the model, as data) | none observed |
+| 7.6 | Spike-0 — Copier API fit (CRITICAL GATE) | none observed |
+| 8.1 | Marker grammar and the per-format registry | none observed |
+| 8.2 | Region parser — span discovery, nesting rejection, fence awareness | none observed |
+| 8.3 | Span substitution — the update primitive | none observed |
+| 8.4 | Anchor resolution and region insertion | none observed |
+| 8.5 | Marker deletion as a sanctioned opt-out | none observed |
+| 9.1 | Findings model — severity, types, remedies | none observed |
+| 9.2 | Repo inventory walker and artifact classification | none observed |
+| 9.3 | Content hashing for managed files and regions | none observed |
+| 9.4 | Legacy convention detection | none observed |
+| 9.5 | Manifest coverage check | none observed |
+| 9.6 | Plan and Action types, repo fingerprint, and the plan builder | none observed |
+| 10.1 | Copier engine wrapper — the single seam | none observed |
+| 10.2 | State schema and the atomic store | none observed |
+| 10.3 | The apply runner — transactional, guarded | none observed |
+| 10.4 | Preconditions, refusals, and skips | none observed |
+| 10.5 | `marshal seed check` | none observed |
+| 10.6 | `marshal seed adopt` | none observed |
+| 10.7 | `marshal seed init` | none observed |
+| 10.8 | Manifest-declared writable artifacts are exempt from their own never-write co... | none observed |
+| 11.1 | Neutral contract and agent-adapter fan-out | none observed |
+| 11.2 | `PROJECTS.md` index and artifact-symlink derivation | none observed |
+| 11.3 | Migration registry and runner | none observed |
+| 11.4 | `marshal seed update` — two-phase | none observed |
+| 11.5 | Referenced-dependency verification and Doctor delegation | none observed |
+| 11.6 | `marshal seed explain` and `marshal seed version` | none observed |
+| 12.1 | Full pixi wiring, distribution, and repo-gate compliance | none observed |
+| 12.2 | The `local-recipes` empty-plan oracle (CRITICAL) | none observed |
+| 12.3 | Offline operation and the egress counter | none observed |
+| 12.4 | Pattern meta-tests and the never-write proof | none observed |
+| 12.5 | CLI contract, idempotence harness, and performance gates | none observed |
+| 12.6 | README, adoption guide, and the finding→remedy reference | none observed |
+| 13.1 | A baseline can be stamped for one spec | none observed |
+| 13.2 | A moved contract reconciles only the paths it names | none observed |
+| 13.3 | The no-baseline, ungoverned and stale-allowlist findings are cleared | none observed |
+| 13.4 | The 34 drift findings are reconciled or recorded | none observed |
+| 13.5 | A Spec cannot declare a surface it has no contract for | none observed |
+| 13.6 | The presumed set is worked down by measurement | none observed |
+| 13.7 | The producer reconciles the surface it drifts *(added 2026-08-09 — FR-174)* | none observed |
+| 14.1 | The leaf exists and is provably a leaf | none observed |
+| 14.2 | Atomic write has one implementation | none observed |
+| 14.3 | One lattice, one envelope, one exception root | none observed |
+| 14.4 | The subprocess seam is reconciled and sole ownership is gated | none observed |
+| 15.1 | One command refreshes the fleet's homes | none observed |
+| 15.2 | Landing promotes the ledger, and staleness is its own check | none observed |
+| 16.1 | One resolver, derived sources, loud failures | none observed |
+| 17.1 | The detectors' remaining blind spots are fixture-pinned, with an incident log | none observed |
+| 17.2 | The dreams hygiene mode exists | none observed |
+| 17.3 | Chain-completeness audit mode reports layers | none observed |
+| 17.4 | Orchestrated regeneration that cannot lose code status | none observed |
+| 18.1 | Marshal's capabilities become named, typed tools | none observed |
+| 18.2 | Parity and coverage are gated numbers | none observed |
+| 19.1 | One generator produces every station's test architecture | none observed |
+| 19.2 | The shared test-support kit | none observed |
+| 19.3 | Coverage gates that name the module | none observed |
+| 19.4 | Test architecture stays current as stories land | none observed |
+| 20.1 | Baseline-drift detector at the seam | none observed |
+| 20.2 | Baseline-drift defers get loud | none observed |
+| 20.3 | The gated upstream filing | none observed |
+| 20.4 | Intent-gap attempts are preserved | none observed |
+| 20.5 | Missing-preserve detector | none observed |
+| 20.6 | The verify_scope primitive | none observed |
+| 20.7 | Both guards hard-fail on drift | none observed |
+| 20.8 | The landing-evidence grammar | none observed |
+| 20.9 | Doctor consumes the grammar | none observed |
+| 20.10 | Marshal consumes the grammar | none observed |
+| 21.1 | Chain-completeness audit mode extends layer-presence into full CAP-3 coverage | none observed |
+| 21.2 | Orchestrated chain regeneration | none observed |
+| 21.3 | Code-status preservation | none observed |
+| 21.4 | Orphan detection with review-gated cleanup | none observed |
+| 21.5 | Configurable per-project invocation | none observed |
+| 22.1 | The dispatch verb launches one governed, isolated story session | none observed |
+| 22.2 | Completion is judged from git and process facts, and a zombie is never redisp... | none observed |
+| 22.3 | Verification is the product — no landing on a self-report | none observed |
+| 22.4 | A verified story lands through the existing machinery, classified marshal-native | none observed |
+| 22.5 | One story in flight per station; stations in parallel; overlap is loud | none observed |
+| 22.6 | The dispatched run survives its operator, and its journal carries the timing ... | none observed |
+| 23.1 | Wall-clock fallback derivation from promoted-spec revision fields | none observed |
+| 23.2 | Wall-clock is never blended with active-compute | none observed |
+| 23.3 | The coverage caption partitions by true reason | none observed |
+| 24.1 | Marshal gains the missing liveness primitive | none observed |
+| 24.2 | The operator answer is one documented command | none observed |
+| 24.3 | An UNSUPERVISED row has a cheap, documented double-check | none observed |
+| 25.1 | Retired skill IDs are purged and guarded | none observed |
+| 25.2 | bmad-loop's repo skills match the installed package | none observed |
+| 25.3 | Every spec folder accepts a 6.11 bmad-spec update | none observed |
+| 25.4 | The 0.10/0.11 policy knobs are governable | none observed |
+| 25.5 | Marshal speaks the 0.11 status vocabulary | none observed |
+| 25.6 | A hand-driven run's deferrals reach the ledger unaided | none observed |
+| 25.7 | The factory's living docs are re-grounded, with a named owner | none observed |
 
-| Story | Title | UT | IT | E2E | Coverage |
-|-------|-------|:--:|:--:|:---:|----------|
-| **2.1** | Standalone verify-command runner, project-scoped | ✅ | ✅ | ✅ | Gate CLI (FR-20, FR-21) |
-| **2.2** | Verdict aggregation that never false-greens | ✅ | ✅ | — | Correctness (FR-26, NFR-3) |
-| **2.3** | Frozen-surface scope check, narrowing only | ✅ | ✅ | — | Surface (FR-22, AD-27) |
-| **2.4** | Doc-only story classification | ✅ | ✅ | — | Classification (FR-23) |
-| **2.5** | Gate mode ladder with autonomy labels | ✅ | ✅ | — | Autonomy (FR-24) |
-| **2.6** | Gate evidence record with redaction at egress | ✅ | ✅ | — | Evidence (FR-25, AD-34) |
-| **2.7** | A gate binds to the spec's Success signal | ✅ | ✅ | — | Spec binding (FR-64, AD-49) |
+## Quality Gates
 
-**Acceptance**: All 7 stories UT + IT. Gate CLI (2.1) + verdict (2.2) includes E2E.
+| Gate | Target | Enforcement |
+|------|--------|-------------|
+| Unit coverage | ≥80% | Story 19.3 CI gate |
+| Integration coverage | ≥70% | Story 19.3 CI gate |
+| Forbidden placeholder token | zero occurrences | this generator (hard fail) |
+| Idempotent regen | byte-identical on unchanged tree | FR-132 |
 
----
+## Regeneration
 
-### Epic 3: Supervised Unattended Runs (8 stories)
-
-**Scope**: Detached launch, supervisor attachment, idle detection, budget ceilings, escalation, run journal.
-
-| Story | Title | UT | IT | E2E | Coverage |
-|-------|-------|:--:|:--:|:---:|----------|
-| **3.1** | Detached launch (FR-9) and scoped launch (FR-10) | ✅ | ✅ | ✅ | Launch (FR-9/10) |
-| **3.2** | Supervisor attaches and establishes heartbeat | ✅ | ✅ | ✅ | Supervisor (FR-11, FR-12) |
-| **3.3** | Idle-strand detection and escalation surfacing | ✅ | ✅ | — | Detection (FR-12, FR-15) |
-| **3.4** | Budget ceilings and heaviest-story advisory | ✅ | ✅ | — | Budget (FR-13/14) |
-| **3.5** | Deferral capture into ledger | ✅ | ✅ | — | Ledger (FR-16) |
-| **3.6** | Resume from deferral state | ✅ | ✅ | ✅ | Resume (FR-17) |
-| **3.7** | Run journal with scoped visibility | ✅ | ✅ | — | Journal (FR-18, AD-30) |
-| **3.8** | Bounded-loss durability (FR-61) | ✅ | ✅ | — | Durability (FR-61, NFR-4) |
-
-**Acceptance**: All 8 stories UT + IT. Launch (3.1) → supervise (3.2) → resume (3.6) includes E2E.
-
----
-
-### Epic 4: Landing with a Durable Paper Trail (10 stories)
-
-**Scope**: Batch PR, merge-subject conformance, story-spec promotion, deploy idempotence, feed refresh.
-
-| Story | Title | UT | IT | E2E | Coverage |
-|-------|-------|:--:|:--:|:---:|----------|
-| **4.1** | Batch pull request orchestration | ✅ | ✅ | ✅ | PR creation (FR-28, FR-59/60) |
-| **4.2** | Repository-hygiene preflight (FR-29) | ✅ | ✅ | — | Hygiene (FR-29) |
-| **4.3** | Automatic story-spec promotion (FR-30) | ✅ | ✅ | — | Promotion (FR-30) |
-| **4.4** | Spec-recovery assistance (FR-31) | ✅ | ✅ | — | Recovery (FR-31) |
-| **4.5** | Merge-subject conformance (FR-32) | ✅ | ✅ | ✅ | Subject (FR-32, AD-12) |
-| **4.6** | Sprint & console feed refresh (FR-33) | ✅ | ✅ | — | Feeds (FR-33, AD-38) |
-| **4.7** | Deploy idempotence (FR-34) | ✅ | ✅ | — | Idempotence (FR-34, NFR-7) |
-| **4.8** | No AI attribution (FR-35) | ✅ | ✅ | — | Governance (FR-35, NFR-5) |
-| **4.9** | Landing rules as policy (FR-59) | ✅ | ✅ | — | Policy (FR-59) |
-| **4.10** | Fleet-wide branch retirement (FR-63) | ✅ | ✅ | — | Cleanup (FR-63) |
-
-**Acceptance**: All 10 stories UT + IT. PR creation (4.1) → conformance (4.5) includes E2E.
-
----
-
-### Epic 5: Fleet Visibility (6 stories)
-
-**Scope**: Fleet view, per-run detail, escalation queue, ledger reconciliation, stable status contract.
-
-| Story | Title | UT | IT | E2E | Coverage |
-|-------|-------|:--:|:--:|:---:|----------|
-| **5.1** | Fleet view and per-run detail (FR-36/37) | ✅ | ✅ | ✅ | Visibility (FR-36/37) |
-| **5.2** | Escalation queue and priority ordering (FR-38) | ✅ | ✅ | — | Queue (FR-38, AD-5) |
-| **5.3** | Ledger-vs-git reconciliation (FR-39) | ✅ | ✅ | — | Reconciliation (FR-39) |
-| **5.4** | Stable machine-readable status contract (FR-40) | ✅ | ✅ | — | Contract (FR-40, AD-14/39) |
-| **5.5** | Durability as a reported fleet property (FR-62) | ✅ | ✅ | — | Durability (FR-62) |
-| **5.6** | `marshal check` — detector registry (FR-65) | ✅ | ✅ | ✅ | Detector (FR-65) |
-
-**Acceptance**: 6/6 stories UT + IT. Fleet view (5.1) + detector (5.6) includes E2E.
-
----
-
-### Epic 6: Portability Proven (9 stories)
-
-**Scope**: Skill-tree projection, conformance matrix, adapter probes, entry-file drift, contributions register.
-
-| Story | Title | UT | IT | E2E | Coverage |
-|-------|-------|:--:|:--:|:---:|----------|
-| **6.1** | Skill-tree projection and drift detection (FR-41/42) | ✅ | ✅ | — | Projection (FR-41/42, AD-36) |
-| **6.2** | Adapter probe and conformance smoke (FR-43/44) | ✅ | ✅ | ✅ | Probe (FR-43/44) |
-| **6.3** | Conformance matrix and entry-file family drift (FR-45/46) | ✅ | ✅ | — | Matrix (FR-45/46, AD-37) |
-| **6.4** | First-run acknowledgement and project scoping (FR-47) | ✅ | ✅ | — | Scoping (FR-47) |
-| **6.5** | Adapter selection and entry-file family (FR-48) | ✅ | ✅ | — | Selection (FR-48) |
-| **6.6** | Upstream contribution register (FR-58) | ✅ | ✅ | — | Registry (FR-58) |
-| **6.7** | Package identity and layout (FR-55) | ✅ | ✅ | — | Identity (FR-55) |
-| **6.8** | Conda and wheel artifacts (FR-56) | ✅ | ✅ | — | Artifacts (FR-56) |
-| **6.9** | Version and capability reporting (FR-57) | ✅ | ✅ | — | Reporting (FR-57) |
-
-**Acceptance**: 9/9 stories UT + IT. Probe (6.2) includes E2E.
-
----
-
-## Test Coverage Summary
-
-| Level | Target | Stories | Status |
-|-------|--------|---------|--------|
-| **Unit (UT)** | ≥80% (≥40 stories) | 50/50 | ✅ COMPLETE |
-| **Integration (IT)** | ≥70% (≥35 stories) | 50/50 | ✅ COMPLETE |
-| **E2E** | Happy-path + critical | 10/50 | ⏳ IN PROGRESS |
-
-**E2E Coverage** (critical paths):
-1. **Provision → Verify**: 1.4 (provision) → 2.1 (verify) → 1.8 (teardown)
-2. **Supervise → Land**: 3.1 (launch) → 3.2 (supervise) → 3.6 (resume) → 4.1 (land)
-3. **Fleet → Detect**: 5.1 (fleet view) → 5.6 (marshal check)
-4. **Adapt → Conform**: 6.2 (probe) → 6.3 (matrix)
-
----
-
-## Story Dependencies & Critical Path
-
-**Execution Order** (stories must pass in this sequence for E2E):
-
+```bash
+python _bmad/scripts/bmad_tea_playwright.py --project pyforge-marshal
+python _bmad/scripts/bmad_tea_playwright.py --all
 ```
-Phase 1: Foundations (Epics 1-2)
-  1.1 ✓ (Verdict lattice + finding codes established)
-    ├→ 1.2 ✓ (Feed protocol ready)
-    ├→ 1.3 ✓ (Policy composition ready)
-    ├→ 1.4 ✓ (Worktree provisioning) [GATE 1]
-    │   ├→ 1.5 ✓ (Tier-3 durability)
-    │   ├→ 1.6 ✓ (Isolation checks)
-    │   └→ 1.7 ✓ (Preflight + config)
-    ├→ 2.1 ✓ (Gate runner CLI)
-    └→ 2.2 ✓ (Verdict never false-green) [GATE 2]
-
-Phase 2: Supervision (Epic 3) [After GATE 1 passes]
-  3.1 ✓ (Launch worktree)
-    ├→ 3.2 ✓ (Supervisor attaches)
-    ├→ 3.3 ✓ (Idle detection)
-    ├→ 3.6 ✓ (Resume from state)
-    └→ 3.7 ✓ (Journal logging) [GATE 3]
-
-Phase 3: Landing (Epic 4) [After GATE 3 passes]
-  4.1 ✓ (Batch PR creation)
-    ├→ 4.2 ✓ (Repo hygiene)
-    └→ 4.5 ✓ (Merge-subject conformance) [GATE 4]
-
-Phase 4: Visibility + Portability (Epics 5-6) [Can run in parallel after GATE 4]
-  5.1 ✓ (Fleet view)
-  6.2 ✓ (Adapter probe)
-```
-
-**Critical Gates:**
-- **GATE 1** (E1 complete): Loop home provisioning works; isolation verified; preflight passes
-- **GATE 2** (E2 complete): Verdict logic never false-greens; all gates deterministic
-- **GATE 3** (E3 complete): Supervised runs survive restarts; journals consistent
-- **GATE 4** (E4 complete): PRs land with correct subjects; specs promoted
-
----
-
-## Test Fixtures & Mocks
-
-**Shared Fixtures** (`tests/conftest.py`):
-
-```python
-@pytest.fixture
-def verdict_lattice():
-    """Closed verdict lattice: ERROR, WARNING, PASS (no invalid transitions)."""
-    return VerdiLattice(states=[ERROR, WARNING, PASS], transitions={...})
-
-@pytest.fixture
-def loop_home_fixture(tmp_path):
-    """Real worktree provisioned at tmp_path. Auto-cleaned up after test."""
-    home = LoopHome.provision(tmp_path)
-    yield home
-    home.teardown()  # Safety: refuses if work in progress
-
-@pytest.fixture
-def policy_layers(loop_home_fixture):
-    """6-layer policy composition: system → project → team → user → run → story."""
-    return PolicyComposition.from_home(loop_home_fixture)
-
-@pytest.fixture
-def finding_codes():
-    """Registry of all valid finding codes (MRS-*, FR-*, AD-*, etc.)."""
-    return FindingCodeRegistry.load_from('_bmad/data/finding-codes.json')
-
-@pytest.fixture
-def run_journal(loop_home_fixture):
-    """Append-only journal with deterministic serialization."""
-    return RunJournal(store=loop_home_fixture.tier3_store)
-
-@pytest.fixture
-def adapter_config(loop_home_fixture):
-    """Adapter config seeded from first-run context."""
-    return AdapterConfig.seed_from_context(loop_home_fixture)
-```
-
-**Mocks** (`tests/mocks/`):
-
-- `mock_worktree.py`: Simulates worktree creation/deletion (for unit tests)
-- `mock_supervisor.py`: Fake supervisor that responds to heartbeat/escalation signals
-- `mock_runner.py`: Fake story runner with deterministic timing
-- `mock_github_api.py`: Stubs GitHub PR/branch operations
-
----
-
-## Meta-Tests (Invariant Verification)
-
-All stories depend on E1 establishing the verdict lattice and policy contract. Meta-tests verify:
-
-| Invariant | Test Case | Expected | Failure Mode |
-|-----------|-----------|----------|--------------|
-| **AD-3/4 Determinism** | Run marshal twice with identical input; diff output | Output byte-identical | Non-deterministic random seed or timestamp in logic |
-| **AD-14 Envelope** | Parse feed from 10+ stories; validate every entry | All entries have required fields (finding_code, severity, source) | Partial envelope (e.g., missing severity) |
-| **AD-15 Finding Codes** | Collect all findings from verdict; check against registry | All finding_code values in registry | Unknown finding code in verdict |
-| **NFR-1 Determinism** | Run same story 5× in isolation; hash state files | All hashes identical | Timer, RNG, or sequence-order variability |
-| **NFR-3 Never false-green** | Inject FAIL into any sub-verdict; run aggregation | Aggregated result = FAIL, never PASS | Aggregation logic allows PASS when any sub = FAIL |
-
-**Implementation**: Pytest fixtures in `tests/meta/` with deterministic input + output comparison.
-
-**Test Code Example:**
-```python
-@pytest.mark.meta
-def test_determinism_verdict_lattice():
-    """Verdict aggregation is deterministic (AD-3/4)."""
-    input_verdicts = [ERROR, WARNING, PASS, WARNING]
-    result1 = verdict_lattice.aggregate(input_verdicts)
-    result2 = verdict_lattice.aggregate(input_verdicts)
-    assert result1 == result2
-    assert result1.timestamp is None  # No timestamps in verdict logic
-
-@pytest.mark.meta
-def test_never_false_green(verdict_lattice):
-    """Verdict never false-greens (NFR-3)."""
-    verdicts_with_fail = [PASS, PASS, FAIL, PASS]
-    result = verdict_lattice.aggregate(verdicts_with_fail)
-    assert result.state == FAIL, "Aggregation must fail if any sub-verdict fails"
-```
-
----
-
-## Framework & Tooling
-
-**Pytest**: Main test runner. Plugins: `pytest-cov`, `pytest-timeout`, `pytest-xdist`.
-
-**Playwright**: Browser automation for E2E tests (CLI, web, integration). Config: `playwright.config.ts`.
-
-**Coverage**: `pytest-cov` with threshold enforcement (>80% unit, >70% integration).
-
-**CI/CD Integration**: GitHub Actions + local worktree testing via bmad-loop.
-
----
-
-## CI/CD Gates & Coverage Thresholds
-
-**Gate 1: Ready for Merge** (PR → main)
-```yaml
-coverage_unit_min: 80%
-coverage_integration_min: 70%
-test_suite: unit + integration
-failure_mode: block merge
-timeout: 10 minutes
-```
-
-**Gate 2: Ready to Ship** (Story deployment)
-```yaml
-coverage_unit_min: 80%
-coverage_integration_min: 70%
-coverage_e2e_min: critical_paths  # 1.1→1.4→1.5 must pass
-all_meta_tests: pass
-failure_mode: block story deployment
-timeout: 20 minutes
-```
-
-**Baseline Establishment** (Spike story 0.x or first story per epic):
-- Run full test suite on spike; measure coverage baseline
-- Store baseline in `.bmad-loop/coverage-baseline.json`
-- Subsequent stories must meet or exceed baseline per epic
-
-**Coverage Thresholds by Epic:**
-| Epic | Unit | Integration | E2E | Notes |
-|------|------|-------------|-----|-------|
-| E1 | ≥80% | ≥70% | Critical path (1.1→1.4→1.5) | Foundational |
-| E2 | ≥80% | ≥70% | 2.1 (gate runner CLI) | Must not false-green |
-| E3 | ≥80% | ≥70% | 3.x supervisor workflow | Determinism critical |
-| E4 | ≥80% | ≥70% | 4.1–4.5 landing flow | PR conformance |
-| E5 | ≥75% | ≥65% | 5.1 fleet view render | Visual pass acceptable |
-| E6 | ≥75% | ≥65% | 6.2 adapter probe | Integration light |
-
-**Failure Recovery:**
-- If coverage drops below threshold: bisect PRs, identify root cause, re-run with fixture adjustment
-- If meta-test fails: block all stories until determinism/envelope/finding-codes fixed
-- If E2E critical path fails: escalate; must fix before any other E2E proceeds
-
----
-
-## Story-Level Implementation Notes
-
-**Epic 1 (Foundations):**
-- **1.1** (Lattice): Implement `VerdiLattice` class with closed-set states (ERROR, WARNING, PASS); verify no invalid transitions; UT: test 100+ state combinations; IT: mock aggregation rules
-- **1.2** (Feed): Implement `StoryIdentity` + feed-entry struct with all required fields; UT: validate field presence; IT: round-trip serialize/deserialize with 20+ stories
-- **1.3** (Policy): Implement 6-layer composition (system → project → team → user → run → story); UT: verify each layer override; IT: test full merge with conflicts + provenance tracking
-- **1.4** (Provision): Create real worktree via `git worktree add`; UT: mock worktree calls; IT+E2E: real provisioning on tmp_path with preflight checks
-- **1.5** (Store)**: Implement Tier-3 durability via backlink; IT: verify Tier-3 edits persist across home restarts; test journal append-only semantics
-- **1.6** (Isolation)**: Test that each home is isolated from others; UT: mock isolation checks; IT: verify two homes can coexist without state bleed
-- **1.7** (Preflight)**: Implement preflight checks (disk space, git config, python version); UT: mock checks; IT: run all checks on real system
-- **1.8** (Teardown)**: Implement teardown that refuses if uncommitted work exists; UT: verify refusal behavior; IT: test full teardown with real worktree
-- **1.9** (Package)**: Implement version reporting and manifest; UT: verify version format; IT: test package installation + capability detection
-- **1.10** (Render)**: Implement policy rendering from `EffectivePolicy`; UT: test templating; IT: render to file and verify YAML correctness
-
-**Epic 2 (Gates):**
-- **2.1** (Runner CLI): Implement gate-runner entry point with argument parsing; UT: test all argument combinations; IT: run against mock stories; E2E: run real gates on staging
-- **2.2** (Never False-Green)**: Test aggregation logic with FAIL injection at every position; UT: verify aggregation always fails if any sub-verdict fails; IT: test with 5+ different verdict mixes
-- **2.3** (Frozen-surface)**: Implement scope narrowing (files must be within frozen scope); UT: test scope checks; IT: test with real git diffs
-- **2.4** (Doc-only)**: Implement story classification logic; UT: classify 10+ story types; IT: test against real story specs
-- **2.5** (Gate mode)**: Implement mode ladder (inspect, verify, enforce); UT: test mode transitions; IT: run same gate in all modes
-- **2.6** (Evidence)**: Implement evidence record with PII redaction; UT: test redaction rules; IT: generate and inspect evidence files
-- **2.7** (Spec binding)**: Verify that gate result matches spec's Success signal; UT: mock spec binding; IT: test with real story specs
-
-**Epic 3 (Supervision):**
-- **3.1** (Launch)**: UT: mock worktree launch; IT: real launch + supervisor attachment; E2E: full workflow start-to-idle detection
-- **3.2** (Heartbeat)**: Implement heartbeat protocol (send/receive every N seconds); UT: mock heartbeat; IT: test timeout + recovery
-- **3.3** (Idle detection)**: Implement idle detection (no progress for T seconds); UT: simulate time; IT: run slow story + verify detection
-- **3.4** (Budget)**: Implement token budget tracking; UT: test budget arithmetic; IT: test enforcement with mock stories
-- **3.5** (Deferral)**: Implement deferral ledger (story deferred, reason, resume criteria); UT: test ledger append; IT: test resume from deferral
-- **3.6** (Resume)**: IT: serialize state, kill process, deserialize, resume; verify journal consistency + zero data loss
-- **3.7** (Journal)**: Implement append-only journal with scoped visibility (private vs. public); UT: test visibility rules; IT: test journal across restarts
-- **3.8** (Durability)**: Test bounded-loss guarantee (at most T seconds of work lost); UT: mock crash points; IT: crash + resume, verify loss ≤ T
-
-**Epic 4 (Landing):**
-- **4.1** (Batch PR)**: IT: create 5 PRs in batch; verify all created with correct branch names and subjects
-- **4.2** (Hygiene)**: Check for uncommitted files, untracked files, diverged branches before landing; IT: test preflight with dirty worktree
-- **4.3** (Promotion)**: Move story spec from `implementation-artifacts/` to `planning-artifacts/specs/`; IT: test promotion for all story types
-- **4.4** (Recovery)**: Implement spec recovery if promotion failed; IT: test recovery path
-- **4.5** (Subject)**: Verify merge subjects conform to spec (e.g., "feat: Epic 1.4 – Provision a loop home"); UT: test regex; E2E: verify on real PRs
-- **4.6** (Feeds)**: Refresh sprint feed + console feed after landing; IT: verify feeds updated with new stories
-- **4.7** (Idempotence)**: Landing the same story twice should be safe (no duplicate PRs); IT: test idempotent landing
-- **4.8** (Attribution)**: Verify no "Generated with" or "Co-Authored-By: Claude" in commit messages; UT: scan commits; IT: verify on real PRs
-- **4.9** (Rules)**: Implement landing rules as composable policy (retry on conflict, auto-rebase, etc.); UT: test policy composition
-- **4.10** (Cleanup)**: Implement branch retirement (delete branch after N days); IT: test cleanup of old branches
-
-**Epic 5 (Fleet):**
-- **5.1** (Fleet View)**: E2E: render dashboard with 100+ stories; measure load time; verify all stories visible; check status indicators accurate
-- **5.2** (Escalation)**: Implement priority queue for failed/stalled runs; UT: test queue ordering; IT: test with 10+ runs
-- **5.3** (Reconciliation)**: Compare ledger state vs. git branches; IT: verify consistency after landings
-- **5.4** (Contract)**: Define stable machine-readable status contract (JSON schema); UT: validate against schema; IT: generate and validate status
-- **5.5** (Durability property)**: Report fleet durability (% of runs without data loss); IT: calculate after full run set
-- **5.6** (Detector)**: Implement `marshal check` registry (find running loops, check status); IT: test detection + status reporting
-
-**Epic 6 (Portability):**
-- **6.1** (Projection)**: Implement skill-tree projection (what tools/skills available); UT: test projection logic; IT: test with real skill tree
-- **6.2** (Probe)**: E2E: probe for bmad-loop, feedstock-refresh, manifest tools; verify all detected + correct versions
-- **6.3** (Conformance)**: Generate conformance matrix (entry-file family × tool); UT: test matrix generation; IT: verify matrix accuracy
-- **6.4** (Scoping)**: Implement first-run project scoping (ask user: solo, co-maintained, upstream); IT: test scoping flow
-- **6.5** (Selection)**: Implement adapter selection based on project scope + conformance; UT: test selection rules
-- **6.6** (Registry)**: Implement upstream contribution register (track which packages contributed to cf_atlas); IT: query + verify registry
-- **6.7** (Identity)**: Verify package identity (name, version, metadata); UT: test identity parsing; IT: test with real packages
-- **6.8** (Artifacts)**: Support conda + wheel artifacts; UT: test artifact detection; IT: build + verify both artifact types
-- **6.9** (Reporting)**: Implement version + capability reporting; UT: test report generation; IT: verify report accuracy
-
----
-
-## Readiness Checklist
-
-- [x] All 50 stories defined in epics.md
-- [x] All stories mapped to FRs + ADs
-- [x] UT + IT strategy defined (50/50 stories)
-- [x] E2E critical paths identified (4 paths, 10 stories)
-- [x] Meta-test invariants specified (AD-3/4, AD-14/15, NFR-1/3)
-- [x] Fixtures defined (verdict_lattice, loop_home_fixture, policy_layers, etc.)
-- [x] Mocks scaffolded (worktree, supervisor, runner, GitHub API)
-- [x] Story-level implementation notes documented
-- [x] Dependencies & critical path mapped
-- [x] CI/CD gates defined with coverage thresholds
-- [ ] Playwright config generated (`playwright.config.ts`)
-- [ ] Pytest config generated (`pytest.ini`)
-- [ ] Test directory structure scaffolded (`tests/` hierarchy)
-- [ ] Coverage baselines established per epic
-- [ ] CI workflow configured (`.github/workflows/test.yml`)
-- [ ] Ready for implementation (bmad-loop story execution)
-
----
-
-**Status**: DRAFT → READY FOR IMPLEMENTATION
-
-**Coverage Target**: Unit ≥80% (40/50), Integration ≥70% (35/50), E2E 10/50 critical paths
-
-**Last updated**: 2026-08-02
-
-
-
