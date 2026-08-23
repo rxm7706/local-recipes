@@ -832,6 +832,13 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # convention above: the example stays tracked, the real file is ignored.
 .steward/sync-config.yaml
 
+# pyforge-steward `workspace` duty (Epic 13, Story 13.1): machine-local
+# bookkeeping of tool-created scratch worktrees + their archive-not-delete
+# tarballs. Never commit — paths are host-absolute and archives hold full
+# trees.
+.steward/workspaces.yaml
+.steward/workspace-archive/
+
 # CDO packaging inventory: local consumption workbook + secret gist id.
 # Tracked template is conf/conda-forge-packaging-inventory-operations.local.env.example.
 docs/Analysis_Dataset-*.xlsx
