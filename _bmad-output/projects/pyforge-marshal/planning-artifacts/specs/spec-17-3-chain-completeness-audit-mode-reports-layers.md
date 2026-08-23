@@ -98,6 +98,9 @@ baseline_revision: 3f4b28838bdbca05c7f425450c19d2d8240358f9
 ## Auto Run Result
 
 Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/665
+Merge: f318609126250b40f41e82ecb20f2f9819faf6e7
+CLI spelling: `chain-completeness --layers --project <slug>` (seeded from generate.py FLEET_STAGES).
 Summary: Added read-only `chain-completeness --layers --project <slug>` audit mode on pyforge-doctor board sources. Layer presence/absence is seeded from `docs/dashboard/generate.py` (`FLEET_STAGES` / `_stage_globs` / `_resolve`) — no second derivation. Distinct from INV-A..D and `--dreams`.
 Files:
 - `board.py` — `gather_chain_layers_audit`
@@ -105,6 +108,6 @@ Files:
 - `models.py` / REGISTRY / report-schema / SOURCE_MODULE — `chain-layers-audit`
 - `test_sources_board_chain_layers_audit.py` — I/O matrix + isolation + CLI
 - `pixi.toml` — `chain-layers-audit-check`
-Review: low patch only (task name); followup_review_recommended=false (score 1).
-Verification: unit+meta PASS (146); live marshal audit reports 14/15 layers (missing: retro); INV path and `--dreams` unchanged.
+Review: low patch only (task name / pixi dedupe); followup_review_recommended=false (score 1).
+Verification: unit+meta PASS (146); CI green on #665; live marshal audit reports 14/15 layers (missing: retro); INV path and `--dreams` unchanged.
 Residual: primary-chain-only report (epic "named project"); satellite chains under the same project are deferred to Epic 21 extensions.

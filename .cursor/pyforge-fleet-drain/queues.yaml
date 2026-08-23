@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 37
-    next: 17-3-chain-completeness-audit-mode-reports-layers
+    remaining_count: 36
+    next: 17-4-orchestrated-regeneration-that-cannot-lose-code-status
     queue:
-    - 17-3-chain-completeness-audit-mode-reports-layers
     - 17-4-orchestrated-regeneration-that-cannot-lose-code-status
     - 18-1-marshals-capabilities-become-named-typed-tools
     - 18-2-parity-and-coverage-are-gated-numbers

@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~10:28 CDT  
+**Updated:** 2026-08-23 ~10:35 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -19,14 +19,14 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 37** · **steward 16** (**53 total**; 12-7 skipped) |
+| Backlog | **marshal 36** · **steward 16** (**52 total**; 12-7 skipped) |
 | Drained | atlas, doctor, herald, mason, scribe, warden |
 
 ## In-flight (canonical only — do not duplicate)
 
 | Station | Story | Canonical PR / agent |
 |---------|-------|----------------------|
-| marshal | `17-3` | [#665](https://github.com/rxm7706/local-recipes/pull/665) · [Marshal 17-3](a7f8366f-238f-4631-991c-4672b1f05312) — only; HALT [9a5bba8d](9a5bba8d-8042-40b8-8065-8fc6c9e5c628) |
+| — | — | marshal **17-3** merged [#665](https://github.com/rxm7706/local-recipes/pull/665) (`f318609126`); next marshal ready: **17-4** |
 | steward | `14-2` | [Steward 14-2](54c7190f-d6d1-4225-9eb5-a5864782d7fe) — deliberate branched apply (skip 12-7); worktree `steward-14-2-1787498789` |
 
 ## Operator skip
