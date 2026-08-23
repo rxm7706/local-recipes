@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 31
-    next: 19-3-coverage-gates-that-name-the-module
+    remaining_count: 30
+    next: 19-4-test-architecture-stays-current-as-stories-land
     queue:
-    - 19-3-coverage-gates-that-name-the-module
     - 19-4-test-architecture-stays-current-as-stories-land
     - 20-1-baseline-drift-detector-at-the-seam
     - 20-2-baseline-drift-defers-get-loud
