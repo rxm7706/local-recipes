@@ -50,8 +50,8 @@ def _contract_forbidding(forbidden_module: str) -> dict:
     raise AssertionError(f"no contract forbids {forbidden_module!r}")
 
 
-def test_pyproject_declares_exactly_four_contracts():
-    assert len(_contracts()) == 4
+def test_pyproject_declares_exactly_five_contracts():
+    assert len(_contracts()) == 5
 
 
 def test_ad4_core_purity_contract_shape():
@@ -73,6 +73,7 @@ def test_ad3_harness_seam_contract_shape():
         "pyforge.marshal.cli",
         "pyforge.marshal.core",
         "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131
+        "pyforge.marshal.dispatch_supervisor",
         "pyforge.marshal.mcp",
         "pyforge.marshal.ports",
         "pyforge.marshal.scope",  # Story 20.6 / FR-190 CAP-1

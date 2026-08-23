@@ -634,29 +634,51 @@ def _merge_dispatch_overlay(
     fs: FsPort,
     process: ProcessPort,
     clock: ClockPort,
+    vcs: VcsPort,
     repo_root: Path,
     slug: str,
     facts: status_core.FleetHomeFacts,
 ) -> status_core.FleetHomeFacts:
-    """Story 22.1: overlay in-flight ``marshal factory dispatch`` sessions."""
-    from .dispatch import gather_dispatch_journal_facts, latest_dispatch_run_dir
+    """Story 22.1/22.2: overlay ``marshal factory dispatch`` session facts."""
+    from .dispatch import (
+        _compose_policy,
+        gather_dispatch_journal_facts,
+        latest_dispatch_run_dir,
+        resolve_dispatch_session_verdict,
+    )
 
     run_dir = latest_dispatch_run_dir(repo_root, slug)
     if run_dir is None:
         return facts
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
-    if journal.session_pid is None:
+    if journal.session_pid is None and journal.completion_verdict is None:
         return facts
-    alive = process.is_alive(journal.session_pid)
+    alive = (
+        journal.session_pid is not None and process.is_alive(journal.session_pid)
+    )
     elapsed: float | None = None
     if journal.launched_at is not None:
         elapsed = (clock.now() - journal.launched_at).total_seconds()
+    effective_policy = _compose_policy(slug)
+    verdict = resolve_dispatch_session_verdict(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        journal=journal,
+        effective_policy=effective_policy,
+    )
+    completion_verdict = (
+        verdict.value if verdict is not None else journal.completion_verdict
+    )
     return replace(
         facts,
         dispatch_story=journal.story_key,
         dispatch_engine_alive=alive,
         dispatch_elapsed_seconds=elapsed,
         dispatch_run_id=run_dir.name,
+        dispatch_completion_verdict=completion_verdict,
     )
 
 
@@ -1288,6 +1310,7 @@ def run_status(
             fs=fs,
             process=process,
             clock=clock,
+            vcs=vcs,
             repo_root=git_repo_root,
             slug=slug,
             facts=facts,

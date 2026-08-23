@@ -87,6 +87,7 @@ source_modules = [
     "pyforge.marshal.cli",
     "pyforge.marshal.core",
     "pyforge.marshal.coverage_gate",  # Story 19.3 / FR-131 named-module coverage gates
+    "pyforge.marshal.dispatch_supervisor",
     "pyforge.marshal.mcp",
     "pyforge.marshal.ports",
     "pyforge.marshal.scope",  # Story 20.6 / FR-190 CAP-1 verify_scope primitive
@@ -124,6 +125,12 @@ type = "forbidden"
 # ITS OWN source_modules, forbidding supervisor -> bmad_loop): this one
 # forbids the other direction, supervisor -> cli.
 source_modules = ["pyforge.marshal.supervisor"]
+forbidden_modules = ["pyforge.marshal.cli"]
+
+[[tool.importlinter.contracts]]
+name = "AD-9: the dispatch supervisor has no control channel back to cli"
+type = "forbidden"
+source_modules = ["pyforge.marshal.dispatch_supervisor"]
 forbidden_modules = ["pyforge.marshal.cli"]
 
 [[tool.importlinter.contracts]]
