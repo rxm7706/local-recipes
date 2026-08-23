@@ -293,13 +293,19 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
     """
     # Keep "supported: ..." in sync with provision.py's `_SUPPORTED_MODULES`
     # (that module is deliberately not imported here -- see its own comment).
+    # WDS is an explicit skip (deprecated upstream → bmad-ux); never listed.
     provision_parser.add_argument(
         "--list-modules",
         action="store_true",
         help="list every registered module with installed/available state (derived from the filesystem)",
     )
     provision_parser.add_argument(
-        "--module", metavar="NAME", help="BMAD module to provision (supported: bmb)"
+        "--module",
+        metavar="NAME",
+        help=(
+            "BMAD module to provision (supported: bmb, cis, manticore, tea, "
+            "utility-skills; WDS is skip-decided — deprecated upstream)"
+        ),
     )
     provision_parser.add_argument(
         "--env", metavar="NAME", help="pixi environment name (pixi.toml's [environments] table)"

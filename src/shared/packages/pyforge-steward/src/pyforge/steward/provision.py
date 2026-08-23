@@ -35,8 +35,8 @@ comparison `.github/workflows/scripts/linter.py` already runs on every PR
 build`, compare both `.rstrip()`'d) rather than reimplementing the
 comparison a second way (AD-1). Wired as `steward provision --verify`.
 
-Story 6.1 slice (Epic 6, `--module`): `_SUPPORTED_MODULES` (currently just
-`{"bmb"}`), `provision_module` (assembles `module.yaml`'s own declared
+Story 6.1 slice (Epic 6, `--module`): `_SUPPORTED_MODULES` (bmb via setup-
+skill scripts), `provision_module` (assembles `module.yaml`'s own declared
 variable defaults into an answers JSON, then drives BMB's own
 `bmad-bmb-setup` skill scripts -- `merge-config.py` then `merge-help-csv.py`
 -- as `uv run` subprocesses; Steward never reimplements their merge/
@@ -52,6 +52,14 @@ module's legacy config, and `cleanup-legacy.py --module-code bmb` would
 `[module_code, "core"]` removal list (see the story spec's Design Notes for
 the full evidence trail). Wired as `steward provision --module <name>
 [--json]`, the new first precedence check ahead of `--verify`.
+
+Story 15.3 slice (Epic 15 / CAP-3): grows `_SUPPORTED_MODULES` to
+`{bmb, tea, cis, utility-skills, manticore}`. The four new names drive each
+conda package's `*-install` entry point, skill-name-collision-check before
+first wire, and record a `_bmad/config.yaml` manifest section so
+`--list-modules` / Story 6.3's post-success gate see them. WDS is an
+explicit skip (deprecated upstream, absorbing into bmad-ux) — documented in
+`_SKIPPED_MODULES` and `--module` help, never registered.
 
 Story 6.2 slice (Epic 6, `--list-modules`): `module_install_states` (a
 pure, read-only membership check -- `_bmad/config.yaml`'s own top-level
@@ -88,12 +96,13 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
-import re
+import os
 import subprocess
-import sys
 import tempfile
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import yaml
 
@@ -279,23 +288,104 @@ def _run_verify(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no fla
     )
 
 
-# ── Module provisioning (FR-?, Story 6.1) ───────────────────────────────────
+# ── Module provisioning (FR-?, Story 6.1; Story 15.3 grows the registry) ─────
 
-# name -> the module's own installed setup-skill dir, relative to repo root.
-# `bmb` is the only registered backend as of Story 6.1 -- Skill Forge's own
-# `install` has no non-interactive CLI flag (v1.0.0 `STABILITY.md`), so
-# wrapping it needs a new, committed headless driver, deferred not dropped.
+# Story 6.1 registered `bmb` via its setup-skill scripts. Story 15.3 (CAP-3)
+# adds tea / cis / utility-skills / manticore via each conda package's
+# `*-install` entry point. Skill Forge stays deferred (TTY-only Installer).
 # Keep the `--module` help text in `cli.py`'s `_add_provision_subparsers` in
 # sync with this set (mirrors this file's own `DUTIES`/`_HELP` precedent in
 # `cli.py`, not derived to avoid an eager cross-module import at parser-build
 # time -- `resolve_duty` is the one place that imports duty modules lazily).
-_SUPPORTED_MODULES: dict[str, Path] = {
-    "bmb": Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup"),
+#
+# WDS (bmad-method-wds-expansion / code `wds`) is an explicit SKIP — not in
+# `_SUPPORTED_MODULES`. Upstream deprecation citation: install-matrix.md
+# ("DEPRECATED upstream — skip wiring") and docs/dreams/bmad-suite-channel-
+# product.md (absorbing into bmad-ux). Never wire via `--module`.
+
+
+@dataclass(frozen=True)
+class SetupSkillBackend:
+    """Drive BMB's own `bmad-bmb-setup` merge scripts (Story 6.1)."""
+
+    kind: Literal["setup_skill"] = "setup_skill"
+    skill_dir: Path = Path()  # relative to repo root
+
+
+@dataclass(frozen=True)
+class CondaInstallBackend:
+    """Drive a conda package's `*-install` entry point (Story 15.3).
+
+    `skill_source_dirs` names share/<package>/<dir> children that become
+    `.claude/skills/` entries (tea: agents+workflows; utility/manticore:
+    skills). `skill_names`, when non-empty, is an explicit allowlist matching
+    the installer's own fixed list (cis) — used for collision checks and
+    post-install verification instead of directory discovery.
+    """
+
+    installer: str
+    share_package: str
+    skill_source_dirs: tuple[str, ...] = ()
+    skill_names: tuple[str, ...] = ()
+    kind: Literal["conda_install"] = "conda_install"
+
+
+ModuleBackend = SetupSkillBackend | CondaInstallBackend
+
+_CIS_SKILL_NAMES: tuple[str, ...] = (
+    "bmad-cis-agent-brainstorming-coach",
+    "bmad-cis-agent-creative-problem-solver",
+    "bmad-cis-agent-design-thinking-coach",
+    "bmad-cis-agent-innovation-strategist",
+    "bmad-cis-agent-presentation-master",
+    "bmad-cis-agent-storyteller",
+    "bmad-cis-design-thinking",
+    "bmad-cis-innovation-strategy",
+    "bmad-cis-problem-solving",
+    "bmad-cis-storytelling",
+)
+
+_SUPPORTED_MODULES: dict[str, ModuleBackend] = {
+    "bmb": SetupSkillBackend(
+        skill_dir=Path(".pixi/envs/local-recipes/share/bmad-builder/skills/bmad-bmb-setup"),
+    ),
+    "tea": CondaInstallBackend(
+        installer="bmad-tea-install",
+        share_package="bmad-method-test-architecture-enterprise",
+        skill_source_dirs=("agents", "workflows"),
+    ),
+    "cis": CondaInstallBackend(
+        installer="bmad-cis-install",
+        share_package="bmad-creative-intelligence-suite",
+        skill_names=_CIS_SKILL_NAMES,
+    ),
+    "utility-skills": CondaInstallBackend(
+        installer="bmad-utility-skills-install",
+        share_package="bmad-utility-skills",
+        skill_source_dirs=("skills",),
+    ),
+    "manticore": CondaInstallBackend(
+        installer="bmad-manticore-install",
+        share_package="bmad-manticore",
+        skill_source_dirs=("skills",),
+    ),
+}
+
+# Documented skip set — never registered, never provisionable. Citation only.
+_SKIPPED_MODULES: dict[str, str] = {
+    "wds": (
+        "WDS (bmad-method-wds-expansion) is skip-decided: deprecated upstream "
+        "(spec-bmad-suite-channel-product/install-matrix.md; Dream "
+        "bmad-suite-channel-product — absorbing into bmad-ux). Not in "
+        "_SUPPORTED_MODULES."
+    ),
 }
 
 _MODULE_YAML_RELATIVE_PATH = Path("assets/module.yaml")
 _MODULE_HELP_CSV_RELATIVE_PATH = Path("assets/module-help.csv")
 _BMAD_RELATIVE_PATH = Path("_bmad")
+_CLAUDE_SKILLS_RELATIVE_PATH = Path(".claude/skills")
+_LOCAL_RECIPES_ENV_RELATIVE_PATH = Path(".pixi/envs/local-recipes")
 
 
 def _module_variable_defaults(module_yaml: dict[str, object]) -> dict[str, object]:
@@ -344,38 +434,125 @@ def _materialize_module_output_dirs(
     return tuple(created)
 
 
-def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
-    """Provision the module registered as `name` by driving its own
-    non-interactive setup-skill scripts as subprocesses (AD-1) -- Steward
-    assembles their documented CLI arguments from `module.yaml`'s own
-    declared variable defaults, never reimplements the scripts' own merge/
-    anti-zombie logic.
+def _conda_prefix(*, cwd: Path, share_package: str | None = None) -> Path:
+    """Resolve the conda/pixi prefix that holds suite share packages.
 
-    Deliberately excludes `--legacy-dir` on both scripts and never invokes
-    `cleanup-legacy.py` at all: this repo's actual `_bmad/core/` holds a
-    *different*, already-governance-owned module's legacy config, and there
-    is no genuine `_bmad/<name>/` legacy directory for `bmb` to migrate from
-    in the first place (story spec Design Notes).
-
-    Returns `{"merge_config": <parsed stdout>, "merge_help_csv": <parsed
-    stdout>, "output_dirs_created": [...]}` -- each script's own JSON
-    result, keyed by step.
-
-    Raises `FileNotFoundError` if the module's setup-skill directory isn't
-    installed under `.pixi/envs/local-recipes/...` (the `bmad-builder` pixi
-    dependency), and `subprocess.CalledProcessError` if either script exits
-    non-zero -- both propagated, not swallowed. `FileNotFoundError`
-    propagates all the way to `ProvisionDuty`'s own boundary;
-    `subprocess.CalledProcessError` (and the `RuntimeError`s raised
-    elsewhere in this function) are caught one level earlier, inside
-    `_run_module` itself, since Story 6.3 (review finding: this docstring
-    previously claimed a single shared boundary for both).
+    Prefer this checkout's `.pixi/envs/local-recipes` when it already holds
+    the requested share package — the same convention Story 6.1 used for the
+    bmb setup-skill path, and what fresh-clone fixtures stage under. Fall
+    back to `CONDA_PREFIX` (set when the operator is inside the env that owns
+    the `*-install` entry points). Fresh-clone fixtures must not be defeated
+    by an ambient `CONDA_PREFIX` pointing at a lean env (e.g. pyforge-steward)
+    that does not ship the suite share trees.
     """
-    if name not in _SUPPORTED_MODULES:
-        raise FileNotFoundError(f"module {name!r} is not registered in _SUPPORTED_MODULES")
+    local = cwd / _LOCAL_RECIPES_ENV_RELATIVE_PATH
+    if share_package is not None:
+        local_share = local / "share" / share_package
+        if local_share.is_dir():
+            return local
+    elif local.is_dir():
+        return local
+    env = os.environ.get("CONDA_PREFIX")
+    if env:
+        return Path(env)
+    if local.is_dir():
+        return local
+    raise FileNotFoundError(
+        "CONDA_PREFIX is not set and "
+        f"{_LOCAL_RECIPES_ENV_RELATIVE_PATH} is missing under {cwd} — activate "
+        "the local-recipes pixi environment (or run via `pixi run -e "
+        "local-recipes`) so conda package installers can find their share data."
+    )
 
-    root = Path(cwd)
-    skill_dir = root / _SUPPORTED_MODULES[name]
+
+def _installer_skill_names(backend: CondaInstallBackend, *, share_root: Path) -> tuple[str, ...]:
+    """Names the installer will place under `.claude/skills/`."""
+    if backend.skill_names:
+        return backend.skill_names
+    names: list[str] = []
+    for source in backend.skill_source_dirs:
+        directory = share_root / source
+        if not directory.is_dir():
+            continue
+        names.extend(sorted(p.name for p in directory.iterdir() if p.is_dir()))
+    return tuple(names)
+
+
+def _check_skill_name_collisions(
+    name: str,
+    skill_names: tuple[str, ...],
+    *,
+    cwd: Path,
+    already_installed: bool,
+) -> None:
+    """Refuse to overwrite `.claude/skills/<skill>` that already exists when
+    this module is not yet manifest-recorded (a foreign skill collision).
+    Re-provision of an already-installed module is allowed (idempotent).
+    """
+    if already_installed or not skill_names:
+        return
+    skills_root = cwd / _CLAUDE_SKILLS_RELATIVE_PATH
+    collisions = sorted(
+        skill for skill in skill_names if (skills_root / skill).exists()
+    )
+    if collisions:
+        raise RuntimeError(
+            f"module {name!r}: skill-name collision(s) under "
+            f"{_CLAUDE_SKILLS_RELATIVE_PATH}: {', '.join(collisions)} — refuse "
+            "to overwrite skills that already exist before this module is "
+            "manifest-recorded. Remove or rename the colliding skills, then "
+            "re-run provision."
+        )
+
+
+def _record_module_manifest(
+    name: str,
+    *,
+    cwd: Path,
+    installer: str,
+    skills: tuple[str, ...],
+) -> None:
+    """Write/merge `<name>:` into `_bmad/config.yaml` — the same anti-zombie
+    key `module_install_states` / Story 6.3's post-success gate consult.
+    Installer entry points only copy skills; Steward records the manifest
+    so a fresh-clone provision is discoverable via `--list-modules`.
+    """
+    config_path = cwd / _BMAD_RELATIVE_PATH / "config.yaml"
+    config: dict[str, object] = {}
+    if config_path.is_file():
+        try:
+            with config_path.open("r", encoding="utf-8") as f:
+                loaded = yaml.safe_load(f)
+        except (yaml.YAMLError, UnicodeDecodeError) as exc:
+            raise RuntimeError(
+                f"cannot record module {name!r}: {_BMAD_RELATIVE_PATH / 'config.yaml'} "
+                f"is unreadable ({exc})"
+            ) from exc
+        if loaded is None:
+            config = {}
+        elif isinstance(loaded, dict):
+            config = loaded
+        else:
+            raise RuntimeError(
+                f"cannot record module {name!r}: {_BMAD_RELATIVE_PATH / 'config.yaml'} "
+                "must be a mapping (refusing to overwrite a non-mapping config)"
+            )
+    config[name] = {
+        "provisioned_by": "steward",
+        "installer": installer,
+        "skills": list(skills),
+    }
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    # Atomic replace so a crash mid-write cannot leave a truncated config.
+    tmp_path = config_path.with_suffix(config_path.suffix + ".tmp")
+    with tmp_path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(config, f, sort_keys=False)
+    tmp_path.replace(config_path)
+
+
+def _provision_setup_skill(name: str, backend: SetupSkillBackend, *, cwd: Path) -> dict[str, object]:
+    """Story 6.1 path: drive `merge-config.py` + `merge-help-csv.py`."""
+    skill_dir = cwd / backend.skill_dir
     if not skill_dir.is_dir():
         raise FileNotFoundError(
             f"module {name!r}'s setup-skill directory is missing at {skill_dir} "
@@ -395,7 +572,7 @@ def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
         )
 
     answers = {"module": _module_variable_defaults(module_yaml)}
-    bmad_dir = root / _BMAD_RELATIVE_PATH
+    bmad_dir = cwd / _BMAD_RELATIVE_PATH
 
     with tempfile.TemporaryDirectory(prefix="steward-provision-module-") as tmpdir:
         answers_path = Path(tmpdir) / "answers.json"
@@ -437,7 +614,7 @@ def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
             text=True,
         )
 
-    output_dirs_created = _materialize_module_output_dirs(module_yaml, cwd=root)
+    output_dirs_created = _materialize_module_output_dirs(module_yaml, cwd=cwd)
 
     try:
         merge_config_result = json.loads(merge_config.stdout)
@@ -452,6 +629,97 @@ def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
         "merge_help_csv": merge_help_csv_result,
         "output_dirs_created": list(output_dirs_created),
     }
+
+
+def _provision_conda_install(
+    name: str, backend: CondaInstallBackend, *, cwd: Path
+) -> dict[str, object]:
+    """Story 15.3 path: drive the package's `*-install` entry point, then
+    record a `_bmad/config.yaml` manifest section so `--list-modules` and
+    Story 6.3's post-success gate see the module as installed.
+    """
+    prefix = _conda_prefix(cwd=cwd, share_package=backend.share_package)
+    share_root = prefix / "share" / backend.share_package
+    if not share_root.is_dir():
+        raise FileNotFoundError(
+            f"module {name!r}'s share package is missing at {share_root} — "
+            f"the {backend.share_package} pixi/conda dependency is not "
+            "installed. Fix with `pixi install -e local-recipes`."
+        )
+
+    skill_names = _installer_skill_names(backend, share_root=share_root)
+    if not skill_names:
+        raise RuntimeError(
+            f"module {name!r}: no skills discovered under {share_root} "
+            f"(sources={backend.skill_source_dirs!r}, names={backend.skill_names!r})"
+        )
+
+    already_installed = _module_install_state_or_none(name, cwd=cwd) == "installed"
+    _check_skill_name_collisions(
+        name, skill_names, cwd=cwd, already_installed=already_installed
+    )
+
+    dest = cwd / _CLAUDE_SKILLS_RELATIVE_PATH
+    dest.mkdir(parents=True, exist_ok=True)
+    env = {**os.environ, "CONDA_PREFIX": str(prefix)}
+    completed = subprocess.run(
+        [backend.installer, str(dest)],
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    missing = [s for s in skill_names if not (dest / s).is_dir()]
+    if missing:
+        raise RuntimeError(
+            f"module {name!r}: {backend.installer} exited 0 but skills still "
+            f"missing under {_CLAUDE_SKILLS_RELATIVE_PATH}: {', '.join(missing)}"
+        )
+
+    _record_module_manifest(
+        name, cwd=cwd, installer=backend.installer, skills=skill_names
+    )
+
+    return {
+        "installer": backend.installer,
+        "skills_installed": list(skill_names),
+        "stdout": (completed.stdout or "").strip(),
+        "output_dirs_created": [],
+    }
+
+
+def provision_module(name: str, *, cwd: str | Path) -> dict[str, object]:
+    """Provision the module registered as `name` by driving its own
+    non-interactive install path as a subprocess (AD-1) -- Steward never
+    reimplements the module's installer.
+
+    Backends:
+    - `SetupSkillBackend` (`bmb`): BMB's `merge-config.py` /
+      `merge-help-csv.py` (Story 6.1). Deliberately excludes `--legacy-dir`
+      and never invokes `cleanup-legacy.py`.
+    - `CondaInstallBackend` (tea / cis / utility-skills / manticore): the
+      conda package's `*-install` entry point, then a `_bmad/config.yaml`
+      manifest record + skill-name collision check (Story 15.3).
+
+    Raises `FileNotFoundError` if the module is skip-decided / unregistered
+    or its backend assets are missing, and `subprocess.CalledProcessError`
+    if a wrapped script/installer exits non-zero -- both propagated, not
+    swallowed. `FileNotFoundError` propagates to `ProvisionDuty`'s boundary;
+    `subprocess.CalledProcessError` / `RuntimeError` are caught one level
+    earlier inside `_run_module` (Story 6.3).
+    """
+    if name in _SKIPPED_MODULES:
+        raise FileNotFoundError(_SKIPPED_MODULES[name])
+    if name not in _SUPPORTED_MODULES:
+        raise FileNotFoundError(f"module {name!r} is not registered in _SUPPORTED_MODULES")
+
+    root = Path(cwd)
+    backend = _SUPPORTED_MODULES[name]
+    if isinstance(backend, SetupSkillBackend):
+        return _provision_setup_skill(name, backend, cwd=root)
+    return _provision_conda_install(name, backend, cwd=root)
 
 
 def _format_called_process_error(exc: subprocess.CalledProcessError) -> str:
@@ -515,6 +783,10 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
     self-report is not trusted at face value (FR-21's "succeeds while
     leaving the module unimportable" clause)."""
     name = ns.module
+    if name in _SKIPPED_MODULES:
+        return DutyResult(
+            ok=False, summary=ProvisionDuty._render_error(ns, _SKIPPED_MODULES[name])
+        )
     if name not in _SUPPORTED_MODULES:
         supported = ", ".join(sorted(_SUPPORTED_MODULES))
         message = f"{name!r} is not a supported module. Supported modules: {supported}"
@@ -552,22 +824,31 @@ def _run_module(ns: argparse.Namespace) -> DutyResult:
             ok=False,
             summary=ProvisionDuty._render_error(
                 ns,
-                f"{name!r}'s setup-skill scripts both exited 0, but {name!r} is not present "
+                f"{name!r} exited 0, but {name!r} is not present "
                 "in _bmad/config.yaml afterward -- not counted as provisioned",
             ),
         )
     if getattr(ns, "json", False):
         return DutyResult(ok=True, summary=json.dumps(steps, indent=2))
     dirs_note = (
-        f"; created {', '.join(steps['output_dirs_created'])}" if steps["output_dirs_created"] else ""
+        f"; created {', '.join(steps['output_dirs_created'])}"
+        if steps.get("output_dirs_created")
+        else ""
     )
-    return DutyResult(
-        ok=True,
-        summary=(
+    backend = _SUPPORTED_MODULES[name]
+    if isinstance(backend, CondaInstallBackend):
+        skill_count = len(steps.get("skills_installed") or ())
+        summary = (
+            f"provision --module: {name!r} provisioned via {backend.installer} "
+            f"({skill_count} skill(s) → {_CLAUDE_SKILLS_RELATIVE_PATH}; manifest recorded)"
+            f"{dirs_note}"
+        )
+    else:
+        summary = (
             f"provision --module: {name!r} provisioned (merge-config.py, merge-help-csv.py)"
             f"{dirs_note}"
-        ),
-    )
+        )
+    return DutyResult(ok=True, summary=summary)
 
 
 # ── Module discovery (FR-20, Story 6.2) ─────────────────────────────────────
