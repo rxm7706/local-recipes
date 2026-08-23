@@ -174,6 +174,7 @@ from typing import Any
 from ..detect.findings import Finding, FindingType, Severity
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..detect.inventory import ArtifactState, classify, legacy_findings
+from ..detect.referenced_deps import referenced_dep_findings
 from ..detect.optout import classify_regions, region_findings
 from ..errors import StateInvalid
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest
@@ -442,6 +443,7 @@ def run_check(repo_root: Path, manifest: Manifest, *, strict: bool = False) -> C
                 findings.append(finding)
 
     findings.extend(legacy_findings(inventory))
+    findings.extend(referenced_dep_findings(manifest, repo_root))
 
     model_version_status, state_model_version = _model_version_status(manifest, state)
     if model_version_status is ModelVersionStatus.BEHIND:

@@ -36,6 +36,7 @@ dependencies = [
     # AD-52). Imported nowhere but seed/engine/copier.py (P-02, proven by
     # tests/meta/test_p02_copier_sole_ownership.py).
     "copier>=9.17,<10",
+    "packaging>=24.0",
 ]
 
 [project.scripts]

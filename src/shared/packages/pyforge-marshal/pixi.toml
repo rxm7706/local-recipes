@@ -45,3 +45,4 @@ pyforge-core = { path = "../pyforge-core" }
 # tests/meta/test_p02_copier_sole_ownership.py). Matches pyproject.toml's
 # identical pin -- see tests/meta/test_manifest_sync.py.
 copier = ">=9.17,<10"
+packaging = ">=24.0"

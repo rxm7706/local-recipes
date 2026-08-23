@@ -75,14 +75,14 @@ def _manifest(*entries: ManifestEntry, model_version: ModelVersion = _VERSION) -
     return Manifest(model_version=model_version, never_write=(), entries=tuple(entries))
 
 
-def _referenced(entry_id: str, path: str = "unused") -> ManifestEntry:
+def _referenced(entry_id: str, path: str = "unused", pin: str = ">=1.0") -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.REFERENCED,
         path=path,
         applies_to=AppliesTo.BOTH,
         rationale="test",
-        pin=">=1.0",
+        pin=pin,
     )
 
 
@@ -257,17 +257,18 @@ def test_fully_conformant_adopted_repo_reports_zero_findings(clean_repo):
     assert report.failing is False
 
 
-def test_referenced_entries_are_never_inspected(clean_repo):
-    """A referenced entry is never materialized, so it must not produce a
-    finding of any kind even when a stray (legally-schema-valid) managed[]
-    claim exists for it."""
-    manifest = _manifest(_referenced("ref", path="https://example.com/not-a-real-file"))
-    _write_state(clean_repo, _state())
-    _commit_all(clean_repo)
+def test_referenced_entries_report_dep_missing_at_drift(clean_repo):
+    """Story 11.5: a referenced entry below floor yields ``referenced-dep-missing``
+    (DRIFT), never ``artifact-missing`` (HARD)."""
+    manifest = _manifest(_referenced("ref", pin=">=99.0.0"))
 
     report = run_check(clean_repo, manifest)
 
-    assert report.findings == ()
+    assert not any(finding.type is FindingType.ARTIFACT_MISSING for finding in report.findings)
+    dep_findings = [f for f in report.findings if f.type is FindingType.REFERENCED_DEP_MISSING]
+    assert len(dep_findings) == 1
+    assert dep_findings[0].severity is Severity.DRIFT
+    assert dep_findings[0].path == "ref"
 
 
 # --- hand-edited managed file --------------------------------------------
