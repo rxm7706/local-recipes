@@ -10,23 +10,6 @@ skip_policies:
   story: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
   action: skip_on_blocked
   reason: Requires live OCP cluster; dispatch 12-8 next and report skip to operator.
-- station: marshal
-  story: 21-2-orchestrated-chain-regeneration
-  action: skip_on_blocked
-  reason: spec-fleet-chain-completeness Q1/Q2 unresolved — operator decision required
-    before Epic 21.2.
-- station: marshal
-  story: 21-3-code-status-preservation
-  action: skip_on_blocked
-  reason: Transitively blocked on S-21.2 (Epic 21).
-- station: marshal
-  story: 21-4-orphan-detection-with-review-gated-cleanup
-  action: skip_on_blocked
-  reason: Blocked on S-21.2 + Q3 (Phase 8 git integration shape).
-- station: marshal
-  story: 21-5-configurable-per-project-invocation
-  action: skip_on_blocked
-  reason: Transitively blocked on S-21.2 (Epic 21).
 order_overrides:
   marshal:
   - 11-5-referenced-dependency-verification-and-doctor-delegation
@@ -60,16 +43,16 @@ order_overrides:
   - 20-9-doctor-consumes-the-grammar
   - 20-10-marshal-consumes-the-grammar
   - 21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage
-  - 21-2-orchestrated-chain-regeneration
-  - 21-3-code-status-preservation
-  - 21-4-orphan-detection-with-review-gated-cleanup
-  - 21-5-configurable-per-project-invocation
   - 22-1-the-dispatch-verb-launches-one-governed-isolated-story-session
   - 22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched
   - 22-3-verification-is-the-product-no-landing-on-a-self-report
   - 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
   - 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
   - 22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal
+  - 21-2-orchestrated-chain-regeneration
+  - 21-3-code-status-preservation
+  - 21-4-orphan-detection-with-review-gated-cleanup
+  - 21-5-configurable-per-project-invocation
   - 23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields
   - 23-2-wall-clock-is-never-blended-with-active-compute
   - 23-3-the-coverage-caption-partitions-by-true-reason

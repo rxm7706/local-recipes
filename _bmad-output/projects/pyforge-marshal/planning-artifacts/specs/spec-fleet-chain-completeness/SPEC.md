@@ -1,16 +1,14 @@
 ---
 spec: fleet-chain-completeness
-status: draft
+status: ready
 owner-dream: docs/dreams/fleet-chain-completeness.md
-surface: []          # frontier — no code exists yet; a PRD/architecture pass will claim a surface
+surface:
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/planning.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py
 companions: []
 sources:
   - ../../../../../../docs/dreams/fleet-chain-completeness.md
-open_questions:
-  - "Q1 — invocation shape unspecified. The Dream names the 4 skills to orchestrate (bmad-spec, bmad-prd, bmad-architecture, bmad-create-epics-and-stories) but not how the orchestrator itself is invoked non-interactively — a new bmad-* skill, a Workflow tool script, or a subagent chain is undecided."
-  - "Q2 — error/resume semantics undefined. If a mid-chain phase (e.g. PRD generation) fails or needs human clarification, the Dream does not specify whether the run halts, retries, or resumes from that phase on a second invocation."
-  - "Q3 — Phase 8's git integration is unspecified. The Dream says cleanup 'stages for human review in IDE' but does not say whether that means git add without commit, an unstaged working-tree diff, or something else."
-  - "Q4 — Phases 2 (Research Generation) and 3 (Brief Generation) have no confirmed 1:1 skill mapping. Verified 2026-08-02: this repo ships bmad-product-brief and bmad-prfaq but no dedicated bmad-research skill; whether Phase 2/3 map onto bmad-product-brief, get folded together, or need new tooling is unresolved."
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what to build, test, and validate. `docs/dreams/fleet-chain-completeness.md` is listed in `sources:` for narrative rationale this contract intentionally omits.
@@ -32,11 +30,22 @@ Dream changes, review the diff, commit clean.
 ## Capabilities
 
 - **CAP-1 — orchestrated chain regeneration.**
-  - **intent:** From a consolidated Dream, run `bmad-spec` → `bmad-prd` → `bmad-architecture`
-    → `bmad-create-epics-and-stories` in sequence, each phase's output feeding the next,
-    without a human hand-carrying files between skill invocations.
+  - **intent:** From a consolidated Dream, run the full planning chain in sequence via
+    `marshal planning chain-regenerate` — each phase's output feeding the next, without a
+    human hand-carrying files between skill invocations. **Default mode: Full** (all eight
+    Dream phases). **Minimal mode** (`--minimal`): skips Research and Brief (phases 2–3) for
+    drift repair on stations without research history.
+  - **phase order (Full):**
+    1. `bmad-spec` — Spec kernel from Dream
+    2. `bmad-deep-recon` — headless **run**, domain type default → `planning-artifacts/research/<run-folder>/`
+    3. `bmad-product-brief` — headless **create** from Dream + Spec + Research
+    4. `bmad-prd`
+    5. `bmad-architecture`
+    6. `bmad-create-epics-and-stories`
+    7. Code-linkage verify — read-only trace (no code edits)
+    8. Orphan report + cleanup gates (CAP-4)
   - **success:** a single invocation against a consolidated Dream produces a coherent
-    Spec/PRD/Architecture/Epics chain with no manual hand-off required between phases.
+    eight-layer planning chain with no manual hand-off required between phases.
 
 - **CAP-2 — code-status preservation.**
   - **intent:** Regenerating the planning chain does not clobber existing Code implementation
@@ -52,28 +61,55 @@ Dream changes, review the diff, commit clean.
   - **success:** run in audit mode against any of the 8 PyForge stations and get a pass/fail
     per contract checkpoint, matching what a manual read of the chain plus `dream_chain_check`
     would find, with the dashboard reflecting each audited station as chain-complete or naming
-    its gap.
+    its gap. In **Minimal** regeneration mode, Research/Brief checkpoints pass when those
+    layers were intentionally skipped and never existed for the station.
 
 - **CAP-4 — orphan detection with review-gated cleanup.**
   - **intent:** Identify artifacts the regenerated chain no longer references — old spec
-    folders, epics from replaced specs, dream-deleted references — and stage their removal
-    for human review. Never delete, commit, or push unattended.
-  - **success:** after a consolidation run, the operator sees a named list of orphan
-    candidates and a reviewable diff, and nothing is deleted or committed without their
-    explicit action.
+    folders, epics from replaced specs, dream-deleted references — and surface them for human
+    review. Never delete, commit, or push unattended.
+  - **success:** after a consolidation run, the operator sees a named orphan manifest
+    (`orphans.json` + `orphans.md` under the run folder) and an unstaged working-tree diff;
+    optional `--stage` stages regenerated paths and orphan deletions without commit;
+    `--apply-orphans` performs disk deletes only on explicit operator action; nothing is
+    committed without their explicit action.
 
 - **CAP-5 — configurable per-project invocation.**
-  - **intent:** `project_slug`, `dream_path`, `preserve_code_status` (default true),
-    `auto_commit` (default false), and `delete_orphans` (default true-with-review-pause) are
-    parameters, not hardcoded per station.
+  - **intent:** `project_slug`, `dream_path`, `chain_mode` (`full` default | `minimal`),
+    `preserve_code_status` (default true), `stage` (default false), `apply_orphans` (default
+    false), and `resume` (continue from last checkpoint) are parameters, not hardcoded per
+    station. `auto_commit` remains false and is not offered.
   - **success:** the same workflow definition runs unmodified against any of the 8 stations by
     varying only its parameters.
 
+## Orchestration (resolved — operator 2026-08-23)
+
+**Invocation (Q1):** `marshal planning chain-regenerate --project <slug> --dream <path>`
+Skills are invoked headlessly through the FR-52 harness seam (same adapter pattern as
+`marshal factory dispatch`). Each phase uses per-invocation `BMAD_ACTIVE_PROJECT` and
+literal physical paths under `_bmad-output/projects/<slug>/planning-artifacts/`, never
+`scripts/bmad-switch`. Doctor retains read-only audit (`chain-completeness`); marshal owns
+regenerate.
+
+**Error / resume (Q2):** Persisted run journal at
+`planning-artifacts/.chain-regen/<run-id>/state.yaml`. On skill `complete`, advance phase and
+checkpoint. On skill `blocked`, halt with journal `status: blocked` — operator fixes input and
+re-invokes with `--resume`. On transient failure (timeout, rate limit), retry current phase up
+to **2×** with backoff, then halt. `--resume` continues at the last incomplete phase, never
+restarts from phase 1 unless operator starts a new run id.
+
+**Git integration (Q3):** Default: all regeneration output is **unstaged**; orphan manifest
+written alongside the run journal. Optional `--stage`: `git add` on regenerated paths and
+`git add -u` on confirmed orphan paths only — still **no commit**. `--apply-orphans`: disk
+deletes only. Never auto-commit or auto-push.
+
+**Research / Brief mapping (Q4):** Full mode (default) **always** runs `bmad-deep-recon`
+then `bmad-product-brief` before PRD. Minimal mode (`--minimal`) skips both for repair runs.
+
 ## Constraints
 
-- **Wrap, never absorb.** This workflow orchestrates `bmad-spec`, `bmad-prd`,
-  `bmad-architecture`, and `bmad-create-epics-and-stories` in sequence; it never reimplements
-  any of their derivation logic itself.
+- **Wrap, never absorb.** This workflow orchestrates existing BMAD skills in sequence; it
+  never reimplements any of their derivation logic itself.
 - **The memlog-derivation invariant is not bypassed.** `bmad-spec`/`bmad-prd` derive `SPEC.md`
   / `prd.md` from an append-only `.memlog.md` and re-render on each run. This workflow must
   drive that same append-then-rerender path per phase, never hand-overwrite a downstream
@@ -87,8 +123,8 @@ Dream changes, review the diff, commit clean.
   passed per invocation, never by concurrent `scripts/bmad-switch` calls (CLAUDE.md
   parallel-agent physical-path rule). Within one station's own chain the 8 phases are
   inherently sequential — this constraint only bites at the cross-station level.
-- **Never auto-commits or auto-pushes.** Cleanup (CAP-4) stages orphan removal for review;
-  regeneration output (CAP-1) is left for the operator to review and commit.
+- **Never auto-commits or auto-pushes.** Regeneration output and orphan cleanup are left for
+  the operator to review and commit.
 
 ## Non-goals
 
@@ -101,28 +137,14 @@ Dream changes, review the diff, commit clean.
   thinking within them.
 - **Not a one-way pipeline.** Re-runnable whenever the Dream changes; CAP-1 is idempotent
   against an unchanged Dream.
+- **Not a bmad-loop replacement.** Chain regeneration is a sibling marshal verb beside
+  `factory spin`/`dispatch`, not an extension of the multi-story loop orchestrator.
 
 ## Success signal
 
 A consolidated Dream (the kind this session produced by hand eight times, once per PyForge
-station) drives its own Spec, PRD, Architecture, and Epics regeneration through one workflow
-invocation instead of eight separate hand-run skill invocations stitched together manually —
-with existing Code-implementation status intact, orphaned artifacts named for review rather
-than silently deleted, and nothing committed without the operator's explicit action.
-
-## Open Questions
-
-- Q1 — invocation shape unspecified. The Dream names the 4 skills to orchestrate (`bmad-spec`,
-  `bmad-prd`, `bmad-architecture`, `bmad-create-epics-and-stories`) but not how the orchestrator
-  itself is invoked non-interactively — a new `bmad-*` skill, a Workflow tool script, or a
-  subagent chain is undecided.
-- Q2 — error/resume semantics undefined. If a mid-chain phase (e.g. PRD generation) fails or
-  needs human clarification, the Dream does not specify whether the run halts, retries, or
-  resumes from that phase on a second invocation.
-- Q3 — Phase 8's git integration is unspecified. The Dream says cleanup "stages for human
-  review in IDE" but does not say whether that means `git add` without commit, an unstaged
-  working-tree diff, or something else.
-- Q4 — Phases 2 (Research Generation) and 3 (Brief Generation) have no confirmed 1:1 skill
-  mapping. Verified 2026-08-02: this repo ships `bmad-product-brief` and `bmad-prfaq` but no
-  dedicated `bmad-research` skill; whether Phase 2/3 map onto `bmad-product-brief`, get folded
-  together, or need new tooling is unresolved.
+station) drives its own full eight-layer planning chain regeneration through one
+`marshal planning chain-regenerate` invocation instead of eight separate hand-run skill
+invocations stitched together manually — with existing Code-implementation status intact,
+orphaned artifacts named in a manifest for review rather than silently deleted, and nothing
+committed without the operator's explicit action.

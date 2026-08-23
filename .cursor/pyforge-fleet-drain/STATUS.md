@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~18:15 CDT
+**Updated:** 2026-08-23 ~18:20 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -31,12 +31,15 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 |---------|-------|-----------------|
 | marshal | `22-3` | [45300ea3-d0d0-4603-a652-46484c167615](45300ea3-d0d0-4603-a652-46484c167615) |
 
+## Dispatch sequencing (operator — 2026-08-23)
+
+**Epic 22 slice first:** finish `22-3` → `22-4` → `22-5` → `22-6`, **then** Epic 21 regen (`21-2`…`21-5`). `spec-fleet-chain-completeness` Q1–Q4 resolved; queue reordered accordingly.
+
 ## Operator skip
 
 | Story | Reason |
 |-------|--------|
 | steward `12-7` | Live OCP — permanently `skip_on_blocked` until CRC available |
-| marshal `21-2`…`21-5` | `spec-fleet-chain-completeness` Q1–Q4 need operator decisions; dispatch **22-3** next |
 
 ## Recently merged (admin merge, no CI)
 
