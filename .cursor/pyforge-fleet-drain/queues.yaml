@@ -175,10 +175,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 23
-    next: 12-6-redis-is-hardened-still-ephemeral
+    remaining_count: 22
+    next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
-    - 12-6-redis-is-hardened-still-ephemeral
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     - 12-8-github-projects-v2-lands-in-github-metrics-via-dlt
     - 13-1-workspace-verbs-over-git-worktree
