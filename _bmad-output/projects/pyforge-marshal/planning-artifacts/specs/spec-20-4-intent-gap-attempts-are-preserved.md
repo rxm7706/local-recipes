@@ -2,7 +2,7 @@
 title: Intent-gap attempts are preserved
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 updated: '2026-08-23'
 context: []
 warnings: []

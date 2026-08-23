@@ -338,13 +338,22 @@ class TaskPhaseSnapshot:
     task population so ``core.status.build_run_detail`` can name the
     recovery pointer on escalated/any-phase story rows, not only the
     ``Phase.DEFERRED`` subset). Trailing default (``branch``'s own
-    precedent)."""
+    precedent).
+
+    Story 20.4 (intent-gap preserve, FR-189) adds ``worktree_path: str = ""``
+    and ``baseline_commit: str | None = None`` -- ``StoryTask``'s own same-
+    named fields (already present in ``state.json``; needed so the
+    supervisor's proactive capture can read them off every tick's task
+    population without a second bmad-loop import). Trailing defaults
+    (``preserve_ref``'s own precedent)."""
 
     story_key: str
     phase: str
     commit_sha: str | None
     branch: str = ""
     preserve_ref: str | None = None
+    worktree_path: str = ""
+    baseline_commit: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)

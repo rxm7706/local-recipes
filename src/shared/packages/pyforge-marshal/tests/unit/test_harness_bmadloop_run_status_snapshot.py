@@ -68,6 +68,7 @@ def _task(
     spec_file: str | None = None,
     commit_sha: str | None = None,
     preserve_ref: str | None = None,
+    baseline_commit: str | None = None,
 ) -> dict[str, object]:
     task: dict[str, object] = {
         "story_key": story_key,
@@ -85,6 +86,8 @@ def _task(
         # bmad-loop 0.10/0.11's own `StoryTask.to_dict` key, spelled
         # verbatim (Story 25.5); omitted for the pre-0.10 fixture shape.
         task["preserve_ref"] = preserve_ref
+    if baseline_commit is not None:
+        task["baseline_commit"] = baseline_commit
     return task
 
 
@@ -663,3 +666,28 @@ def test_a_pre_011_state_json_defaults_the_new_fields(harness, tmp_path):
     assert snapshot.deferred[0].preserve_ref is None
     assert snapshot.escalated_preserve_ref is None
     assert snapshot.sweeps_refused == {}
+    assert snapshot.tasks[0].worktree_path == ""
+    assert snapshot.tasks[0].baseline_commit is None
+
+
+def test_tasks_carry_worktree_path_and_baseline_commit(harness, tmp_path):
+    """Story 20.4: proactive capture reads ``StoryTask`` worktree + baseline."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "20-4": _task(
+                "20-4",
+                "dev-running",
+                worktree_path="/tmp/story-wt",
+                baseline_commit="abc123def456",
+            ),
+        },
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    task = snapshot.tasks[0]
+    assert task.worktree_path == "/tmp/story-wt"
+    assert task.baseline_commit == "abc123def456"
