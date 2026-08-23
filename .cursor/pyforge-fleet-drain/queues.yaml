@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 25
-    next: 20-5-missing-preserve-detector
+    remaining_count: 24
+    next: 20-6-the-verify-scope-primitive
     queue:
-    - 20-5-missing-preserve-detector
     - 20-6-the-verify-scope-primitive
     - 20-7-both-guards-hard-fail-on-drift
     - 20-8-the-landing-evidence-grammar

@@ -2,7 +2,8 @@
 title: Missing-preserve detector
 type: test
 created: '2026-08-23'
-status: in-progress
+status: done
+shipped_ref: 'PR #689 / 7fd89e4294'
 updated: '2026-08-23'
 context: []
 warnings: []
