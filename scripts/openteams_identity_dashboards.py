@@ -615,3 +615,479 @@ def render(records: list[dict[str, str]], xlsx: Path, gist_id: str, tab: str, he
     ]
     )
     return "\n".join(lines)
+
+
+# Two of the three dashboard views for the live identity tab (catalog, ops,
+# Artifactory/workbook -- see docs/dreams/conda-forge-packaging-inventory-
+# operations.md). Catalog already exists (identity-2026-08-20.canvas.tsx via
+# conda-forge-packaging-inventory-operations_priority.py::write_canvas).
+# These two restructure the same already-computed values `render()` uses for
+# its markdown mirror into a `cursor/canvas` TSX file. Same import block and
+# DATA-blob structural pattern as write_canvas -- see its `_CANVAS_PREFIX` /
+# `_CANVAS_SUFFIX` in conda-forge-packaging-inventory-operations_priority.py.
+CANVAS_DIR = Path(
+    "/home/rxm7706/.cursor/projects/"
+    "home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases"
+)
+DEFAULT_OPS_CANVAS_PATH = CANVAS_DIR / "identity-ops.canvas.tsx"
+DEFAULT_WORKBOOK_CANVAS_PATH = CANVAS_DIR / "jfrog-workbook.canvas.tsx"
+
+_CANVAS_PREFIX = r"""import {
+  BarChart,
+  Button,
+  Callout,
+  Grid,
+  H1,
+  H2,
+  Row,
+  Select,
+  Stack,
+  Stat,
+  Table,
+  Text,
+  TextInput,
+  useCanvasState,
+} from "cursor/canvas";
+
+const DATA = """
+
+_OPS_CANVAS_SUFFIX = r""" as {
+  tab: string;
+  n: number;
+  priorityCounts: Record<string, number>;
+  workCounts: Record<string, number>;
+  priorityDefs: Array<[string, string, number]>;
+  workDefs: Array<[string, string, number]>;
+  issues: { have: number; miss: number; byP: Array<[string, number, number, number]> };
+  buildByType: Array<[string, number, number, number, number, number, number]>;
+  rows: Array<[string, string, string, string, string]>;
+  leaders: Array<[string, string, string]>;
+};
+
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+export default function IdentityOps() {
+  const [q, setQ] = useCanvasState("identity-ops-q", "");
+  const query = q.trim().toLowerCase();
+  const filtered = DATA.rows.filter(
+    (r) => !query || r[0].includes(query) || r[2].toLowerCase().includes(query)
+  );
+
+  return (
+    <Stack gap={20}>
+      <Stack gap={6}>
+        <H1>Identity ops -- Priority, Work, Issues, Builds</H1>
+        <Text tone="secondary" size="small">
+          {fmt(DATA.n)} rows on tab {DATA.tab}.
+        </Text>
+      </Stack>
+
+      <Grid columns={4} gap={12}>
+        <Stat value={fmt(DATA.issues.have)} label="Have OpenTeams issue" />
+        <Stat value={fmt(DATA.issues.miss)} label="Missing OpenTeams issue" tone="warning" />
+        <Stat value={fmt(DATA.workCounts["Create recipe"] || 0)} label="Create recipe" />
+        <Stat value={fmt(DATA.workCounts["Fix vulnerability"] || 0)} label="Fix vulnerability" tone="danger" />
+      </Grid>
+
+      <Callout tone="info">
+        Priority is first-match top-down (P1 highest, P10 floor). Work is
+        independent of priority: Fix vulnerability / Create recipe / File
+        OpenTeams tracking issue [Conda-Forge Packaging] / Already tracked.
+      </Callout>
+
+      <H2>Priority buckets</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["P", "Packages", "Description"]}
+        columnAlign={["left", "right", "left"]}
+        rows={DATA.priorityDefs.map((d) => [d[0], fmt(d[2]), d[1]])}
+      />
+
+      <H2>Work type</H2>
+      <BarChart
+        horizontal
+        height={160}
+        categories={DATA.workDefs.map((d) => d[0])}
+        series={[{ name: "packages", data: DATA.workDefs.map((d) => d[2]), tone: "warning" }]}
+        showValues
+      />
+
+      <H2>Packaging-issue gap by priority</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["P", "Have issue", "Missing", "Missing rate"]}
+        columnAlign={["left", "right", "right", "right"]}
+        rows={DATA.issues.byP.map((r) => [r[0], fmt(r[1]), fmt(r[2]), `${r[3]}%`])}
+      />
+
+      <H2>Local build by recipe type</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["Type", "Rows", "Success", "Test-blocked", "Failed", "Not attempted", "Blank"]}
+        columnAlign={["left", "right", "right", "right", "right", "right", "right"]}
+        rows={DATA.buildByType.map((r) => [r[0], fmt(r[1]), fmt(r[2]), fmt(r[3]), fmt(r[4]), fmt(r[5]), fmt(r[6])])}
+      />
+
+      <H2>All packages</H2>
+      <Row gap={8} align="center" wrap>
+        <TextInput value={q} onChange={setQ} placeholder="Filter by package or work" />
+        <Text tone="secondary" size="small">
+          {fmt(filtered.length)} of {fmt(DATA.rows.length)} rows
+        </Text>
+      </Row>
+      <Table
+        striped
+        stickyHeader
+        headers={["Package", "P", "Work", "Build status", "Has issue"]}
+        columnAlign={["left", "left", "left", "left", "left"]}
+        rows={filtered}
+      />
+    </Stack>
+  );
+}
+"""
+
+_WORKBOOK_CANVAS_SUFFIX = r""" as {
+  tab: string;
+  jfrogMap: {
+    parseable: number;
+    skip: number;
+    both: number;
+    pypiOnly: number;
+    cfOnly: number;
+    neither: number;
+  };
+  neitherRows: Array<[string, number, string]>;
+  needPr: Array<[string, number]>;
+  boardGap: Array<[string, number]>;
+  workbookTabs: Array<[string, number, number]>;
+  externalCounts: Array<[string, string, string, string]>;
+};
+
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+export default function JfrogWorkbook() {
+  return (
+    <Stack gap={20}>
+      <Stack gap={6}>
+        <H1>Artifactory / workbook -- CDO-ENT-JFROG to PyPI / conda-forge</H1>
+        <Text tone="secondary" size="small">
+          {fmt(DATA.jfrogMap.parseable)} parseable JFROG names on tab {DATA.tab}
+          ({fmt(DATA.jfrogMap.skip)} skipped).
+        </Text>
+      </Stack>
+
+      <Grid columns={4} gap={12}>
+        <Stat value={fmt(DATA.jfrogMap.both)} label="PyPI + conda-forge" />
+        <Stat value={fmt(DATA.jfrogMap.pypiOnly)} label="PyPI only" tone="warning" />
+        <Stat value={fmt(DATA.jfrogMap.cfOnly)} label="conda-forge only" />
+        <Stat value={fmt(DATA.jfrogMap.neither)} label="Neither" tone="danger" />
+      </Grid>
+
+      <H2>No verified PyPI or conda-forge URL</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["Package", "Artifactory downloads", "Packaging tier"]}
+        columnAlign={["left", "right", "left"]}
+        rows={DATA.neitherRows.map((r) => [r[0], fmt(r[1]), r[2]])}
+      />
+
+      <H2>Needs a staged-recipes PR</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["Package", "Artifactory downloads"]}
+        columnAlign={["left", "right"]}
+        rows={DATA.needPr.map((r) => [r[0], fmt(r[1])])}
+      />
+
+      <H2>PyPI-only names with no packaging issue</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["Package", "Artifactory downloads"]}
+        columnAlign={["left", "right"]}
+        rows={DATA.boardGap.map((r) => [r[0], fmt(r[1])])}
+      />
+
+      <H2>Workbook tabs</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["Tab", "Data rows", "Unique names"]}
+        columnAlign={["left", "right", "right"]}
+        rows={DATA.workbookTabs.map((r) => [r[0], fmt(r[1]), fmt(r[2])])}
+      />
+
+      <H2>External source counts</H2>
+      <Table
+        striped
+        stickyHeader
+        headers={["Source", "Count", "How counted", "Workbook tab"]}
+        columnAlign={["left", "right", "left", "left"]}
+        rows={DATA.externalCounts}
+      />
+    </Stack>
+  );
+}
+"""
+
+
+def _pct(numerator: int, denominator: int) -> float:
+    return round(100 * numerator / denominator, 1) if denominator else 0.0
+
+
+def write_ops_canvas(
+    path: Path,
+    records: list[dict[str, str]],
+    tab: str,
+    helpers,
+) -> None:
+    """Ops dashboard canvas: Priority/Work, Issues gap, Builds/Census --
+    restructures the same values `render()` computes for its markdown mirror
+    (Priority and work / Packaging-issue gap / Local build sections) into a
+    `cursor/canvas` TSX file. Structural sibling of
+    conda-forge-packaging-inventory-operations_priority.py::write_canvas;
+    this canvas renders inside Cursor, not this repo's test suite -- a zero
+    input still produces a valid, schema-shaped file with empty rows/leaders.
+    """
+    p_order = helpers.P_ORDER
+    recipe_type_order = helpers.RECIPE_TYPE_ORDER
+    work_order = helpers.WORK_DASH_ORDER
+    row_recipe_type = helpers.row_recipe_type
+    load_local_recipe_type = helpers.load_local_recipe_type
+    overlay_live_local = helpers.overlay_live_local
+    repo_root = helpers.REPO_ROOT
+
+    dir_types: dict[str, str] = {}
+    if records:
+        overlay_live_local(records, repo_root / "recipes")
+        dir_types = load_local_recipe_type(repo_root / "recipes")
+
+    p_counts = Counter(r.get("P") or "?" for r in records)
+    work_counts = Counter(r.get("Work") or "?" for r in records)
+
+    have_by_p: Counter = Counter()
+    miss_by_p: Counter = Counter()
+    have_issue = 0
+    for r in records:
+        p = r.get("P") or "?"
+        if r.get("OpenTeams_Issue_URL"):
+            have_issue += 1
+            have_by_p[p] += 1
+        else:
+            miss_by_p[p] += 1
+    miss_issue = len(records) - have_issue
+
+    type_status: dict[str, Counter] = defaultdict(Counter)
+    for r in records:
+        rtype = row_recipe_type(r, dir_types)
+        status = r.get("Local_Build_Status") or "blank"
+        type_status[rtype][status] += 1
+
+    priority_defs = [[p, PRIORITY_DESC[p], p_counts.get(p, 0)] for p in p_order]
+    work_defs = [[w, WORK_DESC[w], work_counts.get(w, 0)] for w in work_order]
+    issues_by_p = [
+        [p, have_by_p.get(p, 0), miss_by_p.get(p, 0), _pct(miss_by_p.get(p, 0), p_counts.get(p, 0))]
+        for p in p_order
+    ]
+    build_by_type = [
+        [
+            rtype,
+            sum(type_status[rtype].values()),
+            type_status[rtype].get("success", 0),
+            type_status[rtype].get("build-clean-test-blocked", 0),
+            type_status[rtype].get("failed", 0),
+            type_status[rtype].get("not-attempted", 0),
+            type_status[rtype].get("blank", 0),
+        ]
+        for rtype in recipe_type_order
+        if rtype in type_status
+    ]
+    rows = [
+        [
+            r.get("Core_Python_Package_Name") or "",
+            r.get("P") or "",
+            r.get("Work") or "",
+            r.get("Local_Build_Status") or "",
+            "yes" if r.get("OpenTeams_Issue_URL") else "no",
+        ]
+        for r in records
+    ]
+    leaders: list[list] = []
+    for p in p_order:
+        n = 0
+        for r in records:
+            if (r.get("P") or "?") != p:
+                continue
+            if n >= 6:
+                break
+            leaders.append([p, r.get("Core_Python_Package_Name") or "", r.get("Work") or ""])
+            n += 1
+
+    data = json.dumps(
+        {
+            "tab": tab,
+            "n": len(records),
+            "priorityCounts": dict(p_counts),
+            "workCounts": dict(work_counts),
+            "priorityDefs": priority_defs,
+            "workDefs": work_defs,
+            "issues": {"have": have_issue, "miss": miss_issue, "byP": issues_by_p},
+            "buildByType": build_by_type,
+            "rows": rows,
+            "leaders": leaders,
+        },
+        separators=(",", ":"),
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_CANVAS_PREFIX + data + _OPS_CANVAS_SUFFIX, encoding="utf-8")
+
+
+def write_workbook_canvas(
+    path: Path,
+    records: list[dict[str, str]],
+    xlsx: Path,
+    tab: str,
+    helpers,
+) -> None:
+    """Artifactory / workbook dashboard canvas: CDO-ENT-JFROG -> PyPI /
+    conda-forge map, staged-recipes gap, board gap, workbook tabs, external
+    source counts -- restructures the same values `render()` computes for its
+    markdown mirror into a `cursor/canvas` TSX file. A missing/nonexistent
+    `xlsx` (as in a zero-records test) still produces a valid, schema-shaped
+    file with empty array fields; this canvas renders inside Cursor, not this
+    repo's test suite.
+    """
+    pep503_name = helpers.pep503_name
+    read_xlsx_tab = helpers.read_xlsx_tab
+    as_int = helpers._as_int
+
+    ident = {pep503_name(r.get("Core_Python_Package_Name") or ""): r for r in records}
+
+    def is_pypi(row: dict[str, str] | None) -> bool:
+        if not row:
+            return False
+        return (row.get("primary_type") or "") == "pypi" or (
+            row.get("primary_purl") or ""
+        ).startswith("pkg:pypi/")
+
+    def is_cf(row: dict[str, str] | None) -> bool:
+        if not row:
+            return False
+        return bool(row.get("conda_purl") or row.get("Conda-Forge_FeedStock_URL"))
+
+    jfrog_rows = read_xlsx_tab(xlsx, "CDO-ENT-JFROG") if xlsx and xlsx.is_file() else []
+    jfrog_by: dict[str, dict[str, str]] = {}
+    skip = 0
+    for jr in jfrog_rows:
+        raw = (jr.get("name") or "").strip()
+        k = pep503_name(raw) if raw else ""
+        if not k or len(k) == 1:
+            skip += 1
+            continue
+        jfrog_by.setdefault(k, jr)
+
+    both = pypi_only = cf_only = neither = 0
+    neither_rows: list[list] = []
+    need_pr: list[list] = []
+    for k, jr in jfrog_by.items():
+        ident_row = ident.get(k)
+        pypi = is_pypi(ident_row)
+        cf = is_cf(ident_row)
+        if pypi and cf:
+            both += 1
+        elif pypi:
+            pypi_only += 1
+        elif cf:
+            cf_only += 1
+        else:
+            neither += 1
+            neither_rows.append(
+                [
+                    jr.get("name") or k,
+                    as_int(jr.get("artifactory_downloads") or "0"),
+                    jr.get("packaging_tier") or "",
+                ]
+            )
+        on_cf = bool(
+            ident_row
+            and (ident_row.get("Conda-Forge_FeedStock_URL") or ident_row.get("conda_purl"))
+        )
+        has_pr = bool(ident_row and ident_row.get("Staged_Recipes_PR_URL"))
+        if ident_row and not on_cf and not has_pr:
+            need_pr.append([jr.get("name") or k, as_int(jr.get("artifactory_downloads") or "0")])
+    neither_rows.sort(key=lambda r: (-r[1], str(r[0]).lower()))
+    need_pr.sort(key=lambda r: -r[1])
+    parseable = len(jfrog_by)
+
+    board_gap: list[list] = []
+    for k, jr in jfrog_by.items():
+        ident_row = ident.get(k)
+        if (
+            is_pypi(ident_row)
+            and not is_cf(ident_row)
+            and ident_row
+            and not ident_row.get("OpenTeams_Issue_URL")
+        ):
+            board_gap.append([jr.get("name") or k, as_int(jr.get("artifactory_downloads") or "0")])
+    board_gap.sort(key=lambda r: (-r[1], str(r[0]).lower()))
+
+    sheet_stats: list[list] = []
+    if xlsx and xlsx.is_file():
+        wb = load_workbook(xlsx, read_only=True, data_only=True)
+        for sheet in wb.sheetnames:
+            ws = wb[sheet]
+            rows_iter = ws.iter_rows(values_only=True)
+            try:
+                header = [str(h) if h is not None else "" for h in next(rows_iter)]
+            except StopIteration:
+                sheet_stats.append([sheet, 0, 0])
+                continue
+            data_rows = list(rows_iter)
+            name_idx = next(
+                (
+                    i
+                    for i, h in enumerate(header)
+                    if h.lower() in {"name", "package_name", "core_python_package_name"}
+                ),
+                None,
+            )
+            names: set[str] = set()
+            if name_idx is not None:
+                for raw in data_rows:
+                    val = "" if raw[name_idx] is None else str(raw[name_idx]).strip()
+                    if val:
+                        names.add(pep503_name(val) or val)
+            sheet_stats.append([sheet, len(data_rows), len(names)])
+        wb.close()
+
+    data = json.dumps(
+        {
+            "tab": tab,
+            "jfrogMap": {
+                "parseable": parseable,
+                "skip": skip,
+                "both": both,
+                "pypiOnly": pypi_only,
+                "cfOnly": cf_only,
+                "neither": neither,
+            },
+            "neitherRows": neither_rows,
+            "needPr": need_pr,
+            "boardGap": board_gap,
+            "workbookTabs": sheet_stats,
+            "externalCounts": [list(row) for row in EXTERNAL_LIVE],
+        },
+        separators=(",", ":"),
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_CANVAS_PREFIX + data + _WORKBOOK_CANVAS_SUFFIX, encoding="utf-8")

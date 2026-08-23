@@ -350,6 +350,96 @@ def board_packaging_urls(items: list[dict]) -> dict[str, str]:
     return out
 
 
+ISSUE_CREATE_REPO = "OpenTeams-WFT-CDO/mgmt-wf-python-modernization"
+PROJECT_OWNER = "OpenTeams-WFT-CDO"
+PROJECT_NUMBER = "1"
+
+
+def create_missing_issues(
+    gh: str | None,
+    records: list[dict[str, str]],
+    board: dict[str, str],
+    dry_run: bool = True,
+) -> list[tuple[str, str]]:
+    """One GitHub issue per record missing ``OpenTeams_Issue_URL``.
+
+    Additive-only and idempotent: this only ever creates issues for names the
+    board join (``board_packaging_urls``) did not already find -- it never
+    edits, closes, or re-titles an existing issue. A row with a blank/missing
+    ``Core_Python_Package_Name`` is skipped (never produces a garbage
+    ``[Conda-Forge Packaging] `` title).
+
+    A created issue is also added to OpenTeams project 1 so a subsequent
+    run's board join sees it and treats the name as ``Already tracked``.
+    ``row["OpenTeams_Issue_URL"]``/``board[...]`` are only updated once BOTH
+    the issue-create and the project-item-add calls succeed -- if item-add
+    fails after a successful create, the row is left unmarked (still
+    reported via the return value) so a future run retries adding it to the
+    project board instead of silently treating it as done forever.
+
+    ``dry_run`` (the default, ``--create-issues`` absent) makes no ``gh``
+    mutation call: it only prints and returns the ``(name, title)`` pairs
+    that would be created. With ``dry_run=False`` a non-zero ``gh`` exit (or
+    the ``gh`` binary vanishing mid-run) for one name is logged to stderr and
+    does not abort the remaining names.
+    """
+    missing = [
+        row
+        for row in records
+        if not (row.get("OpenTeams_Issue_URL") or "").strip()
+        and (row.get("Core_Python_Package_Name") or "").strip()
+    ]
+    if not missing:
+        return []
+    if dry_run:
+        result: list[tuple[str, str]] = []
+        for row in missing:
+            name = row.get("Core_Python_Package_Name", "")
+            title = row.get("OpenTeams_Title") or f"[Conda-Forge Packaging] {name}"
+            print(f"[dry-run] would create issue: {name} -- {title}", flush=True)
+            result.append((name, title))
+        return result
+    if not gh:
+        raise SystemExit("gh not found; cannot create issues with --create-issues")
+    created: list[tuple[str, str]] = []
+    for row in missing:
+        name = row.get("Core_Python_Package_Name", "")
+        title = row.get("OpenTeams_Title") or f"[Conda-Forge Packaging] {name}"
+        try:
+            url = subprocess.check_output(
+                [gh, "issue", "create", "--repo", ISSUE_CREATE_REPO, "--title", title],
+                text=True,
+            ).strip()
+        except (subprocess.CalledProcessError, OSError) as exc:
+            print(f"gh issue create failed for {name}: {exc}", file=sys.stderr)
+            continue
+        try:
+            subprocess.check_call(
+                [
+                    gh,
+                    "project",
+                    "item-add",
+                    "--owner",
+                    PROJECT_OWNER,
+                    "--number",
+                    PROJECT_NUMBER,
+                    "--url",
+                    url,
+                ]
+            )
+        except (subprocess.CalledProcessError, OSError) as exc:
+            print(
+                f"gh project item-add failed for {name} ({url}): {exc}",
+                file=sys.stderr,
+            )
+            created.append((name, title))
+            continue
+        row["OpenTeams_Issue_URL"] = url
+        board[pep503_name(name)] = url
+        created.append((name, title))
+    return created
+
+
 def issue_url(inv: dict, board: dict[str, str]) -> str:
     name = pep503_name(inv.get("Core_Python_Package_Name", ""))
     if name in board:
@@ -1032,23 +1122,40 @@ def write_dashboard_markdown(
     xlsx: Path,
     gist_id: str,
     tab: str,
+    ops_canvas: Path | None = None,
+    workbook_canvas: Path | None = None,
 ) -> None:
     script_dir = str(Path(__file__).resolve().parent)
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
     import types
-    from openteams_identity_dashboards import render
+    from openteams_identity_dashboards import (
+        DEFAULT_OPS_CANVAS_PATH,
+        DEFAULT_WORKBOOK_CANVAS_PATH,
+        render,
+        write_ops_canvas,
+        write_workbook_canvas,
+    )
 
+    helpers = types.SimpleNamespace(**globals())
     path.write_text(
-        render(
-            records,
-            xlsx,
-            gist_id,
-            tab,
-            helpers=types.SimpleNamespace(**globals()),
-        ),
+        render(records, xlsx, gist_id, tab, helpers=helpers),
         encoding="utf-8",
     )
+    # A canvas-write failure (unwritable default Cursor projects path, a
+    # locked/corrupt xlsx on write_workbook_canvas's second load_workbook
+    # open, ...) must never block the gist-markdown publish above it, nor
+    # the caller's subsequent publish_gist_files call.
+    try:
+        write_ops_canvas(ops_canvas or DEFAULT_OPS_CANVAS_PATH, records, tab, helpers=helpers)
+    except Exception as exc:
+        print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
+    try:
+        write_workbook_canvas(
+            workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH, records, xlsx, tab, helpers=helpers
+        )
+    except Exception as exc:
+        print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
 
 
 def gist_file_names(gh: str, gist_id: str) -> set[str]:
@@ -1088,7 +1195,13 @@ def publish_gist_files(
     )
 
 
-def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None, tab: str = TAB_OUT) -> int:
+def publish_gist_from_tab(
+    xlsx: Path,
+    gist_id_cli: str | None,
+    tab: str = TAB_OUT,
+    ops_canvas: Path | None = None,
+    workbook_canvas: Path | None = None,
+) -> int:
     """Edit the pinned gist from the current identity tab. Does not rewrite the tab."""
     gist_id = resolve_gist_id(gist_id_cli)
     if not gist_id:
@@ -1114,7 +1227,9 @@ def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None, tab: str = TAB_OU
     md_path = CACHE_DIR / GIST_FILENAME
     dash_path = CACHE_DIR / GIST_DASHBOARD_FILENAME
     write_gist_markdown(md_path, records, xlsx, gist_id, tab)
-    write_dashboard_markdown(dash_path, records, xlsx, gist_id, tab)
+    write_dashboard_markdown(
+        dash_path, records, xlsx, gist_id, tab, ops_canvas, workbook_canvas
+    )
     print(f"Publishing {len(records):,} rows ({len(GIST_COLUMNS)} cols) ...", flush=True)
     publish_gist_files(gh, gist_id, md_path, dash_path)
     print("Updated pinned identity gist in place (catalog + dashboards)")
@@ -1201,6 +1316,15 @@ def main() -> int:
         help="Do not edit the pinned identity gist (offline tests only).",
     )
     p.add_argument(
+        "--create-issues",
+        action="store_true",
+        help=(
+            "Create a GitHub issue (gh issue create) and add it to OpenTeams "
+            "project 1 for every record missing OpenTeams_Issue_URL. Default: "
+            "dry-run only -- print what would be created, no gh mutation call."
+        ),
+    )
+    p.add_argument(
         "--gist-only",
         action="store_true",
         help=(
@@ -1216,9 +1340,38 @@ def main() -> int:
             f"{GIST_ID_ENV} or {LOCAL_ENV_PATH.name}. Never commit the id."
         ),
     )
+    p.add_argument(
+        "--ops-canvas",
+        type=Path,
+        default=None,
+        help=(
+            "Ops dashboard canvas output path (Priority/Issues/Builds/Census). "
+            "Default: the live identity-ops.canvas.tsx under the Cursor project "
+            "canvases dir. Override for offline tests."
+        ),
+    )
+    p.add_argument(
+        "--workbook-canvas",
+        type=Path,
+        default=None,
+        help=(
+            "Artifactory/workbook dashboard canvas output path. Default: the "
+            "live jfrog-workbook.canvas.tsx under the Cursor project canvases "
+            "dir. Override for offline tests."
+        ),
+    )
     args = p.parse_args()
     if args.gist_only:
-        return publish_gist_from_tab(args.xlsx, args.gist_id, args.tab_out)
+        return publish_gist_from_tab(
+            args.xlsx, args.gist_id, args.tab_out, args.ops_canvas, args.workbook_canvas
+        )
+    if args.create_issues and not gh_bin():
+        print(
+            "gh not found; cannot use --create-issues (pass --project-items and "
+            "omit --create-issues for a dry-run, or install gh)",
+            file=sys.stderr,
+        )
+        return 1
 
     cache = args.cache_dir
     cache.mkdir(parents=True, exist_ok=True)
@@ -1282,6 +1435,14 @@ def main() -> int:
         extra += 1
 
     overlay_live_local(records, args.recipes_dir)
+
+    created = create_missing_issues(gh_bin(), records, board, dry_run=not args.create_issues)
+    if created:
+        label = "Created" if args.create_issues else "Would create (dry-run)"
+        print(f"{label} {len(created)} missing OpenTeams issue(s):")
+        for name, title in created:
+            print(f"  {name}: {title}")
+
     write_xlsx_tab(args.xlsx, records, args.tab_out)
     if args.output_csv:
         write_csv(args.output_csv, records)
@@ -1333,7 +1494,15 @@ def main() -> int:
     md_path = cache / GIST_FILENAME
     dash_path = cache / GIST_DASHBOARD_FILENAME
     write_gist_markdown(md_path, records, args.xlsx, gist_id, args.tab_out)
-    write_dashboard_markdown(dash_path, records, args.xlsx, gist_id, args.tab_out)
+    write_dashboard_markdown(
+        dash_path,
+        records,
+        args.xlsx,
+        gist_id,
+        args.tab_out,
+        args.ops_canvas,
+        args.workbook_canvas,
+    )
     print(f"Publishing {md_path} and {dash_path} to gist {gist_id} ...", flush=True)
     publish_gist_files(gh, gist_id, md_path, dash_path)
     print(f"Updated gist {gist_id} (gh gist view {gist_id})")
