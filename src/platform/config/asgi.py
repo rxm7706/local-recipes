@@ -22,6 +22,11 @@ sys.path.append(str(BASE_DIR / "platformapp"))
 
 # If DJANGO_SETTINGS_MODULE is unset, default to the local settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+# CAP-3 locality: ASGI's default leaf is local. Production images must set
+# DJANGO_SETTINGS_MODULE=config.settings.production (and leave
+# COMPONENT_RUNTIME unset / non-local) so stage-1/2 refusals stay armed.
+if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.local":
+    os.environ.setdefault("COMPONENT_RUNTIME", "local")
 
 # This application object is used by any ASGI server configured to use this file.
 django_application = get_asgi_application()

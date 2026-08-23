@@ -8,6 +8,11 @@ from pathlib import Path
 def main():
     """Run administrative tasks."""
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+    # CAP-3 locality: manage.py's default leaf is local development. setdefault
+    # only — a production release that sets DJANGO_SETTINGS_MODULE=production
+    # keeps COMPONENT_RUNTIME unset (fail-closed deployed).
+    if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.local":
+        os.environ.setdefault("COMPONENT_RUNTIME", "local")
 
     try:
         from django.core.management import execute_from_command_line  # noqa: PLC0415

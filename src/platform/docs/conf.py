@@ -24,6 +24,10 @@ else:
     sys.path.insert(0, os.path.abspath(".."))
 os.environ["DATABASE_URL"] = "sqlite:///readthedocs.db"
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+# CAP-3: Sphinx imports Django with the local leaf — keep stage-2 refusals
+# from treating docs builds as a deployment.
+if os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.local":
+    os.environ.setdefault("COMPONENT_RUNTIME", "local")
 django.setup()
 
 # -- Project information -----------------------------------------------------

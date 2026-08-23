@@ -56,7 +56,8 @@ django:
   # production.py's SECURE_SSL_REDIRECT + ALLOWED_HOSTS would otherwise
   # reject/redirect the probe requests.
   allowedHosts: platform.internal
-  adminUrl: admin/
+  # CAP-3: must not be '/', 'admin', or 'admin/' (stage-1 refuses those).
+  adminUrl: platform-admin/
   # production.py defaults True; probes still work because they send
   # X-Forwarded-Proto: https (SECURE_PROXY_SSL_HEADER).
   secureSslRedirect: "True"
