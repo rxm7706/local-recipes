@@ -2,22 +2,36 @@
 
 from __future__ import annotations
 
+import tempfile
 import uuid
 from pathlib import Path
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
 
 from .models import ComplianceJob
 from .phases import current_progress
-from .tasks import SUPPORTED_SUFFIXES, run_compliance_job
+from .tasks import SUPPORTED_SUFFIXES
+from .tasks import run_compliance_job
+
+_WELL_KNOWN_MANIFEST_NAMES = frozenset(
+    {
+        "requirements.txt",
+        "environment.yaml",
+        "pixi.toml",
+        "pyproject.toml",
+        "pixi.lock",
+        "conda-lock.yml",
+    },
+)
 
 
 def _blob_root() -> Path:
-    import tempfile
-
     root = Path(getattr(settings, "COMPLIANCE_FACE_BLOB_ROOT", tempfile.gettempdir()))
     root.mkdir(parents=True, exist_ok=True)
     return root
@@ -32,17 +46,9 @@ def upload_manifest(request: HttpRequest) -> HttpResponse:
         return JsonResponse({"error": "missing manifest file field"}, status=400)
     name = Path(uploaded.name).name
     suffix = Path(name).suffix.lower()
-    if suffix not in SUPPORTED_SUFFIXES and name not in {
-        "requirements.txt",
-        "environment.yaml",
-        "pixi.toml",
-        "pyproject.toml",
-        "pixi.lock",
-        "conda-lock.yml",
-    }:
+    if suffix not in SUPPORTED_SUFFIXES and name not in _WELL_KNOWN_MANIFEST_NAMES:
         return JsonResponse({"error": f"unsupported format: {name}"}, status=400)
 
-    # Safe-loader-only: store bytes; never yaml.load / exec.
     storage_key = f"{uuid.uuid4().hex}/{name}"
     dest = _blob_root() / storage_key
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -55,7 +61,6 @@ def upload_manifest(request: HttpRequest) -> HttpResponse:
         original_name=name,
         status=ComplianceJob.Status.PENDING,
     )
-    # Keys-not-blobs: task args are strings only.
     run_compliance_job.delay(str(job.id))
     return JsonResponse({"job_id": str(job.id)}, status=202)
 
@@ -76,7 +81,7 @@ def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
             "phase_total": progress.total,
             "progress": progress.ratio,
             "error": job.error or None,
-        }
+        },
     )
 
 
@@ -87,7 +92,10 @@ def job_report(request: HttpRequest, job_id: str) -> HttpResponse:
     except ComplianceJob.DoesNotExist:
         return JsonResponse({"error": "not found"}, status=404)
     if job.status != ComplianceJob.Status.SUCCEEDED:
-        return JsonResponse({"error": "report not ready", "status": job.status}, status=409)
+        return JsonResponse(
+            {"error": "report not ready", "status": job.status},
+            status=409,
+        )
     kind = request.GET.get("kind", "report")
     body = job.sbom_json if kind == "sbom" else job.report_json
     return HttpResponse(body, content_type="application/json")

@@ -49,15 +49,20 @@ def current_progress(job: PhaseJob) -> PhaseProgress:
 
 
 def advance(job: PhaseJob, expected_next: str) -> PhaseProgress:
-    """Advance exactly one phase. ``expected_next`` must match PHASES[job.phase_index]."""
+    """Advance exactly one phase.
+
+    ``expected_next`` must match ``PHASES[job.phase_index]``.
+    """
     if job.phase_index >= len(PHASES):
-        raise RuntimeError("job already complete; cannot advance")
+        msg = "job already complete; cannot advance"
+        raise RuntimeError(msg)
     expected = PHASES[job.phase_index]
     if expected_next != expected:
-        raise RuntimeError(
+        msg = (
             f"phase guard: expected {expected!r}, got {expected_next!r} "
             f"(no phase chooses its own number)"
         )
+        raise RuntimeError(msg)
     job.phase_index += 1
     job.save(update_fields=["phase_index", "updated_at"])
     return current_progress(job)

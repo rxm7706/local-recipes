@@ -607,8 +607,18 @@ jobs:
       # runner, not a value tuned to an observed failure.
       - name: Poll /api/health for 200
         run: |
+          if [ "${{ matrix.engine }}" = "podman" ]; then
+            health_url() {
+              port="$(${{ matrix.engine }} port dbgpt-sidecar-ci-app-${{ matrix.engine }} 5670/tcp | head -1 | cut -d: -f2)"
+              echo "http://127.0.0.1:${port}/api/health"
+            }
+          else
+            health_url() { echo "http://localhost:5670/api/health"; }
+          fi
+          url="$(health_url)"
+          echo "polling ${url}"
           for i in $(seq 1 45); do
-            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5670/api/health || true)"
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$url" || true)"
             if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
             sleep 2
           done

@@ -11,7 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from compliance_face.phases import PHASES, advance, current_progress
+from compliance_face.phases import PHASES
+from compliance_face.phases import advance
+from compliance_face.phases import current_progress
 
 TASKS_PATH = Path(__file__).resolve().parents[1] / "compliance_face" / "tasks.py"
 
