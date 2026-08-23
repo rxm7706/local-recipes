@@ -10,7 +10,6 @@ from pathlib import Path
 
 from celery import shared_task
 from django.conf import settings
-from pyforge.warden.cli import main as warden_main
 
 from .models import ComplianceJob
 from .phases import PHASES
@@ -97,6 +96,10 @@ def run_compliance_job(self, job_id: str) -> str:
 
 def _run_warden_engines(target: Path) -> tuple[str, str]:
     """Call EXISTING warden CLI scan — never reimplement analyzers."""
+    # Lazy: platform host must import without pyforge installed (Story 10.1
+    # boundary; Django check/migrate run in the platform-only env).
+    from pyforge.warden.cli import main as warden_main  # noqa: PLC0415
+
     out = io.StringIO()
     err = io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
