@@ -137,6 +137,9 @@ def test_adopt_parser_defaults(tmp_path):
     assert args.agents is None
     assert args.skip is None
     assert args.force is False
+    assert args.dry_run is False
+    assert args.json is False
+    assert args.quiet is False
     assert args.handler is seed_cli.run_adopt
 
 

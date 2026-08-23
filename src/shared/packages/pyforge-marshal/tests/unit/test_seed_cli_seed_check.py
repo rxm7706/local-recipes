@@ -103,6 +103,7 @@ def test_check_parser_defaults(tmp_path):
     assert args.repo_root is None
     assert args.strict is False
     assert args.json is False
+    assert args.quiet is False
     assert args.handler is seed_cli.run_check
 
 
@@ -110,12 +111,13 @@ def test_check_parser_wires_the_expected_flags(tmp_path):
     parser = _build_parser()
 
     args = parser.parse_args(
-        ["seed", "check", "--repo-root", str(tmp_path), "--strict", "--json"]
+        ["seed", "check", "--repo-root", str(tmp_path), "--strict", "--json", "--quiet"]
     )
 
     assert args.repo_root == str(tmp_path)
     assert args.strict is True
     assert args.json is True
+    assert args.quiet is True
 
 
 # --- exit code 0 ------------------------------------------------------
@@ -204,8 +206,11 @@ def test_json_flag_emits_valid_json_to_stdout(clean_repo, capsys):
     seed_cli.run_check(_args(repo_root=str(clean_repo), json_flag=True), manifest=manifest)
 
     payload = json.loads(capsys.readouterr().out)
-    assert list(payload.keys()) == ["strict", "findings", "model_version", "failing"]
-    assert payload["failing"] is True
+    assert list(payload.keys()) == ["verb", "ok", "result"]
+    assert payload["verb"] == "check"
+    assert payload["ok"] is True
+    assert list(payload["result"].keys()) == ["strict", "findings", "model_version", "failing"]
+    assert payload["result"]["failing"] is True
 
 
 def test_json_flag_is_honored_on_the_usage_error_path(tmp_path, capsys):

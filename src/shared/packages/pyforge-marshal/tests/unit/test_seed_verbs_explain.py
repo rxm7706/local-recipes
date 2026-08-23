@@ -126,7 +126,9 @@ def test_explain_cli_json_flag(capsys):
 
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["artifact_id"] == "whole"
+    assert payload["verb"] == "explain"
+    assert payload["ok"] is True
+    assert payload["result"]["artifact_id"] == "whole"
 
 
 def test_explain_cli_unknown_exits_usage_error(capsys):
