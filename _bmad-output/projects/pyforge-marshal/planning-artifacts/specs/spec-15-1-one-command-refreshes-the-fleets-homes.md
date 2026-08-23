@@ -2,7 +2,7 @@
 title: One command refreshes the fleet's homes
 type: feature
 created: '2026-08-23'
-status: in-review
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -49,3 +49,5 @@ Status: in-review
 Verification: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 5743 passed, 12 deselected.
 Changed: `marshal refresh` CLI; `VcsPort.commits_behind`; `core/refresh` step types; `slug_from_loop_branch`; MRS-REFRESH-001..007.
 Note: a peer agent briefly collided on this worktree then HALTed; this run completed implementation + verification.
+
+Merged as 2894da04f4ced7544128a67f53af1571443d7402 (PR #655).
