@@ -2,7 +2,7 @@
 title: The pin fan-out is enumerated, not discovered by red tests
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -43,3 +43,10 @@ baseline_revision: ed2b1fe6c05d1ef870d452b757f82fd53ae39aed
 - `pixi run --frozen -e pyforge-steward pytest …` green
 - Fixture enumerates expected sites with moved/not-moved
 - CI: detectors, linter, package tests
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/670
+Merge SHA: b9f1000a671c94266a72d487b2b10ae0935752d1
+Tests: 33 upgrade unit tests passed; CI green on #670
