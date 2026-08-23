@@ -24,7 +24,9 @@ class ComplianceJob(models.Model):
     storage_key = models.CharField(max_length=512)
     original_name = models.CharField(max_length=255)
     status = models.CharField(
-        max_length=16, choices=Status.choices, default=Status.PENDING,
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
     )
     phase_index = models.PositiveSmallIntegerField(default=0)
     error = models.TextField(blank=True, default="")
@@ -35,3 +37,6 @@ class ComplianceJob(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.original_name} ({self.status})"

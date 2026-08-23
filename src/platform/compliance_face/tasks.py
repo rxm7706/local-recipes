@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import logging
 import tempfile
 from pathlib import Path
@@ -26,13 +28,36 @@ SUPPORTED_SUFFIXES = frozenset(
     },
 )
 
+_WELL_KNOWN_MANIFEST_NAMES = frozenset(
+    {
+        "requirements.txt",
+        "environment.yaml",
+        "pixi.toml",
+        "pyproject.toml",
+        "pixi.lock",
+        "conda-lock.yml",
+    },
+)
+
 
 def _blob_path(storage_key: str) -> Path:
     root = Path(getattr(settings, "COMPLIANCE_FACE_BLOB_ROOT", tempfile.gettempdir()))
     path = (root / storage_key).resolve()
     if not str(path).startswith(str(root.resolve())):
-        raise ValueError("storage_key escapes blob root")
+        msg = "storage_key escapes blob root"
+        raise ValueError(msg)
     return path
+
+
+def _validate_manifest_blob(path: Path, storage_key: str) -> None:
+    if not path.is_file():
+        msg = f"missing blob for key {storage_key}"
+        raise FileNotFoundError(msg)
+    if path.suffix.lower() not in SUPPORTED_SUFFIXES and path.name not in (
+        _WELL_KNOWN_MANIFEST_NAMES
+    ):
+        msg = f"unsupported manifest: {path.name}"
+        raise ValueError(msg)
 
 
 @shared_task(bind=True, name="compliance_face.run_job")
@@ -44,27 +69,9 @@ def run_compliance_job(self, job_id: str) -> str:
     try:
         advance(job, "validate")
         path = _blob_path(job.storage_key)
-        if not path.is_file():
-            raise FileNotFoundError(f"missing blob for key {job.storage_key}")
-        if path.suffix.lower() not in SUPPORTED_SUFFIXES and path.name not in {
-            "requirements.txt",
-            "environment.yaml",
-            "pixi.toml",
-            "pyproject.toml",
-        }:
-            # Still allow well-known basenames.
-            if path.name not in {
-                "requirements.txt",
-                "environment.yaml",
-                "pixi.toml",
-                "pyproject.toml",
-                "pixi.lock",
-                "conda-lock.yml",
-            }:
-                raise ValueError(f"unsupported manifest: {path.name}")
+        _validate_manifest_blob(path, job.storage_key)
 
         advance(job, "materialize")
-        # Scan target: parent dir containing the blob (warden discovers manifests).
         target = path.parent
         advance(job, "scan")
         report_json, sbom_json = _run_warden_engines(target)
@@ -89,10 +96,9 @@ def run_compliance_job(self, job_id: str) -> str:
 
 def _run_warden_engines(target: Path) -> tuple[str, str]:
     """Call EXISTING warden CLI scan — never reimplement analyzers."""
-    import contextlib
-    import io
-
-    from pyforge.warden.cli import main as warden_main
+    # Lazy: platform host must import without pyforge installed (Story 10.1
+    # boundary; Django check/migrate run in the platform-only env).
+    from pyforge.warden.cli import main as warden_main  # noqa: PLC0415
 
     out = io.StringIO()
     err = io.StringIO()
@@ -100,19 +106,9 @@ def _run_warden_engines(target: Path) -> tuple[str, str]:
         code = warden_main(["scan", str(target), "--format", "json"])
     report_json = out.getvalue().strip() or "{}"
     if code not in (0, 1, 2):
-        raise RuntimeError(f"warden scan exited {code}: {err.getvalue()[:500]}")
-    # SBOM: best-effort second pass via library if report parsed.
-    sbom_json = "{}"
-    try:
-        from pyforge.warden.report import ComplianceReport
-        from pyforge.warden.sbom import render_cyclonedx
-
-        # Re-scan via library internals is out of scope; leave empty SBOM
-        # when CLI-only path is used. Story 8.2 accepts CLI report bytes.
-        _ = (ComplianceReport, render_cyclonedx)
-    except Exception:  # noqa: BLE001
-        pass
-    return report_json, sbom_json
+        msg = f"warden scan exited {code}: {err.getvalue()[:500]}"
+        raise RuntimeError(msg)
+    return report_json, "{}"
 
 
 _ = PHASES
