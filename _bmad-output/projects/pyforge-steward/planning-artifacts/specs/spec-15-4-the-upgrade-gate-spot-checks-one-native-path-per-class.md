@@ -2,12 +2,34 @@
 title: The upgrade gate spot-checks one native path per class
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context: []
 warnings: []
-baseline_revision: b28dde1f7d
+baseline_revision: 9f32ca77067f8e9f49708a8d396367b26f51dabb
+deferred:
+  - summary: >-
+      Live prove-landed may still hit the network / warm caches when running
+      cited npx/uv spot-checks even with --help/--dry-run.
+    evidence: |-
+      Story 15.4 deliberately invokes native CLIs; side effects are inherent
+      to the AC. Failures remain advisory.
+    location: >-
+      src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py
+    severity: medium
+  - summary: >-
+      skip_native_spot_checks exists on build_prove_landed_report but has no
+      CLI flag.
+    evidence: |-
+      Not required by CAP-4 AC.
+    severity: low
+  - summary: >-
+      _BMAD_LOOP_UV_GIT_SPEC hard-pins v0.11.0 with no regeneration note when
+      the matrix version moves.
+    evidence: |-
+      Citation substring test catches matrix edit drift after the fact.
+    severity: low
 ---
 
 <intent-contract>
@@ -34,12 +56,19 @@ baseline_revision: b28dde1f7d
 
 ## Code Map
 
-- install-matrix under steward bmad-suite-channel-product planning artifacts
-- Epic 14 CAP-5 / `steward upgrade prove-landed` orbit
-- Unit/fixture tests for per-class spot-check + dashboard doc-only path
+- `install-matrix.md` under steward `spec-bmad-suite-channel-product`
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py` — CAP-5 prove-landed + advisory native spot-checks
+- `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py`
 
 ## Verification
 
-- `pixi run --frozen -e pyforge-steward pytest …` green
-- Fixture covers seven classes; dashboards doc-only
+- `pixi run --frozen -e pyforge-steward pytest …/test_upgrade_native_path_spot_checks.py …/test_upgrade_prove_landed.py -q` — 14 passed
+- Fixture covers seven classes; dashboards doc-only; advisory fail keeps CLI EXIT_OK
 - CI: detectors, linter, package tests
+
+## Auto Run Result
+
+Status: done
+
+### Summary
+CAP-5 prove-landed now advisory-spot-checks one cited native path per install-matrix class (dashboards check-by-doc only). Spot-check failures do not flip verdict/DutyResult.ok.
