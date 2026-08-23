@@ -89,8 +89,8 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 
 # ---- pip layer: Django-host production extras the pixi env doesn't cover ----
 # `pip install --no-deps` into the SAME pixi-materialized interpreter (never
-# a second venv) -- generated from the union of requirements/base.txt +
-# requirements/production.txt (the same files `pip install -r
+# a second venv) -- generated from [feature.platform-image-pip.pypi-dependencies] in
+# pixi.toml via scripts/platform_image_pip_layer.py (steward Story 16.1; was `pip install -r
 # production.txt` would resolve, since production.txt's own `-r base.txt`
 # line is a nested include), filtered down by EXCLUDING every package line
 # this pixi env ALREADY CONDA-SOURCES.
@@ -134,7 +134,7 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # pip layer at their pinned versions.
 #
 # ONE PIP PIN HAD TO BE RAISED, NOT JUST KEPT: `uvicorn-worker`.
-# `requirements/base.txt` pins `uvicorn-worker==0.3.0`, whose
+# `[feature.platform-ci-test]` pins `uvicorn-worker==0.3.0`, whose
 # `init_process()` calls `uvicorn.Config.setup_event_loop()` -- a method
 # REMOVED in uvicorn 0.36.0. Against this env's conda `uvicorn 0.52.3` that
 # is a hard boot failure, not a warning: gunicorn's worker dies with
@@ -179,7 +179,7 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # `[=<>~!\[]` list) also avoids the POSIX bracket-expression ambiguity of a
 # literal `[` inside a character class.
 #
-# EIGHT EXTRA PACKAGES, not in requirements/base.txt or production.txt:
+# IMAGE-ONLY TRANSITIVE PINS (owned by [feature.platform-image-pip], not the CI test feature):
 # `django-timezone-field`, `python-crontab`, `cron-descriptor`,
 # `django-appconf`, `rjsmin`, `text-unidecode`, `fido2`, `qrcode`. (A ninth
 # explicit line, `uvicorn-worker==0.4.0`, is NOT one of these -- it is a
@@ -192,7 +192,7 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # one has to be named explicitly or Django's own app-loading fails at
 # import time. Not discovered by guesswork: computed by diffing the FULL
 # 74-package closure of `pip install --dry-run --ignore-installed --report=-
-# -r requirements/production.txt` (pip's own resolver, asked to plan the
+# the retired requirements/production.txt` (pip's own resolver, asked to plan the
 # install as if nothing were present) against what this image's conda env +
 # this pip layer's normal set already provide -- confirmed live, exactly 5
 # names were absent from both sides (the other 3 below were found first,
@@ -204,7 +204,7 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 #     pin, both already satisfied).
 #   - `text-unidecode`==1.3 -- python-slugify's dep.
 #   - `fido2`==2.2.1, `qrcode`==8.2 -- django-allauth's `[mfa]`
-#     extra (`requirements/base.txt` pins `django-allauth[mfa]==65.10.0`,
+#     extra (`[feature.platform-ci-test]` pins `django-allauth[mfa]==65.10.0`,
 #     and `"allauth.mfa"` is a real `INSTALLED_APPS` entry --
 #     `config/settings/base.py` -- so these are not optional here).
 #   - `django-timezone-field`==7.2.2, `python-crontab`==3.3.0,
@@ -245,10 +245,10 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # SUBSTITUTION (psycopg 3 -> psycopg 2), mandated by the spec's own
 # Boundaries & Constraints and by "the Python layer is exactly the pixi env";
 # Django's `postgresql` backend fully supports both, but the image therefore
-# runs a different major driver than `requirements/production.txt` pins and
+# runs a different major driver than the former production requirements pins and
 # than the `test` job exercises. THE GAP, STATED HERE RATHER THAN BY
 # REFERENCE: no test anywhere exercises the container's actual driver --
-# `platform-ci.yml`'s `test` job installs `requirements/local.txt`, so every
+# `platform-ci.yml`'s `test` job installs `[feature.platform-ci-test]`, so every
 # ORM assertion in the repo runs against psycopg 3, never the psycopg2 this
 # image ships. Not a known defect (both drivers are fully supported by
 # Django's `postgresql` backend), but untested. It is also carried as a
@@ -274,14 +274,11 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # status would be tee's, and a genuinely failing `pip install` would pass.
 RUN bash -c "set -o pipefail \
     && source /app/shell-hook.sh \
-    && grep -hE '^[A-Za-z]' /app/src/platform/requirements/base.txt /app/src/platform/requirements/production.txt \
-       | grep -viE '^(django|psycopg|fastapi|django-health-check|redis|pillow|celery|uvicorn|gunicorn|argon2-cffi|uvicorn-worker)[^A-Za-z0-9._-]' \
-       > /tmp/platform-pip-layer.txt \
-    && printf 'django-timezone-field==7.2.2\npython-crontab==3.3.0\ncron-descriptor==2.1.0\ndjango-appconf==1.2.0\nrjsmin==1.2.2\ntext-unidecode==1.3\nfido2==2.2.1\nqrcode==8.2\nuvicorn-worker==0.4.0\n' >> /tmp/platform-pip-layer.txt \
+    && python3 /app/scripts/platform_image_pip_layer.py > /tmp/platform-pip-layer.txt \
     && python3 -m pip install --no-cache-dir --no-deps -r /tmp/platform-pip-layer.txt 2>&1 | tee /tmp/platform-pip-layer.log \
     && if grep -q 'Attempting uninstall:' /tmp/platform-pip-layer.log; then \
          echo 'ERROR: the pip layer displaced a package the conda env already provides.'; \
-         echo 'ERROR: the exclusion alternation above is stale -- re-derive it from pixi.lock.'; \
+         echo 'ERROR: [feature.platform-image-pip] overlaps the conda env -- re-derive exclusions from pixi.lock.'; \
          grep -A2 'Attempting uninstall:' /tmp/platform-pip-layer.log; \
          exit 1; \
        fi \

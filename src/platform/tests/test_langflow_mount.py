@@ -9,7 +9,7 @@ stays on the platform's own stub, and everything else still falls through
 to Django.
 
 Requires the `langflow` package (the `python-agent-platform` conda env, not
-the pip-only `requirements/local.txt` the CI `test` job installs -- Langflow
+the pixi env `platform-ci-test` the CI `test` job installs -- Langflow
 is factory-sourced conda-only, CAP-5) plus a real, reachable `DATABASE_URL`/
 `REDIS_URL`: `langflow_integration.asgi` builds Langflow's app at import
 time, and `create_app()` constructs its settings service (validating

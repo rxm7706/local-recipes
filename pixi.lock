@@ -8201,6 +8201,91 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - conda_source: pyforge-core[b4be983e] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[b2035984] @ src/shared/packages/pyforge-steward
+  platform-image-pip:
+    channels:
+    - url: https://conda.anaconda.org/conda-forge/
+    - url: https://conda.anaconda.org/SelfExplainML/
+    indexes:
+    - https://pypi.org/simple
+    packages:
+      linux-64:
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-py310h44b86e0_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/ld_impl_linux-64-2.46.1-default_hbd61a6d_102.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libexpat-2.8.1-hecca717_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libffi-3.7.0-h3435931_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libgcc-16.1.0-ha9f2e26_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libgomp-16.1.0-he0feb66_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/liblzma-5.8.3-hb03c661_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libnsl-2.0.1-hb9d3cd8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.53.4-h13e7031_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-16.1.0-h934c35e_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.2-h5347b49_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libxcrypt-4.4.38-h280c20c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.3-h35e630c_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/python-3.12.14-h8ab3286_0_cpython.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-hd6e31c0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_7.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+      - pypi: https://files.pythonhosted.org/packages/00/d9/ac374a1f7a432230cdf4d2ffbe957fd0d4d5d6426bf4d5c17f382b0801c4/django_compressor-4.5.1-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/03/ff/7c0c86c43b3cbb927e0ccc0255cb4057ceba4799cd44ae95174ce8e8b5b2/vine-5.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/0d/41/c476c41cb88dbbba83e0685dd331b9d32599f1e4a94ca223b02437a3d83b/cron_descriptor-2.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/19/dc/7a55fc605543fd5cb11c003fbbb21a1911d5e88a582cce6c5e063bf5c176/gunicorn-26.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/1b/5b/974430b5ffdb7a4f1941d13d83c64a0395114503cc357c6b9ae4ce5047ed/click_didyoumean-0.3.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/1d/ec/a25f81e56a674e63cf6c3dd8e36b1b3fecc238fecd6098504adc0cc61402/django_crispy_forms-2.4-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/26/99/fc813cd978842c26c82534010ea849eee9ab3a13ea2b74e95cb9c99e747b/amqp-5.3.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/2b/5f/c8dfb67105c4ef391a3e9d0bcd35b7eae4c4c9d023d612c3999ae1cb32ef/django_timezone_field-7.2.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/3d/9a/2abecb28ae875e39c8cad711eb1186d8d14eab564705325e77e4e6ab9ae5/click_plugins-1.1.1.2-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/47/42/bb4afa5b088f64092036221843fc989b7db9d9d302494c1f8b024ee78a46/python_crontab-3.3.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/52/40/9d857001228658f0d59e97ebd4c346fe73e138c6de1bce61dc568a57c7f8/click_repl-0.3.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/54/6f/84908cad2d6aa5144abcf7b42709fe4fdb459bc640ec7ac5786e7693dabc/prompt_toolkit-3.0.53-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/57/86/e7b0c5f295a6f031fa852380f70d5c6c1108a2d32d26a3f34a2d459a5dd4/rcssmin-1.1.2-cp312-cp312-manylinux1_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/57/b0/0e52c878c53f245edd3a11020f20979b3f490f245af532c7cae3027754b5/idna-3.19-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/61/e5/3a0167044773dee989b498e9a851fc1663bea9ab879f1179f7b8a827ac10/django_celery_beat-2.8.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/64/b2/2ce9263149fbde9701d352bda24ea1362c154e196d2fda2201f18fc585d7/whitenoise-6.9.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/65/25/83a31420535e2778662caa95533d5c997011fa6a88331f0cdb22afea9ec3/hiredis-3.2.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/66/9d/c5731f6e3608663d4d3656fd8d3aecee8b509c3082818f5a13eae925baea/redis-8.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/6b/72/a1116d683a6d7ece94590013882515de087edf9ef0e6292aae615a44df73/cryptography-50.0.0-cp311-abi3-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/6f/89/bb5108dc6c3651dca963f2b0a3ba19bbcb370c94e1b6d3e0e844a58e6dca/charset_normalizer-3.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/71/84/198d99c3312557ef6121cf78c38281efe9b3bc88cba0e2c05446f38a024d/fido2-2.2.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/79/055dfcc508cfe9f439d9f453741188d633efa9eab90fc78a67b0ab50b137/django_redis-6.0.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/83/b3/0a3bec4ecbfee960f39b1842c2f91e4754251e0a6ed443db9fe3f666ba8f/django_environ-0.12.0-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/90/25/09cd7a90c8bb7fb693be0d6704fccd5f9778d5513214b7a01cc4a94ff314/uvicorn_worker-0.4.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/96/42/3e5985a0a7e57de470b320c6d6a1a67c844f6737a587f3d44dd13d1819e7/wcwidth-0.8.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/9e/a4/017a7a6cbe387d961a688ec31364ae60a5c4e22c96ae9921b79a947c855d/tzlocal-5.4.4-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/a4/62/02da182e544a51a5c3ccf4b03ab79df279f9c60c5e82d5e8bec7ca26ac11/python_slugify-8.0.4-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/a6/a5/c0b6468d3824fe3fde30dbb5e1f687b291608f9473681bbf7dabbf5a87d7/text_unidecode-1.3-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b1/db/dceb9dd5b231e1da801793f8acc9f3c52a7e1afe40bb1aae37e02b0faad5/cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/c0/1b/54f4ad77cd8a584fa70746c47df988e002cf1ee1eba43364d46f87803647/asgiref-3.12.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/c9/4d/461912648ebd16d1c5c42eba3f8320671daa3a3913a8bcb0e27c0ba675e8/django_anymail-13.0.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/cb/87/8bab77b323f16d67be364031220069f79159117dd5e43eeb4be2fef1ac9b/billiard-4.2.4-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/cf/c9/6eccdda96e098f7ae843162db2d3c149c6931a24fda69fe4ab84d0027eb5/celery-5.6.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d3/61/c71a1843d22378c10cb2bb528efadbf0bc3f3f99c6bd8cadcfa7b03a439b/rjsmin-1.2.2-cp312-cp312-manylinux1_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/d8/d4/8cf1ba773a91fc17bab1fd46b75bbdef780c4cccbbb8230e617980a0362c/crispy_bootstrap5-2025.6-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d9/50/f00935da0ec7cbf325f8dc4f772ae46fbc7b672dd62876e73f0a94adda57/sqlparse-0.6.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/df/f8/ce120525ca78f12b07daf65786679c5d0b54a75285a8958d3ae55e39da35/django-5.2.17-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e1/9e/271e3b8ea27c089ddf3431140cf4aa86df86556ec102e360da5af62c3a99/django_allauth-65.10.0.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/e5/6d/b53b99a9f2766d095985947a5782f1702cabb129a34f7a802d7197af832f/tzdata-2026.3-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e8/e6/4c34d94dfb74bbcbc489606e61f1924933de30d22c593dd1f429f35fbd7f/django_appconf-1.2.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/f1/79/4a20b54ab0491485ccd8c077db2d39187c7f12b3e15485d38a7be37c81b4/uvicorn-0.52.4-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/fb/0f/834427d8c03ff1d7e867d3db3d176470c64871753252b21b4f4897d1fa45/kombu-5.6.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/fb/e2/79c688af8b210d232694e31e59da9f6ec747bae31c3f5946e4e9b98860d5/click-8.4.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/fd/13/87a42048700c54bfce35900a34e2031245132775fb24363fc0e33664aa9c/django_model_utils-5.0.0-py3-none-any.whl
   pyforge-atlas:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -57898,6 +57983,28 @@ packages:
   version: 4.11.3
   sha256: 5ed065d443751de711da036041a7a214122efc4a4de393b3f4137ba5576540e7
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/19/dc/7a55fc605543fd5cb11c003fbbb21a1911d5e88a582cce6c5e063bf5c176/gunicorn-26.1.0-py3-none-any.whl
+  name: gunicorn
+  version: 26.1.0
+  sha256: 9f45bcddec5e9dc7a25a3bdccb0c6832f11fd5d4739b1ee36c8d2fec25f1dc86
+  requires_dist:
+  - gevent>=24.10.1 ; extra == 'gevent'
+  - packaging ; extra == 'gevent'
+  - tornado>=6.5.7 ; extra == 'tornado'
+  - setproctitle ; extra == 'setproctitle'
+  - h2>=4.4.1 ; extra == 'http2'
+  - gunicorn-h1c>=0.6.6 ; extra == 'fast'
+  - gevent>=24.10.1 ; extra == 'testing'
+  - h2>=4.4.1 ; extra == 'testing'
+  - coverage ; extra == 'testing'
+  - packaging ; extra == 'testing'
+  - pytest>=9.0.3 ; extra == 'testing'
+  - pytest-cov ; extra == 'testing'
+  - pytest-asyncio ; extra == 'testing'
+  - uvloop>=0.19.0 ; extra == 'testing'
+  - httpx[http2]>=0.23.0 ; extra == 'testing'
+  - inotify>=0.2.10 ; sys_platform == 'linux' and extra == 'testing'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/1b/5b/974430b5ffdb7a4f1941d13d83c64a0395114503cc357c6b9ae4ce5047ed/click_didyoumean-0.3.1-py3-none-any.whl
   name: click-didyoumean
   version: 0.3.1
@@ -58383,6 +58490,23 @@ packages:
   version: 3.2.1
   sha256: 1252e10a1f3273d1c6bf2021e461652c2e11b05b83e0915d6eb540ec7539afe2
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/66/9d/c5731f6e3608663d4d3656fd8d3aecee8b509c3082818f5a13eae925baea/redis-8.1.0-py3-none-any.whl
+  name: redis
+  version: 8.1.0
+  sha256: a4fe1aac3d3b3cc791d4b3d5931c5a956045dc951ee74d1c913ee3ac4d2ee9fb
+  requires_dist:
+  - async-timeout>=4.0.3 ; python_full_version < '3.11.3'
+  - pybreaker>=1.4.0 ; extra == 'circuit-breaker'
+  - hiredis>=3.2.0 ; extra == 'hiredis'
+  - pyjwt>=2.13.0 ; extra == 'jwt'
+  - cryptography>=36.0.1 ; extra == 'ocsp'
+  - pyopenssl>=20.0.1 ; extra == 'ocsp'
+  - requests>=2.31.0 ; extra == 'ocsp'
+  - opentelemetry-api>=1.39.1 ; extra == 'otel'
+  - opentelemetry-exporter-otlp-proto-http>=1.39.1 ; extra == 'otel'
+  - opentelemetry-sdk>=1.39.1 ; extra == 'otel'
+  - xxhash~=3.6.0 ; extra == 'xxhash'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl
   name: typing-inspection
   version: 0.4.4
@@ -58651,6 +58775,14 @@ packages:
   version: 0.21.2
   sha256: dafca5b9e384f0e419294eb4d2ff9fa826435bf15f15b7bd45723e8ad76811b2
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/90/25/09cd7a90c8bb7fb693be0d6704fccd5f9778d5513214b7a01cc4a94ff314/uvicorn_worker-0.4.0-py3-none-any.whl
+  name: uvicorn-worker
+  version: 0.4.0
+  sha256: e2ed952cef976f5e9e429d7269640bbcafbd36c80aa80f1003c8c77a6797abde
+  requires_dist:
+  - gunicorn>=21.0.0
+  - uvicorn>=0.36.0
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/92/fb/889f1b69da2f13691de09a111c16c4766a433382d44aa0ecf221deded44a/pytest_sugar-1.0.0-py3-none-any.whl
   name: pytest-sugar
   version: 1.0.0
@@ -58746,6 +58878,20 @@ packages:
   sha256: a52e88663fc1d415a2b1e365fb50697b00f0bbbc4716ff0f3380ee6198b9d6ce
   requires_dist:
   - fastmcp>=0.3
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/9e/a4/017a7a6cbe387d961a688ec31364ae60a5c4e22c96ae9921b79a947c855d/tzlocal-5.4.4-py3-none-any.whl
+  name: tzlocal
+  version: 5.4.4
+  sha256: aae09f0126a8a86fa736be266eb4a471380d26a0de3bc14844e7821fee3e2a15
+  requires_dist:
+  - tzdata ; sys_platform == 'win32'
+  - pytest>=4.3 ; extra == 'testing'
+  - pytest-mock>=3.3 ; extra == 'testing'
+  - pytest-cov ; extra == 'testing'
+  - check-manifest ; extra == 'testing'
+  - pyroma ; extra == 'testing'
+  - ruff ; extra == 'testing'
+  - zest-releaser ; extra == 'devenv'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/9e/c3/059298687310d527a58bb01f3b1965787ee3b40dce76752eda8b44e9a2c5/pexpect-4.9.0-py2.py3-none-any.whl
   name: pexpect
@@ -59158,6 +59304,65 @@ packages:
   version: 2.3.0
   sha256: f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/cf/c9/6eccdda96e098f7ae843162db2d3c149c6931a24fda69fe4ab84d0027eb5/celery-5.6.3-py3-none-any.whl
+  name: celery
+  version: 5.6.3
+  sha256: 0808f42f80909c4d5833202360ffafb2a4f83f4d8e23e1285d926610e9a7afa6
+  requires_dist:
+  - billiard>=4.2.1,<5.0
+  - kombu>=5.6.0
+  - vine>=5.1.0,<6.0
+  - click>=8.1.2,<9.0
+  - click-didyoumean>=0.3.0
+  - click-repl>=0.2.0
+  - click-plugins>=1.1.1
+  - python-dateutil>=2.8.2
+  - exceptiongroup>=1.3.0 ; python_full_version < '3.11'
+  - tzlocal
+  - pyarango>=2.0.2 ; extra == 'arangodb'
+  - cryptography==46.0.5 ; extra == 'auth'
+  - azure-storage-blob>=12.15.0 ; extra == 'azureblockblob'
+  - azure-identity>=1.19.0 ; extra == 'azureblockblob'
+  - brotlipy>=0.7.0 ; platform_python_implementation == 'PyPy' and extra == 'brotli'
+  - brotli>=1.0.0 ; platform_python_implementation == 'CPython' and extra == 'brotli'
+  - cassandra-driver>=3.25.0,<4 ; extra == 'cassandra'
+  - python-consul2==0.1.5 ; extra == 'consul'
+  - pydocumentdb==2.3.5 ; extra == 'cosmosdbsql'
+  - couchbase>=3.0.0 ; (python_full_version < '3.10' and platform_python_implementation != 'PyPy' and extra == 'couchbase') or (platform_python_implementation != 'PyPy' and sys_platform != 'win32' and extra == 'couchbase')
+  - pycouchdb==1.16.0 ; extra == 'couchdb'
+  - django>=2.2.28 ; extra == 'django'
+  - boto3>=1.26.143 ; extra == 'dynamodb'
+  - elasticsearch<=9.3.0 ; extra == 'elasticsearch'
+  - elastic-transport<=9.2.1 ; extra == 'elasticsearch'
+  - eventlet>=0.32.0 ; python_full_version < '3.10' and extra == 'eventlet'
+  - gevent>=1.5.0 ; extra == 'gevent'
+  - google-cloud-storage>=2.10.0 ; extra == 'gcs'
+  - grpcio==1.76.0 ; extra == 'gcs'
+  - google-cloud-firestore==2.23.0 ; extra == 'gcs'
+  - librabbitmq>=2.0.0 ; python_full_version < '3.11' and extra == 'librabbitmq'
+  - pylibmc==1.6.3 ; sys_platform != 'win32' and extra == 'memcache'
+  - kombu[mongodb] ; extra == 'mongodb'
+  - kombu[msgpack] ; extra == 'msgpack'
+  - python-memcached>=1.61 ; extra == 'pymemcache'
+  - pydantic>=2.4 ; python_full_version < '3.14' and extra == 'pydantic'
+  - pydantic>=2.12.0a1 ; python_full_version >= '3.14' and extra == 'pydantic'
+  - pyro4==4.82 ; python_full_version < '3.11' and extra == 'pyro'
+  - pytest-celery[all]>=1.3.0 ; extra == 'pytest'
+  - kombu[redis] ; extra == 'redis'
+  - boto3>=1.26.143 ; extra == 's3'
+  - softlayer-messaging>=1.0.3 ; extra == 'slmq'
+  - ephem==4.2 ; platform_python_implementation != 'PyPy' and extra == 'solar'
+  - kombu[sqlalchemy] ; extra == 'sqlalchemy'
+  - boto3>=1.26.143 ; extra == 'sqs'
+  - pycurl>=7.43.0.5,<7.45.4 ; python_full_version < '3.9' and platform_python_implementation == 'CPython' and sys_platform != 'win32' and extra == 'sqs'
+  - pycurl>=7.45.4 ; python_full_version >= '3.9' and platform_python_implementation == 'CPython' and sys_platform != 'win32' and extra == 'sqs'
+  - urllib3>=1.26.16 ; extra == 'sqs'
+  - kombu[sqs]>=5.5.0 ; extra == 'sqs'
+  - tblib==3.2.2 ; extra == 'tblib'
+  - kombu[yaml] ; extra == 'yaml'
+  - kazoo>=1.3.1 ; extra == 'zookeeper'
+  - zstandard==0.23.0 ; extra == 'zstd'
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl
   name: colorama
   version: 0.4.6
@@ -59258,6 +59463,17 @@ packages:
   - pillow>=9.1.0 ; extra == 'all' or extra == 'pil'
   - pypng ; extra == 'all' or extra == 'png'
   requires_python: '>=3.9,<4.0'
+- pypi: https://files.pythonhosted.org/packages/df/f8/ce120525ca78f12b07daf65786679c5d0b54a75285a8958d3ae55e39da35/django-5.2.17-py3-none-any.whl
+  name: django
+  version: 5.2.17
+  sha256: f04fb3b36ee119e1af4fa1d397d5fd6cf12700f49321e84d4f4c642c5b1973db
+  requires_dist:
+  - asgiref>=3.8.1
+  - sqlparse>=0.3.1
+  - tzdata ; sys_platform == 'win32'
+  - argon2-cffi>=19.1.0 ; extra == 'argon2'
+  - bcrypt ; extra == 'bcrypt'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/e1/9e/271e3b8ea27c089ddf3431140cf4aa86df86556ec102e360da5af62c3a99/django_allauth-65.10.0.tar.gz
   name: django-allauth
   version: 65.10.0
@@ -59376,6 +59592,21 @@ packages:
   - python-consul2==0.1.5 ; extra == 'consul'
   - confluent-kafka>=2.2.0 ; extra == 'confluentkafka'
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/f1/79/4a20b54ab0491485ccd8c077db2d39187c7f12b3e15485d38a7be37c81b4/uvicorn-0.52.4-py3-none-any.whl
+  name: uvicorn
+  version: 0.52.4
+  sha256: f86e41a149d7d05a9969337e3946a9c171c06a5d42680896daaba624aeac8da1
+  requires_dist:
+  - click>=7.0
+  - h11>=0.8
+  - typing-extensions>=4.0 ; python_full_version < '3.11'
+  - httptools>=0.8.0 ; extra == 'standard'
+  - python-dotenv>=0.13 ; extra == 'standard'
+  - pyyaml>=5.1 ; extra == 'standard'
+  - uvloop>=0.15.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'cygwin' and sys_platform != 'win32' and extra == 'standard'
+  - watchfiles>=0.20 ; extra == 'standard'
+  - websockets>=13.0 ; extra == 'standard'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl
   name: stack-data
   version: 0.6.3
@@ -59427,6 +59658,39 @@ packages:
   requires_dist:
   - django>=4.2.9
   - sqlparse>=0.2
+  requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/fb/0f/834427d8c03ff1d7e867d3db3d176470c64871753252b21b4f4897d1fa45/kombu-5.6.2-py3-none-any.whl
+  name: kombu
+  version: 5.6.2
+  sha256: efcfc559da324d41d61ca311b0c64965ea35b4c55cc04ee36e55386145dace93
+  requires_dist:
+  - amqp>=5.1.1,<6.0.0
+  - vine==5.1.0
+  - tzdata>=2025.2
+  - packaging
+  - msgpack==1.1.2 ; extra == 'msgpack'
+  - pyyaml>=3.10 ; extra == 'yaml'
+  - redis>=4.5.2,!=4.5.5,!=5.0.2,<6.5 ; extra == 'redis'
+  - pymongo==4.15.3 ; extra == 'mongodb'
+  - boto3>=1.26.143 ; extra == 'sqs'
+  - pycurl>=7.43.0.5 ; platform_python_implementation == 'CPython' and sys_platform != 'win32' and extra == 'sqs'
+  - urllib3>=1.26.16 ; extra == 'sqs'
+  - google-cloud-pubsub>=2.18.4 ; extra == 'gcpubsub'
+  - google-cloud-monitoring>=2.16.0 ; extra == 'gcpubsub'
+  - grpcio==1.75.1 ; extra == 'gcpubsub'
+  - protobuf==6.32.1 ; extra == 'gcpubsub'
+  - kazoo>=2.8.0 ; extra == 'zookeeper'
+  - sqlalchemy>=1.4.48,<2.1 ; extra == 'sqlalchemy'
+  - librabbitmq>=2.0.0 ; python_full_version < '3.11' and extra == 'librabbitmq'
+  - pyro4==4.82 ; extra == 'pyro'
+  - softlayer-messaging>=1.0.3 ; extra == 'slmq'
+  - azure-storage-queue>=12.6.0 ; extra == 'azurestoragequeues'
+  - azure-identity>=1.12.0 ; extra == 'azurestoragequeues'
+  - azure-servicebus>=7.10.0 ; extra == 'azureservicebus'
+  - qpid-python==1.36.0.post1 ; extra == 'qpid'
+  - qpid-tools==1.36.0.post1 ; extra == 'qpid'
+  - python-consul2==0.1.5 ; extra == 'consul'
+  - confluent-kafka>=2.2.0 ; extra == 'confluentkafka'
   requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/fb/e2/79c688af8b210d232694e31e59da9f6ec747bae31c3f5946e4e9b98860d5/click-8.4.2-py3-none-any.whl
   name: click

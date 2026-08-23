@@ -1,7 +1,7 @@
 """Meta test -- Story 10.1 factory/platform import boundary.
 
 Invokes the real ``lint-imports`` CLI (import-linter, provisioned via
-``requirements/local.txt``) against this package's own ``pyproject.toml``
+``pixi env platform-ci-test``) against this package's own ``pyproject.toml``
 and asserts the ``forbidden`` contract barring ``pyforge`` imports is kept.
 Mirrors pyforge-marshal's AD-3/AD-4 precedent (``src/shared/packages/
 pyforge-marshal/tests/meta/test_ad3_ad4_import_linter.py``): makes the
@@ -29,7 +29,7 @@ def _strip_ansi(text: str) -> str:
 def test_lint_imports_passes_against_the_platform_host():
     if shutil.which("lint-imports") is None:
         pytest.fail(
-            "lint-imports not on PATH -- install requirements/local.txt "
+            "lint-imports not on PATH -- install pixi env platform-ci-test "
             "(provisions import-linter) before running this suite",
         )
     result = subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input

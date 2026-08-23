@@ -27,7 +27,7 @@ urlpatterns = [
     # ingress-layer concern owned by the deployment epic, not this one.
     #
     # Story 10.3: this app runs against TWO django-health-check versions --
-    # requirements/base.txt pins pip's `django-health-check==3.24.0` (used
+    # [feature.platform-ci-test] pins pip's `django-health-check==3.24.0` (used
     # by platform-ci.yml's `test` job) while pixi.toml's conda-sourced
     # `python-agent-platform` env pins `>=4.5.0` (used by the container
     # image `test`/`container` jobs and this Containerfile). 4.x has no
