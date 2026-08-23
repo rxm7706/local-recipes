@@ -60,6 +60,12 @@ name: Platform CI
 # Containerfile the way `scripts/container-gates` is) -- same rule as
 # every other entry in this list: a change to it can break the job while
 # leaving `src/platform/**` untouched, so it needs its own filter entry.
+#
+# P1 fan-in (2026-08-23): `build-platform-image` builds once for
+# gke-portability-smoke and air-gap-parity (Docker-only jobs). The
+# `container` job keeps TWO INDEPENDENT builds (spec 10.3): docker build
+# and podman build each solve the Containerfile on their own engine --
+# never load the shared artifact. container-dbgpt keeps its own build.
 
 # The two lists below are duplicated verbatim rather than shared via a YAML
 # anchor: GitHub Actions does not support YAML anchors/aliases in workflow
@@ -74,6 +80,7 @@ on:
       - '.dockerignore'
       - 'scripts/container-gates'
       - 'scripts/build-pixi-mirror.py'
+      - 'scripts/platform_ci_test_requirements_check.py'
       - 'src/shared/packages/pyforge-steward/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/platform/compose/dbgpt/**'
@@ -89,6 +96,7 @@ on:
       - '.dockerignore'
       - 'scripts/container-gates'
       - 'scripts/build-pixi-mirror.py'
+      - 'scripts/platform_ci_test_requirements_check.py'
       - 'src/shared/packages/pyforge-steward/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/platform/compose/dbgpt/**'
@@ -109,6 +117,9 @@ permissions:
 # Override on pull_request/push: set repo variable PLATFORM_TEST_BACKEND=pip.
 env:
   PLATFORM_TEST_BACKEND: ${{ github.event_name == 'workflow_dispatch' && inputs.platform_test_backend || vars.PLATFORM_TEST_BACKEND || 'pixi' }}
+  # Shared platform image tag from build-platform-image (gke + air-gap only;
+  # container runs independent docker/podman builds per spec 10.3).
+  PLATFORM_CI_IMAGE_REF: platform:ci-${{ github.sha }}
 
 concurrency:
   group: platform-ci-${{ github.ref }}
@@ -183,6 +194,31 @@ jobs:
       - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v
 
+  # P1 fan-in: one Docker build exported for gke-portability-smoke and
+  # air-gap-parity only. container runs independent docker + podman builds
+  # (spec 10.3 — both engines, both build paths).
+  build-platform-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      - name: Build platform image (once per workflow run)
+        run: docker build -f src/platform/Containerfile -t "${{ env.PLATFORM_CI_IMAGE_REF }}" .
+
+      - name: Export platform image for downstream jobs
+        run: docker save "${{ env.PLATFORM_CI_IMAGE_REF }}" | gzip -1 > platform-ci-image.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-ci-image
+          path: platform-ci-image.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
   # Story 10.3 ("One image, both engines"): builds + smoke-tests
   # `src/platform/Containerfile` under BOTH engines from the same file --
   # spec-python-agent-platform's own Constraints name this explicitly ("CI
@@ -211,12 +247,9 @@ jobs:
       matrix:
         engine: [docker, podman]
     runs-on: ubuntu-latest
-    # 45, not 20: a cold runner has no pixi package cache, and this build
-    # solves + downloads the 395-package `python-agent-platform` env, a
-    # SECOND build-time-only `pyforge-steward` env for the secrets-scan
-    # gate, a pip layer, and three static-asset passes -- all before the
-    # image export. A too-tight cap turns a slow-but-correct build into a
-    # cancelled job that reads exactly like a real regression.
+    # 45, not 20: each leg cold-builds the full Containerfile on its own
+    # engine (spec 10.3 — independent docker build + independent podman
+    # build; neither loads build-platform-image's artifact).
     timeout-minutes: 45
 
     steps:
@@ -717,16 +750,12 @@ jobs:
   # deliberately not duplicated here; a portability profile job is out of
   # scope for that second axis.
   #
-  # No `needs:` on `test`/`container`/`container-dbgpt` -- this job builds
-  # its own throwaway image from the same Containerfile rather than reusing
-  # one of theirs (those images are already torn down by the time this job
-  # would need one, and no artifact-passing wiring exists between jobs here).
+  # No `needs:` on `test`/`container-dbgpt` -- this job loads the shared
+  # platform image from build-platform-image rather than rebuilding it.
   gke-portability-smoke:
+    needs: build-platform-image
     runs-on: ubuntu-latest
-    # 45, matching `container`'s own budget: this job builds the exact same
-    # 395-package `python-agent-platform` image on a cold runner (no pixi
-    # package cache for THAT build -- it's a plain `docker build`, not a
-    # pixi-cached step) on top of kind cluster + ingress-nginx bring-up.
+    # kind + ingress + helm; image build happens in build-platform-image.
     timeout-minutes: 45
 
     steps:
@@ -765,6 +794,10 @@ jobs:
           sudo rm -rf /usr/local/share/boost || true
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: platform-ci-image
 
       # AD-16: helm and kubectl come from the `platform-dev` pixi
       # environment, never a system install -- mirrors `dashboard.yml`'s
@@ -828,28 +861,17 @@ jobs:
             --selector=app.kubernetes.io/component=controller \
             --timeout=300s
 
-      # Same Containerfile, same repo-root build context as `container`'s
-      # own build step -- no second image definition. Tagged away from
-      # `latest` deliberately: `_helpers.tpl`'s `platform.imagePullPolicy`
-      # forces `Always` whenever the EFFECTIVE tag is "latest", and a
-      # kind-loaded image has no registry behind it for that pull to reach
-      # -- the pod would sit in `ImagePullBackOff` forever (this story's own
-      # I/O & Edge-Case Matrix names this gotcha explicitly).
-      - name: Build the platform image (docker, non-latest tag)
-        run: docker build -f src/platform/Containerfile -t platform:gke-smoke .
-
-      # Belt-and-suspenders alongside the disk-reclaim step above: BuildKit
-      # retains the builder stage's OWN intermediate layers (a full second
-      # solve of the `python-agent-platform` pixi env, inside the container)
-      # in its build cache after the build finishes -- `platform:gke-smoke`
-      # itself is untouched (a tagged image, not cache) since `kind load`
-      # below needs it. This is exactly the disk `kind load` ran out of
-      # live (see the disk-reclaim step's comment) at the moment it needs
-      # headroom most, so free it right before that step, not after.
-      - name: Reclaim docker build cache
+      # Same Containerfile artifact as `container` / air-gap-parity -- loaded
+      # from build-platform-image, retagged away from `latest` deliberately:
+      # `_helpers.tpl`'s `platform.imagePullPolicy` forces `Always` whenever
+      # the EFFECTIVE tag is "latest", and a kind-loaded image has no registry
+      # behind it for that pull to reach -- the pod would sit in
+      # `ImagePullBackOff` forever (this story's own I/O & Edge-Case Matrix
+      # names this gotcha explicitly).
+      - name: Load shared platform image (retag for kind)
         run: |
-          docker builder prune -af
-          df -h /
+          gunzip -c platform-ci-image.tar.gz | docker load
+          docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" platform:gke-smoke
 
       # No registry push -- `kind load` sideloads the image directly into
       # every node's containerd, which is what makes the non-`latest` tag
@@ -973,10 +995,10 @@ jobs:
   # Single engine (Docker) only, same rationale as `gke-portability-smoke`:
   # a second network-egress axis (docker vs. podman) is out of scope here.
   #
-  # No `needs:` on any other job, for the same reason `gke-portability-
-  # smoke` has none: this job builds its own throwaway image rather than
-  # reusing one that's already been torn down by the time it would run.
+  # No `needs:` on test/container-dbgpt. Loads the shared platform image
+  # from build-platform-image (P1 fan-in) rather than rebuilding it.
   air-gap-parity:
+    needs: build-platform-image
     runs-on: ubuntu-latest
     # 60: mirror build (428 conda packages, network-limited) plus the same
     # 395-package image `gke-portability-smoke` builds, minus ingress-nginx
@@ -1035,6 +1057,10 @@ jobs:
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: platform-ci-image
+
       # AD-16: helm and kubectl come from the `platform-dev` pixi
       # environment, never a system install -- identical usage to
       # `gke-portability-smoke`'s own step. This FIRST install runs with
@@ -1066,34 +1092,16 @@ jobs:
       - name: Create kind cluster
         run: kind create cluster --name air-gap-smoke --wait 90s
 
-      # Same Containerfile, same repo-root build context as `container`'s
-      # and `gke-portability-smoke`'s own build steps -- no second image
-      # definition. Network still on: the Containerfile's pip-install layer
-      # and its build-time-only `pyforge-steward` secrets-scan env fetch
-      # live from PyPI during this step, and this story deliberately does
-      # NOT air-gap either (Design Notes' own stated scope boundary --
-      # AD-8 names the conda/pixi lockfile specifically). Tagged away from
-      # `latest` for the same reason `gke-portability-smoke`'s build step
-      # is: a kind-loaded image with no registry behind it would otherwise
-      # sit in `ImagePullBackOff` forever. Runs BEFORE the mirror is built
-      # below (deliberately reordered from a naive top-to-bottom reading of
-      # this story's own Boundaries): the mirror can total hundreds of MB
-      # across 428 packages, and building it first would ship it into THIS
-      # step's own `docker build .` context for no reason (the image build
-      # never reads it -- it isn't needed until the mirror-only pixi
-      # install, several steps below).
-      - name: Build the platform image (docker, network still on)
-        run: docker build -f src/platform/Containerfile -t platform:air-gap-smoke .
-
-      # Same belt-and-suspenders reasoning as `gke-portability-smoke`'s own
-      # step -- not re-derived here. Doubly worth running before the mirror
-      # download below, on the same runner that already hit a real
-      # no-space-left-on-device failure once (see the disk-reclaim step's
-      # own comment above).
-      - name: Reclaim docker build cache
+      # Shared Containerfile artifact from build-platform-image -- retagged
+      # away from `latest` for the same reason as gke-portability-smoke.
+      # Runs BEFORE the mirror is built below (deliberately reordered from a
+      # naive top-to-bottom reading of this story's own Boundaries): the
+      # mirror can total hundreds of MB across 428 packages, and prefetching
+      # it before kind load would waste disk on this runner for no gain.
+      - name: Load shared platform image (retag for kind)
         run: |
-          docker builder prune -af
-          df -h /
+          gunzip -c platform-ci-image.tar.gz | docker load
+          docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" platform:air-gap-smoke
 
       # No registry push -- same as `gke-portability-smoke`'s own step.
       - name: kind load the built image (no registry push)
@@ -1141,6 +1149,21 @@ jobs:
       # only named entries are excluded, no catch-all) and is created only
       # at CI-runtime, never committed. Deliberately AFTER the image is
       # already built and kind-loaded -- see that step's own comment.
+      #
+      # GHA cache (P0): restore the mirror prefetch keyed on pixi.lock so
+      # unchanged locks skip hundreds of HTTP GETs. The AD-13 proof still
+      # runs live -- egress block, evicted env, mirror-only pixi install.
+      # build-pixi-mirror.py remains idempotent (sha256-valid files skip).
+      # Seed the cache on main pushes only; PRs read, never write.
+      - name: Restore ci-airgap-mirror cache
+        id: airgap-mirror-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ci-airgap-mirror
+          key: platform-ci-airgap-mirror-${{ hashFiles('pixi.lock') }}
+          restore-keys: |
+            platform-ci-airgap-mirror-
+
       - name: Build the local pixi mirror from pixi.lock (network still on)
         timeout-minutes: 45
         env:
@@ -1152,6 +1175,13 @@ jobs:
             --platform linux-64 \
             --dest "${{ github.workspace }}/ci-airgap-mirror" \
             --workers 16
+
+      - name: Save ci-airgap-mirror cache (main only)
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: actions/cache/save@v4
+        with:
+          path: ci-airgap-mirror
+          key: platform-ci-airgap-mirror-${{ hashFiles('pixi.lock') }}
 
       # Appends to THIS CHECKOUT'S OWN `.pixi/config.toml` only -- never
       # committed (no `git add`/`git commit` anywhere in this job). The
