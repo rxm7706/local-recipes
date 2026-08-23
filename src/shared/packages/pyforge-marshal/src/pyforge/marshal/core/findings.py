@@ -1473,6 +1473,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-REFRESH-005",
         "MRS-REFRESH-006",
         "MRS-REFRESH-007",
+        # Story 17.4 (orchestrated chain regen, FR-148/149/151, AD-72):
+        # MRS-CHAIN-001 missing planning tree (WARN/UNEVALUABLE);
+        # 002 phase failure (ERROR); 003 done-key regression refuse (ERROR);
+        # 004 orphan candidate reported, not deleted (WARN).
+        "MRS-CHAIN-001",
+        "MRS-CHAIN-002",
+        "MRS-CHAIN-003",
+        "MRS-CHAIN-004",
     }
 )
 

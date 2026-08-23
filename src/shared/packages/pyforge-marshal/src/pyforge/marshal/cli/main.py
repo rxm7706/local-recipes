@@ -123,6 +123,7 @@ from ..core import policy as policy_core
 from ..core.context import MarshalContext
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import adapters as adapters_cli
+from . import chain as chain_cli
 from . import check as check_cli
 from . import config as config_cli
 from . import deploy as deploy_cli
@@ -263,6 +264,7 @@ def _build_parser() -> argparse.ArgumentParser:
     upstream_cli.add_upstream_subparser(subparsers)
     seed_cli.add_seed_subparser(subparsers)
     refresh_cli.add_refresh_subparser(subparsers)
+    chain_cli.add_chain_subparser(subparsers)
     return parser
 
 
