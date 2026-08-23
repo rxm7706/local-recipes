@@ -7,34 +7,38 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: 3c0d74fa09
+baseline_revision: 7c126bc39d
 ---
 
 <intent-contract>
 
 ## Intent
 
-**Problem:** Detector blind spots still degrade silently or lack fixtures — unparseable frontmatter does not surface as a finding (FR-144 residual), and several bmad-drift cases lack fixture pins plus a tracked incident log (FR-145/146).
+**Problem:** Doctor detector suites largely cover FR-144, but unparseable frontmatter still degrades silently (today pinned as the opposite in `test_sources_chain_dream_chain.py`), and bmad-drift pin-missing / archive-misplaced / stray-file / spec-status-stale lack dedicated fixture pins. Detector regressions have no tracked incident log.
 
-**Approach:** Change unparseable frontmatter to a finding (re-pin tests that currently assert degrade-to-owner-none). Add fixtures for bmad-drift pin-missing / archive-misplaced / stray-file / spec-status-stale. Create a tracked detector-incident log with mandatory-entry rule when a detector fix lands.
+**Approach:** Change unparseable-frontmatter behaviour to surface a finding (re-pin tests). Add fixture pins for each bmad-drift blind spot (live-repo integrity tests stay). Introduce a tracked detector-incident log companion (date, detector, wrong claim, true value, root cause, fixing commit, pinning fixture) with a mandatory-entry rule whenever a detector fix lands in the same change.
 
 ## Acceptance Criteria
 
-- Unparseable frontmatter surfaces as a finding (not silent degrade); re-pin opposite tests.
-- Fixtures for pin-missing, archive-misplaced, stray-file, spec-status-stale (live-repo integrity tests stay).
-- Tracked incident log (date, detector, wrong claim, true value, root cause, fixing commit, pinning fixture) with mandatory-entry rule on detector fixes.
+- Unparseable frontmatter surfaces as a finding — not silent degrade-to-owner-none (replaces opposite pin at `test_sources_chain_dream_chain.py:682`).
+- `covers-dreams:` path remains pinned (existing coverage at `:147/:164/:657` — do not regress).
+- bmad-drift pin-missing, archive-misplaced, stray-file, and spec-status-stale each have a dedicated fixture test.
+- Tracked detector-incident log exists with mandatory entry when a detector is fixed in the same PR.
 
 ## Boundaries & Constraints
 
-**Never:** Weaken live-repo integrity tests. Doctor package surface under `src/shared/packages/pyforge-doctor/tests/` + tracked incident log companion. Never `scripts/bmad-switch`.
+**Never:** Second parser for frontmatter. Never weaken live-repo integrity tests. Surface: `src/shared/packages/pyforge-doctor/tests/` + tracked incident log companion under doctor planning or package docs.
 
 </intent-contract>
 
 ## Code Map
 
-- `src/shared/packages/pyforge-doctor/tests/`
-- Tracked detector-incident log companion (path per existing doctor docs conventions)
+- `src/shared/packages/pyforge-doctor/tests/` — fixture pins + behaviour change tests
+- `test_sources_chain_dream_chain.py` — unparseable frontmatter re-pin
+- bmad-drift detector fixture tests (pin-missing, archive-misplaced, stray-file, spec-status-stale)
+- Tracked detector-incident log companion (new file under doctor package or planning-artifacts)
 
 ## Verification
 
-- Doctor/marshal test tasks as established for detector fixtures
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` (or established doctor test task)
+- Incident log entry present when a detector behaviour changes
