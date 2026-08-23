@@ -90,15 +90,18 @@ capability-naming reason where helm/PyYAML are absent.
 
 ## Honest limitations
 
-- **OCP live-cluster verification is attended-only (Story 12.7).** Bring-up
-  and internal-registry push are documented in `overlays/ocp/cluster-bringup.md`
-  (Story 12.4); Route admission, SCC enforcement, PVC binding, and
-  postgres/redis under arbitrary UID remain AD-16 Tier 3 until that verification
-  story lands. Story 12.2's `gke-portability-smoke` CI job (`.github/
-  workflows/platform-ci.yml`) DOES deploy this same core chart onto a real
+- **OCP live-cluster verification is opt-in CI (Story 12.9), with attended
+  closeout still Story 12.7.** Bring-up and internal-registry push are
+  documented in `overlays/ocp/cluster-bringup.md` (Story 12.4). The optional
+  `ocp-portability-smoke` job in `.github/workflows/platform-ci.yml` (default
+  off; requires `CRC_PULL_SECRET` and `PLATFORM_CI_OCP_PORTABILITY_SMOKE=true`
+  or workflow_dispatch) deploys core + overlay on CRC and curls through an
+  admitted Route — proving SCC-assigned UIDs and the OCP edge path when enabled.
+  Story 12.7 remains the attended verification for sidecar contingencies,
+  postgres/redis image fallbacks, and full Tier-3 closeout. Story 12.2's
+  `gke-portability-smoke` job DOES deploy this same core chart onto a real
   ephemeral `kind` cluster and curl it through a live `Ingress` +
-  ingress-nginx controller — so the vanilla-K8s path is live-verified; the OCP
-  overlay's own resources remain parsed-manifest-only until 12.7.
+  ingress-nginx controller — so the vanilla-K8s path is live-verified.
 - **Fresh installs have a transient migration window.** On a FIRST
   install the web pods go Ready before the post-install migrate Job has
   run: the `/ht/` readiness `Database` check is connectivity-only (a bare

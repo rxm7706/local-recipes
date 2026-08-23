@@ -65,10 +65,11 @@ name: Platform CI
 # input air_gap_parity overrides for manual runs.
 #
 # P1 fan-in (2026-08-23): `build-platform-image` builds once for
-# gke-portability-smoke and air-gap-parity (Docker-only jobs). The
-# `container` job keeps TWO INDEPENDENT builds (spec 10.3): docker build
-# and podman build each solve the Containerfile on their own engine --
-# never load the shared artifact. container-dbgpt keeps its own build.
+# gke-portability-smoke, ocp-portability-smoke, and air-gap-parity
+# (Docker-only jobs). The `container` job keeps TWO INDEPENDENT builds
+# (spec 10.3): docker build and podman build each solve the Containerfile
+# on their own engine -- never load the shared artifact. container-dbgpt
+# keeps its own build.
 
 # The two lists below are duplicated verbatim rather than shared via a YAML
 # anchor: GitHub Actions does not support YAML anchors/aliases in workflow
@@ -125,6 +126,10 @@ on:
         description: 'Run gke-portability-smoke (kind + ingress + helm); default off'
         type: boolean
         default: false
+      ocp_portability_smoke:
+        description: 'Run ocp-portability-smoke (CRC + Route + helm); default off'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -134,11 +139,15 @@ permissions:
 # Optional Platform CI jobs (default off on push/PR — opt in with repo variables):
 #   PLATFORM_CI_AIR_GAP_PARITY=true
 #   PLATFORM_CI_GKE_PORTABILITY_SMOKE=true
-# workflow_dispatch exposes air_gap_parity / gke_portability_smoke inputs instead.
+#   PLATFORM_CI_OCP_PORTABILITY_SMOKE=true
+# Requires GitHub Actions secret CRC_PULL_SECRET (Red Hat pull secret from
+# console.redhat.com/openshift/create/local) when ocp-portability-smoke runs.
+# workflow_dispatch exposes air_gap_parity / gke_portability_smoke /
+# ocp_portability_smoke inputs instead.
 env:
   PLATFORM_TEST_BACKEND: ${{ github.event_name == 'workflow_dispatch' && inputs.platform_test_backend || vars.PLATFORM_TEST_BACKEND || 'pixi' }}
-  # Shared platform image tag from build-platform-image (gke + air-gap only;
-  # container runs independent docker/podman builds per spec 10.3).
+  # Shared platform image tag from build-platform-image (gke + ocp + air-gap
+  # only; container runs independent docker/podman builds per spec 10.3).
   PLATFORM_CI_IMAGE_REF: platform:ci-${{ github.sha }}
 
 concurrency:
@@ -215,21 +224,22 @@ jobs:
       - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v
 
-  # P1 fan-in: one Docker build exported for gke-portability-smoke and
-  # air-gap-parity only. container runs independent docker + podman builds
-  # (spec 10.3 — both engines, both build paths).
+  # P1 fan-in: one Docker build exported for gke-portability-smoke,
+  # ocp-portability-smoke, and air-gap-parity only. container runs
+  # independent docker + podman builds (spec 10.3 — both engines, both
+  # build paths).
   build-platform-image:
     if: >-
       (
         github.event_name == 'workflow_dispatch' &&
         (
-          (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke)) ||
+          (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) ||
           (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity)
         )
       ) ||
       (
         github.event_name != 'workflow_dispatch' &&
-        (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true')
+        (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true')
       )
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -1022,6 +1032,216 @@ jobs:
       - name: Teardown
         if: always()
         run: kind delete cluster --name gke-smoke || true
+
+  # Story 12.9 ("OCP as a portability profile"): proves AD-11's OCP overlay
+  # path on a real OpenShift API -- CRC / OpenShift Local with Route admission
+  # and restricted-v2 SCC behavior that kind cannot exercise. Reuses
+  # `gke-portability-smoke`'s established patterns (disk reclaim, setup-pixi,
+  # artifact download, platform-secrets Secret, no-`--wait` helm install,
+  # migrate-Job wait, Route-routed curl retries, `if: always()` teardown) --
+  # only the NEW pieces this story adds are commented in depth below.
+  #
+  # Single engine (Docker) only -- same rationale as `gke-portability-smoke`.
+  # Image delivery uses the CRC internal registry push pattern from
+  # `cluster-bringup-facts.md`, not `kind load`.
+  #
+  # No `needs:` on test/container-dbgpt. Loads the shared platform image from
+  # build-platform-image (P1 fan-in) rather than rebuilding it.
+  ocp-portability-smoke:
+    if: >-
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke) ||
+        (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true')
+      ) &&
+      (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')
+    needs: build-platform-image
+    runs-on: ubuntu-latest
+    # CRC preset (4 cores, 10.5 GiB RAM, 35 GiB disk) + bundle download +
+    # internal-registry push + helm/Routes -- sized above gke-smoke's 45m.
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      # Block If: the job is enabled but the Red Hat pull secret is absent --
+      # fail fast with an explicit annotation rather than letting CRC start
+      # with the action's dummy default and flake later.
+      - name: Verify CRC_PULL_SECRET is configured
+        env:
+          CRC_PULL_SECRET: ${{ secrets.CRC_PULL_SECRET }}
+        run: |
+          if [ -z "${CRC_PULL_SECRET}" ]; then
+            echo "::error::CRC_PULL_SECRET GitHub Actions secret is required when ocp-portability-smoke is enabled. Obtain a pull secret from console.redhat.com/openshift/create/local and set it with: gh secret set CRC_PULL_SECRET --repo ${{ github.repository }} < pull-secret.txt"
+            exit 1
+          fi
+
+      # Same disk-pressure rationale as `gke-portability-smoke` -- CRC's
+      # openshift preset alone wants ~35 GiB, and this job also stacks the
+      # `platform-dev` pixi env plus a second copy of the platform image.
+      - name: Free disk space (reclaim unused preinstalled toolchains)
+        run: |
+          echo "Before:"; df -h /
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /opt/az || true
+          echo "After:"; df -h /
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: platform-ci-image
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.77.0
+          environments: platform-dev
+          locked: true
+          cache: true
+
+      # AD-16 named system exception alongside kind (gke-smoke) and the
+      # container engine: CRC bundles its own `oc`, installed by the action
+      # below. helm/kubectl remain pixi-provisioned above.
+      - name: Start OpenShift Local (CRC 2.63.0 / OpenShift 4.22.7)
+        uses: crc-org/crc-github-action@v1
+        with:
+          pull-secret: ${{ secrets.CRC_PULL_SECRET }}
+          preset: openshift
+          cpus: '4'
+          memory: '10752'
+          disk: '35'
+          version: '2.63.0'
+
+      # CRC's internal registry route uses a cluster-signed cert that Docker
+      # rejects by default -- mirror the operator-locked flow in
+      # cluster-bringup-facts.md with Docker's insecure-registry knob.
+      - name: Configure Docker for the CRC internal registry
+        run: |
+          echo '{"insecure-registries":["default-route-openshift-image-registry.apps-crc.testing"]}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: Create deploy namespace
+        run: oc create namespace platform-smoke
+
+      # Shared Containerfile artifact from build-platform-image -- retagged
+      # away from `latest` for the same ImagePullPolicy reason as gke-smoke.
+      - name: Push platform image to the CRC internal registry
+        env:
+          REGISTRY: default-route-openshift-image-registry.apps-crc.testing
+          NS: platform-smoke
+          IMAGE_TAG: ocp-smoke
+        run: |
+          gunzip -c platform-ci-image.tar.gz | docker load
+          docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" "${REGISTRY}/${NS}/platform:${IMAGE_TAG}"
+          TOKEN="$(oc whoami -t)"
+          echo "${TOKEN}" | docker login -u kubeadmin --password-stdin "${REGISTRY}"
+          docker push "${REGISTRY}/${NS}/platform:${IMAGE_TAG}"
+          oc get imagestream -n "${NS}" || true
+
+      # AD-12: same Secret shape as gke-smoke / deploy README (NOTES.txt).
+      - name: Create platform-secrets Secret
+        run: |
+          oc create secret generic platform-secrets \
+            --namespace platform-smoke \
+            --from-literal=DJANGO_SECRET_KEY=ci-ocp-smoke-placeholder-not-a-real-secret \
+            --from-literal=DATABASE_URL=postgres://platform:ci-ocp-smoke-not-a-real-secret@platform-postgres:5432/platform \
+            --from-literal=POSTGRES_PASSWORD=ci-ocp-smoke-not-a-real-secret \
+            --from-literal=REDIS_PASSWORD=ci-ocp-smoke-not-a-real-secret
+
+      # AD-11: OCP deltas ONLY via the checked-in overlay values file --
+      # never a second chart or OCP kinds in the core templates. Image
+      # seams aim at the ImageStream this job just pushed; django.secureSslRedirect
+      # is False for the same TLS-less-probe rationale documented in
+      # gke-smoke (the Route still terminates TLS at the edge).
+      # Deliberately NO --wait: same migrate-hook deadlock as gke-smoke.
+      - name: helm install core chart with OCP overrides
+        run: |
+          helm install platform src/platform/deploy/charts/platform \
+            --namespace platform-smoke \
+            -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+            --set image.registry=default-route-openshift-image-registry.apps-crc.testing \
+            --set image.repository=platform-smoke/platform \
+            --set image.tag=ocp-smoke \
+            --set django.secureSslRedirect=False \
+            --timeout 5m || {
+            echo "::error::helm install platform failed"
+            kubectl get pods,jobs,events,routes -n platform-smoke
+            exit 1
+          }
+
+      - name: helm install Route overlay beside the core release
+        run: |
+          helm install platform-ocp src/platform/deploy/overlays/ocp/chart \
+            --namespace platform-smoke \
+            --set route.host=platform-smoke.apps-crc.testing || {
+            echo "::error::helm install platform-ocp failed"
+            kubectl get pods,jobs,events,routes -n platform-smoke
+            oc describe route -n platform-smoke || true
+            exit 1
+          }
+
+      - name: Verify a Route exists and targets the core web Service
+        run: |
+          oc get route platform-ocp -n platform-smoke -o jsonpath='{.spec.to.name}{"\n"}' | grep -qx platform
+          oc get route platform-ocp -n platform-smoke -o jsonpath='{.status.ingress[0].host}{"\n"}' | grep -q .
+
+      # `/ht/` is connectivity-only (deploy/README.md) -- may 200 before migrate
+      # finishes; not gated on the explicit migrate wait below.
+      - name: Smoke-test /ht/ through the Route (connectivity-only)
+        run: |
+          ROUTE_HOST="platform-smoke.apps-crc.testing"
+          for i in $(seq 1 30); do
+            code="$(curl -sk -o /dev/null -w '%{http_code}' "https://${ROUTE_HOST}/ht/" || true)"
+            if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::/ht/ through the Route never returned 200"
+          kubectl get pods,routes,events -n platform-smoke
+          exit 1
+
+      - name: Wait for the migrate hook Job to complete
+        run: |
+          kubectl wait --namespace platform-smoke --for=condition=complete job/platform-migrate --timeout=180s || {
+            echo "::error::migrate Job did not reach Complete"
+            kubectl get pods,jobs,events -n platform-smoke
+            kubectl logs -n platform-smoke -l app.kubernetes.io/component=migrate --tail=200 || true
+            exit 1
+          }
+
+      - name: Smoke-test /admin/login/ through the Route (proves the ORM round-trip)
+        run: |
+          ROUTE_HOST="platform-smoke.apps-crc.testing"
+          code="$(curl -sk -o /dev/null -w '%{http_code}' "https://${ROUTE_HOST}/admin/login/" || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::/admin/login/ through the Route returned $code, expected 200"
+            kubectl get pods,events,routes -n platform-smoke || true
+            kubectl logs -n platform-smoke -l app.kubernetes.io/component=web --tail=200 || true
+            exit 1
+          fi
+
+      # Spot-check that the OCP overlay nulled the data-service UID pins so
+      # restricted-v2 assigns arbitrary UIDs (Story 12.1 contract).
+      - name: Verify postgres pod has no fixed runAsUser (SCC-assigned UID path)
+        run: |
+          RUN_AS_USER="$(kubectl get pod -n platform-smoke -l app.kubernetes.io/component=postgres -o jsonpath='{.items[0].spec.containers[0].securityContext.runAsUser}' 2>/dev/null || true)"
+          if [ -n "${RUN_AS_USER}" ]; then
+            echo "::error::postgres pod has fixed runAsUser=${RUN_AS_USER}; expected absent/null for OCP overlay"
+            kubectl describe pod -n platform-smoke -l app.kubernetes.io/component=postgres || true
+            exit 1
+          fi
+          echo "postgres pod runAsUser absent (SCC-assigned UID path)"
+
+      - name: Teardown
+        if: always()
+        run: |
+          oc delete namespace platform-smoke --ignore-not-found=true || true
+          crc stop -f || true
+          crc delete -f || true
 
   # Story 12.3 ("Air-gap parity is a failing check"): proves AD-13/CAP-6 --
   # a build + deploy executed with external egress blocked must succeed
