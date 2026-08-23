@@ -26,7 +26,7 @@
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `19-4` | launching |
+| marshal | `19-4` | [Marshal 19-4](1ff742ec-f685-4c84-aced-efb1288c24e3) |
 | steward | `15-3` | [Steward 15-3](acccef8b-ef1d-49fd-975f-b3a8e73ec953) (skip 12-7) |
 
 ## Operator skip
