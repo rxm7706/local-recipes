@@ -34,7 +34,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 
 # The six duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
-# `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Story 13.1).
+# `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2).
 DUTIES: tuple[str, ...] = (
     "keys", "deploy", "provision", "budget", "sync", "workspace",
 )
