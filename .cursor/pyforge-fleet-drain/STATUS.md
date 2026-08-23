@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~11:14 CDT  
+**Updated:** 2026-08-23 ~11:16 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -19,15 +19,15 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 34** · **steward 15** (**49 total**; 12-7 skipped) |
+| Backlog | **marshal 34** · **steward 14** (**48 total**; 12-7 skipped) |
 | Drained | atlas, doctor, herald, mason, scribe, warden |
 
 ## In-flight (canonical only — do not duplicate)
 
 | Station | Story | Canonical PR / agent |
 |---------|-------|----------------------|
-| marshal | `18-2` | [Marshal 18-2](e4dc56cf-2ccc-46bd-b344-6d32050aed43) — parity + coverage gates (spec `0cf306f9ed`) |
-| steward | `14-3` | [#669](https://github.com/rxm7706/local-recipes/pull/669) · [Steward 14-3](dd93a8c7-9027-41b2-821f-f185afdc6992) — CI green; merge-in-agent |
+| marshal | `18-2` | [Marshal 18-2](e4dc56cf-2ccc-46bd-b344-6d32050aed43) — parity + coverage gates |
+| steward | `14-4` | [Steward 14-4](c2144c44-a067-4a28-84f4-21b0ae234a49) — pin fan-out enum (skip 12-7) |
 
 ## Operator skip
 
@@ -39,6 +39,7 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
+| steward | `14-3` | [#669](https://github.com/rxm7706/local-recipes/pull/669) merge `e7d2ead159` · finalize (this commit) ([Steward 14-3](dd93a8c7-9027-41b2-821f-f185afdc6992)) |
 | marshal | `18-1` | [#668](https://github.com/rxm7706/local-recipes/pull/668) merge `657c6bbe1e` · finalize `4ff73ba127` ([Marshal 18-1](b5923e5a-38cc-4e9c-a635-9a897c3e7d0e)) |
 | marshal | `17-4` | [#667](https://github.com/rxm7706/local-recipes/pull/667) |
 | steward | `14-2` | [#666](https://github.com/rxm7706/local-recipes/pull/666) |
