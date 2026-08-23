@@ -2,7 +2,7 @@
 title: Verification is the product — no landing on a self-report
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -42,3 +42,19 @@ baseline_revision: c23116e064
 
 - `pixi run -e pyforge-marshal pyforge-marshal-test` green
 - Regression: self-reported shipped + failing gates → non-landing verdict
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/703
+Merge: dc56f55e6b8c8958fe9a7953cace6a86b9760d9e
+Merge policy: admin merge (`gh pr merge 703 --merge --admin --repo rxm7706/local-recipes`) — GitHub Actions billing blocks CI; local tests green before merge.
+Summary: Story 22.3 (FR-193 CAP-3) wires independent Epic 2 gate verification into the dispatch supervisor before any landing: verify commands run in the dispatch worktree, frozen-surface scope check reads diff against policy seed, and session self-report is never the verdict. Doctor-12.3 refusal fixture regression-pinned (self-reported shipped + MRS-GATE-001 gate fail + MRS-GATE-007 out-of-surface).
+Files:
+- `core/dispatch_verification.py` — pure verification judge (self-report never verdict)
+- `dispatch_verify.py` — impure gate runner (AD-9: outside cli for supervisor import)
+- `dispatch_supervisor/__main__.py` — runs verification when session dead with git progress
+- `cli/dispatch.py`, `cli/status.py`, `core/status.py` — verification verdict journal + fleet overlay
+- `tests/unit/test_dispatch_verification.py` — doctor-12.3 fixture + self-report regression pins
+Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` — **6135 passed**, 12 deselected.
+Out of scope (Stories 22.4–22.6): landing, overlap guard, attach/resume.
