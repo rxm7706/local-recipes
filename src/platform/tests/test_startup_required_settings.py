@@ -22,6 +22,7 @@ from config.locality import RUNTIME_ENV_VAR
 from config.startup import refuse_required_settings
 from config.startup import run_stage_one
 from config.startup.stage_one import REQUIRED_SETTINGS
+from config.startup.stage_one import RequiredSetting
 
 
 @pytest.fixture(autouse=True)
@@ -53,7 +54,7 @@ def _refusal_message() -> str:
 def test_each_required_key_absent_refuses_naming_setting_and_remedy(
     monkeypatch: pytest.MonkeyPatch,
     required_env: None,
-    setting: object,
+    setting: RequiredSetting,
 ) -> None:
     monkeypatch.delenv(setting.name, raising=False)
 
@@ -71,7 +72,7 @@ def test_each_required_key_absent_refuses_naming_setting_and_remedy(
 def test_each_required_key_empty_refuses_naming_setting_and_remedy(
     monkeypatch: pytest.MonkeyPatch,
     required_env: None,
-    setting: object,
+    setting: RequiredSetting,
 ) -> None:
     monkeypatch.setenv(setting.name, "   ")
 
