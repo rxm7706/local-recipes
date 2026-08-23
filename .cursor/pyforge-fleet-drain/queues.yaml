@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 48
-    next: 11-6-marshal-seed-explain-and-version
+    remaining_count: 47
+    next: 12-1-full-pixi-wiring-distribution-and-repo-gate-compliance
     queue:
-    - 11-6-marshal-seed-explain-and-version
     - 12-1-full-pixi-wiring-distribution-and-repo-gate-compliance
     - 12-2-the-local-recipes-empty-plan-oracle
     - 12-3-offline-operation-and-the-egress-counter

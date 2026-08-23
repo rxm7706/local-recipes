@@ -2,12 +2,12 @@
 title: marshal seed explain and marshal seed version
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
-baseline_revision: f8c8df5469
+baseline_revision: 88be2d2e07c8dec2df4501b0c95256a18a331e29
 ---
 
 <intent-contract>
@@ -45,3 +45,28 @@ baseline_revision: f8c8df5469
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
 - `pixi run --frozen -e pyforge-ci pytest tests/packaging/test_dependency_completeness.py -k pyforge-marshal`
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Implemented read-only `marshal seed explain <artifact>` and `marshal seed version` verbs (Story 11.6, FR-125/FR-127). Explain resolves manifest entries by id or path, renders class/rationale/update behavior/hybrid regions, supports `--json`, and suggests near matches on unknown queries. Version reports CLI semver, bundled model version, and adopted repo model version when state is readable.
+
+**Files changed:**
+- `seed/verbs/explain.py` — explain verb logic and rendering
+- `seed/verbs/version.py` — version report logic and rendering
+- `cli/seed.py` — wire subcommands, `--json`, and error handling
+- `tests/unit/test_seed_verbs_explain.py` — explain unit tests
+- `tests/unit/test_seed_verbs_version.py` — version unit tests
+- `tests/unit/test_seed_scaffold.py` — retire explain/version stubs
+
+**Review:** Self-review; no blocking findings. Scaffold tests updated for real verbs.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 5305 passed
+- `pixi run --frozen -e pyforge-ci pytest tests/packaging/test_dependency_completeness.py -k pyforge-marshal` — 8 passed
+- PR #641 CI: linter pass, detectors pass
+
+**PR:** https://github.com/rxm7706/local-recipes/pull/641 (merge commit `e48ea1292d3`)
+
+**followup_review_recommended:** false
