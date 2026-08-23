@@ -1153,17 +1153,19 @@ jobs:
       # `pixi install --frozen -e platform-dev` no-op straight off the
       # existing, already-valid `.pixi/envs/platform-dev` prefix -- proving
       # nothing about the mirror or the egress block, regardless of whether
-      # either actually works. Removing that installed env prefix is what
-      # forces the next install to genuinely re-materialize the environment
-      # from scratch. For the package cache, use a fresh empty
-      # `PIXI_CACHE_DIR` on the proof step (the spec's named alternative to
-      # `rm -rf ~/.cache/rattler`) -- deleting the default rattler cache on
-      # a GitHub-hosted runner routinely hangs for 20+ minutes on hundreds
-      # of thousands of small files, blowing the job budget before the
-      # actual AD-13 proof runs.
+      # either actually works. Moving the installed env prefix aside (not
+      # deleting it -- `rm -rf` of a full prefix hangs on GHA the same way
+      # `~/.cache/rattler` does) forces the next install to genuinely
+      # re-materialize the environment from scratch. For the package cache,
+      # use a fresh empty `PIXI_CACHE_DIR` on the proof step (the spec's
+      # named alternative to `rm -rf ~/.cache/rattler`).
       - name: Evict the pixi cache + installed env before the mirror-only install
         run: |
-          rm -rf .pixi/envs/platform-dev
+          # mv is O(1) on the directory inode; rm -rf of a full conda env
+          # prefix (same scale as ~/.cache/rattler) also hangs 20+ min on GHA.
+          if [ -d .pixi/envs/platform-dev ]; then
+            mv .pixi/envs/platform-dev ".pixi/envs/platform-dev-bootstrap-${GITHUB_RUN_ID}"
+          fi
           rm -rf "${{ runner.temp }}/pixi-cache-proof-empty"
           mkdir -p "${{ runner.temp }}/pixi-cache-proof-empty"
 
