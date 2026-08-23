@@ -459,6 +459,7 @@ copier = ">=9.17,<10"
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
+pytest-cov = ">=7.1.0"                   # Story 19.3 / FR-131: coverage JSON for named-module gates
 import-linter = ">=2.13"                 # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-conda]
@@ -487,6 +488,10 @@ cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m slow"
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-test-coverage]
+description = "Story 19.3 / FR-131: unit (>80%) + integration (>70%) coverage gates that name uncovered modules (full package evaluate)."
+cmd = "python scripts/run_station_coverage_gate.py --station marshal"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-smoke]
 description = "Smoke-test the INSTALLED pyforge-marshal conda artifact (FR-56): marshal --help proves the console script and its subparser tree work; marshal --version always exits 0 (informational, never a gate), so the actual harness-resolvable proof is grepping its output for a real 'bmad-loop <version>' line rather than trusting the exit code -- against the SAME lean pyforge-marshal pixi-build-python-installed environment (no separate throwaway env), which already carries the built package plus its pinned bmad-loop run-dependency. Supported smoke targets: linux-64 and osx-arm64 (Windows is WSL-first)."
