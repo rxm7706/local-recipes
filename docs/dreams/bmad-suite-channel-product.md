@@ -1,17 +1,17 @@
 ---
-title: The SelfExplainML bmad-suite is a governed product — always latest, dual-path installable, modules provisioned
+title: The PrivateChannel bmad-suite is a governed product — always latest, dual-path installable, modules provisioned
 type: dream
 owner: steward
 status: specified   # 2026-08-22 — spec-bmad-suite-channel-product (5 CAPs + install-matrix.md); decomposed as steward Epic 15 (4 stories) + doctor Epic 15 (2 stories, CAP-5 relay); channel bmad-method refreshed to 6.11.0 same day
 ---
 
-# The SelfExplainML bmad-suite is a governed product
+# The PrivateChannel conda install bmad-suite is a governed product
 
 ## The Dream
 
 The operator intends to utilize the complete bmad-suite (13 packages). Every
 one of them should be installable two ways at all times — **via pixi from the
-SelfExplainML channel** and **via its upstream-native method** (npm, npx
+PrivateChannel channel** and **via its upstream-native method** (npm, npx
 module selection, uv-from-git, Claude plugin marketplace, custom-source) —
 at the latest available version, with its skills/module actually wired where
 the fleet works. Today that is true only because a human hand-drove all seven
@@ -32,7 +32,7 @@ are pinned at the literal default-branch HEAD. Two exceptions:
 1. **Channel `bmad-method` = 6.3.0** vs recipe/conda-forge 6.11.0 — the one
    channel↔recipe divergence (harmless to solves: conda-forge shadows it, and
    conda-forge/bmad-method-feedstock is current at 6.11.0 — the ONLY suite
-   package with a feedstock; the other 12 are SelfExplainML-only).
+   package with a feedstock; the other 12 are PrivateChannel-Conda -only).
 2. **TEA v1.23.3 tagged-but-unreleased** (git tag exists, package.json 1.23.3;
    npm latest still 1.23.2, no GH release) — a watch/optional bump.
 
@@ -140,7 +140,7 @@ no dual-path contract.
 
 - Packaging anything new (autopilot/bmalph/dashboard-extension stay parked;
   the suite is the operator's 13).
-- Submitting more suite packages to conda-forge (SelfExplainML is the home;
+- Submitting more suite packages to conda-forge (PrivateChannel is the home;
   bmad-method's feedstock is the one exception and stays upstream).
 - The bmad-method core upgrade itself (steward Epic 14) and the era-retrofit
   chain (marshal Epic 25) — kin efforts this pipeline feeds and consumes.
@@ -150,8 +150,10 @@ no dual-path contract.
 ## Kinships
 
 [[bmad-module-provisioning]] (realized; `_SUPPORTED_MODULES` is this Dream's
-wiring seam) · [[bmad-method-version-drift]] (doctor; DW-14-1-1's GitHub
-fallback + the new per-stage drift checks extend it) ·
+wiring seam) · [[bmad-suite-install-class-wiring]] (companion Dream: how
+method/loop/skf/labs/dashboards/template get provisioned by install class —
+not through `--module`) · [[bmad-method-version-drift]] (doctor; DW-14-1-1's
+GitHub fallback + the new per-stage drift checks extend it) ·
 [[bmad-method-core-upgrade]] (steward Epic 14; its CAP-4 pin fan-out and
 CAP-5 gate consume this pipeline's output) · [[bmad-611-era-alignment]]
 (marshal Epic 25; the era-alignment this pipeline keeps from regressing) ·

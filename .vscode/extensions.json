@@ -1,6 +1,41 @@
 {
-  // Recommends vscode-kedro for optional human sessions; see the dated defer
-  // decision at _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/
-  // spec-kedro-org-tooling-adoption/vscode-kedro-decision.md
-  "recommendations": ["kedro.Kedro"]
+  // Workspace extension recommendations for PyForge / Cursor / VS Code.
+  // `recommendations` only resolves Marketplace / Open VSX IDs (publisher.name).
+  // Sideload .vsix and unpublished adapters cannot appear here.
+  //
+  // Included — stack / station tooling:
+  // - kedro.Kedro — optional human Kedro IDE help; see
+  //   _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/
+  //   spec-kedro-org-tooling-adoption/vscode-kedro-decision.md (defer + recommend)
+  // - ms-python.python + ms-python.vscode-pylance + ms-python.vscode-python-envs
+  //   — interpreter, language server, env picker
+  // - renan-r-santos.pixi-code — Pixi envs for this pixi.toml workspace
+  //   (https://pixi.sh/latest/integration/editor/vscode/)
+  // - charliermarsh.ruff — lint/format (matches repo Python style gates)
+  // - redhat.vscode-yaml — recipe.yaml / meta.yaml + rattler-build $schema headers
+  // - marp-team.marp-vscode — Herald Marp decks under presentations/*/src/marp/
+  //
+  // Omitted on purpose:
+  // - BMAD Dashboard (official Method UI) — conda .vsix via
+  //   `pixi` feature bmad-ui → `pixi run bmad-dashboard-install`
+  //   (`code --install-extension` on the bundled vsix). Not a gallery ID.
+  // - MyBMAD — web app (`pixi run mybmad up`), not a VS Code extension.
+  // - copilot-bridge — sideload-only .vsix, no marketplace (NG1);
+  //   docs/specs/copilot-bridge-vscode-extension.md (superseded / absorbed).
+  // - @bmad Copilot adapter — not a shipped extension; upstream brief into
+  //   the official BMAD UI; docs/specs/bmad-copilot-adapter-upstream.md.
+  // - Classic Anaconda extension pack — conda is channel/build here; day-to-day
+  //   Python is pixi (use pixi-code above instead).
+  // - Agents (GitHub Copilot, Claude, Continue, etc.) — product / account
+  //   choice for the operator; never a repo pin.
+  "recommendations": [
+    "kedro.Kedro",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.vscode-python-envs",
+    "renan-r-santos.pixi-code",
+    "charliermarsh.ruff",
+    "redhat.vscode-yaml",
+    "marp-team.marp-vscode"
+  ]
 }
