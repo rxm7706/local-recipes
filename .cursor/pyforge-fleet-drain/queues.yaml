@@ -111,11 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 44
-    next: 12-4-pattern-meta-tests-and-the-never-write-proof
+    remaining_count: 42
+    next: 12-6-readme-adoption-guide-and-the-finding-remedy-reference
     queue:
-    - 12-4-pattern-meta-tests-and-the-never-write-proof
-    - 12-5-cli-contract-idempotence-harness-and-performance-gates
     - 12-6-readme-adoption-guide-and-the-finding-remedy-reference
     - 15-1-one-command-refreshes-the-fleets-homes
     - 15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check
