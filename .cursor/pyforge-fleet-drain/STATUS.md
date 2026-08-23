@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~16:25 CDT
+**Updated:** 2026-08-23 ~16:30 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -26,7 +26,8 @@
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| steward | `16-4` | launching (skip 12-7) |
+| marshal | `20-7` | launching |
+| steward | `16-4` | [Steward 16-4](cb73af2f-982d-4638-9f98-fda65b7ff656) (skip 12-7) |
 
 ## Operator skip
 
@@ -38,10 +39,9 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `20-6` | [#691](https://github.com/rxm7706/local-recipes/pull/691) merge `54425c84f4` ([Marshal 20-6](d7bc992e-eb0e-4b66-8bd4-625a89e8b4fe)) |
+| marshal | `20-6` | [#691](https://github.com/rxm7706/local-recipes/pull/691) merge `54425c84f4` · finalize `049c416ca6` ([Marshal 20-6](d7bc992e-eb0e-4b66-8bd4-625a89e8b4fe)) |
 | steward | `16-3` | [#688](https://github.com/rxm7706/local-recipes/pull/688) merge `b0782c48b4` · finalize `0e1a41be0f` ([Steward 16-3](b04fa062-4cc1-4e56-8b3b-56f8004b66b4)) |
 | marshal | `20-5` | [#689](https://github.com/rxm7706/local-recipes/pull/689) · finalize [#690](https://github.com/rxm7706/local-recipes/pull/690) |
-| marshal | `20-4` | [#687](https://github.com/rxm7706/local-recipes/pull/687) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary

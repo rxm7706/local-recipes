@@ -3,6 +3,7 @@ title: 'The verify_scope primitive'
 type: feature
 created: '2026-08-23'
 status: done
+shipped_ref: 'PR #691 / 54425c84f4'
 updated: '2026-08-23'
 context: []
 warnings: []
