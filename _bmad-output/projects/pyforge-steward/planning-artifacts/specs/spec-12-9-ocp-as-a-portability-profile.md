@@ -2,7 +2,7 @@
 title: OCP as a portability profile
 type: infra
 created: '2026-08-23'
-status: in-progress
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -10,6 +10,7 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-1-the-vanilla-chart-with-an-ocp-overlay.md'
 warnings: []
 baseline_revision: 11069e182e
+shipped_ref: 'fa1436585c06e6750f1cdeffba78cb41b2c5a6e4'
 ---
 
 <intent-contract>
@@ -44,3 +45,11 @@ baseline_revision: 11069e182e
 
 - Workflow YAML valid (detectors/linter CI)
 - Mirror gke-portability-smoke structure; job skipped when var unset
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/648
+Merge SHA: fa1436585c06e6750f1cdeffba78cb41b2c5a6e4
+Verification: helm lint (0 errors), workflow YAML parse; first green ocp-portability-smoke deferred to operator (CRC_PULL_SECRET + opt-in)
+Story 12-7: skipped per operator directive (attended OCP verification deferred)

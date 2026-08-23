@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 113
+# stories: 114
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -38,6 +38,7 @@ development_status:
   12-6-redis-is-hardened-still-ephemeral: done
   12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: backlog
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
+  12-9-ocp-as-a-portability-profile: done
   13-1-workspace-verbs-over-git-worktree: backlog
   13-2-status-and-the-feed-mirror-decision: backlog
   13-3-a-repo-set-opens-as-one-workspace: backlog
