@@ -2,11 +2,13 @@
 AD-1/AD-5/AD-6/AD-9).
 
 `compile_graph()` is the "compile" layer of the architecture's paradigm:
-event-sourced capture with a derived, rebuildable read-model. It reads five
+event-sourced capture with a derived, rebuildable read-model. It reads six
 named real-tool surfaces -- `.claude/memory/`, `.memlog.md` files, git
-history, retros, and CHANGELOGs (PRD Open Question 2, resolved here) -- and
-writes one `GraphNode` per source item through the `GraphStore` port (Story
-2.1), never a specific storage engine's client library directly (AD-5).
+history, retros, CHANGELOGs (PRD Open Question 2, resolved here), and
+un-curated session transcripts (Story 3.1's `scan_transcripts()`, registered
+as a compile source in Story 3.2) -- and writes one `GraphNode` per source
+item through the `GraphStore` port (Story 2.1), never a specific storage
+engine's client library directly (AD-5).
 
 Every run is a FULL rebuild, never an incremental patch: `store.reset()`
 clears the in-memory state, every surface is re-read from scratch, and
@@ -17,6 +19,14 @@ deterministically from source identity (file path / commit sha), and node
 content depends only on the current on-disk/in-git state, two consecutive
 runs against unchanged sources produce byte-identical `GraphStore` output --
 the idempotency Story 2.2 requires.
+
+That reproducibility is per-machine, not repo-wide: five of the six surfaces
+are repo artifacts, but the transcript surface (Story 3.2) reads a per-user,
+per-machine `~/.claude/projects/<encoded-cwd>/` tree that is not part of the
+repository. Two operators compiling the same commit therefore get the same
+five-surface core plus whatever transcript nodes their own machine holds --
+by design (that local-only content is the gap Epic 3 exists to close), but
+worth stating, since the AD-1 quote above otherwise reads as repo-determinism.
 
 `compile_graph()` never prompts and never blocks on input (unattended, FR-11)
 -- there is no `typer.confirm()`/`input()` anywhere in this module. A single
@@ -40,6 +50,11 @@ from pathlib import Path
 
 from pyforge.scribe.graph_store import GraphStore
 from pyforge.scribe.models import CAPTURE_TYPES, GraphNode, GraphNodeKind, parse_capture_file
+from pyforge.scribe.transcripts import (
+    TranscriptCandidate,
+    default_transcript_root,
+    scan_transcripts,
+)
 
 #: Directories excluded from every repo-wide glob -- vendored, generated, or
 #: runtime-scratch trees that would otherwise dominate node count / cost.
@@ -89,14 +104,19 @@ def compile_graph(
     store_path: Path | None = None,
     nightly: bool = False,
     max_commits: int = _DEFAULT_MAX_COMMITS,
+    transcript_root: Path | None = None,
 ) -> CompileResult:
-    """Rebuild the compiled graph from scratch from the five named surfaces.
+    """Rebuild the compiled graph from scratch from the six named surfaces.
 
     `nightly` is accepted for CLI/scheduling clarity only -- compile is
     unattended-by-construction either way (no prompts in any code path).
     Raises `ValueError` if `memory_root` does not exist, before any read.
     Pass `store` directly (e.g. a `FlatFileGraphStore` under `tmp_path`) in
     tests instead of relying on `store_path`'s repo-relative default.
+    `transcript_root` defaults to `default_transcript_root()` when `None`
+    (production wiring), matching the `store`/`store_path` injection pattern
+    already used for testability -- pass an explicit, empty directory in
+    tests to avoid picking up a developer machine's real session transcripts.
     """
     if not memory_root.is_dir():
         raise ValueError(
@@ -126,6 +146,12 @@ def compile_graph(
         store.upsert_node(node)
 
     for node in _read_git_surface(repo_root, max_commits, warnings):
+        store.upsert_node(node)
+
+    resolved_transcript_root = (
+        transcript_root if transcript_root is not None else default_transcript_root()
+    )
+    for node in _read_transcript_surface(memory_root, resolved_transcript_root, warnings):
         store.upsert_node(node)
 
     invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
@@ -317,6 +343,151 @@ def _read_git_surface(repo_root: Path, max_commits: int, warnings: list[str]) ->
             )
         )
     return nodes
+
+
+# --- surface: session transcripts (Story 3.1's scanner, registered here as a
+# --- compile source per Story 3.2 / CAP-2) ------------------------------------
+
+
+def _read_transcript_surface(
+    memory_root: Path, transcript_root: Path, warnings: list[str]
+) -> list[GraphNode]:
+    """Registers Story 3.1's `scan_transcripts()` output as the sixth
+    compile source (CAP-2). All decision-marking/dedup logic lives in that
+    scanner -- no second implementation here (Epic 3's own Cross-Story
+    Dependencies). A missing/unreadable `transcript_root` (the ordinary
+    case: transcripts are per-user/local, so a machine that has simply never
+    run a session against this repo has no root at all) degrades to a
+    warning and zero nodes, same as every other optional surface -- it never
+    aborts the compile.
+
+    A per-`(source_file, line_number)` occurrence counter disambiguates
+    multiple candidates on one transcript line into distinct ids:
+    `transcript:<file>:L<line>` for the first, `transcript:<file>:L<line>:1`,
+    `:2`, ... for repeats. Keying off the candidate's own file+line identity
+    (rather than a single global running index) keeps an already-assigned id
+    stable when a new transcript file contributes *different* content: a
+    global index would re-number every later candidate instead. It does NOT
+    make ids stable in general -- `scan_transcripts()` dedups repeated
+    sentences across files in sorted-filename order, so the SAME sentence
+    appearing in a new, earlier-sorting file re-homes that node onto the new
+    file's id (review finding: verified, `session-z.jsonl:L1` ->
+    `session-a.jsonl:L1`). Node identity here follows the surviving
+    candidate's own file+line, not a stable per-fact key.
+    """
+    try:
+        proposal = scan_transcripts(transcript_root, memory_root)
+    except ValueError as exc:
+        warnings.append(_transcript_unavailable_warning(transcript_root, exc))
+        return []
+
+    # `scan_transcripts()` swallows an `OSError` from its own glob, so an
+    # existing-but-unreadable root would otherwise be indistinguishable from
+    # "nothing decision-shaped was said" -- zero nodes AND zero warnings,
+    # contradicting this story's own "missing/unreadable ... degrades to a
+    # warning" contract (review finding). Probe the listing explicitly.
+    #
+    # Only when the scan came back empty, though: candidates ARE proof the
+    # root was listable, and probing unconditionally meant a root pruned
+    # between the scan and the probe (the same rotate-mid-compile race
+    # `_transcript_valid_from()` guards) threw away real, already-computed
+    # nodes and mislabelled them "does not exist -- expected" (review
+    # finding: reproduced).
+    if not proposal.candidates:
+        try:
+            next(transcript_root.iterdir(), None)
+        except OSError as exc:
+            warnings.append(_transcript_unavailable_warning(transcript_root, exc))
+            return []
+
+    nodes: list[GraphNode] = []
+    occurrence: dict[tuple[Path, int], int] = {}
+    for candidate in proposal.candidates:
+        key = (candidate.source_file, candidate.line_number)
+        index = occurrence.get(key, 0)
+        occurrence[key] = index + 1
+        citation = f"{candidate.source_file.name}:L{candidate.line_number}"
+        node_id = f"transcript:{citation}" if index == 0 else f"transcript:{citation}:{index}"
+        nodes.append(
+            GraphNode(
+                id=node_id,
+                kind="transcript",
+                title=candidate.snippet,
+                text=candidate.text,
+                citation=citation,
+                valid_from=_transcript_valid_from(candidate),
+            )
+        )
+    return nodes
+
+
+def _transcript_unavailable_warning(transcript_root: Path, exc: Exception) -> str:
+    """The one warning wording for every "surface contributed nothing"
+    reason.
+
+    Deliberately does NOT forward `scan_transcripts()`'s own `ValueError`
+    text: that message ends in "pass --source to point at the correct
+    user-local session-transcript directory", and `--source` exists on
+    `scribe capture --transcripts`, not on `scribe graph compile` (which
+    this story's own contract forbids giving one) -- so forwarding it told
+    operators of the unattended path to reach for a flag that command does
+    not accept (review finding). The reason is re-derived here instead, so
+    a genuine misconfiguration stays just as diagnosable.
+    """
+    if not transcript_root.exists():
+        reason = "does not exist"
+    elif not transcript_root.is_dir():
+        reason = "is not a directory"
+    else:
+        reason = f"is not readable ({exc.__class__.__name__})"
+    return (
+        f"transcript surface unavailable ({transcript_root} {reason}) -- expected "
+        "when this machine has no session transcripts for this repo; contributed "
+        "zero transcript nodes"
+    )
+
+
+def _transcript_valid_from(candidate: TranscriptCandidate) -> datetime:
+    """`candidate.timestamp` parsed as ISO-8601 first; falling back to the
+    source file's own mtime -- deliberately NOT `datetime.now()` as the FIRST
+    fallback (unlike the git-surface's unparseable-date fallback above),
+    because `datetime.now()` here would break `compile_graph()`'s own
+    byte-identical-rerun guarantee for any candidate lacking a parseable
+    timestamp. `fromisoformat()` is guarded against both `ValueError` (an
+    unparseable string) and `TypeError` (a non-string `timestamp`, e.g. a
+    raw JSON number) -- review finding. The mtime `stat()` call is itself
+    guarded: a transcript file is per-user/local and can be pruned or
+    rotated outside Scribe's control, so it can vanish between
+    `scan_transcripts()` returning its candidates and this stat -- that race
+    (plus `OverflowError` from an out-of-range mtime -- review finding)
+    degrades to `datetime.now(timezone.utc)` (breaking idempotency only in
+    this narrow, rare case, same tradeoff the git-surface already accepts
+    for its own unparseable-date case) rather than raising and aborting the
+    whole compile.
+
+    The parsed result is normalized to tz-aware UTC. A transcript timestamp
+    carrying no offset (`"2026-08-20T12:00:00"`) parses to a NAIVE datetime,
+    and every other surface's `valid_from` is tz-aware UTC -- mixing the two
+    on one graph makes any cross-node comparison (sorting, an AD-4
+    bi-temporal `valid_from` filter) raise `TypeError: can't compare
+    offset-naive and offset-aware datetimes` (review finding: reproduced).
+    A naive timestamp is read as UTC, matching the mtime fallback below.
+    """
+    try:
+        parsed = datetime.fromisoformat(candidate.timestamp)
+    except (ValueError, TypeError):
+        # TypeError: a transcript entry whose `timestamp` field is a JSON
+        # number (or any other non-string value) makes `fromisoformat`
+        # raise TypeError rather than ValueError -- review finding.
+        pass
+    else:
+        return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+    try:
+        return datetime.fromtimestamp(candidate.source_file.stat().st_mtime, tz=timezone.utc)
+    except (OSError, OverflowError):
+        # OverflowError: `fromtimestamp()` can raise this for an
+        # out-of-range mtime, per its own docs -- review finding.
+        return datetime.now(timezone.utc)
 
 
 # --- supersession (Story 2.3) -------------------------------------------------

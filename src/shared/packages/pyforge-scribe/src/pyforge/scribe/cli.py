@@ -253,8 +253,9 @@ def graph_compile(
     nightly: bool = typer.Option(False, "--nightly", help="Run in unattended nightly mode."),
 ) -> None:
     """Rebuild the compiled knowledge graph from `.claude/memory/`,
-    `.memlog.md` files, git history, retros, and CHANGELOGs (Story 2.2/2.3).
-    Never prompts -- safe to run from cron/CI with no human present."""
+    `.memlog.md` files, git history, retros, CHANGELOGs (Story 2.2/2.3), and
+    un-curated session transcripts (Story 3.2). Never prompts -- safe to run
+    from cron/CI with no human present."""
     try:
         result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
     except ValueError as exc:
