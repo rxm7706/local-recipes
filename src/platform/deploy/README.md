@@ -53,7 +53,12 @@ compose stack flips locally.
 
 ## OpenShift
 
-Two installs (see `overlays/ocp/README.md` for detail):
+**Cluster bring-up** (CRC 2.63.0 / OpenShift 4.22.7, internal-registry image
+push, keys inventory): follow
+`overlays/ocp/cluster-bringup.md` end to end before installing the chart.
+
+Two installs after the cluster is Running and the platform image is in the
+internal registry (see `overlays/ocp/README.md` for detail):
 
 ```sh
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
@@ -83,14 +88,15 @@ capability-naming reason where helm/PyYAML are absent.
 
 ## Honest limitations
 
-- **No OCP live-cluster verification in this repo.** OCP-specific behavior
-  (Route admission, SCC enforcement, registry/OIDC wiring) is AD-16 Tier 3 —
-  attended-only. Story 12.2's `gke-portability-smoke` CI job (`.github/
+- **OCP live-cluster verification is attended-only (Story 12.7).** Bring-up
+  and internal-registry push are documented in `overlays/ocp/cluster-bringup.md`
+  (Story 12.4); Route admission, SCC enforcement, PVC binding, and
+  postgres/redis under arbitrary UID remain AD-16 Tier 3 until that verification
+  story lands. Story 12.2's `gke-portability-smoke` CI job (`.github/
   workflows/platform-ci.yml`) DOES deploy this same core chart onto a real
   ephemeral `kind` cluster and curl it through a live `Ingress` +
-  ingress-nginx controller on every relevant PR/push — so the vanilla-K8s
-  path is live-verified; only the OCP overlay's own resources remain
-  parsed-manifest-only.
+  ingress-nginx controller — so the vanilla-K8s path is live-verified; the OCP
+  overlay's own resources remain parsed-manifest-only until 12.7.
 - **Fresh installs have a transient migration window.** On a FIRST
   install the web pods go Ready before the post-install migrate Job has
   run: the `/ht/` readiness `Database` check is connectivity-only (a bare
