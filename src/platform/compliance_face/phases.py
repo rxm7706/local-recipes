@@ -60,7 +60,7 @@ def advance(job: PhaseJob, expected_next: str) -> PhaseProgress:
     if expected_next != expected:
         msg = (
             f"phase guard: expected {expected!r}, got {expected_next!r} "
-            f"(no phase chooses its own number)"
+            f"(no phase chooses its own number)",
         )
         raise RuntimeError(msg)
     job.phase_index += 1
