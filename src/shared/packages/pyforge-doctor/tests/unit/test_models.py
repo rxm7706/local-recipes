@@ -174,6 +174,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "adoption",
         "marshal-durability",
         "ledger-regression",
+        "ledger-direction",
         "story-status",
         "chain-completeness",
         "dashboard-drift",

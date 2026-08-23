@@ -707,6 +707,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.
+# Story 15.2 (landing promotes the ledger, FR-136/FR-139) adds an ELEVENTH
+# MRS-LAND-* code, MRS-LAND-011 (`_promote_sprint_ledger`'s own advisory-lock
+# contention on the tracked sprint-status-ledger, a refused downgrade sync,
+# or a write/commit failure). Classifies WARN, the same tier as
+# MRS-LAND-010: reported, never blocking -- the wave already landed.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
@@ -938,6 +943,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-012": Verdict.ERROR,
     "MRS-LAND-009": Verdict.WARN,
     "MRS-LAND-010": Verdict.WARN,
+    "MRS-LAND-011": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
     "MRS-DEPLOY-024": Verdict.WARN,

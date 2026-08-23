@@ -73,6 +73,11 @@ class Source(StrEnum):
     # sources/marshal.py's gather_story_status for the independence rationale.
     LEDGER_REGRESSION = "ledger-regression"
     STORY_STATUS = "story-status"
+    # Story 15.2 (marshal FR-137/FR-138): standalone ledger-vs-git drift with
+    # DIRECTION — landed-but-unpromoted (merged in git, not done in the
+    # tracked twin) and the converse. Reads merge history + tracked ledgers
+    # only; never the Tier-3 feed. See sources/ledger.py::gather_direction.
+    LEDGER_DIRECTION = "ledger-direction"
     # Story 6.5 (FR-15): the closed taxonomy EXTENDED once more -- Doctor's
     # verdict on the fleet-status board's own truthfulness: every open Spec a
     # station owns is decomposed and its epics/ledger/board agree (ported from

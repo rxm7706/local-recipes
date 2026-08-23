@@ -39,6 +39,7 @@ from pyforge.doctor.sources import (
 
 _EXPECTED_DISPATCH = {
     "ledger-regression": ledger.gather,
+    "ledger-direction": ledger.gather_direction,
     "story-status": marshal.gather_story_status,
     "chain-completeness": board.gather_chain_completeness,
     "dashboard-drift": board.gather_dashboard_drift,

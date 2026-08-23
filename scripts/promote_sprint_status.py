@@ -263,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  WARNING   {key}: --allow-regression, un-finishing "
                       f"{len(lost)} key(s): {detail}")
 
-        dest.write_text(text, encoding="utf-8")
+        _write_ledger_locked(dest, text)
         wrote.append(f"{key} ({len(statuses)})")
 
     print(f"sprint-status ledger sync — wrote {len(wrote)}, unchanged {len(unchanged)}, "
@@ -282,6 +282,35 @@ def main(argv: list[str] | None = None) -> int:
         print("\nNOTHING promoted — every feed was missing or unparseable.")
         return 1
     return 0
+
+
+def _write_ledger_locked(dest: Path, text: str) -> None:
+    """Write ``dest`` under ``FsPort.acquire_advisory_lock`` when
+    ``pyforge.marshal`` is importable (Story 15.2 / FR-139 / AD-42).
+
+    Concurrent ``marshal land`` promotions and this script must serialize on
+    the SAME lock primitive — never a second lock implementation. When
+    marshal is absent (plain ``local-recipes`` env), fall back to a direct
+    write: the land path still holds the lock for its own concurrent writers.
+    """
+    try:
+        from pyforge.marshal.adapters.fs_local import FsError, LocalFs
+    except ImportError:
+        dest.write_text(text, encoding="utf-8")
+        return
+
+    fs = LocalFs()
+    lock = None
+    try:
+        lock = fs.acquire_advisory_lock(dest, timeout_s=5.0)
+        dest.write_text(text, encoding="utf-8")
+    except FsError as exc:
+        raise SystemExit(
+            f"sprint-ledger-sync: cannot acquire lock on {dest}: {exc}"
+        ) from exc
+    finally:
+        if lock is not None:
+            fs.release_advisory_lock(lock)
 
 
 if __name__ == "__main__":
