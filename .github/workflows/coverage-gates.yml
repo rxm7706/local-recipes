@@ -62,6 +62,10 @@ jobs:
           COVERAGE_GATES_STATIONS: marshal
         run: |
           set -euo pipefail
+          # Seed verbs + integration harnesses create commits; GHA runners
+          # have no git identity by default.
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="origin/${GITHUB_BASE_REF}"
           else
