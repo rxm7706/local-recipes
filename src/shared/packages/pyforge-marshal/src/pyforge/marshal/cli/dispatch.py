@@ -184,6 +184,8 @@ def gather_dispatch_journal_facts(
     baseline_head_sha: str | None = None
     supervisor_pid: int | None = None
     completion_verdict: str | None = None
+    verification_verdict: str | None = None
+    verification_failed_gate: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
             raw_story = entry.payload.get("story_key")
@@ -214,6 +216,14 @@ def gather_dispatch_journal_facts(
             verdict_val = entry.payload.get("verdict")
             if isinstance(verdict_val, str):
                 completion_verdict = verdict_val
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
+        if entry.phase == Phase.OUTCOME:
+            vval = entry.payload.get("verdict")
+            if isinstance(vval, str):
+                verification_verdict = vval
+            gate_val = entry.payload.get("failed_gate")
+            if isinstance(gate_val, str):
+                verification_failed_gate = gate_val
     return dispatch_core.DispatchJournalFacts(
         story_key=story_key,
         session_pid=session_pid,
@@ -223,6 +233,8 @@ def gather_dispatch_journal_facts(
         baseline_head_sha=baseline_head_sha,
         supervisor_pid=supervisor_pid,
         completion_verdict=completion_verdict,
+        verification_verdict=verification_verdict,
+        verification_failed_gate=verification_failed_gate,
     )
 
 
