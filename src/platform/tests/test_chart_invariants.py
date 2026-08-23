@@ -46,6 +46,7 @@ _VANILLA_KINDS = frozenset(
         "Job",
         "ServiceAccount",
         "PersistentVolumeClaim",
+        "NetworkPolicy",
     },
 )
 _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job"})
@@ -377,6 +378,132 @@ def _collect_workload_images(docs: list[dict[str, Any]]) -> set[str]:
     return images
 
 
+def _assert_redis_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> None:
+    """Story 12.6: Redis stays ephemeral -- Deployment volumes use emptyDir,
+    never a PVC.
+    """
+    redis_deployments = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Deployment"
+        and (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+        )
+        == "redis"
+    ]
+    assert len(redis_deployments) == 1, (
+        f"expected exactly one redis Deployment, got "
+        f"{[doc['metadata']['name'] for doc in redis_deployments]}"
+    )
+    volumes = redis_deployments[0]["spec"]["template"]["spec"].get("volumes") or []
+    assert volumes, "redis Deployment has no volumes -- emptyDir check vacuous"
+    for volume in volumes:
+        assert "emptyDir" in volume, (
+            f"redis volume {volume.get('name')!r} is not emptyDir: {volume!r}"
+        )
+        assert "persistentVolumeClaim" not in volume, (
+            f"redis volume {volume.get('name')!r} uses a PVC -- persistence "
+            f"must stay ephemeral (Story 12.6)"
+        )
+
+
+def _assert_redis_uses_password_from_existing_secret(
+    docs: list[dict[str, Any]],
+    *,
+    secret_name: str,
+    password_key: str,
+    redis_service_host: str,
+) -> None:
+    """Story 12.6: redis container and platform pods wire AUTH from
+    existingSecret into --requirepass and REDIS_URL respectively.
+    """
+    by_component = _pod_specs_by_component(docs)
+    assert "redis" in by_component, "redis workload missing from render"
+    redis_env = _collect_env_by_name(by_component["redis"])
+    redis_password = redis_env.get("REDIS_PASSWORD")
+    assert redis_password is not None, "redis pod missing REDIS_PASSWORD env"
+    assert redis_password.get("valueFrom", {}).get("secretKeyRef") == {
+        "name": secret_name,
+        "key": password_key,
+    }, f"redis REDIS_PASSWORD secretKeyRef mismatch: {redis_password!r}"
+
+    redis_container = by_component["redis"]["containers"][0]
+    assert redis_container.get("command") == [
+        "redis-server",
+        "--requirepass",
+        "$(REDIS_PASSWORD)",
+    ], f"redis command missing --requirepass wiring: {redis_container.get('command')!r}"
+
+    expected_redis_url = f"redis://:$(REDIS_PASSWORD)@{redis_service_host}:6379/0"
+    for component in sorted(_PLATFORM_COMPONENTS):
+        env = _collect_env_by_name(by_component[component])
+        password_env = env.get("REDIS_PASSWORD")
+        assert password_env is not None, f"{component} pod missing REDIS_PASSWORD env"
+        assert password_env.get("valueFrom", {}).get("secretKeyRef") == {
+            "name": secret_name,
+            "key": password_key,
+        }, f"{component} REDIS_PASSWORD secretKeyRef mismatch: {password_env!r}"
+        redis_url = env.get("REDIS_URL")
+        assert redis_url is not None, f"{component} pod missing REDIS_URL env"
+        assert redis_url.get("value") == expected_redis_url, (
+            f"{component} REDIS_URL is {redis_url.get('value')!r}, "
+            f"expected AUTH-wired {expected_redis_url!r}"
+        )
+
+
+def _assert_redis_network_policy_restricts_platform_pods(
+    docs: list[dict[str, Any]],
+    *,
+    redis_policy_name: str,
+) -> None:
+    """Story 12.6: exactly one NetworkPolicy targets redis and allows
+    ingress from web/worker/migrate platform pods on 6379 only.
+    """
+    policies = [doc for doc in docs if doc.get("kind") == "NetworkPolicy"]
+    redis_policies = [
+        doc for doc in policies if doc["metadata"]["name"] == redis_policy_name
+    ]
+    assert len(redis_policies) == 1, (
+        f"expected exactly one redis NetworkPolicy named {redis_policy_name!r}, "
+        f"got {[doc['metadata']['name'] for doc in policies]}"
+    )
+    policy = redis_policies[0]
+    selector = policy["spec"]["podSelector"]
+    assert selector.get("matchLabels", {}).get("app.kubernetes.io/component") == "redis"
+
+    ingress_rules = policy["spec"].get("ingress") or []
+    assert len(ingress_rules) == 1, (
+        f"redis NetworkPolicy must have exactly one ingress rule, got {ingress_rules!r}"
+    )
+    rule = ingress_rules[0]
+    from_entries = rule.get("from") or []
+    assert len(from_entries) == 1, (
+        f"redis NetworkPolicy ingress.from must have one podSelector entry, "
+        f"got {from_entries!r}"
+    )
+    pod_selector = from_entries[0].get("podSelector") or {}
+    component_expr = next(
+        (
+            expr
+            for expr in pod_selector.get("matchExpressions") or []
+            if expr.get("key") == "app.kubernetes.io/component"
+        ),
+        None,
+    )
+    assert component_expr is not None, (
+        f"redis NetworkPolicy missing component matchExpression: {pod_selector!r}"
+    )
+    assert component_expr.get("operator") == "In", component_expr
+    assert set(component_expr.get("values") or []) == set(_PLATFORM_COMPONENTS), (
+        f"redis NetworkPolicy component filter must match platform pods "
+        f"{sorted(_PLATFORM_COMPONENTS)}, got {component_expr.get('values')!r}"
+    )
+    ports = rule.get("ports") or []
+    assert ports == [{"protocol": "TCP", "port": 6379}], (
+        f"redis NetworkPolicy must allow TCP/6379 only, got {ports!r}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Real proofs (helm-gated)
 # ---------------------------------------------------------------------------
@@ -507,6 +634,58 @@ def test_platform_pods_wire_dbgpt_sidecar_base_url_to_internal_service():
             f"expected internal Service URL {expected_url!r}"
         )
         assert "localhost" not in dbgpt_env.get("value", "")
+
+
+@requires_helm
+def test_redis_uses_existing_secret_password_and_wires_redis_url():
+    """AC (Story 12.6): redis Deployment and platform pods consume
+    REDIS_PASSWORD from existingSecret; REDIS_URL embeds it via env
+    expansion.
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    redis_host = next(
+        doc["metadata"]["name"]
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "redis"
+    )
+    _assert_redis_uses_password_from_existing_secret(
+        docs,
+        secret_name=values["existingSecret"],
+        password_key=values["redis"]["passwordSecretKey"],
+        redis_service_host=redis_host,
+    )
+
+
+@requires_helm
+def test_redis_network_policy_restricts_ingress_to_platform_pods():
+    """AC (Story 12.6): a NetworkPolicy limits redis ingress to web/worker/
+    migrate pods on port 6379.
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    redis_policy_name = next(
+        doc["metadata"]["name"]
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["spec"]["podSelector"]
+        .get("matchLabels", {})
+        .get("app.kubernetes.io/component")
+        == "redis"
+    )
+    _assert_redis_network_policy_restricts_platform_pods(
+        docs,
+        redis_policy_name=redis_policy_name,
+    )
+
+
+@requires_helm
+def test_redis_persistence_remains_empty_dir():
+    """AC (Story 12.6): Redis stays ephemeral -- emptyDir only, no PVC."""
+    docs = _render(_CORE_CHART)
+    _assert_redis_persistence_is_empty_dir(docs)
 
 
 @requires_helm
@@ -807,3 +986,152 @@ def test_route_target_check_fails_on_a_mismatched_service_name_or_port():
 
     with pytest.raises(AssertionError):
         _assert_route_targets_service(route, unnamed_port_service)
+
+
+def test_redis_auth_check_fails_when_requirepass_is_missing():
+    """A redis container without --requirepass wiring must raise."""
+    platform_env = [
+        {
+            "name": "REDIS_PASSWORD",
+            "valueFrom": {
+                "secretKeyRef": {
+                    "name": "platform-secrets",
+                    "key": "REDIS_PASSWORD",
+                },
+            },
+        },
+        {
+            "name": "REDIS_URL",
+            "value": "redis://:$(REDIS_PASSWORD)@platform-redis:6379/0",
+        },
+    ]
+
+    def platform_deployment(component: str) -> dict[str, Any]:
+        return {
+            "kind": "Deployment",
+            "metadata": {
+                "name": f"platform-{component}",
+                "labels": {"app.kubernetes.io/component": component},
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {"app.kubernetes.io/component": component},
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": component,
+                                "image": "platform:latest",
+                                "env": platform_env,
+                            },
+                        ],
+                    },
+                },
+            },
+        }
+
+    docs = [
+        {
+            "kind": "Deployment",
+            "metadata": {
+                "name": "platform-redis",
+                "labels": {"app.kubernetes.io/component": "redis"},
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {"app.kubernetes.io/component": "redis"},
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "redis",
+                                "image": "redis:7",
+                                "env": [platform_env[0]],
+                                "command": ["redis-server"],
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+        platform_deployment("web"),
+        platform_deployment("worker"),
+        platform_deployment("migrate"),
+    ]
+
+    with pytest.raises(AssertionError, match="requirepass"):
+        _assert_redis_uses_password_from_existing_secret(
+            docs,
+            secret_name="platform-secrets",
+            password_key="REDIS_PASSWORD",
+            redis_service_host="platform-redis",
+        )
+
+
+def test_redis_network_policy_check_fails_when_sidecar_is_allowed():
+    """A NetworkPolicy that admits the sidecar component must raise."""
+    contaminated_policy = [
+        {
+            "kind": "NetworkPolicy",
+            "metadata": {"name": "platform-redis"},
+            "spec": {
+                "podSelector": {
+                    "matchLabels": {"app.kubernetes.io/component": "redis"},
+                },
+                "ingress": [
+                    {
+                        "from": [
+                            {
+                                "podSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "app.kubernetes.io/component",
+                                            "operator": "In",
+                                            "values": ["web", "worker", "migrate", "dbgpt"],
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                        "ports": [{"protocol": "TCP", "port": 6379}],
+                    },
+                ],
+            },
+        },
+    ]
+
+    with pytest.raises(AssertionError, match="component filter"):
+        _assert_redis_network_policy_restricts_platform_pods(
+            contaminated_policy,
+            redis_policy_name="platform-redis",
+        )
+
+
+def test_redis_empty_dir_check_fails_when_a_pvc_volume_is_present():
+    """A redis Deployment with a PVC-backed volume must raise."""
+    contaminated_docs = [
+        {
+            "kind": "Deployment",
+            "metadata": {
+                "name": "platform-redis",
+                "labels": {"app.kubernetes.io/component": "redis"},
+            },
+            "spec": {
+                "template": {
+                    "spec": {
+                        "volumes": [
+                            {
+                                "name": "data",
+                                "persistentVolumeClaim": {"claimName": "redis-data"},
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+    ]
+
+    with pytest.raises(AssertionError, match="emptyDir"):
+        _assert_redis_persistence_is_empty_dir(contaminated_docs)

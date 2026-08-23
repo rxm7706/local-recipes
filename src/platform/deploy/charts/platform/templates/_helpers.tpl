@@ -154,7 +154,7 @@ existingSecret fails the render naming the values path instead of
 rendering secretKeyRefs against a Secret named "".
 */}}
 {{- define "platform.existingSecretName" -}}
-{{- required "existingSecret is required -- the name of the pre-created Secret holding DJANGO_SECRET_KEY/DATABASE_URL/POSTGRES_PASSWORD (AD-12)" .Values.existingSecret }}
+{{- required "existingSecret is required -- the name of the pre-created Secret holding DJANGO_SECRET_KEY/DATABASE_URL/POSTGRES_PASSWORD/REDIS_PASSWORD (AD-12)" .Values.existingSecret }}
 {{- end }}
 
 {{/*
@@ -189,8 +189,9 @@ compose.yml's wiring exactly. Secrets arrive ONLY by secretKeyRef into the
 pre-created existingSecret (AD-12); DATABASE_URL is the operator's whole
 URL from that Secret, never composed in templates (composing
 user:pass@host here would drag the password into the render path).
-REDIS_URL is computed: no credential in it, and the redis Service name is
-this chart's own.
+REDIS_URL is computed from the redis Service name plus REDIS_PASSWORD
+(secretKeyRef below, expanded via $(REDIS_PASSWORD) at runtime -- the
+password never enters the render path). Story 12.6.
 */}}
 {{- define "platform.djangoEnv" -}}
 {{- include "platform.validateAllowedHosts" . -}}
@@ -210,8 +211,13 @@ this chart's own.
     secretKeyRef:
       name: {{ include "platform.existingSecretName" . | quote }}
       key: DATABASE_URL
+- name: REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
 - name: REDIS_URL
-  value: {{ printf "redis://%s:6379/0" (include "platform.redis.fullname" .) | quote }}
+  value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redis.fullname" .) | quote }}
 - name: DBGPT_SIDECAR_BASE_URL
   value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
 {{- end }}

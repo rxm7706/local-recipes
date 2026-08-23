@@ -23,6 +23,7 @@ Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
   | `DJANGO_SECRET_KEY` | Django's `SECRET_KEY` |
   | `DATABASE_URL` | the whole URL, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` |
   | `POSTGRES_PASSWORD` | the same `<password>`, consumed by the postgres container |
+  | `REDIS_PASSWORD` | Redis AUTH password (Story 12.6); consumed by redis and wired into platform pods' `REDIS_URL` |
 
   `helm install` prints the exact in-cluster DNS names (NOTES.txt), so the
   operator composes `DATABASE_URL` from them — the chart never composes it
@@ -34,7 +35,8 @@ Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
 kubectl create secret generic platform-secrets \
     --from-literal=DJANGO_SECRET_KEY=... \
     --from-literal=DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
-    --from-literal=POSTGRES_PASSWORD=...
+    --from-literal=POSTGRES_PASSWORD=... \
+    --from-literal=REDIS_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform
 ```
 
@@ -108,12 +110,13 @@ capability-naming reason where helm/PyYAML are absent.
   `pre-upgrade` hook runs migrations before the new pods roll out). The
   hook shape is deliberate — see the deadlock rationale in
   `charts/platform/templates/migrate-job.yaml`.
-- **Redis is an unauthenticated in-namespace broker.** Any workload in
-  the namespace (or, without a NetworkPolicy, the cluster) that can reach
-  `<fullname>-redis:6379` can poison the cache and enqueue arbitrary
-  Celery tasks. NetworkPolicy and Redis AUTH are explicitly out of this
-  story's scope (spec Never: no NetworkPolicy) — named here as follow-up
-  hardening, not solved.
+- **Redis is AUTH-protected with a NetworkPolicy (Story 12.6).** The
+  pre-created Secret's `REDIS_PASSWORD` key feeds `--requirepass` on the
+  redis container and is wired into platform pods' `REDIS_URL` via
+  secretKeyRef + runtime env expansion. A NetworkPolicy restricts ingress
+  on port 6379 to web/worker/migrate pods only. Persistence stays
+  emptyDir (ephemeral by design — Celery re-queues). Clusters without a
+  CNI that enforces NetworkPolicy get AUTH only, not network isolation.
 - **The official `postgres`/`redis` images may need image overrides under
   OCP `restricted-v2`.** Both declare a root `USER` and step down at
   runtime; under an SCC-assigned arbitrary UID they generally run, but
@@ -137,4 +140,4 @@ capability-naming reason where helm/PyYAML are absent.
   keys fall through to the image's baked TOML defaults). LLM API keys, when
   wired, come from the same pre-created `existingSecret` via
   `sidecar.llm.apiKeySecretKey` — the chart never renders Secrets (AD-12).
-- No HPA/PDB/NetworkPolicy/media PVC — out of this story's scope.
+- No HPA/PDB/media PVC — out of scope for the current chart stories.

@@ -44,6 +44,9 @@ resources: {}
 #                        (NOTES.txt prints the exact DNS name to use)
 #   POSTGRES_PASSWORD -- the same password, consumed by the postgres
 #                        container itself
+#   REDIS_PASSWORD    -- Redis AUTH password (Story 12.6); consumed by the
+#                        redis container and wired into platform pods'
+#                        REDIS_URL via secretKeyRef + env expansion
 existingSecret: platform-secrets
 
 # Non-secret Django settings surface (mirrors compose.yml's env wiring).
@@ -133,6 +136,8 @@ redis:
     repository: redis
     tag: "7"
     pullPolicy: IfNotPresent
+  # Key in existingSecret holding the Redis AUTH password (Story 12.6).
+  passwordSecretKey: REDIS_PASSWORD
   # Same rationale as postgres.runAsUser; nulled by the OCP overlay.
   runAsUser: 999
   # Same empty-default seam rationale as the top-level `resources`.
