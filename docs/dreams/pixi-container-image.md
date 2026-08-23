@@ -11,34 +11,61 @@ status: specified   # 2026-08-22 — spec + station decomposition landed same da
 
 The source dream's actual value — every containerized project inheriting one consistent,
 credential-safe pixi installation layer instead of each team hand-rolling its own — presupposes
-an organization shipping many containers that all need pixi. This repo ships none. Mason's own
-`docker`-mode build path (`cfe.py`'s `build_docker`) uses Docker as a RECIPE cross-compilation
-isolation mechanism, not as a shipped application container — a genuinely different concern this
-Dream must not be confused with. Captured for parity, not because a real gap exists today.
+an organization shipping many containers that all need pixi. This repo now ships three (see "What
+is real" below), and all three independently converged on the same pixi-materialization discipline
+rather than actually inheriting one shared pre-built layer — that convergence is what's real today,
+not the shared-layer artifact itself. Mason's own `docker`-mode build path (`cfe.py`'s
+`build_docker`) uses Docker as a RECIPE cross-compilation isolation mechanism, not as a shipped
+application container — a genuinely different concern this Dream must not be confused with.
+Captured for parity originally; partially realized now (see "What is real" and "Constraints") in
+the discipline, not yet in a shared base image.
 
 ## What it looks like when real
 
-Left thin, deliberately, since no PyForge artifact currently ships as a container:
+Left thin originally, since no PyForge artifact shipped as a container at the time this Dream was
+captured. Three now do (see "What is real"), so the "IF" below has partly resolved — not into a
+shared pre-built base image, but into three independently-built images that converged on the same
+pixi-materialization discipline and are now held to it explicitly:
 
-- IF this repo (or a station's own artifact) is ever containerized, a shared base layer with pixi
-  pre-installed is the right pattern to reach for rather than each container hand-rolling its own
-  install — this Dream is where that design would live.
-- Credential handling (build-time secret mount, never baked into a layer) is the one piece worth
-  retaining regardless of WHEN this gets built, since it's a security discipline, not an
-  implementation detail specific to WF's own Artifactory.
+- A shared base layer with pixi pre-installed is still the right pattern to reach for IF a fourth
+  Containerfile, or a real divergence between the three that exist, ever makes hand-rolling the
+  same builder stage three-plus times worth consolidating — this Dream is where that design would
+  live; it hasn't been built because it hasn't been needed (see "Constraints").
+- Credential handling (build-time secret mount, never baked into a layer) is the one piece that
+  didn't wait for a shared base image to become real — it's already true today across all three
+  Containerfiles, documented and guarded by
+  `docs/reference/container-base-layer-convention.md`, since it's a security discipline, not an
+  implementation detail specific to a shared base layer or WF's own Artifactory.
 
 ## What is real
 
-Nothing. No Dockerfile exists anywhere in this repo's own tracked source (checked directly — the
-only `Dockerfile`-named files present are third-party dependency artifacts inside `.pixi/envs/`
-and one unrelated test fixture). Mason's `build_docker` mode is a recipe-build execution
-mechanism, not an application-shipping concern — confirmed by reading `models.py`'s own Story 2.6
-documentation before drafting this, specifically to avoid mistaking the two for overlap.
+The trigger fired. Three Containerfiles now ship in this repo's own tracked source: `Containerfile`
+(root, Story 7.1), `src/platform/Containerfile` (Story 10.3), and
+`src/platform/compose/dbgpt/Containerfile` (Story 10.5). All three converged independently on the
+same base-layer pattern — a registry-pinned `ghcr.io/prefix-dev/pixi` builder stage plus a minimal
+runtime stage, no credential ever baked into a layer or `ENV`. That convergence is now written down
+as policy in `docs/reference/container-base-layer-convention.md` and enforced by
+`tests/packaging/test_containerfile_base_layer_convention.py` (which sweeps every `FROM`/`ENV` line
+across all three files), alongside the pre-existing `scripts/pixi_version_registry.py` (which keeps
+the pixi builder-stage tag in sync with `pixi.toml`'s `requires-pixi` floor). Mason's `build_docker`
+mode remains the separate recipe cross-compilation concern this Dream never covers — confirmed by
+reading `models.py`'s own Story 2.6 documentation before drafting this, specifically to avoid
+mistaking the two for overlap.
 
 ## Constraints
 
-- **Not to be built until a real containerized artifact exists.** Building a base image with
-  nothing to `FROM` it would be pure speculation.
+- **The discipline is real; a repo-owned base image still is not.** The three Containerfiles above
+  all build directly `FROM` the upstream `ghcr.io/prefix-dev/pixi` image — none of them, and nothing
+  else in this repo, builds or publishes a custom pixi-preinstalled base image.
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pixi-container-image/SPEC.md`
+  (the spec this Dream produced) keeps it that way deliberately: the official pixi image stays the
+  base, and a shipped repo-owned base image stays out of scope until at least two Containerfiles
+  diverge for reasons a shared custom base would actually solve — not true today, since all three
+  still follow one documented pattern. This Dream's original "not to be built until a real
+  containerized artifact exists" premise has therefore only partially resolved: the artifacts exist
+  and the pattern they converged on is now documented and guarded, but the larger ask this Dream
+  captures — an actual shared, repo-owned base image — remains speculative until a real divergence
+  makes one worth building.
 
 ## Non-goals
 
@@ -51,7 +78,7 @@ documentation before drafting this, specifically to avoid mistaking the two for 
 
 | Source feature | Disposition | Why |
 |---|---|---|
-| UBI8-minimal base + pixi pre-install | **Omitted, no target** | No PyForge artifact ships as a container. |
+| UBI8-minimal base + pixi pre-install | **Omitted, no target** | No PyForge artifact builds or publishes a shared, repo-owned, pixi-preinstalled base image — the three Containerfiles that now exist (see "What is real") each materialize pixi independently in their own builder stage rather than inheriting one. |
 | BuildKit `--mount=type=secret` credential handling | **Pattern retained** | The one piece worth keeping regardless of timing — a security discipline, not WF-specific. |
 | Jenkins + `SharedLibrary_cicd` CI/CD, weekly rebuild cron | **Omitted, WF-infrastructure-specific** | This repo runs plain GitHub Actions; no Jenkins presence anywhere. |
 | Prisma scan, OCI labels, `microdnf` hardening | **Omitted, no target** | Container-hardening detail with nothing to harden yet. |
@@ -88,3 +115,16 @@ source org's Tier-3 batch, sharing the same "no current PyForge target" disposit
   no container ever reaching the public net; (6) downstream layers that later run `pixi install`
   resolve their channels from the same Artifactory conda mirrors this repo's pixi channels
   already swap to.
+- **2026-08-22** — **Correction: the "nothing exists yet" premise is stale.** Story
+  `spec-8-1-the-convention-is-written-and-guarded` (from `spec-pixi-container-image`) found the
+  repo now ships three Containerfiles (root `Containerfile`, `src/platform/Containerfile`,
+  `src/platform/compose/dbgpt/Containerfile` — Stories 7.1, 10.3, 10.5), all three already
+  base-tag-pinned to `ghcr.io/prefix-dev/pixi` and free of any `ENV`-baked credential. Corrected
+  "What is real" and "Constraints" above in place (prior entries left untouched) to state that,
+  added `docs/reference/container-base-layer-convention.md` naming the three pillars (base-tag
+  pinning, the multi-stage pixi-materialization shape, and the `--mount=type=secret`-only
+  credential rule this Dream's own air-gapped requirements entry above already named as the piece
+  worth retaining), and added `tests/packaging/test_containerfile_base_layer_convention.py` to
+  statically guard against a future unpinned base or `ENV`-declared credential across all three
+  files. No repo-owned base image was built or published — the upstream `ghcr.io/prefix-dev/pixi`
+  image stays the base for every builder stage, per `spec-pixi-container-image`'s own Constraints.
