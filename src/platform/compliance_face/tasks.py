@@ -10,7 +10,8 @@ from celery import shared_task
 from django.conf import settings
 
 from .models import ComplianceJob
-from .phases import PHASES, advance
+from .phases import PHASES
+from .phases import advance
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ SUPPORTED_SUFFIXES = frozenset(
         ".yml",
         ".lock",
         ".json",
-    }
+    },
 )
 
 
@@ -78,7 +79,7 @@ def run_compliance_job(self, job_id: str) -> str:
         job.status = ComplianceJob.Status.SUCCEEDED
         job.save(update_fields=["status", "updated_at"])
         return str(job.id)
-    except Exception as exc:  # noqa: BLE001 -- job boundary
+    except Exception as exc:
         logger.exception("compliance job %s failed", job_id)
         job.status = ComplianceJob.Status.FAILED
         job.error = f"{exc.__class__.__name__}: {exc}"

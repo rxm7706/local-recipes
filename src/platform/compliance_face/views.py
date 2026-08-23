@@ -6,13 +6,17 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
 
 from .models import ComplianceJob
 from .phases import current_progress
-from .tasks import SUPPORTED_SUFFIXES, run_compliance_job
+from .tasks import SUPPORTED_SUFFIXES
+from .tasks import run_compliance_job
 
 
 def _blob_root() -> Path:
@@ -76,7 +80,7 @@ def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
             "phase_total": progress.total,
             "progress": progress.ratio,
             "error": job.error or None,
-        }
+        },
     )
 
 

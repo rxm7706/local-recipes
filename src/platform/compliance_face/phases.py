@@ -56,7 +56,7 @@ def advance(job: PhaseJob, expected_next: str) -> PhaseProgress:
     if expected_next != expected:
         raise RuntimeError(
             f"phase guard: expected {expected!r}, got {expected_next!r} "
-            f"(no phase chooses its own number)"
+            f"(no phase chooses its own number)",
         )
     job.phase_index += 1
     job.save(update_fields=["phase_index", "updated_at"])

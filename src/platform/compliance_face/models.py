@@ -24,7 +24,7 @@ class ComplianceJob(models.Model):
     storage_key = models.CharField(max_length=512)
     original_name = models.CharField(max_length=255)
     status = models.CharField(
-        max_length=16, choices=Status.choices, default=Status.PENDING
+        max_length=16, choices=Status.choices, default=Status.PENDING,
     )
     phase_index = models.PositiveSmallIntegerField(default=0)
     error = models.TextField(blank=True, default="")
