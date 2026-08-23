@@ -119,6 +119,9 @@ def test_init_parser_defaults(tmp_path):
     assert args.slug is None
     assert args.agents is None
     assert args.force is False
+    assert args.dry_run is False
+    assert args.json is False
+    assert args.quiet is False
     assert args.handler is seed_cli.run_init
 
 
@@ -135,6 +138,9 @@ def test_init_parser_wires_the_expected_flags(tmp_path):
             "--agents",
             "claude,cursor",
             "--force",
+            "--dry-run",
+            "--json",
+            "--quiet",
         ]
     )
 
@@ -142,6 +148,9 @@ def test_init_parser_wires_the_expected_flags(tmp_path):
     assert args.slug == "pyforge-scribe"
     assert args.agents == "claude,cursor"
     assert args.force is True
+    assert args.dry_run is True
+    assert args.json is True
+    assert args.quiet is True
 
 
 def test_init_parser_requires_a_path_positional():

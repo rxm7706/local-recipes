@@ -153,22 +153,102 @@ def _render_check_report_text(report: CheckReport) -> str:
     return "\n".join(lines)
 
 
-def _print_seed_error(exc: SeedError, *, as_json: bool) -> None:
+def _print_seed_error(
+    exc: SeedError,
+    *,
+    verb: str,
+    as_json: bool,
+    quiet: bool = False,
+) -> None:
     """Render a caught ``SeedError`` the same way a clean/failing run is
     rendered: honoring ``--json`` on the error path exactly as it is
     honored on the success path (review finding -- a CI harness that
     unconditionally parses stdout as JSON whenever ``--json`` was passed
     must get JSON on every exit code, not text on some and JSON on
-    others)."""
+    others). Story 12.5 wraps every JSON emission in the schema-stable
+    ``{verb, ok, error|result}`` envelope (FR-123 / NFR-12). ``--quiet``
+    suppresses text chatter but never swallows JSON or error text."""
     if as_json:
-        print(
-            json.dumps(
-                {"error": {"type": type(exc).__name__, "message": exc.message, "remedy": exc.remedy}},
-                indent=2,
-            )
-        )
-    else:
+        print(json.dumps(_json_error_envelope(verb, exc), indent=2))
+    elif not quiet:
         print(str(exc))
+
+
+def _flag(args: argparse.Namespace, name: str, default: bool = False) -> bool:
+    """Read a boolean CLI flag with a default, so older hand-built
+    ``argparse.Namespace`` test fixtures that pre-date Story 12.5's
+    ``--json``/``--quiet``/``--dry-run`` wiring keep working."""
+    return bool(getattr(args, name, default))
+
+
+def _json_ok_envelope(verb: str, result: dict[str, object]) -> dict[str, object]:
+    """Schema-stable success envelope shared by every ``marshal seed`` verb
+    (Story 12.5, FR-123 / NFR-12): fixed top-level keys ``verb``/``ok``/
+    ``result``, verb-specific payload nested under ``result``."""
+    return {"verb": verb, "ok": True, "result": result}
+
+
+def _json_error_envelope(verb: str, exc: SeedError) -> dict[str, object]:
+    """Schema-stable error envelope: same top-level keys as success, with
+    ``ok: false`` and ``error`` carrying the S-7.2 leaf's type/message/
+    remedy (never a bare traceback)."""
+    return {
+        "verb": verb,
+        "ok": False,
+        "error": {
+            "type": type(exc).__name__,
+            "message": exc.message,
+            "remedy": exc.remedy,
+        },
+    }
+
+
+def _emit_success(
+    *,
+    verb: str,
+    as_json: bool,
+    quiet: bool,
+    result: dict[str, object] | None = None,
+    text: str | None = None,
+) -> None:
+    """Print either the schema-stable JSON envelope or the human text
+    report. ``--quiet`` suppresses text; JSON is always emitted when
+    ``--json`` is set (machine consumers need the payload)."""
+    if as_json:
+        print(json.dumps(_json_ok_envelope(verb, result or {}), indent=2))
+    elif not quiet and text is not None:
+        print(text)
+
+
+def _add_json_quiet_flags(parser: argparse.ArgumentParser) -> None:
+    """FR-123: every seed verb accepts ``--json`` and ``--quiet``."""
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Emit the schema-stable JSON envelope instead of the text report.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="Suppress human-readable stdout (JSON still emitted when --json is set).",
+    )
+
+
+def _add_dry_run_flag(parser: argparse.ArgumentParser) -> None:
+    """FR-124: mutating verbs accept ``--dry-run`` explicitly."""
+    parser.add_argument(
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        default=False,
+        help="Compute and print the plan without applying it.",
+    )
+
+
+def _plan_result_dict(plan: Plan) -> dict[str, object]:
+    return plan.to_json_dict()
 
 
 def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> int:
@@ -221,10 +301,14 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> 
                 " installation, not a problem with the repository being checked"
             ),
         )
-        _print_seed_error(wrapped, as_json=args.json)
+        _print_seed_error(
+            wrapped, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(exc, as_json=args.json)
+        _print_seed_error(
+            exc, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see docstring.
         wrapped = InternalError(
@@ -234,13 +318,18 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> 
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(wrapped, as_json=args.json)
+        _print_seed_error(
+            wrapped, verb="check", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
 
-    if args.json:
-        print(json.dumps(report.to_json_dict(), indent=2))
-    else:
-        print(_render_check_report_text(report))
+    _emit_success(
+        verb="check",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result=report.to_json_dict(),
+        text=_render_check_report_text(report),
+    )
 
     return ConformanceFailure.exit_code if report.failing else EXIT_OK
 
@@ -279,10 +368,9 @@ def _render_plan_text(plan: Plan) -> str:
     """The human-reviewable rendering of a ``marshal seed adopt`` plan --
     one line per ``Action`` (its id, target path, and rationale) and one per
     skipped artifact, or an explicit "nothing to do" line for an empty plan
-    (FR-84/AD-60's own idempotence case). ``adopt`` carries no ``--json``
-    flag (this story's own Never bullet: "a written plan.json already IS
-    the machine-readable artifact FR-82 asks for"), so this is the ONLY
-    rendering this command ever prints.
+    (FR-84/AD-60's own idempotence case). Story 12.5 adds ``--json`` (the
+    schema-stable envelope nests ``plan.to_json_dict()`` under ``result``);
+    this remains the human text path.
 
     A first-claim (FR-83) action is prefixed ``[OVERWRITES EXISTING FILE]``
     (review finding): this feature's whole safety model is "a human reviews
@@ -333,6 +421,11 @@ def run_adopt(
     identical widened try/except shape ``run_check`` above already
     establishes (10.5's own review finding), extended to this command."""
     try:
+        if _flag(args, "dry_run") and args.apply:
+            raise UsageError(
+                "--dry-run and --apply are mutually exclusive",
+                remedy="pass exactly one of --dry-run (default) or --apply",
+            )
         repo_root = _resolve_repo_root(args.repo_root)
         if manifest is None:
             manifest = _load_packaged_manifest()
@@ -355,10 +448,14 @@ def run_adopt(
                 " installation, not a problem with the repository being adopted"
             ),
         )
-        _print_seed_error(wrapped, as_json=False)
+        _print_seed_error(
+            wrapped, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(exc, as_json=False)
+        _print_seed_error(
+            exc, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -368,31 +465,47 @@ def run_adopt(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(wrapped, as_json=False)
+        _print_seed_error(
+            wrapped, verb="adopt", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
 
-    print(_render_plan_text(result.plan))
+    status: str
     if result.declined:
-        print("adopt: apply declined; nothing was applied.")
+        status = "declined"
+        footer = "adopt: apply declined; nothing was applied."
     elif result.applied is not None:
+        status = "applied"
         if result.applied:
-            print(f"adopt: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
+            footer = f"adopt: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}"
         else:
-            print("adopt: plan was empty; nothing to apply.")
+            footer = "adopt: plan was empty; nothing to apply."
     else:
-        print("adopt: dry-run; re-run with --apply to execute this plan.")
+        status = "dry-run"
+        footer = "adopt: dry-run; re-run with --apply to execute this plan."
+
+    text = f"{_render_plan_text(result.plan)}\n{footer}"
+    _emit_success(
+        verb="adopt",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result={
+            "status": status,
+            "plan": _plan_result_dict(result.plan),
+            "applied": list(result.applied) if result.applied is not None else None,
+            "declined": result.declined,
+        },
+        text=text,
+    )
 
     return EXIT_OK
 
 
 def _render_init_result_text(result: InitResult) -> str:
     """The human-readable ``marshal seed init`` report -- mirrors ``_render_
-    plan_text``'s per-action listing (id, target path, rationale), but with
-    no "dry-run"/"declined" branches at all: ``init`` never dry-runs and
-    never confirms (that module's own docstring), so there is exactly one
-    outcome to render -- what was actually applied, or, for a ``--force``'d
-    target whose every filtered entry was already conformant, that nothing
-    needed to happen."""
+    plan_text``'s per-action listing (id, target path, rationale). Story 12.5
+    adds an explicit ``--dry-run`` path (FR-124); when ``result.dry_run`` is
+    set the footer names the dry-run rather than claiming apply happened."""
     lines = [f"marshal seed init -- slug {result.slug!r}:"]
     if not result.plan.actions:
         lines.append("  plan is empty; nothing to do")
@@ -400,7 +513,10 @@ def _render_init_result_text(result: InitResult) -> str:
         lines.append(f"  plan ({len(result.plan.actions)} action(s)):")
         for action in result.plan.actions:
             lines.append(f"    {action.artifact_id} ({action.target_path}): {action.rationale}")
-        lines.append(f"applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
+        if result.dry_run or result.applied is None:
+            lines.append("dry-run; re-run without --dry-run to apply this plan.")
+        else:
+            lines.append(f"applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
     return "\n".join(lines)
 
 
@@ -418,7 +534,8 @@ def run_init(
     ``run_adopt`` already establish; a production caller (``main.py``'s
     dispatch) never supplies it. Unlike ``run_adopt``, there is no
     ``confirm=`` seam here at all -- ``init`` never confirms (``seed.verbs.
-    init``'s own docstring).
+    init``'s own docstring). Story 12.5 wires ``--dry-run``/``--json``/
+    ``--quiet`` (FR-123/FR-124).
 
     The verb call is INSIDE the ``try``, and a bare ``Exception`` is wrapped
     as ``InternalError`` rather than left to escape as a traceback -- the
@@ -434,6 +551,7 @@ def run_init(
             slug=args.slug,
             agents=_parse_agents(args.agents),
             force=args.force,
+            dry_run=_flag(args, "dry_run"),
         )
     except ManifestError as exc:
         wrapped = InternalError(
@@ -444,10 +562,14 @@ def run_init(
                 " installation, not a problem with the directory being initialized"
             ),
         )
-        _print_seed_error(wrapped, as_json=False)
+        _print_seed_error(
+            wrapped, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(exc, as_json=False)
+        _print_seed_error(
+            exc, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -457,10 +579,23 @@ def run_init(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(wrapped, as_json=False)
+        _print_seed_error(
+            wrapped, verb="init", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
 
-    print(_render_init_result_text(result))
+    _emit_success(
+        verb="init",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result={
+            "slug": result.slug,
+            "dry_run": result.dry_run,
+            "plan": _plan_result_dict(result.plan),
+            "applied": list(result.applied) if result.applied is not None else None,
+        },
+        text=_render_init_result_text(result),
+    )
     return EXIT_OK
 
 
@@ -525,6 +660,11 @@ def run_update(
     identical widened try/except shape ``run_check``/``run_adopt``/
     ``run_init`` already establish."""
     try:
+        if _flag(args, "dry_run") and args.run:
+            raise UsageError(
+                "--dry-run and --run are mutually exclusive",
+                remedy="pass exactly one of --dry-run (default) or --run",
+            )
         repo_root = _resolve_repo_root(args.repo_root)
         if manifest is None:
             manifest = _load_packaged_manifest()
@@ -546,10 +686,14 @@ def run_update(
                 " installation, not a problem with the repository being updated"
             ),
         )
-        _print_seed_error(wrapped, as_json=False)
+        _print_seed_error(
+            wrapped, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(exc, as_json=False)
+        _print_seed_error(
+            exc, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -559,21 +703,45 @@ def run_update(
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(wrapped, as_json=False)
+        _print_seed_error(
+            wrapped, verb="update", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
 
-    print(_render_update_plan_text(result.plan))
+    status: str
+    lines = [_render_update_plan_text(result.plan)]
     if result.referenced_dep_findings:
-        print(_render_referenced_dep_findings_text(result.referenced_dep_findings))
+        lines.append(_render_referenced_dep_findings_text(result.referenced_dep_findings))
     if result.declined:
-        print("update: apply declined; nothing was applied.")
+        status = "declined"
+        lines.append("update: apply declined; nothing was applied.")
     elif result.applied is not None:
+        status = "applied"
         if result.applied:
-            print(f"update: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}")
+            lines.append(
+                f"update: applied {len(result.applied)} artifact(s): {', '.join(result.applied)}"
+            )
         else:
-            print("update: plan was empty; nothing to apply.")
+            lines.append("update: plan was empty; nothing to apply.")
     else:
-        print("update: dry-run; re-run with --run to execute this plan.")
+        status = "dry-run"
+        lines.append("update: dry-run; re-run with --run to execute this plan.")
+
+    _emit_success(
+        verb="update",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result={
+            "status": status,
+            "plan": _plan_result_dict(result.plan),
+            "applied": list(result.applied) if result.applied is not None else None,
+            "declined": result.declined,
+            "referenced_dep_findings": [
+                finding.to_json_dict() for finding in result.referenced_dep_findings
+            ],
+        },
+        text="\n".join(lines),
+    )
 
     return EXIT_OK
 
@@ -594,10 +762,14 @@ def run_explain(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " installation, not a problem with the query"
             ),
         )
-        _print_seed_error(wrapped, as_json=args.json)
+        _print_seed_error(
+            wrapped, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(exc, as_json=args.json)
+        _print_seed_error(
+            exc, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -607,13 +779,18 @@ def run_explain(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(wrapped, as_json=args.json)
+        _print_seed_error(
+            wrapped, verb="explain", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
 
-    if args.json:
-        print(json.dumps(report.to_json_dict(), indent=2))
-    else:
-        print(render_explain_text(report))
+    _emit_success(
+        verb="explain",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result=report.to_json_dict(),
+        text=render_explain_text(report),
+    )
     return EXIT_OK
 
 
@@ -634,10 +811,14 @@ def run_version(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " installation"
             ),
         )
-        _print_seed_error(wrapped, as_json=args.json)
+        _print_seed_error(
+            wrapped, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
     except SeedError as exc:
-        _print_seed_error(exc, as_json=args.json)
+        _print_seed_error(
+            exc, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
         wrapped = InternalError(
@@ -647,13 +828,18 @@ def run_version(args: argparse.Namespace, *, manifest: Manifest | None = None) -
                 " pyforge-marshal with the full command and output"
             ),
         )
-        _print_seed_error(wrapped, as_json=args.json)
+        _print_seed_error(
+            wrapped, verb="version", as_json=_flag(args, "json"), quiet=_flag(args, "quiet")
+        )
         return wrapped.exit_code
 
-    if args.json:
-        print(json.dumps(report.to_json_dict(), indent=2))
-    else:
-        print(render_version_text(report))
+    _emit_success(
+        verb="version",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result=report.to_json_dict(),
+        text=render_version_text(report),
+    )
     return EXIT_OK
 
 
@@ -661,7 +847,8 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register the ``seed`` subcommand on ``main.py``'s subparser tree, with
     six nested verb actions -- mirrors ``cli/gate.py::add_gate_subparser``'s
     identical nested-subparsers shape, one level down (six verbs instead of
-    one ``evaluate`` action)."""
+    one ``evaluate`` action). Story 12.5 wires ``--json``/``--quiet`` on every
+    verb and ``--dry-run`` on the mutating ones (FR-123/FR-124)."""
     parser = subparsers.add_parser(
         "seed",
         help="Scaffold/adopt/check/update a project from Marshal's seed templates (AD-70).",
@@ -678,8 +865,9 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Scaffold a brand-new project from Marshal's seed templates.",
         description=(
             "Story 10.7: bootstrap (mkdir + git init if needed) -> detect -> plan ->"
-            " preconditions -> apply DIRECTLY -- no dry-run, no confirm prompt"
-            " (FR-78's non-empty-directory refusal is this verb's own safety gate)."
+            " preconditions -> apply DIRECTLY by default; --dry-run computes the plan"
+            " without applying (FR-124). FR-78's non-empty-directory refusal is this"
+            " verb's own safety gate."
         ),
     )
     init_parser.add_argument(
@@ -708,6 +896,8 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Proceed even though PATH already exists and is non-empty (FR-78).",
     )
+    _add_dry_run_flag(init_parser)
+    _add_json_quiet_flags(init_parser)
     init_parser.set_defaults(handler=run_init)
 
     adopt_parser = seed_subparsers.add_parser(
@@ -717,6 +907,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
             "Story 10.6: detect -> plan -> confirm -> apply -> state-write. Dry-run"
             " by default -- writes only .marshal/plan.json and prints it; --apply"
             " executes the plan (prompting for confirmation unless --yes is given)."
+            " --dry-run is accepted explicitly (FR-124)."
         ),
     )
     adopt_parser.add_argument(
@@ -759,6 +950,8 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Bypass the hand-edited-managed-content precondition (rung 6 only).",
     )
+    _add_dry_run_flag(adopt_parser)
+    _add_json_quiet_flags(adopt_parser)
     adopt_parser.set_defaults(handler=run_adopt)
 
     check_parser = seed_subparsers.add_parser(
@@ -783,12 +976,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Also fail (non-zero exit) on DRIFT findings, not only HARD ones.",
     )
-    check_parser.add_argument(
-        "--json",
-        action="store_true",
-        default=False,
-        help="Emit the full findings report as JSON instead of the text report.",
-    )
+    _add_json_quiet_flags(check_parser)
     check_parser.set_defaults(handler=run_check)
 
     update_parser = seed_subparsers.add_parser(
@@ -799,6 +987,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
             " regenerate, merged) -> confirm -> apply -> state-write. Dry-run by"
             " default -- writes only .marshal/plan.json and prints it; --run executes"
             " the plan (prompting for confirmation unless --yes is given)."
+            " --dry-run is accepted explicitly (FR-124)."
         ),
     )
     update_parser.add_argument(
@@ -835,6 +1024,8 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Skip the confirmation prompt when applying (unattended/CI use).",
     )
+    _add_dry_run_flag(update_parser)
+    _add_json_quiet_flags(update_parser)
     update_parser.set_defaults(handler=run_update)
 
     explain_parser = seed_subparsers.add_parser(
@@ -850,12 +1041,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         metavar="ARTIFACT",
         help="Manifest artifact id or repo-relative path (e.g. agents-md or AGENTS.md).",
     )
-    explain_parser.add_argument(
-        "--json",
-        action="store_true",
-        default=False,
-        help="Emit the explain payload as JSON instead of the text report.",
-    )
+    _add_json_quiet_flags(explain_parser)
     explain_parser.set_defaults(handler=run_explain)
 
     version_parser = seed_subparsers.add_parser(
@@ -873,10 +1059,5 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         metavar="PATH",
         help="Repo whose adopted model version to read (default: cwd).",
     )
-    version_parser.add_argument(
-        "--json",
-        action="store_true",
-        default=False,
-        help="Emit the version payload as JSON instead of the text report.",
-    )
+    _add_json_quiet_flags(version_parser)
     version_parser.set_defaults(handler=run_version)

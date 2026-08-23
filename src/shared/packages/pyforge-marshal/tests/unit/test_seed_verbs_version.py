@@ -108,4 +108,6 @@ def test_version_cli_json_flag(clean_repo, capsys):
 
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["bundled_model_version"] == "1.0.0"
+    assert payload["verb"] == "version"
+    assert payload["ok"] is True
+    assert payload["result"]["bundled_model_version"] == "1.0.0"

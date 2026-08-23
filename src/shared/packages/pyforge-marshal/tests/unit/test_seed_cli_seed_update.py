@@ -145,6 +145,9 @@ def test_update_parser_defaults(tmp_path):
     assert args.force is False
     assert args.include_seeded is False
     assert args.yes is False
+    assert args.dry_run is False
+    assert args.json is False
+    assert args.quiet is False
     assert args.handler is seed_cli.run_update
 
 
@@ -156,6 +159,7 @@ def test_update_parser_wires_the_expected_flags(tmp_path):
             "seed", "update",
             "--repo-root", str(tmp_path),
             "--run", "--force", "--include-seeded", "--yes",
+            "--json", "--quiet",
         ]
     )
 
@@ -164,6 +168,8 @@ def test_update_parser_wires_the_expected_flags(tmp_path):
     assert args.force is True
     assert args.include_seeded is True
     assert args.yes is True
+    assert args.json is True
+    assert args.quiet is True
 
 
 # --- exit code 0: dry-run, applied, and declined are all ordinary outcomes -
