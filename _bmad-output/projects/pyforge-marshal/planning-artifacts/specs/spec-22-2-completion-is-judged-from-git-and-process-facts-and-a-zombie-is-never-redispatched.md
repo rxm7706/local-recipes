@@ -2,7 +2,7 @@
 title: Completion is judged from git and process facts, and a zombie is never redispatched
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -41,3 +41,20 @@ baseline_revision: 66b551be10
 
 - `pixi run -e pyforge-marshal pyforge-marshal-test` green
 - Regression tests pin both motivating traps from epics.md
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/702
+Merge: 91c4e5244a05959f7540822b5b2901e961c17ee5
+Merge policy: admin merge (`gh pr merge 702 --merge --admin --repo rxm7706/local-recipes`) — GitHub Actions billing blocks CI; local tests green before merge.
+Summary: Story 22.2 (FR-193 CAP-2) adds detached `dispatch_supervisor` spawned by `marshal factory dispatch` to judge completion from git facts (branch progress, merge refs per AD-33) plus process liveness — never harness notifications or foreground busy-wait. Zombie redispatch refused (`MRS-DISP-011`) when git shows live progress despite dead session. `FleetHomeFacts`/`marshal status` overlay extended with `dispatch_completion_verdict`.
+Files:
+- `core/dispatch_completion.py` — pure git+process completion judge
+- `dispatch_supervisor/__main__.py` — detached supervisor loop (60s tick)
+- `cli/dispatch.py` — spawn supervisor, baseline head journaling, zombie refusal
+- `cli/status.py`, `core/status.py` — completion verdict overlay
+- `core/findings.py`, `core/verdict.py` — MRS-DISP-011..013
+- `tests/unit/test_dispatch_completion.py` — watchdog + zombie regression pins
+Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` — **6106 passed**, 12 deselected.
+Out of scope (Stories 22.3–22.6): verification gate, landing, overlap guard, attach/resume.
