@@ -212,7 +212,7 @@ jobs:
       - name: Export platform image for downstream jobs
         run: docker save "${{ env.PLATFORM_CI_IMAGE_REF }}" | gzip -1 > platform-ci-image.tar.gz
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: platform-ci-image
           path: platform-ci-image.tar.gz
@@ -795,7 +795,7 @@ jobs:
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: platform-ci-image
 
@@ -1057,7 +1057,7 @@ jobs:
           sudo rm -rf /opt/az || true
           echo "After:"; df -h /
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: platform-ci-image
 
@@ -1158,7 +1158,7 @@ jobs:
       # steward iteration and post-merge runs warm the same pixi.lock key.
       - name: Restore ci-airgap-mirror cache
         id: airgap-mirror-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ci-airgap-mirror
           key: platform-ci-airgap-mirror-${{ hashFiles('pixi.lock') }}
@@ -1178,7 +1178,7 @@ jobs:
             --workers 32
 
       - name: Save ci-airgap-mirror cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ci-airgap-mirror
           key: platform-ci-airgap-mirror-${{ hashFiles('pixi.lock') }}
