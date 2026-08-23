@@ -8,7 +8,9 @@ from pathlib import Path
 from urllib.parse import quote
 
 import environ
+from django.urls import reverse_lazy
 
+from config.authorization.claims import load_claims_contract
 from config.observability.logging import build_logging_config
 from config.observability.logging import configure_structlog
 
@@ -90,6 +92,8 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.mfa",
     "allauth.socialaccount",
+    # CAP-1 / steward 16.5: OIDC provider ships with django-allauth (no second framework).
+    "allauth.socialaccount.providers.openid_connect",
     "django_celery_beat",
     # Story 10.1: K8s liveness/readiness target at /ht/ -- PostgreSQL + Redis
     # (via the configured cache backend) only. health_check.storage is
@@ -133,7 +137,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # https://docs.djangoproject.com/en/dev/ref/settings/#migration-modules
 MIGRATION_MODULES = {"sites": "platformapp.contrib.sites.migrations"}
 
-# AUTHENTICATION
+# AUTHENTICATION (CAP-1 / steward 16.5 — OIDC-delegated, no local passwords)
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 AUTHENTICATION_BACKENDS = [
@@ -144,8 +148,10 @@ AUTHENTICATION_BACKENDS = [
 AUTH_USER_MODEL = "users.User"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
 LOGIN_REDIRECT_URL = "users:redirect"
-# https://docs.djangoproject.com/en/dev/ref/settings/#login-url
-LOGIN_URL = "account_login"
+OIDC_PROVIDER_ID = env.str("COMPONENT_OIDC_PROVIDER_ID", default="oidc")
+# Unauthenticated requests redirect to the IdP, not a local password form.
+LOGIN_URL = reverse_lazy("openid_connect_login", kwargs={"provider_id": OIDC_PROVIDER_ID})
+CLAIMS_CONTRACT = load_claims_contract(env)
 
 # PASSWORDS
 # ------------------------------------------------------------------------------
@@ -341,21 +347,39 @@ CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 # django-allauth
 # ------------------------------------------------------------------------------
-ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
-# https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_LOGIN_METHODS = {"username"}
-# https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-# https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-# https://docs.allauth.org/en/latest/account/configuration.html
+# OIDC-only: no local registration or password login (CAP-1).
+ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=False)
+ACCOUNT_LOGIN_METHODS = set()
+ACCOUNT_SIGNUP_FIELDS = []
+ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_ADAPTER = "platformapp.users.adapters.AccountAdapter"
-# https://docs.allauth.org/en/latest/account/forms.html
 ACCOUNT_FORMS = {"signup": "platformapp.users.forms.UserSignupForm"}
-# https://docs.allauth.org/en/latest/socialaccount/configuration.html
-SOCIALACCOUNT_ADAPTER = "platformapp.users.adapters.SocialAccountAdapter"
-# https://docs.allauth.org/en/latest/socialaccount/configuration.html
+SOCIALACCOUNT_ADAPTER = "config.authorization.adapters.OIDCSocialAccountAdapter"
 SOCIALACCOUNT_FORMS = {"signup": "platformapp.users.forms.UserSocialSignupForm"}
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
+
+OIDC_ISSUER = env.str("COMPONENT_OIDC_ISSUER", default="")
+OIDC_CLIENT_ID = env.str("COMPONENT_OIDC_CLIENT_ID", default="")
+OIDC_JWKS_URL = env.str("COMPONENT_OIDC_JWKS_URL", default="")
+OIDC_AUDIENCE = env.str("COMPONENT_OIDC_AUDIENCE", default="") or OIDC_CLIENT_ID
+OIDC_ALGORITHMS = env.list("COMPONENT_OIDC_ALGORITHMS", default=["RS256"])
+OIDC_LEEWAY_SECONDS = max(0.0, env.float("COMPONENT_OIDC_LEEWAY_SECONDS", default=0.0))
+
+SOCIALACCOUNT_PROVIDERS = {
+    "openid_connect": {
+        "APPS": [
+            {
+                "provider_id": OIDC_PROVIDER_ID,
+                "name": env.str("COMPONENT_OIDC_PROVIDER_NAME", default="Platform IdP"),
+                "client_id": OIDC_CLIENT_ID,
+                "secret": env.str("COMPONENT_OIDC_CLIENT_SECRET", default=""),
+                "settings": {
+                    "server_url": OIDC_ISSUER,
+                },
+            },
+        ],
+    },
+}
 # django-compressor
 # ------------------------------------------------------------------------------
 # https://django-compressor.readthedocs.io/en/latest/quickstart/#installation

@@ -271,4 +271,6 @@ dump.rdb
 ### Project template
 platform/media/
 
+.dev-keys/
+
 .pytest_cache/
