@@ -937,8 +937,8 @@ class FleetHomeFacts:
     # while both `done: false` and `done: null` are
     # `CONFIDENCE_UNCONFIRMED` -- an ABSENCE of a match proves nothing (the
     # squash-merge blind spot that constant block documents in full,
-    # re-confirmed live on 2026-08-10: 2 of 3 real `MRS-STATUS-010` WARNs
-    # against the live 12-patch fleet were false).
+    # re-confirmed live on 2026-08-10 before Story 20.10 widened the
+    # classifier via ``pyforge.core.landing_evidence``).
     # `reconcile_ledger_vs_git` below already tags the identical evidence
     # source exactly this way.
     #
@@ -954,11 +954,12 @@ class FleetHomeFacts:
     # (`extract_story_key_from_github_merge_subject` now requires and scopes
     # on `project_slug`, the same live-collision reproduction that closed
     # it, see that function's own docstring). `CONFIDENCE_CONFIRMED` is
-    # still not unqualified proof for OTHER reasons (the squash-merge and
-    # `land/<slug>-<epic>-<seq>` blind spots this docstring's paragraph
-    # above documents remain real), but cross-project misattribution is no
-    # longer one of them. Both directions of this signal are best-effort;
-    # only their failure modes differ (noise vs. silence).
+    # still not unqualified proof for OTHER reasons (the squash-merge blind
+    # spot this docstring's paragraph above documents remains real; recovery
+    # and ``land/`` shapes are now recognized via
+    # ``pyforge.core.landing_evidence`` as of Story 20.10), but cross-project
+    # misattribution is no longer one of them. Both directions of this signal
+    # are best-effort; only their failure modes differ (noise vs. silence).
     failed_patches: tuple[dict[str, object], ...] = ()
 
 

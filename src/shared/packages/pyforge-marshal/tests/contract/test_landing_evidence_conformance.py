@@ -1,7 +1,7 @@
-"""Marshal-side landing-evidence grammar conformance (Story 20.8, CAP-1).
+"""Marshal-side landing-evidence grammar conformance (Story 20.8 / 20.10).
 
 Re-runs the shared ``conformance_fixtures()`` matrix from ``pyforge.core``
-before Story 20.10 wires ``core/promotion.py`` and MRS-STATUS-010.
+after ``core/promotion.py`` wires consumers to the grammar (CAP-3).
 """
 
 from __future__ import annotations
