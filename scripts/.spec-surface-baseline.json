@@ -2615,7 +2615,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py": "4ddea081b9f81be3f60656abb4e3e191f34aab79",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py": "dc284496033127ebc61adb181f85358ebf4576ba",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py": "edc682a83f420bf4cf234a2be9cfe3d69e95b003",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py": "1c71c6b9acaf7206642252c36244d427964071c7",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py": "b5ee6c89028576d675bc038b448a7794c9e54f81",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py": "dc1d02b961fe3b9bdd933fd3067532f2f6046caa",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "88cc0ddf6785043c7f12f8b2630754af9a4c01de",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/upstream.py": "6a656b0a8a080636cd41fa23760b7258c1c368b2",
@@ -2705,6 +2705,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/init.py": "d817649a56c60f06ddf13a5bc7144b60ff7e39c3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/preconditions.py": "1ec4616d5475a729d91abddb28c6cbde941d159a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/skips.py": "01d87c09c398bf344008692e4c85a7fb4f990a6e",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py": "9ae11390b02a2434172329d29fb4ee78bd0bd82d",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__init__.py": "076c2eeb2aee156b4d5d15f7179716afca67e413",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py": "7aeb2e8c639968934389b511e781b0dd8c067021",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/durability.py": "215cccd6f62ef3b43c2bb6e3e4d3075dfaded444",
@@ -2773,6 +2774,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_adopt.py": "8c2913f3a10d18139334a6850dc12523172ce457",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_check.py": "b78cd8df84e90b9d7bd74c5296f83719c2cf225c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_init.py": "e1592458a2911b1fca835b13e0f79f5324c042a7",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_cli_seed_update.py": "8ec94dce17441cad548abc1c07b6e6873344cc4b",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_derive_adapters.py": "eb0dfcfed1c523249b6d83232ca1eb08d761010f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_derive_projects_index.py": "8edbd50062e2033986779399fa47d680eb189834",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_findings.py": "5ebda38f3bd6a6ab25ff17eac7891b97c80cdd9f",
@@ -2792,7 +2794,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_apply.py": "2d57f6cd1c877bbbf021a91dcf6cef302d6a9891",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_markers.py": "46c390fafb187a9f01d8b1d92483e4fb94206bee",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_parse.py": "7f6aeecc9500c4fa73f3916d6b82832a4ef041fc",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_scaffold.py": "71aa20df8d818047c8bdb180266fb57e3abc7931",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_scaffold.py": "dbb4d7bca522b13543724bc8bbcca54bbb64d07d",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_state_store.py": "074415177a69e2c4465c6705f3e9ca0125a58201",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_templates_manifest.py": "d6f12221bd2aa3266283f3ef8bab63fd0c84f9ce",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_adopt.py": "03045b5052b72cf62e2b018382ca57b91544b259",
@@ -2800,6 +2802,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_init.py": "a09e230c1e36c58189c2a55e236c843dd5d7d0df",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_preconditions.py": "3dec904efd7f086f8d4f2bb04469451108c90c81",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_skips.py": "80616a2acef03c35561749a948c0c2a01c2958e4",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_update.py": "f3ae68b160346c4b9f6cf73ffa57440fa337c71f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_skill_projection.py": "64a300c01aba85e7fc50c091eba88625f74a6787",
    "src/shared/packages/pyforge-marshal/tests/unit/test_spec_binding.py": "870ad8bb825a5a8c55d238e731cb024f2984655f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_spec_difficulty.py": "64830f37b08b8325d2a9dfbbb3fad0c3585066b8",
@@ -2813,7 +2816,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "c1d548b6f116e4fcda5124f30dab9b6cd891cb32",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "18457557624771e5365d39d2c0c0df03b1ebc9e1"
   },
-  "memlog": "a59c20edee373e3149fa793b593a987c166f7f57"
+  "memlog": "4c7868c09636138ee789dcaf9a9c9837efac63b6"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
