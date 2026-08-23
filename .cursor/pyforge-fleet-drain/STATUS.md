@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~10:50 CDT
+**Updated:** 2026-08-23 ~10:54 CDT  
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -24,9 +24,10 @@
 
 ## In-flight (canonical only — do not duplicate)
 
-| Station | Story | Canonical PR / agent |
-|---------|-------|----------------------|
-| *(none)* | | |
+| Station | Story | Canonical agent |
+|---------|-------|-----------------|
+| marshal | `18-1` | [Marshal 18-1](b5923e5a-38cc-4e9c-a635-9a897c3e7d0e) — named typed tools |
+| steward | `14-3` | [Steward 14-3](dd93a8c7-9027-41b2-821f-f185afdc6992) — clobbered custom re-apply (skip 12-7) |
 
 ## Operator skip
 
@@ -38,12 +39,10 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `17-4` | [#667](https://github.com/rxm7706/local-recipes/pull/667) merge `7aa120fe86` · finalize `3dd4e0a277c3` ([Marshal 17-4](632da240-9d79-443e-987f-e78b82e17f93)) |
-| steward | `14-2` | [#666](https://github.com/rxm7706/local-recipes/pull/666) merge `3f58e30916e7f25fd6625b973761261945271692` ([Steward 14-2](54c7190f-d6d1-4225-9eb5-a5864782d7fe)) |
-| marshal | `17-3` | [#665](https://github.com/rxm7706/local-recipes/pull/665) merge `f318609126` · finalize `a38a2dbdfb` ([Marshal 17-3](a7f8366f-238f-4631-991c-4672b1f05312)) |
+| marshal | `17-4` | [#667](https://github.com/rxm7706/local-recipes/pull/667) merge `7aa120fe86` · finalize `3dd4e0a277` ([Marshal 17-4](632da240-9d79-443e-987f-e78b82e17f93)) |
+| steward | `14-2` | [#666](https://github.com/rxm7706/local-recipes/pull/666) merge `3f58e30916` · finalize `76df1d3388` ([Steward 14-2](54c7190f-d6d1-4225-9eb5-a5864782d7fe)) |
+| marshal | `17-3` | [#665](https://github.com/rxm7706/local-recipes/pull/665) |
 | steward | `14-1` | [#664](https://github.com/rxm7706/local-recipes/pull/664) |
-| marshal | `17-2` | [#663](https://github.com/rxm7706/local-recipes/pull/663) |
-| steward | `13-4` | [#662](https://github.com/rxm7706/local-recipes/pull/662) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
