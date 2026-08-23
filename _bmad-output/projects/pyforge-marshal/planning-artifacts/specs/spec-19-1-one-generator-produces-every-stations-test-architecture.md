@@ -2,7 +2,7 @@
 title: One generator produces every station's test architecture
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

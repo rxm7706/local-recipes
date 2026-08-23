@@ -701,6 +701,10 @@ cmd = "python .claude/scripts/conda-forge-expert/my_feedstocks.py"
 description = "Verify local-recipes env, BMAD installation, and active project before BMAD workflows"
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
+[feature.local-recipes.tasks.tea-playwright-all]
+description = "Story 19.1 / FR-129: regenerate every station's planning-artifacts/test-architecture.md from epics + live test inventory. TBD in output is a hard fail. Idempotent on an unchanged tree."
+cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
+
 [feature.local-recipes.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python -m pyforge.doctor.sources bmad-drift"
