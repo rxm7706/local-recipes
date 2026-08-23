@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~15:25 CDT
+**Updated:** 2026-08-23 ~15:35 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -19,14 +19,14 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 26** · **steward 6** (**32 total**; 12-7 skipped forever) |
+| Backlog | **marshal 25** · **steward 6** (**31 total**; 12-7 skipped forever) |
 | Drained | atlas, doctor, herald, mason, scribe, warden |
 
 ## In-flight (canonical only — do not duplicate)
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `20-4` | [Marshal 20-4](8c2b060b-7b3f-4176-949c-e61337a5959d) |
+| marshal | `20-5` | launching |
 | steward | `16-3` | [Steward 16-3](b04fa062-4cc1-4e56-8b3b-56f8004b66b4) (skip 12-7) |
 
 ## Operator skip
@@ -39,10 +39,9 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| steward | `16-2` | [#686](https://github.com/rxm7706/local-recipes/pull/686) merge `6e157b892b` · finalize `40a7bf666b` ([Steward 16-2](320ec42e-8ae9-4950-861c-41b8e7e2c336)) |
-| marshal | `20-3` | [#684](https://github.com/rxm7706/local-recipes/pull/684) · finalize [#685](https://github.com/rxm7706/local-recipes/pull/685) · upstream [bmad-loop#701](https://github.com/bmad-code-org/bmad-loop/issues/701) |
-| marshal | `20-2` | [#683](https://github.com/rxm7706/local-recipes/pull/683) |
-| steward | `16-1` | [#682](https://github.com/rxm7706/local-recipes/pull/682) |
+| marshal | `20-4` | [#687](https://github.com/rxm7706/local-recipes/pull/687) merge `5a50971409` · finalize `ee39a97fcf` ([Marshal 20-4](8c2b060b-7b3f-4176-949c-e61337a5959d)) |
+| steward | `16-2` | [#686](https://github.com/rxm7706/local-recipes/pull/686) |
+| marshal | `20-3` | [#684](https://github.com/rxm7706/local-recipes/pull/684) · finalize [#685](https://github.com/rxm7706/local-recipes/pull/685) |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
