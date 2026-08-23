@@ -1,0 +1,24 @@
+# Steward credential inventory (FR-5). Metadata only — never secret values.
+# Recording procedure: src/platform/deploy/overlays/ocp/cluster-bringup.md §5
+identities:
+  - name: crc-pull-secret
+    scope: openshift-local
+    provenance: observed
+    status: active
+    last_rotated: null
+    identity_path: null
+    secrets: []
+  - name: crc-kubeadmin
+    scope: openshift-local
+    provenance: observed
+    status: active
+    last_rotated: null
+    identity_path: null
+    secrets: []
+  - name: github-pat-read-project
+    scope: github-api
+    provenance: observed
+    status: active
+    last_rotated: null
+    identity_path: null
+    secrets: []

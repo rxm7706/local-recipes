@@ -13,7 +13,13 @@ from __future__ import annotations
 import json
 
 from pyforge.steward.cli import EXIT_OK, main
-from pyforge.steward.keys import KeyIdentityEntry, format_inventory, save_inventory
+from pyforge.steward.keys import (
+    KeyIdentityEntry,
+    default_inventory_path,
+    format_inventory,
+    load_inventory,
+    save_inventory,
+)
 
 ISSUED = KeyIdentityEntry(
     name="jfrog",
@@ -95,13 +101,24 @@ def test_keys_list_via_the_cli_json_flag(tmp_path, capsys):
     assert data[0]["name"] == "jfrog"
 
 
-def test_keys_list_with_no_inventory_flag_and_no_file_reports_empty(tmp_path, monkeypatch, capsys):
-    # No --inventory given and default_inventory_path() resolves outside
-    # tmp_path (the real repo root) -- but this repo has no real
-    # .steward/keys-inventory.yaml committed, so the default path load is
-    # still the "missing file -> ()" case exercised by save_inventory's own
-    # precedent. Exercised at the primitive level to avoid depending on
-    # real repo state for a CLI-level assertion.
-    from pyforge.steward.keys import default_inventory_path, load_inventory
+def test_repo_keys_inventory_yaml_loads():
+    """Story 12.4: tracked `.steward/keys-inventory.yaml` must parse."""
+    entries = load_inventory(default_inventory_path())
+    names = {e.name for e in entries}
+    assert names == {
+        "crc-pull-secret",
+        "crc-kubeadmin",
+        "github-pat-read-project",
+    }
+    assert all(e.provenance == "observed" for e in entries)
+    assert all(e.status == "active" for e in entries)
 
-    assert load_inventory(default_inventory_path()) == ()
+
+def test_keys_list_with_default_inventory_path_shows_repo_entries(capsys):
+    rc = main(["keys", "list"])
+    out = capsys.readouterr().out
+
+    assert rc == EXIT_OK
+    assert "crc-pull-secret" in out
+    assert "crc-kubeadmin" in out
+    assert "github-pat-read-project" in out
