@@ -67,8 +67,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import secrets
-import socket
 from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1861,7 +1861,7 @@ def run_adapters_matrix(
             findings.append(raw_finding)
 
     now = _now_utc()
-    hostname = socket.gethostname()
+    hostname = platform.node()
     adapters = sorted(set(probe_state) | set(smoke_state))
     rows: list[MatrixRow] = [
         build_matrix_row(

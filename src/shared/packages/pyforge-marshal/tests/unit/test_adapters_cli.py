@@ -1330,7 +1330,7 @@ def _matrix_args(slug: str = "pyforge-marshal", fmt: str = "json", stale_after_d
 def _patch_matrix(monkeypatch):
     monkeypatch.setattr(adapters_cli, "_machine_state_dir", lambda: _PROBE_STATE_PATH.parent)
     monkeypatch.setattr(adapters_cli, "repo_root", lambda: _MATRIX_ROOT)
-    monkeypatch.setattr(adapters_cli.socket, "gethostname", lambda: "host1")
+    monkeypatch.setattr(adapters_cli.platform, "node", lambda: "host1")
     monkeypatch.setattr(adapters_cli, "_now_utc", lambda: _MATRIX_NOW)
 
 

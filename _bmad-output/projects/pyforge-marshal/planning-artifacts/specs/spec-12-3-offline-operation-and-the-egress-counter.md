@@ -2,7 +2,7 @@
 title: Offline operation and the egress counter
 type: test
 created: '2026-08-23'
-status: ready
+status: done
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -35,3 +35,11 @@ baseline_revision: b3e069981e
 ## Verification
 
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added AD-65 meta guards (forbidden network-stack imports, default in-package template path, lean conda-forge env) and a slow strace/unshare egress-counter integration test covering all five seed CLI verbs. Replaced `socket.gethostname()` with `platform.node()` in `cli/adapters.py` so the import scan holds.
+
+**Verification:** `pyforge-marshal-test` green; slow egress strace pass (unshare skips without CAP_SYS_ADMIN).
