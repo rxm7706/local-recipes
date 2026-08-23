@@ -28,6 +28,11 @@ def main():
     current_path = Path(__file__).parent.resolve()
     sys.path.append(str(current_path / "platformapp"))
 
+    # CAP-2: instrument management commands too.
+    from config.observability import configure_observability  # noqa: PLC0415
+
+    configure_observability()
+
     execute_from_command_line(sys.argv)
 
 
