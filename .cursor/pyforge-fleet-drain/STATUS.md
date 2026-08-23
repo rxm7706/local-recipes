@@ -26,7 +26,8 @@
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `19-3` | [Marshal 19-3](042ec63d-ebc8-4319-843c-928fe42457fb) |
+| marshal | `19-3` | [Marshal 19-3](042ec63d-ebc8-4319-843c-928fe42457fb) · [#677](https://github.com/rxm7706/local-recipes/pull/677) |
+| steward | `15-3` | launching (skip 12-7) |
 
 ## Operator skip
 
@@ -38,8 +39,8 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| steward | `15-2` | [#676](https://github.com/rxm7706/local-recipes/pull/676) merge `565ef7d194` ([Steward 15-2](0e78f8b6-a524-478e-9664-abb1818e55d9)) |
-| steward | `15-1` | [#675](https://github.com/rxm7706/local-recipes/pull/675) merge `3c040df4fc` · finalize `034588ccf6` ([Steward 15-1](635f8c65-d9d8-462a-b658-6d837bb74862)) |
+| steward | `15-2` | [#676](https://github.com/rxm7706/local-recipes/pull/676) merge `565ef7d194` · finalize `6da3b4089c` ([Steward 15-2](0e78f8b6-a524-478e-9664-abb1818e55d9)) |
+| steward | `15-1` | [#675](https://github.com/rxm7706/local-recipes/pull/675) |
 | marshal | `19-2` | [#674](https://github.com/rxm7706/local-recipes/pull/674) |
 
 ```bash
