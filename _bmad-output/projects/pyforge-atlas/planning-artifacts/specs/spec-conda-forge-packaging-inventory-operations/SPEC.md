@@ -1,6 +1,6 @@
 ---
 spec: conda-forge-packaging-inventory-operations
-status: in-progress   # CAP-1 (17.1) chartered; CAP-2 (17.2) still backlog
+status: in-progress   # CAP-1 (17.1) chartered; CAP-2 (17.2) code landed, live-execution verification deferred (attended, credentialed run pending)
 owner-dream: docs/dreams/conda-forge-packaging-inventory-operations.md
 surface:            # 17.1 claims the quartet + data files (per-file, not a glob — a
                      # scripts/conda-forge-packaging-inventory-operations* glob would
