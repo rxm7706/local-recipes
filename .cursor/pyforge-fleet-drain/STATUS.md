@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~17:00 CDT
+**Updated:** 2026-08-23 ~17:05 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -29,8 +29,8 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `20-8` | launching |
-| steward | `16-5` | launching (skip 12-7) |
+| marshal | `20-8` | [4797d1c3-a04f-4f77-aafb-bbbe1e3c68a7](4797d1c3-a04f-4f77-aafb-bbbe1e3c68a7) |
+| steward | `16-5` | [c761dd9e-227d-4665-ab4f-df178b70d268](c761dd9e-227d-4665-ab4f-df178b70d268) (skip 12-7) |
 
 ## Operator skip
 
