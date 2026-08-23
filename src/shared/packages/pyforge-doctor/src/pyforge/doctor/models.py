@@ -199,6 +199,11 @@ class Source(StrEnum):
     # discipline. Judges a Marshal-produced artifact (the tracked ledger);
     # see sources/backlog_intake.py for the independence rationale.
     BACKLOG_INTAKE = "backlog-intake"
+    # Story 16.1 (Epic 16 / spec-sibling-dreams-drift CAP-1): warn-only
+    # ambient check that shared Dream titles diverge between this tree and
+    # the named sibling (OpenTeams mgmt-wf) on status/owner/content-hash.
+    # Fleet subject; never FAIL; fail-open without token / when unreachable.
+    SIBLING_DREAMS_DRIFT = "sibling-dreams-drift"
 
 
 class Partition(StrEnum):

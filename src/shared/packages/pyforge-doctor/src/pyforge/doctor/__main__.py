@@ -54,6 +54,7 @@ from .sources import atlas
 from .sources import backlog_intake
 from .sources import bmad_method
 from .sources import marshal as marshal_source
+from .sources import sibling_dreams
 from .sources import warden as warden_source
 from .verdict import EXIT_SIGINT, exit_code_for
 
@@ -90,6 +91,7 @@ _CATEGORY_SOURCE: dict[str, Source] = {
     "env": Source.ENV_HYGIENE,
     "durability": Source.MARSHAL_DURABILITY,
     "bmad-core": Source.BMAD_METHOD_VERSION_DRIFT,
+    "sibling-dreams": Source.SIBLING_DREAMS_DRIFT,
 }
 
 
@@ -168,6 +170,17 @@ def _build_parser() -> tuple[
         ),
     )
     check.add_argument(
+        "--sibling-dreams",
+        action="store_true",
+        help=(
+            "run the 'sibling-dreams' category (shared Dream titles vs the "
+            "named sibling PyForge tree on status/owner/content-hash) -- "
+            "whole category only; OPT-IN ONLY, NEVER part of the zero-flag "
+            "default run (live GitHub Contents API call when a token is "
+            "present); fail-open without GH_TOKEN/GITHUB_TOKEN"
+        ),
+    )
+    check.add_argument(
         "--scope",
         choices=("repo", "runtime", "all"),
         default="all",
@@ -179,8 +192,9 @@ def _build_parser() -> tuple[
             "runtime-scope yet, so this always yields zero findings today); "
             "default 'all' matches every category (today's behavior, "
             "unchanged); combining with an explicit --engines/--env/"
-            "--durability/--bmad-core whose own scope doesn't match is a "
-            "usage error, not a silent empty result -- ignored by --list"
+            "--durability/--bmad-core/--sibling-dreams whose own scope "
+            "doesn't match is a usage error, not a silent empty result -- "
+            "ignored by --list"
         ),
     )
     check.add_argument(
@@ -413,6 +427,7 @@ def _validate_scope_against_explicit_categories(
             ("--env", "env", args.env is not None),
             ("--durability", "durability", args.durability),
             ("--bmad-core", "bmad-core", args.bmad_core),
+            ("--sibling-dreams", "sibling-dreams", args.sibling_dreams),
         )
         if given
     ]
@@ -657,6 +672,15 @@ def _gather_bmad_core(target: Path) -> tuple[Finding, ...]:
     return bmad_method.gather(target)
 
 
+def _gather_sibling_dreams(target: Path) -> tuple[Finding, ...]:
+    """Findings for the "sibling-dreams" category (Story 16.1 / CAP-1).
+
+    OPT-IN ONLY -- live GitHub Contents API when a token is present; same
+    NFR-4 rationale as ``--bmad-core``. Fail-open without a token.
+    """
+    return sibling_dreams.gather(target)
+
+
 def _run_check(args: argparse.Namespace) -> int:
     if args.list:
         return _render_list()
@@ -677,13 +701,21 @@ def _run_check(args: argparse.Namespace) -> int:
     # silently pull in engines+env+durability just because none of THOSE
     # three flags happened to be named.
     run_bmad_core = args.bmad_core
-    if not run_engines and not run_env and not run_durability and not run_bmad_core:
+    # Story 16.1: same opt-in / narrowing discipline as `--bmad-core`.
+    run_sibling_dreams = args.sibling_dreams
+    if (
+        not run_engines
+        and not run_env
+        and not run_durability
+        and not run_bmad_core
+        and not run_sibling_dreams
+    ):
         # Neither flag given -> both categories run (FR-2), each as the
         # WHOLE category -- args.engines/args.env are still None here (the
         # "flag absent" default, distinct from _WHOLE_CATEGORY, the "flag
         # given with no value" const), so the sentinel must be substituted
-        # explicitly rather than forwarded as-is. `run_bmad_core` is
-        # deliberately NOT set True here -- see the comment above.
+        # explicitly rather than forwarded as-is. `run_bmad_core` /
+        # `run_sibling_dreams` are deliberately NOT set True here.
         run_engines = run_env = run_durability = True
         engines_name: object = _WHOLE_CATEGORY
         env_name: object = _WHOLE_CATEGORY
@@ -700,6 +732,9 @@ def _run_check(args: argparse.Namespace) -> int:
     run_env = run_env and _category_in_scope("env", args.scope)
     run_durability = run_durability and _category_in_scope("durability", args.scope)
     run_bmad_core = run_bmad_core and _category_in_scope("bmad-core", args.scope)
+    run_sibling_dreams = run_sibling_dreams and _category_in_scope(
+        "sibling-dreams", args.scope
+    )
 
     findings: tuple[Finding, ...] = ()
     if run_engines:
@@ -710,6 +745,8 @@ def _run_check(args: argparse.Namespace) -> int:
         findings += _gather_durability(target)
     if run_bmad_core:
         findings += _gather_bmad_core(target)
+    if run_sibling_dreams:
+        findings += _gather_sibling_dreams(target)
 
     # Computed BEFORE emission: a stdout write failure must never replace
     # the already-computed exit code (mirrors warden's cli.py discipline).
