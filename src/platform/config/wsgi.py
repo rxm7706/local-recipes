@@ -26,6 +26,10 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 sys.path.append(str(BASE_DIR / "platformapp"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.production")
 
+from config.observability import configure_observability  # noqa: E402
+
+configure_observability()
+
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
 # setting points here.
