@@ -2,7 +2,7 @@
 title: steward setup/initrepo take the machine to green
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 updated: '2026-08-23'
 context: []
 warnings: []

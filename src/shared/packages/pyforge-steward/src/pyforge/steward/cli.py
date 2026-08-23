@@ -37,7 +37,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
 # `upgrade` (Epic 14, Stories 14.1–14.5 — pre-flight + apply + CAP-3 reconcile + CAP-4 pin fan-out + CAP-5 prove-landed),
 # `suite` (Epic 15, Story 15.1 — CAP-1 pipeline-truth report),
-# `init`/`shell-init` (Epic 17, Story 17.1 — machine bootstrap prereqs + shell).
+# `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -49,6 +49,9 @@ DUTIES: tuple[str, ...] = (
     "suite",
     "init",
     "shell-init",
+    "setup",
+    "initrepo",
+    "validate-fast",
 )
 
 _HELP = {
@@ -85,6 +88,18 @@ _HELP = {
         "emit idempotent PATH/completions/env shell snippet to stdout for eval "
         "(Story 17.1)"
     ),
+    "setup": (
+        "machine bootstrap — clone (when missing), pixi install, and pre-commit hooks "
+        "(Story 17.2)"
+    ),
+    "initrepo": (
+        "onboard a pixi checkout — scaffold pyforge.toml when absent, materialize env, "
+        "run validate-fast (Story 17.2)"
+    ),
+    "validate-fast": (
+        "fast green gate — prereqs, environment.yaml sync, steward CLI smoke "
+        "(Story 17.2)"
+    ),
 }
 
 
@@ -113,12 +128,44 @@ def build_parser() -> argparse.ArgumentParser:
             _add_upgrade_subparsers(duty_parser)
         elif name == "suite":
             _add_suite_subparsers(duty_parser)
-        elif name in ("init", "shell-init"):
+        elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
                 action="store_true",
                 help="emit JSON instead of human-readable text",
             )
+            if name == "setup":
+                duty_parser.add_argument(
+                    "--url",
+                    default=None,
+                    metavar="URL",
+                    help="git remote to clone when --dest is missing (default: local-recipes GitHub URL)",
+                )
+                duty_parser.add_argument(
+                    "--dest",
+                    default=None,
+                    metavar="PATH",
+                    help="checkout destination (default: current repo root)",
+                )
+                duty_parser.add_argument(
+                    "--env",
+                    default=None,
+                    metavar="NAME",
+                    help="pixi environment to materialize (default: local-recipes)",
+                )
+            if name in ("initrepo", "validate-fast"):
+                duty_parser.add_argument(
+                    "--repo",
+                    default=None,
+                    metavar="PATH",
+                    help="pixi project root (default: current repo root)",
+                )
+                duty_parser.add_argument(
+                    "--env",
+                    default=None,
+                    metavar="NAME",
+                    help="pixi environment for CLI smoke (default: local-recipes)",
+                )
     return parser
 
 
@@ -797,6 +844,18 @@ def resolve_duty(name: str) -> Duty:
         from .bootstrap import ShellInitDuty
 
         return ShellInitDuty()
+    if name == "setup":
+        from .bootstrap import SetupDuty
+
+        return SetupDuty()
+    if name == "initrepo":
+        from .bootstrap import InitRepoDuty
+
+        return InitRepoDuty()
+    if name == "validate-fast":
+        from .bootstrap import ValidateFastDuty
+
+        return ValidateFastDuty()
     return NullDuty(name)
 
 
