@@ -2,7 +2,7 @@
 title: Both guards hard-fail on drift
 type: feature
 created: '2026-08-23'
-status: in-review
+status: blocked
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -65,9 +65,14 @@ baseline_revision: 3f722545d5cd7a4225eda0ed22d4c7f6ca4d3cc4
 
 ## Auto Run Result
 
-Status: in-review
+Status: blocked
 
-Summary: Both guards consume sole `verify_scope`. `bmad-switch --current` exits 2 on drift naming found-vs-expected; `marshal init` refuses repurposed homes. DW-1-4-2 closed.
+Blocking condition: GitHub Actions billing/spending-limit — jobs never start (`The job was not started because recent account payments have failed or your spending limit needs to be increased`). Local verification green; staged-recipes linter passes locally with `maintenance` label.
 
-Verification: `pixi run -e pyforge-marshal pytest …/test_verify_scope.py …/test_init.py tests/scripts/test_bmad_switch_hard_fail.py -q` → 186 passed.
+PR: https://github.com/rxm7706/local-recipes/pull/692
+HEAD: 430a0f71f674f2fdcdb2be8bc990197afacda4d1
+
+Summary: Both guards consume sole `verify_scope`. `bmad-switch --current` exits 2 on drift; `marshal init` refuses wrong-project agreement; DW-1-4-2 closed in ledger. Merge + finalize deferred until CI can run.
+
+Verification (local): `pixi run -e pyforge-marshal pytest …/test_verify_scope.py …/test_init.py tests/scripts/test_bmad_switch_hard_fail.py -q` → 186 passed; `linter.py --pr-num=692` → excellent.
 
