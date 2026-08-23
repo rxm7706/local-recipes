@@ -10,6 +10,7 @@
 |-------|--------|
 | Mode | `drain_to_zero` |
 | Merge | **`merge_in_agent: true`** (all stations) |
+| Auto-coordinator | **ON** — see [COORDINATOR.md](./COORDINATOR.md); drains marshal + steward until backlog zero |
 | Active stations | **marshal**, **steward** |
 | Drained (ledger) | atlas, doctor, herald, mason, scribe, warden |
 
