@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import json
 import shutil
 import subprocess
 import sys
@@ -240,3 +241,84 @@ def test_detector_scope_is_runtime_not_repo():
     assert matches, f"detector not discovered; sample={found[:3]!r}"
     assert all(m.get("scope") == "runtime" for m in matches)
     assert not any(m.get("scope") == "repo" for m in matches)
+
+
+def test_collect_findings_returns_unrecovered_dicts(tmp_path, monkeypatch):
+    """Story 20.2: collect_findings() is the shared list for human/--json/ATTENTION."""
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    _seed_preserve_branch(repo)
+    _seed_loop_home(loop_root, journal_fixture="journal_9_6_drift.jsonl")
+    _seed_repo_ledger(repo, ledger_fixture=None)
+
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+
+    findings = mod.collect_findings()
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["slug"] == "marshal"
+    assert f["story"] == STORY_KEY
+    assert f["run"] == RUN_ID
+    assert f["real"] == REAL_BASELINE
+    assert f["drifted"] == DRIFTED_BASELINE
+    assert PRESERVE_REF in f["refs"]
+
+
+def test_collect_findings_empty_when_recovered(tmp_path, monkeypatch):
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    _seed_preserve_branch(repo)
+    _seed_loop_home(loop_root, journal_fixture="journal_9_6_drift.jsonl")
+    _seed_repo_ledger(repo, ledger_fixture="sprint_status_ledger_recovered.yaml")
+
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+
+    assert mod.collect_findings() == []
+
+
+def test_json_flag_prints_findings_and_exits_nonzero(tmp_path, monkeypatch, capsys):
+    """--json: machine list only; exit 1 when unrecovered (CAP-1 loud exit preserved)."""
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    _seed_preserve_branch(repo)
+    _seed_loop_home(loop_root, journal_fixture="journal_9_6_drift.jsonl")
+    _seed_repo_ledger(repo, ledger_fixture=None)
+
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    rc = mod.main(["--json"])
+    out = capsys.readouterr().out
+
+    assert rc == 1
+    data = json.loads(out)
+    assert len(data) == 1
+    assert data[0]["story"] == STORY_KEY
+    assert data[0]["real"] == REAL_BASELINE
+    assert data[0]["drifted"] == DRIFTED_BASELINE
+    assert PRESERVE_REF in data[0]["refs"]
+    assert "[unrecovered]" not in out  # no human banner mixed into --json
+
+
+def test_json_flag_empty_array_on_clean(tmp_path, monkeypatch, capsys):
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    _seed_loop_home(loop_root, journal_fixture="journal_clean.jsonl")
+    _seed_repo_ledger(repo, ledger_fixture=None)
+
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    rc = mod.main(["--json"])
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert json.loads(out) == []

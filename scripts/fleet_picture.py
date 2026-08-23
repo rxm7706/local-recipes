@@ -328,6 +328,99 @@ def _dream_chain_watch_lines(findings: list[dict]) -> list[str]:
     return lines
 
 
+def baseline_drift_findings(
+    repo: pathlib.Path = REPO, timeout: int = 60
+) -> list[dict]:
+    """Unrecovered baseline-drift defers from CAP-1's detector (Story 20.2 /
+    CAP-2 -- loud-defer containment on the ATTENTION plane).
+
+    Shells out via ``sys.executable scripts/bmad_loop_baseline_drift_check.py
+    --json`` -- same subprocess discipline as ``dream_chain_gap_findings``;
+    this script never imports the detector module (or ``bmad_loop``).
+
+    Timeout 60s: the detector walks every ``~/.bmad-loops`` home and runs
+    ``git for-each-ref`` per unrecovered run; slower than dream-chain's 30s
+    bound on a cold disk with many loop homes.
+
+    DELIBERATE deviation from siblings' ``check=True``: exit codes {0, 1}
+    are BOTH success here. Exit 1 means findings exist (the CAP-1 loud
+    exit); a ``check=True`` mirror would raise on exactly the case this
+    function exists for and degrade every real unrecovered defer to
+    "could not run". Any other exit code raises ``CalledProcessError``.
+
+    Does NOT catch its own failures -- raises so ``main()``'s ATTENTION
+    ``try/except`` can degrade to one watch line.
+    """
+    cmd = [
+        sys.executable,
+        str(repo / "scripts" / "bmad_loop_baseline_drift_check.py"),
+        "--json",
+    ]
+    result = subprocess.run(
+        cmd, cwd=repo, capture_output=True, text=True, timeout=timeout,
+        check=False,  # {0, 1} are both success -- see docstring
+        stdin=subprocess.DEVNULL,
+    )
+    if result.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(
+            result.returncode, cmd, output=result.stdout, stderr=result.stderr
+        )
+    raw = (result.stdout or "").strip()
+    if not raw:
+        return []
+    payload = json.loads(raw)
+    if not isinstance(payload, list):
+        raise ValueError(
+            f"baseline-drift-check --json expected a list, got {type(payload).__name__}"
+        )
+    return payload
+
+
+def _baseline_drift_needs_lines(findings: list[dict]) -> list[str]:
+    """ATTENTION ``needs`` lines for ``baseline_drift_findings()`` output.
+
+    Pure assembly helper (dream_chain pattern): count + first finding's
+    recovery fields (story, run, drifted-vs-real baselines, preserve ref
+    or patch hint) + unambiguous ``baseline-drift-check`` pointer.
+    ``[]`` when clean / recovered (empty findings) -- healthy silence.
+    """
+    if not findings:
+        return []
+
+    def _sanitize(val: object, cap: int) -> str:
+        # First printable line only; scrub C0 controls AND Unicode line
+        # breaks (U+0085/U+2028/U+2029) so journal fields cannot split one
+        # needs bullet into many.
+        text = str(val if val is not None else "?")
+        text = re.split(r"[\n\r\u0085\u2028\u2029]", text, maxsplit=1)[0]
+        return re.sub(r"[\x00-\x1f\x7f\u0085\u2028\u2029]", "?", text)[:cap]
+
+    f0 = findings[0]
+    slug = _sanitize(f0.get("slug") or "?", 40)
+    story = _sanitize(f0.get("story") or "?", 110)
+    run = _sanitize(f0.get("run") or "?", 40)
+    real = _sanitize(f0.get("real") or "?", 40)
+    drifted = _sanitize(f0.get("drifted") or "?", 40)
+    refs = f0.get("refs") or []
+    if not isinstance(refs, list):
+        refs = [refs] if refs else []
+    if refs:
+        recover = f"recover from: {_sanitize(', '.join(str(r) for r in refs), 120)}"
+    else:
+        recover = (
+            f"no attempt-preserve/{run}-* branch -- "
+            f"check failed/{story}/changes.patch in the run dir"
+        )
+    return [
+        f"{len(findings)} unrecovered baseline-drift defer(s) -- real reviewed "
+        f"work stranded by bmad-loop's stuck-orchestrator bug "
+        f"(e.g. {slug}/{story} run {run}: real {real} != drifted {drifted}; "
+        f"{recover}) -- run `pixi run -e local-recipes baseline-drift-check` "
+        f"for the full list, then recover per "
+        f"docs/dreams/bmad-loop-baseline-drift.md"
+    ]
+
+
 def running_stations() -> tuple[set[str], dict[str, dict]]:
     """(slugs running, slug -> live row) from marshal status.
 
@@ -460,17 +553,8 @@ def main() -> int:
         watch.append("could not query open PRs")
 
     try:
-        drift = subprocess.run(
-            [sys.executable, str(REPO / "scripts" / "bmad_loop_baseline_drift_check.py")],
-            cwd=REPO, capture_output=True, text=True, timeout=60)
-        if drift.returncode == 1:
-            n = sum(1 for line in drift.stdout.splitlines() if line.startswith("  ✗"))
-            needs.append(f"{n} unrecovered baseline-drift defer(s) -- real reviewed "
-                         f"work stranded by bmad-loop's stuck-orchestrator bug: run "
-                         f"`pixi run -e local-recipes baseline-drift-check` for "
-                         f"story/run/preserve-ref details, then recover per "
-                         f"docs/dreams/bmad-loop-baseline-drift.md")
-    except Exception:
+        needs.extend(_baseline_drift_needs_lines(baseline_drift_findings()))
+    except Exception:  # noqa: BLE001 -- same ATTENTION-probe degrade idiom
         watch.append("could not run baseline-drift-check")
 
     try:
