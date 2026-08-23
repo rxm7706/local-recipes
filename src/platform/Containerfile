@@ -433,7 +433,11 @@ ENV DJANGO_SETTINGS_MODULE=config.settings.production
 # two more binary artifacts). IF YOU RE-VENDOR BOOTSTRAP FROM A CDN, the
 # comments come back and this RUN fails again -- either strip them the same
 # way or vendor the two `.map` files too.
-RUN DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
+# CAP-3: collectstatic imports production settings; COMPONENT_RUNTIME=local
+# keeps stage-1/2 refusals from treating the image build as a live deploy
+# (build still may use the cookiecutter placeholder admin URL).
+RUN COMPONENT_RUNTIME=local \
+    DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
     DJANGO_ADMIN_URL=admin/ \
     bash -c "source /app/shell-hook.sh \
         && python manage.py collectstatic --noinput \

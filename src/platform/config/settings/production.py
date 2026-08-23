@@ -1,9 +1,19 @@
 # ruff: noqa: E501
+import sys
+
+from config.startup import run_stage_one
+from config.startup.stage_one import refuse_required_settings
+
 from .base import *  # noqa: F403
 from .base import DATABASES
 from .base import INSTALLED_APPS
 from .base import REDIS_URL
 from .base import env
+
+# CAP-3 / steward 16.2: named required-env refusals *before* django-environ
+# raises an opaque ImproperlyConfigured on missing DJANGO_SECRET_KEY /
+# DJANGO_ADMIN_URL. Deployed-only (see config.locality).
+refuse_required_settings()
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -170,3 +180,7 @@ LOGGING = {
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+# CAP-3 stage 1: last statement of this leaf (not base.py). Re-checks required
+# env and leaves the hook for later namespace conditions.
+run_stage_one(sys.modules[__name__])
