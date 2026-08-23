@@ -39,7 +39,7 @@
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `20-2` | [#683](https://github.com/rxm7706/local-recipes/pull/683) merge `d12779380c` · finalize  ([Marshal 20-2](cac55d3b-b3aa-446a-b852-5916494676b8)) |
+| marshal | `20-2` | [#683](https://github.com/rxm7706/local-recipes/pull/683) merge `d12779380c` · finalize `96c0678145` ([Marshal 20-2](cac55d3b-b3aa-446a-b852-5916494676b8)) |
 | steward | `16-1` | [#682](https://github.com/rxm7706/local-recipes/pull/682) |
 | steward | `15-4` | [#681](https://github.com/rxm7706/local-recipes/pull/681) merge `0c04823619` · finalize `4d9c58ae85` · epic-15 done ([Steward 15-4](8b034e60-b98a-4394-81ef-6b34cc91895e)) |
 | marshal | `20-1` | [#680](https://github.com/rxm7706/local-recipes/pull/680) merge `3a4a7bd854` · finalize `9ca74754a3` ([Marshal 20-1](a99b474c-bc0d-457d-963c-45e13ad364d6)) |
