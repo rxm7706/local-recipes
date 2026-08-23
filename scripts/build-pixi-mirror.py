@@ -45,7 +45,6 @@ import argparse
 import hashlib
 import sys
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
@@ -56,6 +55,7 @@ import yaml
 from requests.adapters import HTTPAdapter
 
 CHUNK_SIZE = 1 << 20  # 1 MiB
+HEARTBEAT_INTERVAL = 30.0  # seconds; CI logs stay alive during slow in-flight GETs
 _THREAD_LOCAL = threading.local()
 
 
@@ -228,6 +228,33 @@ def _download_one(target: MirrorTarget, dest_root: Path, timeout: int) -> str:
     return "downloaded"
 
 
+def _format_progress(completed: int, total: int, downloaded: int, skipped: int, failed: int) -> str:
+    return (
+        f"  ... {completed}/{total} ({downloaded} downloaded, "
+        f"{skipped} skipped, {failed} failed)"
+    )
+
+
+def _progress_heartbeat(
+    stop: threading.Event,
+    progress: dict[str, int],
+    lock: threading.Lock,
+    *,
+    interval: float = HEARTBEAT_INTERVAL,
+) -> None:
+    """Emit progress on a wall clock even when no worker has finished yet."""
+    while not stop.wait(interval):
+        with lock:
+            completed = progress["completed"]
+            total = progress["total"]
+            downloaded = progress["downloaded"]
+            skipped = progress["skipped"]
+            failed = progress["failed"]
+        if completed >= total:
+            break
+        print(_format_progress(completed, total, downloaded, skipped, failed), flush=True)
+
+
 def build_mirror(
     targets: list[MirrorTarget], dest_root: Path, workers: int, timeout: int
 ) -> tuple[int, int]:
@@ -245,49 +272,69 @@ def build_mirror(
         deduped.setdefault(target.dest_relpath, target)
     targets = list(deduped.values())
 
-    downloaded = 0
-    skipped = 0
-    completed = 0
-    errors: list[str] = []
     total = len(targets)
-    last_progress_at = time.monotonic()
+    progress = {
+        "completed": 0,
+        "downloaded": 0,
+        "skipped": 0,
+        "failed": 0,
+        "total": total,
+    }
+    progress_lock = threading.Lock()
+    errors: list[str] = []
+    stop_heartbeat = threading.Event()
+    heartbeat = threading.Thread(
+        target=_progress_heartbeat,
+        args=(stop_heartbeat, progress, progress_lock),
+        name="mirror-heartbeat",
+        daemon=True,
+    )
+    heartbeat.start()
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = {
-            executor.submit(_download_one, target, dest_root, timeout): target
-            for target in targets
-        }
-        for future in as_completed(futures):
-            completed += 1
-            try:
-                result = future.result()
-            except MirrorBuildError as exc:
-                errors.append(str(exc))
-            else:
-                if result == "downloaded":
-                    downloaded += 1
+    try:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {
+                executor.submit(_download_one, target, dest_root, timeout): target
+                for target in targets
+            }
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                except MirrorBuildError as exc:
+                    with progress_lock:
+                        progress["completed"] += 1
+                        progress["failed"] += 1
+                        completed = progress["completed"]
+                        downloaded = progress["downloaded"]
+                        skipped = progress["skipped"]
+                        failed = progress["failed"]
+                    errors.append(str(exc))
                 else:
-                    skipped += 1
-            # Progress, not just a start/end line: a slow connection
-            # working through hundreds of packages with zero output in
-            # between risks tripping a CI no-output stall detector. Printed
-            # every 20 completions OR every 60s of real elapsed time,
-            # whichever comes first -- the count alone doesn't bound wall
-            # time if individual downloads are slow, and the clock alone
-            # would be needlessly noisy on a fast connection.
-            now = time.monotonic()
-            if completed % 20 == 0 or completed == total or (now - last_progress_at) >= 60:
-                print(
-                    f"  ... {completed}/{total} ({downloaded} downloaded, "
-                    f"{skipped} skipped, {len(errors)} failed)",
-                    flush=True,
-                )
-                last_progress_at = now
+                    with progress_lock:
+                        progress["completed"] += 1
+                        if result == "downloaded":
+                            progress["downloaded"] += 1
+                        else:
+                            progress["skipped"] += 1
+                        completed = progress["completed"]
+                        downloaded = progress["downloaded"]
+                        skipped = progress["skipped"]
+                        failed = progress["failed"]
+                # Count-based line on fast runs; the background heartbeat
+                # covers wall-clock gaps while large packages are in flight.
+                if completed % 20 == 0 or completed == total:
+                    print(
+                        _format_progress(completed, total, downloaded, skipped, failed),
+                        flush=True,
+                    )
+    finally:
+        stop_heartbeat.set()
+        heartbeat.join(timeout=1.0)
 
     if errors:
         raise MirrorBuildError("\n".join(errors))
 
-    return downloaded, skipped
+    return progress["downloaded"], progress["skipped"]
 
 
 def main(argv: list[str] | None = None) -> int:
