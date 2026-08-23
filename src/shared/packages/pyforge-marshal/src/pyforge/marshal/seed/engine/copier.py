@@ -111,6 +111,15 @@ from pyforge.core.errors import PyforgeError
 
 from ..model.manifest import ArtifactClass, Manifest, load_manifest
 
+# Story 12.1 (NFR-C2): THE declared Copier version range for Genesis (AD-52).
+# Hand-synced against root ``pixi.toml``'s ``[feature.pyforge-marshal.dependencies]``
+# copier pin, the member ``pixi.toml`` ``[package.run-dependencies]`` entry, and
+# ``pyproject.toml``'s ``copier`` dependency -- proven by
+# ``tests/meta/test_manifest_sync.py::test_copier_range_constants_match_manifest_pins``.
+_COPIER_MIN_VERSION: tuple[int, ...] = (9, 17)
+_COPIER_MAX_MAJOR_EXCLUSIVE: tuple[int, ...] = (10,)
+COPIER_VERSION_RANGE_TEXT = ">=9.17,<10"
+
 # The one path every run_copy/run_update/run_recopy call configures
 # explicitly (Spike-0 Finding 2) -- also the answers file's own entry in
 # the fixed Genesis-owned allow-list below.

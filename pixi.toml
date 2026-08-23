@@ -447,6 +447,11 @@ cmd = "pytest tests/scripts/test_container_volumes_roundtrip.py -q"
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: fs_local.py/harness_bmadloop.py/cli/config.py's mandatory run-dep (atomic_write*)
+# Story 12.1 (Genesis / FR-122, NFR-C2): Copier is the seed engine (AD-52, P-02) -- must
+# resolve in the lean pyforge-marshal env so `marshal seed *` and seed tests import
+# standalone. Pin is THE source of truth in seed/engine/copier.py; member pixi.toml and
+# pyproject.toml are cross-checked by tests/meta/test_manifest_sync.py.
+copier = ">=9.17,<10"
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
@@ -472,7 +477,7 @@ description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from o
 depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test]
-description = "Run the pyforge-marshal test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
+description = "Run the pyforge-marshal test suite (unit + meta incl. tests/**/seed*, fast default loop -- excludes @pytest.mark.slow)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]

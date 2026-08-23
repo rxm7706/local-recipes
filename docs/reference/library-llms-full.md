@@ -63,7 +63,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-core` | pyforge-core (no-default-feature)                     | Lean env for the built `pyforge-core` package (`src/shared/packages/pyforge-core` path dep -> conda pkg + pytest/hatchling/python-build). Pure-stdlib shared leaf (Story 14.1, `pyforge-scribe` mirror); a real run-dependency of six sibling stations' own envs (atlas, herald, marshal, scribe, steward, warden — see each `[feature.pyforge-<station>.dependencies]`). Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/` |
 | `pyforge-mason`| pyforge-mason (no-default-feature)                    | Lean env for the built `pyforge-mason` package (`src/shared/packages/pyforge-mason` path dep -> conda pkg + pytest/hatchling/python-build). The Artisan Builder's CLI (`mason recipe`/`package`/`environment`); **no CLI-framework dep by contract** (FR-41 forbids click/typer — argparse only). Tasks: `pyforge-mason-build{,-conda,-dist}`, `pyforge-mason-test`. Spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/` |
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
-| `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station; `import-linter` is load-bearing, not incidental — it enforces AD-3 (only `adapters/harness_bmadloop.py` may import `bmad_loop`) and AD-4 (`core/**` imports no `subprocess`/`os`/`time`/`adapters`) as **build-breaking contracts** rather than conventions. Task: `pyforge-marshal-test`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
+| `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + **copier** run-dep + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station and ships Genesis (seed engine via Copier, Story 12.1); `import-linter` is load-bearing, not incidental — it enforces AD-3 (only `adapters/harness_bmadloop.py` may import `bmad_loop`) and AD-4 (`core/**` imports no `subprocess`/`os`/`time`/`adapters`) as **build-breaking contracts** rather than conventions. Task: `pyforge-marshal-test`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
 | `python-agent-platform`| python-agent-platform (no-default-feature)     | **`python 3.12.*` — the only non-3.14 env in this catalog.** CAP-5 (Story 10.2, "one factory-sourced environment"): the ONE env that runs the three agentic engines (`langflow`, `dbgpt`, `dbgpt-serve`) alongside `django` on a single conda-forge-sourced interpreter, plus the `fastapi`/`django-health-check`/`psycopg2`/`redis-py` host deps and (Story 11.1) `chromadb`/`langchain-chroma`/`elevenlabs`/`psycopg` — deps `langflow.main.create_app()` hard-imports that the recipe only lists as soft `run_constraints`. `channel-priority = "flexible"` (feature-scoped) lets the solver fall through to a `SelfExplainML`-channel `slowapi` build once conda-forge's own build is ruled out by the `redis-py >=6.0.0` floor. Epic 11's engine-mounting stories and Story 10.3 (container image) both depend on this env existing. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/` |
 | `platform-dev` | python-agent-platform + platform-dev (no-default-feature) | AD-16, Story 11.1: composes `platform-dev` (`postgresql`/`pgvector`/`redis-server`/`kubernetes-helm`/`kubernetes-client`) ONTO `python-agent-platform` — one env for the full local Tier-1 dev baseline (engines + the PostgreSQL/Redis/k8s-CLI processes they need), zero containers or managed services. `pixi install -e platform-dev` alone provisions everything Epic 11's schema-isolation work needs. |
 - **graphviz** (>=14.1.2) — Graph layout engine (the `dot` binary); drives the
@@ -242,6 +242,9 @@ All in `local-recipes`.
 
 - **cookiecutter** (>=2.7.1) — template-based project scaffolding from local or git
   templates.
+- **copier** (>=9.17,<10) — modern project/template scaffolding and update engine;
+  Genesis (`marshal seed *`) uses Copier exclusively (Story 12.1, AD-52). Available in
+  **`pyforge-marshal`** only — not in `local-recipes`.
 - **cruft** (>=2.16.0) — keep cookiecutter-generated projects in sync with their
   upstream template (diff + update).
 - **jinja2** (>=3.1.6) — the template engine itself (also used standalone for codegen).
@@ -823,7 +826,8 @@ depending on them without adding them first:
 - Lock/bundle envs → **conda-lock**, **pixi-pack**/**pixi-unpack**, **conda-pack**
 - Drive a browser → **playwright-python**
 - Build a CLI → **typer** + **rich**
-- Scaffold a project → **cookiecutter** (+ **cruft** to stay synced)
+- Scaffold a project → **copier** (Genesis / `marshal seed init`, Story 12.1) or
+  **cookiecutter** (+ **cruft** to stay synced) for ad-hoc templates in `local-recipes`
 - Web app/CMS → **django** + **wagtail**/**coderedcms**; realtime → **channels**+**daphne**
 - Run the agentic engines (langflow/DB-GPT) alongside Django, `python 3.12` →
   **python-agent-platform** env (**langflow**, **dbgpt**, **dbgpt-serve**, § 11/13)

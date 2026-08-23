@@ -26,8 +26,14 @@ from pyforge.marshal.adapters.harness_bmadloop import (
     _HARNESS_MAX_MINOR_EXCLUSIVE,
     _HARNESS_MIN_VERSION,
 )
+from pyforge.marshal.seed.engine.copier import (
+    COPIER_VERSION_RANGE_TEXT,
+    _COPIER_MAX_MAJOR_EXCLUSIVE,
+    _COPIER_MIN_VERSION,
+)
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = _PACKAGE_ROOT.parents[3]
 
 # PEP 508-lite: the distribution name, then everything after it is the
 # version-specifier tail. Marshal's declared deps are plain name+specifier
@@ -104,3 +110,34 @@ def test_harness_range_constants_match_pyproject_dependency_pin():
     min_text = ".".join(str(part) for part in _HARNESS_MIN_VERSION)
     max_text = ".".join(str(part) for part in _HARNESS_MAX_MINOR_EXCLUSIVE)
     assert HARNESS_VERSION_RANGE_TEXT == f">={min_text},<{max_text}"
+
+
+def _copier_pin_from_pyproject() -> str:
+    specs = []
+    for requirement in _load("pyproject.toml")["project"]["dependencies"]:
+        match = _REQUIREMENT_RE.match(requirement)
+        assert match is not None, f"unparseable requirement {requirement!r}"
+        if match.group(1).lower() == "copier":
+            specs.append(match.group(2).replace(" ", ""))
+    assert specs, "pyproject.toml must declare copier"
+    return specs[0]
+
+
+def test_copier_range_constants_match_manifest_pins():
+    """Story 12.1 (NFR-C2): the Copier pin declared in ``seed/engine/copier.py``
+    must match every manifest copy -- root ``pixi.toml``'s
+    ``[feature.pyforge-marshal.dependencies]``, the member ``pixi.toml``
+    ``[package.run-dependencies]``, and ``pyproject.toml``'s ``copier``
+    dependency (the last two are also equality-checked above, but this test
+    names the engine seam explicitly so a one-sided root-pixi bump can't
+    ship with every other test green)."""
+    assert _copier_pin_from_pyproject() == COPIER_VERSION_RANGE_TEXT
+    member_copier = _load("pixi.toml")["package"]["run-dependencies"]["copier"]
+    assert member_copier.replace(" ", "") == COPIER_VERSION_RANGE_TEXT
+    root_pixi = tomllib.loads((_REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    root_copier = root_pixi["feature"]["pyforge-marshal"]["dependencies"]["copier"]
+    assert root_copier.replace(" ", "") == COPIER_VERSION_RANGE_TEXT
+    min_text = ".".join(str(part) for part in _COPIER_MIN_VERSION)
+    assert COPIER_VERSION_RANGE_TEXT == (
+        f">={min_text},<{_COPIER_MAX_MAJOR_EXCLUSIVE[0]}"
+    )
