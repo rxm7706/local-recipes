@@ -1190,6 +1190,15 @@ board created and repo-linked, queryable end to end; kin-declared to
 
 **Stories 12.4–12.6 and 12.8 clear to dispatch (12.8 after 12.4); 12.7 follows all three chart/bring-up stories.**
 
+### Story 12.9: OCP as a portability profile
+**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-python-agent-platform CAP-6 / AD-11 (OCP overlay live proof); Dream `docs/dreams/ocp-as-a-portability-profile.md`
+**Surface:** platform CI (`.github/workflows/platform-ci.yml`), `deploy/README.md` honesty line
+**Given** the Story 12.1 OCP overlay and a real OpenShift API (CRC / OpenShift Local — not `kind`)
+**Then** an optional Platform CI job (`ocp-portability-smoke`, default off) pushes the shared
+platform image via the internal-registry pattern, installs core + overlay, and curls through an
+admitted Route — proving SCC-assigned UIDs and the OCP edge path end-to-end; consumes
+`cluster-bringup-facts.md` registry commands, does not replace Story 12.7 attended closeout.
+
 ## Epic 16: The platform host earns its 15 factors
 
 **Spec binding.** Decomposes `spec-platform-fifteen-factors` CAP-1..5 (seeded 2026-08-22
