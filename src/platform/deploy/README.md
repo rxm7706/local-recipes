@@ -127,8 +127,14 @@ capability-naming reason where helm/PyYAML are absent.
   mounts at `dataMountPath` and `PGDATA` derives from it, so a mismatch
   silently lands the database on the container's ephemeral filesystem
   instead of the PVC.
-- **No DB-GPT sidecar in the chart** — deliberately (the 2026-08-21
-  sprint-change proposal deferred its chart membership to Epic-12
-  follow-up; the AD-1 inventory here is exactly postgres + redis + the
-  platform image).
+- **DB-GPT sidecar (Story 12.5).** The chart renders a singleton sidecar
+  Deployment (`replicas: 1`, `strategy: Recreate`), a dedicated SQLite PVC
+  at `sidecar.metadataMountPath` (default
+  `/app/.home/.dbgpt/workspace/pilot/meta_data`), and an internal ClusterIP
+  Service. Platform web/worker pods receive `DBGPT_SIDECAR_BASE_URL` pointing
+  at that Service. Override `sidecar.image` for air-gap registry relocation;
+  optional `sidecar.llm.*` keys mirror compose.yml's LLM passthrough (unset
+  keys fall through to the image's baked TOML defaults). LLM API keys, when
+  wired, come from the same pre-created `existingSecret` via
+  `sidecar.llm.apiKeySecretKey` — the chart never renders Secrets (AD-12).
 - No HPA/PDB/NetworkPolicy/media PVC — out of this story's scope.

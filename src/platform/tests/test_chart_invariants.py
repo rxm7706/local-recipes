@@ -4,9 +4,9 @@ The core chart (`deploy/charts/platform/`) must stay vanilla Kubernetes and
 the OCP overlay (`deploy/overlays/ocp/`) must stay a thin Route; the
 platform-image pods (web, worker, migrate) must carry the OCP
 `restricted-v2` contract with no fixed UID anywhere; and the namespace
-inventory must be exactly PostgreSQL + Redis + the platform image (AD-1).
-This module makes those invariants tests over parsed `helm template`
-output rather than conventions.
+inventory must be exactly PostgreSQL + Redis + the platform image + the
+DB-GPT sidecar (AD-1, Story 12.5). This module makes those invariants
+tests over parsed `helm template` output rather than conventions.
 
 Story 9.6's discipline applies: every real proof's assertion logic lives
 in a shared helper, and each of the eight assertion-bearing helpers has at
@@ -38,13 +38,23 @@ _CORE_OVERRIDES = _PLATFORM_DIR / "deploy" / "overlays" / "ocp" / "core-override
 # The plain kinds AD-11 allows the core chart to render -- anything else
 # (Route, DeploymentConfig, ImageStream, BuildConfig, ...) is a finding.
 _VANILLA_KINDS = frozenset(
-    {"Deployment", "StatefulSet", "Service", "Ingress", "Job", "ServiceAccount"},
+    {
+        "Deployment",
+        "StatefulSet",
+        "Service",
+        "Ingress",
+        "Job",
+        "ServiceAccount",
+        "PersistentVolumeClaim",
+    },
 )
 _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job"})
 # The three pods that run the Story 10.3 platform image and must therefore
 # carry the restricted-v2 contract. "migrate" doubles as proof the hook
 # Job renders (`helm template` emits hooks).
 _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
+# Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
+_SIDECAR_COMPONENT = "dbgpt"
 
 requires_helm = pytest.mark.skipif(
     shutil.which("helm") is None,
@@ -115,7 +125,7 @@ def _strip_image_tag(image: str) -> str:
 
 
 def _default_image_references() -> frozenset[str]:
-    """The three expected tag-stripped image references, DERIVED from the
+    """The four expected tag-stripped image references, DERIVED from the
     core chart's own default values (registry + repository composed by the
     same rule as the chart's imageRef helper) rather than re-declared here.
     """
@@ -126,6 +136,7 @@ def _default_image_references() -> frozenset[str]:
         values["image"],
         values["postgres"]["image"],
         values["redis"]["image"],
+        values["sidecar"]["image"],
     ):
         registry = image.get("registry")
         repository = image["repository"]
@@ -341,6 +352,17 @@ def _pod_specs_by_component(
     return by_component
 
 
+def _collect_env_by_name(
+    pod_spec: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Container env vars keyed by name (value or valueFrom)."""
+    env_by_name: dict[str, dict[str, Any]] = {}
+    for container in pod_spec.get("containers") or []:
+        for entry in container.get("env") or []:
+            env_by_name[entry["name"]] = entry
+    return env_by_name
+
+
 def _collect_workload_images(docs: list[dict[str, Any]]) -> set[str]:
     images: set[str] = set()
     for doc in docs:
@@ -409,15 +431,93 @@ def test_platform_image_pod_specs_satisfy_restricted_v2():
 
 
 @requires_helm
-def test_namespace_inventory_is_exactly_postgres_redis_and_the_platform_image():
+def test_sidecar_deployment_renders_with_recreate_and_restricted_v2():
+    """AC: the DB-GPT sidecar Deployment uses replicas 1, Recreate strategy,
+    and satisfies restricted-v2 on its pod spec.
+    """
+    docs = _render(_CORE_CHART)
+    sidecar_deployments = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Deployment"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _SIDECAR_COMPONENT
+    ]
+    assert len(sidecar_deployments) == 1, (
+        f"expected exactly one dbgpt Deployment, got: "
+        f"{[doc['metadata']['name'] for doc in sidecar_deployments]}"
+    )
+    sidecar = sidecar_deployments[0]["spec"]
+    assert sidecar.get("replicas") == 1
+    assert sidecar.get("strategy", {}).get("type") == "Recreate"
+    by_component = _pod_specs_by_component(docs)
+    assert _SIDECAR_COMPONENT in by_component, "dbgpt sidecar missing from render"
+    _assert_restricted_v2_pod_spec(
+        by_component[_SIDECAR_COMPONENT],
+        where=_SIDECAR_COMPONENT,
+    )
+
+
+@requires_helm
+def test_sidecar_sqlite_pvc_and_internal_service_render():
+    """AC: a dedicated SQLite PVC and internal ClusterIP Service appear."""
+    docs = _render(_CORE_CHART)
+    pvcs = [doc for doc in docs if doc.get("kind") == "PersistentVolumeClaim"]
+    assert len(pvcs) == 1, (
+        f"expected exactly one PVC for the sidecar sqlite store, got: "
+        f"{[doc['metadata']['name'] for doc in pvcs]}"
+    )
+    dbgpt_services = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _SIDECAR_COMPONENT
+    ]
+    assert len(dbgpt_services) == 1, (
+        f"expected exactly one dbgpt Service, got: "
+        f"{[doc['metadata']['name'] for doc in dbgpt_services]}"
+    )
+    assert dbgpt_services[0]["spec"].get("type") == "ClusterIP"
+
+
+@requires_helm
+def test_platform_pods_wire_dbgpt_sidecar_base_url_to_internal_service():
+    """AC: web/worker pods resolve DBGPT_SIDECAR_BASE_URL to the internal
+    dbgpt Service (not localhost).
+    """
+    docs = _render(_CORE_CHART, release="platform")
+    dbgpt_service_name = next(
+        doc["metadata"]["name"]
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _SIDECAR_COMPONENT
+    )
+    expected_url = f"http://{dbgpt_service_name}:5670"
+    by_component = _pod_specs_by_component(docs)
+    for component in ("web", "worker"):
+        env = _collect_env_by_name(by_component[component])
+        dbgpt_env = env.get("DBGPT_SIDECAR_BASE_URL")
+        assert dbgpt_env is not None, (
+            f"{component} pod missing DBGPT_SIDECAR_BASE_URL env"
+        )
+        assert dbgpt_env.get("value") == expected_url, (
+            f"{component} DBGPT_SIDECAR_BASE_URL is {dbgpt_env.get('value')!r}, "
+            f"expected internal Service URL {expected_url!r}"
+        )
+        assert "localhost" not in dbgpt_env.get("value", "")
+
+
+@requires_helm
+def test_namespace_inventory_includes_postgres_redis_platform_and_sidecar():
     """AC (AD-1): across ALL rendered workload pod specs, the image set
-    reduces to exactly three -- postgres, redis, and the platform image.
+    reduces to exactly four -- postgres, redis, platform, and sidecar.
     """
     docs = _render(_CORE_CHART)
     images = _collect_workload_images(docs)
 
     _assert_image_inventory_is_exactly(images, _default_image_references())
-
 
 @requires_helm
 def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
@@ -575,35 +675,47 @@ def test_route_only_check_fails_when_a_non_route_document_is_present():
         _assert_only_route_documents(contaminated_docs)
 
 
-def test_image_inventory_check_fails_on_a_fourth_image():
-    """An image set with anything beyond the AD-1 trio, fed to the same
+def test_image_inventory_check_fails_on_a_fifth_image():
+    """An image set with anything beyond the AD-1 quartet, fed to the same
     inventory helper the real test uses, must raise.
-    """
-    images = {"platform:latest", "postgres:17", "redis:7", "vault:1.15"}
-
-    with pytest.raises(AssertionError):
-        _assert_image_inventory_is_exactly(
-            images,
-            frozenset({"platform", "postgres", "redis"}),
-        )
-
-
-def test_image_inventory_check_fails_on_a_superstring_fourth_image():
-    """`platform-dbgpt-sidecar:1.0` CONTAINS the expected reference
-    `platform` as a substring -- exact tag-stripped matching must still
-    count it as a fourth image (the bypass substring matching allowed).
     """
     images = {
         "platform:latest",
         "postgres:17",
         "redis:7",
-        "platform-dbgpt-sidecar:1.0",
+        "platform-dbgpt-sidecar:latest",
+        "vault:1.15",
     }
 
-    with pytest.raises(AssertionError, match="platform-dbgpt-sidecar"):
+    with pytest.raises(AssertionError):
         _assert_image_inventory_is_exactly(
             images,
-            frozenset({"platform", "postgres", "redis"}),
+            frozenset(
+                {"platform", "postgres", "redis", "platform-dbgpt-sidecar"},
+            ),
+        )
+
+
+def test_image_inventory_check_fails_on_a_superstring_sidecar_image():
+    """`platform-dbgpt-sidecar-extra:1.0` CONTAINS the expected reference
+    `platform-dbgpt-sidecar` as a substring -- exact tag-stripped matching
+    must still count it as a fifth image (the bypass substring matching
+    allowed).
+    """
+    images = {
+        "platform:latest",
+        "postgres:17",
+        "redis:7",
+        "platform-dbgpt-sidecar:latest",
+        "platform-dbgpt-sidecar-extra:1.0",
+    }
+
+    with pytest.raises(AssertionError, match="platform-dbgpt-sidecar-extra"):
+        _assert_image_inventory_is_exactly(
+            images,
+            frozenset(
+                {"platform", "postgres", "redis", "platform-dbgpt-sidecar"},
+            ),
         )
 
 

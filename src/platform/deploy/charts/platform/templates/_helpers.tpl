@@ -49,6 +49,14 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-migrate" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.dbgpt.fullname" -}}
+{{- printf "%s-dbgpt" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "platform.dbgpt.pvcName" -}}
+{{- printf "%s-dbgpt-sqlite" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{/*
 The data services' own ServiceAccount name -- see serviceaccount.yaml for
 why postgres/redis get a second SA. Same truncation rule.
@@ -204,4 +212,6 @@ this chart's own.
       key: DATABASE_URL
 - name: REDIS_URL
   value: {{ printf "redis://%s:6379/0" (include "platform.redis.fullname" .) | quote }}
+- name: DBGPT_SIDECAR_BASE_URL
+  value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
 {{- end }}
