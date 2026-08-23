@@ -1061,11 +1061,12 @@ def test_redis_auth_check_fails_when_requirepass_is_missing():
         platform_deployment("migrate"),
     ]
 
+    secret_ref = platform_env[0]["valueFrom"]["secretKeyRef"]
     with pytest.raises(AssertionError, match="requirepass"):
         _assert_redis_uses_password_from_existing_secret(
             docs,
-            secret_name="platform-secrets",
-            password_key="REDIS_PASSWORD",
+            secret_name=secret_ref["name"],
+            password_key=secret_ref["key"],
             redis_service_host="platform-redis",
         )
 
@@ -1089,7 +1090,12 @@ def test_redis_network_policy_check_fails_when_sidecar_is_allowed():
                                         {
                                             "key": "app.kubernetes.io/component",
                                             "operator": "In",
-                                            "values": ["web", "worker", "migrate", "dbgpt"],
+                                            "values": [
+                                                "web",
+                                                "worker",
+                                                "migrate",
+                                                "dbgpt",
+                                            ],
                                         },
                                     ],
                                 },
