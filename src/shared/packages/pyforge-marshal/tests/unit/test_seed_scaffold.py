@@ -1,18 +1,14 @@
 """Smoke test for Story 7.1's ``pyforge.marshal.seed`` scaffold + ``marshal
-seed`` CLI wiring: the module tree imports cleanly, and each of the two
-still-stub verbs reports not-yet-implemented and exits clean. Mirrors
-``tests/unit/test_cli.py``'s ``main([...])``/``capsys`` style -- no real
-detect/plan/apply/Copier logic exists yet to exercise for those two
-(Epic 12).
+seed`` CLI wiring: the module tree imports cleanly, and each verb dispatches
+through ``main()`` to its real implementation (no stubs remain after Story
+11.6). Mirrors ``tests/unit/test_cli.py``'s ``main([...])``/``capsys`` style.
 
-``check`` (Story 10.5), ``adopt`` (Story 10.6), ``init`` (Story 10.7), and
-``update`` (Story 11.4) are no longer stubs -- each is excluded from the
-parametrized stub-verb test below (unlike its two remaining siblings, none
-of them ever prints "not yet implemented") and gets its own smoke test
-proving the full ``main()`` dispatch path reaches the real verb;
-``tests/unit/test_seed_cli_seed_check.py``/``test_seed_cli_seed_adopt.py``/
-``test_seed_cli_seed_init.py``/``test_seed_cli_seed_update.py`` cover their
-exit-code/rendering behavior in full.
+``check`` (Story 10.5), ``adopt`` (Story 10.6), ``init`` (Story 10.7),
+``update`` (Story 11.4), ``explain``, and ``version`` (Story 11.6) are no
+longer stubs -- each is excluded from the parametrized stub-verb test below
+and gets its own smoke test proving the full ``main()`` dispatch path
+reaches the real verb; dedicated CLI unit tests cover exit-code/rendering
+behavior in full.
 """
 
 from __future__ import annotations
@@ -56,12 +52,30 @@ def test_each_architecture_subpackage_imports(subpackage):
     importlib.import_module(f"pyforge.marshal.seed.{subpackage}")
 
 
-@pytest.mark.parametrize("verb", ["explain", "version"])
-def test_seed_verb_stub_exits_zero_and_names_itself(verb, capsys):
-    exit_code = main(["seed", verb])
-    assert exit_code == 0
+def test_seed_explain_is_no_longer_a_stub(capsys):
+    exit_code = main(["seed", "explain", "agents-md"])
+
     captured = capsys.readouterr()
-    assert captured.out == f"marshal seed {verb}: not yet implemented\n"
+    assert "not yet implemented" not in captured.out
+    assert "marshal seed explain" in captured.out
+    assert exit_code == 0
+
+
+def test_seed_version_is_no_longer_a_stub(tmp_path, capsys):
+    exit_code = main(["seed", "version", "--repo-root", str(tmp_path)])
+
+    captured = capsys.readouterr()
+    assert "not yet implemented" not in captured.out
+    assert "marshal seed version" in captured.out
+    assert "bundled_model_version:" in captured.out
+    assert exit_code == 0
+
+
+def test_bare_seed_explain_is_a_usage_error(capsys):
+    exit_code = main(["seed", "explain"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert captured.err
 
 
 def test_seed_check_is_no_longer_a_stub(tmp_path, capsys):
