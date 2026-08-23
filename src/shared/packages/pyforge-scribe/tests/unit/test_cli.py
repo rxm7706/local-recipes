@@ -582,3 +582,37 @@ def test_recall_after_compile_returns_grounded_cited_answer(
     output = _combined_output(result)
     assert "archived upstream" in output
     assert "[source: .claude/memory/project/kuzu-drop.md]" in output
+
+
+def test_graph_compile_registers_transcript_surface_and_recall_finds_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """End-to-end proof of Story 3.2 (CAP-2): an un-curated transcript
+    decision, present only in a raw session transcript, is registered as a
+    compile source and is actually queryable via `scribe recall` --
+    exercises `compile_graph()`'s real `default_transcript_root()` default
+    wiring through the CLI, not an injected `transcript_root` override."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    _scaffold_transcript_entry(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    monkeypatch.setattr(
+        "pyforge.scribe.compile.default_transcript_root", lambda: transcript_root
+    )
+
+    compile_result = runner.invoke(app, ["graph", "compile", "--nightly"])
+
+    assert compile_result.exit_code == 0
+    assert "compiled 1 node(s)" in _combined_output(compile_result)
+
+    result = runner.invoke(app, ["recall", "why sqlite for the cache"])
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert "We decided to use SQLite for the local cache." in output
+    assert "[source: session-a.jsonl:L1]" in output

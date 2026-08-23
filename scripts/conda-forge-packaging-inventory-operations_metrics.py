@@ -646,6 +646,38 @@ def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
         w.writerows(rows)
 
 
+def write_aoss_free_queue(
+    path: Path,
+    aoss_free_names: set[str],
+    universe_names: set[str],
+    timestamp: str,
+) -> list[str]:
+    """Dated AOSS-Free extra Mason queue.
+
+    ``aoss_free_names`` (already filtered to on-PyPI, not-on-conda-forge by
+    the caller) minus ``universe_names`` (the OpenTeams universe: CDO-ENT-JFROG
+    union CDO-ENT-CONDA). Never merges into or expands that universe -- per
+    the Dream, this is a separate, Mason-facing supplementary artifact: "Google
+    AOSS Free names ... are an extra Mason queue. They do not expand the
+    OpenTeams universe."
+    """
+    queue = sorted(aoss_free_names - universe_names)
+    with path.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(
+            f, fieldnames=["Package_Name", "Reason", "Verification_Timestamp_UTC"]
+        )
+        w.writeheader()
+        for pkg in queue:
+            w.writerow(
+                {
+                    "Package_Name": pkg,
+                    "Reason": "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)",
+                    "Verification_Timestamp_UTC": timestamp,
+                }
+            )
+    return queue
+
+
 def write_markdown(
     path: Path,
     total: int,
@@ -913,6 +945,15 @@ def main() -> int:
         for tab in TENK_TABS:
             tenk_names |= tab_packages.get(tab, set())
         must_keep = tab_packages.get("CDO-ENT-JFROG", set()) | tab_packages.get("CDO-ENT-CONDA", set())
+        aoss_free_candidates = {
+            pkg
+            for pkg in aoss_free
+            if pypi_verified.get(pkg, False) and pkg not in cf_or_pm
+        }
+        aoss_free_queue_path = args.output_csv.parent / f"aoss-free-queue-{timestamp[:10]}.csv"
+        aoss_free_queue = write_aoss_free_queue(
+            aoss_free_queue_path, aoss_free_candidates, must_keep, timestamp
+        )
         cf_meta = load_channeldata_packages(args.cf_channeldata)
         dropped_tenk = 0
         keep: list[str] = []
@@ -995,6 +1036,10 @@ def main() -> int:
         print(f"Dropped 10kClosed/10kOpen with no PyPI and no derived source repo: {dropped_tenk:,}")
         print(f"Wrote CSV: {args.output_csv}")
         print(f"Wrote Markdown report: {args.output_md}")
+        print(
+            f"Wrote AOSS-Free queue: {aoss_free_queue_path} "
+            f"({len(aoss_free_queue):,} rows)"
+        )
         if not args.skip_revised_prompt:
             print(f"Wrote revised prompt: {args.output_revised_prompt}")
         if warnings:

@@ -113,15 +113,23 @@ def loop_home_staleness(
 
 
 def bmad_core_drift_findings(
-    repo: pathlib.Path = REPO, timeout: int = 15
-    # 15s vs the source's own ~10s worst-case network design budget: since
+    repo: pathlib.Path = REPO, timeout: int = 25
+    # 25s vs the source's own ~20s worst-case network design budget: since
     # Story 14.1 (CAP-4) the gather issues CAP-2's core fetch (bounded at
     # `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0`) PLUS a suite fetch loop under
-    # its own 5.0s shared deadline (`_SUITE_FETCH_TOTAL_BUDGET_SECONDS`) --
-    # this timeout must also cover interpreter startup and package import
-    # before either starts, so the margin over the inner bounds is now
-    # thinner than the pre-14.1 15s-over-5s arithmetic suggested, but still
-    # positive for the blackholed-network worst case.
+    # its own shared deadline (`_SUITE_FETCH_TOTAL_BUDGET_SECONDS`). Story
+    # 15.2 (review pass 1, bad_spec repair) added a THIRD fetch -- the
+    # CORE-side channel-vs-recipe/recipe-vs-upstream check's own bounded
+    # `_UPSTREAM_FETCH_TIMEOUT_SECONDS = 5.0` call -- and doubled the suite
+    # loop's own shared deadline from 5.0s to 10.0s to keep it from starving
+    # the PRE-EXISTING npm/GitHub upstream check once a third fetch type
+    # draws from the same pool: 5 (CAP-2 npm) + 10 (suite loop) + 5 (CORE
+    # channel) = 20s is the new inner worst case, so this timeout grew from
+    # 15 to 25, preserving the same ~5s margin Story 14.1 originally
+    # established. This timeout must also cover interpreter startup and
+    # package import before any fetch starts, so the margin over the inner
+    # bound is thinner than the pre-14.1 15s-over-5s arithmetic once
+    # suggested, but still positive for the blackholed-network worst case.
 ) -> list[dict]:
     """WARN-status Findings from ``pyforge.doctor``'s bmad-method-version-
     drift source (Story 10.1/10.2's CAP-1/CAP-2 -- installed BMAD-METHOD
@@ -151,14 +159,30 @@ def bmad_core_drift_findings(
     return [f for f in findings if f.get("status") == "warn"]
 
 
+def sibling_dreams_drift_findings(
+    repo: pathlib.Path = REPO, timeout: int = 20
+) -> list[dict]:
+    """WARN Findings from ``pyforge.doctor``'s sibling-dreams-drift source
+    (Story 16.1 / CAP-1). Same subprocess discipline as
+    ``bmad_core_drift_findings``; raises on failure so ATTENTION can degrade.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources",
+         "sibling-dreams-drift", "--json"],
+        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def verification_staleness_findings(
     repo: pathlib.Path = REPO, timeout: int = 90
-    # 90s, not `bmad_core_drift_findings`'s 15s: measured live against this
+    # 90s, not `bmad_core_drift_findings`'s 25s: measured live against this
     # repo's own real fleet (`time python -m pyforge.doctor.sources
     # due-for-verification --json`) at ~48s -- the due-for-verification
     # source, unlike the cheap bmad-method-version-drift check, does real
     # per-entry `git log`/`git grep` churn and mechanical-verdict work
-    # (Stories 11.2/11.3) across the fleet's 400+ tracked entries, so a 15s
+    # (Stories 11.2/11.3) across the fleet's 400+ tracked entries, so a 25s
     # bound would degrade EVERY real invocation, defeating this story's own
     # "ambient, always-visible" Intent. 90s carries a ~2x margin over the
     # measured cost, the same proportional margin `bmad_core_drift_findings`
@@ -503,6 +527,14 @@ def main() -> int:
         # on the normal any-gap path, which is exit 2 with valid JSON (see
         # dream_chain_gap_findings' docstring).
         watch.append("could not check dream-chain gaps")
+
+    try:
+        for finding in sibling_dreams_drift_findings():
+            check = finding.get("check", "sibling-dreams-drift")
+            message = finding.get("message", "sibling dream drift").split(chr(10))[0][:110]
+            watch.append(f"{check}: {message}")
+    except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
+        watch.append("could not check sibling-dreams drift")
 
     print("\nATTENTION:")
     if needs:

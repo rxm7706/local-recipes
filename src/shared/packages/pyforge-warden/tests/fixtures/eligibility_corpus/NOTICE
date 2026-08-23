@@ -1,0 +1,10 @@
+Eligibility corpus fixtures (Story 7.3).
+
+Shape and archetype × format matrix inspired by FABRIC
+(millsks/django-python-generate-sbom, Apache-2.0). Fixture *contents* in this
+tree are original to pyforge-warden (minimal stubs that exercise SourceContract
+adapters). FABRIC notices are retained here for attribution of the matrix
+shape; FABRIC analyzer code is NOT imported.
+
+Copyright notice retained per Apache-2.0 redistribution requirements for the
+matrix concept borrowed from that project.

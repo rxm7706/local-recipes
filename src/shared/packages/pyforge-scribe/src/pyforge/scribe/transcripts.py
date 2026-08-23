@@ -37,8 +37,14 @@ from pyforge.scribe.models import CAPTURE_TYPES, CaptureType, parse_capture_file
 #: Marker phrases (case-insensitive substring match against each split
 #: sentence) that mark a sentence as containing a decision or fact worth
 #: surfacing for human review. A bare substring match produces occasional
-#: false positives -- acceptable because every candidate still goes through
-#: the human confirm gate before anything is written.
+#: false positives. For `scribe capture --transcripts` that is absorbed by
+#: the human confirm gate, which still stands between every candidate and
+#: anything written to `.claude/memory/`. Story 3.2's compile surface has
+#: no such gate -- `compile.py::_read_transcript_surface()` registers this
+#: same candidate set unattended -- so there a false positive costs one
+#: low-overlap node in a derived, fully re-computable graph (AD-1), never a
+#: durable curated record (review finding: this note previously claimed the
+#: confirm gate as an unconditional property of every caller).
 _DECISION_MARKERS: tuple[str, ...] = (
     "we decided",
     "decided to",
@@ -75,10 +81,14 @@ class TranscriptCandidate:
 
     `text` is the full, untruncated matched sentence -- this is what gets
     captured to `.claude/memory/` if the reviewer confirms. `snippet` is a
-    `_truncate()`d preview (~120 chars) used ONLY for the printed proposal's
-    provenance line, never written to disk -- mirrors `promote.py`'s
-    existing split between `rewritten_text` (full body, captured) and
-    `rewritten_description` (truncated, index-line only).
+    `_truncate()`d preview (~120 chars) used for display only, never as the
+    record body -- mirrors `promote.py`'s existing split between
+    `rewritten_text` (full body, captured) and `rewritten_description`
+    (truncated, index-line only). Display-only does not mean in-memory
+    only: Story 3.2's compile surface persists `snippet` as a transcript
+    `GraphNode.title` (its display field) while `text` carries the full
+    sentence, so an earlier "never written to disk" claim here no longer
+    holds (review finding).
     """
 
     source_file: Path

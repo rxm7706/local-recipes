@@ -320,6 +320,85 @@ def test_bmad_core_flag_matching_scope_repo_runs_fine(
     assert [f["source"] for f in document["findings"]] == ["bmad-method-version-drift"]
 
 
+# --- sibling-dreams category (Story 16.1 / CAP-1) -----------------------------
+
+
+def test_sibling_dreams_findings_reach_both_renders(
+    monkeypatch, tmp_path: Path, capsys
+):
+    _forbid_warden_gather(monkeypatch)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.sibling_dreams.gather",
+        lambda target: (
+            Finding(
+                source=Source.SIBLING_DREAMS_DRIFT,
+                check="sibling-dreams-drift",
+                status=DoctorStatus.WARN,
+                message="sibling dream 'X' diverges on owner",
+                evidence={"title": "X", "axes": ["owner"]},
+            ),
+        ),
+    )
+
+    assert main(["check", str(tmp_path), "--sibling-dreams"]) == 0
+    assert "sibling-dreams-drift" in capsys.readouterr().out
+
+    assert main(["check", str(tmp_path), "--sibling-dreams", "--json"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert [f["source"] for f in doc["findings"]] == ["sibling-dreams-drift"]
+
+
+def test_default_run_never_calls_sibling_dreams_gather(
+    monkeypatch, tmp_path: Path, capsys
+):
+    _stub_healthy_warden(monkeypatch)
+
+    def _forbid(target):
+        raise _ForbiddenGatherError(
+            "must never gather sibling-dreams in the default run"
+        )
+
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.sibling_dreams.gather", _forbid
+    )
+    assert main(["check", str(tmp_path)]) == 0
+    assert "sibling-dreams" not in capsys.readouterr().out
+
+
+def test_explicit_sibling_dreams_flag_excludes_the_default_trio(
+    monkeypatch, tmp_path: Path, capsys
+):
+    _forbid_warden_gather(monkeypatch)
+
+    def _forbid_env(target):
+        raise _ForbiddenGatherError("must never gather env here")
+
+    def _forbid_durability(target):
+        raise _ForbiddenGatherError("must never gather durability here")
+
+    monkeypatch.setattr(env_hygiene, "gather", _forbid_env)
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.marshal_source.gather", _forbid_durability
+    )
+    monkeypatch.setattr(
+        "pyforge.doctor.__main__.sibling_dreams.gather",
+        lambda target: (
+            Finding(
+                source=Source.SIBLING_DREAMS_DRIFT,
+                check="sibling-dreams-drift",
+                status=DoctorStatus.OK,
+                message="quiet",
+                evidence={},
+            ),
+        ),
+    )
+
+    exit_code = main(["check", str(tmp_path), "--sibling-dreams", "--json"])
+    document = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert [f["source"] for f in document["findings"]] == ["sibling-dreams-drift"]
+
+
 # --- --json parity (epics AC2) -----------------------------------------------
 
 

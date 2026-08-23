@@ -132,6 +132,66 @@ def test_commit_citation_is_resolvable_if_well_formed_sha(repo_with_citation: Pa
     assert result.citation == "commit:abc1234"
 
 
+def test_transcript_citation_is_resolvable_if_well_formed(repo_with_citation: Path) -> None:
+    """A `<jsonl filename>:L<line>` transcript citation (Story 3.2) is
+    format-checked only, never re-resolved against a live file -- mirrors
+    `test_commit_citation_is_resolvable_if_well_formed_sha` exactly."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="transcript:session-a.jsonl:L1",
+            kind="transcript",
+            citation="session-a.jsonl:L1",
+            text="Dropped Kuzu, straight from a transcript.",
+        )
+    )
+    store.commit()
+
+    result = answer("why did we drop Kuzu?", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == "session-a.jsonl:L1"
+
+
+@pytest.mark.parametrize(
+    "citation",
+    [
+        "nested/dir/session-a.jsonl:L1",  # contract says "no directory path"
+        "../../../etc/passwd.jsonl:L1",
+        "session-a.jsonl:L",  # no line number
+        "session-a.jsonl:L1x",
+        "session-a.txt:L1",  # not a transcript at all
+        "session-a.jsonl:L١٢",  # `\d` matches non-ASCII digits; `[0-9]` must not
+    ],
+)
+def test_malformed_transcript_citation_is_not_waved_through(
+    repo_with_citation: Path, citation: str
+) -> None:
+    """Review finding: the transcript branch was `.+\\.jsonl:L\\d+`, whose
+    `.+` also admitted directory paths and `..` traversal -- and because
+    that branch short-circuits the `is_file()` check below it, any such
+    citation was declared resolvable WITHOUT existing. Only a bare
+    `<jsonl filename>:L<line>` may skip the file check; everything else
+    falls through to it and, absent a real file, must not surface."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id=f"transcript:{citation}",
+            kind="transcript",
+            citation=citation,
+            text="Dropped Kuzu, straight from a transcript.",
+        )
+    )
+    store.commit()
+
+    result = answer("why did we drop Kuzu?", store, repo_root=repo_with_citation)
+
+    assert result.grounded is False
+    assert result.citation is None
+
+
 def test_determinism_two_independent_store_instances_same_file_same_answer(
     repo_with_citation: Path,
 ) -> None:

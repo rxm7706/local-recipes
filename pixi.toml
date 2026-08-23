@@ -842,6 +842,10 @@ cmd = "python .claude/scripts/conda-forge-expert/cwe_seed_gap.py"
 description = "Derive .claude/skills/conda-forge-expert/config/failure-catalog.yaml from SKILL.md's 'Recipe Authoring Gotchas' corpus (G1-G110) — Story 7.1. Deterministic: one row per gotcha with greppable symptom_signature tokens and an enforced_by pointer into recipe_optimizer.py's live check-code registry (or explicit null when no check enforces it yet — the null rows ARE the backlog). Pass --check to diff the committed catalog against a fresh regeneration without writing (exit non-zero on drift)."
 cmd = "python .claude/scripts/conda-forge-expert/failure_catalog_generator.py"
 
+[feature.local-recipes.tasks.failure-catalog-check]
+description = "Detector (Story 7.2): independently re-resolves every committed failure-catalog.yaml enforced_by pointer against the live check registry — recipe_optimizer.py can drift (a check code renamed or removed) without SKILL.md or the catalog changing at all, which the generator's own --check alone would not distinguish from a genuine drift-free state. Delegates catalog<->SKILL.md drift detection to failure_catalog_generator.py --check (Story 7.1) and reports the null-rows backlog count as an informational stat — never a finding, never gates the exit code. scope=repo. Exit 0 clean, 1 findings (unresolved-pointer, catalog-drift), 2 could-not-run (the generator itself failed on an unrecoverable error). Pass -- --json for machine output."
+cmd = "python scripts/failure_catalog_check.py"
+
 [feature.local-recipes.tasks.spdx-schema-gap]
 description = "Propose spdx.schema.json enum additions by diffing the vendored SPDX enum against the upstream SPDX license list (spdx/license-list-data, GITHUB_RAW_BASE_URL-routable, TTL-7d cache), ranked by the licenses real packages carry (v_actionable_packages) — the mapping-gap sibling for the SPDX schema. READ-ONLY: add-to-schema (real upstream IDs on packages) vs non-standard (normalize) tiers; --drift for pure staleness; the schema is never written. Pass --json / --limit N / --out FILE / --source-file FILE (offline) / --drift."
 cmd = "python .claude/scripts/conda-forge-expert/spdx_schema_gap.py"
@@ -877,6 +881,10 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests"
 [feature.local-recipes.tasks.test-coverage]
 description = "Run the conda-forge-expert test suite with coverage report"
 cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not slow' --cov=.claude/skills/conda-forge-expert/scripts --cov-report=term-missing"
+
+[feature.local-recipes.tasks.test-packaging]
+description = "Run tests/packaging under -e local-recipes, which HAS openpyxl -- the counterpart to pyforge-ci's pyforge-deps-test (same directory, deliberately dependency-lean env), which otherwise silently skips every openpyxl-gated test here (pytest.importorskip) and would never actually execute them anywhere"
+cmd = "pytest tests/packaging -q"
 
 # ── conda-forge-expert script wrappers ───────────────────────────────────────
 # Every conda-forge-expert/scripts/*.py that has a stable user-facing CLI gets

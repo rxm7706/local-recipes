@@ -32,6 +32,7 @@ from pyforge.doctor.sources import (
     factory,
     ledger,
     marshal,
+    sibling_dreams,
 )
 
 # --- DISPATCH: name -> the exact function the Code Map names ----------------
@@ -49,6 +50,7 @@ _EXPECTED_DISPATCH = {
     "bmad-drift": factory.gather,
     "due-for-verification": chain.gather_due_for_verification,
     "bmad-method-version-drift": bmad_method.gather,
+    "sibling-dreams-drift": sibling_dreams.gather,
 }
 
 

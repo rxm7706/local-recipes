@@ -1,0 +1,78 @@
+# Reusable staged-recipes linter (mason Story 9.1 / extension-contract socket).
+#
+# Consumption modes:
+#   (a) Cross-repo `uses:` — a consumer (named first candidate: conda-forge-tracker)
+#       calls this workflow via
+#       `uses: rxm7706/local-recipes/.github/workflows/reusable-staged-recipes-linter.yml@<ref>`
+#       and vendors `.github/workflows/scripts/linter.py` at that same relative path in
+#       THEIR repo (one-file copy; linter.py resolves ROOT three parents up from itself
+#       and needs pixi.toml/environment.yaml at the consumer root).
+#   (b) Full vendoring — copy this file AND the script for GitHub-egress-blocked /
+#       air-gapped consumers; invoke the local copy the same way.
+#
+# Out of scope: the parked "63-family" centrally-maintained multi-repo workflow
+# architecture (step workflows, Vault, Kaniko). This file is the thin socket only.
+
+name: reusable-staged-recipes-linter
+
+on:
+  workflow_call:
+    inputs:
+      pr-num:
+        description: "Pull request number to lint"
+        required: true
+        type: number
+      repo:
+        description: "owner/name of the repository that owns the PR"
+        required: false
+        type: string
+        default: ${{ github.repository }}
+    secrets:
+      github-token:
+        description: "Token with pull-request read access; falls back to GITHUB_TOKEN"
+        required: false
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  issues: read
+  pull-requests: read
+  statuses: read
+
+jobs:
+  linter:
+    name: linter
+    runs-on: ubuntu-slim
+    defaults:
+      run:
+        shell: bash -leo pipefail {0}
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: install code
+        uses: mamba-org/setup-micromamba@ce51e99f4bb8a82ab7158c4dc59ef4634c59c4f9 # v3.1.0
+        with:
+          micromamba-version: "2.5.0-2"
+          environment-name: lint
+          condarc: |
+            show_channel_urls: true
+            channel_priority: strict
+            channels:
+              - conda-forge
+          create-args: >-
+            conda-smithy
+            pygithub
+            requests
+            pixi>=0.77.0
+
+      - name: lint
+        run: |
+          python .github/workflows/scripts/linter.py \
+            --repo=${{ inputs.repo }} \
+            --pr-num=${{ inputs.pr-num }} \
+          >> $GITHUB_STEP_SUMMARY
+        env:
+          GH_TOKEN: ${{ secrets.github-token || secrets.GITHUB_TOKEN }}

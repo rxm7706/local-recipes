@@ -348,6 +348,13 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # own `recipes/<name>/recipe.yaml` github mapping, never a hardcoded
     # name->repo table) is tried before giving up on it -- still this one
     # Source, still WARN-or-OK only, zero wiring changes here either.
+    # Story 15.2 (Epic 15/spec-15-2) extends the same gather() once more
+    # with two ambient checks against the SelfExplainML anaconda.org
+    # channel and each package's own tracked recipe.yaml version:
+    # `bmad-channel-drift` (channel behind the recipe's declared version)
+    # and `bmad-recipe-upstream-drift` (recipe behind the already-resolved
+    # upstream latest) -- still this one Source, still warn-only, zero
+    # wiring changes here either.
     SourceRegistration(
         source=Source.BACKLOG_INTAKE,
         scope="repo",
@@ -361,6 +368,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # -- it takes a caller-supplied identifier, which is why it stays out
     # of sources/__main__.py's DISPATCH (every member there is
     # Callable[[Path], tuple[Finding, ...]], with no room for one).
+    SourceRegistration(
+        source=Source.SIBLING_DREAMS_DRIFT,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 16.1 (Epic 16 / CAP-1) -- sources/sibling_dreams.py. Diffs
+    # shared Dream titles vs the named sibling tree; warn-only; fleet
+    # subject (both local docs/dreams and the sibling). Opt-in via
+    # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
 )
 
 
