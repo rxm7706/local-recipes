@@ -18,6 +18,13 @@ include = ["platformapp/**"]
 omit = ["*/migrations/*", "*/tests/*"]
 plugins = ["django_coverage_plugin"]
 
+# Steward 16.4 / CAP-4: measured 2026-08-23 under platform-ci-test
+# (`coverage run -m pytest` → TOTAL 100.00% on the closed include surface).
+# Floor equals the observed total so happy path stays green; lowering it is
+# deliberate drift caught by tests/policy/test_coverage_policy.py.
+[tool.coverage.report]
+fail_under = 100
+
 # ==== mypy ====
 [tool.mypy]
 python_version = "3.12"
