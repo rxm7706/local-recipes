@@ -2771,10 +2771,150 @@ def scan_backlog(dreams: list[dict], projects: dict) -> dict:
     return {"rows": rows, "blocked": blocked, "byOwner": by_owner, "practices": practices}
 
 
-# ---- delivery timing / velocity (derived from bmad-loop run journals) -------
+# ---- delivery timing / velocity (journals + wall-clock fallback) -------------
+
+_WALL_CLOCK_CEILING_METRIC = (
+    "wall-clock ceiling per story (final_revision − baseline_revision commit "
+    "timestamps; includes idle before dispatch) — from promoted story-spec "
+    "revision fields"
+)
+_JOURNAL_METRIC = (
+    "active agent-compute per story (dev + review; excludes gate-pause wait) "
+    "— from bmad-loop run journals"
+)
+_MIXED_METRIC = (
+    "active agent-compute from bmad-loop journals; wall-clock ceiling "
+    "(final_revision − baseline_revision commit timestamps; includes idle "
+    "before dispatch) for hand-driven stories with revision fields — never "
+    "the same class"
+)
+
+
+def _unquote_fm(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    s = value.strip()
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        return s[1:-1]
+    return s
+
+
+def git_commit_timestamp(rev: str, *, cwd: Path | None = None) -> int | None:
+    """Unix epoch seconds for a local commit, or None if unresolvable.
+
+    Offline only — never fabricates. `NO_VCS`, empty, and unknown revs skip.
+    """
+    if not rev or rev == "NO_VCS":
+        return None
+    try:
+        r = subprocess.run(
+            ["git", "show", "-s", "--format=%ct", rev],
+            cwd=cwd or REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception:
+        return None
+    if r.returncode != 0:
+        return None
+    out = r.stdout.strip()
+    if not out or not out.isdigit():
+        return None
+    return int(out)
+
+
+def wall_clock_ceiling_minutes(
+    baseline_rev: str, final_rev: str, *, cwd: Path | None = None,
+) -> int | None:
+    """Ceiling minutes = round((ts(final) − ts(baseline)) / 60), or None.
+
+    Equal or inverted timestamps, and sub-minute spans that round to 0, stay
+    absent — a zero mark is not a resolvable signal (never fabricate).
+    """
+    ts_b = git_commit_timestamp(baseline_rev, cwd=cwd)
+    ts_f = git_commit_timestamp(final_rev, cwd=cwd)
+    if ts_b is None or ts_f is None or ts_f <= ts_b:
+        return None
+    mins = round((ts_f - ts_b) / 60)
+    return mins if mins > 0 else None
+
+
+def story_spec_revision_fields(
+    pkey: str, sid: str, *, repo_root: Path | None = None,
+) -> tuple[str, str] | None:
+    """`(baseline_revision, final_revision)` from the matching promoted story spec.
+
+    Looks up `_bmad-output/projects/<dir>/planning-artifacts/specs/spec-{e}-{n}-*.md`
+    via `resolve_project`. Missing file / ambiguous multi-match / fields /
+    `NO_VCS` → None (silent skip — never pick silently among collisions).
+    """
+    root = repo_root or REPO_ROOT
+    m = re.match(r"^(\d+)\.(\d+)$", sid)
+    if not m:
+        return None
+    try:
+        resolution = resolve_project(pkey)
+    except UnresolvableProjectError:
+        return None
+    if not resolution.project_dir:
+        return None
+    specs_dir = (
+        root / "_bmad-output" / "projects" / resolution.project_dir
+        / "planning-artifacts" / "specs"
+    )
+    matches = sorted(specs_dir.glob(f"spec-{m.group(1)}-{m.group(2)}-*.md"))
+    # Prefer plain story-spec files over accidental directory collisions.
+    files = [p for p in matches if p.is_file()]
+    # Ambiguous: more than one matching story-spec — refuse rather than guess.
+    if len(files) != 1:
+        return None
+    fm = _frontmatter_scalars(files[0], ("baseline_revision", "final_revision"))
+    baseline = _unquote_fm(fm.get("baseline_revision", ""))
+    final = _unquote_fm(fm.get("final_revision", ""))
+    if not baseline or not final or baseline == "NO_VCS" or final == "NO_VCS":
+        return None
+    return baseline, final
+
+
+def _sid_from_journal_key(key: str) -> str:
+    m = re.match(r"^(\d+)-(\d+)", key)
+    return f"{m.group(1)}.{m.group(2)}" if m else key
+
+
+def derive_wall_clock_per_story(
+    pkey: str,
+    proj: dict,
+    journal_sids: set[str],
+    *,
+    repo_root: Path | None = None,
+    cwd: Path | None = None,
+) -> dict[str, int]:
+    """Wall-clock ceiling minutes for done stories with zero journal coverage.
+
+    Per-story precedence: any closed journal session for that sid wins — no
+    wall-clock overwrite. Unresolvable revs stay absent (never fabricate).
+    """
+    out: dict[str, int] = {}
+    for epic in proj.get("epics", []):
+        for story in epic.get("stories", []):
+            if len(story) < 2:
+                continue
+            sid, status = story[0], story[1]
+            if status != "done" or sid in journal_sids:
+                continue
+            revs = story_spec_revision_fields(pkey, sid, repo_root=repo_root)
+            if revs is None:
+                continue
+            mins = wall_clock_ceiling_minutes(revs[0], revs[1], cwd=cwd)
+            if mins is None:
+                continue
+            out[sid] = mins
+    return out
+
 
 def scan_timing(projects: dict) -> None:
-    """Per-story active agent-compute, derived from every loop home's journals.
+    """Per-story timing: journal active-compute + wall-clock ceiling fallback.
 
     In Build showed no clock and no velocity while Realized did, because warden's
     and atlas's numbers were computed once from these same journals and then
@@ -2785,19 +2925,27 @@ def scan_timing(projects: dict) -> None:
     sessions, so it is never inside a summed span — which is exactly warden's
     stated metric.
 
+    Wall-clock fallback (CAP-1): for `done` stories with resolvable
+    `baseline_revision`/`final_revision` on the promoted story spec and zero
+    closed journal sessions, derive ceiling minutes from local git commit
+    timestamps (final − baseline). Those minutes land on `timing.perStory`
+    only — never on `velocity.bars`. Metric/note name the ceiling bound.
+
     Hand-authored `timing`/`velocity` are PRESERVED, never overwritten. Warden's
     carry human judgement no derivation can reproduce (6.4's bar is its delivered
     dev-2 pass, excluding a rolled-back dev-1; 6.9's is recovered from a stalled
     session). Derivation fills the gap for lines that have none; it does not
     second-guess a curated number.
     """
-    for pkey, home in LOOP_HOMES.items():
+    # Every board line, not only those with a loop home: wall-clock-only projects
+    # (and mixed lines whose journals are empty) must still gain timing marks.
+    for pkey in sorted(projects):
         proj = projects.get(pkey)
         # Skip CURATED timing only. Derived output carries `derived: true` so a
         # later run can refresh (or repair) it — without that marker the first
         # derivation became permanent, and a bug in it could never be fixed by
         # re-running the generator.
-        if proj is None:
+        if not isinstance(proj, dict):
             continue
         existing_t, existing_v = proj.get("timing"), proj.get("velocity")
         # A timing object WITHOUT `perStory` is broken by definition — the
@@ -2818,112 +2966,162 @@ def scan_timing(projects: dict) -> None:
         velocity_curated = isinstance(existing_v, dict) and not existing_v.get("derived")
         if timing_curated and velocity_curated:
             continue
-        runs = Path(home) / ".bmad-loop" / "runs"
-        if not runs.is_dir():
-            continue
         spans: dict[str, float] = {}
-        for jf in sorted(runs.glob("*/journal.jsonl")):
-            # `session-end` carries ONLY task_id — no story_key (verified against
-            # live journals). Pairing on story_key silently closed nothing and
-            # every line derived zero. The story is carried on session-START and
-            # looked up by task_id when the session ends.
-            open_at: dict[str, tuple[float, str]] = {}
-            for line in jf.read_text(encoding="utf-8", errors="replace").splitlines():
-                try:
-                    e = json.loads(line)
-                except Exception:
-                    continue
-                kind, ts, task = e.get("kind"), e.get("ts"), e.get("task_id")
-                if not task or not isinstance(ts, (int, float)):
-                    continue
-                if kind == "session-start" and e.get("story_key"):
-                    open_at[task] = (ts, e["story_key"])
-                elif kind == "session-end" and task in open_at:
-                    started, key = open_at.pop(task)
-                    spans[key] = spans.get(key, 0.0) + max(0.0, ts - started)
-        if not spans:
+        home = LOOP_HOMES.get(pkey)
+        runs = (Path(home) / ".bmad-loop" / "runs") if home is not None else None
+        if runs is not None and runs.is_dir():
+            for jf in sorted(runs.glob("*/journal.jsonl")):
+                # `session-end` carries ONLY task_id — no story_key (verified against
+                # live journals). Pairing on story_key silently closed nothing and
+                # every line derived zero. The story is carried on session-START and
+                # looked up by task_id when the session ends.
+                open_at: dict[str, tuple[float, str]] = {}
+                for line in jf.read_text(encoding="utf-8", errors="replace").splitlines():
+                    try:
+                        e = json.loads(line)
+                    except Exception:
+                        continue
+                    kind, ts, task = e.get("kind"), e.get("ts"), e.get("task_id")
+                    if not task or not isinstance(ts, (int, float)):
+                        continue
+                    if kind == "session-start" and e.get("story_key"):
+                        open_at[task] = (ts, e["story_key"])
+                    elif kind == "session-end" and task in open_at:
+                        started, key = open_at.pop(task)
+                        spans[key] = spans.get(key, 0.0) + max(0.0, ts - started)
+        journal_sids = {_sid_from_journal_key(k) for k in spans}
+        wall_clock: dict[str, int] = {}
+        if not timing_curated:
+            wall_clock = derive_wall_clock_per_story(pkey, proj, journal_sids)
+        # Do not early-exit solely because journal spans are empty if wall-clock
+        # marks exist (hand-driven lines with no loop home / no closed sessions).
+        if not spans and not wall_clock:
             continue
         bars = []
         for key, secs in spans.items():
-            m = re.match(r"^(\d+)-(\d+)", key)
-            bars.append([f"{m.group(1)}.{m.group(2)}" if m else key, round(secs / 60)])
+            bars.append([_sid_from_journal_key(key), round(secs / 60)])
         bars.sort(key=lambda b: [int(x) if x.isdigit() else 0 for x in b[0].split(".")])
-        total_h = sum(b[1] for b in bars) / 60
-        # The renderer reads v.{bars,sub,foot} — ALL of them. `foot` is not
-        # optional: `v.foot.map(...)` throws on a partial object exactly as
-        # `timing.perStory` did. Enumerated from the render rather than guessed,
-        # after fixing the same class of bug twice in a row.
-        mins = sorted(b[1] for b in bars)
-        median = mins[len(mins) // 2] if len(mins) % 2 else \
-            round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
-        st = [s for e in proj["epics"] for s in e["stories"]]
-        done_n = sum(1 for s in st if s[1] == "done")
-        velocity_obj = {
-            "derived": True,
-            # The in-flight caveat has to live HERE too, not only on `timing.note`:
-            # velocity is now derivable on a line whose timing is curated (atlas), so
-            # the note that used to carry this never reaches the reader.
-            #
-            # COVERAGE IS STATED, never implied. A graph showing 2 bars on a line with
-            # 38 stories reads as data loss unless it says why. Only loop-driven stories
-            # have journals: atlas's waves 0-H ran in a web session and were never
-            # measured for active compute, and their wall-clock numbers (PR timestamps,
-            # gate waits included) are a DIFFERENT metric that must not share this axis.
-            "sub": (f"Active agent-compute per story (dev + review; excludes "
-                    f"gate-pause wait) — derived from this line's bmad-loop journals. "
-                    f"{len(bars)} of {len(st)} stories measured"
-                    + ("" if len(bars) == len(st) else
-                       "; the rest predate loop instrumentation and carry wall-clock "
-                       "only (a different metric — see the timing strip), so they are "
-                       "deliberately absent rather than plotted on this axis")
-                    + ". A story still in flight contributes only its CLOSED sessions, "
-                      "so its bar is a floor, not a total."),
-            "bars": bars,
-            "foot": [
-                [f"~{median} min", "median / story", "var(--done)"],
-                [f"{mins[0]}–{mins[-1]} min" if len(mins) > 1 else f"{mins[0]} min",
-                 "observed range", ""],
-                [f"{done_n}/{len(st)}", "stories complete", "var(--done)"],
-                [f"{len(st) - done_n}", "remaining", ""],
-            ],
-        }
+        st = [s for e in proj.get("epics", []) for s in e.get("stories", [])]
+        done_n = sum(1 for s in st if len(s) >= 2 and s[1] == "done")
+        velocity_obj = None
+        if bars:
+            total_h = sum(b[1] for b in bars) / 60
+            # The renderer reads v.{bars,sub,foot} — ALL of them. `foot` is not
+            # optional: `v.foot.map(...)` throws on a partial object exactly as
+            # `timing.perStory` did. Enumerated from the render rather than guessed,
+            # after fixing the same class of bug twice in a row.
+            bar_mins = sorted(b[1] for b in bars)
+            median = bar_mins[len(bar_mins) // 2] if len(bar_mins) % 2 else \
+                round((bar_mins[len(bar_mins) // 2 - 1]
+                       + bar_mins[len(bar_mins) // 2]) / 2)
+            velocity_obj = {
+                "derived": True,
+                # The in-flight caveat has to live HERE too, not only on `timing.note`:
+                # velocity is now derivable on a line whose timing is curated (atlas), so
+                # the note that used to carry this never reaches the reader.
+                #
+                # COVERAGE IS STATED, never implied. A graph showing 2 bars on a line with
+                # 38 stories reads as data loss unless it says why. Only loop-driven stories
+                # have journals: atlas's waves 0-H ran in a web session and were never
+                # measured for active compute, and their wall-clock numbers (PR timestamps,
+                # gate waits included) are a DIFFERENT metric that must not share this axis.
+                # Wall-clock CAP-1 marks stay OFF this axis (timing strip only).
+                "sub": (f"Active agent-compute per story (dev + review; excludes "
+                        f"gate-pause wait) — derived from this line's bmad-loop journals. "
+                        f"{len(bars)} of {len(st)} stories measured"
+                        + ("" if len(bars) == len(st) else
+                           "; the rest predate loop instrumentation and carry wall-clock "
+                           "only (a different metric — see the timing strip), so they are "
+                           "deliberately absent rather than plotted on this axis")
+                        + ". A story still in flight contributes only its CLOSED sessions, "
+                          "so its bar is a floor, not a total."),
+                "bars": bars,
+                "foot": [
+                    [f"~{median} min", "median / story", "var(--done)"],
+                    [f"{bar_mins[0]}–{bar_mins[-1]} min"
+                     if len(bar_mins) > 1 else f"{bar_mins[0]} min",
+                     "observed range", ""],
+                    [f"{done_n}/{len(st)}", "stories complete", "var(--done)"],
+                    [f"{len(st) - done_n}", "remaining", ""],
+                ],
+            }
         # The renderer reads timing.{perStory,epicMin,metric,note,totalLabel} —
         # ALL of them. Emitting a partial object is worse than emitting none:
         # `p.timing && p.timing.perStory[key]` passes the truthiness guard and
         # then throws on the missing key, which aborts the whole script and took
         # In Build / Realized / Archived down with it (2026-07-26). Match the
         # curated shape exactly.
-        per_story = {sid: mins for sid, mins in bars}
+        per_story = {sid: m for sid, m in bars}
+        per_story.update(wall_clock)  # journal sids already excluded from wall_clock
         epic_min: dict[str, int] = {}
-        for sid, mins in bars:
-            epic_min[f"E{sid.split('.')[0]}"] = epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
+        for sid, mins in per_story.items():
+            epic_min[f"E{sid.split('.')[0]}"] = (
+                epic_min.get(f"E{sid.split('.')[0]}", 0) + mins)
+        total_mins = sum(per_story.values())
+        total_h_all = total_mins / 60
+        if wall_clock and bars:
+            metric = _MIXED_METRIC
+            note = (
+                f"Derived from {len(bars)} journal-measured + {len(wall_clock)} "
+                f"wall-clock-ceiling "
+                f"stor{'y' if (len(bars) + len(wall_clock)) == 1 else 'ies'}; "
+                f"wall-clock is a ceiling spanning baseline→final commit timestamps "
+                f"(includes idle before dispatch), not active agent-compute. "
+                f"Journal bars still in flight contribute only closed sessions."
+            )
+            total_label = (
+                f"~{total_h_all:.1f} h combined marks" if total_h_all >= 1
+                else f"~{total_mins} min combined marks")
+        elif wall_clock:
+            metric = _WALL_CLOCK_CEILING_METRIC
+            note = (
+                f"Derived from {len(wall_clock)} wall-clock-ceiling "
+                f"stor{'y' if len(wall_clock) == 1 else 'ies'}; "
+                f"ceiling = final_revision − baseline_revision commit timestamps "
+                f"(includes idle before dispatch), not active agent-compute."
+            )
+            total_label = (
+                f"~{total_h_all:.1f} h wall-clock ceiling" if total_h_all >= 1
+                else f"~{total_mins} min wall-clock ceiling")
+        else:
+            metric = _JOURNAL_METRIC
+            note = (
+                f"Derived from {len(bars)} measured "
+                f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
+                f"flight contributes only its closed sessions."
+            )
+            total_label = (
+                f"~{total_h_all:.1f} h active compute" if total_h_all >= 1
+                else f"~{total_mins} min active compute")
         timing_obj = {
             "derived": True,
-            "metric": "active agent-compute per story (dev + review; excludes "
-                      "gate-pause wait) — from bmad-loop run journals",
-            "total": sum(b[1] for b in bars),
-            "totalLabel": (f"~{total_h:.1f} h active compute" if total_h >= 1
-                           else f"~{sum(b[1] for b in bars)} min active compute"),
-            "note": f"Derived from {len(bars)} measured "
-                    f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
-                    f"flight contributes only its closed sessions.",
+            "metric": metric,
+            "total": total_mins,
+            "totalLabel": total_label,
+            "note": note,
             "perStory": per_story,
             "epicMin": epic_min,
         }
         # Assign PER FIELD — a curated field is never overwritten, but its presence
-        # no longer blocks the other from being filled.
+        # no longer blocks the other from being filled. Wall-clock never writes
+        # velocity.bars (journal spans only).
         wrote = []
-        if not velocity_curated:
+        if not velocity_curated and velocity_obj is not None:
             proj["velocity"] = velocity_obj
             wrote.append("velocity")
-        if not timing_curated:
+        if not timing_curated and per_story:
             proj["timing"] = timing_obj
             wrote.append("timing")
         if not wrote:
             continue
-        print(f"[{pkey}] {'+'.join(wrote)} derived: {len(bars)} stories, "
-              f"{sum(b[1] for b in bars)} min active compute"
-              + (" (curated timing preserved)" if timing_curated else ""))
+        print(
+            f"[{pkey}] {'+'.join(wrote)} derived: "
+            f"{len(bars)} journal / {len(wall_clock)} wall-clock stories, "
+            f"{sum(b[1] for b in bars)} min active compute"
+            + (f", {sum(wall_clock.values())} min wall-clock ceiling"
+               if wall_clock else "")
+            + (" (curated timing preserved)" if timing_curated else "")
+        )
 
 
 # ---- station ownership (the Dream -> code through-line) ----------------------
