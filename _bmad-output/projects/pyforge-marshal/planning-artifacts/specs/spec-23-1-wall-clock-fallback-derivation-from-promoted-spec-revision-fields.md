@@ -7,6 +7,7 @@ updated: '2026-08-24'
 context: []
 warnings: []
 baseline_revision: e7d9569ffb4d7a8d30efdabd5d70b5951fff3f0f
+final_revision: fbe1bc935af445da8c9aa9742d98980a4a7514a2
 followup_review_recommended: true
 review_loop_iteration: 0
 deferred:
@@ -125,16 +126,19 @@ deferred:
 
 ## Auto Run Result
 
-Status: done (pending PR merge SHA stamp in finalize chore)
-Summary: CAP-1 wall-clock ceiling fallback in `scan_timing` from promoted-spec `baseline_revision`/`final_revision` via local git timestamps; doctor 8.1–8.4 timing marks (111/48/49/47); wall-clock never on `velocity.bars`; metric/note name the final−baseline ceiling; `derived: true` refreshes on re-run.
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/711
+Merge: fbe1bc935af445da8c9aa9742d98980a4a7514a2
+Merge policy: admin merge () — GitHub Actions billing blocks CI; local tests green before merge.
+Summary: CAP-1 wall-clock ceiling fallback in  from promoted-spec / via local git timestamps; doctor 8.1–8.4 timing marks (111/48/49/47); wall-clock never on ; metric/note name the final−baseline ceiling;  refreshes on re-run.
 Files:
-- `docs/dashboard/generate.py` — helpers + `scan_timing` wall-clock merge
-- `.claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py` — I/O matrix + mixed-path + guards
-- `docs/dashboard/data.js` — regenerated (`--source git`)
+-  — helpers +  wall-clock merge
+-  — I/O matrix + mixed-path + guards
+-  — regenerated ()
 - story spec — contract, triage, deferred
-Merge policy: admin merge (`gh pr merge <n> --merge --admin --repo rxm7706/local-recipes`) — GitHub Actions billing blocks CI; local tests green before merge.
 Verification:
-- `pixi run -e local-recipes pytest …/test_dashboard_scan_timing_wall_clock.py …/test_dashboard_renders.py …/test_dashboard_resolve_project.py -q` — **32 passed**
-- `python docs/dashboard/generate.py --source git` — doctor 8.1–8.4 present; metric names ceiling
+- 
+no tests ran in 0.00s — **32 passed**
+-  — doctor 8.1–8.4 present; metric names ceiling
 Follow-up review recommendation: true (patched high=1; score 3×4 medium + 3 low = 15 ≥ 5)
-Finalize: chore commit on main after merge (ledger key `23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields` → done).
+Finalize: ledger key  → done (this chore).
