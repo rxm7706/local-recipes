@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~18:30 CDT
+**Updated:** 2026-08-23 ~18:45 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 15** · steward **12-7 only** (skipped) — **marshal-only drain** |
+| Backlog | **marshal 14** · steward **12-7 only** (skipped) — **marshal-only drain** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `22-4` | [8dc548b0-8f8a-40dc-8a00-861dfa13f337](8dc548b0-8f8a-40dc-8a00-861dfa13f337) |
+| marshal | `22-5` | launching |
 
 ## Dispatch sequencing (operator — 2026-08-23)
 
-**Epic 22 slice first:** finish `22-4` → `22-5` → `22-6`, **then** Epic 21 regen (`21-2`…`21-5`).
+**Epic 22 slice first:** finish `22-5` → `22-6`, **then** Epic 21 regen (`21-2`…`21-5`).
 
 ## Operator skip
 
@@ -45,7 +45,7 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `22-3` | [#703](https://github.com/rxm7706/local-recipes/pull/703) merge `dc56f55e6b` ([Marshal 22-3](45300ea3-d0d0-4603-a652-46484c167615)) · CAP-3 verify gate |
+| marshal | `22-4` | [#704](https://github.com/rxm7706/local-recipes/pull/704) merge `b4c32b80df` ([Marshal 22-4](8dc548b0-8f8a-40dc-8a00-861dfa13f337)) · CAP-4 land path |
 | marshal | `22-1` | [#701](https://github.com/rxm7706/local-recipes/pull/701) merge `94708563fd` ([Marshal 22-1](4aca90fd-684b-4f22-9fa0-d83a43b91fea)) · `marshal factory dispatch` |
 | steward | `17-2` | [#700](https://github.com/rxm7706/local-recipes/pull/700) merge `84d6fb3ad3` ([Steward 17-2](6e832704-9d4f-4aea-8c42-ed5f96f6d300)) · **Epic 17 done · steward drained** |
 | marshal | `21-1` | [#699](https://github.com/rxm7706/local-recipes/pull/699) merge `2a854b86c7` ([Marshal 21-1](addb4c0e-f017-4e3c-b652-2394f4c7088f)) · Epic 21 CAP-3 done |

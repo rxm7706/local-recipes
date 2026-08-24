@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 15
-    next: 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
+    remaining_count: 14
+    next: 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
     queue:
-    - 22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native
     - 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
     - 22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal
     - 21-2-orchestrated-chain-regeneration
