@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 12
-    next: 21-2-orchestrated-chain-regeneration
+    remaining_count: 11
+    next: 21-3-code-status-preservation
     queue:
-    - 21-2-orchestrated-chain-regeneration
     - 21-3-code-status-preservation
     - 21-4-orphan-detection-with-review-gated-cleanup
     - 21-5-configurable-per-project-invocation

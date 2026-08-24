@@ -89,7 +89,7 @@ development_status:
   20-8-the-landing-evidence-grammar: done
   20-9-doctor-consumes-the-grammar: done
   21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage: done
-  21-2-orchestrated-chain-regeneration: backlog
+  21-2-orchestrated-chain-regeneration: done
   21-3-code-status-preservation: backlog
   21-4-orphan-detection-with-review-gated-cleanup: backlog
   21-5-configurable-per-project-invocation: backlog

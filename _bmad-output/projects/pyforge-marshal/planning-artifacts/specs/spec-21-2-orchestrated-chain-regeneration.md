@@ -104,6 +104,6 @@ Review findings: 9 patches applied; 2 deferred (soft linkage, dual CLI); follow-
 
 Verification: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` → 6264 passed, 12 deselected.
 
-Admin merge: (filled after merge)
+Admin merge: PR https://github.com/rxm7706/local-recipes/pull/707 merge SHA `2710dc06e128f3c44bd169f2f73ddfd40d2a6594` via `gh pr merge --merge --admin` (GitHub Actions billing blocks CI; local tests green).
 
 Residual risks: default invoker is plan/dry-run (no live LLM unless `--live`); CAP-2/4/5 remain stubs.
