@@ -2,11 +2,11 @@
 title: Orchestrated chain regeneration
 type: feature
 created: '2026-08-23'
-status: ready
-updated: '2026-08-23'
+status: in-progress
+updated: '2026-08-24'
 context: []
 warnings: []
-baseline_revision: 4eaf2751fc
+baseline_revision: d77af3b4f3b772efa46f9b384435326b09b4d4fd
 ---
 
 <intent-contract>

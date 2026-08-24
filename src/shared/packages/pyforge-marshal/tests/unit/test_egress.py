@@ -607,6 +607,7 @@ def test_egress_ports_registry_contents():
         "NotifyPort": True,
         "ForgePort": True,
         "BuildHarnessPort": False,
+        "SkillInvokePort": False,
     }
 
 
