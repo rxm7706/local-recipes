@@ -10,6 +10,7 @@ companions:
   - stack.md
   - architecture-diagrams.md
   - ../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md
+  - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform
 surface:
@@ -27,7 +28,6 @@ sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:
   - liquibase-delivery-vehicle
-  - liquibase-airgap-policy
   - liquibase-7791-fixed
   - mcp-client-revision
   - mcp-tasks-runtime
@@ -175,8 +175,12 @@ they are why this is not merely a UI project.
 - **Always:** Django `>=5.2.15,<6` and Python `3.12.*`. Django 6 is unavailable. conda-forge ships
   exactly one qualifying Django build, two patch releases behind upstream, with zero headroom — a
   dependency that demands a newer 5.2 patch is blocked until a feedstock maintenance branch exists.
-- **Always:** every dependency resolves from conda-forge. The egress-blocked build is a gate, not a
-  warning; a PyPI-only package is new feedstock work and must be scheduled as such.
+- **Always:** every **Python/pixi** dependency resolves from conda-forge. The egress-blocked build
+  is a gate, not a warning; a PyPI-only package is new feedstock work and must be scheduled as such.
+  This governs the dependency graph, not every artifact in the namespace — container images are
+  governed separately by `spec-python-agent-platform` CAP-6, which already admits third-party
+  images (`postgres:17`, `redis:7`) under the internal-registry rule. Neither boundary is optional
+  and neither substitutes for the other.
 - **Always:** infrastructure is exactly PostgreSQL + Redis + Kubernetes. A component demanding a
   fourth backing service has failed its design review.
 - **Always:** `src/platform/` consumes the factory's published conda packages and never imports
@@ -248,9 +252,11 @@ database role is provably incapable of altering its own schema.
 
 ## Open Questions
 
-- **liquibase-delivery-vehicle** — does air-gap policy accept a container as the delivery vehicle
-  for a non-conda JVM tool, or must a conda-forge feedstock be authored first? CAP-9 cannot be
-  scheduled until this is answered.
+- **liquibase-delivery-vehicle** — feedstock or container? Research (2026-08-24) collapsed this
+  toward a feedstock: the pre-upgrade hook already exists, runs the platform image, and takes its
+  command as `args`, so a conda-packaged Liquibase needs **no new image at all**, while the
+  container route pays an undocumented third-party-image supply path *and* still builds a derived
+  image because 5.x dropped the bundled JDBC driver. Awaiting the scope commitment.
 - **liquibase-7791-fixed** — is the multi-schema `default-schema-name` regression on 5.0.3 fixed in
   5.0.4? Must be verified before any multi-schema changeset lands.
 - **mcp-client-revision** — which MCP protocol revision do our agent clients actually speak? A
@@ -260,6 +266,7 @@ database role is provably incapable of altering its own schema.
 - **console-parity-inventory** — which of Marshal's console views have no runtime equivalent under
   CAP-2? The supersede ruling of 2026-08-24 settled *that* it is retired; this settles *what has to
   exist first*. Answered by an inventory pass in Phase 4, not by research.
-- **liquibase-airgap-policy** — does this repo's air-gap policy govern container images at all, or
-  only conda-sourced dependencies? Research in flight; `liquibase-delivery-vehicle` cannot be
-  answered before it.
+- ~~**liquibase-airgap-policy**~~ — **answered 2026-08-24.** Two boundaries, both binding:
+  conda channels govern the Python/pixi graph, `spec-python-agent-platform` CAP-6 governs
+  deployment images and already admits non-conda third-party images. See
+  `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.

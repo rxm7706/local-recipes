@@ -90,14 +90,23 @@ there rather than left to inherit:
   framework and onto the **database role** — the app role is DML-only and a separate migration role
   holds DDL — so the question stops being "which apps are carved out" and becomes "which role runs
   what", which an auditor can actually verify. **Test databases are carved out entirely.**
-- **Ordering.** The revision puts `liquibase update` in a Helm **pre-upgrade Job**, explicitly *not*
-  an init container: N replicas each running an init container contend on `DATABASECHANGELOGLOCK`,
-  whose default wait is 5 minutes. Django's `migrate --fake` still runs afterwards so `post_migrate`
-  fires. Story 12.1's chart contract is `done` and AD-4/AD-17 topology is HARD per
-  `spec-platform-fifteen-factors`; the hook lands as a seam, not a chart rewrite.
-- **Delivery vehicle is unresolved.** Liquibase is not on conda-forge. Whether it arrives as a
-  feedstock or as the Job's container image turns on whether this repo's air-gap policy governs
-  images at all — under research as of 2026-08-24, and CAP-9 cannot be scheduled until it lands.
+- **Ordering — and the seam already exists.** The revision puts `liquibase update` in a Helm
+  **pre-upgrade Job**, explicitly *not* an init container. `migrate-job.yaml` is shipped and is
+  exactly that hook (`helm.sh/hook: post-install,pre-upgrade`, `hook-weight: "0"`), so CAP-9 adds a
+  Job at weight `-1` and changes this one's args from `migrate --noinput` to `migrate --fake`.
+  Story 12.1's chart contract stays intact; the risk that this was a chart rewrite is retired.
+  Its header independently rejects init containers for a *different* reason than Phase-2 research
+  did — `helm install --wait` deadlocks migration-gated readiness, versus N replicas contending on
+  `DATABASECHANGELOGLOCK` — two unrelated arguments reaching the same answer.
+- **Delivery vehicle.** The Job runs the **platform image** and takes its command as `args`, so a
+  conda-packaged Liquibase needs no new image at all. See
+  `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`; the policy question
+  underneath it is answered, the scope commitment is not yet made.
+
+**Also already covered, found 2026-08-24:** the **Helm pre-upgrade hook seam** itself
+(`src/platform/deploy/charts/platform/templates/migrate-job.yaml`, Story 12.1 `done`) and the
+**internal-registry image relocation seam** (`image.registry` + `imagePullSecrets` in
+`values.yaml`, `spec-python-agent-platform` CAP-6). CAP-9 consumes both rather than minting either.
 
 ## Adjacent-not-absorbed
 
