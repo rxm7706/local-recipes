@@ -104,7 +104,7 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
         "--preserve-code-status",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="CAP-2 stub hook (default: true; no-op preserve).",
+        help="Preserve done/in-progress/backlog across epics regen (CAP-2; default: true).",
     )
     regen.add_argument(
         "--apply-orphans",
