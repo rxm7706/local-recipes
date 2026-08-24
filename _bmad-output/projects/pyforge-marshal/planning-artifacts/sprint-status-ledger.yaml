@@ -92,7 +92,7 @@ development_status:
   21-2-orchestrated-chain-regeneration: done
   21-3-code-status-preservation: done
   21-4-orphan-detection-with-review-gated-cleanup: done
-  21-5-configurable-per-project-invocation: backlog
+  21-5-configurable-per-project-invocation: done
   22-1-the-dispatch-verb-launches-one-governed-isolated-story-session: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
@@ -202,7 +202,7 @@ development_status:
   epic-2-retrospective: done
   epic-20: backlog
   epic-20-retrospective: optional
-  epic-21: backlog
+  epic-21: done
   epic-21-retrospective: optional
   epic-22: backlog
   epic-22-retrospective: optional

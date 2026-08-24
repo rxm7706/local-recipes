@@ -84,4 +84,4 @@ Review findings: 5 patches applied (1 medium, 4 low); 1 deferred (help/defaults 
 
 Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` → **6283 passed**, 12 deselected; `test_chain_regen.py` CAP-5 block → 10 passed.
 
-Admin merge: pending (GitHub Actions billing blocks CI; local tests green — merge via `--admin` after PR open).
+Admin merge: PR https://github.com/rxm7706/local-recipes/pull/710 merge SHA `3155ec626b0c87a9a522f20589e4ef2ac212d4a4` via `gh pr merge --merge --admin` (GitHub Actions billing blocks CI; local tests green).
