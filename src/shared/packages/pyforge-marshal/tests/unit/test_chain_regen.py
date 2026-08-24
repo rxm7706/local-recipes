@@ -843,3 +843,378 @@ def test_cli_planning_help_registers():
     assert args.planning_command == "chain-regenerate"
     assert args.project == "acme"
     assert args.minimal is True
+
+
+# ---------------------------------------------------------------------------
+# Story 21.5 — CAP-5 configurable per-project invocation
+# ---------------------------------------------------------------------------
+
+
+class _ProjectTrackingInvoker(_RecordingInvoker):
+    """Records per-invoke project + physical planning path for multi-slug tests."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.projects: list[str] = []
+        self.planning_paths: list[Path] = []
+
+    def invoke_planning_skill(
+        self,
+        skill: str,
+        *,
+        root: Path,
+        project: str,
+        dream: Path,
+        phase: str,
+        run_dir: Path,
+    ) -> object:
+        self.projects.append(project)
+        self.planning_paths.append(
+            root / "_bmad-output" / "projects" / project / "planning-artifacts"
+        )
+        return super().invoke_planning_skill(
+            skill,
+            root=root,
+            project=project,
+            dream=dream,
+            phase=phase,
+            run_dir=run_dir,
+        )
+
+
+def test_cap5_defaults_matrix():
+    from pyforge.marshal.core.chain_regen import cap5_defaults
+
+    defaults = cap5_defaults()
+    assert defaults["mode"] == "full"
+    assert defaults["chain_mode"] == "full"
+    assert defaults["preserve_code_status"] is True
+    assert defaults["stage"] is False
+    assert defaults["apply_orphans"] is False
+    assert defaults["resume"] is False
+    assert defaults["auto_commit"] is False
+
+
+def test_cap5_orchestrated_defaults_match_spec(tmp_path: Path):
+    from pyforge.marshal.core.chain_regen import cap5_defaults
+
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=_RecordingInvoker(),
+    )
+    d = cap5_defaults()
+    assert report.mode == d["mode"]
+    assert report.preserve_code_status_hook is d["preserve_code_status"]
+    assert report.stage_hook is d["stage"]
+    assert report.apply_orphans_hook is d["apply_orphans"]
+    assert report.auto_commit is d["auto_commit"]
+
+
+def test_cap5_cli_parser_defaults_and_no_auto_commit_flag():
+    from pyforge.marshal.cli.main import _build_parser
+    from pyforge.marshal.cli.planning import resolve_chain_mode
+
+    parser = _build_parser()
+    args = parser.parse_args(
+        [
+            "planning",
+            "chain-regenerate",
+            "--project",
+            "pyforge-marshal",
+            "--dream",
+            "docs/dreams/demo.md",
+        ]
+    )
+    assert args.minimal is False
+    assert args.chain_mode is None
+    assert resolve_chain_mode(args) == "full"
+    assert args.preserve_code_status is True
+    assert args.stage is False
+    assert args.apply_orphans is False
+    assert args.resume is False
+    assert not hasattr(args, "auto_commit")
+
+    option_strings: list[str] = []
+    for action in parser._actions:
+        option_strings.extend(action.option_strings or ())
+        # Nested planning subparser actions
+        if getattr(action, "choices", None) and isinstance(action.choices, dict):
+            for sub in action.choices.values():
+                for sub_action in getattr(sub, "_actions", ()):
+                    option_strings.extend(sub_action.option_strings or ())
+                    if getattr(sub_action, "choices", None) and isinstance(
+                        sub_action.choices, dict
+                    ):
+                        for nested in sub_action.choices.values():
+                            for na in getattr(nested, "_actions", ()):
+                                option_strings.extend(na.option_strings or ())
+
+    joined = " ".join(option_strings)
+    assert "--project" in joined
+    assert "--dream" in joined
+    assert "--chain-mode" in joined
+    assert "--minimal" in joined
+    assert "--preserve-code-status" in joined
+    assert "--stage" in joined
+    assert "--apply-orphans" in joined
+    assert "--resume" in joined
+    assert "--auto-commit" not in joined
+    assert "--auto_commit" not in joined
+
+
+def test_cap5_cli_help_documents_parameters():
+    from pyforge.marshal.cli import planning as planning_cli
+
+    top = argparse.ArgumentParser(prog="marshal")
+    subs = top.add_subparsers()
+    planning_cli.add_planning_subparser(subs)
+    # Dig out chain-regenerate description + help.
+    planning_parser = None
+    for action in top._actions:
+        if getattr(action, "choices", None) and "planning" in (action.choices or {}):
+            planning_parser = action.choices["planning"]
+            break
+    assert planning_parser is not None
+    regen_parser = None
+    for action in planning_parser._actions:
+        if getattr(action, "choices", None) and "chain-regenerate" in (
+            action.choices or {}
+        ):
+            regen_parser = action.choices["chain-regenerate"]
+            break
+    assert regen_parser is not None
+    help_text = regen_parser.format_help() + "\n" + (regen_parser.description or "")
+    for term in (
+        "CAP-5",
+        "project_slug",
+        "dream_path",
+        "chain_mode",
+        "preserve_code_status",
+        "stage",
+        "apply_orphans",
+        "resume",
+        "auto_commit",
+        "bmad-switch",
+    ):
+        assert term in help_text, f"missing CAP-5 help term: {term}"
+
+
+def test_cap5_chain_mode_flag_consistent_with_minimal():
+    from pyforge.marshal.cli.main import _build_parser
+    from pyforge.marshal.cli.planning import resolve_chain_mode
+
+    parser = _build_parser()
+    base = [
+        "planning",
+        "chain-regenerate",
+        "--project",
+        "acme",
+        "--dream",
+        "docs/dreams/demo.md",
+    ]
+    assert resolve_chain_mode(parser.parse_args([*base, "--chain-mode", "full"])) == "full"
+    assert (
+        resolve_chain_mode(parser.parse_args([*base, "--chain-mode", "minimal"]))
+        == "minimal"
+    )
+    assert resolve_chain_mode(parser.parse_args([*base, "--minimal"])) == "minimal"
+    # Agreeing flags OK.
+    assert (
+        resolve_chain_mode(
+            parser.parse_args([*base, "--minimal", "--chain-mode", "minimal"])
+        )
+        == "minimal"
+    )
+    with pytest.raises(ValueError, match="conflicts"):
+        resolve_chain_mode(
+            parser.parse_args([*base, "--minimal", "--chain-mode", "full"])
+        )
+
+
+def test_cap5_cli_handler_chain_mode_minimal_reaches_orchestrator(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """``run_planning_chain_regenerate`` must honor ``--chain-mode minimal``."""
+    from pyforge.marshal.cli.planning import run_planning_chain_regenerate
+
+    _seed_orchestrated(tmp_path, "acme")
+    ns = argparse.Namespace(
+        project="acme",
+        dream="docs/dreams/demo.md",
+        root=str(tmp_path),
+        format="json",
+        live=False,
+        resume=False,
+        minimal=False,
+        chain_mode="minimal",
+        preserve_code_status=True,
+        apply_orphans=False,
+        stage=False,
+    )
+    code = run_planning_chain_regenerate(ns)
+    assert code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    regen = payload["data"]["planning_chain_regeneration"]
+    assert regen["mode"] == "minimal"
+    assert regen["status"] == "complete"
+    assert regen["auto_commit"] is False
+
+
+def test_cap5_cli_handler_chain_mode_conflict_emits_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Conflicting ``--minimal`` + ``--chain-mode full`` must not start a chain."""
+    from pyforge.marshal.cli.planning import run_planning_chain_regenerate
+
+    _seed_orchestrated(tmp_path, "acme")
+    ns = argparse.Namespace(
+        project="acme",
+        dream="docs/dreams/demo.md",
+        root=str(tmp_path),
+        format="json",
+        live=False,
+        resume=False,
+        minimal=True,
+        chain_mode="full",
+        preserve_code_status=True,
+        apply_orphans=False,
+        stage=False,
+    )
+    code = run_planning_chain_regenerate(ns)
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert "planning_chain_regeneration" not in payload.get("data", {})
+    findings = payload.get("findings") or []
+    assert any(
+        f.get("code") == "MRS-CHAIN-001" and "conflicts" in f.get("message", "")
+        for f in findings
+    )
+    assert any(
+        f.get("path") == "flags: --minimal/--chain-mode" for f in findings
+    )
+
+
+def test_cap5_two_project_slugs_same_workflow(tmp_path: Path):
+    """Same orchestrated workflow against two stations; trees stay isolated."""
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    slugs = ("pyforge-marshal", "pyforge-doctor")
+    invoker = _ProjectTrackingInvoker()
+    reports = []
+    for slug in slugs:
+        _seed_orchestrated(tmp_path, slug)
+        report = run_orchestrated_chain(
+            root=tmp_path,
+            project=slug,
+            dream=dream,
+            invoker=invoker,
+            mode="minimal",
+        )
+        reports.append(report)
+        assert report.status == "complete"
+        assert report.project == slug
+        run_dir = Path(report.run_dir)
+        assert run_dir.is_dir()
+        # Physical path under this slug only.
+        assert f"_bmad-output/projects/{slug}/" in str(run_dir).replace("\\", "/")
+        other = slugs[0] if slug == slugs[1] else slugs[1]
+        assert f"/projects/{other}/" not in str(run_dir).replace("\\", "/")
+        assert (run_dir / "state.yaml").is_file()
+
+    assert set(invoker.projects) == set(slugs)
+    for slug, planning in zip(invoker.projects, invoker.planning_paths, strict=True):
+        assert planning.name == "planning-artifacts"
+        assert slug in planning.parts
+        assert planning == (
+            tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+        )
+    marshal_planning = (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts"
+    )
+    doctor_planning = (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-doctor" / "planning-artifacts"
+    )
+    assert marshal_planning.is_dir() and doctor_planning.is_dir()
+    assert marshal_planning != doctor_planning
+    assert Path(reports[0].run_dir).is_relative_to(marshal_planning)
+    assert Path(reports[1].run_dir).is_relative_to(doctor_planning)
+
+
+def test_cap5_auto_commit_still_rejected(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    with pytest.raises(ValueError, match="auto_commit"):
+        run_orchestrated_chain(
+            root=tmp_path,
+            project="acme",
+            dream=dream,
+            invoker=_RecordingInvoker(),
+            mode="full",
+            auto_commit=True,
+        )
+
+
+def test_cap5_harness_env_uses_bmad_active_never_switch(tmp_path: Path, monkeypatch):
+    """Live harness sets BMAD_ACTIVE_PROJECT; argv never runs bmad-switch."""
+    import subprocess
+
+    from pyforge.marshal.adapters.skill_invoke_harness import HarnessSkillInvoker
+
+    _seed_orchestrated(tmp_path, "pyforge-marshal")
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    run_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "pyforge-marshal"
+        / "planning-artifacts"
+        / ".chain-regen"
+        / "cap5-test"
+    )
+    run_dir.mkdir(parents=True)
+    captured: dict[str, object] = {}
+
+    def fake_run(argv, **kwargs):  # noqa: ANN001
+        captured["argv"] = list(argv)
+        captured["env"] = dict(kwargs.get("env") or {})
+        log_file = kwargs.get("stdout")
+        if log_file is not None:
+            log_file.write(b"STATUS: COMPLETE\n")
+        return subprocess.CompletedProcess(argv, 0)
+
+    invoker = HarnessSkillInvoker(live=True)
+    monkeypatch.setattr(invoker, "binary_present", lambda: True)
+    monkeypatch.setattr(
+        "pyforge.marshal.adapters.skill_invoke_harness.subprocess.run",
+        fake_run,
+    )
+    result = invoker.invoke_planning_skill(
+        "bmad-spec",
+        root=tmp_path,
+        project="pyforge-marshal",
+        dream=dream,
+        phase="spec",
+        run_dir=run_dir,
+    )
+    assert result.status == "complete"
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env.get("BMAD_ACTIVE_PROJECT") == "pyforge-marshal"
+    argv = captured["argv"]
+    assert isinstance(argv, list)
+    # Never launch bmad-switch as an argv token / executable.
+    assert "bmad-switch" not in argv
+    assert not any(
+        str(part).endswith("/bmad-switch") or str(part).endswith("scripts/bmad-switch")
+        for part in argv
+    )
+    assert argv[0] == "cursor"
+    # Prompt forbids switch and names the physical station path.
+    prompt = argv[-1] if argv else ""
+    assert "BMAD_ACTIVE_PROJECT=pyforge-marshal" in prompt
+    assert "never" in prompt.lower() and "scripts/bmad-switch" in prompt
+    assert "never scripts/bmad-switch" in prompt.lower().replace("`", "")
+    assert "_bmad-output/projects/pyforge-marshal/" in prompt
