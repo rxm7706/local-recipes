@@ -169,6 +169,18 @@ they are why this is not merely a UI project.
   - **success:** A persona completes a station task end to end using only CAP-5's grammar and
     CAP-4's service face, with no direct filesystem or ad-hoc HTTP access in the transcript.
 
+- **CAP-17 — Run state is a service, not a local filesystem read.**
+  - **intent:** In-flight execution state — which runs are live, how long they have been going, and
+    the timing history behind them — is published by a supervisor the front door can query, rather
+    than scraped from an operator's local disk at generation time.
+  - **success:** The front door displays live run state in a deployed, egress-blocked namespace
+    with no access to any operator's home directory, and a completed run's timing survives the
+    workstation that produced it.
+  - *(Added 2026-08-24 by operator ruling. The retired console read `~/.bmad-loops`, tmux sessions
+    and journal files directly, so three of its surfaces degraded to `unavailable` when published.
+    Choosing to keep those surfaces is what makes this a capability rather than an answered
+    question — see `console-parity-inventory.md`.)*
+
 ## Constraints
 
 - **Always:** `spec-python-agent-platform` CAP-1..6 are shipped and binding. This SPEC extends
@@ -218,6 +230,14 @@ they are why this is not merely a UI project.
 - **Never:** a station is declared complete on fewer than five tiers. The Dream's symmetry is CLI
   (CAP-5), portal (CAP-3), service (CAP-4), domain skill (CAP-15) and persona (CAP-16); a station
   missing any of the five is unfinished, whatever its ledger says.
+- **Always:** the eight station portals mount under a uniform `/stations/<name>/` prefix, decided
+  2026-08-24. `compliance_face` moves from its shipped `/compliance/` mount and leaves a permanent
+  redirect; the app switcher derives its entries from the registration seam rather than from a
+  path list. A portal that mounts outside the prefix has violated CAP-3.
+- **Never:** CAP-17's supervisor reads an operator's home directory, and the front door never reads
+  run state from a filesystem. The supervisor is the only publisher; a surface that falls back to
+  scraping local paths has reintroduced exactly the coupling that made the retired console's live
+  surfaces undeployable.
 
 ## Non-goals
 

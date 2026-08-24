@@ -50,14 +50,14 @@ effort.
 | **Platform operator** | `kubectl`, Helm, and the shipped chart | Schema change is whatever Django's migration graph did; no separate authority, and the app's own database role can alter its own schema. |
 | **Autonomous agent** | Atlas's MCP server — the only one | Seven stations expose no service face, only a CLI to shell out to, and long operations die with the connection. |
 
-The agent reads as a first-class user here: five of the sixteen capabilities — the service face, the
-command grammar, the event backbone, the domain skills and the personas — exist mainly to make the
-estate legible to something that is not a human. That emphasis is derived from the capability set
-rather than from a stated user requirement, so the PRD should confirm or correct it.
+The agent reads as a first-class user here: five of the seventeen capabilities — the service face,
+the command grammar, the event backbone, the domain skills and the personas — exist mainly to make
+the estate legible to something that is not a human. That emphasis is derived from the capability
+set rather than from a stated user requirement, so the PRD should confirm or correct it.
 
 ## What we are actually building
 
-Fourteen of the sixteen capabilities extend the host outward: a shared chrome package so portals
+Fourteen of the seventeen capabilities extend the host outward: a shared chrome package so portals
 stop reinventing navigation, a CMS-managed front door, the seven missing portals, atlas's
 analytical boards reachable through the host with per-user row isolation, a service face for the
 seven stations without one and the current-spec transport for atlas's existing one, one command
@@ -69,6 +69,12 @@ Two capabilities close a gap the Dream stated and the first convergence sweep mi
 Spec's preservation pass: the Dream promises **five-tier symmetry** — CLI, portal, service, domain
 skill, agent persona — and the estate has one domain skill of eight and zero station personas. A
 station missing any of the five is unfinished, whatever its ledger says.
+
+A seventeenth was added on 2026-08-24, and it is the one place this chain grew rather than
+converged. The console being retired showed live run state by reading an operator's local disk,
+which is why the published copy showed nothing. Keeping those surfaces means building the
+supervisor that publishes run state as a service — so the replacement is held to a higher bar than
+the thing it replaces, deliberately.
 
 Underneath, the governance work: DDL authority enforced by database privilege rather than
 convention, four containment invariants so a failing dependency degrades its caller instead of

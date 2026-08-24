@@ -37,6 +37,7 @@ graph TB
         EV["Redis Streams fabric<br/>CAP-8"]
         SK["8 domain skills<br/>CAP-15 — 1 of 8 today"]
         PER["8 station personas<br/>CAP-16 — 0 of 8 today"]
+        SUP["Run-state supervisor<br/>CAP-17 — added 2026-08-24"]
     end
 
     User --> Host
@@ -60,6 +61,7 @@ graph TB
     PER -.->|"acts only through"| CLI
     PER -.->|"and through"| SVC
     SK -.-> PER
+    Host -.->|"queries — never reads a filesystem"| SUP
 
     classDef shipped fill:#1a3a52,stroke:#4a9eda,color:#fff
     classDef residual fill:#3a2a1a,stroke:#daa54a,color:#fff,stroke-dasharray: 5 3

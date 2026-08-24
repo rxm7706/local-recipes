@@ -158,6 +158,7 @@ Adding or removing a station portal changes no host code outside that portal's o
   portal itself supplies.
 - Removing a portal leaves the host booting and the remaining portals rendering.
 - The app switcher's entries derive from what is registered, not from a hand-maintained list.
+- A portal registering outside the `/stations/<name>/` prefix fails a check.
 
 #### FR-3: The switcher shows only what the user may reach
 
@@ -168,10 +169,10 @@ The app switcher renders the stations the signed-in user is authorized for. **CA
 - The switcher is not the enforcement point — requesting a hidden station's URL directly is still
   refused by that station's own authorization.
 
-**Notes:** `[NOTE FOR PM]` The estate's existing portal (`compliance_face`) mounts at
-`/compliance/`, not under a `/stations/` prefix. Whether CAP-3 adopts a uniform prefix and moves
-it, or accommodates per-station paths, is an **open design decision** (OQ-4) — not an inherited
-convention. It affects FR-2's registration seam directly.
+**Notes:** The estate's existing portal (`compliance_face`) mounts at `/compliance/`, not under a
+`/stations/` prefix. **Decided 2026-08-24: uniform prefix, and `compliance_face` moves** — see
+FR-9a. The pre-audit draft asserted `/stations/{station}/` as an inherited convention; it was not,
+and choosing it now is a decision with a migration attached rather than a free default.
 
 ---
 
@@ -283,7 +284,20 @@ Eight portal URLs resolve, and a single authentication covers all of them. **CAP
 **Consequences (testable):**
 - Requesting each of the eight portals in one session triggers no re-authentication.
 - All eight are same-origin with Lane 1.
+- All eight mount under `/stations/<name>/`.
 - The existing compliance portal is one of the eight and is not re-implemented.
+
+#### FR-9a: The moved portal does not break its old URL
+
+`compliance_face` relocates from `/compliance/` to `/stations/warden/` and the old path keeps
+working. **CAP-3.**
+
+**Consequences (testable):**
+- `/compliance/` returns a permanent redirect to `/stations/warden/`, preserving path and query
+  beneath it.
+- The redirect survives as a supported route, not a temporary shim — it is not scheduled for
+  removal in this chain.
+- No inbound reference to `/compliance/` anywhere in the repo is left pointing at a 404.
 
 #### FR-10: A portal holds no station logic
 
@@ -716,6 +730,60 @@ Station completeness is mechanically verifiable, not asserted. **CAP-15, CAP-16.
 
 ---
 
+### 4.14 Run state is a service
+
+**Description.** In-flight execution state — which runs are live, how long they have been going,
+and the timing history behind them — is published by a supervisor the front door can query, rather
+than read off an operator's local disk when a static page is generated.
+
+This feature exists because of a decision, not a discovery. The parity inventory found that three
+of the retired console's surfaces read `~/.bmad-loops`, tmux sessions and journal files directly,
+which is why the published board showed `unavailable` for all of them. The inventory recommended
+dropping those surfaces; the operator chose on 2026-08-24 to keep them and pay for the service that
+makes them deployable. **The replacement is therefore held to a higher bar than the thing it
+replaces**, and that is deliberate.
+
+**Functional Requirements:**
+
+#### FR-40: Live run state is queryable, not scraped
+
+The front door obtains run state from a service. **CAP-17.**
+
+**Consequences (testable):**
+- Live run state renders in a deployed namespace with **no access to any operator home directory**
+  — the deciding test, because it is exactly what fails today.
+- No front-door code path reads a filesystem for run state, and no fallback to scraping exists.
+- A run started on one machine is visible to a front door running on another.
+
+#### FR-41: A run's timing survives the workstation that produced it
+
+Completed-run timing is ingested into durable storage rather than left in a local journal.
+**CAP-17.**
+
+**Consequences (testable):**
+- A run's timing is retrievable after its originating workstation is unavailable.
+- Ingestion happens at run completion, not at page-generation time.
+- Timing history is queryable across runs, not only for the most recent.
+
+#### FR-42: The supervisor degrades honestly
+
+When the supervisor is unreachable, the surface says so rather than implying staleness is
+liveness. **CAP-17, CAP-10.**
+
+**Consequences (testable):**
+- An unreachable supervisor renders an explicit unavailable state, not an empty list and not stale
+  data presented as current.
+- Any displayed run state carries its age.
+- The front door does not hang waiting on the supervisor — it degrades within its budget, per
+  FR-26.
+
+**Notes:** `[NOTE FOR PM]` this feature was added after the capability set was otherwise settled,
+and it is the one place this chain grew rather than converged. It is worth a deliberate look during
+the readiness gate: it is genuinely useful, and it is also the kind of scope that arrives late and
+is not sized with the same rigor as the rest.
+
+---
+
 ## 5. Non-Goals (Explicit)
 
 - **Not a rewrite of the host.** `src/platform/` stands. No rename, no relocation of `config/` or
@@ -875,26 +943,33 @@ control they cannot.
 
 ## 11. Open Questions
 
+**Still open — all three under research as of 2026-08-24:**
+
 1. **Liquibase multi-schema regression** — is the `default-schema-name` regression fixed in the
-   current release? Must be verified before any multi-schema changeset lands. Blocks part of §4.9.
+   release the feedstock targets? Must be verified before any multi-schema changeset lands. Blocks
+   part of §4.9, and may change which version FR-21 packages.
 2. **MCP client revision** — which protocol revision do our agent clients actually speak? A
    server pinned to one revision rejects clients of another. Blocks FR-11's conformance target.
 3. **MCP resumable-operation runtime** — does the official SDK ship a server-side runtime for it
-   yet? The largest gap between recommended design and shippable code. Blocks FR-12's mechanism,
-   not its requirement.
-4. **Portal URL scheme** — uniform prefix (moving the existing portal) or per-station paths?
-   Affects FR-2 and FR-9. **Decide in the architecture pass**; it is a design decision, not
-   research.
-5. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
-   is *not* the CMS's own API, so this is a real compatibility question. Jointly owned.
-6. **Django patch-level exposure** — do the two upstream patch releases we cannot reach carry
-   security fixes? Unaudited. If yes, this escalates from a constraint to a risk.
-7. ~~**Console parity classification**~~ — **answered 2026-08-24** by the FR-6 inventory. It
-   raises one *new* question in its place: **do live run state and journal-derived timing belong on
-   the front door at all**, or do they stay a local-only view? Answering "yes, on the front door"
-   requires a loop-supervisor service the estate does not have, which would be new scope. The
-   published board already degrades honestly here, so "local-only" is the cheaper answer and the
-   one the inventory leans toward. **Decide in the architecture pass.**
+   yet? The largest gap between CAP-4's recommended pattern and shippable code. Blocks FR-12's
+   mechanism, not its requirement — the FR stands either way, and an interim mechanism must be
+   replaceable without rewriting it.
+4. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
+   is *not* the CMS's own API, so this is a real compatibility question. Jointly owned with atlas.
+
+**Answered 2026-08-24:**
+
+5. ~~**Portal URL scheme**~~ — **uniform `/stations/<name>/` for all eight**, with
+   `compliance_face` moving from `/compliance/` behind a permanent redirect. One rule beats eight
+   exceptions, and the registration seam enforces it (FR-2, FR-9, FR-9a). The cost is a migration
+   of a shipped URL, which the redirect absorbs.
+6. ~~**Django patch-level exposure**~~ — **audit commissioned 2026-08-24**, in flight. If 5.2.16 or
+   5.2.17 carries a security fix this escalates from a constraint to a risk, and a `django-feedstock`
+   5.2 maintenance branch becomes a seventh packaging item.
+7. ~~**Console parity classification**~~ — answered by the FR-6 inventory, and the question it
+   raised in turn is **also** answered: live run state and journal-derived timing **stay on the
+   front door**, which means building the supervisor that makes them deployable. That is
+   **CAP-17 / §4.14**, new scope taken deliberately.
 
 ## 12. Traceability
 
@@ -902,14 +977,15 @@ Every capability has at least one FR; every FR names a capability.
 
 | CAP | FRs | CAP | FRs |
 |---|---|---|---|
-| CAP-1 | FR-1, FR-2, FR-3 | CAP-9 | FR-21..FR-25 |
-| CAP-2 | FR-4..FR-8 | CAP-10 | FR-18, FR-26..FR-29 |
-| CAP-3 | FR-2, FR-9, FR-10 | CAP-11 | FR-30 |
-| CAP-4 | FR-11, FR-12 | CAP-12 | FR-3, FR-5, FR-31, FR-32 |
-| CAP-5 | FR-13 | CAP-13 | FR-33, FR-34 |
-| CAP-6 | FR-10, FR-14, FR-15 | CAP-14 | FR-35, FR-36 |
-| CAP-7 | FR-16 | CAP-15 | FR-37, FR-39 |
-| CAP-8 | FR-17..FR-20, FR-29 | CAP-16 | FR-38, FR-39 |
+| CAP-1 | FR-1, FR-2, FR-3 | CAP-10 | FR-18, FR-26..FR-29, FR-42 |
+| CAP-2 | FR-4..FR-8 | CAP-11 | FR-30 |
+| CAP-3 | FR-2, FR-9, FR-9a, FR-10 | CAP-12 | FR-3, FR-5, FR-31, FR-32 |
+| CAP-4 | FR-11, FR-12 | CAP-13 | FR-33, FR-34 |
+| CAP-5 | FR-13 | CAP-14 | FR-35, FR-36 |
+| CAP-6 | FR-10, FR-14, FR-15 | CAP-15 | FR-37, FR-39 |
+| CAP-7 | FR-16 | CAP-16 | FR-38, FR-39 |
+| CAP-8 | FR-17..FR-20, FR-29 | CAP-17 | FR-40, FR-41, FR-42 |
+| CAP-9 | FR-21..FR-25 | | |
 
 ## 13. Assumptions Index
 

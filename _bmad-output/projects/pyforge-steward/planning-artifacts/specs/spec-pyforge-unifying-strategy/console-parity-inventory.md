@@ -58,8 +58,19 @@ why the published board *already* degrades to `unavailable` today while a local 
 shows them.
 
 **This is one decision, not three:** either the estate grows a loop-supervisor service the front
-door can query, or live run state leaves the front door and stays a local-only view. The second is
-cheaper and is closer to what the published board already does honestly.
+door can query, or live run state leaves the front door and stays a local-only view.
+
+**Ruled 2026-08-24: build the supervisor.** This document recommended the cheaper local-only
+option; the operator chose to keep the surfaces and pay for them. That makes live run state a
+**capability rather than a gap** — recorded as **CAP-17** in `SPEC.md` — and it absorbs the
+journal-derived timing decision below, since a supervisor that publishes live state is also the
+natural place to ingest a run's timing when it completes. So of the four decisions this inventory
+identified, two are now answered by one capability, and what remains for the parity build is
+detector verdicts and curated editorial content.
+
+The consequence worth stating plainly: the retired console degraded honestly to `unavailable` for
+these surfaces. The replacement is being held to a **higher** bar than the thing it replaces, not
+merely parity. That is a deliberate scope increase, not a hidden one.
 
 ### Sync & Health
 
@@ -86,8 +97,9 @@ content authoring and not as ETL.
 ### Derived timing and velocity
 
 Reads bmad-loop journals under `~/.bmad-loops/<slug>/.bmad-loop/runs/*/journal.jsonl` — gitignored,
-local-only. Same shape of decision as live run state: ingest journals into a durable store at loop
-completion, or drop the panel from the public front door.
+local-only. **Absorbed into CAP-17 by the 2026-08-24 ruling:** the supervisor ingests a run's
+journal at completion, which is the durable-store half of this problem and the only version that
+survives the workstation that produced the run.
 
 ### The committed-snapshot model itself
 
@@ -124,10 +136,14 @@ generator sees more than CI does — and they should be resolved during CAP-2's 
    (`dashboard-gen`, `dashboard-watch`, `dashboard-check`, `dashboard-drift-check`), its workflow
    trigger, and the committed `data.js`. It does **not** mean the Kedro-Viz tree, which has its own
    workflow and no inbound link from the console.
-3. **The scope conversation is narrower than the raw count suggests.** Seven build-time-only
-   surfaces reduce to four decisions: live run state (three surfaces, one decision), detector
-   verdicts, editorial content, and journal-derived timing. The fifth item — the snapshot model —
-   is not a loss to mitigate but the point of the exercise.
+3. **The scope conversation is narrower than the raw count suggests, and it has now been had.**
+   Seven build-time-only surfaces reduced to four decisions: live run state (three surfaces, one
+   decision), detector verdicts, editorial content, and journal-derived timing. As of 2026-08-24,
+   **two of the four are answered by CAP-17** — the operator chose to build the supervisor rather
+   than drop the surfaces, and journal timing rides along with it. Detector verdicts want a
+   scheduled job writing a cached result with a visible age; editorial content is CMS authoring
+   and argues *for* the supersession. The fifth item — the snapshot model — is not a loss to
+   mitigate but the point of the exercise.
 4. **Over 100 inbound references to `docs/dashboard` exist across the repo** — dreams, specs,
    presentations, pixi tasks, workflows, tests, scripts, and the Charter's own accountability gate.
    FR-7's "no inbound reference remains" consequence is therefore substantially more work than
