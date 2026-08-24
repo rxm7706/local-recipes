@@ -1,15 +1,16 @@
-"""Meta: `docs/dashboard/generate.py` wall-clock fallback (marshal Story 23.1,
-FR-194 CAP-1 — wall-clock ceiling from promoted-spec revision fields).
+"""Meta: `docs/dashboard/generate.py` wall-clock fallback + metric-class
+separation (marshal Stories 23.1 / 23.2, FR-194 CAP-1 / CAP-2).
 
 Loads the REAL `generate.py` via importlib (same pattern as
-`test_dashboard_resolve_project.py`) and covers every I/O & Edge-Case Matrix
-row from `spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields`:
+`test_dashboard_resolve_project.py`) and covers the 23.1 I/O & Edge-Case
+Matrix plus 23.2 blend-refusal / class-label contracts:
 
   * Happy path — done + resolvable baseline/final + zero journals → wall-clock
   * Journal wins — closed journal session blocks wall-clock overwrite
   * Unresolvable rev — missing / NO_VCS / unknown rev → absent (never fabricate)
   * Refresh — derived: true recomputes; never freezes stale minutes
   * Curated preserved — non-derived timing+velocity stay byte-identical
+  * CAP-2 — perStoryClass, split totalLabel, render wiring (23.2)
 
 Wall-clock minutes never land on `velocity.bars`; metric/note name the
 final−baseline ceiling bound.
@@ -26,6 +27,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 GENERATE_PY = REPO_ROOT / "docs" / "dashboard" / "generate.py"
+INDEX_HTML = REPO_ROOT / "docs" / "dashboard" / "index.html"
 
 
 def _load_generate():
@@ -423,6 +425,16 @@ def test_mixed_journal_and_wall_clock_keeps_velocity_journal_only(
     assert "8.2" not in bars
     assert timing["perStory"]["8.1"] == 3
     assert timing["perStory"]["8.2"] == expected_wc
+    assert timing["perStoryClass"] == {
+        "8.1": gen.TIMING_CLASS_ACTIVE,
+        "8.2": gen.TIMING_CLASS_WALL_CLOCK,
+    }
+    assert timing["epicMin"] == {"E8": 3}
+    assert timing["epicMinWallClock"] == {"E8": expected_wc}
+    assert timing["total"] == 3  # primary class = active-compute; not blended
+    assert "active" in timing["totalLabel"]
+    assert "wall-clock ceiling" in timing["totalLabel"]
+    assert "combined" not in timing["totalLabel"].lower()
     assert "wall-clock ceiling" in timing["metric"].lower()
     assert "journal" in timing["metric"].lower()
     assert "ceiling" in timing["note"].lower()
@@ -504,3 +516,70 @@ def test_asymmetric_curated_velocity_allows_derived_timing(
     assert projects["fixture"]["timing"]["perStory"]["8.1"] == expected
     assert "8.1" not in {
         sid for sid, _ in projects["fixture"]["velocity"]["bars"]}
+
+
+# --- Story 23.2: metric-class labels + render wiring (CAP-2) -----------------
+
+
+def test_journal_only_emits_active_compute_class(gen, tmp_path, monkeypatch):
+    loop_home = tmp_path / "loop-home"
+    run = loop_home / ".bmad-loop" / "runs" / "r1"
+    run.mkdir(parents=True)
+    journal = [
+        {"kind": "session-start", "ts": 0.0, "task_id": "t1",
+         "story_key": "3-2-journal"},
+        {"kind": "session-end", "ts": 1800.0, "task_id": "t1"},
+    ]
+    (run / "journal.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in journal) + "\n", encoding="utf-8")
+    monkeypatch.setattr(gen, "LOOP_HOMES", {"fixture": loop_home})
+    monkeypatch.setattr(gen, "derive_wall_clock_per_story", lambda *a, **k: {})
+    projects = {"fixture": _proj([["3.2", "done", "Journal only"]])}
+    gen.scan_timing(projects)
+    timing = projects["fixture"]["timing"]
+    assert timing["perStoryClass"] == {"3.2": gen.TIMING_CLASS_ACTIVE}
+    assert timing["totalLabel"] == "~30 min active compute"
+
+
+def test_wall_clock_only_emits_ceiling_class_and_epic_min_wall(gen, monkeypatch):
+    monkeypatch.setattr(
+        gen, "derive_wall_clock_per_story",
+        lambda _pkey, _proj, journal_sids, **kw: {"4.1": 45})
+    projects = {"fixture": _proj([["4.1", "done", "Wall-clock only"]])}
+    gen.scan_timing(projects)
+    timing = projects["fixture"]["timing"]
+    velocity = projects["fixture"].get("velocity")
+    assert not velocity or velocity == "" or not velocity.get("bars")
+    assert timing["perStoryClass"] == {"4.1": gen.TIMING_CLASS_WALL_CLOCK}
+    assert timing["totalLabel"] == "~45 min wall-clock ceiling"
+    assert timing["total"] == 45
+    assert timing["epicMin"] == {}
+    assert timing["epicMinWallClock"] == {"E4": 45}
+
+
+def test_timing_chip_css_class_helper(gen):
+    per_class = {
+        "1.1": gen.TIMING_CLASS_ACTIVE,
+        "2.1": gen.TIMING_CLASS_WALL_CLOCK,
+    }
+    assert gen.timing_chip_css_class(per_class, "1.1") == gen.TIMING_CLASS_ACTIVE
+    assert gen.timing_chip_css_class(per_class, "2.1") == gen.TIMING_CLASS_WALL_CLOCK
+    assert gen.timing_chip_css_class(per_class, "9.9") == ""
+    assert gen.timing_chip_css_class(None, "1.1") == ""
+
+
+def test_index_html_wires_per_story_class_and_css():
+    """Static render surface exposes class labels the reader needs (CAP-2)."""
+    if not INDEX_HTML.is_file():
+        pytest.skip("docs/dashboard/index.html not present")
+    html = INDEX_HTML.read_text(encoding="utf-8")
+    for needle in (
+        "perStoryClass",
+        "epicMinWallClock",
+        "wall-clock-ceiling",
+        "active-compute",
+        "timingClassLegend",
+        "timingChipTitle",
+        'data-metric="active-compute"',
+    ):
+        assert needle in html, f"missing render wiring: {needle!r}"
