@@ -780,8 +780,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
-        "total": 4489,
-        "totalLabel": "~74.8 h combined marks",
+        "total": 3629,
+        "totalLabel": "~60.5 h active compute · ~14.3 h wall-clock ceiling",
         "note": "Derived from 29 journal-measured + 11 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.1": 101,
@@ -825,14 +825,59 @@ window.DASHBOARD_DATA = {
           "12.5": 37,
           "14.1": 41
         },
+        "perStoryClass": {
+          "1.1": "active-compute",
+          "1.2": "active-compute",
+          "1.3": "active-compute",
+          "1.4": "active-compute",
+          "1.5": "active-compute",
+          "6.2": "active-compute",
+          "6.3": "active-compute",
+          "6.4": "active-compute",
+          "6.5": "active-compute",
+          "6.6": "active-compute",
+          "6.8": "active-compute",
+          "6.9": "active-compute",
+          "6.10": "active-compute",
+          "6.11": "active-compute",
+          "7.1": "active-compute",
+          "7.2": "active-compute",
+          "7.3": "active-compute",
+          "7.4": "active-compute",
+          "9.1": "active-compute",
+          "9.2": "active-compute",
+          "9.3": "active-compute",
+          "9.4": "active-compute",
+          "10.1": "active-compute",
+          "10.2": "active-compute",
+          "10.3": "active-compute",
+          "11.1": "active-compute",
+          "11.2": "active-compute",
+          "11.3": "active-compute",
+          "11.4": "active-compute",
+          "8.1": "wall-clock-ceiling",
+          "8.2": "wall-clock-ceiling",
+          "8.3": "wall-clock-ceiling",
+          "8.4": "wall-clock-ceiling",
+          "11.5": "wall-clock-ceiling",
+          "11.6": "wall-clock-ceiling",
+          "11.7": "wall-clock-ceiling",
+          "12.3": "wall-clock-ceiling",
+          "12.4": "wall-clock-ceiling",
+          "12.5": "wall-clock-ceiling",
+          "14.1": "wall-clock-ceiling"
+        },
         "epicMin": {
           "E1": 715,
           "E6": 1358,
           "E7": 840,
           "E9": 178,
           "E10": 218,
-          "E11": 454,
+          "E11": 320
+        },
+        "epicMinWallClock": {
           "E8": 255,
+          "E11": 134,
           "E12": 430,
           "E14": 41
         }
@@ -1364,6 +1409,22 @@ window.DASHBOARD_DATA = {
           "14.1": 33,
           "14.2": 62,
           "14.3": 39
+        },
+        "perStoryClass": {
+          "1.1": "active-compute",
+          "1.2": "active-compute",
+          "1.3": "active-compute",
+          "1.4": "active-compute",
+          "1.5": "active-compute",
+          "13.1": "active-compute",
+          "13.2": "active-compute",
+          "13.3": "active-compute",
+          "13.4": "active-compute",
+          "13.5": "active-compute",
+          "13.6": "active-compute",
+          "14.1": "active-compute",
+          "14.2": "active-compute",
+          "14.3": "active-compute"
         },
         "epicMin": {
           "E1": 712,
@@ -2023,12 +2084,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "154/162",
+            "155/162",
             "stories complete",
             "var(--done)"
           ],
           [
-            "8",
+            "7",
             "remaining",
             ""
           ]
@@ -2037,9 +2098,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
-        "total": 7771,
-        "totalLabel": "~129.5 h combined marks",
-        "note": "Derived from 58 journal-measured + 6 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
+        "total": 7332,
+        "totalLabel": "~122.2 h active compute · ~7.8 h wall-clock ceiling",
+        "note": "Derived from 58 journal-measured + 7 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -2104,7 +2165,75 @@ window.DASHBOARD_DATA = {
           "11.1": 54,
           "11.2": 240,
           "11.3": 38,
-          "22.4": 15
+          "22.4": 15,
+          "23.1": 26
+        },
+        "perStoryClass": {
+          "1.1": "active-compute",
+          "1.2": "active-compute",
+          "1.3": "active-compute",
+          "1.4": "active-compute",
+          "1.5": "active-compute",
+          "1.6": "active-compute",
+          "1.7": "active-compute",
+          "1.8": "active-compute",
+          "1.9": "active-compute",
+          "1.10": "active-compute",
+          "2.1": "active-compute",
+          "2.2": "active-compute",
+          "2.4": "active-compute",
+          "2.5": "active-compute",
+          "2.6": "active-compute",
+          "2.8": "active-compute",
+          "3.1": "active-compute",
+          "3.2": "active-compute",
+          "3.3": "active-compute",
+          "3.4": "active-compute",
+          "3.5": "active-compute",
+          "3.6": "active-compute",
+          "3.7": "active-compute",
+          "3.11": "active-compute",
+          "3.12": "active-compute",
+          "3.13": "active-compute",
+          "4.11": "active-compute",
+          "4.12": "active-compute",
+          "4.13": "active-compute",
+          "4.14": "active-compute",
+          "4.15": "active-compute",
+          "5.8": "active-compute",
+          "5.9": "active-compute",
+          "5.10": "active-compute",
+          "7.1": "active-compute",
+          "7.4": "active-compute",
+          "7.5": "active-compute",
+          "7.6": "active-compute",
+          "8.1": "active-compute",
+          "8.2": "active-compute",
+          "8.3": "active-compute",
+          "8.4": "active-compute",
+          "8.5": "active-compute",
+          "9.1": "active-compute",
+          "9.2": "active-compute",
+          "9.3": "active-compute",
+          "9.4": "active-compute",
+          "9.5": "active-compute",
+          "9.6": "active-compute",
+          "10.1": "active-compute",
+          "10.2": "active-compute",
+          "10.3": "active-compute",
+          "10.4": "active-compute",
+          "14.1": "active-compute",
+          "14.2": "active-compute",
+          "14.3": "active-compute",
+          "14.4": "active-compute",
+          "16.1": "active-compute",
+          "10.7": "wall-clock-ceiling",
+          "10.8": "wall-clock-ceiling",
+          "11.1": "wall-clock-ceiling",
+          "11.2": "wall-clock-ceiling",
+          "11.3": "wall-clock-ceiling",
+          "22.4": "wall-clock-ceiling",
+          "23.1": "wall-clock-ceiling"
         },
         "epicMin": {
           "E1": 1343,
@@ -2115,16 +2244,20 @@ window.DASHBOARD_DATA = {
           "E7": 326,
           "E8": 512,
           "E9": 560,
-          "E10": 427,
+          "E10": 335,
           "E14": 457,
-          "E16": 76,
+          "E16": 76
+        },
+        "epicMinWallClock": {
+          "E10": 92,
           "E11": 332,
-          "E22": 15
+          "E22": 15,
+          "E23": 26
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "23.1"
+        "at": "23.2"
       },
       "epics": [
         {
@@ -3010,7 +3143,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "23.1",
-              "pending",
+              "done",
               "Wall-clock fallback derivation from promoted-spec revision fields"
             ],
             [
@@ -3283,8 +3416,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
-        "total": 4342,
-        "totalLabel": "~72.4 h combined marks",
+        "total": 4180,
+        "totalLabel": "~69.7 h active compute · ~2.7 h wall-clock ceiling",
         "note": "Derived from 37 journal-measured + 3 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.2": 91,
@@ -3328,12 +3461,56 @@ window.DASHBOARD_DATA = {
           "6.3": 51,
           "6.4": 36
         },
+        "perStoryClass": {
+          "1.2": "active-compute",
+          "1.3": "active-compute",
+          "1.4": "active-compute",
+          "1.5": "active-compute",
+          "1.6": "active-compute",
+          "1.7": "active-compute",
+          "1.8": "active-compute",
+          "1.9": "active-compute",
+          "1.10": "active-compute",
+          "2.1": "active-compute",
+          "2.2": "active-compute",
+          "2.3": "active-compute",
+          "2.4": "active-compute",
+          "2.5": "active-compute",
+          "2.6": "active-compute",
+          "2.7": "active-compute",
+          "2.8": "active-compute",
+          "2.9": "active-compute",
+          "2.10": "active-compute",
+          "3.1": "active-compute",
+          "3.2": "active-compute",
+          "3.3": "active-compute",
+          "3.4": "active-compute",
+          "3.5": "active-compute",
+          "3.6": "active-compute",
+          "3.7": "active-compute",
+          "3.8": "active-compute",
+          "3.9": "active-compute",
+          "4.1": "active-compute",
+          "4.2": "active-compute",
+          "4.3": "active-compute",
+          "4.4": "active-compute",
+          "5.1": "active-compute",
+          "5.2": "active-compute",
+          "5.3": "active-compute",
+          "5.4": "active-compute",
+          "5.5": "active-compute",
+          "6.2": "wall-clock-ceiling",
+          "6.3": "wall-clock-ceiling",
+          "6.4": "wall-clock-ceiling"
+        },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
           "E3": 860,
           "E4": 264,
-          "E5": 458,
+          "E5": 458
+        },
+        "epicMinWallClock": {
           "E6": 162
         }
       },
@@ -3703,6 +3880,12 @@ window.DASHBOARD_DATA = {
           "1.3": 360,
           "1.4": 9
         },
+        "perStoryClass": {
+          "1.1": "active-compute",
+          "1.2": "active-compute",
+          "1.3": "active-compute",
+          "1.4": "active-compute"
+        },
         "epicMin": {
           "E1": 478
         }
@@ -3908,8 +4091,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
-        "total": 3209,
-        "totalLabel": "~53.5 h combined marks",
+        "total": 2987,
+        "totalLabel": "~49.8 h active compute · ~3.7 h wall-clock ceiling",
         "note": "Derived from 19 journal-measured + 4 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "8.1": 182,
@@ -3936,11 +4119,39 @@ window.DASHBOARD_DATA = {
           "11.4": 44,
           "12.1": 60
         },
+        "perStoryClass": {
+          "8.1": "active-compute",
+          "8.2": "active-compute",
+          "8.3": "active-compute",
+          "8.4": "active-compute",
+          "8.5": "active-compute",
+          "8.6": "active-compute",
+          "8.7": "active-compute",
+          "9.1": "active-compute",
+          "9.2": "active-compute",
+          "9.3": "active-compute",
+          "9.4": "active-compute",
+          "9.5": "active-compute",
+          "9.6": "active-compute",
+          "9.7": "active-compute",
+          "10.1": "active-compute",
+          "10.2": "active-compute",
+          "10.3": "active-compute",
+          "10.4": "active-compute",
+          "11.1": "active-compute",
+          "11.2": "wall-clock-ceiling",
+          "11.3": "wall-clock-ceiling",
+          "11.4": "wall-clock-ceiling",
+          "12.1": "wall-clock-ceiling"
+        },
         "epicMin": {
           "E8": 584,
           "E9": 1642,
           "E10": 577,
-          "E11": 346,
+          "E11": 184
+        },
+        "epicMinWallClock": {
+          "E11": 162,
           "E12": 60
         }
       },
@@ -5065,7 +5276,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-24 02:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-24 02:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8083,7 +8294,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 154,
+          "done": 155,
           "total": 162,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
@@ -8812,7 +9023,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "154/162",
+        "progress": "155/162",
         "complete": 13,
         "of": 13,
         "chainAudit": {
@@ -24732,7 +24943,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 23.1",
+        "line": "paused 23.2",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -29101,7 +29312,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "status": {
-    "source": "git",
+    "source": "sprint-status",
     "running": [],
     "lastShipped": {
       "station": "marshal",
@@ -29110,9 +29321,9 @@ window.DASHBOARD_DATA = {
       "sha": "5227971d1",
       "subject": "feat(marshal): Story 21.5 configurable per-project CAP-5 invocation"
     },
-    "runningAvailable": false,
-    "generatedAt": "2026-08-24 02:16 UTC",
-    "generatedEpoch": 1787537789
+    "runningAvailable": true,
+    "generatedAt": "2026-08-24 02:42 UTC",
+    "generatedEpoch": 1787539379
   },
   "storySpecs": [
     {
@@ -29135,8 +29346,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 154,
-      "tracked": 107,
+      "done": 155,
+      "tracked": 108,
       "gap": 47
     },
     {
@@ -29259,14 +29470,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 154,
-        "backlog": 8,
+        "done": 155,
+        "backlog": 7,
         "blocked": 0,
         "total": 162,
-        "next": "23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields",
+        "next": "23-2-wall-clock-is-never-blended-with-active-compute",
         "blockedKeys": [],
         "backlogKeys": [
-          "23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields",
           "23-2-wall-clock-is-never-blended-with-active-compute",
           "23-3-the-coverage-caption-partitions-by-true-reason",
           "24-1-marshal-gains-the-missing-liveness-primitive",
@@ -29535,8 +29745,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 503,
-      "backlog": 9,
+      "done": 504,
+      "backlog": 8,
       "blocked": 0,
       "total": 512
     }
@@ -29550,7 +29760,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 16,
         "epicsDone": 16,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 57
       },
       {
         "key": "doctor",
@@ -29559,7 +29771,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 16,
         "epicsDone": 16,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 61
       },
       {
         "key": "herald",
@@ -29568,16 +29782,20 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 15,
         "epicsDone": 15,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 58
       },
       {
         "key": "marshal",
         "stories": 162,
-        "done": 154,
+        "done": 155,
         "blocked": 0,
         "epics": 25,
         "epicsDone": 22,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 155
       },
       {
         "key": "mason",
@@ -29586,7 +29804,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 9,
         "epicsDone": 9,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 47
       },
       {
         "key": "scribe",
@@ -29595,7 +29815,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 3,
         "epicsDone": 3,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 11
       },
       {
         "key": "steward",
@@ -29604,7 +29826,9 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 17,
         "epicsDone": 16,
-        "complete": false
+        "complete": false,
+        "running": false,
+        "projected": 79
       },
       {
         "key": "warden",
@@ -29613,16 +29837,22 @@ window.DASHBOARD_DATA = {
         "blocked": 0,
         "epics": 8,
         "epicsDone": 8,
-        "complete": true
+        "complete": true,
+        "running": false,
+        "projected": 36
       }
     ],
     "total": {
       "stories": 512,
-      "done": 503,
+      "done": 504,
       "blocked": 0,
       "epics": 109,
       "epicsDone": 105
     },
-    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
+    "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
+    "live": {
+      "running": [],
+      "projected": 504
+    }
   }
 };

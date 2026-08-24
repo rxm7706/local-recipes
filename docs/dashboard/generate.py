@@ -2788,6 +2788,30 @@ _MIXED_METRIC = (
     "before dispatch) for hand-driven stories with revision fields — never "
     "the same class"
 )
+TIMING_CLASS_ACTIVE = "active-compute"
+TIMING_CLASS_WALL_CLOCK = "wall-clock-ceiling"
+
+
+def _timing_total_label_active(mins: int) -> str:
+    if mins >= 60:
+        return f"~{mins / 60:.1f} h active compute"
+    return f"~{mins} min active compute"
+
+
+def _timing_total_label_wall_clock(mins: int) -> str:
+    if mins >= 60:
+        return f"~{mins / 60:.1f} h wall-clock ceiling"
+    return f"~{mins} min wall-clock ceiling"
+
+
+def timing_chip_css_class(per_story_class: dict | None, sid: str) -> str:
+    """CSS class suffix for a story timing chip (empty if unknown / legacy)."""
+    if not isinstance(per_story_class, dict):
+        return ""
+    cls = per_story_class.get(sid)
+    if cls in (TIMING_CLASS_ACTIVE, TIMING_CLASS_WALL_CLOCK):
+        return cls
+    return ""
 
 
 def _unquote_fm(value: object) -> str:
@@ -2931,6 +2955,12 @@ def scan_timing(projects: dict) -> None:
     timestamps (final − baseline). Those minutes land on `timing.perStory`
     only — never on `velocity.bars`. Metric/note name the ceiling bound.
 
+    Class separation (CAP-2): every `perStory` sid carries a `perStoryClass`
+    of `active-compute` or `wall-clock-ceiling`. Epic rollups never blend —
+    journal → `epicMin`, wall-clock → `epicMinWallClock`. Mixed lines emit a
+    dual `totalLabel` (never a single "combined marks" number). The renderer
+    styles chips by class and shows a legend when both classes appear.
+
     Hand-authored `timing`/`velocity` are PRESERVED, never overwritten. Warden's
     carry human judgement no derivation can reproduce (6.4's bar is its delivered
     dev-2 pass, excluding a rolled-back dev-1; 6.9's is recovered from a stalled
@@ -3045,20 +3075,32 @@ def scan_timing(projects: dict) -> None:
                     [f"{len(st) - done_n}", "remaining", ""],
                 ],
             }
-        # The renderer reads timing.{perStory,epicMin,metric,note,totalLabel} —
-        # ALL of them. Emitting a partial object is worse than emitting none:
-        # `p.timing && p.timing.perStory[key]` passes the truthiness guard and
-        # then throws on the missing key, which aborts the whole script and took
-        # In Build / Realized / Archived down with it (2026-07-26). Match the
-        # curated shape exactly.
+        # The renderer reads timing.{perStory,perStoryClass,epicMin,metric,note,
+        # totalLabel} — ALL of them. Emitting a partial object is worse than
+        # emitting none: `p.timing && p.timing.perStory[key]` passes the
+        # truthiness guard and then throws on the missing key, which aborts the
+        # whole script and took In Build / Realized / Archived down with it
+        # (2026-07-26). Match the curated shape exactly.
         per_story = {sid: m for sid, m in bars}
         per_story.update(wall_clock)  # journal sids already excluded from wall_clock
+        per_story_class: dict[str, str] = {
+            sid: TIMING_CLASS_ACTIVE for sid, _ in bars}
+        per_story_class.update(
+            {sid: TIMING_CLASS_WALL_CLOCK for sid in wall_clock})
+        # CAP-2: epic rollups never blend classes. Journal → epicMin;
+        # wall-clock → epicMinWallClock. `total` is the primary class only
+        # (active-compute when any journal bars exist; else wall-clock).
         epic_min: dict[str, int] = {}
-        for sid, mins in per_story.items():
+        epic_min_wall: dict[str, int] = {}
+        for sid, mins in bars:
             epic_min[f"E{sid.split('.')[0]}"] = (
                 epic_min.get(f"E{sid.split('.')[0]}", 0) + mins)
-        total_mins = sum(per_story.values())
-        total_h_all = total_mins / 60
+        for sid, mins in wall_clock.items():
+            epic_min_wall[f"E{sid.split('.')[0]}"] = (
+                epic_min_wall.get(f"E{sid.split('.')[0]}", 0) + mins)
+        journal_mins = sum(b[1] for b in bars)
+        wall_mins = sum(wall_clock.values())
+        total_mins = journal_mins if bars else wall_mins
         if wall_clock and bars:
             metric = _MIXED_METRIC
             note = (
@@ -3070,8 +3112,8 @@ def scan_timing(projects: dict) -> None:
                 f"Journal bars still in flight contribute only closed sessions."
             )
             total_label = (
-                f"~{total_h_all:.1f} h combined marks" if total_h_all >= 1
-                else f"~{total_mins} min combined marks")
+                f"{_timing_total_label_active(journal_mins)} · "
+                f"{_timing_total_label_wall_clock(wall_mins)}")
         elif wall_clock:
             metric = _WALL_CLOCK_CEILING_METRIC
             note = (
@@ -3080,9 +3122,7 @@ def scan_timing(projects: dict) -> None:
                 f"ceiling = final_revision − baseline_revision commit timestamps "
                 f"(includes idle before dispatch), not active agent-compute."
             )
-            total_label = (
-                f"~{total_h_all:.1f} h wall-clock ceiling" if total_h_all >= 1
-                else f"~{total_mins} min wall-clock ceiling")
+            total_label = _timing_total_label_wall_clock(wall_mins)
         else:
             metric = _JOURNAL_METRIC
             note = (
@@ -3090,9 +3130,7 @@ def scan_timing(projects: dict) -> None:
                 f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
                 f"flight contributes only its closed sessions."
             )
-            total_label = (
-                f"~{total_h_all:.1f} h active compute" if total_h_all >= 1
-                else f"~{total_mins} min active compute")
+            total_label = _timing_total_label_active(journal_mins)
         timing_obj = {
             "derived": True,
             "metric": metric,
@@ -3100,8 +3138,11 @@ def scan_timing(projects: dict) -> None:
             "totalLabel": total_label,
             "note": note,
             "perStory": per_story,
+            "perStoryClass": per_story_class,
             "epicMin": epic_min,
         }
+        if epic_min_wall:
+            timing_obj["epicMinWallClock"] = epic_min_wall
         # Assign PER FIELD — a curated field is never overwritten, but its presence
         # no longer blocks the other from being filled. Wall-clock never writes
         # velocity.bars (journal spans only).

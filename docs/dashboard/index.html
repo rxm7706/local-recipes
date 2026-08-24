@@ -440,7 +440,16 @@
   .tstrip-metric { font-size: 11px; color: var(--slate); }
   .tstrip-note { flex-basis: 100%; font-size: 10.5px; color: var(--slate-faint); line-height: 1.55; }
   .etime { font-family: var(--mono); font-size: 10.5px; color: var(--slate); margin-right: 10px; font-variant-numeric: tabular-nums; }
+  .etime.active-compute { color: var(--done); }
+  .etime.wall-clock-ceiling { color: var(--slate); font-style: italic; }
   .stime { float: right; font-family: var(--mono); font-size: 10.5px; color: var(--slate); font-variant-numeric: tabular-nums; padding-left: 8px; }
+  .stime.active-compute { color: var(--done); }
+  .stime.wall-clock-ceiling { color: var(--slate); font-style: italic; }
+  .tstrip-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 10px; color: var(--slate); }
+  .tstrip-swatch { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+  .tstrip-swatch::before { content: ""; width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .tstrip-swatch.active-compute::before { background: var(--done); }
+  .tstrip-swatch.wall-clock-ceiling::before { background: var(--slate); }
 
   /* ---- v2 zones (six-section IA) ---- */
   .zone-h { font-family: var(--mono); font-size: 13px; font-weight: 600; text-transform: uppercase;
@@ -869,6 +878,20 @@
 <script>
   const glyphFor = { done:"✔", active:"▶", pending:"○", gated:"⧖" };
   const fmtMin = m => m == null ? "" : (m < 60 ? m + "m" : (m/60).toFixed(1) + "h");
+  const timingChipTitle = cls => cls === "wall-clock-ceiling"
+    ? "wall-clock ceiling for this story"
+    : cls === "active-compute"
+    ? "active agent-compute for this story"
+    : "time for this story";
+  const timingClassLegend = perStoryClass => {
+    if (!perStoryClass) return "";
+    const vals = new Set(Object.values(perStoryClass));
+    if (!(vals.has("active-compute") && vals.has("wall-clock-ceiling"))) return "";
+    return '<span class="tstrip-legend">' +
+      '<span class="tstrip-swatch active-compute">active compute</span>' +
+      '<span class="tstrip-swatch wall-clock-ceiling">wall-clock ceiling</span>' +
+      '</span>';
+  };
   const REPO = "https://github.com/rxm7706/local-recipes";
 
   const PROJECTS = window.DASHBOARD_DATA.projects;
@@ -1390,6 +1413,7 @@
       html += '<div class="tstrip">' +
         '<span class="tstrip-total">⏱ ' + p.timing.totalLabel + '</span>' +
         '<span class="tstrip-metric">' + p.timing.metric + '</span>' +
+        timingClassLegend(p.timing.perStoryClass) +
         '<span class="tstrip-note">' + p.timing.note + '</span>' +
       '</div>';
     }
@@ -1424,8 +1448,18 @@
       const state = allDone ? "done" : (sts.some(x => x==="active"||x==="done") ? "active" : "pending");
       const doneCount = sts.filter(x => x==="done").length;
       const chipTxt = allDone ? "complete" : (state==="active" ? "in-progress" : "backlog");
-      const etm = p.timing && p.timing.epicMin[e.badge];
-      const etchip = etm ? '<span class="etime" title="time in this epic">⏱ ' + fmtMin(etm) + '</span>' : '';
+      const etm = p.timing && p.timing.epicMin && p.timing.epicMin[e.badge];
+      const etmW = p.timing && p.timing.epicMinWallClock && p.timing.epicMinWallClock[e.badge];
+      // Classified chips only when perStoryClass exists (derived CAP-2). Curated
+      // atlas/warden timing has no class map — keep the neutral epic chip.
+      const hasClassMap = !!(p.timing && p.timing.perStoryClass);
+      const etchip = (etm != null
+        ? '<span class="etime' + (hasClassMap ? ' active-compute' : '') + '" title="' +
+          (hasClassMap ? 'active agent-compute in this epic' : 'time in this epic') +
+          '">⏱ ' + fmtMin(etm) + '</span>'
+        : '') + (etmW != null
+        ? '<span class="etime wall-clock-ceiling" title="wall-clock ceiling in this epic">⏱ ' + fmtMin(etmW) + '</span>'
+        : '');
       html += '<div class="epic state-' + state + '">' +
         '<div class="epic-head"><span class="epic-num">' + e.badge + '</span>' +
         '<span class="epic-title">' + e.title + '</span>' +
@@ -1436,7 +1470,11 @@
         if (st === "active") tag = '<span class="runchip"><span class="live"></span>' + (chip || "dev-running") + '</span>';
         else if (st === "gated") tag = '<span class="gatetag">blocked-by</span>';
         const stm = p.timing && p.timing.perStory[key];
-        const stchip = stm != null ? '<span class="stime" title="time for this story">' + fmtMin(stm) + '</span>' : '';
+        const rawCls = p.timing && p.timing.perStoryClass && p.timing.perStoryClass[key];
+        const stCls = (rawCls === "active-compute" || rawCls === "wall-clock-ceiling") ? rawCls : "";
+        const stchip = stm != null
+          ? '<span class="stime' + (stCls ? ' ' + stCls : '') + '" title="' + timingChipTitle(stCls) + '">' + fmtMin(stm) + '</span>'
+          : '';
         html += '<div class="story s-' + st + '">' +
           '<div class="story-key"><span class="glyph">' + glyphFor[st] + '</span>' + key + tag + '</div>' +
           '<div class="story-title">' + title + stchip + '</div></div>';
@@ -1451,7 +1489,7 @@
       let ph = '<div class="panel"><h2>Velocity</h2><p class="sub">' + v.sub + '</p><div class="bars">';
       v.bars.forEach(([k, m]) => {
         const heavy = m > 110;
-        ph += '<div class="bar-col"><div class="bar" style="height:' + Math.round((m/maxV)*100) + '%;background:' +
+        ph += '<div class="bar-col" data-metric="active-compute"><div class="bar" style="height:' + Math.round((m/maxV)*100) + '%;background:' +
           (heavy ? 'var(--active)' : 'var(--done)') + '"><span class="mm">' + m + '</span></div><span class="bar-key">' + k + '</span></div>';
       });
       ph += '</div><div class="foot">' + v.foot.map(([val,k,col]) =>
