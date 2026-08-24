@@ -1,0 +1,901 @@
+---
+title: "PRD: the Canopy mounts the eight stations"
+status: "draft"
+created: "2026-08-24"
+updated: "2026-08-24"
+chain: "pyforge-unifying-strategy"
+owner: "steward"
+extends: "spec-python-agent-platform"
+inputs:
+  - "../../specs/spec-pyforge-unifying-strategy/SPEC.md"
+  - "../../specs/spec-pyforge-unifying-strategy/convergence.md"
+  - "../../specs/spec-pyforge-unifying-strategy/resilience-invariants.md"
+  - "../../specs/spec-pyforge-unifying-strategy/stack.md"
+  - "../../briefs/brief-pyforge-unifying-strategy-2026-08-24/brief.md"
+  - "../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md"
+  - "../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md"
+---
+
+# PRD: the Canopy mounts the eight stations
+
+## 0. Document Purpose
+
+This PRD decomposes `spec-pyforge-unifying-strategy` into functional requirements an epic pass can
+group and a dev session can implement. **The SPEC is the contract; this document is its
+decomposition.** Where they disagree, the SPEC wins and this document is wrong.
+
+Every FR carries the capability ID it realizes. Nothing here floats: an FR with no CAP is scope
+creep, and a CAP with no FR is an unmet contract. The traceability check at §12 is mechanical for
+exactly that reason.
+
+Two things this PRD deliberately does not do. It does not restate what `spec-python-agent-platform`
+already shipped — `convergence.md` is the authority on that boundary, and re-specifying a `done`
+surface is how an extension quietly becomes a rewrite. And it does not choose mechanisms; those
+live in `addendum.md` and the architecture pass, except where a mechanism was already decided and
+recorded, in which case the FR names it as a constraint rather than pretending it is open.
+
+## 1. Vision
+
+An operator signs in once and the whole estate is in front of them: a published front page, eight
+station portals, an analytical board that shows them only their own rows. An agent addresses the
+same eight stations through one grammar and one service shape, and survives the connection dropping
+mid-build. A station's action becomes an event another station acts on. All of it inside an
+egress-blocked namespace where the application cannot alter its own schema.
+
+The Canopy already proved this is reachable. `src/platform/` runs today with OIDC single sign-on,
+two agentic engines on isolated schemas, a Helm chart with an OpenShift overlay — and **one** of
+eight station portals. This chain finishes the shape.
+
+## 2. Target User
+
+Four users, and the fourth is not a person. That is load-bearing rather than cute: five of the
+sixteen capabilities exist mainly to make the estate legible to something that is not a human, and
+a requirement written only for the human reader will under-specify them.
+
+### 2.1 Jobs To Be Done
+
+| User | Job | Blocked today by |
+|---|---|---|
+| **Platform operator** (steward's own audience) | Deploy, upgrade and audit the estate in a regulated namespace | Schema change is whatever the migration graph did; the app's role can alter its own schema |
+| **Compliance auditor** | Move from a finding to the package, build and fleet context around it | Warden's portal exists and shows compliance; nothing else has a portal |
+| **Packaging / platform engineer** | Drive any station without learning eight tools | Eight CLIs, eight verb vocabularies, eight output shapes |
+| **Autonomous agent** | Perform a station's work programmatically and reliably | One station of eight has a service face; long operations die with the connection |
+
+### 2.2 Non-Users
+
+- **The public.** Lane 1 is a front door for the estate's own operators, reachable only behind the
+  identity provider. "Public" in CAP-2 means "not gated per-page", not "unauthenticated".
+- **External API consumers.** CAP-4's service face is for estate callers and estate agents. No
+  external contract, no versioning promise to third parties.
+- **Multi-tenant customers.** CAP-7's row isolation is per-user row filtering on analytical boards,
+  not a tenancy layer, and nothing here makes the estate multi-tenant.
+
+### 2.3 Key User Journeys
+
+**UJ-1 — One session, four surfaces.** An operator opens the estate root, reads a runbook page an
+editor published this morning without a deploy, uses the app switcher to jump to the packaging
+station's portal, follows a link into an analytical board, and sees only rows their role permits.
+They authenticate once, at the start, and never change origin.
+
+**UJ-2 — The agent that survives the proxy.** An agent connects to a station's service face,
+starts an operation that takes several minutes, and loses its connection to a router that closes
+idle streams at thirty seconds. It reconnects, re-attaches to the same operation, and collects the
+result. Nothing is recomputed and nothing is lost.
+
+**UJ-3 — The event that crosses stations.** A build completes. The event is published once and a
+different station consumes it and acts. A malformed event published by a buggy producer lands in a
+dead-letter queue after its retry budget rather than blocking the group forever, and an operator
+can see it there.
+
+**UJ-4 — The audited upgrade.** An operator runs a chart upgrade. A governed changeset applies the
+schema change under a role that holds DDL rights; the application's own role does not and provably
+cannot. The application then starts and its framework bookkeeping still runs. The change is
+attributable to a reviewed changeset, not to whatever an ORM decided to emit.
+
+**UJ-5 — The flag flip.** An operator changes one flag value. Web, service and CLI surfaces all
+observe the new behaviour, with no redeploy and no outbound network call.
+
+## 3. Glossary
+
+Defined once. The rest of the document uses these exactly, and no synonyms.
+
+- **Canopy** — the Django host at `src/platform/`. Live today. Not renamed by this chain.
+- **Station** — one of the eight PyForge capability domains: warden, atlas, mason, marshal, doctor,
+  herald, scribe, steward. The roster is fixed at eight.
+- **Lane 1** — the CMS-managed front door mounted at `/`.
+- **Lane 2** — a station's server-rendered portal, mounted under the Canopy as a Django app.
+- **Lane 3** — an analytical board surface, reached through the Canopy, isolated per user.
+- **Service face** — a station's programmatic endpoint, spoken over the current MCP specification.
+- **Five-tier symmetry** — a station is complete when it has all five of: CLI, portal, service
+  face, domain skill, persona. Fewer than five means unfinished.
+- **Domain skill** — an agent-loadable document encoding how a station's work is actually done.
+- **Persona** — an autonomous agent bound to one station, acting only through that station's
+  command grammar and service face.
+- **Chrome** — the app switcher, base layout and theme assets shared by every portal. Owned by one
+  package; never by a portal.
+- **Governed changeset** — a reviewed, versioned schema-change unit applied by an authority holding
+  DDL privilege, distinct from the application's own migration bookkeeping.
+- **Feedstock** — a conda-forge recipe. Six are new work in this chain.
+
+## 4. Features
+
+Twelve features over sixteen capabilities. Grouped by delivery seam, which is also how the epic
+pass should group them.
+
+---
+
+### 4.1 Shared chrome
+
+**Description.** One installable Django app supplies everything a portal needs to look and behave
+like part of the estate: the app switcher, an OIDC-aware base layout, the Modernist theme assets,
+and the seam by which a portal registers itself with the host. It is built first because
+everything visual depends on it, and a portal built before it exists will grow its own chrome that
+nobody removes later. Realizes UJ-1.
+
+Nothing off-the-shelf supplies this. `django-lasuite` — which the Dream named — is OIDC, DRF and
+malware-scanning plumbing with no switcher and no theme, and La Suite's own switcher ships as
+npm/React against a service-list endpoint unreachable in an air gap. This package is ours.
+
+**Functional Requirements:**
+
+#### FR-1: Chrome is installable, and singular
+
+A portal author installs one package and receives the estate's chrome. Realizes UJ-1. **CAP-1.**
+
+**Consequences (testable):**
+- Two portals render byte-identical chrome markup sourced from the package.
+- A test enumerates portal template and static directories and **fails** if any portal ships its
+  own copy of a base layout, app-switcher template, or theme asset.
+- Removing the package from `INSTALLED_APPS` breaks both portals identically.
+
+#### FR-2: A portal registers itself without host edits
+
+Adding or removing a station portal changes no host code outside that portal's own registration.
+**CAP-1, CAP-3.**
+
+**Consequences (testable):**
+- Adding a portal requires no edit to the host's root URLconf or settings beyond an entry the
+  portal itself supplies.
+- Removing a portal leaves the host booting and the remaining portals rendering.
+- The app switcher's entries derive from what is registered, not from a hand-maintained list.
+
+#### FR-3: The switcher shows only what the user may reach
+
+The app switcher renders the stations the signed-in user is authorized for. **CAP-1, CAP-12.**
+
+**Consequences (testable):**
+- A user lacking a station's role does not see it in the switcher.
+- The switcher is not the enforcement point — requesting a hidden station's URL directly is still
+  refused by that station's own authorization.
+
+**Notes:** `[NOTE FOR PM]` The estate's existing portal (`compliance_face`) mounts at
+`/compliance/`, not under a `/stations/` prefix. Whether CAP-3 adopts a uniform prefix and moves
+it, or accommodates per-station paths, is an **open design decision** (OQ-4) — not an inherited
+convention. It affects FR-2's registration seam directly.
+
+---
+
+### 4.2 Lane 1, the front door that replaces a console
+
+**Description.** A CMS-managed front door at `/` whose pages are edited and published without a
+code deploy, with its admin reachable only through the identity provider. It **supersedes** the
+estate's existing statically-built console rather than sitting beside it — so this feature carries
+a migration obligation, and the ordering inside it is the whole point: parity is proven before the
+old build path is removed. Realizes UJ-1.
+
+Wagtail carries it alone. CodeRed CMS was ruled out on maintenance evidence.
+
+**Functional Requirements:**
+
+#### FR-4: Content publishes without a deploy
+
+An editor changes a page and the change is live with no code deploy and no pod restart.
+Realizes UJ-1. **CAP-2.**
+
+**Consequences (testable):**
+- A page edit is visible to an anonymous-within-estate request without a new image or a rollout.
+- Content survives a pod restart and is visible identically from every replica.
+
+#### FR-5: The CMS admin is behind the estate identity provider
+
+An unauthenticated request to the CMS admin is redirected to the identity provider, not to a local
+login form. **CAP-2, CAP-12.**
+
+**Consequences (testable):**
+- The admin login URL resolves to the IdP; no local password form is reachable.
+- Local password management and email-management surfaces are disabled.
+- A user who authenticates but holds no group granting CMS admin access is refused **with a
+  comprehensible error**, not an unexplained bounce.
+
+**Notes:** The last consequence is the one that bites. CMS admin access gates on a specific
+permission rather than a generic staff flag, and OIDC users arrive with no groups — so a correctly
+authenticated user is refused by default until claim-to-group mapping exists. There is no
+first-party guidance for this; treat it as real work, not configuration.
+
+#### FR-6: Console parity is inventoried before anything is removed
+
+Every view the retired console offers is enumerated and classified as runtime-reproducible or
+build-time-only **before** the cutover. **CAP-2.**
+
+**Consequences (testable):**
+- An inventory artifact exists listing every console view with its data source and classification.
+- Any view classified build-time-only is escalated as a scope decision rather than silently
+  dropped.
+- The inventory is the cutover's precondition: FR-7 cannot start until it is complete.
+
+#### FR-7: The old build path is removed, not unlinked
+
+After parity, the console's generation pipeline is deleted — not merely delisted from navigation.
+**CAP-2.**
+
+**Consequences (testable):**
+- The generator no longer runs in CI, and its scheduled trigger is gone.
+- No inbound reference to the retired path remains in docs, workflows, or READMEs.
+- `spec-factory-console` is marked superseded in the same chain — a superseded spec still claiming
+  ownership is a worse outcome than two consoles.
+
+#### FR-8: Media and cache survive multiple replicas
+
+Lane 1 operates correctly with more than one replica. **CAP-2.**
+
+**Consequences (testable):**
+- Uploaded media is retrievable from a replica that did not receive the upload.
+- An image rendition generated by one replica is served by another without regeneration.
+- No Lane 1 state depends on pod-local disk.
+
+**Feature-specific NFRs:**
+- Search uses the database backend (PostgreSQL full-text). No fourth backing service.
+- Background task routing is an explicit decision, not a default — the CMS's task layer ships
+  database and RQ backends and **no Celery backend**, so inheriting the default silently splits the
+  estate's task story. See `addendum.md`.
+
+---
+
+### 4.3 Eight portals, one session
+
+**Description.** Every station becomes reachable as a Lane 2 application under the one host, so an
+operator moves between stations without re-authenticating or changing origin. One of eight exists
+today. Realizes UJ-1.
+
+**Functional Requirements:**
+
+#### FR-9: All eight stations resolve behind one session
+
+Eight portal URLs resolve, and a single authentication covers all of them. **CAP-3.**
+
+**Consequences (testable):**
+- Requesting each of the eight portals in one session triggers no re-authentication.
+- All eight are same-origin with Lane 1.
+- The existing compliance portal is one of the eight and is not re-implemented.
+
+#### FR-10: A portal holds no station logic
+
+A portal renders and dispatches; the station's behaviour stays in the station. **CAP-3, CAP-6.**
+
+**Consequences (testable):**
+- A portal reaches its station only through the shared client (FR-14).
+- No portal imports station internals directly.
+- A test asserts no portal constructs a raw HTTP request to a service.
+
+---
+
+### 4.4 Service faces for agents
+
+**Description.** Each station exposes its capabilities to programmatic and agent callers over a
+current-specification MCP endpoint, with long operations surviving connection loss. One station
+(atlas) has a server today; seven do not. Realizes UJ-2.
+
+The transport question is settled and it is not what the Dream said: the SSE transport it named is
+deprecated twice over, and a compliant current server answers a GET to its endpoint with `405`.
+A single POST endpoint on the official SDK is the target.
+
+**Functional Requirements:**
+
+#### FR-11: Eight stations answer on a current-specification endpoint
+
+Each station exposes a service face implementing the current MCP specification. **CAP-4.**
+
+**Consequences (testable):**
+- A conformance check passes against each of the eight endpoints.
+- The deprecated dual-endpoint SSE shape is not served.
+- Atlas's existing server is brought to the same specification rather than duplicated.
+
+#### FR-12: A long operation survives a disconnect
+
+An operation exceeding the ingress idle timeout completes and its result is retrievable after the
+client reconnects. Realizes UJ-2. **CAP-4.**
+
+**Consequences (testable):**
+- A multi-minute operation run across a simulated ingress disconnect yields its result on
+  reconnection.
+- The operation is not recomputed on reconnect.
+- Keep-alive interval is under 30 seconds, verified by inspecting emitted traffic — not by a route
+  annotation, which is defence-in-depth only.
+
+**Notes:** `[NOTE FOR PM]` FR-12's recommended mechanism depends on OQ-3 — whether the official SDK
+ships a server-side runtime for resumable operations yet. If it does not, this FR needs an interim
+mechanism and the story must be written to survive the SDK catching up. This is the single largest
+gap between recommended design and shippable code in the chain.
+
+---
+
+### 4.5 One command grammar
+
+**Description.** A single entry point dispatches `pyforge <station> <noun> <verb>` to the eight
+existing station CLIs without reimplementing their logic. The station binaries remain first-class;
+this is a front door, not an absorption.
+
+**Functional Requirements:**
+
+#### FR-13: Every station verb is reachable through one entry point
+
+`pyforge <station> <noun> <verb>` reaches the same behaviour as the station's own binary.
+**CAP-5.**
+
+**Consequences (testable):**
+- A generated parity matrix lists every station verb and shows it reachable through both paths.
+- The build **fails** when the two diverge — a verb added to a station CLI and not reachable
+  through the unified entry point breaks CI.
+- No station CLI's logic is reimplemented; dispatch only.
+
+**Notes:** `[ASSUMPTION: the eight station CLIs expose a surface stable enough to dispatch to
+without modification.]` Unverified per-station. If a station's CLI cannot be introspected for the
+parity matrix, that station needs a preparatory story.
+
+---
+
+### 4.6 One client, carrying identity
+
+**Description.** Portals reach station services through a shared client that carries the end user's
+identity as a signed, audience-bound assertion — not a trusted header a compromised caller could
+forge. This is the seam that decides whether the estate's internal traffic is auditable, so it
+lands before the portals that will use it.
+
+**Functional Requirements:**
+
+#### FR-14: A service can verify on whose behalf it was called
+
+A station service independently verifies the end-user identity behind a portal call. **CAP-6.**
+
+**Consequences (testable):**
+- A service rejects a call whose assertion fails signature or audience validation.
+- A service rejects an assertion minted for a different audience.
+- An expired assertion is refused.
+- No portal-to-service path exists that does not carry one.
+
+#### FR-15: The trusted-header path does not exist
+
+Identity is never asserted by an unverified header. **CAP-6.**
+
+**Consequences (testable):**
+- A request bearing an identity header but no valid assertion is refused.
+- A test asserts no portal code constructs a raw request to a service.
+
+---
+
+### 4.7 Analytics behind the front door
+
+**Description.** Atlas's analytical boards become reachable through the host, with per-user row
+isolation enforced at the identity boundary, adopting the estate's existing secure-dashboard
+pattern rather than inventing a second one. Realizes UJ-1.
+
+**Functional Requirements:**
+
+#### FR-16: Two roles, same URL, different rows
+
+Users with different roles requesting the same board receive provably different row sets.
+**CAP-7.**
+
+**Consequences (testable):**
+- Two authenticated users of differing roles request one board URL; returned rows differ as their
+  roles dictate.
+- Isolation is enforced server-side at the identity boundary — not by client-side filtering, and
+  not by serving different URLs.
+- The board is reached through the Canopy, same-origin and same-session.
+
+**Notes:** This consumes the estate's existing secure-dashboard pattern. Making atlas's own
+dashboard adopt that pattern is atlas's story and explicitly out of scope here.
+
+---
+
+### 4.8 Stations can tell each other things
+
+**Description.** A durable event backbone carries structured events between stations, with consumer
+groups, poison-message quarantine, and a ceiling on how deep a cascade may run. Realizes UJ-3.
+
+**Functional Requirements:**
+
+#### FR-17: Events are durable and consumed in groups
+
+A published event reaches its consumers and survives a consumer restart. **CAP-8.**
+
+**Consequences (testable):**
+- An event published while a consumer is down is delivered when it returns.
+- A restart reconciles rather than duplicating — reprocessing does not double-apply effects.
+
+#### FR-18: A poisoned event is quarantined, not retried forever
+
+A message that cannot be processed lands in a dead-letter queue after its retry budget.
+Realizes UJ-3. **CAP-8, CAP-10.**
+
+**Consequences (testable):**
+- A deliberately malformed event ends in the dead-letter queue.
+- It does not block the consumer group.
+- An operator can enumerate quarantined messages.
+
+#### FR-19: Cascades halt at a declared depth
+
+A cyclic publish chain stops at the declared ceiling. **CAP-8.**
+
+**Consequences (testable):**
+- A deliberately cyclic chain halts at the configured depth rather than running away.
+- The halt is observable, not silent.
+
+#### FR-20: Validation happens in the domain adapter
+
+Event payload validation occurs in the consuming domain adapter, not at the stream boundary.
+**CAP-8.**
+
+**Consequences (testable):**
+- A schema-invalid payload is rejected by the consuming adapter with a domain error.
+- The stream boundary does not reject on payload shape — it is a transport, not a validator.
+
+---
+
+### 4.9 Governed schema change
+
+**Description.** Production schema change flows through one auditable authority, enforced by
+**database privilege** rather than by convention, while the application's own tooling remains where
+a developer authors a change. Realizes UJ-4.
+
+This feature reopens shipped work and its literal directive turned out to be unimplementable, so
+the shape below is the revised one. The framework's own bookkeeping — content types, permissions,
+sites — has exactly one supported population mechanism, and the test runner builds every test
+database by running migrations. So migrations keep running; what changes is who is allowed to
+execute DDL. That is also the only version of this an auditor can verify, which is the point.
+
+**Functional Requirements:**
+
+#### FR-21: Liquibase is available inside the boundary
+
+The governed-changeset tool resolves from conda-forge like every other Python/pixi dependency.
+**CAP-9.**
+
+**Consequences (testable):**
+- A recipe exists and builds; the tool is available in the platform environment.
+- The PostgreSQL JDBC driver is **vendored into the recipe** — recent Community releases stopped
+  bundling it and the package manager fetches it over the network, which an air gap forbids.
+- No new container image is introduced.
+
+**Notes:** Per repo Rule 1, this story's dev session invokes `conda-forge-expert`. This FR **gates
+the rest of §4.9** — the epic opens with packaging work, not platform work.
+
+#### FR-22: The application role cannot alter its own schema
+
+The role the application connects with holds no DDL privilege. Realizes UJ-4. **CAP-9.**
+
+**Consequences (testable):**
+- `CREATE`, `ALTER` and `DROP` attempted as the application role are refused **by the database**.
+- A separate migration role holds DDL and is used only by the governed step.
+- The refusal is a privilege error from PostgreSQL, not an application-level guard.
+
+#### FR-23: A schema change without a governed changeset fails the build
+
+Authoring a model change without its corresponding changeset breaks CI. **CAP-9.**
+
+**Consequences (testable):**
+- A model change with no matching changeset fails a check.
+- The check names the missing changeset.
+
+**Notes:** `[NOTE FOR PM]` No prior art exists for this — no team is documented running Liquibase as
+schema authority for a Django application. Size this as invention, not integration.
+
+#### FR-24: The deploy sequence keeps framework bookkeeping working
+
+The governed step runs before the application's migration step, and the latter still fires
+framework post-migration hooks. **CAP-9.**
+
+**Consequences (testable):**
+- The governed changeset applies as a pre-upgrade hook Job at a lower hook-weight than the existing
+  migration Job, on the same platform image.
+- The existing migration Job still runs, so content types, permissions and sites are populated.
+- **No init container is introduced** — replicas would contend on the changelog lock, and the
+  shipped Job's own documentation records that waiting on hooks deadlocks migration-gated
+  readiness.
+- The chart contract from the shipped story is not rewritten; this is a seam beside it.
+
+#### FR-25: Test databases are carved out
+
+The governed authority does not apply to test databases. **CAP-9.**
+
+**Consequences (testable):**
+- The test runner continues to build databases by running migrations, unchanged.
+- No test-suite change is required by this feature.
+
+---
+
+### 4.10 Containment
+
+**Description.** A failing dependency degrades its caller instead of cascading; concurrent writers
+cannot corrupt shared analytical state; validation errors reach the user inline; a restart
+reconciles rather than duplicates. And the queue and the cache stop being able to evict each other.
+
+Each invariant is demonstrated **individually** — a test that fails with the invariant absent and
+passes with it present. A suite that goes green proves nothing about any one of them.
+
+**Functional Requirements:**
+
+#### FR-26: A failing dependency degrades its caller
+
+A dependency failing repeatedly opens a circuit and the caller degrades rather than hanging.
+**CAP-10.**
+
+**Consequences (testable):**
+- Repeated failures open the circuit; the caller returns a degraded response within its budget.
+- **The async path trips correctly** — a failing asynchronous call registers as a failure, not a
+  success.
+- Removing the containment makes the test fail.
+
+**Notes:** The chosen library's async support targets a different coroutine model; an asynchronous
+client call passed to it registers a false success and the circuit never trips. A thin wrapper is
+required and is a known, sized piece of work — see `addendum.md`. `[ASSUMPTION: its cross-replica
+state transitions are not atomic]`, read from source rather than documentation, so the failure
+threshold is coarse protection and not exact-count semantics. Do not write an FR that depends on an
+exact count.
+
+#### FR-27: Concurrent writers cannot corrupt shared analytical state
+
+A single-writer boundary is enforced for the columnar analytical store. **CAP-10.**
+
+**Consequences (testable):**
+- A second concurrent writer is refused or serialized; no corruption occurs.
+- The test fails if the boundary is removed.
+
+#### FR-28: Validation errors reach the user inline
+
+A validation failure is rendered in place rather than lost or thrown as an opaque error.
+**CAP-10.**
+
+**Consequences (testable):**
+- A rejected submission renders its errors inline in the originating surface.
+- The test fails if the inline path is removed.
+
+#### FR-29: A restart reconciles rather than duplicates
+
+Work interrupted by a restart is reconciled, not re-applied. **CAP-10, CAP-8.**
+
+**Consequences (testable):**
+- An operation interrupted mid-flight and resumed produces one effect, not two.
+- The test fails if reconciliation is removed.
+
+#### FR-30: Queue and cache cannot evict each other
+
+Broker and cache are separate resources with separate eviction policies. **CAP-11.**
+
+**Consequences (testable):**
+- Filling the cache to its eviction limit **provably loses no queued task**.
+- The broker's eviction policy refuses to evict; the cache's evicts by recency.
+- Web and worker pools scale independently.
+
+---
+
+### 4.11 Access, secrets, and flags
+
+**Description.** Authorization derives from identity-provider roles rather than locally-managed
+state; runtime secrets arrive from a secret manager rather than the pod environment; and behaviour
+flips without a redeploy through one vendor-neutral flag interface evaluated entirely offline.
+Realizes UJ-5.
+
+**Functional Requirements:**
+
+#### FR-31: Revoking a role at the IdP removes access
+
+A role revoked centrally takes effect on the user's next request. **CAP-12.**
+
+**Consequences (testable):**
+- Revoking the role at the IdP denies portal access on the next request — not at next login, and
+  not after a cache expiry.
+- Local group state is not the authority.
+
+#### FR-32: No long-lived secret appears in a pod specification
+
+Runtime secrets are delivered by a secret manager. **CAP-12.**
+
+**Consequences (testable):**
+- No secret value appears in any pod specification or chart value.
+- A check over rendered manifests fails if one does.
+
+#### FR-33: Flag packages are available inside the boundary
+
+The flag interface and its provider resolve from conda-forge. **CAP-13.**
+
+**Consequences (testable):**
+- Five recipes exist and build.
+- A dependency version conflict introduced by the provider is resolved rather than pinned around
+  silently.
+
+**Notes:** These packages are absent from anaconda.org **entirely** — a global search returns zero
+results. Per repo Rule 1 each of these stories invokes `conda-forge-expert`. Like FR-21, this FR
+**gates the rest of its feature**. A known conflict exists: the provider pins a dependency below
+the version conda-forge ships, so one of the five is a downgrade build, not a straight port.
+
+#### FR-34: One flag flips three surfaces, offline
+
+A single flag change alters behaviour across web, service and CLI. Realizes UJ-5. **CAP-13.**
+
+**Consequences (testable):**
+- One flag change is observed by all three surfaces.
+- No egress occurs during evaluation — evaluation is in-process from a local source.
+- No redeploy and no restart is required.
+
+---
+
+### 4.12 Scribe's graph outlives one file
+
+**Description.** The knowledge graph gains a durable, concurrent-safe backing store behind its
+existing port, keeps a local-development path, and gains semantic recall. Today it is one flat JSON
+file — the Dream's premise of an existing dual-driver engine was simply wrong, so this is a first
+driver, not a second.
+
+**Functional Requirements:**
+
+#### FR-35: The same operations pass against both drivers
+
+Graph operations behave identically against the durable store and the local path. **CAP-14.**
+
+**Consequences (testable):**
+- One operation suite passes against both drivers.
+- The existing port is unchanged — callers are unaware which driver is active.
+- Concurrent writers do not corrupt the durable store.
+
+#### FR-36: Semantic recall returns what lexical recall cannot
+
+Recall finds a semantically relevant result that token-overlap search misses. **CAP-14.**
+
+**Consequences (testable):**
+- A query with no lexical overlap with its target returns that target.
+- The same query under the lexical path does not.
+
+---
+
+### 4.13 The agent-facing tiers
+
+**Description.** The Dream promises five-tier symmetry — CLI, portal, service, domain skill,
+persona. The estate has one domain skill of eight and zero station personas, so two full tiers are
+missing and a station cannot be called complete without them. These are the capabilities most
+easily dropped as "documentation", which is exactly why the SPEC makes fewer-than-five a contract
+violation.
+
+**Functional Requirements:**
+
+#### FR-37: Each station carries a domain skill
+
+Every station has an agent-loadable skill encoding how its work is actually done. **CAP-15.**
+
+**Consequences (testable):**
+- An agent asked to perform a station's core task loads that station's skill and follows it.
+- Demonstrated for a station that has **no** skill today — not for the one that already does.
+- Each skill follows the shape the existing one proves.
+
+#### FR-38: Each station is addressable as a persona
+
+Every station exposes a persona that acts only through that station's grammar and service face.
+**CAP-16.**
+
+**Consequences (testable):**
+- A persona completes a station task end to end.
+- Its transcript shows **no** direct filesystem access and **no** ad-hoc HTTP calls — only FR-13's
+  grammar and FR-11's service face.
+
+#### FR-39: Five-tier completeness is checkable
+
+Station completeness is mechanically verifiable, not asserted. **CAP-15, CAP-16.**
+
+**Consequences (testable):**
+- A check enumerates all eight stations across all five tiers and reports which are missing.
+- The check fails when a station is declared complete with fewer than five.
+
+---
+
+## 5. Non-Goals (Explicit)
+
+- **Not a rewrite of the host.** `src/platform/` stands. No rename, no relocation of `config/` or
+  `platformapp/`.
+- **Not a ninth station or a ninth project.** The roster stays at eight.
+- **Not a re-decision of the monolith-versus-microservices topology.** That trail is closed
+  elsewhere and reopening it is out of scope.
+- **Not a replacement for any station CLI.** FR-13 dispatches; station binaries remain first-class.
+- **Not atlas's own Wagtail Spec.** CAP-2 may end up serving one of its waiting consumers (OQ-5),
+  but does not absorb, re-mint or supersede it.
+- **Not CodeRed CMS.** Ruled out on maintenance evidence.
+- **Not a general-purpose multi-tenancy model.** FR-16 is row isolation for boards, nothing more.
+- **Not atlas's adoption of the secure-dashboard pattern.** Consumed here; adopting it in atlas's
+  own board is atlas's story.
+- **Not an external API contract.** The service faces are for estate callers; no third-party
+  versioning promise.
+
+## 6. MVP Scope
+
+MVP here means "the smallest cut where the estate behaves as one system", not "the first
+demonstrable slice". Two features are excluded from it for opposite reasons — one because it is
+gated on external packaging, one because it is a migration that should not be rushed.
+
+### 6.1 In Scope
+
+- Shared chrome (FR-1..FR-3) — everything visual depends on it.
+- Eight portals behind one session (FR-9, FR-10).
+- The identity-carrying client (FR-14, FR-15) — before its consumers, or the first integration
+  becomes a trusted header nobody removes.
+- Service faces on a current specification (FR-11), with resumability (FR-12) as the risk item.
+- One command grammar (FR-13).
+- Queue/cache separation (FR-30) — cheap, and it prevents a whole class of production surprise.
+- IdP-derived authorization and delivered secrets (FR-31, FR-32).
+
+### 6.2 Out of Scope for MVP
+
+- **Governed schema change (§4.9)** — gated on a feedstock, reopens shipped stories, and has no
+  prior art. Deferring it does not weaken the MVP's demonstration; rushing it risks the estate's
+  database.
+- **Flags (§4.11 FR-33, FR-34)** — gated on five absent feedstocks. `[NOTE FOR PM]` this is the
+  one deferral most likely to be regretted, because flags would de-risk every other rollout in the
+  chain. If packaging lands early, pull it forward.
+- **Lane 1 supersession (§4.2)** — the front door itself is MVP-adjacent, but retiring the console
+  is a migration with a parity precondition. The build may land in MVP; **the removal may not**.
+- **Semantic recall (FR-36)** — durability (FR-35) is the urgent half of CAP-14.
+- **Personas (FR-38)** — depend on FR-13 and FR-11 both existing first.
+
+## 7. Success Metrics
+
+**These are stated as binary gates, not as targets, and that is deliberate.** No baseline
+measurement exists for this estate — no current-state latency, adoption or incident numbers — so a
+percentage target here would be invented, and an invented target propagates into an acceptance
+criterion nobody can evaluate. Where a number appears below it is a threshold already fixed by an
+external constraint, not a goal we chose.
+
+**Primary**
+
+- **SM-1 — One session spans the estate.** An operator traverses Lane 1 → a station portal → an
+  analytical board with a single authentication and no origin change. Binary. Validates FR-4, FR-9,
+  FR-16.
+- **SM-2 — An agent survives the proxy.** A multi-minute operation completes across a simulated
+  ingress disconnect and its result is retrieved. Binary. Validates FR-11, FR-12.
+- **SM-3 — The application cannot alter its own schema.** `CREATE`/`ALTER`/`DROP` as the
+  application role are refused by PostgreSQL. Binary, and verifiable by an auditor without reading
+  application code. Validates FR-22.
+- **SM-4 — The egress-blocked deploy succeeds.** A build and deploy with external egress blocked
+  completes end to end, carrying only PostgreSQL, Redis and the platform images. Binary; already
+  the estate's existing gate. Validates FR-21, FR-33, and the air-gap constraint generally.
+- **SM-5 — Five tiers, eight stations.** The completeness check reports all eight stations with all
+  five tiers present. Countable, with a known denominator: 8 × 5 = 40. Validates FR-37, FR-38,
+  FR-39.
+
+**Secondary**
+
+- **SM-6 — Each containment invariant fails without itself.** Each of the four invariants has a
+  test demonstrated individually to fail when the invariant is removed. Count: 4 of 4. Validates
+  FR-26..FR-29.
+- **SM-7 — Chrome is not duplicated.** The duplication check finds zero portal-local copies of
+  chrome. Count: 0. Validates FR-1.
+- **SM-8 — CLI parity holds.** The generated matrix shows every station verb reachable both ways,
+  and CI fails on divergence. Validates FR-13.
+
+**Counter-metrics (do not optimize)**
+
+- **SM-C1 — Do not optimize portal count.** Eight portals that render but hold station logic is a
+  worse outcome than six that are properly thin. Counterbalances SM-1; enforced by FR-10.
+- **SM-C2 — Do not optimize event throughput.** The fabric's value is durability, ordering and
+  quarantine. A faster fabric that drops or double-applies has failed. Counterbalances the CAP-8
+  work; enforced by FR-17, FR-18, FR-29.
+- **SM-C3 — Do not optimize for the skill/persona count.** Eight shallow skills that no agent
+  actually follows satisfies SM-5 and delivers nothing. Counterbalances SM-5; enforced by FR-37's
+  "demonstrated for a station that has no skill today".
+- **SM-C4 — Do not optimize migration speed.** FR-23's build gate will slow schema authoring. That
+  cost is the feature. Counterbalances SM-3.
+
+## 8. Cross-Cutting NFRs
+
+- **Air-gap.** Every Python/pixi dependency resolves from conda-forge; the egress-blocked build is
+  a gate, not a warning. Container images are governed separately by the platform Spec's
+  internal-registry rule. Both boundaries bind; neither substitutes for the other.
+- **Backing services.** Exactly PostgreSQL, Redis and Kubernetes. A component demanding a fourth
+  has failed design review.
+- **Statelessness.** Replicas are capacity; any pod is disposable. This rules out pod-local media
+  (FR-8) and per-process caches.
+- **Runtime floor.** Django `>=5.2.15,<6` and Python `3.12.*`. **Zero headroom** — conda-forge
+  ships exactly one qualifying Django build, two patch releases behind upstream, with no feedstock
+  maintenance branch. A dependency demanding a newer patch is blocked, not negotiable. See OQ-6.
+- **Import boundary.** `src/platform/` consumes the factory's published conda packages and never
+  imports factory source.
+- **Ingress timing.** Any long-lived response keeps alive well under 30 seconds. The platform's
+  router timeout is cluster-wide with no per-route override; a route annotation is
+  defence-in-depth, never the mechanism.
+
+## 9. Constraints and Guardrails
+
+**Sequencing constraints** — facts about the work, not preferences. Each dictates ordering, and the
+epic pass must honour rather than rediscover them.
+
+1. **Packaging precedes platform in two features.** FR-21 gates §4.9; FR-33 gates FR-34. Both
+   epics open with `conda-forge-expert` sessions.
+2. **FR-1 precedes FR-4 and FR-9.** Chrome first, or portals grow their own.
+3. **FR-14 precedes FR-9's integrations.** The client before its consumers.
+4. **FR-6 precedes FR-7.** Inventory before removal, unconditionally.
+5. **FR-13 and FR-11 precede FR-38.** A persona has nothing to act through otherwise.
+
+**Change-management guardrail.** §4.2 removes something that works today. The guardrail is FR-6's
+inventory as a hard precondition and FR-7's requirement that removal be real. A "temporarily keep
+both" outcome is the failure mode to guard against — it is how a supersession becomes a permanent
+second console.
+
+**Audit guardrail.** FR-22 is deliberately enforced at the database rather than in application
+code, because a control an auditor can verify without reading source is worth more than a stricter
+control they cannot.
+
+## 10. Integration and Dependencies
+
+- **Identity provider** — OIDC, already live. FR-5, FR-31 and the CAP-6 assertion chain all depend
+  on it. Group/claim mapping for CMS admin (FR-5) is **new work with no first-party guidance**.
+- **The shipped chart** — FR-24 adds a Job beside the existing migration hook, on the same image.
+  The existing chart contract is not rewritten.
+- **The existing compliance portal** — becomes one of the eight (FR-9) and may need to move if OQ-4
+  chooses a uniform prefix.
+- **Atlas's MCP server** — brought to the current specification by FR-11 rather than duplicated.
+- **Atlas's waiting CMS consumer** — OQ-5 asks whether FR-4's instance can serve it, so the estate
+  runs one CMS rather than two. Jointly owned with atlas.
+- **Six new feedstocks** — five for FR-33, one for FR-21. Each is a `conda-forge-expert` session
+  under repo Rule 1.
+
+## 11. Open Questions
+
+1. **Liquibase multi-schema regression** — is the `default-schema-name` regression fixed in the
+   current release? Must be verified before any multi-schema changeset lands. Blocks part of §4.9.
+2. **MCP client revision** — which protocol revision do our agent clients actually speak? A
+   server pinned to one revision rejects clients of another. Blocks FR-11's conformance target.
+3. **MCP resumable-operation runtime** — does the official SDK ship a server-side runtime for it
+   yet? The largest gap between recommended design and shippable code. Blocks FR-12's mechanism,
+   not its requirement.
+4. **Portal URL scheme** — uniform prefix (moving the existing portal) or per-station paths?
+   Affects FR-2 and FR-9. **Decide in the architecture pass**; it is a design decision, not
+   research.
+5. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
+   is *not* the CMS's own API, so this is a real compatibility question. Jointly owned.
+6. **Django patch-level exposure** — do the two upstream patch releases we cannot reach carry
+   security fixes? Unaudited. If yes, this escalates from a constraint to a risk.
+7. **Console parity classification** — resolved by the FR-6 inventory pass, in flight at the time
+   of writing. Any build-time-only view escalates to a scope decision.
+
+## 12. Traceability
+
+Every capability has at least one FR; every FR names a capability.
+
+| CAP | FRs | CAP | FRs |
+|---|---|---|---|
+| CAP-1 | FR-1, FR-2, FR-3 | CAP-9 | FR-21..FR-25 |
+| CAP-2 | FR-4..FR-8 | CAP-10 | FR-18, FR-26..FR-29 |
+| CAP-3 | FR-2, FR-9, FR-10 | CAP-11 | FR-30 |
+| CAP-4 | FR-11, FR-12 | CAP-12 | FR-3, FR-5, FR-31, FR-32 |
+| CAP-5 | FR-13 | CAP-13 | FR-33, FR-34 |
+| CAP-6 | FR-10, FR-14, FR-15 | CAP-14 | FR-35, FR-36 |
+| CAP-7 | FR-16 | CAP-15 | FR-37, FR-39 |
+| CAP-8 | FR-17..FR-20, FR-29 | CAP-16 | FR-38, FR-39 |
+
+## 13. Assumptions Index
+
+- **§4.5 FR-13** — the eight station CLIs expose a surface stable enough to dispatch to without
+  modification. Unverified per-station; a station that cannot be introspected needs a preparatory
+  story.
+- **§4.10 FR-26** — the circuit breaker's cross-replica state transitions are not atomic. Read from
+  source, not documentation. Consequence: no FR may depend on an exact failure count.
+- **§4.2** — Marshal's console views are re-creatable as CMS pages plus portal routes. Under test
+  by the FR-6 inventory; a build-time-only view forces a scope conversation.
+- **§2** — the agent is a first-class user, weighted equally with the three human roles. Derived
+  from the capability set rather than from a stated requirement.
+
+## 14. What Comes Next
+
+The architecture pass fixes the invariants these FRs have to agree on: the portal registration
+seam (FR-2) and its URL scheme (OQ-4), the client's assertion contract (FR-14), the event envelope
+(FR-17..FR-20), and the DDL pipeline's ordering (FR-24). Then epics group these twelve features by
+delivery seam, beginning at **Epic 18** — steward runs to 17 today. `addendum.md` carries the
+mechanism decisions already made, so the architecture pass confirms them rather than reopening
+them.
