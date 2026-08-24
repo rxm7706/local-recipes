@@ -2162,3 +2162,91 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-FU-17-1: CAP-1's "a clean run reproduces the inventory" success bar is not freshly re-verified by this story — no quartet runtime code was executed end to end during this change.
+
+- source_spec: `planning-artifacts/specs/spec-17-1-the-from-scratch-run-is-a-chartered-capability.md`
+  summary: CAP-1's "a clean run reproduces the inventory" success bar is not freshly re-verified by this story — no quartet runtime code was executed end to end during this change.
+  evidence: This diff touches zero lines in the quartet's four scripts; no cached external sources (/tmp/ext-src/*) or live OPENTEAMS_IDENTITY_GIST_ID credentials exist in this environment to run a from-scratch pass unattended. The claim is evidenced by the pre-existing identity-2026-08-20 dated tab (2 days old at story time), produced by this same toolchain before this story began — not by fresh execution in this diff. Flagged by the intent-alignment review pass: epics.md's Given/Then for 16.1 is compound (a behavioral regeneration clause plus a governance clause), and only the governance clause is built and verified here.
+  location: scripts/conda-forge-packaging-inventory-operations_metrics.py
+  origin: spec-deferred 1254df4e850a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2: No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against many missing names.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against many missing names.
+  evidence: This repo has already hit GitHub secondary rate limits under lighter concurrent load (Phase K, 8 workers -> 15% 403s). create_missing_issues fires one issue-create + one project item-add per missing name in a tight loop with no backoff. Gated behind an opt-in flag that requires deliberate attended execution with real credentials -- defer to the first real attended --create-issues run.
+  location: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py:create_missing_issues
+  origin: spec-deferred a416fa142f5f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2-2: CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this machine/account.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this machine/account.
+  evidence: Pre-existing convention, not introduced by this story: priority.py's own --canvas argparse default already hardcodes the identical "/home/rxm7706/.cursor/projects/.../canvases" path for the Catalog canvas. This story's two new canvas writers follow that same established (if machine-specific) pattern rather than inventing a new one.
+  location: scripts/openteams_identity_dashboards.py:CANVAS_DIR
+  origin: spec-deferred 5ceaa51ab915 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2-3: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the fixed RECIPE_TYPE_ORDER list.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the fixed RECIPE_TYPE_ORDER list.
+  evidence: Mirrors a pre-existing pattern already present in this same file's render() function (verified against the live file, not just the diff). Cosmetic, dashboard-only impact; neither this canvas nor its sibling has any live-rendering verification yet in this environment.
+  location: scripts/openteams_identity_dashboards.py:write_ops_canvas
+  origin: spec-deferred 5682282eafff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2-4: write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops duplicate JFrog rows without counting them toward the skip total.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops duplicate JFrog rows without counting them toward the skip total.
+  evidence: Same pre-existing-pattern, cosmetic-dashboard rationale as the write_ops_canvas sentinel/order-filtering item above.
+  location: scripts/openteams_identity_dashboards.py:write_workbook_canvas
+  origin: spec-deferred fbab2ab4966a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2-5: write_workbook_canvas's "Needs a staged-recipes PR" bucket excludes JFrog names with no identity match at all, inconsistent with the neither_rows bucket in the same function which does include them.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: write_workbook_canvas's "Needs a staged-recipes PR" bucket excludes JFrog names with no identity match at all, inconsistent with the neither_rows bucket in the same function which does include them.
+  evidence: `if ident_row and not on_cf and not has_pr` requires a truthy ident_row, so a JFrog name with zero identity-tab match -- arguably the strongest "needs packaging" signal -- never appears in need_pr, while neither_rows counts exactly that case.
+  location: scripts/openteams_identity_dashboards.py:write_workbook_canvas
+  origin: spec-deferred 8597dceacf93 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2-6: No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() and leaks the file handle.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() and leaks the file handle.
+  evidence: Minor resource leak in a short-lived CLI process; real but low real-world impact.
+  location: scripts/openteams_identity_dashboards.py:write_workbook_canvas
+  origin: spec-deferred 7e75cc105aef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-17-2-7: _CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported from priority.py, where the original copy lives.
+
+- source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
+  summary: _CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported from priority.py, where the original copy lives.
+  evidence: Drift risk between the two copies; mitigated but not eliminated by a new test (test_write_ops_canvas_empty_records_is_valid_and_schema_shaped) that asserts the two are byte-identical.
+  location: scripts/openteams_identity_dashboards.py:_CANVAS_PREFIX
+  origin: spec-deferred 8b4c28559f93 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

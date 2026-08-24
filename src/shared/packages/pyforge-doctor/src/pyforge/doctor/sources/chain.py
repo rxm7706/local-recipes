@@ -50,6 +50,7 @@ import json
 import os
 import re
 import stat
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -70,8 +71,14 @@ __all__ = (
     "gather_due_for_verification",
     "Tier3Shape",
     "LegacyEntry",
+    "SpecDeferredFinding",
     "classify_tier3_entries",
     "mint_id_for_entry",
+    "parse_spec_frontmatter_deferrals",
+    "discover_spec_frontmatter_deferrals",
+    "frontmatter_deferral_in_tracked",
+    "format_frontmatter_intake_entry",
+    "HARVEST_ORIGIN",
 )
 
 
@@ -2504,6 +2511,255 @@ def mint_id_for_entry(
     return base_id if n is None else f"{base_id}-{n}"
 
 
+# --- Story 25.6 / CAP-6: spec-frontmatter `deferred:` intake -----------------
+#
+# Hand-driven ``bmad-build-auto`` runs record deferrals in spec frontmatter;
+# bmad-loop's ``Engine._harvest_spec_deferrals`` bridges loop runs into Tier-3
+# since 0.9.1. This block closes the hand-driven gap: parse the 6.11-era
+# frontmatter shape, detect missing tracked twins, and supply the pure helpers
+# ``scripts/deferred_work_intake.py`` uses to append into the tracked ledger.
+
+HARVEST_ORIGIN = "spec-deferred"
+SPECS_REL = Path("planning-artifacts") / "specs"
+_DEFERRED_FIELD = "deferred"
+_SUMMARY_LIMIT = 500
+_EVIDENCE_LIMIT = 4000
+_LOCATION_LIMIT = 200
+_SEVERITY_ALIASES = {
+    "critical": "critical", "blocker": "critical",
+    "high": "high", "major": "high",
+    "medium": "medium", "med": "medium", "moderate": "medium",
+    "low": "low", "minor": "low", "trivial": "low",
+}
+_ORIGIN_LINE_RE = re.compile(
+    rf"^[ \t]*origin:[ \t]*{re.escape(HARVEST_ORIGIN)}[ \t]+([0-9a-f]{{12}})\b",
+    re.MULTILINE | re.IGNORECASE,
+)
+_FRONTMATTER_SOURCE_SPEC_RE = re.compile(
+    r"^[ \t]*(?:[-*][ \t]+)?source_spec:[ \t]*`?([^`\n]+)`?",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True)
+class SpecDeferredFinding:
+    """One well-formed deferred finding read from a spec's frontmatter."""
+
+    summary: str
+    evidence: str
+    location: str
+    severity: str
+    fingerprint: str
+    spec_path: Path
+    spec_rel: str
+
+
+def _flatten_deferred_scalar(value: object, limit: int) -> str:
+    if value is None:
+        return ""
+    return " ".join(str(value).split())[:limit].strip()
+
+
+def _is_deferred_yaml_scalar(value: object) -> bool:
+    return isinstance(value, (str, bytes)) or not isinstance(
+        value, (Mapping, Sequence, Set)
+    )
+
+
+def _deferred_contains_nul(value: object) -> bool:
+    return (isinstance(value, str) and "\0" in value) or (
+        isinstance(value, bytes) and b"\0" in value
+    )
+
+
+def harvest_fingerprint(*parts: str) -> str:
+    """Stable short identity over NUL-separated values — mirrors
+    ``bmad_loop.devcontract.harvest_fingerprint`` so hand-driven intake
+    dedupes the same way loop harvest does."""
+    if any("\0" in part for part in parts):
+        raise ValueError("fingerprint parts must not contain NUL characters")
+    return hashlib.sha1(
+        "\0".join(parts).encode("utf-8"),
+        usedforsecurity=False,
+    ).hexdigest()[:12]
+
+
+def parse_spec_frontmatter_deferrals(
+    spec_path: Path,
+    *,
+    project_dir: Path | None = None,
+) -> tuple[tuple[SpecDeferredFinding, ...], tuple[str, ...]]:
+    """Parse a spec file's frontmatter ``deferred:`` list.
+
+    Returns ``(findings, malformed_notes)``. Malformed items cost only
+    themselves; well-formed siblings still parse. Mirrors
+    ``bmad_loop.devcontract.parse_deferred_findings`` without importing
+    bmad-loop (Doctor must stay independent of the orchestrator package).
+    """
+    fm, unparseable = _frontmatter_parse(spec_path)
+    if unparseable or not fm:
+        return (), (f"{spec_path.name}: frontmatter missing or unparseable",)
+    raw = fm.get(_DEFERRED_FIELD)
+    if raw is None:
+        return (), ()
+    if not isinstance(raw, list):
+        return (), (
+            f"{spec_path.name}: `{_DEFERRED_FIELD}:` is not a list "
+            f"(got {type(raw).__name__})",
+        )
+
+    if project_dir is not None:
+        try:
+            spec_rel = spec_path.relative_to(project_dir).as_posix()
+        except ValueError:
+            spec_rel = spec_path.name
+    else:
+        spec_rel = spec_path.name
+
+    findings: list[SpecDeferredFinding] = []
+    malformed: list[str] = []
+    for i, item in enumerate(raw, start=1):
+        if not isinstance(item, dict):
+            malformed.append(
+                f"{spec_path.name} item {i}: not a mapping (got {type(item).__name__})"
+            )
+            continue
+        summary_raw = item.get("summary")
+        if not _is_deferred_yaml_scalar(summary_raw):
+            malformed.append(
+                f"{spec_path.name} item {i}: `summary` is not a scalar "
+                f"(got {type(summary_raw).__name__})"
+            )
+            continue
+        bad_optional = next(
+            (
+                field
+                for field in ("evidence", "location")
+                if not _is_deferred_yaml_scalar(item.get(field))
+            ),
+            None,
+        )
+        if bad_optional is not None:
+            value = item[bad_optional]
+            malformed.append(
+                f"{spec_path.name} item {i}: `{bad_optional}` is not a scalar "
+                f"(got {type(value).__name__})"
+            )
+            continue
+        raw_text_values = {
+            "summary": summary_raw,
+            "evidence": item.get("evidence"),
+            "location": item.get("location"),
+        }
+        bad_nul = next(
+            (field for field, value in raw_text_values.items() if _deferred_contains_nul(value)),
+            None,
+        )
+        if bad_nul is not None:
+            malformed.append(f"{spec_path.name} item {i}: `{bad_nul}` contains a NUL character")
+            continue
+        summary = _flatten_deferred_scalar(summary_raw, _SUMMARY_LIMIT)
+        if not summary:
+            malformed.append(f"{spec_path.name} item {i}: no usable `summary`")
+            continue
+        evidence = _flatten_deferred_scalar(item.get("evidence"), _EVIDENCE_LIMIT)
+        location = _flatten_deferred_scalar(item.get("location"), _LOCATION_LIMIT)
+        sev_raw = str(item.get("severity", "")).strip().lower()
+        severity = _SEVERITY_ALIASES.get(sev_raw, sev_raw if sev_raw else "")
+        fp = harvest_fingerprint(summary, location)
+        findings.append(
+            SpecDeferredFinding(
+                summary=summary,
+                evidence=evidence or summary,
+                location=location,
+                severity=severity,
+                fingerprint=fp,
+                spec_path=spec_path,
+                spec_rel=spec_rel,
+            )
+        )
+    return tuple(findings), tuple(malformed)
+
+
+def discover_spec_frontmatter_deferrals(project_dir: Path) -> tuple[SpecDeferredFinding, ...]:
+    """Every frontmatter deferred finding under ``project_dir/planning-artifacts/specs/``."""
+    specs_dir = project_dir / SPECS_REL
+    if not _is_dir(specs_dir):
+        return ()
+    out: list[SpecDeferredFinding] = []
+    for spec_path in sorted(specs_dir.rglob("*.md")):
+        if not _is_file(spec_path):
+            continue
+        try:
+            head = spec_path.read_text(encoding="utf-8", errors="replace")[:8192]
+        except OSError:
+            continue
+        if "deferred:" not in head:
+            continue
+        findings, _malformed = parse_spec_frontmatter_deferrals(
+            spec_path, project_dir=project_dir
+        )
+        out.extend(findings)
+    return tuple(out)
+
+
+def frontmatter_deferral_in_tracked(finding: SpecDeferredFinding, tracked_text: str) -> bool:
+    """True when ``tracked_text`` already carries this finding's provenance.
+
+    Matches bmad-loop harvest dedup: ``origin: spec-deferred <fingerprint>``
+    AND a ``source_spec:`` line naming the same spec (basename match allowed).
+    """
+    if not tracked_text:
+        return False
+    origin_needle = f"{HARVEST_ORIGIN} {finding.fingerprint}"
+    if origin_needle not in tracked_text:
+        return False
+    spec_name = PurePosixPath(finding.spec_rel.replace("\\", "/")).name
+    for m in _FRONTMATTER_SOURCE_SPEC_RE.finditer(tracked_text):
+        cited = m.group(1).strip()
+        if cited == finding.spec_rel or cited.endswith("/" + spec_name) or cited == spec_name:
+            return True
+    return False
+
+
+def format_frontmatter_intake_entry(
+    new_id: str,
+    finding: SpecDeferredFinding,
+    *,
+    promoted_date: date | None = None,
+) -> str:
+    """One tracked-ledger block for a frontmatter-deferred finding."""
+    promoted = promoted_date or date.today()
+    origin = f"{HARVEST_ORIGIN} {finding.fingerprint}"
+    source_spec = f"`{finding.spec_rel}`"
+    sev_line = f"  severity: {finding.severity}\n" if finding.severity else ""
+    loc_line = f"  location: {finding.location}\n" if finding.location else ""
+    return (
+        f"### {new_id}: {finding.summary}\n"
+        f"\n"
+        f"- source_spec: {source_spec}\n"
+        f"  summary: {finding.summary}\n"
+        f"  evidence: {finding.evidence}\n"
+        f"{loc_line}"
+        f"  origin: {origin} — ingested from spec frontmatter `deferred:` "
+        f"(hand-driven build-auto; marshal Story 25.6)\n"
+        f"{sev_line}"
+        f"  promoted: {promoted.isoformat()} — ingested from spec frontmatter by "
+        f"scripts/deferred_work_intake.py\n"
+        f"  status: open\n"
+    )
+
+
+def _legacy_entry_for_frontmatter_deferral(finding: SpecDeferredFinding) -> LegacyEntry:
+    return LegacyEntry(
+        shape=Tier3Shape.LEGACY_FLAT,
+        id=None,
+        start_line=0,
+        end_line=0,
+        fields={"source_spec": f"`{finding.spec_rel}`", "summary": finding.summary},
+    )
+
+
 def _load_deferred_work_baseline(
     target: Path,
 ) -> tuple[dict[str, int] | None, dict | None]:
@@ -2585,65 +2841,84 @@ def _check_project_deferred_work(
     check for this project (never to guess count 0)."""
     t3_path = proj / TIER3_REL
     tracked_path = proj / TRACKED_REL
-    if not _is_file(t3_path):
-        return
+    has_tier3 = _is_file(t3_path)
 
-    # FILE-level check: an ID-only comparison silently passes a project with
-    # NO tracked ledger at all whose Tier-3 entries happen not to use `DW-`
-    # ids (verbatim rationale from the original).
-    size = t3_path.stat().st_size
-    if not _is_file(tracked_path) and size >= _SUBSTANTIVE_BYTES:
-        findings.append({
-            "kind": "no-tracked-ledger", "project": proj.name, "id": "",
-            "tier3": str(t3_path.relative_to(target)),
-            "tracked": str(tracked_path.relative_to(target)),
-            "tier3_bytes": size, "generic_id": False,
-        })
-
-    for entry_id, has_status in _entries(tracked_path):
-        if has_status:
-            continue
-        findings.append({
-            "kind": "ledger-entry-unstatused", "project": proj.name, "id": entry_id,
-            "tier3": str(t3_path.relative_to(target)),
-            "tracked": str(tracked_path.relative_to(target)),
-            "generic_id": False,
-        })
-    for n in _anonymous(tracked_path):
-        findings.append({
-            "kind": "ledger-entry-unidentified", "project": proj.name, "id": f"line {n}",
-            "tier3": str(t3_path.relative_to(target)),
-            "tracked": str(tracked_path.relative_to(target)),
-            "generic_id": False,
-        })
-
-    # Tier-3-anonymous check (Story 7.3, CAP-2/CAP-3): a POSITIONAL slice,
-    # not a lookup -- `_anonymous()` returns Tier-3 anonymous entries' line
-    # numbers in file order, and the file's append-only discipline makes
-    # "beyond the stamped count" equivalent to "new" (Design Notes). Skipped
-    # entirely when the baseline could not be loaded, never treated as
-    # count 0.
-    if baseline is not None:
-        count = baseline.get(proj.name, 0)
-        for n in _anonymous(t3_path)[count:]:
+    if has_tier3:
+        # FILE-level check: an ID-only comparison silently passes a project with
+        # NO tracked ledger at all whose Tier-3 entries happen not to use `DW-`
+        # ids (verbatim rationale from the original).
+        size = t3_path.stat().st_size
+        if not _is_file(tracked_path) and size >= _SUBSTANTIVE_BYTES:
             findings.append({
-                "kind": "tier3-entry-unidentified", "project": proj.name,
-                "id": f"line {n}",
+                "kind": "no-tracked-ledger", "project": proj.name, "id": "",
                 "tier3": str(t3_path.relative_to(target)),
+                "tracked": str(tracked_path.relative_to(target)),
+                "tier3_bytes": size, "generic_id": False,
+            })
+
+        # Tier-3-anonymous check (Story 7.3, CAP-2/CAP-3): a POSITIONAL slice,
+        # not a lookup -- `_anonymous()` returns Tier-3 anonymous entries' line
+        # numbers in file order, and the file's append-only discipline makes
+        # "beyond the stamped count" equivalent to "new" (Design Notes). Skipped
+        # entirely when the baseline could not be loaded, never treated as
+        # count 0.
+        if baseline is not None:
+            count = baseline.get(proj.name, 0)
+            for n in _anonymous(t3_path)[count:]:
+                findings.append({
+                    "kind": "tier3-entry-unidentified", "project": proj.name,
+                    "id": f"line {n}",
+                    "tier3": str(t3_path.relative_to(target)),
+                    "tracked": str(tracked_path.relative_to(target)),
+                    "generic_id": False,
+                })
+
+        t3 = _ids(t3_path)
+        if t3:
+            tracked_ids = _ids(tracked_path)
+            for dw in sorted(t3 - tracked_ids):
+                findings.append({
+                    "kind": "tier3-only-deferral", "project": proj.name, "id": dw,
+                    "tier3": str(t3_path.relative_to(target)),
+                    "tracked": str(tracked_path.relative_to(target)),
+                    "generic_id": bool(_GENERIC_RE.match(dw)),
+                })
+
+    if _is_file(tracked_path):
+        for entry_id, has_status in _entries(tracked_path):
+            if has_status:
+                continue
+            findings.append({
+                "kind": "ledger-entry-unstatused", "project": proj.name, "id": entry_id,
+                "tier3": str(t3_path.relative_to(target)) if has_tier3 else "(none)",
+                "tracked": str(tracked_path.relative_to(target)),
+                "generic_id": False,
+            })
+        for n in _anonymous(tracked_path):
+            findings.append({
+                "kind": "ledger-entry-unidentified", "project": proj.name, "id": f"line {n}",
+                "tier3": str(t3_path.relative_to(target)) if has_tier3 else "(none)",
                 "tracked": str(tracked_path.relative_to(target)),
                 "generic_id": False,
             })
 
-    t3 = _ids(t3_path)
-    if not t3:
-        return
-    tracked = _ids(tracked_path)
-    for dw in sorted(t3 - tracked):
+    # Story 25.6 / CAP-6: spec-frontmatter deferrals must reach the tracked
+    # ledger without a human relay (loop runs stay on the bmad-loop bridge).
+    tracked_text = (
+        tracked_path.read_text(encoding="utf-8", errors="replace")
+        if _is_file(tracked_path) else ""
+    )
+    for finding in discover_spec_frontmatter_deferrals(proj):
+        if frontmatter_deferral_in_tracked(finding, tracked_text):
+            continue
         findings.append({
-            "kind": "tier3-only-deferral", "project": proj.name, "id": dw,
-            "tier3": str(t3_path.relative_to(target)),
+            "kind": "spec-frontmatter-only-deferral",
+            "project": proj.name,
+            "id": finding.fingerprint,
+            "tier3": finding.spec_rel,
             "tracked": str(tracked_path.relative_to(target)),
-            "generic_id": bool(_GENERIC_RE.match(dw)),
+            "summary": finding.summary[:120],
+            "generic_id": False,
         })
 
 
@@ -2712,6 +2987,14 @@ def _deferred_work_message(item: dict) -> str:
                     "the next damped story collides with it.")
         return (f"{item['project']}/{item['id']}: present in {item['tier3']} "
                 f"but NOT in {item['tracked']}{hint}")
+    if kind == "spec-frontmatter-only-deferral":
+        summary = item.get("summary", "")
+        hint = f" — {summary!r}" if summary else ""
+        return (
+            f"{item['project']}/spec-frontmatter {item['id']}: deferred finding in "
+            f"{item['tier3']} has no tracked twin in {item['tracked']}"
+            f"{hint} — run `python scripts/deferred_work_intake.py --fix`"
+        )
     if kind == "no-deferred-work-baseline":
         return item["detail"]
     return item.get("detail", f"{item['project']}: {kind}")

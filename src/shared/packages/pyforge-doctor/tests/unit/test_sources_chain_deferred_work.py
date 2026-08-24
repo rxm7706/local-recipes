@@ -1801,3 +1801,83 @@ def test_mint_id_for_entry_accumulator_folds_in_like_a_collected_ledger_id(
     already_minted = {first}
     second = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked, already_minted)
     assert second == "DW-FU-4-1-2"
+
+
+# --- Story 25.6: spec-frontmatter deferred intake --------------------------------
+
+
+def _write_spec(target: Path, project: str, rel: str, body: str) -> Path:
+    path = (
+        _project_dir(target, project)
+        / "planning-artifacts"
+        / "specs"
+        / rel
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+_CANARY_SPEC = """\
+---
+title: canary
+status: done
+deferred:
+  - summary: GitHub-releases fallback for npm-invisible packages
+    evidence: bmad-loop 404 on npm
+    location: src/pyforge/doctor/sources/bmad_method.py
+    severity: medium
+---
+
+# Canary
+"""
+
+
+def test_spec_frontmatter_only_deferral_reports_fail(tmp_path: Path) -> None:
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", "spec-14-1-canary.md", _CANARY_SPEC)
+    _write_tracked(tmp_path, "proj", "# empty\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "spec-frontmatter-only-deferral" for f in findings)
+    finding = next(f for f in findings if f.check == "spec-frontmatter-only-deferral")
+    assert finding.status is DoctorStatus.FAIL
+
+
+def test_spec_frontmatter_deferral_ingested_reports_no_finding(tmp_path: Path) -> None:
+    _write_baseline(tmp_path, {})
+    spec_path = _write_spec(tmp_path, "proj", "spec-14-1-canary.md", _CANARY_SPEC)
+    findings_raw, _ = chain.parse_spec_frontmatter_deferrals(
+        spec_path, project_dir=_project_dir(tmp_path, "proj")
+    )
+    assert len(findings_raw) == 1
+    finding = findings_raw[0]
+    new_id = chain.mint_id_for_entry(
+        chain.LegacyEntry(
+            chain.Tier3Shape.LEGACY_FLAT,
+            None,
+            0,
+            0,
+            {"source_spec": f"`{finding.spec_rel}`", "summary": finding.summary},
+        ),
+        "doctor",
+        tmp_path / "missing-tier3.md",
+        tmp_path / "missing-tracked.md",
+    )
+    block = chain.format_frontmatter_intake_entry(new_id, finding)
+    _write_tracked(tmp_path, "proj", block + "\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+    assert not any(f.check == "spec-frontmatter-only-deferral" for f in findings)
+
+
+def test_tier3_only_deferral_still_reports_fail(tmp_path: Path) -> None:
+    """Loop-run bridge regression: Tier-3-only ids still fire."""
+    _write_baseline(tmp_path, {})
+    _write_tier3(tmp_path, "proj", "## DW-99\nloop harvest placeholder\n")
+    _write_tracked(tmp_path, "proj", "## DW-other\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "tier3-only-deferral" for f in findings)

@@ -308,3 +308,69 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   reason: While the 25.5 agent ran scoped `--write-baseline --spec` stamps, the parent session's own scoped stamps interleaved — each full-file read-modify-write rewrote scripts/.spec-surface-baseline.json from its own read, and last-writer-wins dropped the other's entries (observed twice: 4 entries lost, re-stamped, then a DIFFERENT 8 lost — mason x2, scribe, steward x3, warden x2). Story 12.5's fix evidently does not cover two independent processes (or one path bypasses its lock). Remedy shape: file-lock (fcntl) around the read-modify-write, or merge-on-write keyed per spec (the file is per-spec keyed — a targeted upsert of only the stamped spec's entries would be race-immune by construction). Workaround until fixed: never stamp while another stamping process is live; do one consolidated pass on a quiet tree (this session's recovery).
   status: open
+
+### DW-FU-14-1: GitHub-releases fallback for the npm-invisible suite packages: 6 of the 10 live bmad-* pins (bmad-loop, bmad-labs-skills, bmad-manticore, bmad-method-wds-expansion, bmad-module-template, bmad-utility-skills) are GitHub-only local conda recipes that 404 on registry.npmjs.org, so the live CAP-4 path is structurally blind to them — including bmad-loop, the package whose 0.9.0-vs-0.11.0 lag motivated CAP-4.
+
+- source_spec: `planning-artifacts/specs/spec-14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared.md`
+  summary: GitHub-releases fallback for the npm-invisible suite packages: 6 of the 10 live bmad-* pins (bmad-loop, bmad-labs-skills, bmad-manticore, bmad-method-wds-expansion, bmad-module-template, bmad-utility-skills) are GitHub-only local conda recipes that 404 on registry.npmjs.org, so the live CAP-4 path is structurally blind to them — including bmad-loop, the package whose 0.9.0-vs-0.11.0 lag motivated CAP-4.
+  evidence: Live probe 2026-08-21 during Story 14.1: only bmad-builder, bmad-creative-intelligence-suite, bmad-dashboard, and bmad-method-test-architecture-enterprise return 200 from https://registry.npmjs.org/{package}/latest. Recorded as a (note) in spec-bmad-method-version-drift/.memlog.md. The 404s fold to per-package silent skip exactly as the fail-open contract specifies, so no Finding can ever fire for these 6 on the live path; the fixture proof passes only via the stubbed fetch seam. Intent authorized "follow whatever bmad_method.py's existing upstream query does and generalize it" — npm-only — so this is a follow-on capability, not a defect in this story.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py
+  origin: spec-deferred 902f2339efff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-14-1-2: Suite pin-floor-vs-installed (offline CAP-1 analog for the suite) is not covered by any capability: an installed suite package behind its own pixi.toml floor (the fixture's literal shape — bmad-loop 0.9.0 installed vs >=0.11.0 pinned) is provable with zero network but produces no signal; pins are used only as the watched-set roster.
+
+- source_spec: `planning-artifacts/specs/spec-14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared.md`
+  summary: Suite pin-floor-vs-installed (offline CAP-1 analog for the suite) is not covered by any capability: an installed suite package behind its own pixi.toml floor (the fixture's literal shape — bmad-loop 0.9.0 installed vs >=0.11.0 pinned) is provable with zero network but produces no signal; pins are used only as the watched-set roster.
+  evidence: Blind Hunter review, Story 14.1: the design notes dismiss it as "pixi install hygiene, not upstream drift" but no other capability catches it either. Arguably pixi's own territory (the state means pixi install has not run since the pin bump); an operator decision on whether Doctor should ambient-report it.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py
+  origin: spec-deferred 4621b65f5ab5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-1: _fetch_latest_github_release's /tags fallback only reads GitHub's first response page, never following pagination.
+
+- source_spec: `planning-artifacts/specs/spec-15-1-github-releases-unblind-the-npm-invisible-packages.md`
+  summary: _fetch_latest_github_release's /tags fallback only reads GitHub's first response page, never following pagination.
+  evidence: GitHub's /tags endpoint paginates; a heavily-tagged repo's newest tag could sit beyond the first page, understating the "latest" comparison. No currently-watched package needs it live: of the 6 named npm-invisible packages, 3 have GitHub Releases (checked first, succeeds before /tags is ever reached) and the other 3 have zero tags at all. Found by Edge Case Hunter during Story 15.1 review.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py:_fetch_latest_github_release
+  origin: spec-deferred 14acbd8d5b93 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-1-2: No test in test_sources_bmad_method.py reads a real, live recipes/<name>/recipe.yaml directly to prove the GitHub fallback resolves the 6 actually-named npm-invisible packages.
+
+- source_spec: `planning-artifacts/specs/spec-15-1-github-releases-unblind-the-npm-invisible-packages.md`
+  summary: No test in test_sources_bmad_method.py reads a real, live recipes/<name>/recipe.yaml directly to prove the GitHub fallback resolves the 6 actually-named npm-invisible packages.
+  evidence: Every test in this file (including the new Story 15.1 tests) uses synthetic tmp_path-scoped fixtures, matching this file's own established, pre-existing convention (no test reads the real pixi.toml or _bmad/_config/manifest.yaml either). The mechanism was independently hand-verified against the live recipes/*/recipe.yaml files for all 6 named packages during spec planning and again during review (Intent Alignment Auditor), but no automated test would catch a future drift in that file's extra.cfe-upstream-* shape. Found by Intent Alignment Auditor during Story 15.1 review.
+  location: src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py
+  origin: spec-deferred 17d79655759f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-2: Story 15.2's two new checks fire only for suite packages already present in `.pixi/envs` (inherited from `_gather_suite_findings`'s pre-existing install-state gate), so on a fresh clone/CI with no local suite installs, neither new check fires for any suite package -- only the CORE (`bmad-method`) axis is unaffected, since it reads the tracked `manifest.yaml` instead.
+
+- source_spec: `planning-artifacts/specs/spec-15-2-channel-and-recipe-staleness-are-ambient-findings.md`
+  summary: Story 15.2's two new checks fire only for suite packages already present in `.pixi/envs` (inherited from `_gather_suite_findings`'s pre-existing install-state gate), so on a fresh clone/CI with no local suite installs, neither new check fires for any suite package -- only the CORE (`bmad-method`) axis is unaffected, since it reads the tracked `manifest.yaml` instead.
+  evidence: Edge Case Hunter (Story 15.2 review): `_gather_suite_findings` returns `()` immediately when `_installed_suite_versions` is empty, and skips any package absent from `installed` inside the loop -- both pre-existing Story 14.1 gates that Story 15.2's new checks inherit by extension rather than by new design. The story's own named fixture (the 6.3.0 relic) is specifically about the CORE package, which is unaffected; the gap is narrower, scoped to suite packages only.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/bmad_method.py:_gather_suite_findings
+  origin: spec-deferred 43ee95ec8fb5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-2-2: No dedicated fleet-picture-layer meta-test names `bmad-channel-drift` or `bmad-recipe-upstream-drift` specifically -- coverage of that named Surface is structural/generic only.
+
+- source_spec: `planning-artifacts/specs/spec-15-2-channel-and-recipe-staleness-are-ambient-findings.md`
+  summary: No dedicated fleet-picture-layer meta-test names `bmad-channel-drift` or `bmad-recipe-upstream-drift` specifically -- coverage of that named Surface is structural/generic only.
+  evidence: Blind Hunter and Intent Alignment Auditor (review pass 2, independently convergent): `.claude/skills/conda-forge-expert/tests/meta/ test_fleet_picture_bmad_core_drift.py`'s existing `test_both_cap1_and_cap2_warn_simultaneously` already proves the generic pass-through mechanism (any WARN Finding under `Source.BMAD_METHOD_VERSION_DRIFT` reaches ATTENTION regardless of `check` name), matching the precedent set by Stories 10.3/14.1/15.1, none of which added a per-check fleet-picture test either.
+  location: .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_bmad_core_drift.py
+  origin: spec-deferred f0be39068bd9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

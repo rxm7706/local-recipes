@@ -1078,7 +1078,8 @@ status: open
   severity: medium
   reason: BMAD 6.11's build-auto contract (which bmad-loop 0.9.1+ dispatches via on-disk resolution, and 0.10.0 adopts as "the deferred-work contract of the 6.11 era") drops `implementation-artifacts/deferred-work.md` and `final_revision`; deferred findings are spec-frontmatter `deferred:` lists (items: summary, evidence, optional location, severity), and 0.11's own validate now FAILS (was warn) on an unreadable ledger.
   correction (2026-08-22): upstream research narrows the scope — bmad-loop's `Engine._harvest_spec_deferrals` (since the 0.9.1 hotfix, confirmed via closed issue #567) already harvests spec-frontmatter `deferred:` entries into the ledger its sweep reads, so LOOP-DRIVEN runs are bridged upstream. The remaining gap is HAND-DRIVEN build-auto runs (proven live by the 2026-08-22 canary, whose deferral needed a manual relay to doctor's tracked ledger as DW-14-1-1) plus our scripts' tracked-twin intake. Decomposed as marshal Story 25.6 (spec-bmad-611-era-alignment CAP-6); this entry closes when 25.6 lands. Consumers built on the old shape: `scripts/deferred_work_baseline.py`, `deferred_work_promote.py`, `normalize_deferred_ledgers.py`, `apply_verification_verdicts.py`, `scripts/deferred_work_check.py` (whose premise is "bmad-loop's damping refiles into gitignored deferred-work.md"), scribe's promote path, and the tracked-ledger promotion flow. Nothing is broken today (no live runs; existing ledgers remain readable); the first 0.11-era run produces findings these tools will not see. Fix shape: teach the promotion/check pipeline to ALSO read spec-frontmatter `deferred:` lists, keeping the legacy file as a still-honored source.
-  status: open
+  resolved: 2026-08-23 — marshal Story 25.6 (CAP-6). Doctor `chain.py` discovers spec-frontmatter `deferred:` via `spec-frontmatter-only-deferral` findings; `scripts/deferred_work_intake.py --fix` promotes into tracked ledgers; `scripts/deferred_work_check.py` restored as a thin shim over `python -m pyforge.doctor.sources deferred-work`. Loop-run bridge unchanged (bmad-loop `_harvest_spec_deferrals`). Fixture-proven (DW-14-1-1 canary shape).
+  status: resolved
 
 ### DW-25-4-1: `repo_defaults` compose parameter is accepted but never folded — `policy-defaults.toml` is functionally inert for all 28 keys
   origin: story-25-4 review (deferred, MATERIAL — carried in the story spec's 6.11-era frontmatter `deferred:` list; relayed here because the DW pipeline cannot yet read frontmatter, DW-BL011-2/Story 25.6)
@@ -1092,4 +1093,295 @@ status: open
   source_spec: `spec-bmad-611-era-alignment` (CAP-5's story; followup_review_recommended stands)
   severity: medium
   reason: PR #612 merged verified-green (marshal 5223 passed) but without its review round applied. Finalize omissions were completed post-merge same day (ledger flip, owed memlog events for spec-bmad-611 + spec-bmad-loop-governance, story-spec promotion, pixi.toml stall-check description, meta-test baseline classification). The MATERIAL unapplied findings, distilled: (1) ports/harness.py RunStatusSnapshot is a frozen dataclass now carrying a MUTABLE DICT field (sweeps_refused) — hash()/set-membership raises TypeError; tuple-of-pairs or eq=False is the fix; (2) loop_stall_check.parked_tasks assumes state.json "tasks" is a dict — a list/string crashes the whole watchdog before other homes are checked; (3) a run that flips finished/stopped while still carrying awaiting-operator tasks drops its owed confirms from the watchdog (parked-outranks-finished precedence not honored at the liveness gate); (4) fleet_picture's ATTENTION chain emits BOTH "idle — needs a spin" AND the parked-confirm line for a parked station with backlog (the state column pins confirm-not-respin; ATTENTION lacks the exclusion); (5) derive_home_state precedence cell parked+escalated+dead-supervisor flips unsupervised→paused-on-escalation, hiding the dead supervisor; (6) preserve_ref values + sweeps_refused keys print verbatim (no redaction/shape-check) into terminal + dashboard JSON; (7) the installed-package drift pins degrade to silent SKIPS via importorskip when bmad_loop is absent — nothing asserts the env carries it; (8) `sweeps_refused: None` renders as a raw Python literal conflating absent-key with unreadable-state; (9) the parked state cell drops the "N left" backlog count; (10) ledger-count plumbing (counts[awaiting-operator] + the ATTENTION needs line) is untested and the feed-token spelling is unpinned; (11) doctor's marshal.py false-green source: a feed-done story whose harness phase is awaiting-operator confirms "landed" via park commit_sha though acceptance was never confirmed; (12) minor: dead preserve_ref fixture param, F541 f-string, summary-line accounting, mid-phrase wraps. Fix shape: one remediation story (or the Epic 25 retro) applies 1-6 with tests, decides 7's env-assertion posture, and polishes 8-12; nothing here invalidates the landed behavior, which is fixture-verified for the primary paths.
+  status: open
+
+### DW-FU-11-4: `_wholesale_regenerate_actions` never cross-checks `state.opted_out`/`state.skips` before regenerating, so it could silently override a previously opted-out hybrid region or a previously skipped whole-file artifact.
+
+- source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
+  summary: `_wholesale_regenerate_actions` never cross-checks `state.opted_out`/`state.skips` before regenerating, so it could silently override a previously opted-out hybrid region or a previously skipped whole-file artifact.
+  evidence: Blind Hunter review finding. `build_plan` itself already respects `opted_out` for its own actions (`_pendency`/`_is_fully_opted_out`); the new wholesale-regenerate pass has no equivalent check. Not demonstrated as an active bug, and how `update` should treat a prior opt-out/skip on a subsequent update is a genuine, undecided product question the epics AC does not address — deserves dedicated design attention rather than an improvised same-pass fix.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:_wholesale_regenerate_actions
+  origin: spec-deferred 134693f178f9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-11-4-2: The `--include-seeded` "offered now, applicable later" story is untested across separate `update` invocations.
+
+- source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
+  summary: The `--include-seeded` "offered now, applicable later" story is untested across separate `update` invocations.
+  evidence: Blind Hunter review finding. Once a migration's `to_version` lands in `state.migrations_applied[]`, a later `chain()` call may not re-walk that migration, so whether the `copied-seeded` offer still resurfaces on a later `--include-seeded` run is unverified. No test in this diff exercises two sequential `run_update` calls against the same evolving state.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:run_update
+  origin: spec-deferred fce9464dd645 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-11-4-3: `--force` combined with a hand-edited hybrid-managed-region (as opposed to a hand-edited whole-file artifact) is untested.
+
+- source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
+  summary: `--force` combined with a hand-edited hybrid-managed-region (as opposed to a hand-edited whole-file artifact) is untested.
+  evidence: Blind Hunter review finding. `test_force_bypasses_the_hand_edited_managed_content_precondition` only covers the whole-file case; whether `--force` correctly bypasses rung 6 and correctly substitutes over a hand-edited region span is unverified.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_update.py
+  origin: spec-deferred c4780a609ee1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-11-4-4: The `projects-table` repo-computed region-body dispatch (Story 11.2) is never exercised through `update`'s own commit path — only through `adopt`'s.
+
+- source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
+  summary: The `projects-table` repo-computed region-body dispatch (Story 11.2) is never exercised through `update`'s own commit path — only through `adopt`'s.
+  evidence: Verification Gap Reviewer observation. Every hybrid-region test in the new test files uses the static "tiers" fragment; `_region_body_for`'s `projects-index`/`projects-table` branch has no direct test via `update`.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:_region_body_for
+  origin: spec-deferred 0677368b6afa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-12-1: llms-full-check reports 82 pre-existing catalog drift findings on main (floor-drift + undocumented deps unrelated to copier); exit 1 before and after this story.
+
+- source_spec: `planning-artifacts/specs/spec-12-1-full-pixi-wiring-distribution-and-repo-gate-compliance.md`
+  summary: llms-full-check reports 82 pre-existing catalog drift findings on main (floor-drift + undocumented deps unrelated to copier); exit 1 before and after this story.
+  evidence: pixi run -e local-recipes llms-full-check exits 1 on origin/main and on this branch with identical 82 findings; copier is documented and absent from the drift report.
+  origin: spec-deferred 2d1d053f9b12 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-12-2: K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21 filtered actions (managed regions absent, no seed-state, first-claim pending). Slow oracle fails until bootstrap adopt lands.
+
+- source_spec: `planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle.md`
+  summary: K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21 filtered actions (managed regions absent, no seed-state, first-claim pending). Slow oracle fails until bootstrap adopt lands.
+  evidence: pixi run --frozen -e pyforge-marshal pyforge-marshal-test-slow -k test_local_recipes → AssertionError, 21 actions (claude-skills excluded).
+  origin: spec-deferred 96f6f96ebc9f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-2: Coverage detection is filesystem path presence only; an empty stub mcp/tools.py or server.py counts as covered without proving registered tools.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-parity-and-coverage-are-gated-numbers.md`
+  summary: Coverage detection is filesystem path presence only; an empty stub mcp/tools.py or server.py counts as covered without proving registered tools.
+  evidence: Blind Hunter / Design Notes intentionally measure presence for FR-156. Stronger "callable FastMCP tools" checks are a future hardening pass.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/coverage.py
+  origin: spec-deferred 73edfe40ad08 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-2-2: discover_cli_verbs walks private argparse _actions / _build_parser internals.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-parity-and-coverage-are-gated-numbers.md`
+  summary: discover_cli_verbs walks private argparse _actions / _build_parser internals.
+  evidence: Edge-case / Blind Hunter. Works against the live CLI today; a public inventory API would harden the gate against parser refactors.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/parity.py
+  origin: spec-deferred ba68f64529fe — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-2-3: resolve_repo_root has no MARSHAL_REPO_ROOT override when the package is installed outside the monorepo layout.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-parity-and-coverage-are-gated-numbers.md`
+  summary: resolve_repo_root has no MARSHAL_REPO_ROOT override when the package is installed outside the monorepo layout.
+  evidence: Blind Hunter. python -m coverage is repo-operator oriented; installed wheel use outside the tree is out of v1 scope.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/coverage.py
+  origin: spec-deferred 6672ec85a061 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-2: Seeded mock edge-case hardening (recreate-after-delete, negative clock advance, journal reload from disk) remains identical to archive seeds.
+
+- source_spec: `planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md`
+  summary: Seeded mock edge-case hardening (recreate-after-delete, negative clock advance, journal reload from disk) remains identical to archive seeds.
+  evidence: Edge-case hunter listed lifecycle/input guards that the archived Marshal mocks also lack; Story 19.2 seeds without rewriting those behaviors.
+  location: src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/
+  origin: spec-deferred dbdb7dc7a6b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-2-2: docs/reference/library-llms-full.md still reports broad pin/undocumented-dep drift beyond the new pyforge-testing-kit env row.
+
+- source_spec: `planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md`
+  summary: docs/reference/library-llms-full.md still reports broad pin/undocumented-dep drift beyond the new pyforge-testing-kit env row.
+  evidence: llms-full-check reports dozens of pre-existing undocumented deps and pin mismatches; this story only added the testing-kit env row.
+  location: docs/reference/library-llms-full.md
+  origin: spec-deferred 87f14aecc755 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-3: Expand coverage-gates CI beyond the marshal home env (matrix / per-station pixi env) so non-marshal package touches are gated in the same workflow.
+
+- source_spec: `planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md`
+  summary: Expand coverage-gates CI beyond the marshal home env (matrix / per-station pixi env) so non-marshal package touches are gated in the same workflow.
+  evidence: Workflow installs only pyforge-marshal and sets COVERAGE_GATES_STATIONS=marshal; other stations rely on pixi *-test-coverage tasks / future matrix work.
+  location: .github/workflows/coverage-gates.yml
+  origin: spec-deferred 64e543f27d3d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-3-2: Add parallel pixi `pyforge-*-test-coverage` tasks for non-marshal stations.
+
+- source_spec: `planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md`
+  summary: Add parallel pixi `pyforge-*-test-coverage` tasks for non-marshal stations.
+  evidence: Only pyforge-marshal-test-coverage was added; comments still refer to plural tasks.
+  location: pixi.toml
+  origin: spec-deferred 60790d83b8fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-3-3: Upload coverage JSON / term-missing artifacts on gate failure for operators.
+
+- source_spec: `planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md`
+  summary: Upload coverage JSON / term-missing artifacts on gate failure for operators.
+  evidence: CI currently relies on step stdout only.
+  location: .github/workflows/coverage-gates.yml
+  origin: spec-deferred 521659a156b4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-4: Wire `tea-playwright-check` into a CI / detectors job so the CAP-5 gate runs without an operator opt-in (intent allowed CI or CLI; this story shipped the CLI).
+
+- source_spec: `planning-artifacts/specs/spec-19-4-test-architecture-stays-current-as-stories-land.md`
+  summary: Wire `tea-playwright-check` into a CI / detectors job so the CAP-5 gate runs without an operator opt-in (intent allowed CI or CLI; this story shipped the CLI).
+  evidence: pixi task exists; no .github/workflows reference in the 19.4 diff. Approach said "detectable (fail or report)"; original AC allowed CI or CLI.
+  location: pixi.toml / .github/workflows
+  origin: spec-deferred 63ed15e7314d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-19-4-2: Atlas-style epic headers `### Story A1 (2.1): …` are not parsed by `_STORY_HEADER`, so lettered stories never enter the --check expected set.
+
+- source_spec: `planning-artifacts/specs/spec-19-4-test-architecture-stays-current-as-stories-land.md`
+  summary: Atlas-style epic headers `### Story A1 (2.1): …` are not parsed by `_STORY_HEADER`, so lettered stories never enter the --check expected set.
+  evidence: Pre-existing 19.1 generator limitation surfaced by verification-gap review; live atlas check reports only numeric ids.
+  location: _bmad/scripts/bmad_tea_playwright.py
+  origin: spec-deferred dcede833142d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-3: Parent Spec CAP-3 memlog/SPEC success oracle still describes the draft as unfiled; sync on a later docs pass if needed.
+
+- source_spec: `planning-artifacts/specs/spec-20-3-the-gated-upstream-filing.md`
+  summary: Parent Spec CAP-3 memlog/SPEC success oracle still describes the draft as unfiled; sync on a later docs pass if needed.
+  evidence: Blind-hunter finding: spec-bmad-loop-baseline-drift CAP-3 text may still say gated/unfiled; outside this chore's Code Map surfaces.
+  origin: spec-deferred 3099eeba57f5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-3-2: If #701 closes only one half of the coordinated report, split or re-note the register entry so FR-189 is not silently retired.
+
+- source_spec: `planning-artifacts/specs/spec-20-3-the-gated-upstream-filing.md`
+  summary: If #701 closes only one half of the coordinated report, split or re-note the register entry so FR-189 is not silently retired.
+  evidence: Edge-case hunter: single upstream_status on a dual-mode coordinated filing.
+  origin: spec-deferred e50b56676a5b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-6: Until 20.7, cli/init.py and scripts/bmad-switch still ship divergent slug-parse / desync bodies alongside pyforge.marshal.scope.
+
+- source_spec: `planning-artifacts/specs/spec-20-6-the-verify-scope-primitive.md`
+  summary: Until 20.7, cli/init.py and scripts/bmad-switch still ship divergent slug-parse / desync bodies alongside pyforge.marshal.scope.
+  evidence: CAP-1 ships the sole new primitive but intentionally leaves legacy guards in place; never-two-parallel-copies is satisfied for the new module, with body retirement deferred to CAP-2.
+  location: cli/init.py:_slug_from_symlink_target; scripts/bmad-switch:desync_warning
+  origin: spec-deferred 8b1ce54bdb4d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-6-2: MRS-INIT-003 today inspects only planning-artifacts; verify_scope requires both artifact symlinks — 20.7 must absorb the widening.
+
+- source_spec: `planning-artifacts/specs/spec-20-6-the-verify-scope-primitive.md`
+  summary: MRS-INIT-003 today inspects only planning-artifacts; verify_scope requires both artifact symlinks — 20.7 must absorb the widening.
+  evidence: Blind-hunter / design note: semantic widening when CAP-2 replaces the guard with verify_scope.
+  location: cli/init.py:MRS-INIT-003 vs pyforge.marshal.scope.verify_scope
+  origin: spec-deferred 8790f3aea35c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2: Soft code-linkage verify reports missing cites in detail but always completes; tightening to fail/block is a product choice beyond CAP-1.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-orchestrated-chain-regeneration.md`
+  summary: Soft code-linkage verify reports missing cites in detail but always completes; tightening to fail/block is a product choice beyond CAP-1.
+  evidence: Review found verify_code_linkage returns status=complete with missing cite counts in detail only. AC requires read-only verify then orphan report; failing the chain on linkage gaps was not specified.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py
+  origin: spec-deferred bc68c76465f6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2-2: Dual CLI: marshal chain regenerate (17.4) coexists with marshal planning chain-regenerate (21.2) without deprecation cross-link.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-orchestrated-chain-regeneration.md`
+  summary: Dual CLI: marshal chain regenerate (17.4) coexists with marshal planning chain-regenerate (21.2) without deprecation cross-link.
+  evidence: Story 17.4 intentionally shipped the four-phase dry-run verb; 21.2 adds the Full orchestrated verb. Documentation/deprecation is out of CAP-1.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/chain.py
+  origin: spec-deferred a437fc395281 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5: CAP-5 help prose hard-codes defaults instead of deriving text from `cap5_defaults()`, inviting future doc/code drift.
+
+- source_spec: `planning-artifacts/specs/spec-21-5-configurable-per-project-invocation.md`
+  summary: CAP-5 help prose hard-codes defaults instead of deriving text from `cap5_defaults()`, inviting future doc/code drift.
+  evidence: Review pass noted help strings in cli/planning.py duplicate the default matrix returned by core.chain_regen.cap5_defaults(). Cosmetic; tests assert both surfaces independently today.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/planning.py
+  origin: spec-deferred 058d8669b433 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-1: timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says they are different classes.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
+  summary: timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says they are different classes.
+  evidence: CAP-1 places both on timing.perStory honestly named; full visual/series separation is Story 23.2 (CAP-2). Surfaced by blind-hunter; not a fabricate risk.
+  location: docs/dashboard/generate.py:scan_timing
+  origin: spec-deferred 2d5dc03c245d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-1-2: Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
+  summary: Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.
+  evidence: Pre-existing journal key convention; loop homes emit N-M-slug keys. Edge-case hunter only; not introduced by CAP-1 derivation logic beyond shared _sid_from_journal_key.
+  location: docs/dashboard/generate.py:_sid_from_journal_key
+  origin: spec-deferred a67ea55883b2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-2: Velocity panel `sub` still lumps unmeasured stories under "predate loop instrumentation"; full absence-class partitioning is Story 23.3 (CAP-3).
+
+- source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
+  summary: Velocity panel `sub` still lumps unmeasured stories under "predate loop instrumentation"; full absence-class partitioning is Story 23.3 (CAP-3).
+  evidence: CAP-2 only requires wall-clock vs active-compute class labels. Intent explicitly defers 23.3. Surfaced by blind-hunter + intent-alignment.
+  location: docs/dashboard/generate.py:scan_timing velocity.sub
+  origin: spec-deferred e334aaacbac9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-2-2: No runtime render fixture asserts emitted chip class HTML against mixed DASHBOARD_DATA; coverage is generator unit tests + static HTML needles.
+
+- source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
+  summary: No runtime render fixture asserts emitted chip class HTML against mixed DASHBOARD_DATA; coverage is generator unit tests + static HTML needles.
+  evidence: verification-gap review; check_render.js is no-throw only. Acceptable for CAP-2 land; strengthen later if chip regressions recur.
+  location: docs/dashboard/index.html
+  origin: spec-deferred 44ab09a08fa7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

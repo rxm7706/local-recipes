@@ -626,3 +626,227 @@ latent in the sibling only because it sits outside the `mypy platformapp config 
 surface. Pre-existing; Story 11.4 treated the file as read-only. Remedy: None-guard it and
 consider widening the mypy surface to the integration test modules. Severity: low. Status:
 open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.
+
+### DW-FU-12-2: The "395-package `python-agent-platform` env" figure embedded in timeout-justification comments has no mechanism keeping it accurate.
+
+- source_spec: `planning-artifacts/specs/spec-12-2-gke-as-a-portability-profile.md`
+  summary: The "395-package `python-agent-platform` env" figure embedded in timeout-justification comments has no mechanism keeping it accurate.
+  evidence: Found by review during this story, but the figure pre-exists in the sibling `container` job's own timeout comment (platform-ci.yml, Story 10.3) — this story's `gke-portability-smoke` job reused the same descriptive phrasing for consistency, it did not introduce the figure. Not this story's regression to fix.
+  location: .github/workflows/platform-ci.yml (container job's timeout-minutes comment, and gke-portability-smoke's own by extension)
+  origin: spec-deferred a7f2167e2467 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-1: Bookkeeping YAML is not locked; concurrent start/clean in one checkout can race.
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: Bookkeeping YAML is not locked; concurrent start/clean in one checkout can race.
+  evidence: save_bookkeeping uses atomic_write but two processes can still interleaved read-modify-write over .steward/workspaces.yaml.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 5e5280514e6b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-1-2: start does not `git fetch` before branching from origin/main.
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: start does not `git fetch` before branching from origin/main.
+  evidence: Thin git wrap: if origin/main is stale or missing locally, start fails with a git error rather than refreshing remotes first.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred d2605a4be02d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-1-3: A freshly started branch with no unique commits is treated as merged by --merged-only.
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: A freshly started branch with no unique commits is treated as merged by --merged-only.
+  evidence: merge-base --is-ancestor is true when tip equals source; accurate but surprising immediately after start.
+  origin: spec-deferred 1457c9c38154 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-1-4: No tracked schema/example for `.steward/workspaces.yaml`.
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: No tracked schema/example for `.steward/workspaces.yaml`.
+  evidence: Review noted operators only get a gitignore entry; shape is discoverable only from code.
+  origin: spec-deferred 3ef3c14440d7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-1-5: Distinct slugs that normalize to the same sibling path (e.g. a/b vs a-b) can collide.
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: Distinct slugs that normalize to the same sibling path (e.g. a/b vs a-b) can collide.
+  evidence: scratch_path_for replaces `/` with `-` without collision detection.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 8238370bede5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-1-6: Stale bookkeeping entries (missing path / moved checkout) stay listed by ls.
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: Stale bookkeeping entries (missing path / moved checkout) stay listed by ls.
+  evidence: CAP-2 deliberately avoids per-worktree git; staleness is out of 13.1.
+  origin: spec-deferred 490117283b3d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-13-2: status ahead/behind uses local source ref; no fetch of origin before counting.
+
+- source_spec: `planning-artifacts/specs/spec-13-2-status-and-the-feed-mirror-decision.md`
+  summary: status ahead/behind uses local source ref; no fetch of origin before counting.
+  evidence: Same thin-git posture as 13.1 start (no auto-fetch). Stale origin/main makes behind under-count until the operator fetches.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
+  origin: spec-deferred 1347f0e476b0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-14-1: skill-manifest.csv parsing is a naive quoted-CSV split; skills with commas in fields would mis-parse.
+
+- source_spec: `planning-artifacts/specs/spec-14-1-the-pre-flight-diff-retrodicts-a-real-upgrade.md`
+  summary: skill-manifest.csv parsing is a naive quoted-CSV split; skills with commas in fields would mis-parse.
+  evidence: `_read_installed_skill_names` splits on commas rather than using the csv module. Current skill IDs have no commas; review pass noted the fragility.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py
+  origin: spec-deferred 4a363ab1e2e2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-14-5: Trap 8 (.git/info/exclude stale shield lines) is not automated in prove-landed.
+
+- source_spec: `planning-artifacts/specs/spec-14-5-one-command-proves-the-upgrade-landed.md`
+  summary: Trap 8 (.git/info/exclude stale shield lines) is not automated in prove-landed.
+  evidence: failure-modes.md lists trap 8 under CAP-5 orbit, but story ACs only require drift integrity + CFE meta + loop-home init/validate. Hand cleanup remains.
+  location: upgrade.py CAP-5 gates
+  origin: spec-deferred 7d9ac02dba5f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-1: Live (non-baseline) probe implementations are only exercised via stubs; no temp-repo / urllib-monkeypatch coverage for recipe/installed/HTTP paths.
+
+- source_spec: `planning-artifacts/specs/spec-15-1-one-command-reports-the-whole-pipelines-truth.md`
+  summary: Live (non-baseline) probe implementations are only exercised via stubs; no temp-repo / urllib-monkeypatch coverage for recipe/installed/HTTP paths.
+  evidence: verification-gap review: default ProbeHooks paths never run in tests; operators' live `steward suite pipeline-truth` can diverge while --baseline stays green.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
+  origin: spec-deferred 6e252fd00cd7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-1-2: Dashboard wired census uses loose fleet surfaces (docs/dashboard, presentations) rather than package-specific wire state.
+
+- source_spec: `planning-artifacts/specs/spec-15-1-one-command-reports-the-whole-pipelines-truth.md`
+  summary: Dashboard wired census uses loose fleet surfaces (docs/dashboard, presentations) rather than package-specific wire state.
+  evidence: blind-hunter: both dashboards can read wired whenever those docs exist; baseline still encodes the 2026-08-22 research column.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/suite.py
+  origin: spec-deferred 00dbb10c84c7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-3: Conda installer subprocess has no timeout; a hung *-install can block the provision duty indefinitely.
+
+- source_spec: `planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md`
+  summary: Conda installer subprocess has no timeout; a hung *-install can block the provision duty indefinitely.
+  evidence: Review edge-case finding: subprocess.run for CondaInstallBackend has no timeout= argument. Pre-existing pattern also applies to bmb setup-skill uv run calls; not uniquely introduced by 15.3 wiring.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
+  origin: spec-deferred 6daa4503bfc4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-3-2: No rollback of copied skill dirs when post-install verification or manifest write fails after installer exit 0.
+
+- source_spec: `planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md`
+  summary: No rollback of copied skill dirs when post-install verification or manifest write fails after installer exit 0.
+  evidence: Skills may be copied before manifest record; a later raise leaves orphan .claude/skills entries without a module key. Collision check then blocks retry until skills are removed manually.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
+  origin: spec-deferred 66b476615235 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-3-3: --list-modules does not surface _SKIPPED_MODULES (WDS) or skip reasons.
+
+- source_spec: `planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md`
+  summary: --list-modules does not surface _SKIPPED_MODULES (WDS) or skip reasons.
+  evidence: Operators cannot discover from the list verb that WDS is intentionally unwired versus simply unsupported; skip is only on --module wds.
+  origin: spec-deferred 8f88ef20f773 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-3-4: Hard-coded _CIS_SKILL_NAMES allowlist is not asserted against the live bmad-creative-intelligence-suite share tree.
+
+- source_spec: `planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md`
+  summary: Hard-coded _CIS_SKILL_NAMES allowlist is not asserted against the live bmad-creative-intelligence-suite share tree.
+  evidence: Drift shows up only as post-install skills-missing RuntimeError.
+  origin: spec-deferred 9fff87be3e08 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-4: Live prove-landed may still hit the network / warm caches when running cited npx/uv spot-checks even with --help/--dry-run.
+
+- source_spec: `planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md`
+  summary: Live prove-landed may still hit the network / warm caches when running cited npx/uv spot-checks even with --help/--dry-run.
+  evidence: Story 15.4 deliberately invokes native CLIs; side effects are inherent to the AC. Failures remain advisory.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py
+  origin: spec-deferred b3a8e13b0b34 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-4-2: skip_native_spot_checks exists on build_prove_landed_report but has no CLI flag.
+
+- source_spec: `planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md`
+  summary: skip_native_spot_checks exists on build_prove_landed_report but has no CLI flag.
+  evidence: Not required by CAP-4 AC.
+  origin: spec-deferred 870ab68a8b44 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-4-3: _BMAD_LOOP_UV_GIT_SPEC hard-pins v0.11.0 with no regeneration note when the matrix version moves.
+
+- source_spec: `planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md`
+  summary: _BMAD_LOOP_UV_GIT_SPEC hard-pins v0.11.0 with no regeneration note when the matrix version moves.
+  evidence: Citation substring test catches matrix edit drift after the fact.
+  origin: spec-deferred 9d95aae537b3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-16-2: Operator-facing deploy README / NOTES still omit COMPONENT_RUNTIME and the invalid DJANGO_ADMIN_URL set beyond the chart values change.
+
+- source_spec: `planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md`
+  summary: Operator-facing deploy README / NOTES still omit COMPONENT_RUNTIME and the invalid DJANGO_ADMIN_URL set beyond the chart values change.
+  evidence: Blind-hunter noted docs/NOTES still describe required env without CAP-3 locality or admin-URL validity rules. Chart default was patched; prose docs were not fully rewritten this story.
+  location: src/platform/deploy/README.md
+  origin: spec-deferred 3d536d29639e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-16-2-2: is_serving_process / COMPONENT_PROCESS locality helpers ship without dedicated tests (unused by CAP-3 stage-2 conditions yet).
+
+- source_spec: `planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md`
+  summary: is_serving_process / COMPONENT_PROCESS locality helpers ship without dedicated tests (unused by CAP-3 stage-2 conditions yet).
+  evidence: Blind-hunter / verification-gap: PROCESS_ENV_VAR is declared for later stage-2 DB conditions; CAP-3 does not depend on it. Low risk until those conditions land.
+  location: src/platform/config/locality.py
+  origin: spec-deferred 67f0dccfc906 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
