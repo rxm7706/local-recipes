@@ -64,12 +64,22 @@ package, `liquimigrate`, last released in 2016 and predates Django 2.0. And Djan
 5. **Test databases are carved out of the directive entirely.** Ephemeral `test_*` databases are
    not part of the governed estate.
 
-**Blocked on `liquibase-delivery-vehicle`.** Liquibase is not on conda-forge; the sole anaconda.org
-hit is a third-party `maize-genetics/liquibase` 4.21.0 with zero downloads, two major versions
-behind current Community (5.0.4). It needs Java 17+ (`openjdk` *is* on conda-forge), and since 5.0
-the Community image no longer bundles the PostgreSQL JDBC driver — LPM fetches over the network, so
-an air-gapped build must bake the JAR into a derived image. CAP-9 cannot be scheduled until policy
-rules on feedstock-versus-container.
+6. **Liquibase arrives as a conda-forge feedstock** — decided 2026-08-24, closing
+   `liquibase-delivery-vehicle`. It is not on conda-forge today (the sole anaconda.org hit is a
+   third-party `maize-genetics/liquibase` 4.21.0, zero downloads, two majors behind Community
+   5.0.4), so this is a sixth new recipe in this chain. `openjdk` 25.0.2 clears the Java 17+ floor,
+   `apache-tika` is the exact shape to copy, and the PostgreSQL JDBC driver must be **vendored into
+   the recipe** because 5.0 Community stopped bundling it and LPM fetches over the network.
+   Per repo Rule 1 that story's dev session invokes `conda-forge-expert`.
+
+**The hook this needs is already shipped**, which is what made the feedstock the cheap option.
+`src/platform/deploy/charts/platform/templates/migrate-job.yaml` is a
+`helm.sh/hook: post-install,pre-upgrade` Job at weight `0` that runs the **platform image** and
+passes its command as `args`. So step 2 adds a Job at weight `-1` on that same image, and step 4
+changes this one's args from `migrate --noinput` to `migrate --fake`. No new image, no new supply
+path, and Story 12.1's chart contract is untouched. Its header also rejects init containers for an
+entirely different reason than step 2 does — `helm install --wait` deadlocks migration-gated
+readiness — so two unrelated arguments land on the same design.
 
 **If the estate's real goal is auditable, DBA-gated DDL rather than Liquibase specifically**, step 1
 alone delivers most of it at a fraction of the cost, and `sqlmigrate` output is already a reviewable

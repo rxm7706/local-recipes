@@ -50,10 +50,12 @@ consume them through this channel.
 | `openfeature-flagd-core` | CAP-13 | Carries the targeting engine. |
 | `openfeature-provider-flagd` | CAP-13 | The FILE resolver itself. |
 | `cachebox` 5.x | CAP-13 | conda-forge ships **6.2.5**; the flagd provider pins `>=5.1,<6`. A 5.x build is required alongside the four above. |
-| `liquibase` | CAP-9 | **Not on conda-forge.** Sole anaconda.org hit is third-party `maize-genetics/liquibase` 4.21.0 with 0 downloads, two majors behind Community 5.0.4. A feedstock is the researched-dominant vehicle (see below); awaiting the scope commitment. Recipe shape precedent is `apache-tika` — Maven jars into `$PREFIX/share/java/…`, `openjdk` run-dep, CLI wrapper — one of ~12 JVM recipes already in `recipes/`. The PostgreSQL JDBC driver must be vendored: 5.x Community stopped bundling it and LPM fetches over the network. |
+| `liquibase` | CAP-9 | **Not on conda-forge** — sole anaconda.org hit is third-party `maize-genetics/liquibase` 4.21.0, 0 downloads, two majors behind Community 5.0.4. **Feedstock committed 2026-08-24.** Shape precedent: `apache-tika` (Maven jars into `$PREFIX/share/java/…`, `openjdk` run-dep, CLI wrapper), one of ~12 JVM recipes already here. `openjdk` 25.0.2 clears the Java 17+ floor. **Vendor the PostgreSQL JDBC driver** — 5.0 Community stopped bundling it and LPM fetches over the network. |
 
 Nothing OpenFeature-related exists anywhere on anaconda.org: a global search returns zero results.
-Five recipes is the committed cost of CAP-13, ruled 2026-08-24.
+Five recipes is the committed cost of CAP-13, ruled 2026-08-24; `liquibase` is a sixth for CAP-9,
+committed the same day. **Both epics therefore open with packaging work, not platform work** — a
+sequencing fact the epic pass has to honour rather than discover.
 
 ## Two supply boundaries, not one
 
@@ -64,12 +66,13 @@ under it (`postgres:17`, `redis:7`, and `quay.io/keycloak/keycloak:26.4.0` in co
 feedstock. `docs/reference/enterprise-deployment.md` is silent on images entirely; it documents
 conda/PyPI mirrors only.
 
-This matters for exactly one row. **Liquibase is the only dependency in this chain that could
-legitimately arrive either way**, and the deciding fact is not policy but the chart: the shipped
-`migrate-job.yaml` hook runs the **platform image** and passes its command as `args`, so a
-conda-packaged Liquibase requires no new image, while the container route pays a third-party-image
+This mattered for exactly one row. **Liquibase was the only dependency in this chain that could
+legitimately arrive either way**, and the deciding fact turned out not to be policy but the chart:
+the shipped `migrate-job.yaml` hook runs the **platform image** and passes its command as `args`, so
+a conda-packaged Liquibase requires no new image, while the container route pays a third-party-image
 supply path the repo has never documented *and* still builds a derived image for the JDBC driver.
-Full evidence in `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
+**Resolved to the feedstock, 2026-08-24.** Full evidence in
+`research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
 
 ## Ruled out, with reasons
 

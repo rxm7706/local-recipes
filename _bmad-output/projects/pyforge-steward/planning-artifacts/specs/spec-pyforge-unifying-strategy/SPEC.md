@@ -22,12 +22,12 @@ surface:
   - .claude/skills/pyforge-*/**
   - recipes/openfeature-*/**
   - recipes/cachebox/**
+  - recipes/liquibase/**
   - pixi.toml
   - environment.yaml
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:
-  - liquibase-delivery-vehicle
   - liquibase-7791-fixed
   - mcp-client-revision
   - mcp-tasks-runtime
@@ -200,8 +200,13 @@ they are why this is not merely a UI project.
   is cluster-wide with no per-route override, and HAProxy governs streaming responses by
   `timeout client`/`timeout server`, not `timeout tunnel`. A route timeout annotation is
   defence-in-depth, never the mechanism.
-- **Always:** CAP-13's packages do not exist on conda-forge today. Five recipes must land first,
-  and per repo Rule 1 every one of those stories invokes `conda-forge-expert`.
+- **Always:** CAP-13's packages do not exist on conda-forge today, and neither does Liquibase.
+  **Six recipes must land first** — five OpenFeature-related plus `liquibase` — and per repo Rule 1
+  every one of those stories invokes `conda-forge-expert`. CAP-9 and CAP-13 are each blocked on
+  their own feedstocks, so both epics open with packaging work rather than platform work.
+- **Always:** CAP-9 adds a Helm hook Job beside the shipped `migrate-job.yaml`, at a lower
+  hook-weight, on the same platform image. It does not introduce a chart pattern, a second image,
+  or an init container.
 - **Never:** a station portal owns chrome. Chrome lives in CAP-1's package; a portal that ships its
   own app switcher or base layout has violated the contract.
 - **Never:** a portal calls a service with a raw request or a trusted identity header. CAP-6's
@@ -252,11 +257,6 @@ database role is provably incapable of altering its own schema.
 
 ## Open Questions
 
-- **liquibase-delivery-vehicle** — feedstock or container? Research (2026-08-24) collapsed this
-  toward a feedstock: the pre-upgrade hook already exists, runs the platform image, and takes its
-  command as `args`, so a conda-packaged Liquibase needs **no new image at all**, while the
-  container route pays an undocumented third-party-image supply path *and* still builds a derived
-  image because 5.x dropped the bundled JDBC driver. Awaiting the scope commitment.
 - **liquibase-7791-fixed** — is the multi-schema `default-schema-name` regression on 5.0.3 fixed in
   5.0.4? Must be verified before any multi-schema changeset lands.
 - **mcp-client-revision** — which MCP protocol revision do our agent clients actually speak? A
