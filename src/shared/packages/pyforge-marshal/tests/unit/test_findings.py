@@ -243,6 +243,13 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-011",
             "MRS-DISP-012",
             "MRS-DISP-013",
+            "MRS-DISP-014",
+            "MRS-DISP-015",
+            "MRS-DISP-016",
+            "MRS-DISP-017",
+            "MRS-DISP-018",
+            "MRS-DISP-019",
+            "MRS-DISP-020",
         }
     )
 

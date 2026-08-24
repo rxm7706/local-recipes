@@ -1,0 +1,80 @@
+"""Post-merge finalize for dispatch land (Story 22.4, CAP-4).
+
+Spawned as a subprocess by ``dispatch_land`` so ``dispatch_supervisor`` never
+imports ``cli/`` (AD-9). Composes ``deploy promote`` + ``land``'s sprint
+ledger promotion machinery.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from pyforge.marshal.adapters.fs_local import LocalFs
+from pyforge.marshal.adapters.vcs_git import GitVcs
+from pyforge.marshal.cli.config import repo_root
+from pyforge.marshal.cli.deploy import (
+    _DeployRun,
+    _deploy_writer_id,
+    _execute_promotion_plan,
+    _scan_promotions,
+)
+from pyforge.marshal.cli.land import _promote_sprint_ledger
+from pyforge.marshal.core.identity import MalformedStoryKeyError, normalize
+
+
+def finalize_dispatch_land(project_slug: str, story_key: str) -> int:
+    root = repo_root()
+    fs = LocalFs()
+    vcs = GitVcs()
+    try:
+        key = normalize(story_key)
+    except MalformedStoryKeyError as exc:
+        print(f"dispatch land finalize: {exc}", file=sys.stderr)
+        return 1
+
+    findings: list = []
+    data: dict[str, object] = {"lock_contended": False}
+    deploy_run = _DeployRun(fs, root, project_slug, _deploy_writer_id("dispatch-land-finalize"))
+    scan = _scan_promotions(root, project_slug, vcs=vcs, fs=fs)
+    findings.extend(scan.findings)
+    if scan.plan is not None and scan.plan.to_promote:
+        specs_dir = (
+            root
+            / "_bmad-output"
+            / "projects"
+            / project_slug
+            / "planning-artifacts"
+            / "specs"
+        )
+        _execute_promotion_plan(
+            scan.plan.to_promote,
+            project_slug=project_slug,
+            fs=fs,
+            vcs=vcs,
+            root=root,
+            specs_dir=specs_dir,
+            deploy_run=deploy_run,
+            findings=findings,
+            data=data,
+        )
+
+    _promote_sprint_ledger(fs, vcs, root, project_slug, [key], deploy_run, findings)
+    blocking = [f for f in findings if f.severity.name == "ERROR"]
+    if blocking:
+        for finding in blocking:
+            print(f"finding {finding.code}: {finding.message}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Dispatch land finalize (Story 22.4)")
+    parser.add_argument("project_slug")
+    parser.add_argument("story_key")
+    args = parser.parse_args(argv)
+    return finalize_dispatch_land(args.project_slug, args.story_key)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

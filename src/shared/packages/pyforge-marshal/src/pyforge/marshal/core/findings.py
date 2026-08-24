@@ -1503,6 +1503,17 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-011",
         "MRS-DISP-012",
         "MRS-DISP-013",
+        # Story 22.4 (dispatch land, FR-193 CAP-4): 014 unverified refuse
+        # (ERROR); 015 malformed key (ERROR); 016 main history (ERROR);
+        # 017 push/ref (ERROR); 018 PR open/update (ERROR); 019 non-native
+        # subject (ERROR); 020 merge failure (ERROR).
+        "MRS-DISP-014",
+        "MRS-DISP-015",
+        "MRS-DISP-016",
+        "MRS-DISP-017",
+        "MRS-DISP-018",
+        "MRS-DISP-019",
+        "MRS-DISP-020",
     }
 )
 
