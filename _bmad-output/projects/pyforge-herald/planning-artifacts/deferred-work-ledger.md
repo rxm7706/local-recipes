@@ -632,3 +632,25 @@ deployment.
   `-{index}` disambiguation suffix if/when this gate's id-handling is next touched.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3` there) during the pre-shutdown deferred-work audit.
+
+### DW-FU-15-1: No GitHub Actions workflow runs the pyforge-herald pytest suite at all.
+
+- source_spec: `planning-artifacts/specs/spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md`
+  summary: No GitHub Actions workflow runs the pyforge-herald pytest suite at all.
+  evidence: Surfaced incidentally by the verification-gap review while checking whether the round-trip test's `soffice` dependency is declared anywhere reviewable. Grepping .github/workflows/ turns up only herald-live-demo.yml, unrelated to the pytest suite; no workflow runs `pixi run -e pyforge-herald pyforge-herald-test`. Pre-existing -- every prior herald story's tests share the same gap, not introduced by this story.
+  location: .github/workflows/
+  origin: spec-deferred c2195376bfd1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-15-1-2: _resolve_layout silently resolves a name-based layout reference to the first match when a template has two layouts sharing the same name.
+
+- source_spec: `planning-artifacts/specs/spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md`
+  summary: _resolve_layout silently resolves a name-based layout reference to the first match when a template has two layouts sharing the same name.
+  evidence: Edge-case-hunter finding. The bundled default template has no duplicate layout names (verified: 11 distinct names), so this is unreachable with the current own-template decision. No obviously correct disambiguation exists without a design decision (error out? require index instead?), so deferring rather than guessing.
+  location: src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py:_resolve_layout
+  origin: spec-deferred c59d807c8f18 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

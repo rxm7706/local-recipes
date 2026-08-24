@@ -75,3 +75,47 @@ sibling ledgers and the detector both use.
   evidence: Measured 2026-08-09 against the live repo: `compile.py::_node_from_text_file` derives `title` as the first non-empty line (`next((line.strip("# ").strip() for line in text.splitlines() if line.strip()), relpath)`). For a `.memlog.md` that first line is the frontmatter delimiter `---`, so the title is literally `---`. `_read_memlog_surface(Path("."))` returns 88 nodes, of which **87 are titled `---`**; the single exception (`spec: herald-pitch`) is a memlog with no frontmatter. The fix is small — skip frontmatter, or prefer the `topic:` field memlogs already carry — but it is a real defect in the graph's primary human-readable field, not a cosmetic one, since a graph of 87 identically-named nodes cannot be navigated.
   related: 17 memlogs additionally carry unparseable YAML frontmatter (an unquoted `:` inside `topic:`). That is latent today precisely BECAUSE nothing parses memlog frontmatter as YAML — if this defect is fixed by reading `topic:`, those 17 must be quoted in the same change or the fix will fail on them.
   status: open
+
+### DW-FU-3-2: A transcript node's citation/id is derived only from the source file's basename (not a path relative to transcript_root), so two different transcript files sharing a basename under different subdirectories would collide into the same node id.
+
+- source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
+  summary: A transcript node's citation/id is derived only from the source file's basename (not a path relative to transcript_root), so two different transcript files sharing a basename under different subdirectories would collide into the same node id.
+  evidence: Corroborated independently by two review passes (Blind Hunter and Edge Case Hunter). Currently unreachable: scan_transcripts() globs only *.jsonl directly in transcript_root (non-recursive), and default_transcript_root() always resolves to one flat directory, so no subdirectory structure can exist under it today. A real fix would require changing the citation format away from this story's own intent-contract, which explicitly fixed it as "<jsonl filename>:L<line>" with no directory path, matching Story 3.1's established provenance convention -- so it is out of this story's scope, not a defect in what was built here.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:_read_transcript_surface
+  origin: spec-deferred 0bc7fb271ee1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-3-2-2: The transcript surface is the only compile surface with no cost bound, and this story puts it on the unattended nightly path: every `scribe graph compile` now reads every *.jsonl under the transcript root whole into memory and runs an O(candidates x curated-sentences) difflib comparison, with no file cap, byte cap, timeout, or mtime-incremental pass.
+
+- source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
+  summary: The transcript surface is the only compile surface with no cost bound, and this story puts it on the unattended nightly path: every `scribe graph compile` now reads every *.jsonl under the transcript root whole into memory and runs an O(candidates x curated-sentences) difflib comparison, with no file cap, byte cap, timeout, or mtime-incremental pass.
+  evidence: Raised independently by all four review layers. Measured on this machine: the production root for the owning repo (~/.claude/projects/-home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes) holds 27 files totalling 631MB, roughly 4x the 161MB the owning Dream cites. Every other surface has a ceiling (`max_commits=100`, `_MAX_DOC_TEXT_CHARS=20_000`, `timeout=30` on `git log`); this one has none. Story 3.1 only ever drove `scan_transcripts()` interactively. Out of scope on this story's own intent authority, not a defect in what was built: `Block If: None` asserts every design choice is resolved, and the Approach mandates reusing `scan_transcripts()` exactly, so bounding it means either changing Story 3.1's scanner or pre-filtering ahead of it -- both new design decisions. The spec's own frontmatter open question ("Scan economics over 161MB+: incremental by transcript mtime vs full sweeps -- decide at 3.1") was never decided at 3.1 and is still open.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:_read_transcript_surface
+  origin: spec-deferred 8822027f8d86 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-3-2-3: The `pyforge-scribe/spec-pyforge-scribe` spec-surface baseline is stale for 12 files, and the spec's .memlog.md carries no provenance entry for Story 3.1 or 3.2, so the governed-surface reconcile for Epic 3 has never been done.
+
+- source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
+  summary: The `pyforge-scribe/spec-pyforge-scribe` spec-surface baseline is stale for 12 files, and the spec's .memlog.md carries no provenance entry for Story 3.1 or 3.2, so the governed-surface reconcile for Epic 3 has never been done.
+  evidence: `python -m pyforge.doctor.sources spec-surface` reports 12 drift-presumed warnings for pyforge-scribe/spec-pyforge-scribe. Six are this story's own files (compile.py, models.py, recall.py, test_compile.py, test_recall.py, test_supersession.py); two are Story 3.1's, never stamped (transcripts.py, test_transcripts.py); four predate Epic 3 (README.md, pixi.toml, pyproject.toml, graph_store.py). Deliberately NOT reconciled inside this review pass: the remedy the detector names is a spec-scoped `--write-baseline --spec pyforge-scribe/spec-pyforge-scribe`, which stamps all twelve at once and would silently absorb six files of drift this story neither caused nor verified -- exactly the failure mode the repo's own "three checks before a scoped stamp, never a bare --write-baseline" convention warns against. Wants its own scoped reconcile (memlog entry naming the paths, then the stamp), the same shape as commit b513e29aee did for marshal Story 11.4 on this branch.
+  location: scripts/.spec-surface-baseline.json + _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-scribe-mines-raw-session-transcripts/.memlog.md
+  origin: spec-deferred 8a74d96a6c3c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-3-2-4: `recall.answer()` ranks candidates by token overlap and tie-breaks on node id ascending, never consulting `valid_from`, so between two equally-overlapping nodes the alphabetically-earlier id wins -- which for date-ordered session filenames is usually the OLDER, since-reversed statement.
+
+- source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
+  summary: `recall.answer()` ranks candidates by token overlap and tie-breaks on node id ascending, never consulting `valid_from`, so between two equally-overlapping nodes the alphabetically-earlier id wins -- which for date-ordered session filenames is usually the OLDER, since-reversed statement.
+  evidence: Verified in `recall.py::answer()`: `scored.sort(key=lambda pair: (-pair[0], pair[1].id))`, and its own docstring states the id tie-break is deliberate, "for reproducibility". Pre-existing Story 2.x recall behaviour, not introduced here -- but this story is what makes it bite: transcript nodes are the first surface where two nodes routinely make contradictory claims about the same decision across time, and (per the already-rejected supersession finding) `_apply_supersession()` has no path to invalidate a transcript node, so the superseded statement stays `is_current` indefinitely. Fixing it means choosing a recency policy for ties, which is a new design decision for recall, not a defect in what this story built.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py:answer
+  origin: spec-deferred c7a73445c0be — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

@@ -415,3 +415,80 @@ status: open
   evidence: Recorded 2026-08-21 under the operator-chosen hybrid close (record now, re-verify later). Re-confirm when the next CFE MINOR lands from an effort outside Mason's own chain (cadence: v8.79 Jul 18 → v8.80/8.81 Jul 29 → v8.82 Aug 20; the in-flight langflow closure's Rule-2 retro is the likely producer) OR when conda-forge bumps python_min past 3.10, whichever first — re-run `mason recipe optimize` and append the observed verb-level delta to the SM-4 record in epics.md, then close this entry.
   severity: low
   status: open
+
+### DW-7-1-1: symptom_signature tokens are not all meaningfully diagnostic: some rows carry a single generic word (e.g. "fails", "work") or a full sentence pulled verbatim as their entire signature, and common tokens (e.g. "noarch: python", "pip check") repeat across dozens of unrelated rows.
+
+- source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
+  summary: symptom_signature tokens are not all meaningfully diagnostic: some rows carry a single generic word (e.g. "fails", "work") or a full sentence pulled verbatim as their entire signature, and common tokens (e.g. "noarch: python", "pip check") repeat across dozens of unrelated rows.
+  evidence: Cross-validated by two independent reviewers (Blind Hunter + the Verification Gap Reviewer) against the real committed catalog: G98's row is just ["fails"] (SKILL.md:3792, an ordinary English word in quotes, not a literal error string); G13 includes "(parens)" and "isolate" (SKILL.md:1814, typographic emphasis, not symptom text); G59 includes an entire reviewer sentence verbatim. Inherent to the deliberately narrow, deterministic quote/backtick extraction rule this story's intent-contract specifies (a pure syntactic derivation, not an NLP/quality filter) — faithful to SKILL.md's prose, not a defect in the extractor. Revisit if/when a consumer (Story 7.2 or a future build-failure matcher) needs stronger signal quality; a fix would need a curated stopword/specificity heuristic that the current spec deliberately doesn't define.
+  location: .claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py:_signature_tokens
+  origin: spec-deferred aee7832915ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-7-1-2: The fenced-code-block inclusion heuristic in _symptom_paragraph only fires when the Symptom paragraph's prose ends in a literal colon.
+
+- source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
+  summary: The fenced-code-block inclusion heuristic in _symptom_paragraph only fires when the Symptom paragraph's prose ends in a literal colon.
+  evidence: A Symptom paragraph that is a complete sentence (no trailing ':') immediately followed by a diagnostic fenced code block never gets that block's content folded into symptom_signature, even when the block is the most useful diagnostic material in the entry. Empirically grounded in G5's "fails ... with:" pattern (the one case investigated during planning); other, non-colon-ending shapes were not surveyed across all 110 gotchas. Not a defect against any stated AC — all 110 real rows already produce a non-empty signature via the whole-body fallback — but a real, narrow-heuristic limitation worth widening later if signature richness turns out to matter.
+  location: .claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py:_symptom_paragraph
+  origin: spec-deferred 3ae0fb0c3b57 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-7-1-3: _ENFORCED_BY_RE's exact-phrase match ("The optimizer's **CODE** check") has no fallback signal distinguishing "no check exists yet" from "the phrasing drifted."
+
+- source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
+  summary: _ENFORCED_BY_RE's exact-phrase match ("The optimizer's **CODE** check") has no fallback signal distinguishing "no check exists yet" from "the phrasing drifted."
+  evidence: This is the intent-contract's own deliberate design (Always: "This is deliberately conservative... a false non-null pointer is strictly worse than an honest null"), so the brittleness itself is intended behavior, not a bug. The gap is narrower: a future SKILL.md rewording of the two existing declarative sentences (G2/G3) — e.g. pluralizing "check" to "checks", or a typo — would silently degrade that row to null with no diagnostic distinguishing it from a genuine "not yet enforced" gotcha. Currently zero near-miss phrasings exist in the real 110-gotcha corpus, so there is no live impact today. Worth a mild warning/logging enhancement later if SKILL.md's phrasing conventions ever drift.
+  location: .claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py:extract_enforced_by
+  origin: spec-deferred f475fbe29d6f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-7-1-4: failure-catalog.yaml has no schema_version/format_version field.
+
+- source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
+  summary: failure-catalog.yaml has no schema_version/format_version field.
+  evidence: Raised by the Blind Hunter review. Reasonable forward-looking idea — nothing today consumes the file (Story 7.2, which will build the consuming lint/drift gate, doesn't exist yet), so adding a version field now would be speculative per this repo's Simplicity First principle ("minimum code that solves the problem; nothing speculative"). Revisit when Story 7.2 defines what it actually needs from the catalog's shape.
+  location: .claude/skills/conda-forge-expert/config/failure-catalog.yaml
+  origin: spec-deferred 59d5d9740e06 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-7-2-1: _code_present()'s narrow `code="X"`/`code='X'` literal-substring match could miss a check code defined a different way (spaced `code = "X"`, a dict-literal `"code": "X"`, ...), producing a false unresolved-pointer.
+
+- source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
+  summary: _code_present()'s narrow `code="X"`/`code='X'` literal-substring match could miss a check code defined a different way (spaced `code = "X"`, a dict-literal `"code": "X"`, ...), producing a false unresolved-pointer.
+  evidence: This mirrors failure_catalog_generator.py's own _REGISTRY_CODE_RE = re.compile(r'code=["\']([A-Z]+-[0-9]+)["\']') narrow-match convention verbatim -- the spec's own Code Map explicitly directs reusing this exact pattern, and Story 7.1's review already accepted the same narrowness for the generator. Not new to this story; a future widening (if a differently-styled check-code definition is ever added to recipe_optimizer.py) is a legitimate backlog item, not a defect here.
+  location: scripts/failure_catalog_check.py:_code_present
+  origin: spec-deferred 938b3367633e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-7-2-2: check_drift() decides ordinary drift vs. generator-broke by testing for the literal string "DRIFT DETECTED" in the generator's stderr -- a real but self-detecting coupling to Story 7.1's exact wording.
+
+- source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
+  summary: check_drift() decides ordinary drift vs. generator-broke by testing for the literal string "DRIFT DETECTED" in the generator's stderr -- a real but self-detecting coupling to Story 7.1's exact wording.
+  evidence: If failure_catalog_generator.py's message text ever changes, test_check_drift_detects_drifted_catalog reds immediately (the test asserts on the finding kind, not the string), so the coupling break surfaces at test time rather than as a silent misclassification in production.
+  location: scripts/failure_catalog_check.py:check_drift
+  origin: spec-deferred 23eb218e647f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-7-2-3: Nothing in this repo currently makes a detector finding (this one included) or a tests/scripts/ failure literally block a PR -- .github/workflows/detectors.yml is advisory-only by a pre-existing 2026-07-31 operator decision, and tests/scripts/ (including this story's new test file) is not invoked by any GitHub Actions workflow at all.
+
+- source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
+  summary: Nothing in this repo currently makes a detector finding (this one included) or a tests/scripts/ failure literally block a PR -- .github/workflows/detectors.yml is advisory-only by a pre-existing 2026-07-31 operator decision, and tests/scripts/ (including this story's new test file) is not invoked by any GitHub Actions workflow at all.
+  evidence: Confirmed via the Intent Alignment Auditor's independent read of every workflow file plus this dispatch's own earlier research: detectors.yml's own header comment states findings surface as warning annotations and "the job itself always succeeds, so a detector finding never blocks a merge"; no workflow references tests/scripts or the pyforge-doctor-scripts-test pixi task. Pre-existing, repo-wide, and explicitly out of scope per this story's own spec ("Never flip .github/workflows/detectors.yml from advisory to a hard gate"). Worth a future dedicated decision, not a defect of this diff.
+  location: .github/workflows/detectors.yml
+  origin: spec-deferred 95cffdae989f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

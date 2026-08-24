@@ -2,7 +2,7 @@
 title: A hand-driven run's deferrals reach the ledger unaided
 type: feature
 created: '2026-08-24'
-status: ready
+status: in-progress
 updated: '2026-08-24'
 context: []
 warnings: []

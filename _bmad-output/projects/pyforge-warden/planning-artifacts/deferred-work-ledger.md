@@ -496,3 +496,36 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the panicking version is still the one pinned. `pixi.lock` resolves `pixi-build-python-0.8.3` on all three platforms (`:3483` linux-64, `:5205` osx-arm64, `:6302` win-64); no bump past the `tools.rs:461` underflow has landed. As with doctor's DW-1-1-2 the trigger is mitigated by the fleet's move to `~/.bmad-loops/` (157–159 char worktree roots vs the ~173 threshold), but the underlying panic is untouched.
+
+### DW-FU-7-1: SourceEvidence carries no de-duplication across multiple observations of the same PackageIdentity (e.g. a package seen both direct and transitive within one CycloneDX document, or across adapters).
+
+- source_spec: `planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md`
+  summary: SourceEvidence carries no de-duplication across multiple observations of the same PackageIdentity (e.g. a package seen both direct and transitive within one CycloneDX document, or across adapters).
+  evidence: Story 7.2's union computation is the natural owner of duplicate- identity reconciliation (that is what a union does); Story 7.1's adapters intentionally emit one evidence record per observation. Flagged by the Blind Hunter review pass on the 2026-08-22 loopback.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py (CycloneDXSourceAdapter.ingest / ManifestSourceAdapter.ingest)
+  origin: spec-deferred 6dbc337850e2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-7-1-2: CycloneDXSourceAdapter.validate() never checks the document's specVersion, so an incompatible/very old CycloneDX schema version would be accepted and processed identically to 1.6.
+
+- source_spec: `planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md`
+  summary: CycloneDXSourceAdapter.validate() never checks the document's specVersion, so an incompatible/very old CycloneDX schema version would be accepted and processed identically to 1.6.
+  evidence: The specific fields this adapter reads (purl, name) are stable across CycloneDX versions in practice, so the practical risk is low; a stricter check needs a policy decision on which versions to accept, which is a value judgment beyond this story's scope. Flagged by the Blind Hunter review pass on the 2026-08-22 loopback.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py (CycloneDXSourceAdapter.validate)
+  origin: spec-deferred ed16ef95b06d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-7-2: "Reproducible from provenance alone" (SPEC.md CAP-2 / epics.md AC) does not universally hold: the required_authority_sources policy that actually determines status is never recorded on EligibilityResult or ProvenanceEntry.
+
+- source_spec: `planning-artifacts/specs/spec-7-2-the-eligibility-union-carries-its-provenance.md`
+  summary: "Reproducible from provenance alone" (SPEC.md CAP-2 / epics.md AC) does not universally hold: the required_authority_sources policy that actually determines status is never recorded on EligibilityResult or ProvenanceEntry.
+  evidence: Under the default policy (None), the whole-run union of every result's own provenance sources reconstructs the effective required set, so reproducibility holds at the whole-run level. Under an explicit, caller-supplied override, no trace of that override survives in the returned data -- a third party holding only the EligibilityResult tuples (without also knowing the call's required_authority_sources argument) cannot always re-derive status from provenance alone. The caller who supplied the override still holds it themselves, so no information is lost from their vantage point; the gap only bites a downstream/persisted consumer. Story 7.3 (CAP-3, CycloneDX output) is the natural point to decide how/whether to record the effective policy alongside a persisted eligibility report (e.g. as document metadata), since that is the first point "the answer" becomes an artifact a third party could hold in isolation. Raised by the Intent Alignment Auditor review layer on the 2026-08-22 review pass.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py (compute_eligibility_union)
+  origin: spec-deferred 5de88842f955 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
