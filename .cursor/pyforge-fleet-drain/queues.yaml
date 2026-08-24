@@ -110,11 +110,10 @@ stations:
     queue: []
   marshal:
     project: pyforge-marshal
-    drained: false
-    remaining_count: 1
-    next: 25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner
-    queue:
-    - 25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   mason:
     project: pyforge-mason
     drained: true
