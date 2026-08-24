@@ -22,6 +22,10 @@ same rule to the projected state, so a single blocked story keeps its epic open
 
 Running stations are detected live from `marshal status`, so the table reflects
 reality rather than a hardcoded list that would rot the moment a run ends.
+
+UNSUPERVISED rows (no Marshal supervisor sidecar) are supervision state, not
+engine liveness — the ATTENTION block names the CAP-2 follow-up before any
+re-spin (`reference/fleet-landing-pass-liveness.md`).
 """
 from __future__ import annotations
 
@@ -45,6 +49,14 @@ STALE_BEHIND_THRESHOLD = 20
 # one human projection, spelled identically everywhere run state is shown
 # (marshal status text, this table's state column, loop_stall_check.py).
 AWAITING_OPERATOR_LABEL = "awaiting-operator (run bmad-loop confirm)"
+
+# UNSUPERVISED follow-up (marshal Story 24.3, FR-195 CAP-3): the one-command
+# engine-liveness check before assuming a re-spin — same primary check as
+# fleet landing-pass STEP 2 (`.claude/memory/reference/fleet-landing-pass-liveness.md`).
+UNSUPERVISED_LIVENESS_FOLLOWUP = (
+    "`bmad-loop status <run_id> --json` + `bmad-loop list --json` "
+    "in the loop home"
+)
 
 
 def station_state(*, running: bool, story: str, hstate: str, done: int,
@@ -519,8 +531,15 @@ def main() -> int:
             reason = ((live.get(slug, {}) or {}).get("escalation_reason") or "unstated").split(chr(10))[0][:110]
             needs.append(f"{slug}: PAUSED on escalation ({reason}) -- "
                          f"run `/bmad-loop-resolve {current.get(slug, '<story>')}`")
-        elif hstate in ("stopped", "unsupervised") and back:
-            needs.append(f"{slug}: run {hstate} with {back} story(ies) left -- "
+        elif hstate == "unsupervised" and back:
+            needs.append(
+                f"{slug}: UNSUPERVISED with {back} story(ies) left -- "
+                f"verify engine liveness first ({UNSUPERVISED_LIVENESS_FOLLOWUP}); "
+                f"re-spin only if dead (`marshal factory spin pyforge-{slug}` "
+                f"or `marshal factory resume {slug}`)"
+            )
+        elif hstate == "stopped" and back:
+            needs.append(f"{slug}: run stopped with {back} story(ies) left -- "
                          f"needs `marshal factory spin pyforge-{slug}`")
         elif hstate == "unknown":
             watch.append(f"{slug}: status unreadable (stale journal) -- cosmetic "
