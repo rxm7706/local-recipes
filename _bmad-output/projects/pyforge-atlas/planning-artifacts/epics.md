@@ -1658,3 +1658,43 @@ with a dated entry.
 Packaging] {name}` issue per library + the dated Mason handoff tab (four dispositions),
 the AOSS-Free extra queue never expands the universe, and the three dashboard views render
 from the live identity tab — Mason consumes a tab without questions.
+
+---
+
+## Canopy obligations (2026-08-24)
+
+Recorded by `sprint-change-proposal-2026-08-24-canopy.md` (Phase 5,
+`docs/dreams/pyforge-unifying-strategy.md`). Atlas Epics 1–17 are **complete**; steward
+Epics 18–30 own Canopy implementation on `src/platform/`. **No Epic 18 here** — atlas must
+not copy steward stories.
+
+1. **`lane1-serves-dw-h3` (joint open question with steward — NOT answered here).** Epic 16
+   (`spec-wagtail-corporate-brain`) and the frozen `LaSuiteClient` REST contract
+   (`POST /api/v1/documents/`, `PATCH /api/v1/documents/{id}/`, `GET /api/v1/documents/{id}/`,
+   `GET /api/v1/documents/all/`) define atlas's narrow DW-H3 bring-up contract. They are **not**
+   Wagtail's own admin/API surface. Canopy Lane 1 must **not** absorb or re-mint
+   `spec-wagtail-corporate-brain`; resolution stays a **joint** steward↔atlas open question
+   (`lane1-serves-dw-h3`). DW-H3 remains open until the attended bring-up runs.
+
+2. **MCP — mount, do not duplicate.** Atlas already ships `build_server()` (Story 3.3). Steward
+   Story **21.2** (*Atlas MCP on the host, dual-era*) brings that face onto the host ASGI at
+   `POST /stations/atlas/mcp` using the official `mcp` SDK and dual-era revisions
+   `2025-03-26`–`2026-07-28`. Atlas does **not** build a second MCP server or a parallel public
+   port.
+
+3. **CAP-7 boards — steward dashboard only on the host.** Analytical boards mounted behind the
+   Canopy host consume **`pyforge.steward.dashboard`** (filter-then-search, steward Epic 23).
+   Atlas adopting that pattern for its own **Vizro CLI** boards (`dashboard/` module, Story 5.2)
+   is a **non-goal**. Vizro stays **outside** the host; Epic 14 query views follow their own
+   ASGI contract and are not re-scoped here.
+
+4. **BS-5 DuckDB — cooperate, do not duplicate Story 25.2.** Single-writer discipline and
+   `read_only=True` on atlas read paths are **atlas-local** (DuckDB consolidation, Epic 7).
+   Steward Story **25.2** (*One DuckDB writer*) implements the **absence-test** gate on the estate.
+   Atlas records cooperation with that gate; it does **not** add a duplicate steward story.
+
+5. **Five-tier symmetry — steward completes portal, MCP mount, skill, persona.** Atlas already
+   satisfies **Tier 1 (CLI)**. Steward Epics **19** (portal shell at `/stations/atlas/`),
+   **21** (hosted MCP face), and **29** (SKF domain skill + station persona) complete the
+   remaining tiers. Atlas must **not** grow a second chrome layer, duplicate `django-pyforge`
+   registration, or expose an extra public port for Canopy symmetry.

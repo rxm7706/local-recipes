@@ -850,3 +850,18 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+---
+
+## Canopy course correction (2026-08-24)
+
+### DW-CANOPY-2026-08-24
+
+- source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
+  summary: Canopy Phase 5 (`spec-pyforge-unifying-strategy`) — reconcile shipped Epic 11 with Epic 27 DDL governance without reopening engine integration stories.
+  evidence: Epic 11 Stories 11.1–11.2 provisioned `langflow_schema` / `dbgpt_schema` via Django `RunSQL` under parent AD-5; Canopy CAP-9 / FR-22 / canopy AD-9 moves production DDL to Liquibase (Epic 27). Architecture spine marks this as conflict-not-override — isolation and `search_path` remain; only the DDL producer changes.
+  resolution: **11.1 and 11.2 are NOT reopened** — sprint-status stays `done`; isolation shipped. **Epic 27 is the superseding forward work** (S-27.1 operator gate → S-27.2 pre-upgrade Job + DML-only app role → sqlmigrate CI gate). Do not queue rework of 11.1/11.2 when FR-22 lands.
+  open_joint: `lane1-serves-dw-h3` — whether Lane 1 (Wagtail) serves atlas data-warehouse H3 surfaces — **remains open**; joint steward/atlas decision; not invented in steward Canopy stories.
+  origin: Phase 5 bmad-correct-course, pyforge-steward, 2026-08-24
+  severity: medium
+  status: open

@@ -620,3 +620,33 @@ vs standalone) resolved here with a dated entry. **Consult (2026-08-22):** atlas
 **Given** engine output **Then** SBOM + vuln/license/currency reports render byte-equal to
 the CLI on the same input, and progress derives from phase position (`_phase_guard`
 pattern — monotonic by construction, no phase chooses its own number).
+
+## Canopy obligations (2026-08-24)
+
+Phase 5 (`bmad-correct-course`, headless/express). Warden ledger is **complete at Epic 8**;
+this section records Canopy convergence obligations — **no new warden epics**.
+
+**Portal rename and URL move (steward-owned).** The shipped portal (`compliance_face` at
+`/compliance/`, Epic 8) relocates under Canopy FR-9a/9b via steward **Story 19.1**
+(`pyforge-steward` Epic 19): mount `/stations/warden/`, permanent redirect from
+`/compliance/`, distribution `django-warden`, module `django_warden_fabric`, label
+`warden_fabric`. Existing models stay; portal remains a projection (no second write path).
+Warden planning artifacts naming `compliance_face` must still resolve after rename (S-19.1 AC).
+This pass records the obligation only — **no rename in warden package code here**.
+
+**Five-tier symmetry (warden):**
+
+| Tier | Surface | Status |
+|------|---------|--------|
+| CLI | `pyforge-warden` | Shipped (Epics 1–7) |
+| Web Portal | Epic 8 web face → `django_warden_fabric` | Shipped; move/rename = steward S-19.1 |
+| MCP service | Host ASGI MCP face | Steward Epic 21 |
+| Domain skill | Station SKF skill | Steward Epic 29 |
+| Agent persona | Station persona | Steward Epic 29 |
+
+**Out of scope for warden:** chrome (`django-pyforge`), FastAPI service ports, second dashboard
+stack — all Canopy/steward concerns.
+
+**Pointers:** `sprint-change-proposal-2026-08-24-canopy.md`; steward
+`_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` Epic 19; deferred
+`DW-CANOPY-2026-08-24`.

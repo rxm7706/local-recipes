@@ -529,3 +529,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+## DW-CANOPY-2026-08-24 — Portal rename and URL relocation (Canopy FR-9a/9b)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Phase 5; steward Story 19.1)
+  summary: The shipped compliance portal (`compliance_face` at `/compliance/`, Epic 8) must relocate to `/stations/warden/` behind a permanent redirect and rename to distribution `django-warden`, module `django_warden_fabric`, app label `warden_fabric` (Canopy FR-9a/9b). Existing models stay; portal remains a projection with no second write path. Execution is steward-owned (Epic 19 Story 19.1), not a warden epic — warden's last epic remains 8.
+  evidence: pyforge-unifying-strategy realization log 2026-08-24 (portal URL scheme + reusable-app triple); steward `epics.md` Story 19.1 AC ("pyforge-warden planning artifacts that named the old app still resolve"); `sprint-change-proposal-2026-08-24-canopy.md` (this pass, planning-only).
+  warden_artifact_resolution: Planning artifacts updated 2026-08-24 (`epics.md` Canopy obligations section; this ledger entry). No warden specs hard-code `/compliance/`; any operational bookmark to the old path remains valid via FR-9a's permanent redirect.
+  owner: pyforge-steward (S-19.1)
+  blocked_by: steward Epic 18 chrome/registration seam (S-19.1 deps S-18.1)
+  close_when: S-19.1 merges — no `compliance_face` identifier under `src/`, redirect live, app-label migration preserves job rows and migration history
+  status: open
+  recorded: 2026-08-24

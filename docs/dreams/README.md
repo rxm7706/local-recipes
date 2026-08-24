@@ -99,10 +99,12 @@ contract; the Dream is the "why" behind it.
   downstream row (Fleet, Backlog, In Build, Realized, Pitch, Archived). Owning
   is **not** becoming: the station is the post, not the product, so Atlas owning
   [`unity-data-stack.md`](unity-data-stack.md) does not mean it ships as
-  `pyforge-atlas`. `guild` is reserved for the two Dreams that *precede* the
-  stations ([`pyforge-charter.md`](pyforge-charter.md),
-  [`pyforge-genesis.md`](pyforge-genesis.md)); `bmad-drift-check` emits
-  `dream-unowned` for anything else claiming it. *(Replaces `crew`, which was
+  `pyforge-atlas`. `guild` is reserved for the one Dream that *precedes* the
+  stations ([`pyforge-charter.md`](pyforge-charter.md)); `bmad-drift-check` emits
+  `dream-unowned` for anything else claiming it. *(Closed at one on 2026-08-08,
+  when `pyforge-genesis` was absorbed into the Charter — Dream § Satellite: The
+  Seed, Spec CAP-5..CAP-8. `docs/governance/guild-roster.json` `guild_dreams` is
+  the authority; this line trailed it until 2026-08-24.)* *(Replaces `crew`, which was
   both retired vocabulary and a non-answer — "the Guild owns it" means no
   station does.)*
 
@@ -198,6 +200,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`horizontal-run-concurrency.md`](horizontal-run-concurrency.md) | dreamt | `scm.max_parallel = 1` in Marshal's rendered policy isn't a Marshal default — vendored `bmad_loop` 0.9.0 hard-clamps any requested value to 1 at policy load ("Phase 5" fan-out unbuilt upstream), silently, with no upstream-register entry tracking the gap. Wants the clamp surfaced, the gap registered, and Marshal-side readiness assessed for when it ships. |
 | [`bmad-drift-new-artifact-shape.md`](bmad-drift-new-artifact-shape.md) | dreamt | `pyforge.doctor.sources.factory::classify()` HARD-fails any project file it has no rule for — working as designed (fourteen shapes 2026-07-28, eleven more 2026-08-08, each closed by one git-reviewed rule), but Marshal Story 7.6's spike report (`planning-artifacts/spike-0-copier-api-fit-report.md`, PR #427) is a shape it hasn't seen yet, HARD-failing `detectors-ci`. Wants one more classification rule for the spike-report shape. |
 | [`quick-dev-reconciliation.md`](quick-dev-reconciliation.md) | dreamt | A story hand-implemented via `bmad-quick-dev` is invisible to Marshal — zero references in `pyforge-marshal`'s own source, `sprint-status-ledger.yaml` only ever advances on a `bmad-loop` completion signal, and Epic 4's spec-promotion/durability guarantees never apply to it. Wants quick-dev completions reconciled into the same tracked ledger/dashboard flow a loop-landed story gets, so an operator can mix modes within one station without Marshal's state drifting from reality. |
+| [`pyforge-unifying-strategy.md`](pyforge-unifying-strategy.md) | specified | The Canopy and the 8-station hub-and-spoke estate — one Django host at `src/platform/` mounting every station's portal, MCP on that same ASGI process, a unified CLI and a Redis Streams event backbone. **Rescoped 2026-08-24** to an extension of [`python-agent-platform`](python-agent-platform.md); Spec `ready`, steward Epics 18–30. Residual: Wagtail Lane 1, `django-pyforge`, seven portals, `pyforge.core.client`, RFC-1..5 and BS-1..8. No `services/` microservice tier. |
 | [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md) | dreamt | Every story pays the identical review cost regardless of risk — `gate_mode = "none"` only ever skips the human approval gate, never the independent reviewer, and `max_review_cycles`/`max_followup_reviews` are flat, repo-wide ceilings. `classify_doc_only_declaration` (Story 2.4) is real precedent for classifying a story's risk shape, but it feeds gate pass/fail, not review scheduling. Wants a similar classification to inform review *depth* for low-risk stories, without reproducing the `DW-AD23-3` incident (a lower `max_followup_reviews` cap silently dropped real recommended follow-ups). |
 
 **Applications**

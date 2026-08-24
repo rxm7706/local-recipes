@@ -654,3 +654,20 @@ deployment.
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+---
+
+## DW-CANOPY-2026-08-24 — Canopy five-tier integration deferred to steward (Phase 5)
+
+- source: `docs/dreams/pyforge-unifying-strategy.md` Phase 5; `sprint-change-proposal-2026-08-24-canopy.md`; `epics.md` § Canopy obligations (2026-08-24)
+  summary: Herald Epics 1–15 are complete, but four of five Canopy tiers remain steward-owned under `spec-pyforge-unifying-strategy`. Herald must not mint Epics 16+ copying steward 18–30. Integration lands through steward **Epic 19** (portal at `/stations/herald/`, naming triple `django-herald` / `django_herald_<app>` / `herald_<app>`), **Epic 21** (`POST /stations/herald/mcp` on host ASGI + supervisor run state), **Epic 22** (`pyforge herald …` dispatch while `herald` CLI remains), and **Epic 29** (SKF skill compiled from `pyforge-herald` + Agent-Herald persona). Herald's static Moments dashboard stays framework-neutral (`spec-secure-live-dashboards` adopter; CAP-7 via `pyforge.steward.dashboard`; no Vizro). No second chrome, no extra public port, no `services/` FastAPI.
+  evidence: Phase-5 `bmad-correct-course` run 2026-08-24 (headless-express). Peer pattern: marshal/steward `## Canopy obligations (2026-08-24)` blocks. Live pre-Canopy surfaces: `webhook_host.py` supports throwaway demo only (DW-13-6-1 — no steward perimeter ASGI target yet); fleet MCP servers blocked on open question `mcp-runtime-base` (unifying-strategy realization log 2026-08-24). Herald SPEC non-goal at `:137` (no console ownership) unchanged.
+  status: open
+  owner: pyforge-steward (Canopy build); pyforge-herald consumes at integration hooks only
+  blocked_by:
+    - steward:Epic 19 (eight portal shells under `/stations/<name>/`)
+    - steward:Epic 21.4 (remaining MCP faces incl. herald)
+    - steward:Epic 22 (unified `pyforge` CLI dispatch)
+    - steward:Epic 29 (SKF domain skills + station personas)
+  related: DW-13-6-1 (persistent webhook/perimeter hosting), `mcp-runtime-base`
+  promoted: 2026-08-24 — Phase 5 correct-course for pyforge-herald

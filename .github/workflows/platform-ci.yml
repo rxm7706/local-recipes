@@ -142,6 +142,9 @@ env:
   # Shared platform image tag from build-platform-image (gke + ocp + air-gap
   # only; container runs independent docker/podman builds per spec 10.3).
   PLATFORM_CI_IMAGE_REF: platform:ci-${{ github.sha }}
+  # The chart renders the DB-GPT sidecar unconditionally, so the shared build
+  # produces it too -- see build-platform-image's own step for why.
+  PLATFORM_CI_SIDECAR_REF: platform-dbgpt-sidecar:ci-${{ github.sha }}
 
 concurrency:
   group: platform-ci-${{ github.ref }}
@@ -249,8 +252,17 @@ jobs:
       - name: Build platform image (once per workflow run)
         run: docker build -f src/platform/Containerfile -t "${{ env.PLATFORM_CI_IMAGE_REF }}" .
 
-      - name: Export platform image for downstream jobs
-        run: docker save "${{ env.PLATFORM_CI_IMAGE_REF }}" | gzip -1 > platform-ci-image.tar.gz
+      # The chart renders the DB-GPT sidecar Deployment UNCONDITIONALLY
+      # (sidecar-deployment.yaml has no `enabled` guard), so every `helm
+      # install` of the core chart references `platform-dbgpt-sidecar`. Built
+      # here alongside the platform image so air-gap-parity can prove the whole
+      # rendered release resolves node-locally -- without it that job's pod
+      # pulls from a registry, which is the exact thing CAP-6 forbids.
+      - name: Build DB-GPT sidecar image (chart renders it unconditionally)
+        run: docker build -f src/platform/compose/dbgpt/Containerfile -t "${{ env.PLATFORM_CI_SIDECAR_REF }}" .
+
+      - name: Export platform + sidecar images for downstream jobs
+        run: docker save "${{ env.PLATFORM_CI_IMAGE_REF }}" "${{ env.PLATFORM_CI_SIDECAR_REF }}" | gzip -1 > platform-ci-image.tar.gz
 
       - uses: actions/upload-artifact@v7
         with:
@@ -1370,14 +1382,19 @@ jobs:
       # naive top-to-bottom reading of this story's own Boundaries): the
       # mirror can total hundreds of MB across 428 packages, and prefetching
       # it before kind load would waste disk on this runner for no gain.
-      - name: Load shared platform image (retag for kind)
+      - name: Load shared platform + sidecar images (retag for kind)
         run: |
           gunzip -c platform-ci-image.tar.gz | docker load
           docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" platform:air-gap-smoke
+          docker tag "${{ env.PLATFORM_CI_SIDECAR_REF }}" platform-dbgpt-sidecar:air-gap-smoke
 
       # No registry push -- same as `gke-portability-smoke`'s own step.
-      - name: kind load the built image (no registry push)
-        run: kind load docker-image platform:air-gap-smoke --name air-gap-smoke
+      # The sidecar goes in for the same reason postgres/redis do below: the
+      # chart renders its Deployment unconditionally, so leaving it out means a
+      # pod in this release reaches for a registry, and this job's whole
+      # premise is that nothing does.
+      - name: kind load the built images (no registry push)
+        run: kind load docker-image platform:air-gap-smoke platform-dbgpt-sidecar:air-gap-smoke --name air-gap-smoke
 
       # The chart's own postgres/redis StatefulSet/Deployment default to
       # plain upstream images (values.yaml: postgres.image
@@ -1606,6 +1623,7 @@ jobs:
           helm install platform src/platform/deploy/charts/platform \
             --namespace platform-airgap \
             --set image.tag=air-gap-smoke \
+            --set sidecar.image.tag=air-gap-smoke \
             --set django.secureSslRedirect=False \
             --timeout 5m || {
             echo "::error::helm install failed"
@@ -1623,6 +1641,39 @@ jobs:
             kubectl logs -n platform-airgap -l app.kubernetes.io/component=migrate --tail=200 || true
             exit 1
           }
+
+      # The general form of the defect this job was blind to until
+      # 2026-08-24: it waited on the migrate Job and curled the web Service,
+      # so ANY other pod in the release could sit in ImagePullBackOff --
+      # reaching for a registry that, in a real air gap, is not there -- and
+      # this job still reported green. That is a false negative against its
+      # own core criterion ("any external reference is a FAILING check, not a
+      # warning"). The DB-GPT sidecar was the live instance; this step is
+      # written against the CLASS so the next unloaded image cannot repeat it.
+      #
+      # Retries for 60s rather than asserting once: images are node-local
+      # here, but kubelet still reports transient `ErrImagePull` before the
+      # first successful lookup on a cold node.
+      - name: Assert no pod is pulling from a registry (the AD-13 premise)
+        run: |
+          deadline=$((SECONDS + 60))
+          while :; do
+            bad="$(kubectl get pods -n platform-airgap \
+              -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .status.containerStatuses[*]}{.state.waiting.reason}{" "}{end}{"\n"}{end}' \
+              | grep -E 'ImagePullBackOff|ErrImagePull' || true)"
+            if [ -z "$bad" ]; then
+              echo "No pod is waiting on an image pull."
+              break
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::A pod is reaching for a registry inside the air-gap proof -- its image was never loaded node-locally:"
+              echo "$bad"
+              kubectl get pods -n platform-airgap
+              kubectl get events -n platform-airgap --sort-by=.lastTimestamp | tail -30
+              exit 1
+            fi
+            sleep 5
+          done
 
       # `kubectl port-forward` (not Ingress -- 12.2 already proves that
       # path) backgrounded for the two steps below; its PID is captured so

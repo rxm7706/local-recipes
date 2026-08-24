@@ -77,7 +77,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 
 > **Note (2026-07-25):** `PRD.md` and `epics.md` are `tracked:plan` documents. This pass reconciled the *living* docs only; the plan pair re-syncs structurally via `bmad-correct-course` → `bmad-prd` / `bmad-create-epics-and-stories`, which has **not** been run here. Known plan-side staleness: Epic 10 is titled "Part 3 MCP Server + 42 Tools" (live: 46), and neither doc knows about Part 5.
 
-**Change history** — **9** `bmad-correct-course` proposals under **[`change-history/`](./change-history/)**:
+**Change history** — **10** `bmad-correct-course` proposals under **[`change-history/`](./change-history/)**:
 
 | Document | Sync |
 |---|---|
@@ -90,6 +90,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 | [sprint-change-proposal-2026-05-24-v8.6.0.md](./change-history/sprint-change-proposal-2026-05-24-v8.6.0.md) | v8.5.3 → v8.6.0 — AppThreat Deep Signals (migrations v23 → v24 → v25); Wave C cancelled pre-implementation |
 | [sprint-change-proposal-2026-06-07-v8.11.1.md](./change-history/sprint-change-proposal-2026-06-07-v8.11.1.md) | v8.10.0 → v8.11.1 — npm-generator default flipped to per-platform inline build |
 | [sprint-change-proposal-2026-06-20-v8.39.0.md](./change-history/sprint-change-proposal-2026-06-20-v8.39.0.md) | v8.11.1 → v8.39.0 — Phase F+ intelligence waves, PR-artifact downloader, Phase P cost refactor |
+| [sprint-change-proposal-2026-08-24-canopy.md](./change-history/sprint-change-proposal-2026-08-24-canopy.md) | Canopy Phase 5 — `spec-factory-console` superseded by steward CAP-2; generator until S-30.2 |
 
 **Frozen archive** (never re-grounded by the sync loop): [`prfaq-cfe-atlas-kedro-migration.md`](./prfaq-cfe-atlas-kedro-migration.md) + [its distillate](./prfaq-cfe-atlas-kedro-migration-distillate.md), the 4 studies under [`research/`](./research/), and [`campaign-spec-completion-2026-07-25.md`](./campaign-spec-completion-2026-07-25.md).
 
@@ -101,7 +102,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 | [`spec-regenerable-factory/`](./specs/spec-regenerable-factory/SPEC.md) | spec-surface governance itself (+ [`waves.md`](./specs/spec-regenerable-factory/waves.md)) |
 | [`spec-fleet-stewardship/`](./specs/spec-fleet-stewardship/SPEC.md) | the recipe/feedstock fleet (2,809 files; drift exempt) |
 | [`spec-modernist-identity/`](./specs/spec-modernist-identity/SPEC.md) | the PyForge identity + deck family (693 files) |
-| [`spec-factory-console/`](./specs/spec-factory-console/SPEC.md) | the Guildhall console (+ [`console-contract.md`](./specs/spec-factory-console/console-contract.md), [`drill-evidence.md`](./specs/spec-factory-console/drill-evidence.md)) |
+| [`spec-factory-console/`](./specs/spec-factory-console/SPEC.md) | **superseded 2026-08-24** → steward CAP-2 (Lane 1 Wagtail front door); generator until S-30.2 (+ [`console-contract.md`](./specs/spec-factory-console/console-contract.md), [`drill-evidence.md`](./specs/spec-factory-console/drill-evidence.md)) |
 | [`spec-multi-loop-isolation/`](./specs/spec-multi-loop-isolation/SPEC.md) | concurrent bmad-loop homes |
 | [`spec-enterprise-airgap/`](./specs/spec-enterprise-airgap/SPEC.md) | the air-gap / JFrog routing layer |
 | [`spec-pyforge-marshal/`](./specs/spec-pyforge-marshal/SPEC.md) | Marshal's governance surface in this repo (distinct from the `pyforge-marshal` project's product Spec — the collision `spec_surface_check.py` keys around) |
@@ -333,7 +334,7 @@ This index and its 11 companion documents were reconciled against:
 | Tracked plan docs | 2 (`PRD.md`, `epics.md`) |
 | Dated gate snapshots | 2 (`validation-report-PRD.md`, `implementation-readiness-report.md`) |
 | Specs owned by this project | 8 (of 22 across 14 BMAD projects) |
-| Change history | 9 sprint-change-proposals under `change-history/` |
+| Change history | 10 sprint-change-proposals under `change-history/` |
 | Frozen archive | 2 PRFAQ + 4 research studies + 1 campaign record |
 | Total files classified by the detector | 75 |
 | Originally generated | 2026-05-12 |

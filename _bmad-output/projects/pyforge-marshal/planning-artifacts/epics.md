@@ -3895,3 +3895,38 @@ re-grounded via plain agents with bumped `source_pin`s, and SYNC-RUNBOOK names t
 recurring owner + cadence — resolving the spec's open question with a dated entry.
 
 **Epic 25 clears to dispatch in full — all seven stories are independent.**
+
+---
+
+## Canopy obligations (2026-08-24)
+
+Marshal station boundaries under the Canopy (`spec-pyforge-unifying-strategy`, steward-owned).
+Planning retirement of `spec-factory-console` is effective immediately; code deletion waits on
+steward Story **30.2**. Do **not** mint marshal Epics 26+ that duplicate steward Epics 18–30.
+
+**Five-tier symmetry.** Marshal's CLI tier is shipped (`pyforge-marshal` / `marshal` verbs). The
+remaining tiers are steward-owned: **Epic 19** (eight portals, uniform prefix), **Epic 21**
+(service face / MCP + supervisor run state), **Epic 29** (SKF domain skills + station personas).
+Marshal integrates at hooks — it does not re-spec those tiers here.
+
+**Uniform URL.** Marshal's Lane 2 portal mounts at **`/stations/marshal/`** under the single host
+session — no station-specific origin, no bookmark-breaking slug outside the shared prefix.
+
+**Chrome.** Portals mount **`django-pyforge`** shared chrome only — no second app switcher, no
+duplicated Modernist shell, no marshal-only header fork.
+
+**Service face.** Marshal capabilities surface through the estate MCP host and shared client
+(CAP-4/CAP-6) — **no extra FastAPI port** or standalone marshal microservice outside the Canopy
+service pattern.
+
+**Supervisor ingest (deferred).** Publishing bmad-loop run state into the Canopy supervisor
+(`public.run_state`, steward **Epic 21**) is **deferred** to steward; marshal-side ingest hooks
+land **after** Epic 21 — not in this planning pass.
+
+**Epic 16 is not Lane 1 CMS.** Epic 16 ("The board derives truth") governs **`docs/dashboard/`
+generator path plumbing** only — slug→path resolution, loud failures, derived `data.js` fields.
+It is **not** the Wagtail Lane 1 front door (steward CAP-2 / Epic 20). Generator work may
+continue until steward 30.2 removes the static build path.
+
+**Kedro-Viz.** `docs/dashboard/kedro-viz/**` remains atlas-owned publish output — not superseded,
+not in marshal Canopy retirement scope.
