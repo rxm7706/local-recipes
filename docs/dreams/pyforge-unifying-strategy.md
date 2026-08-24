@@ -931,6 +931,48 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 
 ---
 
+## Adversarial Architecture & Red Team Hardening Directives
+
+A rigorous Red Team architecture review evaluated the 10-layer topology across 6 enterprise stress-test lenses, codifying the following systemic mitigations and pre-implementation directives:
+
+### 1. The 5 Pre-Implementation Remediation Directives (RFC Architecture)
+
+```mermaid
+graph LR
+    RFC1["RFC-1: FastAPI Worker Pool Separation (REST vs. MCP)"] --> Core["Enterprise Production Parity"]
+    RFC2["RFC-2: Dedicated Redis Broker vs. Cache Instances"] --> Core
+    RFC3["RFC-3: OAuth2 Token Delegation & Scoped Task Auth"] --> Core
+    RFC4["RFC-4: Redis Streams PEL Reclaim & DLQ Contract"] --> Core
+    RFC5["RFC-5: Alembic Single-Source DB Governance"] --> Core
+```
+
+* **Directive 1 — Uvicorn Process & Worker Pool Separation (RFC-1):**
+  * *Vulnerability:* Long-running MCP streaming sessions and heavy CPU AST evaluations in FastAPI starve the asyncio event loop for human HTMX portal requests.
+  * *Remediation:* Split each station's compute runtime into two distinct process pools: (1) Low-latency REST worker pool with 500ms timeout ceilings for Django HTMX portals, and (2) Dedicated async worker pool for persistent SSE/MCP agent connections and background threads.
+* **Directive 2 — Strict Redis Broker vs. Cache Infrastructure Separation (RFC-2):**
+  * *Vulnerability:* Using a single Redis instance with `noeviction` causes volatile web session/cache writes to exhaust memory and crash Celery task ingestion.
+  * *Remediation:* Provision two independent Redis services: `redis-broker` (`maxmemory-policy noeviction` for Celery & Redis Streams) and `redis-cache` (`maxmemory-policy allkeys-lru` for Django sessions, HTMX partial caches, and rate-limiting).
+* **Directive 3 — Scoped Identity Token Delegation (RFC-3):**
+  * *Vulnerability:* Forwarding raw user Bearer tokens causes mid-build 401s during long asynchronous tasks, while static API keys destroy audit attribution.
+  * *Remediation:* Standardize `pyforge.core.client` on Signed Internal JWTs (HMAC-SHA256) carrying `idp_subject`, user roles, and an explicit `delegated_by: "pyforge-host"` claim. Async Celery tasks capture the `idp_subject` at invocation time to mint a scoped execution token.
+* **Directive 4 — Redis Streams PEL Reclaim, DLQ & Loop-Depth Limits (RFC-4):**
+  * *Vulnerability:* Unhandled consumer panics leave orphaned messages in the Pending Entries List (PEL), while recursive agent triggers risk infinite loops.
+  * *Remediation:* Mandate an automated Dead Letter Queue (`pyforge:events:dlq`) consumer using `XAUTOCLAIM` to harvest abandoned messages, and enforce a strict loop-depth ceiling (`X-PyForge-Loop-Depth <= 5`) on all inter-station event payloads.
+* **Directive 5 — Single-Source Database DDL Governance via Alembic (RFC-5):**
+  * *Vulnerability:* Running dual migrations (Django migrations vs. FastAPI Alembic) across zero-model portals causes DDL lock contention and schema drift.
+  * *Remediation:* Django manages only platform tables (`auth_user`, `django_session`, `wagtail_*`). Station domain schemas (`warden_*`, `atlas_*`, `scribe_*`) in PostgreSQL are owned exclusively by FastAPI services and migrated via Alembic in Kubernetes pre-install Helm hooks.
+
+### 2. Edge Case Failure Protections
+
+| Failure Scenario | Mitigation Pattern |
+| :--- | :--- |
+| **Agentic DDoS / Runaway MCP Loop** | Token-Bucket rate limiting per `agent_id` in Redis + Semantic Circuit Breakers tripping if an agent executes >10 build calls per minute. |
+| **Reverse-Proxy Tenant Data Leakage** | Cryptographically signed `X-Tenant-Signature` headers injected by Django Host and validated by Vizro/FastAPI backends; strict CSP iframe sandboxing. |
+| **DuckDB Concurrency Lock Contention** | Read-only shared DuckDB file attachments with single-writer lock queues offloaded to background Celery workers. |
+| **OpenShift `readOnlyRootFilesystem` Startup Failures** | Explicit in-memory `emptyDir` mounts for `/tmp`, `PYTHONPYCACHEPREFIX=/tmp/pycache`, and WhiteNoise cache directories. |
+
+---
+
 ## Constraints / Non-goals
 
 - **Not a fragile monolithic SPA:** We use server-driven Django + HTMX + Wagtail CRX with pluggable reusable apps (`django-pyforge`) and reverse-proxied Vizro analytics containers rather than a fragile JavaScript monolith.
@@ -974,3 +1016,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Packaging Audit & High-Leverage Opportunity Matrix: completed an audit of all station `pyproject.toml` files, verifying `hatchling` build systems and `pyforge-core` leaf spine bindings across all 9 stations, and mapped top 10 underutilized repository libraries (`cocoindex`, `openlineage`, `BSL`, `markitdown`, `graphviz2drawio`, `filelock`, `go-sops`, `pandera`, `taplo`, `playwright`) to specific station capabilities.
 - **2026-08-23** — Empirical Multi-Python Resolution Benchmark: executed standalone `pixi lock` solver benchmarks across the entire 1,000+ package estate for Python 3.12, 3.13, and 3.14, confirming 100% solver success across all three Python minor versions with complete binary C-extension availability.
 - **2026-08-23** — The 3 Operational Planes Architecture Formalization: unified the 10 platform layers into three macro operational planes (UI & Routing Plane, Compute & Agent Plane, Data & Infrastructure Plane) with an overarching Mermaid system topology showing direct client-to-service and agent-to-MCP execution paths.
+- **2026-08-23** — Adversarial Architecture & Red Team Hardening Directives: codified 5 mandatory pre-implementation RFCs (FastAPI REST vs. MCP worker process separation, dedicated Redis broker vs. cache instances, scoped identity token delegation, Redis Streams PEL dead-letter queue with max loop-depth limits, and single-source PostgreSQL DDL governance via Alembic).
