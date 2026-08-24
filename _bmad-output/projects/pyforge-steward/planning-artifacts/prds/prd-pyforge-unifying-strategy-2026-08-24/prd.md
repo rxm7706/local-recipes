@@ -384,8 +384,24 @@ Each station exposes a service face implementing the current MCP specification. 
 
 **Consequences (testable):**
 - A conformance check passes against each of the eight endpoints.
+- Each endpoint accepts **`2025-03-26` through `2026-07-28`** — the four handshake revisions and
+  the modern one — served from one deployment.
+- An `initialize` request is answered with **the revision the client asked for**, never the
+  server's own newest.
+- A request declaring an unsupported revision returns `-32022` with the supported list attached,
+  rather than failing opaquely.
+- No code path selects behavior from the client's name or user-agent.
 - The deprecated dual-endpoint SSE shape is not served.
 - Atlas's existing server is brought to the same specification rather than duplicated.
+
+**Notes:** The revision range is not a compatibility nicety — the client fleet is genuinely split.
+Copilot and Zed sit at `2025-11-25`, Gemini CLI at `2025-06-18`, and Codex already sends
+`2026-07-28`. Pinning either end alone rejects real traffic. Cursor's revision is unpublished, which
+is itself an argument for accepting the range rather than enumerating known clients.
+
+The echo rule earns its own consequence because the failure it prevents is counter-intuitive: a
+client receiving a revision it does not recognize aborts **even when that revision is newer**.
+Asserting the newest is a self-inflicted rejection, not a forward-compatible default.
 
 #### FR-12: A long operation survives a disconnect
 
@@ -396,13 +412,32 @@ client reconnects. Realizes UJ-2. **CAP-4.**
 - A multi-minute operation run across a simulated ingress disconnect yields its result on
   reconnection.
 - The operation is not recomputed on reconnect.
-- Keep-alive interval is under 30 seconds, verified by inspecting emitted traffic — not by a route
-  annotation, which is defence-in-depth only.
+- The starting call **returns without holding the connection**, proven by the response arriving well
+  before the operation completes.
+- The result is retrievable **from a different replica** than the one that started the work, so no
+  session affinity is required.
+- A handle is opaque and high-entropy, and expires — it is not a guessable or permanent identifier.
+- Keep-alive interval is under 30 seconds where any stream exists at all, verified by inspecting
+  emitted traffic — not by a route annotation, which is defence-in-depth only.
 
-**Notes:** `[NOTE FOR PM]` FR-12's recommended mechanism depends on OQ-3 — whether the official SDK
-ships a server-side runtime for resumable operations yet. If it does not, this FR needs an interim
-mechanism and the story must be written to survive the SDK catching up. This is the single largest
-gap between recommended design and shippable code in the chain.
+**Notes:** **OQ-3 is answered, and the answer removes the mechanism this FR was expected to use.**
+There is no server-side Tasks runtime in the official SDK — it is listed under *Known gaps*, and the
+only implementation in any language is a beta on an unreleased FastMCP 4 that conda-forge cannot
+accept. So the requirement is delivered as a **`start`/`get` tool pair over a durable store**.
+
+This is why the FR is worded as an outcome rather than a mechanism. The pair implements the same
+lifecycle SEP-2663 standardizes, so adopting Tasks later is a wire-layer swap over the same store —
+the durable store is the hard part, and the extension only replaces the layer above it.
+
+Three things that look like they satisfy this FR and do not: progress notifications travel down the
+live connection and die with it (they solve the spinner, not the disconnect); sticky-session
+affinity is ruled out because the modern protocol revision deliberately removed sessions; and
+home-grown stream replay reimplements the hard part badly. The "different replica" consequence
+exists specifically to make the affinity shortcut fail its test.
+
+`[NOTE FOR PM]` Tasks is worth a **scheduled re-check** rather than treating this as settled
+forever. SEP-2663 is Final, the SDK's pluggable extension API has landed, and the tracking issue is
+open to bring the extension in-repo — this could plausibly resolve during the chain.
 
 ---
 
@@ -1034,22 +1069,30 @@ control they cannot.
 
 **Still open:**
 
-1. **MCP client revision** — which protocol revision do our agent clients actually speak? A
-   server pinned to one revision rejects clients of another. Blocks FR-11's conformance target.
-   Under research.
-2. **MCP resumable-operation runtime** — does the official SDK ship a server-side runtime for it
-   yet? The largest gap between CAP-4's recommended pattern and shippable code. Blocks FR-12's
-   mechanism, not its requirement — the FR stands either way, and an interim mechanism must be
-   replaceable without rewriting it. Under research.
-3. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
+1. **Do the service faces stay on FastMCP or move onto the official `mcp` SDK?** **No published
+   pairing satisfies both** — every conda-forge `fastmcp` 3.x build excludes `mcp` 2.0, and the one
+   pair the solver currently picks is broken at runtime. Staying on FastMCP means dropping below
+   `mcp` 2.0 and forgoing the modern revision that FR-11 requires; moving onto `mcp` delivers the
+   range for free but relocates five modules. **New, and urgent — it is also a live outage.**
+2. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
    is *not* the CMS's own API, so this is a real compatibility question. Jointly owned with atlas.
-4. **One tracking schema or one per application?** `liquibaseSchemaName` decides where the
+3. **One tracking schema or one per application?** `liquibaseSchemaName` decides where the
    changelog and lock tables live. Shared means a **global** migration lock; per-schema means a
    per-application one — which determines whether two applications can migrate concurrently.
    **New, surfaced by the Liquibase research; decide in the architecture pass.**
 
 **Answered 2026-08-24:**
 
+-2. ~~**MCP client revision**~~ — **accept `2025-03-26` through `2026-07-28`**, which `mcp` 2.0.0
+   already serves dual-era with no configuration. The fleet is split (Copilot and Zed at
+   `2025-11-25`, Gemini CLI at `2025-06-18`, Codex already at `2026-07-28`), so both ends are load
+   bearing. Bound into FR-11, along with two invariants the research surfaced: echo the client's
+   requested revision, and never branch on client name.
+-1. ~~**MCP resumable-operation runtime**~~ — **no, and blocked upstream.** The Tasks extension is
+   listed under the SDK's *Known gaps*; the only runtime in any language is a beta on an unreleased
+   FastMCP 4, absent from conda-forge along with its own dependency. FR-12 ships a `start`/`get`
+   pair over a durable store instead — the same lifecycle SEP-2663 standardizes, so adopting it
+   later is a wire-layer swap. Worth a scheduled re-check rather than treating as closed.
 0. ~~**Liquibase multi-schema regression**~~ — **fixed in 5.0.4**, corroborated by both the merged
    PR and the release notes. The question was framed too broadly: the defect only affected
    `runInTransaction="false"` changesets, never in-transaction ones. It surfaced a worse hazard in

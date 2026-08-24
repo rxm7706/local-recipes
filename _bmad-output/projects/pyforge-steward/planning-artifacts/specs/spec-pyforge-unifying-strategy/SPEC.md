@@ -13,6 +13,7 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md
+  - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform
 surface:
@@ -31,9 +32,8 @@ surface:
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:
-  - mcp-client-revision
-  - mcp-tasks-runtime
   - lane1-serves-dw-h3
+  - mcp-runtime-base
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -93,6 +93,9 @@ they are why this is not merely a UI project.
     current-specification MCP endpoint, with long operations surviving connection loss.
   - **success:** An agent completes a multi-minute station operation across a simulated ingress
     disconnect and still retrieves the result.
+  - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
+    would be the natural vehicle and has no server-side runtime to build on — so binding the
+    capability to Tasks would block it on upstream. See the `start`/`get` constraint below.)*
 
 - **CAP-5 — One command grammar.**
   - **intent:** A single entry point dispatches `pyforge <station> <noun> <verb>` to the eight
@@ -221,6 +224,26 @@ they are why this is not merely a UI project.
   is cluster-wide with no per-route override, and HAProxy governs streaming responses by
   `timeout client`/`timeout server`, not `timeout tunnel`. A route timeout annotation is
   defence-in-depth, never the mechanism.
+- **Always:** service faces accept **`2025-03-26` through `2026-07-28`** — four handshake revisions
+  plus the modern one. Pinning to the modern revision alone would reject most of the current client
+  fleet; omitting it rejects Codex, which already sends it.
+- **Never:** a server asserts its own newest revision in an `initialize` response. It **echoes the
+  client's requested revision** whenever it can serve it. A client that receives a revision it has
+  never heard of aborts — *even when that revision is newer* — so asserting the newest is a
+  self-inflicted rejection.
+- **Never:** behavior is selected from the client's name or user-agent. Only the declared protocol
+  revision decides. Sniffing becomes tempting mid-migration and is always wrong.
+- **Always:** CAP-4's disconnect-survival is delivered as a **`start`/`get` tool pair over a durable
+  store**, not via the MCP Tasks extension. Tasks is Final as SEP-2663 but has **no server-side
+  runtime in the official SDK**, and the only implementation anywhere is a beta on an unreleased
+  FastMCP 4, absent from conda-forge. The pair implements SEP-2663's own lifecycle, so adopting the
+  extension later is a wire-layer swap over the same store. `start` must not hold the connection —
+  which also means no long-lived stream exists for the keep-alive constraint above to apply to.
+- **Never:** disconnect-survival is claimed by progress notifications, sticky-session affinity, or
+  home-grown stream replay. Progress notifications die with the connection they travel on; the
+  `2026-07-28` core deliberately removed sessions.
+- **Always:** a task handle is treated as a **capability** — opaque, high-entropy, TTL'd. Without
+  sessions, anyone presenting the handle can read the task.
 - **Always:** **six conda-forge builds must land first**, and they are not six new recipes. Five
   serve CAP-13: four new feedstocks (`openfeature-sdk`, `openfeature-flagd-api`,
   `openfeature-flagd-core`, `openfeature-provider-flagd`, none present anywhere on anaconda.org)
@@ -320,10 +343,25 @@ database role is provably incapable of altering its own schema.
   `runInTransaction="false"`, never in-transaction ones, so the gate covers the exception
   (`CREATE INDEX CONCURRENTLY`, `ALTER TYPE … ADD VALUE`) rather than multi-schema work generally.
   It surfaced a larger hazard in its place — open issue 7624, now a `Never:` constraint above.
-- **mcp-client-revision** — which MCP protocol revision do our agent clients actually speak? A
-  `2026-07-28`-only server rejects handshake-era clients and vice versa.
-- **mcp-tasks-runtime** — does the official `mcp` Python SDK ship a server-side Tasks runtime yet?
-  This is the largest gap between CAP-4's recommended pattern and shippable code.
+- ~~**mcp-client-revision**~~ — **answered 2026-08-24: accept `2025-03-26` through `2026-07-28`**,
+  four handshake revisions plus the modern one, which is what `mcp` 2.0.0 already serves dual-era
+  with no configuration. The client fleet is mixed enough that a `2026-07-28`-only server would
+  reject most of it, while Codex traffic already declares `2026-07-28` — so both ends are needed
+  now. Cursor's revision is genuinely unpublished and is treated as unknown.
+- ~~**mcp-tasks-runtime**~~ — **answered 2026-08-24: no, and blocked upstream.** `mcp` 2.0.0 lists
+  the Tasks extension under *Known gaps*; the only working server-side runtime in any language is
+  `fastmcp-tasks` at `4.0.0b3`, a beta on unreleased FastMCP 4, absent from conda-forge along with
+  its `docket` dependency. CAP-4's success criterion is shippable **without** Tasks — see the
+  constraint below. Recorded as a **scheduled re-check**, not a closed door: SEP-2663 is Final and
+  the SDK's extension API has landed, so this may resolve within the chain's lifetime.
+- **mcp-runtime-base** — do the service faces stay on FastMCP or move onto the official `mcp` SDK?
+  **No published pairing satisfies both**: every conda-forge `fastmcp` 3.x build declares
+  `mcp >=1.24.0,<2.0`, and `fastmcp` 2.14.3 only co-installs with `mcp` 2.0.0 because its upper
+  bound is missing — which is why `import fastmcp` currently raises `ImportError` on `McpError` and
+  **every in-repo MCP server is unstartable today**. Staying on FastMCP means dropping `mcp` below
+  2.0 and forgoing the modern revision entirely; moving onto `mcp` gives the dual-era range for
+  free but relocates five modules. This is CAP-4's foundational choice, and it is also a live
+  outage, so it cannot wait for the architecture pass to reach it.
 - **lane1-serves-dw-h3** — can CAP-2's CMS satisfy atlas's `DW-H3` (its attended live
   La Suite/Wagtail bring-up), so the estate runs one instance rather than two? Atlas's shipped
   `LaSuiteClient` froze a **La Suite Docs** REST contract, which is not Wagtail's own API, so this
