@@ -2,7 +2,7 @@
 title: Marshal gains the missing liveness primitive
 type: feature
 created: '2026-08-24'
-status: in-progress
+status: shipped
 updated: '2026-08-24'
 context: []
 warnings: []
@@ -44,7 +44,8 @@ baseline_revision: 4f978f3213b
 
 ## Auto Run Result
 
-Status: in-review
-Tests: `pixi run -e pyforge-marshal pyforge-marshal-test` (pending PR merge verification)
+Status: shipped
+PR: https://github.com/rxm7706/local-recipes/pull/718 (admin merge — GitHub Actions billing blocker; local tests green: 6291 passed)
+Merge SHA: `67ae6237a4d731da2ca4a039fdf9e647f9730e0e`
 Implementation: `HarnessPort.engine_liveness` + `BmadLoopHarness.engine_liveness` via `bmad-loop status <run_id> --json` gate + `list --json` liveness-aware status mapping; spec-3-7 deferred entry updated.
 Spec change: `list --json` carries `discover_runs`' engine liveness tri-state; `status --json` alone is run-state-only.

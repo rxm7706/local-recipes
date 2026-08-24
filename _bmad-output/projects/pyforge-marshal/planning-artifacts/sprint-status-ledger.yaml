@@ -102,7 +102,7 @@ development_status:
   23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: done
   23-2-wall-clock-is-never-blended-with-active-compute: done
   23-3-the-coverage-caption-partitions-by-true-reason: done
-  24-1-marshal-gains-the-missing-liveness-primitive: backlog
+  24-1-marshal-gains-the-missing-liveness-primitive: done
   24-2-the-operator-answer-is-one-documented-command: backlog
   24-3-an-unsupervised-row-has-a-cheap-documented-double-check: backlog
   25-1-retired-skill-ids-are-purged-and-guarded: done
