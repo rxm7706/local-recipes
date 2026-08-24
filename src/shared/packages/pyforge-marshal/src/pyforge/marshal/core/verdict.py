@@ -997,6 +997,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # Story 22.5 dispatch station guard / overlap advisory (CAP-5).
     "MRS-DISP-021": Verdict.ERROR,
     "MRS-DISP-022": Verdict.WARN,
+    "MRS-DISP-023": Verdict.ERROR,
+    "MRS-DISP-024": Verdict.WARN,
+    "MRS-DISP-025": Verdict.WARN,
+    "MRS-DISP-026": Verdict.ERROR,
 }
 
 

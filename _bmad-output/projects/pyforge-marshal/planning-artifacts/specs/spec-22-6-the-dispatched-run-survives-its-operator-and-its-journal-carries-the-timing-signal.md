@@ -2,11 +2,11 @@
 title: The dispatched run survives its operator, and its journal carries the timing signal
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 updated: '2026-08-23'
 context: []
 warnings: []
-baseline_revision: 4945e8abc6
+baseline_revision: e76e1818de6
 ---
 
 <intent-contract>

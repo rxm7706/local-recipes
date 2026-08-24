@@ -997,9 +997,15 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     resume_parser.set_defaults(handler=run_resume)
 
-    from .dispatch import add_factory_dispatch_subparser
+    from .dispatch import (
+        add_factory_dispatch_subparser,
+        add_factory_dispatch_attach_subparser,
+        add_factory_dispatch_resume_subparser,
+    )
 
     add_factory_dispatch_subparser(factory_subparsers)
+    add_factory_dispatch_attach_subparser(factory_subparsers)
+    add_factory_dispatch_resume_subparser(factory_subparsers)
 
 
 def _spawn_supervisor_sidecar(

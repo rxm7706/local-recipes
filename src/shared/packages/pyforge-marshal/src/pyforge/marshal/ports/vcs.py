@@ -307,6 +307,15 @@ class VcsPort(Protocol):
         repository, a corrupted repo)."""
         ...
 
+    def worktree_unified_patch(
+        self, worktree_path: Path, *, baseline_sha: str
+    ) -> str:
+        """Story 22.6: unified diff of all recoverable work in ``worktree_path``
+        since ``baseline_sha`` — committed range plus working-tree overlay.
+        Returns an empty string when there is nothing to preserve. Read-only.
+        Raises ``VcsCommandError`` on git failure."""
+        ...
+
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         """Every commit subject line reachable from ``ref`` (Story 4.1,
         AD-33), newest-first (``git log <ref> --format=%s``'s own default

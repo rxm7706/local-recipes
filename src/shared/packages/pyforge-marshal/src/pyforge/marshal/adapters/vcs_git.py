@@ -708,6 +708,49 @@ class GitVcs:
 
         return tuple(sorted(committed | dirty))
 
+    def worktree_unified_patch(
+        self, worktree_path: Path, *, baseline_sha: str
+    ) -> str:
+        """Story 22.6: ``git diff baseline..HEAD`` plus dirty overlay vs baseline."""
+        diff_result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "core.quotePath=false",
+                "diff",
+                f"{baseline_sha}..HEAD",
+            ]
+        )
+        if diff_result.returncode != 0:
+            raise VcsCommandError(
+                f"git diff {baseline_sha}..HEAD failed in {worktree_path}: "
+                f"{diff_result.stderr.strip()}"
+            )
+        parts: list[str] = []
+        if diff_result.stdout:
+            parts.append(diff_result.stdout)
+        dirty_result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "core.quotePath=false",
+                "diff",
+                baseline_sha,
+            ]
+        )
+        if dirty_result.returncode != 0:
+            raise VcsCommandError(
+                f"git diff {baseline_sha} failed in {worktree_path}: "
+                f"{dirty_result.stderr.strip()}"
+            )
+        if dirty_result.stdout:
+            parts.append(dirty_result.stdout)
+        return "".join(parts)
+
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         """Story 4.1 (AD-33): ``git log <ref> --format=%s``, read-only.
         ``ref`` is never resolved/validated ahead of time -- an unresolvable
