@@ -101,7 +101,7 @@ development_status:
   22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal: done
   23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: done
   23-2-wall-clock-is-never-blended-with-active-compute: done
-  23-3-the-coverage-caption-partitions-by-true-reason: backlog
+  23-3-the-coverage-caption-partitions-by-true-reason: done
   24-1-marshal-gains-the-missing-liveness-primitive: backlog
   24-2-the-operator-answer-is-one-documented-command: backlog
   24-3-an-unsupervised-row-has-a-cheap-documented-double-check: backlog
@@ -206,7 +206,7 @@ development_status:
   epic-21-retrospective: optional
   epic-22: backlog
   epic-22-retrospective: optional
-  epic-23: backlog
+  epic-23: done
   epic-23-retrospective: optional
   epic-24: backlog
   epic-24-retrospective: optional
