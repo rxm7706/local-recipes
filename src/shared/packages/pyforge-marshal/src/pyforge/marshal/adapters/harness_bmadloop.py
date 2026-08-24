@@ -214,6 +214,7 @@ from ..core.egress import to_redacted
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
+    EngineLiveness,
     RunStatusSnapshot,
     SmokeRunResult,
     SpinResult,
@@ -778,6 +779,20 @@ _RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
 # must still degrade to a reported failure rather than hang the supervisor's
 # own tick loop indefinitely).
 _STOP_TIMEOUT_S = 30.0
+
+# Story 24.1 (FR-195 CAP-1): ``bmad-loop list --json``'s per-run ``status`` is
+# ``discover_runs``' liveness-aware vocabulary (``engine_liveness`` applied
+# internally upstream). ``status --json``'s own ``status`` field is run-state
+# only and cannot distinguish alive from interrupted engines.
+_LIST_STATUS_TO_ENGINE_LIVENESS: dict[str, EngineLiveness] = {
+    "running": "alive",
+    "interrupted": "dead",
+    "finished": "dead",
+    "stopped": "dead",
+    "crashed": "dead",
+    "paused": "dead",
+    "unknown": "unknown",
+}
 
 # Story 6.4's `adapter_probe` -- `bmad-loop probe-adapter --json`'s own
 # default SCAN mode is documented (confirmed live against the installed
@@ -1380,6 +1395,50 @@ class BmadLoopHarness:
             except (FileNotFoundError, ValueError, OSError) as exc:
                 raise HarnessError(f"cannot launch bmad-loop resume: {exc}") from exc
         return process.pid
+
+    def engine_liveness(self, project: Path, run_id: str) -> EngineLiveness:
+        """Story 24.1 (FR-195 CAP-1): tri-state engine probe via the supported
+        ``bmad-loop`` CLI ``--json`` surfaces only -- never ``engine.pid``,
+        never ``bmad_loop`` imports. See ``HarnessPort.engine_liveness``."""
+        try:
+            status_result = PosixProcess().run(
+                ["bmad-loop", "status", run_id, "--json"],
+                cwd=project,
+                timeout_s=_STOP_TIMEOUT_S,
+            )
+        except ProcessError:
+            return "unknown"
+        if status_result.returncode != 0:
+            return "unknown"
+        try:
+            list_result = PosixProcess().run(
+                ["bmad-loop", "list", "--json"],
+                cwd=project,
+                timeout_s=_STOP_TIMEOUT_S,
+            )
+        except ProcessError:
+            return "unknown"
+        if list_result.returncode != 0:
+            return "unknown"
+        try:
+            document = json.loads(list_result.stdout)
+        except (json.JSONDecodeError, ValueError):
+            return "unknown"
+        runs = document.get("runs")
+        if not isinstance(runs, list):
+            return "unknown"
+        for entry in runs:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("run_id") != run_id:
+                continue
+            status = entry.get("status")
+            if isinstance(status, str):
+                mapped = _LIST_STATUS_TO_ENGINE_LIVENESS.get(status)
+                if mapped is not None:
+                    return mapped
+            return "unknown"
+        return "unknown"
 
     def usage_snapshot(self, project: Path, run_id: str) -> UsageSnapshot | None:
         # Lazy import, this method's own instance -- see the module

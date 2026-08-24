@@ -184,6 +184,37 @@ def test_harness_bmadloop_imports_bmad_loop_lazily_only():
     )
 
 
+def test_engine_liveness_never_reads_engine_pid():
+    """Story 24.1 CAP-1: the primitive must never hand-parse ``engine.pid`` --
+    the footgun the parent spec exists to eliminate (docstring mentions are fine)."""
+    import ast
+
+    module_path = _installed_package_dir() / "adapters" / "harness_bmadloop.py"
+    source = module_path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(module_path))
+    method: ast.FunctionDef | None = None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "BmadLoopHarness":
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name == "engine_liveness":
+                    method = item
+                    break
+    assert method is not None, "BmadLoopHarness.engine_liveness missing"
+    body = list(method.body)
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        body = body[1:]
+    for node in ast.walk(ast.Module(body=body, type_ignores=[])):
+        if isinstance(node, ast.Constant) and node.value == "engine.pid":
+            raise AssertionError(
+                f"engine_liveness reads engine.pid at line {node.lineno}"
+            )
+
+
 def test_lint_imports_passes_against_the_installed_package():
     if shutil.which("lint-imports") is None:
         pytest.fail(
