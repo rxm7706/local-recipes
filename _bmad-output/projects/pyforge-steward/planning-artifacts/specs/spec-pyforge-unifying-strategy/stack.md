@@ -21,11 +21,10 @@ Django `>=5.2.15,<6` and Python `3.12.*`, inherited from `spec-python-agent-plat
 **A live packaging risk sits underneath that pin.** conda-forge's Django 5.2 line **stopped at
 5.2.15 (2026-06-06)** while upstream shipped 5.2.16 (2026-07-07) and 5.2.17 (2026-08-04).
 conda-forge's autotick bot follows newest-upstream, so it advanced the 6.x line and left 5.2
-behind. Consequences: exactly one conda-forge build satisfies our pin, with **zero resolution
-headroom**, and it is two patch releases behind. Any dependency requiring a newer 5.2 patch is
-blocked until a 5.2 maintenance branch exists on `django-feedstock` — which it does not today.
-Whether 5.2.16 or 5.2.17 carry security fixes was not audited and should be, since we cannot
-consume them through this channel.
+behind — but a `5.x` maintenance branch **does** exist (`abi_migration_branches`); catching up is
+a one-file PR. **Audited 2026-08-24:** those releases carry seven CVEs, one high, and every
+affected path is unreachable in `src/platform/`. Currency gap, not a live exposure. Recommend
+moving the pin to `>=5.2.17,<6` once the feedstock publishes it (scanners key on version strings).
 
 ## Available — no work required
 
@@ -36,7 +35,7 @@ consume them through this channel.
 | `mcp` (official SDK) | 2.0.0 | CAP-4 | `2026-07-28`-capable. The only conda-forge path to the current MCP spec. |
 | `django-lasuite` | 0.0.28 | CAP-12 | OIDC plumbing only — see below. Feedstock's sole listed maintainer is `rxm7706`, so responsiveness is self-supplied with no bus-factor cover. Extras (`celery`, `django-configurations`) are not in its run-deps; add to our own env if used. |
 | `pybreaker` | 1.4.1 | CAP-10 | Sync paths only — see `resilience-invariants.md` BS-4. |
-| `django-storages` | 1.14.6 | CAP-2 | Required: Wagtail media must leave the pod filesystem for multi-replica. |
+| `django-storages` | 1.14.6 | CAP-2 | Library present. **Backend is filesystem on a ReadWriteMany PVC** (parent AD-1 forbids MinIO/S3 as a fourth kind). Multi-replica media leaves ephemeral pod disk without a new infra kind. |
 | `django-redis` | 7.0.0 | CAP-11 | Also what PyBreaker's own Redis-storage docs use. |
 | `openjdk` | 25.0.2 | CAP-9 | Satisfies Liquibase's Java 17+ floor — but Liquibase itself is absent. |
 | `celery`, `redis-py`, `grpcio`, `protobuf`, `pyyaml`, `pydantic` | current | CAP-8, CAP-11, CAP-13 | No work. |

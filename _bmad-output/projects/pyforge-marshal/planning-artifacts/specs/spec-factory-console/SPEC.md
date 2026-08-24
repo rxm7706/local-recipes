@@ -1,6 +1,7 @@
 ---
 spec: factory-console
-status: shipped
+status: superseded
+superseded_by: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md#cap-2--lane-1-is-cms-managed-and-it-is-the-only-front-door
 owner-dream: docs/dreams/factory-console.md
 program: regenerable-factory (Wave 2)
 surface:
@@ -14,6 +15,12 @@ sources:
   - ../../../../../../docs/dreams/factory-console.md
 open_questions: []
 ---
+
+> **Superseded 2026-08-24.** Lane 1 Wagtail (steward `spec-pyforge-unifying-strategy` CAP-2) is
+> the estate front door and supersedes this Spec as the binding contract for the Pages console.
+> The `docs/dashboard/` generator, pixi tasks, and `data.js` blob remain until steward Story
+> **30.2** after parity. `docs/dashboard/kedro-viz/**` is atlas-owned publish output and is out
+> of scope for this retirement.
 
 # SPEC — factory console (program console + Dreamscape)
 

@@ -1837,7 +1837,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 162 stories journal-measured on this axis; 8 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 72 spec-without-revision-fields deliberately absent; 18 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 162 stories journal-measured on this axis; 12 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 80 spec-without-revision-fields deliberately absent; 12 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -2084,12 +2084,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "156/162",
+            "162/162",
             "stories complete",
             "var(--done)"
           ],
           [
-            "6",
+            "0",
             "remaining",
             ""
           ]
@@ -2099,8 +2099,8 @@ window.DASHBOARD_DATA = {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
         "total": 7332,
-        "totalLabel": "~122.2 h active compute · ~8.0 h wall-clock ceiling",
-        "note": "Derived from 58 journal-measured + 8 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
+        "totalLabel": "~122.2 h active compute · ~9.8 h wall-clock ceiling",
+        "note": "Derived from 58 journal-measured + 12 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -2160,6 +2160,8 @@ window.DASHBOARD_DATA = {
           "14.3": 97,
           "14.4": 101,
           "16.1": 76,
+          "7.2": 28,
+          "7.3": 31,
           "10.7": 35,
           "10.8": 57,
           "11.1": 54,
@@ -2167,7 +2169,9 @@ window.DASHBOARD_DATA = {
           "11.3": 38,
           "22.4": 15,
           "23.1": 26,
-          "23.2": 12
+          "23.2": 12,
+          "23.3": 3,
+          "25.1": 50
         },
         "perStoryClass": {
           "1.1": "active-compute",
@@ -2228,6 +2232,8 @@ window.DASHBOARD_DATA = {
           "14.3": "active-compute",
           "14.4": "active-compute",
           "16.1": "active-compute",
+          "7.2": "wall-clock-ceiling",
+          "7.3": "wall-clock-ceiling",
           "10.7": "wall-clock-ceiling",
           "10.8": "wall-clock-ceiling",
           "11.1": "wall-clock-ceiling",
@@ -2235,7 +2241,9 @@ window.DASHBOARD_DATA = {
           "11.3": "wall-clock-ceiling",
           "22.4": "wall-clock-ceiling",
           "23.1": "wall-clock-ceiling",
-          "23.2": "wall-clock-ceiling"
+          "23.2": "wall-clock-ceiling",
+          "23.3": "wall-clock-ceiling",
+          "25.1": "wall-clock-ceiling"
         },
         "epicMin": {
           "E1": 1343,
@@ -2251,15 +2259,17 @@ window.DASHBOARD_DATA = {
           "E16": 76
         },
         "epicMinWallClock": {
+          "E7": 59,
           "E10": 92,
           "E11": 332,
           "E22": 15,
-          "E23": 38
+          "E23": 41,
+          "E25": 50
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "23.3"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -3155,7 +3165,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "23.3",
-              "pending",
+              "done",
               "The coverage caption partitions by true reason"
             ]
           ]
@@ -3166,17 +3176,17 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "24.1",
-              "pending",
+              "done",
               "Marshal gains the missing liveness primitive"
             ],
             [
               "24.2",
-              "pending",
+              "done",
               "The operator answer is one documented command"
             ],
             [
               "24.3",
-              "pending",
+              "done",
               "An UNSUPERVISED row has a cheap, documented double-check"
             ]
           ]
@@ -3212,12 +3222,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "25.6",
-              "pending",
+              "done",
               "A hand-driven run's deferrals reach the ledger unaided"
             ],
             [
               "25.7",
-              "pending",
+              "done",
               "The factory's living docs are re-grounded, with a named owner"
             ]
           ]
@@ -3988,7 +3998,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 74 stories journal-measured on this axis; 4 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 39 spec-without-revision-fields deliberately absent; 12 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 109 stories journal-measured on this axis; 13 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 40 spec-without-revision-fields deliberately absent; 2 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "8.1",
@@ -4079,12 +4089,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "74/74",
+            "74/109",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "35",
             "remaining",
             ""
           ]
@@ -4094,8 +4104,8 @@ window.DASHBOARD_DATA = {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
         "total": 2987,
-        "totalLabel": "~49.8 h active compute · ~3.7 h wall-clock ceiling",
-        "note": "Derived from 19 journal-measured + 4 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
+        "totalLabel": "~49.8 h active compute · ~11.9 h wall-clock ceiling",
+        "note": "Derived from 19 journal-measured + 9 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "8.1": 182,
           "8.2": 61,
@@ -4116,6 +4126,11 @@ window.DASHBOARD_DATA = {
           "10.3": 280,
           "10.4": 91,
           "11.1": 184,
+          "6.2": 36,
+          "6.3": 45,
+          "7.1": 212,
+          "7.3": 114,
+          "7.4": 85,
           "11.2": 71,
           "11.3": 47,
           "11.4": 44,
@@ -4141,6 +4156,11 @@ window.DASHBOARD_DATA = {
           "10.3": "active-compute",
           "10.4": "active-compute",
           "11.1": "active-compute",
+          "6.2": "wall-clock-ceiling",
+          "6.3": "wall-clock-ceiling",
+          "7.1": "wall-clock-ceiling",
+          "7.3": "wall-clock-ceiling",
+          "7.4": "wall-clock-ceiling",
           "11.2": "wall-clock-ceiling",
           "11.3": "wall-clock-ceiling",
           "11.4": "wall-clock-ceiling",
@@ -4153,13 +4173,15 @@ window.DASHBOARD_DATA = {
           "E11": 184
         },
         "epicMinWallClock": {
+          "E6": 81,
+          "E7": 411,
           "E11": 162,
           "E12": 60
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "18.1"
       },
       "epics": [
         {
@@ -4631,6 +4653,259 @@ window.DASHBOARD_DATA = {
               "17.2",
               "done",
               "steward setup/initrepo take the machine to green"
+            ]
+          ]
+        },
+        {
+          "badge": "E18",
+          "title": "Chrome and the trusted client",
+          "stories": [
+            [
+              "18.1",
+              "pending",
+              "django-pyforge is the only chrome"
+            ],
+            [
+              "18.2",
+              "pending",
+              "The switcher shows only what the user may reach"
+            ],
+            [
+              "18.3",
+              "pending",
+              "Two clients, one RS256 assertion"
+            ]
+          ]
+        },
+        {
+          "badge": "E19",
+          "title": "Eight portals, one prefix",
+          "stories": [
+            [
+              "19.1",
+              "pending",
+              "Warden moves and is renamed"
+            ],
+            [
+              "19.2",
+              "pending",
+              "Seven more portal shells under the prefix"
+            ]
+          ]
+        },
+        {
+          "badge": "E20",
+          "title": "The published front door",
+          "stories": [
+            [
+              "20.1",
+              "pending",
+              "Wagtail publishes without a deploy"
+            ],
+            [
+              "20.2",
+              "pending",
+              "Media, renditions, and a cache that cannot eat the queue"
+            ]
+          ]
+        },
+        {
+          "badge": "E21",
+          "title": "Agents survive; run state is a service",
+          "stories": [
+            [
+              "21.1",
+              "pending",
+              "Supervisor tables in public"
+            ],
+            [
+              "21.2",
+              "pending",
+              "Atlas MCP on the host, dual-era"
+            ],
+            [
+              "21.3",
+              "pending",
+              "start/get survives disconnect"
+            ],
+            [
+              "21.4",
+              "pending",
+              "The other seven MCP faces"
+            ],
+            [
+              "21.5",
+              "pending",
+              "Front door queries the supervisor"
+            ]
+          ]
+        },
+        {
+          "badge": "E22",
+          "title": "One command grammar",
+          "stories": [
+            [
+              "22.1",
+              "pending",
+              "pyforge dispatches without reimplementing"
+            ]
+          ]
+        },
+        {
+          "badge": "E23",
+          "title": "Boards show only your rows",
+          "stories": [
+            [
+              "23.1",
+              "pending",
+              "Same URL, different rows"
+            ]
+          ]
+        },
+        {
+          "badge": "E24",
+          "title": "Stations tell each other things",
+          "stories": [
+            [
+              "24.1",
+              "pending",
+              "CloudEvents on redis-broker"
+            ],
+            [
+              "24.2",
+              "pending",
+              "Cascades halt; adapters validate"
+            ]
+          ]
+        },
+        {
+          "badge": "E25",
+          "title": "Failure stays contained",
+          "stories": [
+            [
+              "25.1",
+              "pending",
+              "Circuits trip on async too"
+            ],
+            [
+              "25.2",
+              "pending",
+              "One DuckDB writer"
+            ],
+            [
+              "25.3",
+              "pending",
+              "Validation errors render inline"
+            ],
+            [
+              "25.4",
+              "pending",
+              "Restarts reconcile"
+            ]
+          ]
+        },
+        {
+          "badge": "E26",
+          "title": "Access, secrets, and flags",
+          "stories": [
+            [
+              "26.1",
+              "pending",
+              "Revoke takes effect on the next request"
+            ],
+            [
+              "26.2",
+              "pending",
+              "Manifests carry secret references only"
+            ],
+            [
+              "26.3",
+              "pending",
+              "OpenFeature packages on the channel (operator gate)"
+            ],
+            [
+              "26.4",
+              "pending",
+              "One flag flips three surfaces without a redeploy"
+            ]
+          ]
+        },
+        {
+          "badge": "E27",
+          "title": "Schema change is governed",
+          "stories": [
+            [
+              "27.1",
+              "pending",
+              "Liquibase on the channel (operator gate)"
+            ],
+            [
+              "27.2",
+              "pending",
+              "Pre-upgrade Job and DML-only app role"
+            ],
+            [
+              "27.3",
+              "pending",
+              "Stale extraction fails CI"
+            ],
+            [
+              "27.4",
+              "pending",
+              "Test databases still migrate"
+            ]
+          ]
+        },
+        {
+          "badge": "E28",
+          "title": "Scribe's graph outlives a file",
+          "stories": [
+            [
+              "28.1",
+              "pending",
+              "PostgreSQL driver behind the existing port"
+            ],
+            [
+              "28.2",
+              "pending",
+              "Semantic recall"
+            ]
+          ]
+        },
+        {
+          "badge": "E29",
+          "title": "Every station is five tiers",
+          "stories": [
+            [
+              "29.1",
+              "pending",
+              "SKF domain skills from station packages"
+            ],
+            [
+              "29.2",
+              "pending",
+              "Personas act only through grammar and MCP"
+            ],
+            [
+              "29.3",
+              "pending",
+              "Five-tier check"
+            ]
+          ]
+        },
+        {
+          "badge": "E30",
+          "title": "The old console is gone",
+          "stories": [
+            [
+              "30.1",
+              "pending",
+              "Remaining console surfaces have a home"
+            ],
+            [
+              "30.2",
+              "pending",
+              "Delete the generator and its inbound refs"
             ]
           ]
         }
@@ -5278,7 +5553,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-24 02:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-24 16:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6244,10 +6519,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-unifying-strategy",
       "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
-      "status": "dreamt",
-      "owner": "herald",
+      "status": "specified",
+      "owner": "steward",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy"
+      }
     },
     {
       "slug": "pyforge-warden-compliance-gates",
@@ -6626,7 +6903,7 @@ window.DASHBOARD_DATA = {
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
       "caps": 9,
       "companions": 1,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -6776,7 +7053,7 @@ window.DASHBOARD_DATA = {
       "title": "PyForge stays aligned to the installed BMAD era",
       "caps": 7,
       "companions": 2,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "bmad-611-era-alignment",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-611-era-alignment"
     },
@@ -7096,7 +7373,7 @@ window.DASHBOARD_DATA = {
       "title": "regenerable-factory program",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
     },
@@ -7449,6 +7726,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-22",
       "dream": "pyforge-steward-feedstock-maintenance",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
+    },
+    {
+      "slug": "pyforge-unifying-strategy",
+      "project": "pyforge-steward",
+      "title": "pyforge-unifying-strategy — the Canopy mounts the eight stations",
+      "caps": 17,
+      "companions": 10,
+      "updated": "2026-08-24",
+      "dream": "pyforge-unifying-strategy",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy"
     },
     {
       "slug": "python-agent-platform",
@@ -8264,7 +8551,7 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "next free slot",
           "done": 79,
-          "total": 80,
+          "total": 115,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8294,9 +8581,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-marshal",
           "pkey": null,
           "stories": 86,
-          "state": "in-progress",
+          "state": "done",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 156,
+          "done": 162,
           "total": 162,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
@@ -8367,7 +8654,7 @@ window.DASHBOARD_DATA = {
     "sound": 0,
     "live": 84,
     "reached": 8,
-    "gaps": 86,
+    "gaps": 85,
     "findings": 25,
     "rows": [
       {
@@ -8385,7 +8672,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-17",
           "ux": "",
           "arch": "2026-07-17",
-          "context": "2026-08-04",
+          "context": "2026-08-24",
           "epics": "2026-07-17",
           "sprint": "2026-07-29",
           "tea": "2026-07-17",
@@ -8403,7 +8690,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-04",
+          "context": "2026-08-24",
           "epics": "2026-08-14",
           "sprint": "2026-08-22",
           "tea": "2026-08-20",
@@ -8492,7 +8779,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -8561,7 +8848,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-25",
           "ux": "",
           "arch": "2026-07-25",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -8579,7 +8866,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-02",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-08-15",
           "sprint": "2026-08-22",
           "tea": "2026-08-23",
@@ -8668,7 +8955,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -8737,7 +9024,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-01",
-          "context": "2026-08-02",
+          "context": "2026-08-24",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -8755,7 +9042,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-02",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-02",
+          "context": "2026-08-24",
           "epics": "2026-08-22",
           "sprint": "2026-08-22",
           "tea": "2026-08-22",
@@ -8844,7 +9131,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -8892,10 +9179,8 @@ window.DASHBOARD_DATA = {
               ]
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -8915,7 +9200,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-25",
           "ux": "",
           "arch": "2026-07-25",
-          "context": "2026-06-20",
+          "context": "2026-08-24",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-26",
@@ -8933,7 +9218,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-14",
           "ux": "",
           "arch": "2026-08-10",
-          "context": "2026-06-20",
+          "context": "2026-08-24",
           "epics": "2026-08-23",
           "sprint": "2026-08-23",
           "tea": "2026-08-23",
@@ -9021,11 +9306,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "156/162",
+        "progress": "162/162",
         "complete": 13,
         "of": 13,
         "chainAudit": {
@@ -9090,7 +9375,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-25",
           "ux": "",
           "arch": "2026-07-25",
-          "context": "2026-08-02",
+          "context": "2026-08-24",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -9108,7 +9393,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-02",
+          "context": "2026-08-24",
           "epics": "2026-08-02",
           "sprint": "2026-08-22",
           "tea": "2026-08-22",
@@ -9201,7 +9486,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -9275,7 +9560,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-25",
           "ux": "",
           "arch": "2026-07-25",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -9293,7 +9578,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-08-02",
           "sprint": "2026-08-22",
           "tea": "2026-08-22",
@@ -9383,7 +9668,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "11/11",
@@ -9451,7 +9736,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-25",
           "ux": "",
           "arch": "2026-07-25",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -9464,13 +9749,13 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-01",
-          "epics": "2026-08-15",
+          "context": "2026-08-24",
+          "epics": "2026-08-24",
           "sprint": "2026-08-23",
           "tea": "2026-08-23",
           "gates": "2026-08-10",
@@ -9539,7 +9824,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "research",
             "than": "brief",
-            "at": "2026-08-08",
+            "at": "2026-08-24",
             "other": "2026-07-25"
           },
           {
@@ -9558,11 +9843,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "74/74",
+        "progress": "74/109",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -9586,7 +9871,7 @@ window.DASHBOARD_DATA = {
                   "kind": "feeds",
                   "stage": "research",
                   "than": "brief",
-                  "at": "2026-08-08",
+                  "at": "2026-08-24",
                   "other": "2026-07-25"
                 },
                 {
@@ -9629,7 +9914,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-14",
           "ux": "",
           "arch": "2026-07-14",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-07-14",
           "sprint": "2026-07-29",
           "tea": "2026-07-14",
@@ -9647,7 +9932,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-08-01",
           "ux": "",
           "arch": "2026-08-02",
-          "context": "2026-08-01",
+          "context": "2026-08-24",
           "epics": "2026-08-02",
           "sprint": "2026-08-22",
           "tea": "2026-08-22",
@@ -9737,7 +10022,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "36/36",
@@ -9888,7 +10173,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10020,7 +10305,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10152,7 +10437,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10284,7 +10569,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10416,7 +10701,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10548,7 +10833,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10680,7 +10965,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10805,7 +11090,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -10937,7 +11222,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11069,7 +11354,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11194,7 +11479,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11326,7 +11611,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11458,7 +11743,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11590,7 +11875,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11723,7 +12008,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11856,7 +12141,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -11988,7 +12273,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12120,7 +12405,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12252,7 +12537,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12384,7 +12669,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12523,7 +12808,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "spec",
         "updated": "2026-08-08",
-        "age": 15,
+        "age": 16,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12654,7 +12939,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12682,10 +12967,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -12788,7 +13071,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12816,10 +13099,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -12922,7 +13203,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -12950,10 +13231,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -13057,7 +13336,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -13086,10 +13365,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -13192,7 +13469,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -13220,10 +13497,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -13326,7 +13601,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -13354,146 +13629,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
-            }
-          }
-        }
-      },
-      {
-        "label": "unifying-strategy",
-        "slug": "pyforge-unifying-strategy",
-        "project": "pyforge-herald",
-        "dream": "pyforge-unifying-strategy",
-        "owner": "herald",
-        "stages": {
-          "dream": "2026-08-23",
-          "deck": "",
-          "spec": "",
-          "research": "2026-07-25",
-          "brief": "",
-          "prd": "",
-          "ux": "",
-          "arch": "",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "updatedAt": {
-          "dream": "2026-08-23",
-          "deck": "",
-          "spec": "",
-          "research": "2026-08-08",
-          "brief": "",
-          "prd": "",
-          "ux": "",
-          "arch": "",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "sub": {
-          "research": {
-            "have": {
-              "domain": true,
-              "market": true,
-              "technical": true
-            },
-            "n": 3,
-            "of": 3,
-            "missing": [],
-            "inherited": true
-          },
-          "deck": {
-            "have": {
-              "prototype": false,
-              "exec": false,
-              "infographic": false,
-              "marp": false,
-              "standalone": false,
-              "pptx": false
-            },
-            "n": 0,
-            "of": 6,
-            "missing": [
-              "exec",
-              "infographic",
-              "marp",
-              "pptx",
-              "prototype",
-              "standalone"
-            ]
-          }
-        },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
-        "noDream": false,
-        "unowned": false,
-        "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [
-          "ux"
-        ],
-        "required": [
-          "dream",
-          "deck",
-          "spec",
-          "research"
-        ],
-        "gaps": [
-          "deck",
-          "spec"
-        ],
-        "partial": [],
-        "staleBy": [],
-        "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 0,
-        "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 2,
-        "of": 4,
-        "chainAudit": {
-          "verdict": "fail",
-          "checkpoints": {
-            "layers": {
-              "pass": false,
-              "gaps": [
-                "deck",
-                "spec"
-              ],
-              "partial": []
-            },
-            "coherence": {
               "pass": true,
-              "noDream": false,
-              "unowned": false,
-              "overtaken": false
-            },
-            "staleness": {
-              "pass": true,
-              "staleBy": []
-            },
-            "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "kinds": []
             }
           }
         }
@@ -13596,7 +13733,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -13728,7 +13865,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -13860,7 +13997,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -13992,7 +14129,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14124,7 +14261,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14256,7 +14393,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14317,7 +14454,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-22",
           "deck": "",
-          "spec": "2026-08-22T09:13",
+          "spec": "2026-08-24T00:00",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -14371,7 +14508,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 1,
+        "openQuestions": 0,
         "overtaken": false,
         "na": [
           "dream",
@@ -14388,7 +14525,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14520,7 +14657,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14652,7 +14789,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14784,7 +14921,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -14916,7 +15053,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15048,7 +15185,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15180,7 +15317,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15312,7 +15449,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15444,7 +15581,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15576,7 +15713,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15708,7 +15845,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15840,7 +15977,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -15972,7 +16109,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16104,7 +16241,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16236,7 +16373,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16368,7 +16505,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16501,7 +16638,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16634,7 +16771,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16766,7 +16903,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -16898,7 +17035,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17030,7 +17167,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17162,7 +17299,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17294,7 +17431,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17426,7 +17563,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17558,7 +17695,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17690,7 +17827,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17822,7 +17959,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -17954,7 +18091,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18103,7 +18240,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "verify",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18242,7 +18379,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18374,7 +18511,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18506,7 +18643,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18643,7 +18780,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18775,7 +18912,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -18907,7 +19044,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19039,7 +19176,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19171,7 +19308,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19303,7 +19440,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19435,7 +19572,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19567,7 +19704,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19699,7 +19836,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19831,7 +19968,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -19963,7 +20100,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -20095,7 +20232,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -20227,7 +20364,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -20361,7 +20498,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -20498,7 +20635,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -20630,7 +20767,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -20763,7 +20900,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -20895,7 +21032,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21027,7 +21164,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21159,7 +21296,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21220,7 +21357,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:06",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -21290,7 +21427,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -21354,7 +21491,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-21",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -21424,7 +21561,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -21488,7 +21625,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-15",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -21558,7 +21695,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -21622,7 +21759,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-23",
           "deck": "",
           "spec": "2026-08-22T06:20",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -21692,7 +21829,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -21756,7 +21893,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-23",
           "deck": "",
           "spec": "",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -21827,7 +21964,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -21892,7 +22029,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:06",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -21962,7 +22099,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22026,7 +22163,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:16",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22096,7 +22233,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22160,7 +22297,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-07-31",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22230,7 +22367,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22294,7 +22431,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:06",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22364,7 +22501,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22428,7 +22565,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-10",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22503,7 +22640,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22569,7 +22706,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:06",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22639,7 +22776,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22703,7 +22840,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:05",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22773,7 +22910,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22837,7 +22974,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-23",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -22907,7 +23044,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -22971,7 +23108,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-23",
           "deck": "",
           "spec": "",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23042,7 +23179,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23107,7 +23244,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-22",
           "deck": "",
           "spec": "2026-08-22T07:16",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23177,7 +23314,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23241,7 +23378,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23311,7 +23448,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23333,6 +23470,143 @@ window.DASHBOARD_DATA = {
               "noDream": false,
               "unowned": false,
               "overtaken": false
+            },
+            "staleness": {
+              "pass": true,
+              "staleBy": []
+            },
+            "orphans": {
+              "pass": false,
+              "kinds": [
+                "dream-without-spec"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "label": "unifying-strategy",
+        "slug": "pyforge-unifying-strategy",
+        "project": "pyforge-steward",
+        "dream": "pyforge-unifying-strategy",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-23",
+          "deck": "",
+          "spec": "2026-08-24",
+          "research": "2026-07-25",
+          "brief": "2026-08-24",
+          "prd": "2026-08-24",
+          "ux": "",
+          "arch": "2026-08-24",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-24",
+          "deck": "",
+          "spec": "2026-08-24T06:19",
+          "research": "2026-08-24",
+          "brief": "2026-08-24",
+          "prd": "2026-08-24",
+          "ux": "",
+          "arch": "2026-08-24",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-unifying-strategy",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 1,
+        "overtaken": true,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "arch",
+        "updated": "2026-08-24",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 5,
+        "of": 6,
+        "chainAudit": {
+          "verdict": "fail",
+          "checkpoints": {
+            "layers": {
+              "pass": false,
+              "gaps": [
+                "deck"
+              ],
+              "partial": []
+            },
+            "coherence": {
+              "pass": false,
+              "noDream": false,
+              "unowned": false,
+              "overtaken": true
             },
             "staleness": {
               "pass": true,
@@ -23375,7 +23649,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-21",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23445,7 +23719,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23509,7 +23783,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-14",
           "deck": "",
           "spec": "2026-08-23",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23579,7 +23853,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23643,7 +23917,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-10",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23718,7 +23992,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23784,7 +24058,7 @@ window.DASHBOARD_DATA = {
           "dream": "2026-08-10",
           "deck": "",
           "spec": "2026-08-22T05:39",
-          "research": "2026-08-08",
+          "research": "2026-08-24",
           "brief": "",
           "prd": "",
           "ux": "",
@@ -23859,7 +24133,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "arch",
-        "updated": "2026-08-23",
+        "updated": "2026-08-24",
         "age": 0,
         "stale": false,
         "version": "",
@@ -23996,7 +24270,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -24128,7 +24402,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -24260,7 +24534,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-23",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -24571,7 +24845,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "6 complete (atlas, doctor, herald, mason, scribe, warden); 2 building (marshal, steward)",
+        "gate": "7 complete (atlas, doctor, herald, marshal, mason, scribe, warden); 1 building (steward)",
         "stations": [
           {
             "name": "Herald",
@@ -24663,7 +24937,7 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
@@ -24712,14 +24986,6 @@ window.DASHBOARD_DATA = {
         "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
         "status": "dreamt",
         "owner": "steward",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "pyforge-unifying-strategy",
-        "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
-        "status": "dreamt",
-        "owner": "herald",
         "blockedOn": "",
         "chain": {}
       },
@@ -24785,7 +25051,6 @@ window.DASHBOARD_DATA = {
     "blocked": 0,
     "byOwner": {
       "steward": 3,
-      "herald": 1,
       "doctor": 1,
       "marshal": 2,
       "atlas": 1
@@ -24863,9 +25128,9 @@ window.DASHBOARD_DATA = {
     "rows": [
       {
         "station": "herald",
-        "total": 8,
+        "total": 7,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 2,
           "realized": 1,
@@ -24873,7 +25138,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "complete",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -24887,13 +25152,6 @@ window.DASHBOARD_DATA = {
             "slug": "herald-pitch",
             "title": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
             "status": "archived",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "pyforge-unifying-strategy",
-            "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
-            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -24945,7 +25203,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 23.3",
+        "line": "complete",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -25626,16 +25884,16 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "steward",
-        "total": 21,
+        "total": 22,
         "counts": {
           "dreamt": 1,
           "pitched": 0,
-          "specified": 4,
+          "specified": 5,
           "realized": 3,
           "archived": 1,
           "practice": 2
         },
-        "line": "complete",
+        "line": "paused 18.1",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -25712,6 +25970,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "jira-github-projects-sync",
             "title": "A ticket moves once, both boards know",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-unifying-strategy",
+            "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
             "status": "specified",
             "type": "dream",
             "blockedOn": ""
@@ -25798,23 +26063,1026 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 461,
-    "done": 29,
-    "triaged": 145,
+    "open": 546,
+    "done": 30,
+    "triaged": 148,
     "bySeverity": {
       "critical": 0,
-      "high": 1,
-      "medium": 19,
-      "low": 48,
-      "unspecified": 393
+      "high": 2,
+      "medium": 45,
+      "low": 100,
+      "unspecified": 399
     },
     "projects": [
       {
+        "project": "pyforge-marshal",
+        "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+        "open": 129,
+        "done": 13,
+        "triaged": 25,
+        "entries": [
+          {
+            "id": "DW-1-1-1",
+            "title": "The `pyforge-mason`, `pyforge-steward`, and `pyforge-warden` `*-build-conda` pixi tasks (root `p…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-1-2",
+            "title": "`pyforge-doctor` and `pyforge-warden`'s package `.gitignore` files put comments inline after the…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-1-3",
+            "title": "Every pyforge sibling package (doctor, warden, steward, mason, and now marshal) declares `licens…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-1-4",
+            "title": "The `pyforge-mason-build-dist` and `pyforge-steward-build-dist` pixi tasks (root `pixi.toml`) ru…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-FU-1-1",
+            "title": "Follow-up review still recommended for 1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enfor",
+            "status": "open",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-2-1",
+            "title": "`architecture.md`'s AD-23 rule text still says the story key is \"purely numeric on both parts\", contradicting AD-38",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-3-1",
+            "title": "`core/policy.py`'s `content_hash` (and therefore `materialize()`'s content-addressed filename) i…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "`schemas/policy.json`'s `policyField` `$defs` entry does not constrain the TYPE of `value`/`raw_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-3-3",
+            "title": "`cli/config.py::materialize()` can leave an orphaned `.policy-*.tmp` file in the target director…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-FU-1-3",
+            "title": "Follow-up review still recommended for 1-3-layered-policy-composition-with-provenance-and-validation after the damping c",
+            "status": "open",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-7",
+            "title": "No project-policy source supplies `gate_mode=\"none\"` / `max_followup_reviews=2`, so the first real `write_policy_toml` c",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-1",
+            "title": "`adapters/harness_bmadloop.py`'s vendored `_POLICY_TEMPLATE` is a hand-copied snapshot of `bmad_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-2",
+            "title": "`write_policy_toml`'s unconditional whole-file overwrite will silently discard harness-native st…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-3",
+            "title": "This story's untrack (`git rm --cached .bmad-loop/policy.toml`) only closes the F-1 cross-projec…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-4",
+            "title": "Between this story's merge (which untracks `.bmad-loop/policy.toml`) and the later story that wi…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-5",
+            "title": "The `max_followup_reviews = 2` value in the (now untracked) live policy.toml was explicitly bran…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-10-6",
+            "title": "The tracked `.bmad-loop/policy.toml` this story deletes carried curated operational commentary w…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-7-1",
+            "title": "The supported harness range had three unsynchronized declarations",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-8-1",
+            "title": "Preflight lacks init and teardown's Git-ref-shape slug guard",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-8-2",
+            "title": "Teardown hardcodes the integration branch as `main`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-3",
+            "title": "Teardown has a branch-deletion TOCTOU window",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-4",
+            "title": "Teardown cannot see valuable gitignored content",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-5",
+            "title": "Teardown can destroy nested registered worktrees",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-8-6",
+            "title": "Teardown has no active-run liveness guard",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-9-1",
+            "title": "Marshal's README still describes a Story 1.1 skeleton",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-9-2",
+            "title": "The future run journal must record Marshal and harness versions",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-AUD-2026-07-31-1",
+            "title": "Stories 1.7-1.9 shipped without canonical memlog reconciliation",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-AUD-2026-07-31-2",
+            "title": "Four Marshal-owned Dreams still have no Tier-2 Spec",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-AUD-2026-07-31-3",
+            "title": "Deferred-work detector ignores anonymous Tier-3 entries",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "`cli/init.py`'s project-existence check (`MRS-INIT-002`) reads `_bmad-output/pro…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-2",
+            "title": "The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_f…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-4-3",
+            "title": "`adapters/fs_local.py`'s two atomic-write helpers disagree on stale-temp-file ha…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-4",
+            "title": "`marshal init <slug>` has no protection against two concurrent invocations for t…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-5",
+            "title": "`cli/init.py::_loop_home_root()`'s real default fallback (`Path.home() / \".bmad-…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-6",
+            "title": "`tests/unit/test_vcs_git.py` and `tests/integration/test_init_worktree.py` each …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-7",
+            "title": "`cli/init.py`'s printed `launch_line` (`cd <home> && export BMAD_ACTIVE_PROJECT=…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-8",
+            "title": "`marshal init` has no guard against the total loop-home path length, despite thi…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-9",
+            "title": "`cli/main.py::main` catches only `SystemExit` and `KeyboardInterrupt` — it has n…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-10",
+            "title": "`tests/integration/test_init_worktree.py` — the only end-to-end proof of both wo…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-5-11",
+            "title": "`cli/init.py`'s `tier3_backlink` step gives a real, non-empty DIRECTORY at the l…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-5-13",
+            "title": "`tier3_backlink`'s convergence check compares the raw (unresolved) symlink target…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-5-14",
+            "title": "A failed `ensure_dir`/`repoint_symlink_atomic` after `remove_empty_dir` leaves the…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-1-5-12",
+            "title": "A home provisioned by `marshal init` alone still lacks the TOP-LEVEL `_bmad-outp…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-2-1",
+            "title": "`marshal teardown` reports every landed story as an unreachable promotion for …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-SYNC-2026-08-08-1",
+            "title": "`sprint-ledger-sync` silently DOWNGRADES the tracked ledger when …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-1",
+            "title": "RETRACTED. Herald's \"34 orphan story specs\" was damage I caus…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-2",
+            "title": "VOID (measured after the DW-LEDGER-1 damage; doctor's real orpha…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-3",
+            "title": "RETRACTED. Atlas's feed and twin agree exactly; there is no …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-LEDGER-2026-08-08-4",
+            "title": "VOID. Its table was measured after the damage, not before it.",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-DOCTOR-2026-08-08-1",
+            "title": "`doctor check` is 7.04s against its documented 5.0s budget",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-DOCTOR-2026-08-08-2",
+            "title": "Doctor's discovery walk borrowed warden's entry cap, where hitting it means the opposite thing",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-BOARD-2026-08-08-1",
+            "title": "Herald's build line and Herald's ledger describe DIFFERENT sto…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-SURFACE-2026-08-08-1",
+            "title": "memlog movement is surface-wide, so one entry launders every pending drift finding",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-SURFACE-2026-08-08-2",
+            "title": "`--write-baseline` is all-or-nothing, so no spec can be reconciled in isolation",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-FU-2-1",
+            "title": "Follow-up review still recommended for 2-1-standalone-verify-command-runner-project-scoped after the damping cap was spe",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-2-6",
+            "title": "Follow-up review still recommended for 2-6-gate-evidence-record-with-redaction-at-egress after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-3-3",
+            "title": "Follow-up review still recommended for 3-3-detached-launch-with-scoped-story-selection after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-3-4",
+            "title": "Follow-up review still recommended for 3-4-supervisor-process-lifecycle after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-3-5",
+            "title": "Follow-up review still recommended for 3-5-idle-strand-detection after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-4-14",
+            "title": "source_spec: `spec-4-14-the-failed-story-safety-net-is-reported.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9",
+            "title": "Follow-up review still recommended for 7-4-manifest-schema-loader-and-model-version-ranges after the damping cap was spe",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-2-1",
+            "title": "`pyforge-deps-test` fails on `pyforge-mason`'s five conda-only run-dependencies, reddening a verify command every story ",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-10-3-1",
+            "title": "Writing `plan.json` to its canonical path flips the fingerprint's dirty flag, so the first apply of every freshly built ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-10",
+            "title": "A failed rollback wraps an interrupt in a catchable `InternalError`, so a CLI's `except SeedError` swallows the operator",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-2",
+            "title": "Rollback restores a file's bytes but not its mode, so a failed apply leaves every executable managed artifact non-execut",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-3",
+            "title": "A directory target snapshots as `None` and is never removed, so a rolled-back apply leaves the whole tree it created",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-4",
+            "title": "A symlinked target is snapshotted through the link but restored over it, leaving neither the link nor its referent as th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-5",
+            "title": "An interrupt raised during rollback discards the list of paths rollback already knew it could not restore",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-6",
+            "title": "The never-write guard is applied to rollback restores, so a target `commit` wrote into a never-write path can never be p",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-7",
+            "title": "A plan's fingerprint records no repo identity, so a plan built against one non-git directory applies cleanly to a differ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-8",
+            "title": "`fingerprint_drift` performs an unguarded arbitrary-path read; containment lives only in its caller, and Story 10.4 owns",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-9",
+            "title": "`build_plan` emits Actions whose `target_path` escapes `repo_root`, so one bad manifest entry makes `run_apply` refuse t",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-1",
+            "title": "A symlinked ancestor directory defeats the never-write guard, because the pattern is matched against the resolved destin",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-2",
+            "title": "The new never-imported packaging ratchet cannot see `python-build`, the one exempted name its own docstring says the gat",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-3",
+            "title": "`ManagedRecord`'s region-bearing shape has no source in the state model Story 10.2 actually landed, so rung 6 cannot be ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-4",
+            "title": "`managed_after_skips` cannot protect the artifact class rung 6 actually guards, because a hand-edited managed file never",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-5",
+            "title": "An action whose target is an existing DIRECTORY clears all six precondition rungs and fails later as an untyped `IsADire",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-1-1",
+            "title": "`pyforge-core/.gitignore`'s `/dist/` and `/dist-conda/` lines carry inline comments gitignore cannot parse, so both patt",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-2-1",
+            "title": "story deferred at the dev verify-gate — substantive work committed locally but never merged, blocked on cross-spec spec-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-3-1",
+            "title": "Doctor and Steward still carry un-reparented exception roots outside Story 14.3's CAP-5 scope",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-4-1",
+            "title": "Herald, Mason, and Scribe carry real, un-migrated subprocess implementations outside Story 14.4's CAP-6 scope",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-4-2",
+            "title": "AD-4's import-linter contract has a verification blind spot for pyforge-core's own internal os/subprocess imports",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-8-1",
+            "title": "epics.md's Story 2.8 entry omits the **Surface:** line every sibling Epic-2 story carries",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-1",
+            "title": "A resumed run's retry-escalation ceilings are read from whatever policy.toml is on disk now, not the policy that governe",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-2",
+            "title": "A newly-struggling story is never named in the escalation journal once a resumed run's model is already floor-raised",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-3",
+            "title": "A model-tiering policy.toml write can land on disk before its own launch/resume intent is journaled, in both run_spin an",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-4",
+            "title": "A TOML serialization failure ahead of the atomic policy.toml write is never wrapped in HarnessPolicyWriteError, in both ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-13-1",
+            "title": "Policy-vocabulary key-count literals in cli/config.py's comments and two test names were already stale before this story",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-10-1",
+            "title": "A malformed `merge_subject_template` (missing or duplicate `{key}` placeholder) crashes `marshal land`'s full-merge path",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-10-2",
+            "title": "A multi-key `marshal land` wave under `landing_merge_strategy: squash` or `rebase` renders its subject from the wave's p",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-10-3",
+            "title": "`gh pr merge --subject`'s `commitHeadline` has no merge commit to title under `landing_merge_strategy: rebase`, so a reb",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-8-1",
+            "title": "`is_run_live`, which gates `marshal land`'s branch retirement off the same `FleetHomeFacts` this story extends, never co",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-8-2",
+            "title": "`ProcessPort.is_alive`'s bare pid-existence probe has no identity/start-time corroboration and admits a degenerate `pid:",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-8-3",
+            "title": "`tests/packaging/test_dependency_completeness.py`'s `BASELINE_UNDECLARED_IMPORTS` ratchet is a shared, repo-wide file wi",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-1",
+            "title": "Two distinct raw sprint-status-ledger.yaml keys that both normalize to the identical StoryKey silently collapse in recon",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-2",
+            "title": "`cli/deploy.py::run_promote` reports a story key in `data[\"promoted\"]` even when the `commit_paths` that would make the ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-3",
+            "title": "`promote_sprint_status.py::repair_feed` matches the tracked ledger's raw key spelling against the Tier-3 feed's raw key ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-4",
+            "title": "A failed ledger `commit_paths` after a successful `git add` leaves the git INDEX staged with pre-rollback content, even ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-5",
+            "title": "A literal duplicate raw key appearing twice as separate lines in the tracked ledger's own text has only its FIRST occurr",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-1-1",
+            "title": "the region-name forward-reference entry S-7.4's own ledger opened for S-8.1 is now closed in fact but still reads `statu",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-1-1",
+            "title": "`spec_surface_check.py --write-baseline --spec` stamps every file the named spec governs, not just the paths a reconcili",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-1",
+            "title": "`check_managed_file`/`check_managed_region` never distinguish a shape-invalid `recorded_sha` from a genuine hand-edit",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-1",
+            "title": "Epic 9.4's AC prose names a glob (`docs/specs/*.md`) for the canonical legacy worked example that this module's presence",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-1",
+            "title": "Manifest coverage check can never actually fire against any manifest built through normal construction",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-2",
+            "title": "A second, independent review pass re-confirms manifest coverage is structurally redundant with `ManifestEntry.__post_ini",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-3",
+            "title": "Manifest coverage only sees version-filtered entries, so a staged or retired entry's corrupted class/rationale produces ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-6-1",
+            "title": "`build_plan`'s git fingerprint can misreport an ancestor repository's HEAD/dirty state for a nested target",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-6-2",
+            "title": "Writing `plan.json` before the target's `.gitignore` region is materialized can make the plan file itself flip a subsequ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-14-1",
+            "title": "Follow-up review still recommended for 4-14-the-failed-story-safety-net-is-reported after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-8-5",
+            "title": "Follow-up review still recommended for 8-5-marker-deletion-as-a-sanctioned-opt-out after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-BL011-1",
+            "title": "loop-stall-check labels a bmad-loop 0.11 `awaiting-operator` parked run \"stalled\" — attention arrives, mislabeled",
+            "status": "done",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-BL011-2",
+            "title": "the deferred-work pipeline's intake shape changes on the FIRST bmad-loop 0.11 run — Tier-3 `deferred-work.md` is no long",
+            "status": "done",
+            "severity": "medium",
+            "triaged": true
+          },
+          {
+            "id": "DW-25-4-1",
+            "title": "`repo_defaults` compose parameter is accepted but never folded — `policy-defaults.toml` is functionally inert for all 28",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-25-5-1",
+            "title": "Story 25.5's review round landed AFTER the merge — two layers' findings dispositioned here, unapplied",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-11-4",
+            "title": "`_wholesale_regenerate_actions` never cross-checks `state.opted_out`/`state.skips` before regenerating, so it could sile",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-11-4-2",
+            "title": "The `--include-seeded` \"offered now, applicable later\" story is untested across separate `update` invocations.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-11-4-3",
+            "title": "`--force` combined with a hand-edited hybrid-managed-region (as opposed to a hand-edited whole-file artifact) is unteste",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-11-4-4",
+            "title": "The `projects-table` repo-computed region-body dispatch (Story 11.2) is never exercised through `update`'s own commit pa",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-12-1",
+            "title": "llms-full-check reports 82 pre-existing catalog drift findings on main (floor-drift + undocumented deps unrelated to cop",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-12-2",
+            "title": "K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21 filtered actions (managed regions absent, no seed-s",
+            "status": "open",
+            "severity": "high",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-18-2",
+            "title": "Coverage detection is filesystem path presence only; an empty stub mcp/tools.py or server.py counts as covered without p",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-18-2-2",
+            "title": "discover_cli_verbs walks private argparse _actions / _build_parser internals.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-18-2-3",
+            "title": "resolve_repo_root has no MARSHAL_REPO_ROOT override when the package is installed outside the monorepo layout.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-2",
+            "title": "Seeded mock edge-case hardening (recreate-after-delete, negative clock advance, journal reload from disk) remains identi",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-2-2",
+            "title": "docs/reference/library-llms-full.md still reports broad pin/undocumented-dep drift beyond the new pyforge-testing-kit en",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-3",
+            "title": "Expand coverage-gates CI beyond the marshal home env (matrix / per-station pixi env) so non-marshal package touches are ",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-3-2",
+            "title": "Add parallel pixi `pyforge-*-test-coverage` tasks for non-marshal stations.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-3-3",
+            "title": "Upload coverage JSON / term-missing artifacts on gate failure for operators.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-4",
+            "title": "Wire `tea-playwright-check` into a CI / detectors job so the CAP-5 gate runs without an operator opt-in (intent allowed ",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-19-4-2",
+            "title": "Atlas-style epic headers `### Story A1 (2.1): …` are not parsed by `_STORY_HEADER`, so lettered stories never enter the ",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-20-3",
+            "title": "Parent Spec CAP-3 memlog/SPEC success oracle still describes the draft as unfiled; sync on a later docs pass if needed.",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-20-3-2",
+            "title": "If #701 closes only one half of the coordinated report, split or re-note the register entry so FR-189 is not silently re",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-20-6",
+            "title": "Until 20.7, cli/init.py and scripts/bmad-switch still ship divergent slug-parse / desync bodies alongside pyforge.marsha",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-20-6-2",
+            "title": "MRS-INIT-003 today inspects only planning-artifacts; verify_scope requires both artifact symlinks — 20.7 must absorb the",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-21-2",
+            "title": "Soft code-linkage verify reports missing cites in detail but always completes; tightening to fail/block is a product cho",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-21-2-2",
+            "title": "Dual CLI: marshal chain regenerate (17.4) coexists with marshal planning chain-regenerate (21.2) without deprecation cro",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-21-5",
+            "title": "CAP-5 help prose hard-codes defaults instead of deriving text from `cap5_defaults()`, inviting future doc/code drift.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-23-1",
+            "title": "timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-23-1-2",
+            "title": "Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-23-2",
+            "title": "Velocity panel `sub` still lumps unmeasured stories under \"predate loop instrumentation\"; full absence-class partitionin",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-23-2-2",
+            "title": "No runtime render fixture asserts emitted chip class HTML against mixed DASHBOARD_DATA; coverage is generator unit tests",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "Static Guildhall console planning retired; code deletion gated on steward parity",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          }
+        ]
+      },
+      {
         "project": "pyforge-atlas",
         "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
-        "open": 118,
+        "open": 127,
         "done": 4,
-        "triaged": 53,
+        "triaged": 54,
         "entries": [
           {
             "id": "DW-A1-5",
@@ -26669,822 +27937,78 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "low",
             "triaged": false
-          }
-        ]
-      },
-      {
-        "project": "pyforge-marshal",
-        "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 102,
-        "done": 12,
-        "triaged": 25,
-        "entries": [
-          {
-            "id": "DW-1-1-1",
-            "title": "The `pyforge-mason`, `pyforge-steward`, and `pyforge-warden` `*-build-conda` pixi tasks (root `p…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-1-2",
-            "title": "`pyforge-doctor` and `pyforge-warden`'s package `.gitignore` files put comments inline after the…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-1-3",
-            "title": "Every pyforge sibling package (doctor, warden, steward, mason, and now marshal) declares `licens…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-1-4",
-            "title": "The `pyforge-mason-build-dist` and `pyforge-steward-build-dist` pixi tasks (root `pixi.toml`) ru…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-FU-1-1",
-            "title": "Follow-up review still recommended for 1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enfor",
-            "status": "open",
-            "severity": "low",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-2-1",
-            "title": "`architecture.md`'s AD-23 rule text still says the story key is \"purely numeric on both parts\", contradicting AD-38",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-3-1",
-            "title": "`core/policy.py`'s `content_hash` (and therefore `materialize()`'s content-addressed filename) i…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-3-2",
-            "title": "`schemas/policy.json`'s `policyField` `$defs` entry does not constrain the TYPE of `value`/`raw_…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-3-3",
-            "title": "`cli/config.py::materialize()` can leave an orphaned `.policy-*.tmp` file in the target director…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-FU-1-3",
-            "title": "Follow-up review still recommended for 1-3-layered-policy-composition-with-provenance-and-validation after the damping c",
-            "status": "open",
-            "severity": "low",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-7",
-            "title": "No project-policy source supplies `gate_mode=\"none\"` / `max_followup_reviews=2`, so the first real `write_policy_toml` c",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-1",
-            "title": "`adapters/harness_bmadloop.py`'s vendored `_POLICY_TEMPLATE` is a hand-copied snapshot of `bmad_…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-2",
-            "title": "`write_policy_toml`'s unconditional whole-file overwrite will silently discard harness-native st…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-3",
-            "title": "This story's untrack (`git rm --cached .bmad-loop/policy.toml`) only closes the F-1 cross-projec…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-4",
-            "title": "Between this story's merge (which untracks `.bmad-loop/policy.toml`) and the later story that wi…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-5",
-            "title": "The `max_followup_reviews = 2` value in the (now untracked) live policy.toml was explicitly bran…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-10-6",
-            "title": "The tracked `.bmad-loop/policy.toml` this story deletes carried curated operational commentary w…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-7-1",
-            "title": "The supported harness range had three unsynchronized declarations",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-8-1",
-            "title": "Preflight lacks init and teardown's Git-ref-shape slug guard",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-8-2",
-            "title": "Teardown hardcodes the integration branch as `main`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-3",
-            "title": "Teardown has a branch-deletion TOCTOU window",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-4",
-            "title": "Teardown cannot see valuable gitignored content",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-5",
-            "title": "Teardown can destroy nested registered worktrees",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-8-6",
-            "title": "Teardown has no active-run liveness guard",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-9-1",
-            "title": "Marshal's README still describes a Story 1.1 skeleton",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-9-2",
-            "title": "The future run journal must record Marshal and harness versions",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-AUD-2026-07-31-1",
-            "title": "Stories 1.7-1.9 shipped without canonical memlog reconciliation",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-AUD-2026-07-31-2",
-            "title": "Four Marshal-owned Dreams still have no Tier-2 Spec",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-AUD-2026-07-31-3",
-            "title": "Deferred-work detector ignores anonymous Tier-3 entries",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-1",
-            "title": "`cli/init.py`'s project-existence check (`MRS-INIT-002`) reads `_bmad-output/pro…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-2",
-            "title": "The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_f…",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-4-3",
-            "title": "`adapters/fs_local.py`'s two atomic-write helpers disagree on stale-temp-file ha…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-4",
-            "title": "`marshal init <slug>` has no protection against two concurrent invocations for t…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-5",
-            "title": "`cli/init.py::_loop_home_root()`'s real default fallback (`Path.home() / \".bmad-…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-6",
-            "title": "`tests/unit/test_vcs_git.py` and `tests/integration/test_init_worktree.py` each …",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-7",
-            "title": "`cli/init.py`'s printed `launch_line` (`cd <home> && export BMAD_ACTIVE_PROJECT=…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-8",
-            "title": "`marshal init` has no guard against the total loop-home path length, despite thi…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-9",
-            "title": "`cli/main.py::main` catches only `SystemExit` and `KeyboardInterrupt` — it has n…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-10",
-            "title": "`tests/integration/test_init_worktree.py` — the only end-to-end proof of both wo…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-5-11",
-            "title": "`cli/init.py`'s `tier3_backlink` step gives a real, non-empty DIRECTORY at the l…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-5-13",
-            "title": "`tier3_backlink`'s convergence check compares the raw (unresolved) symlink target…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-5-14",
-            "title": "A failed `ensure_dir`/`repoint_symlink_atomic` after `remove_empty_dir` leaves the…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-1-5-12",
-            "title": "A home provisioned by `marshal init` alone still lacks the TOP-LEVEL `_bmad-outp…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-2-1",
-            "title": "`marshal teardown` reports every landed story as an unreachable promotion for …",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-SYNC-2026-08-08-1",
-            "title": "`sprint-ledger-sync` silently DOWNGRADES the tracked ledger when …",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-LEDGER-2026-08-08-1",
-            "title": "RETRACTED. Herald's \"34 orphan story specs\" was damage I caus…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-LEDGER-2026-08-08-2",
-            "title": "VOID (measured after the DW-LEDGER-1 damage; doctor's real orpha…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-LEDGER-2026-08-08-3",
-            "title": "RETRACTED. Atlas's feed and twin agree exactly; there is no …",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-LEDGER-2026-08-08-4",
-            "title": "VOID. Its table was measured after the damage, not before it.",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-DOCTOR-2026-08-08-1",
-            "title": "`doctor check` is 7.04s against its documented 5.0s budget",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-DOCTOR-2026-08-08-2",
-            "title": "Doctor's discovery walk borrowed warden's entry cap, where hitting it means the opposite thing",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-BOARD-2026-08-08-1",
-            "title": "Herald's build line and Herald's ledger describe DIFFERENT sto…",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-SURFACE-2026-08-08-1",
-            "title": "memlog movement is surface-wide, so one entry launders every pending drift finding",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-SURFACE-2026-08-08-2",
-            "title": "`--write-baseline` is all-or-nothing, so no spec can be reconciled in isolation",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-FU-2-1",
-            "title": "Follow-up review still recommended for 2-1-standalone-verify-command-runner-project-scoped after the damping cap was spe",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-FU-2-6",
-            "title": "Follow-up review still recommended for 2-6-gate-evidence-record-with-redaction-at-egress after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-FU-3-3",
-            "title": "Follow-up review still recommended for 3-3-detached-launch-with-scoped-story-selection after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-FU-3-4",
-            "title": "Follow-up review still recommended for 3-4-supervisor-process-lifecycle after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-FU-3-5",
-            "title": "Follow-up review still recommended for 3-5-idle-strand-detection after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-FU-4-14",
-            "title": "source_spec: `spec-4-14-the-failed-story-safety-net-is-reported.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9",
-            "title": "Follow-up review still recommended for 7-4-manifest-schema-loader-and-model-version-ranges after the damping cap was spe",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-2-1",
-            "title": "`pyforge-deps-test` fails on `pyforge-mason`'s five conda-only run-dependencies, reddening a verify command every story ",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-10-3-1",
-            "title": "Writing `plan.json` to its canonical path flips the fingerprint's dirty flag, so the first apply of every freshly built ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-10",
-            "title": "A failed rollback wraps an interrupt in a catchable `InternalError`, so a CLI's `except SeedError` swallows the operator",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-2",
-            "title": "Rollback restores a file's bytes but not its mode, so a failed apply leaves every executable managed artifact non-execut",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-3",
-            "title": "A directory target snapshots as `None` and is never removed, so a rolled-back apply leaves the whole tree it created",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-4",
-            "title": "A symlinked target is snapshotted through the link but restored over it, leaving neither the link nor its referent as th",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-5",
-            "title": "An interrupt raised during rollback discards the list of paths rollback already knew it could not restore",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-6",
-            "title": "The never-write guard is applied to rollback restores, so a target `commit` wrote into a never-write path can never be p",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-7",
-            "title": "A plan's fingerprint records no repo identity, so a plan built against one non-git directory applies cleanly to a differ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-8",
-            "title": "`fingerprint_drift` performs an unguarded arbitrary-path read; containment lives only in its caller, and Story 10.4 owns",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-3-9",
-            "title": "`build_plan` emits Actions whose `target_path` escapes `repo_root`, so one bad manifest entry makes `run_apply` refuse t",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-4-1",
-            "title": "A symlinked ancestor directory defeats the never-write guard, because the pattern is matched against the resolved destin",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-4-2",
-            "title": "The new never-imported packaging ratchet cannot see `python-build`, the one exempted name its own docstring says the gat",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-4-3",
-            "title": "`ManagedRecord`'s region-bearing shape has no source in the state model Story 10.2 actually landed, so rung 6 cannot be ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-4-4",
-            "title": "`managed_after_skips` cannot protect the artifact class rung 6 actually guards, because a hand-edited managed file never",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-10-4-5",
-            "title": "An action whose target is an existing DIRECTORY clears all six precondition rungs and fails later as an untyped `IsADire",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-14-1-1",
-            "title": "`pyforge-core/.gitignore`'s `/dist/` and `/dist-conda/` lines carry inline comments gitignore cannot parse, so both patt",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-14-2-1",
-            "title": "story deferred at the dev verify-gate — substantive work committed locally but never merged, blocked on cross-spec spec-",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-14-3-1",
-            "title": "Doctor and Steward still carry un-reparented exception roots outside Story 14.3's CAP-5 scope",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-14-4-1",
-            "title": "Herald, Mason, and Scribe carry real, un-migrated subprocess implementations outside Story 14.4's CAP-6 scope",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-14-4-2",
-            "title": "AD-4's import-linter contract has a verification blind spot for pyforge-core's own internal os/subprocess imports",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-2-8-1",
-            "title": "epics.md's Story 2.8 entry omits the **Surface:** line every sibling Epic-2 story carries",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-3-12-1",
-            "title": "A resumed run's retry-escalation ceilings are read from whatever policy.toml is on disk now, not the policy that governe",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-3-12-2",
-            "title": "A newly-struggling story is never named in the escalation journal once a resumed run's model is already floor-raised",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-3-12-3",
-            "title": "A model-tiering policy.toml write can land on disk before its own launch/resume intent is journaled, in both run_spin an",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-3-12-4",
-            "title": "A TOML serialization failure ahead of the atomic policy.toml write is never wrapped in HarnessPolicyWriteError, in both ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-3-13-1",
-            "title": "Policy-vocabulary key-count literals in cli/config.py's comments and two test names were already stale before this story",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-10-1",
-            "title": "A malformed `merge_subject_template` (missing or duplicate `{key}` placeholder) crashes `marshal land`'s full-merge path",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-10-2",
-            "title": "A multi-key `marshal land` wave under `landing_merge_strategy: squash` or `rebase` renders its subject from the wave's p",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-10-3",
-            "title": "`gh pr merge --subject`'s `commitHeadline` has no merge commit to title under `landing_merge_strategy: rebase`, so a reb",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-8-1",
-            "title": "`is_run_live`, which gates `marshal land`'s branch retirement off the same `FleetHomeFacts` this story extends, never co",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-8-2",
-            "title": "`ProcessPort.is_alive`'s bare pid-existence probe has no identity/start-time corroboration and admits a degenerate `pid:",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-8-3",
-            "title": "`tests/packaging/test_dependency_completeness.py`'s `BASELINE_UNDECLARED_IMPORTS` ratchet is a shared, repo-wide file wi",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-9-1",
-            "title": "Two distinct raw sprint-status-ledger.yaml keys that both normalize to the identical StoryKey silently collapse in recon",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-9-2",
-            "title": "`cli/deploy.py::run_promote` reports a story key in `data[\"promoted\"]` even when the `commit_paths` that would make the ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-9-3",
-            "title": "`promote_sprint_status.py::repair_feed` matches the tracked ledger's raw key spelling against the Tier-3 feed's raw key ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-9-4",
-            "title": "A failed ledger `commit_paths` after a successful `git add` leaves the git INDEX staged with pre-rollback content, even ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-5-9-5",
-            "title": "A literal duplicate raw key appearing twice as separate lines in the tracked ledger's own text has only its FIRST occurr",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-8-1-1",
-            "title": "the region-name forward-reference entry S-7.4's own ledger opened for S-8.1 is now closed in fact but still reads `statu",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-1-1",
-            "title": "`spec_surface_check.py --write-baseline --spec` stamps every file the named spec governs, not just the paths a reconcili",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-3-1",
-            "title": "`check_managed_file`/`check_managed_region` never distinguish a shape-invalid `recorded_sha` from a genuine hand-edit",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-4-1",
-            "title": "Epic 9.4's AC prose names a glob (`docs/specs/*.md`) for the canonical legacy worked example that this module's presence",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-5-1",
-            "title": "Manifest coverage check can never actually fire against any manifest built through normal construction",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-5-2",
-            "title": "A second, independent review pass re-confirms manifest coverage is structurally redundant with `ManifestEntry.__post_ini",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-5-3",
-            "title": "Manifest coverage only sees version-filtered entries, so a staged or retired entry's corrupted class/rationale produces ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-6-1",
-            "title": "`build_plan`'s git fingerprint can misreport an ancestor repository's HEAD/dirty state for a nested target",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-9-6-2",
-            "title": "Writing `plan.json` before the target's `.gitignore` region is materialized can make the plan file itself flip a subsequ",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-14-1",
-            "title": "Follow-up review still recommended for 4-14-the-failed-story-safety-net-is-reported after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-FU-8-5",
-            "title": "Follow-up review still recommended for 8-5-marker-deletion-as-a-sanctioned-opt-out after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-BL011-1",
-            "title": "loop-stall-check labels a bmad-loop 0.11 `awaiting-operator` parked run \"stalled\" — attention arrives, mislabeled",
-            "status": "done",
-            "severity": "low",
-            "triaged": true
           },
           {
-            "id": "DW-BL011-2",
-            "title": "the deferred-work pipeline's intake shape changes on the FIRST bmad-loop 0.11 run — Tier-3 `deferred-work.md` is no long",
+            "id": "DW-FU-17-1",
+            "title": "CAP-1's \"a clean run reproduces the inventory\" success bar is not freshly re-verified by this story — no quartet runtime",
             "status": "open",
             "severity": "medium",
             "triaged": false
           },
           {
-            "id": "DW-25-4-1",
-            "title": "`repo_defaults` compose parameter is accepted but never folded — `policy-defaults.toml` is functionally inert for all 28",
+            "id": "DW-FU-17-2",
+            "title": "No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against man",
             "status": "open",
             "severity": "medium",
             "triaged": false
           },
           {
-            "id": "DW-25-5-1",
-            "title": "Story 25.5's review round landed AFTER the merge — two layers' findings dispositioned here, unapplied",
+            "id": "DW-FU-17-2-2",
+            "title": "CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this mac",
             "status": "open",
-            "severity": "medium",
+            "severity": "low",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-17-2-3",
+            "title": "write_ops_canvas: records whose P/Work falls back to the \"?\" sentinel are counted in the total but invisible in every pe",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-17-2-4",
+            "title": "write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops d",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-17-2-5",
+            "title": "write_workbook_canvas's \"Needs a staged-recipes PR\" bucket excludes JFrog names with no identity match at all, inconsist",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-17-2-6",
+            "title": "No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-17-2-7",
+            "title": "_CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "Phase 5 Canopy obligations recorded (atlas station); `lane1-serves-dw-h3` still open",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": true
           }
         ]
       },
       {
         "project": "pyforge-steward",
         "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
-        "open": 75,
+        "open": 97,
         "done": 2,
-        "triaged": 1,
+        "triaged": 2,
         "entries": [
           {
             "id": "DW-1-2-1",
@@ -28024,13 +28548,167 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-12-2",
+            "title": "The \"395-package `python-agent-platform` env\" figure embedded in timeout-justification comments has no mechanism keeping",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-1",
+            "title": "Bookkeeping YAML is not locked; concurrent start/clean in one checkout can race.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-1-2",
+            "title": "start does not `git fetch` before branching from origin/main.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-1-3",
+            "title": "A freshly started branch with no unique commits is treated as merged by --merged-only.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-1-4",
+            "title": "No tracked schema/example for `.steward/workspaces.yaml`.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-1-5",
+            "title": "Distinct slugs that normalize to the same sibling path (e.g. a/b vs a-b) can collide.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-1-6",
+            "title": "Stale bookkeeping entries (missing path / moved checkout) stay listed by ls.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-13-2",
+            "title": "status ahead/behind uses local source ref; no fetch of origin before counting.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-14-1",
+            "title": "skill-manifest.csv parsing is a naive quoted-CSV split; skills with commas in fields would mis-parse.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-14-5",
+            "title": "Trap 8 (.git/info/exclude stale shield lines) is not automated in prove-landed.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-1",
+            "title": "Live (non-baseline) probe implementations are only exercised via stubs; no temp-repo / urllib-monkeypatch coverage for r",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-1-2",
+            "title": "Dashboard wired census uses loose fleet surfaces (docs/dashboard, presentations) rather than package-specific wire state",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-3",
+            "title": "Conda installer subprocess has no timeout; a hung *-install can block the provision duty indefinitely.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-3-2",
+            "title": "No rollback of copied skill dirs when post-install verification or manifest write fails after installer exit 0.",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-3-3",
+            "title": "--list-modules does not surface _SKIPPED_MODULES (WDS) or skip reasons.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-3-4",
+            "title": "Hard-coded _CIS_SKILL_NAMES allowlist is not asserted against the live bmad-creative-intelligence-suite share tree.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-4",
+            "title": "Live prove-landed may still hit the network / warm caches when running cited npx/uv spot-checks even with --help/--dry-r",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-4-2",
+            "title": "skip_native_spot_checks exists on build_prove_landed_report but has no CLI flag.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-4-3",
+            "title": "_BMAD_LOOP_UV_GIT_SPEC hard-pins v0.11.0 with no regeneration note when the matrix version moves.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-16-2",
+            "title": "Operator-facing deploy README / NOTES still omit COMPONENT_RUNTIME and the invalid DJANGO_ADMIN_URL set beyond the chart",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-16-2-2",
+            "title": "is_serving_process / COMPONENT_PROCESS locality helpers ship without dedicated tests (unused by CAP-3 stage-2 conditions",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "source_spec: `planning-artifacts/sprint-change-proposal-2026-08-24-canopy.md`",
+            "status": "open",
+            "severity": "medium",
+            "triaged": true
           }
         ]
       },
       {
         "project": "pyforge-mason",
         "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 50,
+        "open": 58,
         "done": 1,
         "triaged": 0,
         "entries": [
@@ -28390,13 +29068,69 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "low",
             "triaged": false
+          },
+          {
+            "id": "DW-7-1-1",
+            "title": "symptom_signature tokens are not all meaningfully diagnostic: some rows carry a single generic word (e.g. \"fails\", \"work",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-1-2",
+            "title": "The fenced-code-block inclusion heuristic in _symptom_paragraph only fires when the Symptom paragraph's prose ends in a ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-1-3",
+            "title": "_ENFORCED_BY_RE's exact-phrase match (\"The optimizer's **CODE** check\") has no fallback signal distinguishing \"no check ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-1-4",
+            "title": "failure-catalog.yaml has no schema_version/format_version field.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-2-1",
+            "title": "_code_present()'s narrow `code=\"X\"`/`code='X'` literal-substring match could miss a check code defined a different way (",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-2-2",
+            "title": "check_drift() decides ordinary drift vs. generator-broke by testing for the literal string \"DRIFT DETECTED\" in the gener",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-2-3",
+            "title": "Nothing in this repo currently makes a detector finding (this one included) or a tests/scripts/ failure literally block ",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "Canopy five-tier surfaces and event backbone (steward-owned)",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-warden",
         "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
-        "open": 41,
+        "open": 45,
         "done": 2,
         "triaged": 41,
         "entries": [
@@ -28700,13 +29434,41 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": true
+          },
+          {
+            "id": "DW-FU-7-1",
+            "title": "SourceEvidence carries no de-duplication across multiple observations of the same PackageIdentity (e.g. a package seen b",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-1-2",
+            "title": "CycloneDXSourceAdapter.validate() never checks the document's specVersion, so an incompatible/very old CycloneDX schema ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-7-2",
+            "title": "\"Reproducible from provenance alone\" (SPEC.md CAP-2 / epics.md AC) does not universally hold: the required_authority_sou",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "Portal rename and URL relocation (Canopy FR-9a/9b)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-herald",
         "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
-        "open": 40,
+        "open": 43,
         "done": 5,
         "triaged": 21,
         "entries": [
@@ -29024,15 +29786,36 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-15-1",
+            "title": "No GitHub Actions workflow runs the pyforge-herald pytest suite at all.",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-1-2",
+            "title": "_resolve_layout silently resolves a name-based layout reference to the first match when a template has two layouts shari",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "Canopy five-tier integration deferred to steward (Phase 5)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 28,
+        "open": 35,
         "done": 3,
-        "triaged": 4,
+        "triaged": 5,
         "entries": [
           {
             "id": "DW-1-1-1",
@@ -29250,13 +30033,62 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "medium",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-14-1",
+            "title": "GitHub-releases fallback for the npm-invisible suite packages: 6 of the 10 live bmad-* pins (bmad-loop, bmad-labs-skills",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-14-1-2",
+            "title": "Suite pin-floor-vs-installed (offline CAP-1 analog for the suite) is not covered by any capability: an installed suite p",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-1",
+            "title": "_fetch_latest_github_release's /tags fallback only reads GitHub's first response page, never following pagination.",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-1-2",
+            "title": "No test in test_sources_bmad_method.py reads a real, live recipes/<name>/recipe.yaml directly to prove the GitHub fallba",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-2",
+            "title": "Story 15.2's two new checks fire only for suite packages already present in `.pixi/envs` (inherited from `_gather_suite_",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-15-2-2",
+            "title": "No dedicated fleet-picture-layer meta-test names `bmad-channel-drift` or `bmad-recipe-upstream-drift` specifically -- co",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "source_spec: `planning-artifacts/sprint-change-proposal-2026-08-24-canopy.md`",
+            "status": "open",
+            "severity": "medium",
+            "triaged": true
           }
         ]
       },
       {
         "project": "pyforge-scribe",
         "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md",
-        "open": 7,
+        "open": 12,
         "done": 0,
         "triaged": 0,
         "entries": [
@@ -29308,6 +30140,41 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-FU-3-2",
+            "title": "A transcript node's citation/id is derived only from the source file's basename (not a path relative to transcript_root)",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-3-2-2",
+            "title": "The transcript surface is the only compile surface with no cost bound, and this story puts it on the unattended nightly ",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-3-2-3",
+            "title": "The `pyforge-scribe/spec-pyforge-scribe` spec-surface baseline is stale for 12 files, and the spec's .memlog.md carries ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-3-2-4",
+            "title": "`recall.answer()` ranks candidates by token overlap and tie-breaks on node id ascending, never consulting `valid_from`, ",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-CANOPY-2026-08-24",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-change-proposal-2026-08-24-canopy.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       }
@@ -29318,45 +30185,45 @@ window.DASHBOARD_DATA = {
     "running": [],
     "lastShipped": {
       "station": "marshal",
-      "story": "21.5",
-      "epoch": 1787536271,
-      "sha": "5227971d1",
-      "subject": "feat(marshal): Story 21.5 configurable per-project CAP-5 invocation"
+      "story": "24.3",
+      "epoch": 1787540882,
+      "sha": "39a13a22d",
+      "subject": "docs(marshal): UNSUPERVISED engine-liveness double-check (Story 24.3)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-24 02:49 UTC",
-    "generatedEpoch": 1787539784
+    "generatedAt": "2026-08-24 16:11 UTC",
+    "generatedEpoch": 1787587908
   },
   "storySpecs": [
     {
       "station": "pyforge-atlas",
       "done": 57,
-      "tracked": 50,
-      "gap": 7
+      "tracked": 58,
+      "gap": 0
     },
     {
       "station": "pyforge-doctor",
       "done": 61,
-      "tracked": 50,
-      "gap": 11
+      "tracked": 58,
+      "gap": 3
     },
     {
       "station": "pyforge-herald",
       "done": 58,
-      "tracked": 50,
-      "gap": 8
+      "tracked": 58,
+      "gap": 0
     },
     {
       "station": "pyforge-marshal",
-      "done": 156,
-      "tracked": 109,
-      "gap": 47
+      "done": 162,
+      "tracked": 153,
+      "gap": 9
     },
     {
       "station": "pyforge-mason",
       "done": 47,
-      "tracked": 18,
-      "gap": 29
+      "tracked": 48,
+      "gap": 0
     },
     {
       "station": "pyforge-scribe",
@@ -29367,8 +30234,8 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-steward",
       "done": 79,
-      "tracked": 50,
-      "gap": 29
+      "tracked": 77,
+      "gap": 2
     },
     {
       "station": "pyforge-warden",
@@ -29379,115 +30246,6 @@ window.DASHBOARD_DATA = {
   ],
   "readiness": {
     "rows": [
-      {
-        "station": "marshal",
-        "project": "pyforge-marshal",
-        "epicsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-agent-tool-surface",
-            "status": "in-progress",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md"
-          },
-          {
-            "slug": "spec-bmad-611-era-alignment",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-611-era-alignment/SPEC.md"
-          },
-          {
-            "slug": "spec-bmad-loop-baseline-drift",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md"
-          },
-          {
-            "slug": "spec-bmad-loop-intent-gap-work-preservation",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation/SPEC.md"
-          },
-          {
-            "slug": "spec-bmad-loop-liveness-footgun",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun/SPEC.md"
-          },
-          {
-            "slug": "spec-bmad-switch-scope-enforcement",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md"
-          },
-          {
-            "slug": "spec-dashboard-project-path-derivation",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md"
-          },
-          {
-            "slug": "spec-dashboard-velocity-captures-hand-driven-work",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-velocity-captures-hand-driven-work/SPEC.md"
-          },
-          {
-            "slug": "spec-dream-to-code-model-self-verification",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification/SPEC.md"
-          },
-          {
-            "slug": "spec-fleet-chain-completeness",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md"
-          },
-          {
-            "slug": "spec-landing-evidence-grammar",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-landing-evidence-grammar/SPEC.md"
-          },
-          {
-            "slug": "spec-loop-home-fleet-refresh",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/SPEC.md"
-          },
-          {
-            "slug": "spec-marshal-single-story-dispatch",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md"
-          },
-          {
-            "slug": "spec-pyforge-core",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md"
-          },
-          {
-            "slug": "spec-pyforge-testing-charter",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md"
-          },
-          {
-            "slug": "spec-sprint-status-auto-promote",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md"
-          },
-          {
-            "slug": "spec-surface-drift-reconciliation",
-            "status": "in-progress",
-            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
-          }
-        ],
-        "done": 156,
-        "backlog": 6,
-        "blocked": 0,
-        "total": 162,
-        "next": "23-3-the-coverage-caption-partitions-by-true-reason",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "23-3-the-coverage-caption-partitions-by-true-reason",
-          "24-1-marshal-gains-the-missing-liveness-primitive",
-          "24-2-the-operator-answer-is-one-documented-command",
-          "24-3-an-unsupervised-row-has-a-cheap-documented-double-check",
-          "25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided",
-          "25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner"
-        ],
-        "state": "ready"
-      },
       {
         "station": "steward",
         "project": "pyforge-steward",
@@ -29531,6 +30289,11 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-fifteen-factors/SPEC.md"
           },
           {
+            "slug": "spec-pyforge-unifying-strategy",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md"
+          },
+          {
             "slug": "spec-python-agent-platform",
             "status": "in-progress",
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform/SPEC.md"
@@ -29547,13 +30310,20 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 79,
-        "backlog": 1,
+        "backlog": 36,
         "blocked": 0,
-        "total": 80,
+        "total": 115,
         "next": "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
         "blockedKeys": [],
         "backlogKeys": [
-          "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster"
+          "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
+          "18-1-django-pyforge-is-the-only-chrome",
+          "18-2-the-switcher-shows-only-what-the-user-may-reach",
+          "18-3-two-clients-one-rs256-assertion",
+          "19-1-warden-moves-and-is-renamed",
+          "19-2-seven-more-portal-shells-under-the-prefix",
+          "20-1-wagtail-publishes-without-a-deploy",
+          "20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue"
         ],
         "state": "ready"
       },
@@ -29659,6 +30429,108 @@ window.DASHBOARD_DATA = {
         "state": "complete"
       },
       {
+        "station": "marshal",
+        "project": "pyforge-marshal",
+        "epicsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-agent-tool-surface",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface/SPEC.md"
+          },
+          {
+            "slug": "spec-bmad-611-era-alignment",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-611-era-alignment/SPEC.md"
+          },
+          {
+            "slug": "spec-bmad-loop-baseline-drift",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md"
+          },
+          {
+            "slug": "spec-bmad-loop-intent-gap-work-preservation",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation/SPEC.md"
+          },
+          {
+            "slug": "spec-bmad-loop-liveness-footgun",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-liveness-footgun/SPEC.md"
+          },
+          {
+            "slug": "spec-bmad-switch-scope-enforcement",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md"
+          },
+          {
+            "slug": "spec-dashboard-project-path-derivation",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation/SPEC.md"
+          },
+          {
+            "slug": "spec-dashboard-velocity-captures-hand-driven-work",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-velocity-captures-hand-driven-work/SPEC.md"
+          },
+          {
+            "slug": "spec-dream-to-code-model-self-verification",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dream-to-code-model-self-verification/SPEC.md"
+          },
+          {
+            "slug": "spec-fleet-chain-completeness",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md"
+          },
+          {
+            "slug": "spec-landing-evidence-grammar",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-landing-evidence-grammar/SPEC.md"
+          },
+          {
+            "slug": "spec-loop-home-fleet-refresh",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh/SPEC.md"
+          },
+          {
+            "slug": "spec-marshal-single-story-dispatch",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/SPEC.md"
+          },
+          {
+            "slug": "spec-pyforge-core",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md"
+          },
+          {
+            "slug": "spec-pyforge-testing-charter",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter/SPEC.md"
+          },
+          {
+            "slug": "spec-sprint-status-auto-promote",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote/SPEC.md"
+          },
+          {
+            "slug": "spec-surface-drift-reconciliation",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
+          }
+        ],
+        "done": 162,
+        "backlog": 0,
+        "blocked": 0,
+        "total": 162,
+        "next": "",
+        "blockedKeys": [],
+        "backlogKeys": [],
+        "state": "complete"
+      },
+      {
         "station": "mason",
         "project": "pyforge-mason",
         "epicsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
@@ -29746,10 +30618,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 505,
-      "backlog": 7,
+      "done": 511,
+      "backlog": 36,
       "blocked": 0,
-      "total": 512
+      "total": 547
     }
   },
   "fleetProgress": {
@@ -29790,13 +30662,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 162,
-        "done": 156,
+        "done": 162,
         "blocked": 0,
         "epics": 25,
-        "epicsDone": 22,
-        "complete": false,
+        "epicsDone": 25,
+        "complete": true,
         "running": false,
-        "projected": 156
+        "projected": 162
       },
       {
         "key": "mason",
@@ -29822,10 +30694,10 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "steward",
-        "stories": 80,
+        "stories": 115,
         "done": 79,
         "blocked": 0,
-        "epics": 17,
+        "epics": 30,
         "epicsDone": 16,
         "complete": false,
         "running": false,
@@ -29844,16 +30716,16 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 512,
-      "done": 505,
+      "stories": 547,
+      "done": 511,
       "blocked": 0,
-      "epics": 109,
-      "epicsDone": 105
+      "epics": 122,
+      "epicsDone": 108
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 505
+      "projected": 511
     }
   }
 };

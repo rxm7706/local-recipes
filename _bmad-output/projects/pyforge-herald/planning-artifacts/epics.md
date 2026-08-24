@@ -438,3 +438,48 @@ PowerPoint (round-trip proven).
 calls render editable objects into 15.1's decks with Pillow real-font-measured autofit
 (wrap, shrink, orphan rebalancing) — the densest six-act appendix slide fits, measured
 not guessed.
+
+---
+
+## Canopy obligations (2026-08-24)
+
+Herald station boundaries under the Canopy (`spec-pyforge-unifying-strategy`, steward-owned).
+Epics 1–15 are **complete**. Do **not** mint herald Epics 16+ that duplicate steward Epics
+18–30.
+
+**Five-tier symmetry.** Herald's CLI tier is shipped (`pyforge-herald` / `herald` verbs).
+Remaining tiers are steward-owned: **Epic 19** (portal), **Epic 21** (service face / MCP +
+supervisor), **Epic 22** (`pyforge herald …` dispatch), **Epic 29** (SKF domain skill +
+Agent-Herald persona). Herald integrates at hooks — it does not re-spec those tiers here.
+
+**Uniform URL.** Herald's Lane 2 portal mounts at **`/stations/herald/`** under the single host
+session — no station-specific origin, no extra public port.
+
+**Naming triple.** Distribution **`django-herald`**, module **`django_herald_<app>`**, app label
+**`herald_<app>`** (reusable-app convention; additional apps are siblings; existing models never
+move between apps).
+
+**Chrome.** Portals mount **`django-pyforge`** shared chrome only — no second app switcher, no
+duplicated Modernist shell, no herald-only header fork.
+
+**Service face.** Herald capabilities surface through **`POST /stations/herald/mcp`** on the host
+ASGI (steward **Epic 21.4**) — **no** standalone `:8006` FastAPI, **no** `services/` microservice,
+**no** second public port. Existing transport/MCP bridge code migrates to the Canopy pattern; it
+is not duplicated.
+
+**CLI.** The **`herald`** entry point remains authoritative; **`pyforge herald …`** dispatch is
+steward **Epic 22** — herald does not fork a second grammar.
+
+**Domain skill & persona.** SKF compiles the domain skill from **`pyforge-herald`** (steward
+**Epic 29.1**); **Agent-Herald** consults that skill and acts only through FR-13 grammar + FR-11
+MCP (steward **Epic 29.2**).
+
+**Web surfaces — two lanes, not confused.** Herald's Moments UI (Epics 7–10, static JSON
+snapshot) is the **framework-neutral secure-dashboard adopter** that motivated
+`spec-secure-live-dashboards` — role isolation and audit ride **`pyforge.steward.dashboard`**
+(CAP-7). Herald **does not** adopt Vizro (Lane 3). Lane 1 Guildhall/Wagtail is **not** Herald's
+(`spec-pyforge-herald/SPEC.md` non-goal: owning the console); steward **Epic 20** owns the front
+door. Portal projection of Moments data is steward **Epic 19**, not a herald Epic 16+.
+
+**Shipped work stands.** Epics 1–15 (deck bridge, CLI, Moments 2–4, live backend, deck QA, PPTX
+pipeline) remain **done**. Canopy integration is additive — no rollback of shipped herald stories.

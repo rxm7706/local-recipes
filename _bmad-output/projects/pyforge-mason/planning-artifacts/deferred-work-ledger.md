@@ -492,3 +492,14 @@ status: open
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-CANOPY-2026-08-24: Canopy five-tier surfaces and event backbone (steward-owned)
+
+- source_spec: `docs/dreams/pyforge-unifying-strategy.md` Phase 5; `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
+  summary: Mason mounts as Canopy station 3. Portal (`/stations/mason/`), MCP face, SKF domain skill (`pyforge-mason`), `Agent-Mason` persona, CloudEvents producer/consumer wiring, and PostgreSQL-first boot reconcile (steward S-25.4) are steward-delivered — not new mason epics beyond Epic 9.
+  evidence: Phase-5 `bmad-correct-course` 2026-08-24 (headless-express). Mason Epics 1–9 cover the CLI packaging factory only. Five-tier symmetry gaps (portal, MCP, persona; SKF skill additive to hand-authored CFE) bind to steward Epics 19, 21, 24, 29. MinIO/object-store boot scan is explicitly forbidden for mason (parent AD-1 amended; steward S-25.4: reconcile PostgreSQL + RWX files). `conda-forge-expert` remains hand-authored per canopy AD-17. Liquibase/OpenFeature/cachebox packaging is operator-owned (steward S-26.3), outside mason epic chain.
+  location: `_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md` § Canopy obligations (2026-08-24)
+  origin: bmad-correct-course Phase 5 headless-express 2026-08-24
+  severity: medium
+  promoted: 2026-08-24
+  status: open

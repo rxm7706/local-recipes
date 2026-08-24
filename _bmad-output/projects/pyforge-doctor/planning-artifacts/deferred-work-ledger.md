@@ -374,3 +374,18 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+---
+
+## Canopy course correction (2026-08-24)
+
+### DW-CANOPY-2026-08-24
+
+- source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
+  summary: Canopy Phase 5 (`spec-pyforge-unifying-strategy`) — record doctor's five-tier gaps and bind them to steward Epics 18–30 without minting doctor Epics 17+.
+  evidence: Doctor ships Tier 1 (CLI, Epics 1–16) and in-process MCP client usage (AD-6, `sources/atlas.py`); Tiers 2/4/5 absent; no host MCP server face; pre-audit Dream prose (`doctor_portal`, `:8008`, standalone FastAPI under `services/`) superseded by 2026-08-24 Grounding (host ASGI seam, no `services/` tier).
+  resolution: **Doctor Epics 1–16 are NOT reopened or extended for Canopy tiers.** Portal (`/stations/doctor/`, naming triple `django-doctor` / `django_doctor_<app>` / `doctor_<app>`), host MCP (`POST /stations/doctor/mcp`, official `mcp` SDK, dual-era), `pyforge doctor` dispatch (Epic 22), optional `pyforge.events` publishing (Epic 24), SKF domain skill, and Agent-Doctor persona are **steward-owned forward work** (Epics 19, 21, 22, 24, 29). Doctor package supplies domain logic and MCP tool definitions; steward mounts portal and host MCP face.
+  constraints: no second chrome (`django-pyforge` only); no extra public port; no `pyforge.*` import under `src/platform/`; do not grow a FastAPI `services/` process; `conda-forge-expert` is mason's skill, not doctor's.
+  origin: Phase 5 bmad-correct-course, pyforge-doctor, 2026-08-24
+  severity: medium
+  status: open

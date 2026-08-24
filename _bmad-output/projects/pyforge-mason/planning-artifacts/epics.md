@@ -1544,3 +1544,57 @@ channel set, pixi bootstrap path, verification hooks), an EMPTY backend registry
 (`_SUPPORTED_MODULES` precedent), and a shape-validating test ship — so any external
 installer registers and validates as a separate deliverable; 12.3's air-gap run consumes
 the same contract.
+
+## Canopy obligations (2026-08-24)
+
+Phase 5 (`bmad-correct-course`, `docs/dreams/pyforge-unifying-strategy.md`) records how
+**pyforge-mason** mounts into the Platform Canopy. **Last mason epic remains 9** — no Epic 10+
+is minted here; steward Epics 18–30 own Canopy implementation. Cite **parent AD-n**
+(`architecture-pyforge-mason-2026-07-25`) vs **canopy AD-n**
+(`architecture-pyforge-unifying-strategy-2026-08-24`); bare `AD-n` is review-blocking.
+
+### Boot and state (parent AD-1 / BS-8 / steward S-25.4)
+
+- Mason **must not** scan MinIO or any object store on boot. Restart reconciliation is against
+  **PostgreSQL** (canonical anchor) plus **RWX-mounted files** when they exist.
+- **Forbidden:** boto3, MinIO client, or S3-backed artifact indexing as mason runtime backing
+  store. The Dream's BS-8 Mason/MinIO example does **not** apply to mason.
+
+### Domain skill (canopy AD-17)
+
+- **`conda-forge-expert` stays the hand-authored operating skill** — mason's recipe/build
+  authority for conda-forge work (Rule 1). SKF compiles **`pyforge-mason`** from
+  `src/shared/packages/pyforge-mason/` as the station *domain* skill (steward Epic 29); it does
+  **not** replace CFE.
+
+### Operator-owned packaging (out of mason epic chain)
+
+- Liquibase, OpenFeature feedstocks, and `cachebox` 5.x packaging are **operator-owned**
+  (steward S-26.3 / CAP-9 / CAP-13 gates). Not mason epic work in this chain.
+
+### Five-tier symmetry (steward Epics 19 / 21 / 29)
+
+| Tier | Mason today | Canopy obligation | Steward owner |
+| :-: | :--- | :--- | :--- |
+| CLI | `mason` / `pyforge mason` — **shipped** (Epics 1–9) | Keep as primary local surface | — |
+| Portal | — | `/stations/mason/` via `django-mason` reusable app; zero domain models in portal | Epic 19 |
+| MCP | — | `POST /stations/mason/mcp` on host ASGI; dual-era handshake | Epic 21 |
+| Domain skill | `conda-forge-expert` (hand-authored) + future SKF `pyforge-mason` | CFE never replaced; SKF is additive | Epic 29 |
+| Persona | — | `Agent-Mason` — BMAD launcher consults CFE + domain skill; FR-13/FR-11 only | Epic 29 |
+
+No second chrome, no extra public port — one modular-monolith ASGI process (canopy AD-1, AD-5,
+AD-10).
+
+### Event backbone (steward Epic 24)
+
+- When mason has an event **producer**, consume/produce **CloudEvents** on `pyforge.events`;
+  poison payloads → `pyforge.events.dlq`. Event `type` values are dotted verbs registered in
+  `django-pyforge`; payload validation lives in domain adapters, not at the stream boundary.
+- Mason does not implement the backbone — it participates when a producer exists.
+
+### Explicit non-goals
+
+- Do **not** copy steward Epics 18–30 into mason's epic chain.
+- Do **not** introduce MinIO/object-store boot reconciliation for mason.
+- Do **not** replace `conda-forge-expert` with SKF-compiled output.
+- Do **not** own Liquibase/OpenFeature/cachebox packaging in mason stories.

@@ -3,7 +3,7 @@ doc_type: deferred-work-ledger
 project: pyforge-atlas
 date: 2026-07-29
 status: restored
-entries: 57
+entries: 59
 ---
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
@@ -2250,3 +2250,33 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+## DW-CANOPY-2026-08-24 — Phase 5 Canopy obligations recorded (atlas station); `lane1-serves-dw-h3` still open
+
+- source_spec: `docs/dreams/pyforge-unifying-strategy.md` Phase 5; `sprint-change-proposal-2026-08-24-canopy.md`
+  summary: Headless/express `bmad-correct-course` for station **pyforge-atlas** records how atlas
+    relates to the Platform Canopy (`src/platform/`) without re-scoping steward Epics 18–30. Atlas
+    Epics 1–17 stand; **no atlas Epic 18** copies steward work. Five obligations are bound in
+    `epics.md` § *Canopy obligations (2026-08-24)* and summarized here.
+  obligations:
+    - mcp: atlas `build_server()` is mounted by steward Story 21.2 — atlas does not build a second server
+    - cap7-boards: host boards use `pyforge.steward.dashboard` only; Vizro CLI boards stay outside the host (non-goal)
+    - bs5-duckdb: single-writer + `read_only=True` is atlas-local; steward Story 25.2 owns the absence-test — cooperate, do not duplicate
+    - five-tier: CLI exists; steward Epics 19/21/29 supply portal `/stations/atlas/`, MCP face, SKF skill, persona — no second chrome or extra public port in atlas
+  joint_open_question:
+    id: lane1-serves-dw-h3
+    status: open
+    parties: [pyforge-steward, pyforge-atlas]
+    question: Whether Canopy Lane 1 (Guildhall Wagtail at `/`) serves, replaces, or merely coexists with
+      the Epic 16 / `spec-wagtail-corporate-brain` narrow DW-H3 contract (`LaSuiteClient` frozen REST —
+      `POST /api/v1/documents/` etc.). **Not answered in this pass.**
+    constraint: Canopy Lane 1 must **not** absorb or re-mint `spec-wagtail-corporate-brain`. Epic 16's
+      contract and Wagtail's own API/admin surface are distinct until steward and atlas jointly resolve
+      `lane1-serves-dw-h3`.
+  dw_h3: DW-H3 (live Wagtail/La Suite server + credential + httpx opener bring-up) remains **open** —
+    unchanged by this entry; closes only when the attended bring-up runs and passes per Epic 16 / DW-H3.
+  evidence: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`; steward
+    `planning-artifacts/epics.md` § *Phase 5 scope* (open question stays joint, out of steward stories)
+  status: open
+  verified: 2026-08-24 — obligations applied to atlas Tier-2 planning artifacts; `lane1-serves-dw-h3`
+    explicitly **not** resolved; no answer invented for whether Lane 1 serves DW-H3.

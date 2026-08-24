@@ -30,10 +30,10 @@ graph TB
         DP["django-pyforge<br/>CAP-1 shared chrome"]
         L1["Wagtail Lane 1<br/>CAP-2"]
         P7["7 more portals<br/>CAP-3"]
-        SVC["services/ FastAPI + MCP<br/>CAP-4"]
+        SVC["MCP on host ASGI<br/>CAP-4 — not a services/ process"]
         CLI["pyforge CLI<br/>CAP-5"]
         CLIENT["pyforge.core.client<br/>CAP-6"]
-        VZ["Vizro Lane 3<br/>CAP-7"]
+        SD["secure-dashboard pattern<br/>CAP-7"]
         EV["Redis Streams backbone<br/>CAP-8"]
         SK["8 domain skills<br/>CAP-15 — 1 of 8 today"]
         PER["8 station personas<br/>CAP-16 — 0 of 8 today"]
@@ -54,9 +54,9 @@ graph TB
     CF -.-> CLIENT
     P7 -.-> CLIENT
     CLIENT -.-> SVC
-    FastAPIseam -.->|RFC-1 splits this| SVC
+    FastAPIseam -.->|same ASGI; RFC-1 is Celery workers| SVC
     SVC -.-> EV
-    Host -.-> VZ
+    Host -.-> SD
     CLI -.-> SVC
     PER -.->|"acts only through"| CLI
     PER -.->|"and through"| SVC
@@ -66,7 +66,7 @@ graph TB
     classDef shipped fill:#1a3a52,stroke:#4a9eda,color:#fff
     classDef residual fill:#3a2a1a,stroke:#daa54a,color:#fff,stroke-dasharray: 5 3
     class Host,Auth,FastAPIseam,LF,DG,CF shipped
-    class DP,L1,P7,SVC,CLI,CLIENT,VZ,EV,SK,PER residual
+    class DP,L1,P7,SVC,CLI,CLIENT,SD,EV,SK,PER residual
 ```
 
 ## Request path and the identity chain (CAP-6)

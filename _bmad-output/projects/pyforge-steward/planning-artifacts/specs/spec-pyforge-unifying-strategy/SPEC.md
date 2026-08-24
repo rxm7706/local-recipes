@@ -1,6 +1,6 @@
 ---
 spec: pyforge-unifying-strategy
-status: draft
+status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
 updated: "2026-08-24"
@@ -14,6 +14,7 @@ companions:
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-mcp-runtime-2026-08-24.md
+  - ../../architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform
 surface:
@@ -33,7 +34,6 @@ sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:
   - lane1-serves-dw-h3
-  - mcp-runtime-base
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -354,14 +354,10 @@ database role is provably incapable of altering its own schema.
   its `docket` dependency. CAP-4's success criterion is shippable **without** Tasks — see the
   constraint below. Recorded as a **scheduled re-check**, not a closed door: SEP-2663 is Final and
   the SDK's extension API has landed, so this may resolve within the chain's lifetime.
-- **mcp-runtime-base** — do the service faces stay on FastMCP or move onto the official `mcp` SDK?
-  **No published pairing satisfies both**: every conda-forge `fastmcp` 3.x build declares
-  `mcp >=1.24.0,<2.0`, and `fastmcp` 2.14.3 only co-installs with `mcp` 2.0.0 because its upper
-  bound is missing — which is why `import fastmcp` currently raises `ImportError` on `McpError` and
-  **every in-repo MCP server is unstartable today**. Staying on FastMCP means dropping `mcp` below
-  2.0 and forgoing the modern revision entirely; moving onto `mcp` gives the dual-era range for
-  free but relocates five modules. This is CAP-4's foundational choice, and it is also a live
-  outage, so it cannot wait for the architecture pass to reach it.
+- ~~**mcp-runtime-base**~~ — **answered 2026-08-24: hybrid.** Stopgap now: `local-recipes` pins
+  `fastmcp >=3.4.7,<4` and `mcp >=1.24,<2.0` so servers start. CAP-4 service faces are built on
+  the official `mcp` SDK (`>=2.0.0`) on the one ASGI process; that story lifts the ceiling.
+  Bound as architecture AD-5.
 - **lane1-serves-dw-h3** — can CAP-2's CMS satisfy atlas's `DW-H3` (its attended live
   La Suite/Wagtail bring-up), so the estate runs one instance rather than two? Atlas's shipped
   `LaSuiteClient` froze a **La Suite Docs** REST contract, which is not Wagtail's own API, so this

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 114
+# stories: 175
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -59,14 +59,49 @@ development_status:
   16-5-identity-is-oidc-delegated-no-local-passwords: done
   17-1-steward-init-shell-init-detect-and-prepare-the-machine: done
   17-2-steward-setup-initrepo-take-the-machine-to-green: done
+  18-1-django-pyforge-is-the-only-chrome: backlog
+  18-2-the-switcher-shows-only-what-the-user-may-reach: backlog
+  18-3-two-clients-one-rs256-assertion: backlog
+  19-1-warden-moves-and-is-renamed: backlog
+  19-2-seven-more-portal-shells-under-the-prefix: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
   2-4-the-operator-can-ask-when-did-the-dashboard-last-actually-deploy: done
+  20-1-wagtail-publishes-without-a-deploy: backlog
+  20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue: backlog
+  21-1-supervisor-tables-in-public: backlog
+  21-2-atlas-mcp-on-the-host-dual-era: backlog
+  21-3-start-get-survives-disconnect: backlog
+  21-4-the-other-seven-mcp-faces: backlog
+  21-5-front-door-queries-the-supervisor: backlog
+  22-1-pyforge-dispatches-without-reimplementing: backlog
+  23-1-same-url-different-rows: backlog
+  24-1-cloudevents-on-redis-broker: backlog
+  24-2-cascades-halt-adapters-validate: backlog
+  25-1-circuits-trip-on-async-too: backlog
+  25-2-one-duckdb-writer: backlog
+  25-3-validation-errors-render-inline: backlog
+  25-4-restarts-reconcile: backlog
+  26-1-revoke-takes-effect-on-the-next-request: backlog
+  26-2-manifests-carry-secret-references-only: backlog
+  26-3-openfeature-packages-on-the-channel-operator-gate: backlog
+  26-4-one-flag-flips-three-surfaces-without-a-redeploy: backlog
+  27-1-liquibase-on-the-channel-operator-gate: backlog
+  27-2-pre-upgrade-job-and-dml-only-app-role: backlog
+  27-3-stale-extraction-fails-ci: backlog
+  27-4-test-databases-still-migrate: backlog
+  28-1-postgresql-driver-behind-the-existing-port: backlog
+  28-2-semantic-recall: backlog
+  29-1-skf-domain-skills-from-station-packages: backlog
+  29-2-personas-act-only-through-grammar-and-mcp: backlog
+  29-3-five-tier-check: backlog
   3-1-any-named-pixi-environment-materializes-with-one-command: done
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
   3-4-the-environment-yaml-sync-gate-is-one-command-away-not-a-remembered-incantation: done
+  30-1-remaining-console-surfaces-have-a-home: backlog
+  30-2-delete-the-generator-and-its-inbound-refs: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
@@ -112,10 +147,36 @@ development_status:
   epic-16-retrospective: optional
   epic-17: done
   epic-17-retrospective: optional
+  epic-18: backlog
+  epic-18-retrospective: optional
+  epic-19: backlog
+  epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
+  epic-20: backlog
+  epic-20-retrospective: optional
+  epic-21: backlog
+  epic-21-retrospective: optional
+  epic-22: backlog
+  epic-22-retrospective: optional
+  epic-23: backlog
+  epic-23-retrospective: optional
+  epic-24: backlog
+  epic-24-retrospective: optional
+  epic-25: backlog
+  epic-25-retrospective: optional
+  epic-26: backlog
+  epic-26-retrospective: optional
+  epic-27: backlog
+  epic-27-retrospective: optional
+  epic-28: backlog
+  epic-28-retrospective: optional
+  epic-29: backlog
+  epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
+  epic-30: backlog
+  epic-30-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

@@ -277,3 +277,15 @@ full) resolves here.
 **Given** Epic 2's knowledge-graph compile source list **Then** raw transcripts register
 alongside git history/memlogs/retros/CHANGELOGs/dreams with the same provenance
 discipline — the next Scribe layer cannot re-miss them.
+
+## Canopy obligations (2026-08-24)
+
+Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). Scribe-local
+epics **stop at Epic 3** — there is **no Epic 4** for graph backend or semantic recall.
+
+| Obligation | Owner | Notes |
+|---|---|---|
+| **CAP-14 / FR-35** — durable PostgreSQL/pgvector graph driver behind the existing `GraphStore` port, with the local flat-file path retained | **steward Epic 28** (S-28.1) | Scribe cooperates only: keep `compile.py` / `recall.py` caller-agnostic (scribe AD-5); schema isolation is **parent AD-1** / **parent AD-5** (`scribe_schema`). **Do not** add SQLite-over-RWX. Today's shipped backend is **`FlatFileGraphStore`** only — the unifying-strategy Dream's "already dual-driver" premise was false. |
+| **CAP-14 / FR-36** — semantic recall (meaning, not only lexical overlap) | **steward Epic 28** (S-28.2) | Additive to shipped lexical recall; not a scribe-local epic. |
+| **Five-tier symmetry** — portal `/stations/scribe/`, MCP service face, SKF domain skill, station persona | **steward Epics 19, 21, 29** | CLI tier exists (`scribe`; unified `pyforge scribe` via steward Epic 22). No second chrome, no extra port. |
+| Scribe tracker | *This section only* | Thin cooperation note — implementation stories live in steward planning artifacts, not here. |

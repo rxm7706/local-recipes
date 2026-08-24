@@ -1269,3 +1269,43 @@ evolving, owners diverging).
 reports shared titles with diverging status/owner/content-hash — warn-only, fail-open
 unreachable, no sibling prose stored — on the doctor report + fleet-picture ATTENTION;
 fixture reproduces the 2026-08-22 demonstrated drift; offline yields nothing.
+
+## Canopy obligations (2026-08-24)
+
+**Owner:** `pyforge-steward` owns the Canopy (`src/platform/` host). Doctor is spoke #5; the
+Canopy is not a ninth station.
+
+**Build surface:** Doctor's implementation chain ends at **Epic 16** (`spec-pyforge-doctor`,
+Epics 1–16). **No Epics 17+ are minted here** — portal, host MCP, unified CLI dispatch,
+events, SKF skill, and persona tiers are steward Epics 18–30 (`spec-pyforge-unifying-strategy`),
+not duplicated as doctor stories.
+
+**Five-tier symmetry (current → obligation):**
+
+| Tier | Today | Canopy obligation | Steward epic |
+|------|-------|-------------------|--------------|
+| CLI | `doctor` console script (Epics 1–16) | Remains `doctor`; also reachable as `pyforge doctor …` | 22 |
+| Web portal | absent | `/stations/doctor/`; triple `django-doctor` / `django_doctor_<app>` / `doctor_<app>` | 19 |
+| Service/MCP | in-process MCP **client** (AD-6) | `POST /stations/doctor/mcp` on host ASGI; official `mcp` SDK; dual-era | 21 |
+| Domain skill | absent | SKF skill from `pyforge-doctor/`; `conda-forge-expert` is mason, not doctor | 29 |
+| Agent persona | absent | BMAD persona consults doctor domain skill | 29 |
+
+**Constraints (binding on doctor participation):**
+
+- No second chrome — portals use `django-pyforge` only.
+- No extra public port — MCP is an in-host ASGI seam, not a standalone FastAPI process or
+  `services/` tier.
+- No `pyforge.*` import under `src/platform/` — portal reaches doctor only through
+  `django-pyforge`'s HTTP client.
+- If doctor publishes cross-station events, they ride `pyforge.events` on redis-broker (Epic 24)
+  with a CloudEvents envelope — no ad-hoc bus.
+
+**Shipped work stands:** Epics 1–16 and `spec-pyforge-doctor` CAP-1..9 remain the station
+contract. Canopy tiers do not reopen CLI gather/prescribe semantics (AD-1..AD-6, NFR-1..5).
+Pre-audit Dream prose (`doctor_portal`, `:8008`, `services/pyforge-doctor/`) is superseded by
+Grounding (2026-08-24).
+
+**Phase 5 scope:** This block records doctor's Canopy obligations and defers implementation to
+steward. Cite **parent AD-n** (`architecture-pyforge-doctor-2026-07-25`) vs **canopy AD-n**
+(`architecture-pyforge-unifying-strategy-2026-08-24`); bare `AD-n` in Canopy-facing reviews is
+review-blocking.

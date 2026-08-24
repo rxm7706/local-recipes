@@ -1,6 +1,6 @@
 ---
 title: "PRD: the Canopy mounts the eight stations"
-status: "draft"
+status: "ready"
 created: "2026-08-24"
 updated: "2026-08-24"
 chain: "pyforge-unifying-strategy"

@@ -1385,3 +1385,17 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-CANOPY-2026-08-24: Static Guildhall console planning retired; code deletion gated on steward parity
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md`
+  summary: Lane 1 Wagtail (steward `spec-pyforge-unifying-strategy` CAP-2) supersedes `spec-factory-console` as the estate front-door contract. Planning retirement applied 2026-08-24 via `sprint-change-proposal-2026-08-24-canopy.md`.
+  evidence: Operator approved Phase 5 of `docs/dreams/pyforge-unifying-strategy.md`; steward Epics 20 + 30 own Wagtail front door and post-parity removal of `docs/dashboard/` generator / pixi tasks / `data.js`.
+  location: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md`; `docs/dashboard/` (code — **not deleted this pass**)
+  origin: bmad-correct-course — marshal station, headless-express batch (2026-08-24)
+  severity: medium
+  promoted: 2026-08-24
+  status: open
+  carve-outs: `docs/dashboard/kedro-viz/**` is atlas-owned publish — not in deletion scope; marshal Epic 16 generator plumbing is not Lane 1 CMS; supervisor bmad-loop ingest deferred to steward Epic 21 (marshal hooks later)
+  successor: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md` CAP-2; steward Stories 20.x (front door), 30.2 (code removal)
+  resolution_gate: steward Story 30.2 after console-parity inventory (Epic 20 + 21.5)

@@ -8,11 +8,11 @@ archived-reason: absorbed
 
 > **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
 > in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) under "Kept separate on purpose."
-> **Its downstream chain stays fully live and untouched**: `spec-factory-console` (companions
-> `console-contract.md`, `drill-evidence.md`) remains the current, binding reference for this
-> Dream's still-unbuilt frontier (per-Dream drill-through, a delivery/notables feed, a
-> fleet-health strip). No PRD exists for it yet — only this top-level Dream file consolidates;
-> nothing downstream was merged, retired, or reworded.
+> **Planning superseded 2026-08-24:** `spec-factory-console` is retired in favor of steward
+> `spec-pyforge-unifying-strategy` CAP-2 (Lane 1 Wagtail front door). The generator under
+> `docs/dashboard/` remains until steward Story 30.2; Kedro-Viz (`docs/dashboard/kedro-viz/**`)
+> is atlas-owned and out of scope for retirement. Companions `console-contract.md` and
+> `drill-evidence.md` remain historical references for the generator until deletion.
 
 # Factory console — the whole pipeline on one page
 
@@ -63,6 +63,9 @@ console already knows.
 mono/panel language).
 
 ## Realization log
+
+- **2026-08-24** — `spec-factory-console` superseded by steward Canopy CAP-2; Wagtail Lane 1
+  replaces the static Guildhall as the estate front door (generator until steward 30.2).
 
 - **2026-08-09** — Reopened for the fleet roll-up. Five stations ran in parallel
   overnight and the operator's first question was one the board could not answer:
