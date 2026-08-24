@@ -28,6 +28,7 @@ from ..core.dispatch_verification import (
     judge_dispatch_verification,
     primary_gate_failure,
 )
+from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.journal import JournalEntryId, Phase, build_entry, fold, prepare_for_write
 from ..core.identity import normalize, resolve_feed
 from ..dispatch_verify import (
@@ -35,6 +36,7 @@ from ..dispatch_verify import (
     evaluate_dispatch_verification,
     resolve_spec_text_for_story,
 )
+from ..dispatch_land import execute_dispatch_land
 from ..ports.fs import FsPort
 from ..ports.vcs import VcsPort
 
@@ -96,6 +98,94 @@ def _verification_already_journaled(folded, run_id: str) -> bool:
         entry.run_id == run_id and entry.phase == Phase.OUTCOME
         for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)
     )
+
+
+def _landing_already_journaled(folded, run_id: str) -> bool:
+    return any(
+        entry.run_id == run_id and entry.phase == Phase.OUTCOME
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND)
+    )
+
+
+def _verification_outcome_verdict(folded, run_id: str) -> str | None:
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
+        if entry.run_id == run_id and entry.phase == Phase.OUTCOME:
+            verdict_val = entry.payload.get("verdict")
+            if isinstance(verdict_val, str):
+                return verdict_val
+    return None
+
+
+def _run_and_journal_landing(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    verification_verdict: DispatchVerificationVerdict,
+    merge_subject_template: str,
+) -> int:
+    """Land a verified dispatch via Epic 4 machinery and journal (Story 22.4)."""
+    effective = compose_dispatch_policy(slug, repo_root)
+    landing_result, envelope = execute_dispatch_land(
+        project_slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=repo_root,
+        verification_verdict=verification_verdict,
+        effective=effective,
+        fs=fs,
+        vcs=vcs,
+        process=process,
+    )
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_LAND,
+        phase=Phase.INTENT,
+        payload={
+            "verdict": landing_result.verdict.value,
+            "verification_verdict": verification_verdict.value,
+            "pr_number": landing_result.pr_number,
+            "subject": landing_result.subject,
+            "marshal_native": landing_result.marshal_native,
+        },
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_LAND,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "verdict": landing_result.verdict.value,
+            "ok": landing_result.verdict == DispatchLandingVerdict.LANDED,
+            "envelope_verdict": envelope.verdict.value,
+            "pr_number": landing_result.pr_number,
+            "merge_sha": landing_result.merge_sha,
+            "marshal_native": landing_result.marshal_native,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal landing for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
 
 
 def _session_awaits_verification(
@@ -288,6 +378,47 @@ def run_dispatch_supervisor(
                     text = fs.read_text(journal_path)
                     if text is not None:
                         folded = fold(text.splitlines())
+                v_outcome = _verification_outcome_verdict(folded, run_id)
+                if (
+                    v_outcome == DispatchVerificationVerdict.VERIFIED.value
+                    and not git_facts.story_merged_on_main
+                    and not _landing_already_journaled(folded, run_id)
+                ):
+                    counter = _run_and_journal_landing(
+                        fs=fs,
+                        vcs=vcs,
+                        process=process,
+                        run_dir=run_dir,
+                        run_id=run_id,
+                        writer_id=writer_id,
+                        counter=counter,
+                        repo_root=repo_root,
+                        slug=slug,
+                        story_key=story_key,
+                        worktree=worktree,
+                        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+                        merge_subject_template=merge_subject_template,
+                    )
+                    text = fs.read_text(journal_path)
+                    if text is not None:
+                        folded = fold(text.splitlines())
+                    try:
+                        git_facts = gather_dispatch_git_facts(
+                            vcs,
+                            repo_root=repo_root,
+                            worktree=worktree,
+                            story_key=story_key,
+                            project_slug=slug,
+                            baseline_head_sha=baseline_head_sha,
+                            merge_subject_template=merge_subject_template,
+                        )
+                        verdict = judge_dispatch_completion(
+                            DispatchCompletionInput(
+                                session_alive=session_alive, git=git_facts
+                            )
+                        )
+                    except (VcsCommandError, ValueError):
+                        pass
             heartbeat = build_entry(
                 id=JournalEntryId(writer_id, counter),
                 ts=_format_entry_ts(_now_utc()),
@@ -308,6 +439,46 @@ def run_dispatch_supervisor(
                 pass
             time.sleep(_TICK_SECONDS)
             continue
+
+        v_outcome = _verification_outcome_verdict(folded, run_id)
+        if (
+            v_outcome == DispatchVerificationVerdict.VERIFIED.value
+            and not git_facts.story_merged_on_main
+            and not _landing_already_journaled(folded, run_id)
+        ):
+            counter = _run_and_journal_landing(
+                fs=fs,
+                vcs=vcs,
+                process=process,
+                run_dir=run_dir,
+                run_id=run_id,
+                writer_id=writer_id,
+                counter=counter,
+                repo_root=repo_root,
+                slug=slug,
+                story_key=story_key,
+                worktree=worktree,
+                verification_verdict=DispatchVerificationVerdict.VERIFIED,
+                merge_subject_template=merge_subject_template,
+            )
+            text = fs.read_text(journal_path)
+            if text is not None:
+                folded = fold(text.splitlines())
+            try:
+                git_facts = gather_dispatch_git_facts(
+                    vcs,
+                    repo_root=repo_root,
+                    worktree=worktree,
+                    story_key=story_key,
+                    project_slug=slug,
+                    baseline_head_sha=baseline_head_sha,
+                    merge_subject_template=merge_subject_template,
+                )
+                verdict = judge_dispatch_completion(
+                    DispatchCompletionInput(session_alive=session_alive, git=git_facts)
+                )
+            except (VcsCommandError, ValueError):
+                pass
 
         intent_entry = build_entry(
             id=JournalEntryId(writer_id, counter),

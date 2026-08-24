@@ -15,6 +15,7 @@ KIND_DISPATCH_LAUNCH = "dispatch-launch"
 KIND_DISPATCH_SUPERVISOR_ATTACH = "dispatch-supervisor-attach"
 KIND_DISPATCH_COMPLETION = "dispatch-completion"
 KIND_DISPATCH_VERIFICATION = "dispatch-verification"
+KIND_DISPATCH_LAND = "dispatch-land"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"
@@ -35,6 +36,7 @@ class DispatchJournalFacts:
     completion_verdict: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    landing_verdict: str | None = None
     harness_self_report_shipped: bool = False
 
 
