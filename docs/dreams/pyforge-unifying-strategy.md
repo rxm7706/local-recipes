@@ -1,5 +1,5 @@
 ---
-title: PyForge Unifying Strategy — Hub-and-Spoke Enterprise Architecture across all 9 stations
+title: PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture
 type: dream
 owner: herald
 status: dreamt
@@ -9,7 +9,7 @@ status: dreamt
 
 ## The Dream
 
-We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building 9 disconnected apps; we are building **one enterprise host (`pyforge_host`) that mounts 9 capability domains**, powered by **Pixi** as the unified package and environment manager.
+We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building disconnected apps; we are building **one enterprise Platform Canopy (`pyforge_host` + `pyforge-agent-platform`) that mounts the 8 canonical capability stations**, powered by **Pixi** as the unified package and environment manager.
 
 By placing a unified **Django + Wagtail/CodeRed CMS (CRX)** application at the center and delegating heavy lifting to **FastAPI / MCP microservices**, we achieve a flawless separation of concerns:
 - **The Host (`pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, and reverse-proxying.
