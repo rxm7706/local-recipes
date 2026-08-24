@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 9
-    next: 21-5-configurable-per-project-invocation
+    remaining_count: 8
+    next: 23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields
     queue:
-    - 21-5-configurable-per-project-invocation
     - 23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields
     - 23-2-wall-clock-is-never-blended-with-active-compute
     - 23-3-the-coverage-caption-partitions-by-true-reason

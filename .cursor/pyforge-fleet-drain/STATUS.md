@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~20:35 CDT
+**Updated:** 2026-08-23 ~20:55 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 9** · steward **12-7 only** (skipped) — **marshal-only drain** |
+| Backlog | **marshal 8** · steward **12-7 only** (skipped) — **marshal-only drain** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `21-5` | [d20f4848-3b44-40da-8647-80784afb83b3](d20f4848-3b44-40da-8647-80784afb83b3) |
+| marshal | `23-1` | launching |
 
 ## Dispatch sequencing (operator — 2026-08-23)
 
-**Epic 22 complete.** Epic 21 last story `21-5` in flight → then Epics 23–25.
+**Epics 21 + 22 complete.** Now Epic 23: `23-1` → `23-2` → `23-3`, then Epics 24–25.
 
 ## Operator skip
 
@@ -45,9 +45,9 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | PR |
 |---------|-------|-----|
+| marshal | `21-5` | [#710](https://github.com/rxm7706/local-recipes/pull/710) merge `3155ec626b` ([Marshal 21-5](d20f4848-3b44-40da-8647-80784afb83b3)) · **Epic 21 done** |
 | marshal | `21-4` | [#709](https://github.com/rxm7706/local-recipes/pull/709) merge `584818efcb` ([Marshal 21-4](159c24e8-616a-46b4-b943-0b73908009fb)) · CAP-4 orphan cleanup |
 | marshal | `21-3` | [#708](https://github.com/rxm7706/local-recipes/pull/708) merge `765497a06b` ([Marshal 21-3](d30e5dfd-7551-4690-b6ea-d88d275f674f)) · CAP-2 code-status preserve |
-| marshal | `21-2` | [#707](https://github.com/rxm7706/local-recipes/pull/707) merge `2710dc06e1` ([Marshal 21-2](36410bee-290d-4f7d-bf29-0fa3ed1faf8a)) · CAP-1 chain-regenerate |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
