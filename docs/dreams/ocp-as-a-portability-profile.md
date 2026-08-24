@@ -2,7 +2,7 @@
 title: OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster
 type: dream
 owner: steward
-status: specified   # 2026-08-23 — spec-12-9-ocp-as-a-portability-profile (Story 12.9)
+status: specified   # 2026-08-24 — spec-ocp-as-a-portability-profile (CAP-1..3); decomposed as steward Story 12.9 (backlog — no ocp-portability-smoke job yet)
 ---
 
 # OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster
@@ -89,3 +89,14 @@ Story 12.1 already owns stays the only OCP-specific surface.
   does not re-own the full hybrid SDLC.
 - Story 12.7 — overlapping Tier-3 items; 12.9 automates the subset CI can own;
   12.7 remains the attended closeout after chart extensions 12.5–12.6 land.
+
+## Realization log
+
+- **2026-08-23** — Dreamt and prematurely marked `specified` against
+  `spec-12-9-ocp-as-a-portability-profile` (a story-spec name). That folder
+  never existed; INV-1 matches the Dream slug, so the chain was still
+  `dream-without-spec`.
+- **2026-08-24** — Chain Spec `spec-ocp-as-a-portability-profile` landed
+  `ready` (CAP-1..3). Bound to existing Story 12.9; ledger flipped
+  done→backlog because Platform CI still has no `ocp-portability-smoke`
+  job. Runner class remains an open question at story time.

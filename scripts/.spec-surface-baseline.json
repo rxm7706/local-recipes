@@ -3976,6 +3976,10 @@
   "files": {},
   "memlog": "7d8744d0684204a4c9ffa95355cde13291cf4933"
  },
+ "pyforge-steward/spec-bmad-suite-install-class-wiring": {
+  "files": {},
+  "memlog": "8e793ffeabb258d7c40a01e65fe1ae824e975e7e"
+ },
  "pyforge-steward/spec-db-gpt-django-plugin": {
   "files": {},
   "memlog": "d165e07cd002a1297e7b961a4f4e10dc3a610719"
@@ -4010,6 +4014,10 @@
  "pyforge-steward/spec-multi-repo-workspaces": {
   "files": {},
   "memlog": "b9d9a896e744d9748cea460bd718f898a25e3c30"
+ },
+ "pyforge-steward/spec-ocp-as-a-portability-profile": {
+  "files": {},
+  "memlog": "4ea51aeceef9bbdb3297b025849b7e471da86f94"
  },
  "pyforge-steward/spec-platform-fifteen-factors": {
   "files": {},
