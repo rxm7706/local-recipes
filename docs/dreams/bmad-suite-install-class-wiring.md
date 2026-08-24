@@ -2,7 +2,7 @@
 title: Non-module bmad-suite pieces are provisioned by install class — not forced through --module
 type: dream
 owner: steward
-status: dreamt
+status: specified   # 2026-08-24 — spec-bmad-suite-install-class-wiring (CAP-1..3 + install-class-playbook.md); decomposed as steward Epic 31 (3 stories). --module skf refused.
 ---
 
 # Non-module bmad-suite pieces are provisioned by install class
@@ -116,3 +116,8 @@ modules; skf optional extension lives there if Spec says yes) ·
   of all 13 packages ≠ `--module` wiring; CAP-3 five clarified; remaining six
   needed an explicit install-class Dream so steward's "channel + upgrade, not
   --module" line has a positive "how then?" rather than only a refusal.
+- **2026-08-24** — Specified. Chain Spec `spec-bmad-suite-install-class-wiring`
+  landed `ready` (CAP-1 playbook, CAP-2 class-correct wired-or-not, CAP-3
+  fresh-clone path). Companion `install-class-playbook.md` cites parent
+  `install-matrix.md`. Decomposed as steward Epic 31 (15 stays done).
+  `--module skf` refused as a non-goal.

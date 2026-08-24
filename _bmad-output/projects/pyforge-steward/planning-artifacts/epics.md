@@ -1195,10 +1195,17 @@ dataset on cluster Postgres via port-forward, within the 5,000-points/hr budget 
 board created and repo-linked, queryable end to end; kin-declared to
 `spec-jira-github-projects-sync` Mode B, never a second sync engine.
 
-**Stories 12.4–12.6 and 12.8 clear to dispatch (12.8 after 12.4); 12.7 follows all three chart/bring-up stories.**
+**Stories 12.4–12.6 and 12.8 clear to dispatch (12.8 after 12.4); 12.7 follows all three chart/bring-up stories. Story 12.9 (OCP portability profile) is dispatchable after 12.1+12.2; it does not replace 12.7.**
+
+**Spec binding (2026-08-24).** Story 12.9 decomposes `spec-ocp-as-a-portability-profile` CAP-1..3
+(chain Spec landed 2026-08-24 from `docs/dreams/ocp-as-a-portability-profile.md`; INV-1 requires
+the folder `spec-ocp-as-a-portability-profile/`, not a `spec-12-9-*` story-spec name). Parent
+`spec-python-agent-platform` CAP-6 / AD-11 remain. Adopted companions: `cluster-bringup-facts.md`,
+`spec-12-2-gke-as-a-portability-profile.md`. Runner class is an open question at story time.
+Ledger previously marked 12.9 done with no `ocp-portability-smoke` job — flipped to backlog.
 
 ### Story 12.9: OCP as a portability profile
-**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-python-agent-platform CAP-6 / AD-11 (OCP overlay live proof); Dream `docs/dreams/ocp-as-a-portability-profile.md`
+**Type:** infra • **Effort:** M • **Deps:** S-12.1, S-12.2 (pattern) • **FR/AD:** spec-ocp-as-a-portability-profile CAP-1, CAP-2, CAP-3 (parent CAP-6 / AD-11)
 **Surface:** platform CI (`.github/workflows/platform-ci.yml`), `deploy/README.md` honesty line
 **Given** the Story 12.1 OCP overlay and a real OpenShift API (CRC / OpenShift Local — not `kind`)
 **Then** an optional Platform CI job (`ocp-portability-smoke`, default off) pushes the shared
@@ -1918,3 +1925,38 @@ S-27.1 stay **blocked** on operator-owned packaging (canopy AD-16).
 warden, doctor, herald, mason, scribe) run their own Phase 5 course-correction proposals;
 Marshal additionally retires `spec-factory-console`. Open question `lane1-serves-dw-h3` stays
 joint with atlas — not answered in steward stories.
+
+## Epic 31: Non-module suite pieces install by class
+
+**Spec binding.** Decomposes `spec-bmad-suite-install-class-wiring` CAP-1..3 (Spec landed
+2026-08-24 from `docs/dreams/bmad-suite-install-class-wiring.md`; companion
+`install-class-playbook.md` cites parent `install-matrix.md`). **HARD:** Epic 15 stays
+**done** — this is a new epic, not 15.5+. CAP-3 five and the WDS skip are not reopened.
+`--module skf` is a Spec non-goal. Wrap, don't absorb (method first-install = Epic 14;
+loop = `--runner` only). Template is scaffold-only forever.
+
+### Story 31.1: Class-keyed playbook is the operator path
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-bmad-suite-install-class-wiring CAP-1
+**Surface:** `steward provision --help` (or equivalent CLI pointer), playbook companion
+**Given** the six non-module suite pieces **Then** `steward provision --help` names the
+class-keyed playbook, and that playbook lists pixi path, cited native wire, and steward
+verb/task for each class — no tribal knowledge, native commands cited from
+`install-matrix.md` never invented.
+
+### Story 31.2: wired-or-not is class-correct
+**Type:** feature • **Effort:** M • **Deps:** S-15.1 • **FR/AD:** spec-bmad-suite-install-class-wiring CAP-2
+**Surface:** pipeline-truth report (parent CAP-1)
+**Given** the pipeline-truth `wired-or-not` column **Then** each of the six is judged by
+its class predicate (installer tree / runner home / plugin enabled / VS Code extension /
+scaffold N/A), not a boolean only `--module` targets can satisfy — and template-into-this-repo
+never reports wired.
+
+### Story 31.3: Fresh clone class-path is proven
+**Type:** feature • **Effort:** M • **Deps:** S-31.1 • **FR/AD:** spec-bmad-suite-install-class-wiring CAP-3
+**Surface:** documented/scripted fresh-clone path (CI or recorded run)
+**Given** a fresh clone **Then** method core is installed, loop is provisionable via
+`--runner`, skf skills are present via its own installer, labs plugin path is documented,
+dashboard install task is runnable, and template is N/A unless scaffolding — zero
+improvised npm Installer driving from a chat transcript.
+
+**Epic 31 clears to dispatch on 31.1; 31.2 after 15.1 (already done); 31.3 after 31.1.**
