@@ -7,7 +7,7 @@ updated: '2026-08-24'
 context: []
 warnings: []
 baseline_revision: 2febf3bda5b404d0fe4a6c2f39df817b8d604611
-final_revision: 5248c077479a9e314d48c2ce6a5884d31fff5a11
+final_revision: 6488062c317909e9b69c869f0b347ccb49b9600d
 review_loop_iteration: 0
 followup_review_recommended: true
 deferred:
@@ -115,15 +115,18 @@ Render surface = timing-strip class labels (not a second velocity series). Veloc
 ## Auto Run Result
 
 Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/714
+Merge: 6488062c317909e9b69c869f0b347ccb49b9600d
+Merge policy: admin merge () — GitHub Actions billing blocks CI; local tests green before merge.
 Summary: CAP-2 metric-class separation — wall-clock stays off velocity.bars; perStoryClass + chip/legend styling; split totalLabel; unblended epicMin / epicMinWallClock; data.js regenerated. Warden/atlas curated timing byte-identical.
 Files:
 - docs/dashboard/generate.py — perStoryClass, split rollups/labels, helpers
 - docs/dashboard/index.html — chip CSS/titles, mixed legend, epic dual chips, data-metric
 - docs/dashboard/data.js — regenerated (CAP-2 fields on derived lines)
 - .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py — CAP-2 assertions
-Review findings: 5 patches applied; 2 deferred (CAP-3 sub caption; runtime DOM fixture); 9 rejected (noise / curated constraint / 23.3 scope).
+Review findings: 5 patches applied; 2 deferred (CAP-3 sub caption; runtime DOM fixture); 9 rejected.
 Follow-up review recommendation: true (patched high=1; score 3×2 medium + 2 low = 8 ≥ 5)
 Verification:
 - pixi run -e local-recipes pytest meta test_dashboard_scan_timing_wall_clock.py + test_dashboard_renders.py — 19 passed
 - pixi run -e local-recipes dashboard-gen — doctor dual totalLabel; no combined marks; curated warden/atlas timing unchanged
-Merge policy: admin merge (`gh pr merge <n> --merge --admin`) — GitHub Actions billing blocks CI; local tests green before merge.
+Finalize: ledger key 23-2-wall-clock-is-never-blended-with-active-compute → done (this chore).
