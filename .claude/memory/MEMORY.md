@@ -25,4 +25,5 @@ letting the index grow unbounded.
 
 ## Reference
 
+- [fleet landing-pass liveness](reference/fleet-landing-pass-liveness.md) — STEP 2 primary check is `bmad-loop status <run_id> --json` + `list --json`; never `cat engine.pid` / bare `grep 'bmad-loop run'`; corroboration grep must match run|resume|resolve
 - [bmad-loop escalation & landing traps](reference/bmad-loop-escalation-and-landing-traps.md) — re-arm defaults to re-implementing from scratch; `--no-interactive` is NOT the safe flag; diff the restore patch against current main; `dashboard-gen` defaults to the intent feed
