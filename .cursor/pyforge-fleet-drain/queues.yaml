@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 6
-    next: 23-3-the-coverage-caption-partitions-by-true-reason
+    remaining_count: 5
+    next: 24-1-marshal-gains-the-missing-liveness-primitive
     queue:
-    - 23-3-the-coverage-caption-partitions-by-true-reason
     - 24-1-marshal-gains-the-missing-liveness-primitive
     - 24-2-the-operator-answer-is-one-documented-command
     - 24-3-an-unsupervised-row-has-a-cheap-documented-double-check
