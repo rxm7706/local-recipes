@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 7
-    next: 23-2-wall-clock-is-never-blended-with-active-compute
+    remaining_count: 6
+    next: 23-3-the-coverage-caption-partitions-by-true-reason
     queue:
-    - 23-2-wall-clock-is-never-blended-with-active-compute
     - 23-3-the-coverage-caption-partitions-by-true-reason
     - 24-1-marshal-gains-the-missing-liveness-primitive
     - 24-2-the-operator-answer-is-one-documented-command

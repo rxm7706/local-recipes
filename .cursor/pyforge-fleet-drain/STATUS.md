@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-23 ~21:30 CDT
+**Updated:** 2026-08-23 ~21:35 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 7** · steward **12-7 only** (skipped) — **marshal-only drain** |
+| Backlog | **marshal 6** · steward **12-7 only** (skipped) — **marshal-only drain** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `23-2` | [370ff5d0-3984-4727-aab9-43e703653012](370ff5d0-3984-4727-aab9-43e703653012) (retry; prior [d553482b](d553482b-ed82-4027-9dad-e5c0987a110a) resource_exhausted, no PR) |
+| marshal | `23-3` | launching |
 
 ## Dispatch sequencing (operator — 2026-08-23)
 
-**Epics 21 + 22 complete.** Epic 23: `23-2` → `23-3`, then Epics 24–25.
+**Epics 21 + 22 complete.** Epic 23 last story `23-3` in flight → then Epics 24–25.
 
 ## Operator skip
 
@@ -45,9 +45,9 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `23-1` | [#711](https://github.com/rxm7706/local-recipes/pull/711) merge `fbe1bc935a` ([Marshal 23-1](37fbb462-a605-4fc8-8cce-4bbf6209aafa)) · wall-clock fallback (+ #712/#713 finalize/repair) |
+| marshal | `23-2` | [#714](https://github.com/rxm7706/local-recipes/pull/714) merge `6488062c31` ([Marshal 23-2 retry](370ff5d0-3984-4727-aab9-43e703653012)) · CAP-2 unblended classes |
+| marshal | `23-1` | [#711](https://github.com/rxm7706/local-recipes/pull/711) merge `fbe1bc935a` ([Marshal 23-1](37fbb462-a605-4fc8-8cce-4bbf6209aafa)) · wall-clock fallback |
 | marshal | `21-5` | [#710](https://github.com/rxm7706/local-recipes/pull/710) merge `3155ec626b` ([Marshal 21-5](d20f4848-3b44-40da-8647-80784afb83b3)) · **Epic 21 done** |
-| marshal | `21-4` | [#709](https://github.com/rxm7706/local-recipes/pull/709) merge `584818efcb` ([Marshal 21-4](159c24e8-616a-46b4-b943-0b73908009fb)) · CAP-4 orphan cleanup |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
