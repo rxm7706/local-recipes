@@ -943,7 +943,7 @@ graph LR
     RFC2["RFC-2: Dedicated Redis Broker vs. Cache Instances"] --> Core
     RFC3["RFC-3: OAuth2 Token Delegation & Scoped Task Auth"] --> Core
     RFC4["RFC-4: Redis Streams PEL Reclaim & DLQ Contract"] --> Core
-    RFC5["RFC-5: Alembic Single-Source DB Governance"] --> Core
+    RFC5["RFC-5: Liquibase Single-Source PostgreSQL DDL Governance"] --> Core
 ```
 
 * **Directive 1 — Uvicorn Process & Worker Pool Separation (RFC-1):**
@@ -958,9 +958,13 @@ graph LR
 * **Directive 4 — Redis Streams PEL Reclaim, DLQ & Loop-Depth Limits (RFC-4):**
   * *Vulnerability:* Unhandled consumer panics leave orphaned messages in the Pending Entries List (PEL), while recursive agent triggers risk infinite loops.
   * *Remediation:* Mandate an automated Dead Letter Queue (`pyforge:events:dlq`) consumer using `XAUTOCLAIM` to harvest abandoned messages, and enforce a strict loop-depth ceiling (`X-PyForge-Loop-Depth <= 5`) on all inter-station event payloads.
-* **Directive 5 — Single-Source Database DDL Governance via Alembic (RFC-5):**
-  * *Vulnerability:* Running dual migrations (Django migrations vs. FastAPI Alembic) across zero-model portals causes DDL lock contention and schema drift.
-  * *Remediation:* Django manages only platform tables (`auth_user`, `django_session`, `wagtail_*`). Station domain schemas (`warden_*`, `atlas_*`, `scribe_*`) in PostgreSQL are owned exclusively by FastAPI services and migrated via Alembic in Kubernetes pre-install Helm hooks.
+* **Directive 5 — Single-Source PostgreSQL DDL Governance via Liquibase (RFC-5):**
+  * *Vulnerability:* Fragmented migrations across multiple frameworks (Django migrations, ORM auto-generation, ad-hoc DDL) cause schema drift, lock contention, and unrepeatable rollbacks across multi-tenant schemas.
+  * *Remediation:* **All PostgreSQL database changes across the entire PyForge estate must be managed strictly via Liquibase (`db/changelog/`)**:
+    - **Declarative ChangeSets:** Formatted YAML/SQL changelogs (`db.changelog-master.yaml`) maintain an immutable, checksummed audit trail (`DATABASECHANGELOG` table).
+    - **Multi-Schema Orchestration:** Manages all PostgreSQL schemas (`public`, `warden_schema`, `atlas_schema`, `scribe_schema`, `langflow_schema`, `dbgpt_schema`) under atomic transactions with deterministic rollback definitions (`rollback:` blocks).
+    - **Kubernetes Lifecycle Hook:** Executed as an init-container or pre-upgrade Helm Job (`liquibase update`) before Django or FastAPI microservices boot, preventing schema race conditions during rolling deployments.
+    - **Zero-ORM DDL Coupling:** Application frameworks (Django, FastAPI, SQLAlchemy) consume existing schemas as read/write targets but are strictly prohibited from generating runtime DDL alterations.
 
 ### 2. Edge Case Failure Protections
 
@@ -1016,4 +1020,4 @@ graph LR
 - **2026-08-23** — Packaging Audit & High-Leverage Opportunity Matrix: completed an audit of all station `pyproject.toml` files, verifying `hatchling` build systems and `pyforge-core` leaf spine bindings across all 9 stations, and mapped top 10 underutilized repository libraries (`cocoindex`, `openlineage`, `BSL`, `markitdown`, `graphviz2drawio`, `filelock`, `go-sops`, `pandera`, `taplo`, `playwright`) to specific station capabilities.
 - **2026-08-23** — Empirical Multi-Python Resolution Benchmark: executed standalone `pixi lock` solver benchmarks across the entire 1,000+ package estate for Python 3.12, 3.13, and 3.14, confirming 100% solver success across all three Python minor versions with complete binary C-extension availability.
 - **2026-08-23** — The 3 Operational Planes Architecture Formalization: unified the 10 platform layers into three macro operational planes (UI & Routing Plane, Compute & Agent Plane, Data & Infrastructure Plane) with an overarching Mermaid system topology showing direct client-to-service and agent-to-MCP execution paths.
-- **2026-08-23** — Adversarial Architecture & Red Team Hardening Directives: codified 5 mandatory pre-implementation RFCs (FastAPI REST vs. MCP worker process separation, dedicated Redis broker vs. cache instances, scoped identity token delegation, Redis Streams PEL dead-letter queue with max loop-depth limits, and single-source PostgreSQL DDL governance via Alembic).
+- **2026-08-23** — Adversarial Architecture & Red Team Hardening Directives: codified 5 mandatory pre-implementation RFCs (FastAPI REST vs. MCP worker process separation, dedicated Redis broker vs. cache instances, scoped identity token delegation, Redis Streams PEL dead-letter queue with max loop-depth limits, and single-source PostgreSQL DDL governance via Liquibase).
