@@ -1,18 +1,19 @@
 ---
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
 project_name: 'pyforge-mason'
 project_phase: 'in-progress'
 user_name: 'rxm7706'
-date: '2026-08-02'
+date: '2026-08-24'
 sections_completed: ['overview', 'status']
 ---
 
 # Project Context for AI Agents — Mason
 
-_Critical rules and patterns for Mason, the packaging station. This project
-is currently 4/48 stories done (per `sprint-status-ledger.yaml`, the tracked
-completion source of record)._
+_Critical rules and patterns for Mason, the packaging station. Ledger: mix of done / backlog / optional (re-ground 2026-08-24)._
 
-**Status:** 4/48 stories done (39 backlog, 5 optional)
+**Status:** sprint-status-ledger — **100** done · **12** backlog · **18** optional (incl. epics); mixed in-flight.
+
+**Living docs:** re-ground of `architecture-bmad-infra.md` + the 8 station `project-context.md` rulebooks is a **marshal** SYNC-RUNBOOK duty (CAP-7 decision 2026-08-24) — not a per-station relay. Pins use `source_pin: BMAD 6.11.0 / conda-forge-expert v8.84.0`.
 
 ---
 
@@ -42,7 +43,7 @@ productizing the `conda-forge-expert` capability (`mason recipe/package/environm
 
 All stories in this project must pass:
 1. **Local verification:** `pixi run -e local-recipes pytest src/shared/packages/pyforge-mason/tests/`
-2. **Readiness gate:** `bmad-check-implementation-readiness` at epic completion.
+2. **Readiness gate:** `bmad-sprint-planning` readiness gate (6.11; former check-implementation-readiness absorbed) at epic completion.
 3. **Integration gate:** All dependent stories must complete before downstream gates.
 
 ---

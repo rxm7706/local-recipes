@@ -1,21 +1,22 @@
 ---
 project_name: 'local-recipes'
 user_name: 'rxm7706'
-date: '2026-06-20'
+date: '2026-08-24'
 sections_completed: ['default_conventions', 'tech_stack', 'identity_vocabulary', 'spec_tiers', 'recipe_format', 'compiler_stdlib', 'python_policy', 'dependency_resolution', 'mcp_lifecycle', 'sha256', 'build_test', 'anti_patterns', 'canonical_patterns', 'air_gapped', 'submission_workflow', 'pr_ci_gates', 'repository_conventions', 'planner_constraints']
 existing_patterns_found: 1392
 status: 'complete'
 rule_count: 74
 optimized_for_llm: true
 sync_sources: ['CLAUDE.md', 'AGENTS.md', 'docs/dreams/pyforge-charter.md', '.claude/skills/conda-forge-expert/SKILL.md', '.claude/skills/conda-forge-expert/reference/', '.claude/skills/conda-forge-expert/guides/', '.claude/skills/conda-forge-expert/quickref/', '.claude/skills/conda-forge-expert/CHANGELOG.md', 'docs/reference/enterprise-deployment.md', '_bmad-output/PROJECTS.md']
-last_synced_skill_version: 'conda-forge-expert v8.81.0'
-maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump'
+last_synced_skill_version: 'conda-forge-expert v8.84.0'
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
+maintenance_model: 'hand-edited rulebook; per-section (Sync: ...) tags name the upstream source. Re-verify volatile sections (Recipe Format, MCP Lifecycle, Anti-Patterns) on each CHANGELOG MINOR bump. Living factory-doc re-ground (this file + architecture-bmad-infra.md + sibling station contexts) is a marshal SYNC-RUNBOOK duty (CAP-7, 2026-08-24).'
 ---
 # Project Context for AI Agents
 
-> **Re-grounded 2026-07-25** (`last_synced_skill_version` → **v8.79.1**; reconciler loop per SYNC-RUNBOOK, triggered by `surface-changed` pixi_envs 12 → 15). What moved since the 2026-07-18 pass — all of it *around* the packaging factory, none of it *inside* it:
-> **15 pixi envs** (+3: `pyforge-doctor`, `pyforge-herald`, `pyforge-scribe`); **five workspace packages** now ship real code under `src/shared/packages/pyforge-{atlas,doctor,herald,scribe,warden}/`; **14 BMAD projects** (was 3 documented) each carrying a **Spec** (22 across the portfolio) plus **63 tracked per-story specs**; the **PyForge identity system** landed (`docs/dreams/pyforge-charter.md` § Branding + § The Lexicon) and is now binding on prose; **26 Dreams** and **14 decks**; new governance tooling (`scripts/spec_surface_check.py`, `scripts/bmad-loop-worktree`) and a HARD parallel-agent rule (address projects by physical path, never `bmad-switch`).
-> **Unchanged and re-verified against live code:** cf_atlas schema **v29**, **46 MCP tools**, **22 atlas phases**, gotchas through **G106**, the 10-step lifecycle loop, and every rule in the recipe-authoring sections below.
+> **Re-grounded 2026-08-24** (`source_pin` / `last_synced_skill_version` → **BMAD 6.11.0 / conda-forge-expert v8.84.0**; CAP-7 / marshal Story 25-7). Live factory facts (`bmad-groundtruth`): cf_atlas schema **v29**, **46 MCP tools**, **22** atlas phases, gotchas **G1–G110**, **26** pixi envs. BMAD-METHOD **6.11.0** (render pipeline, 5 agents, 20 deprecated shims, `bmad-build` / `bmad-build-auto` / `bmad-project-context` / `bmad-deep-recon`). Active BMAD projects: the **8** Smith stations. Marshal ledger (incl. epics): **350** done · **32** backlog · **42** optional — Epic 25 completing. Living-doc cadence: **marshal** owns re-ground of this rulebook set via SYNC-RUNBOOK (not per-station).
+>
+> Prior pass (2026-07-25) had pinned CFE v8.79.1-era counts (15 pixi envs, G106, 14 BMAD projects, 6.10.0-era skill catalog) — superseded here.
 
 
 _Foundational rules every BMAD agent reads on spawn. This file is a **rulebook**, not a primer — full mechanics live in the cited upstream sources. Mirrors `CLAUDE.md` (repo-wide guidance) and the `conda-forge-expert` skill (conda-forge specifics)._
@@ -38,9 +39,9 @@ _Foundational rules every BMAD agent reads on spawn. This file is a **rulebook**
 
 Versions live in `pixi.toml` — read it, do not duplicate version numbers in prose. Non-obvious:
 
-- **15 pixi envs**, in two families. **Factory envs (9)** compose shared features: `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`. **Product envs (6)** are `no-default-feature = true` — deliberately isolated from the factory toolchain: `pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`. `local-recipes` is the default (set via `# default-env:` directive at the top of `[environments]`) and carries 106 of the repo's tasks.
+- **26 pixi envs** (live `bmad-groundtruth`; two families). **Factory envs** compose shared features (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`, …). **Product / station envs** are typically `no-default-feature = true` — deliberately isolated from the factory toolchain (`pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `pyforge-mason`, `pyforge-steward`, `pyforge-marshal`, `bmad-ui`, …). `local-recipes` is the default (set via `# default-env:` directive at the top of `[environments]`) and carries the bulk of the repo's tasks. Recount from `pixi.toml` before citing a frozen list.
 - **Never add a product feature to a factory env or vice versa.** The `no-default-feature` isolation is what lets `pyforge-atlas`/`pyforge-doctor` require Python ≥3.14 while `pyforge-warden`/`-herald`/`-scribe` require ≥3.12 and the factory runs 3.12. A cross-env dependency union silently drops deps — this has broken `main` twice (PRs #113, #115 restored deps dropped by a manifest union).
-- **Five workspace packages** ship real code under `src/shared/packages/pyforge-{atlas,doctor,herald,scribe,warden}/`. All five: `hatchling` backend, wheel from `src/pyforge`, **no `src/pyforge/__init__.py`** — `pyforge` is a **PEP 420 implicit namespace** so `pyforge.atlas`/`.doctor`/`.herald`/`.scribe`/`.warden` coexist. Each has its own `[package]` `pixi.toml` (pixi workspace member) and **no `[workspace]` table**. Do not add an `__init__.py` to `src/pyforge/` in any package — it would shadow the other four.
+- **Workspace packages** under `src/shared/packages/` (live recount): `pyforge-{atlas,core,doctor,herald,marshal,mason,scribe,steward,testing-kit,warden}` — not every station env has a 1:1 package, and not every package is a Guild Smith. Prefer the directory listing over a frozen count. Each package that ships under `src/pyforge/`: `hatchling` backend, wheel from `src/pyforge`, **no `src/pyforge/__init__.py`** — `pyforge` is a **PEP 420 implicit namespace**. Do not add an `__init__.py` to `src/pyforge/` in any package — it would shadow siblings.
 - Cross-package edges are **one-directional and extras-gated**: `pyforge-atlas` and `pyforge-doctor` each declare a `gate = ["pyforge-warden"]` extra. Nothing imports in the reverse direction; keep it that way so an external conda install of atlas/doctor stays warden-optional.
 - FastMCP server at `.claude/tools/conda_forge_server.py` exposes the recipe lifecycle as MCP tools; Claude Code auto-starts it at session boot. `pyforge-atlas` ships a *second*, separate FastMCP server (`pyforge/atlas/mcp/server.py`) — do not conflate them.
 - `src/sentinel/knowledge/` is loose, non-packaged Python (no `pyproject.toml`, no `__init__.py`) imported as the top-level `sentinel.knowledge` namespace by the `wiki-*` pixi tasks and by `pyforge-atlas` tests. `src/prototype/` is a **generated, dependency-free** kedro-viz mirror of the atlas DAG — regenerate it with `tools/regenerate_from_atlas.py`, never hand-edit.
@@ -65,13 +66,14 @@ The Charter is Tier 0 and constitutional: **no artifact may contradict it**, and
 
 (Sync: `CLAUDE.md` § Spec-driven, framework-neutral layout; `AGENTS.md`; `_bmad-output/PROJECTS.md`)
 
-- **Tier 0 — Dream** (`docs/dreams/*.md`, tracked): the raw human aspiration. **26 Dreams** live today. Before implementing any non-trivial effort a Dream must exist.
+- **Tier 0 — Dream** (`docs/dreams/*.md`, tracked): the raw human aspiration. Recount Dreams before citing a frozen total. Before implementing any non-trivial effort a Dream must exist.
 - **Tier 1 — legacy intake spec** (`docs/specs/*.md`, tracked, **phasing out**): 19 files, kept for in-flight efforts. **Author no new files here.**
-- **Tier 2 — Spec & planning** (`_bmad-output/projects/<slug>/planning-artifacts/`, tracked): where the active contract lives. **22 Specs across 14 projects.**
+- **Tier 2 — Spec & planning** (`_bmad-output/projects/<slug>/planning-artifacts/`, tracked): where the active contract lives. **8** active Smith stations; Spec + story-spec counts move with promotions — recount from `specs/spec-*/SPEC.md`.
 - **Tier 3 — execution output** (`_bmad-output/projects/<slug>/implementation-artifacts/`, **gitignored**): sprint YAMLs, test output, retros. **Nothing here may ever be git-tracked** (HARD `tracked-impl-artifact` finding).
-- **Story specs are durable, NOT Tier-3** (convention since 2026-07-25). bmad-loop drafts a story spec into the run's gitignored implementation-artifacts as runtime scratch; **after the story merges, promote it into the tracked `planning-artifacts/specs/` subdir and commit it**. 63 tracked story specs exist today (pyforge-warden 31, pyforge-atlas 32). Motivating incident: warden lost 13 of 31 story specs to worktree teardown before this convention existed.
+- **Story specs are durable, NOT Tier-3** (convention since 2026-07-25). bmad-loop drafts a story spec into the run's gitignored implementation-artifacts as runtime scratch; **after the story merges, promote it into the tracked `planning-artifacts/specs/` subdir and commit it**. Motivating incident: warden lost 13 of 31 story specs to worktree teardown before this convention existed.
 - Keep a Spec's `status` current (`draft → ready → in-progress → shipped`) regardless of who did the work.
 - **PARALLEL AGENTS — HARD (2026-07-25).** The `.active-project` marker *and* the `_bmad-output/{planning,implementation}-artifacts` symlinks are **per-working-tree global state**, so `scripts/bmad-switch` is a mutex nobody holds. When more than one agent writes planning artifacts: write to `_bmad-output/projects/<slug>/planning-artifacts/…` **literally**, never through the symlink; **do not call `scripts/bmad-switch`** — pass `BMAD_ACTIVE_PROJECT=<slug>` per invocation instead; and verify placement after writing, because the failure is silent.
+- **BMAD 6.11 notes:** prefer `bmad-build` / `bmad-build-auto` / `bmad-project-context` / `bmad-deep-recon` (not the deprecated shim IDs). `bmad-project-context` maintains the `AGENTS.md` block only — it does not re-derive brownfield living docs. Living-doc re-ground is marshal's SYNC-RUNBOOK duty.
 
 ## Recipe Format Rules
 

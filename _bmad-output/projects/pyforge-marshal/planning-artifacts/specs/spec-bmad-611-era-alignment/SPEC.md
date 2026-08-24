@@ -14,11 +14,7 @@ assumptions:
   - "The v7 cut is months out (no date, no milestone; npm `next` is a 6.11.1
     patch line; monthly-plus minor cadence with a 6.12-ish bmad-ticket landing
     expected first) — CAP-1 is cheap insurance, not an emergency."
-open_questions:
-  - "CAP-7's recurring owner: fold living-doc re-grounding into the
-    SYNC-RUNBOOK cadence as a marshal duty, or relay a per-station refresh
-    obligation? Decide at story time; the one-shot re-ground is unambiguous
-    either way."
+open_questions: []
 ---
 
 # SPEC — PyForge stays aligned to the installed BMAD era

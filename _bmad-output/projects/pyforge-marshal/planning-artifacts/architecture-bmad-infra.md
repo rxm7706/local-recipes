@@ -3,32 +3,30 @@ doc_type: architecture
 part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
-date: 2026-07-25
-source_pin: 'conda-forge-expert v8.81.0'
+date: 2026-08-24
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
 
-> **Re-grounded 2026-07-25** (source_pin → v8.79.1; reconciler loop per SYNC-RUNBOOK). This was
-> the most stale doc in the set — the BMAD layer roughly quadrupled since the 2026-07-06 pass and
-> several claims were not merely behind but **wrong**. Corrected: BMAD-METHOD **6.10.0** (was
-> documented as 6.6.0); **89 real skills** across `.claude/skills/` (was "65", with math that
-> named two skills that do not exist); **14 BMAD projects** (was 3); the `_bmad/bmm/` "4 workflow
-> phases" directory tree **does not exist** in a 6.10.0 install and that section is replaced by the
-> real installer layout; the FX.8 provenance hook **is not wired** into `.claude/settings.json` and
-> so does not run. Added, because the doc had no concept of them: the **tier model**, **the Spec**
-> and its `.memlog.md` derivation model, the **bmad-loop** deterministic harness + loop homes, the
-> three **governance detectors**, and the **Guildhall**. Re-verified unchanged: the six-layer config
-> merge and its merge rules, the active-project priority order, the `resolve_customization.py`
-> three-layer per-skill merge, the six BMAD agent personas and their descriptors in
-> `_bmad/config.toml`, the 21 engineering-practice skills, and both BMAD ↔ conda-forge-expert
-> integration rules. Live factory facts this doc leans on (`bmad-groundtruth`, 2026-07-25):
-> cf_atlas **schema v29**, **46 MCP tools**, 23 atlas phases, gotchas **G1–G107**, **20 pixi envs**.
+> **Re-grounded 2026-08-24** (source_pin → **BMAD 6.11.0 / conda-forge-expert v8.84.0**; CAP-7 /
+> marshal Story 25-7; living-doc cadence owned by **marshal** per SYNC-RUNBOOK). Corrected against
+> the live install: BMAD-METHOD **6.11.0** (was pinned here as 6.10.0); **90 real skills** in
+> `.claude/skills/` = 94 dirs − 4 nonskill; **52 `bmad-*`** (32 active + **20** deprecated v7-removal
+> forwarders); **5** BMAD agents (Paige / `bmad-agent-tech-writer` **retired** in 6.11); renames
+> `bmad-build` / `bmad-build-auto` / `bmad-project-context` / `bmad-deep-recon`; the **render
+> pipeline** (`_bmad/scripts/render_skill.py` → immutable snapshots under `_bmad/render/`);
+> nonskill dirs are `cf-atlas-legacy`, `cfe-recipe-generation`, `knowledge`, `shared` (not a stray
+> `data/` as "current"). Active BMAD projects under `_bmad-output/projects/` are the **8** Smith
+> stations (portfolio peers dissolved/archived earlier). Live factory facts (`bmad-groundtruth`):
+> cf_atlas **schema v29**, **46 MCP tools**, **22** atlas phases, gotchas **G1–G110**, **26** pixi
+> envs, CFE **v8.84.0**. Historical note: the 2026-07-25 pass had re-grounded an earlier 6.6.0-era
+> draft onto the then-current 6.10.0 install — that revision is superseded here, not rewritten.
 
 BMAD-METHOD is an AI-driven software development framework that this repository hosts as a
 **multi-project installation**. A single BMAD installer (`_bmad/`) drives spec + planning + dev +
-review + retro workflows for **14** projects, each with its own subdirectory under
-`_bmad-output/projects/<slug>/`.
+review + retro workflows for the **8** active Smith-station projects under
+`_bmad-output/projects/<slug>/` (plus archived/dissolved peers retained only as history).
 
 BMAD itself is **independent of conda-forge**, but this repo's **BMAD ↔ conda-forge-expert
 integration rules** (codified in `CLAUDE.md`) make BMAD the entry point for any planned
@@ -43,25 +41,31 @@ skill**. The hand that builds is never the gate that judges.
 
 ## Mission
 
-> **Provide a multi-project BMAD-METHOD 6.10.0 installation — six-layer config merge, marker+symlink
-> active-project resolution, 89 installed skills, a deterministic loop harness, and the detectors
-> that bind every tracked file to a Spec — so any of the 14 hosted projects can be specced, planned,
-> built, reviewed and retro'd without cross-contamination.**
+> **Provide a multi-project BMAD-METHOD 6.11.0 installation — six-layer config merge, render-pipeline
+> skill snapshots, marker+symlink active-project resolution, 90 installed skills, a deterministic
+> loop harness, and the detectors that bind every tracked file to a Spec — so any of the 8 active
+> Smith-station projects can be specced, planned, built, reviewed and retro'd without
+> cross-contamination.**
 
 Operationalized:
 - Six-layer TOML config merge (installer team/user → custom team/user → project team/user) resolved
   by `_bmad/scripts/resolve_config.py`.
+- **Render pipeline** — `_bmad/scripts/render_skill.py` materializes immutable, content-addressed
+  skill snapshots under `_bmad/render/<skill>/<project-slug>-<root_hash>/<generation_hash>/` before
+  an agent follows `workflow.md` (skills such as `bmad-build` invoke this on activation).
 - Active-project resolution via CLI flag → env var → marker file → none, in priority order —
   **plus** the two `_bmad-output/` symlinks that write-skills actually resolve through.
 - Per-project artifacts under `_bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}/`,
   with the tier rules enforcing what may be tracked where.
 - **The Spec** as the unit of contract, derived on every run from an append-only `.memlog.md`.
-- **bmad-loop** as the deterministic DEV → VERIFY → REVIEW → VERIFY → COMMIT harness, one isolated
-  loop home per project.
+- **bmad-loop** (`>=0.11.0`) as the deterministic DEV → VERIFY → REVIEW → VERIFY → COMMIT harness,
+  one isolated loop home per project.
 - Three governance detectors (`bmad_drift_check.py`, `spec_surface_check.py`, `llms_full_check.py`)
   that make drift visible instead of silent.
 - BMAD ↔ CFE integration rules in `CLAUDE.md` make every conda-forge-touching BMAD agent invoke the
   skill and run a retro on closeout.
+- Living factory docs (`architecture-bmad-infra.md` + 8× `project-context.md`) re-ground on the
+  **marshal** SYNC-RUNBOOK cadence (CAP-7 decision 2026-08-24) — not a per-station relay.
 
 ---
 
@@ -71,27 +75,30 @@ Operationalized:
 |---|---|
 | Installer root | `_bmad/` |
 | Multi-project root | `_bmad-output/projects/` |
-| BMAD-METHOD version | **6.10.0** (`_bmad/_config/manifest.yaml`; `_bmad/{bmm,core}/config.yaml` headers agree) |
-| Install / last update | installed 2026-04-30, last updated 2026-07-12 |
-| Installed modules | `core` 6.10.0, `bmm` 6.10.0 (both `source: built-in`) + `skf` **2.0.1** (separately managed) |
+| BMAD-METHOD version | **6.11.0** (`_bmad/_config/manifest.yaml`; `_bmad/{bmm,core}/config.yaml` headers agree) |
+| Install / last update | installed 2026-04-30, last updated 2026-08-22 |
+| Installed modules | `core` 6.11.0, `bmm` 6.11.0 (both `source: built-in`) + `skf` **2.1.0** (`source: custom`) |
 | Registered IDEs | `claude-code` |
-| Skill directories | 93 in `.claude/skills/` = **89 real skills** + 4 non-skill support dirs |
-| Skill split | 51 `bmad-*` · 16 `skf-*` · 21 engineering-practice · 1 repo-specific |
+| Skill directories | **94** in `.claude/skills/` = **90 real skills** + **4** nonskill support dirs |
+| Skill split | **52** `bmad-*` (32 active + 20 deprecated forwarders) · **16** `skf-*` · **21** engineering-practice · **1** repo-specific (`conda-forge-expert`) |
+| BMAD agents | **5** (analyst / architect / dev / pm / ux-designer) — tech-writer retired in 6.11 |
+| Render pipeline | `_bmad/scripts/render_skill.py` → `_bmad/render/<skill>/…` immutable snapshots |
+| Currently active | ephemeral — `scripts/bmad-switch --current` or `BMAD_ACTIVE_PROJECT` / marker; not a fixed doc field |
 | Config merge layers | 6 (layers 2 and 4 are optional; both currently absent) |
 | Per-skill customization layers | 3 (`resolve_customization.py`) |
-| BMAD projects (this repo) | **14** |
-| Specs (`planning-artifacts/specs/spec-*/SPEC.md`) | **22** |
-| Tracked per-story specs | **63** (pyforge-atlas 32, pyforge-warden 31; all others 0) |
+| BMAD projects (active, this repo) | **8** Smith stations under `_bmad-output/projects/` |
+| Specs (`planning-artifacts/specs/spec-*/SPEC.md`) | **107** (live count; grows with story-spec promotions) |
 | Active-project marker | `_bmad/custom/.active-project` (gitignored, single-line slug) |
 | Active-project symlinks | `_bmad-output/{planning,implementation}-artifacts` (gitignored) |
-| Currently active | `local-recipes` |
-| Switcher CLI | `scripts/bmad-switch` (319 lines, stdlib-only) |
+| Switcher CLI | `scripts/bmad-switch` (stdlib-only) — parallel agents: prefer `BMAD_ACTIVE_PROJECT` |
 | Loop-home provisioner | `scripts/bmad-loop-worktree` |
 | Config resolver | `_bmad/scripts/resolve_config.py` |
 | Per-skill customization resolver | `_bmad/scripts/resolve_customization.py` |
+| Skill renderer | `_bmad/scripts/render_skill.py` |
 | Memory log writer | `_bmad/scripts/memlog.py` |
-| Loop orchestrator | `bmad-loop >=0.9.0` (external, pinned in `pixi.toml`) |
+| Loop orchestrator | `bmad-loop >=0.11.0` (external, pinned in `pixi.toml`) |
 | Program console | the **Guildhall** — `docs/dashboard/` → GitHub Pages |
+| Live factory pin | schema **v29** · MCP **46** · atlas phases **22** · gotchas **G1–G110** · pixi envs **26** · CFE **v8.84.0** |
 | Python requirement | 3.11+ for the config resolvers (stdlib `tomllib`); `memlog.py` declares `>=3.8` — no pip, no venv |
 
 ---
@@ -103,7 +110,7 @@ and the framework are interchangeable; the tiers are not, and are never crossed.
 
 | Tier | Location | Purpose | Git |
 |---|---|---|---|
-| **0 — Dream** | `docs/dreams/*.md` (**26** Dreams + a README) | the raw human aspiration | tracked, permanent |
+| **0 — Dream** | `docs/dreams/*.md` (**115** Dreams + a README as of this re-ground — recount before citing) | the raw human aspiration | tracked, permanent |
 | **1 — Intake spec (LEGACY)** | `docs/specs/*.md` (**19**) | former hand-authored tier, superseded by Tier 2 | tracked, phasing out — author no new files here |
 | **2 — Spec & planning** | `_bmad-output/projects/<slug>/planning-artifacts/` | `bmad-spec` output + PRD, architecture, epics+stories, gate reports. **The active contract.** | tracked, permanent |
 | **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` | story files, sprint YAMLs, test outputs, retros, run scratch | **gitignored — nothing here may be git-tracked** |
@@ -229,7 +236,7 @@ exists in the current checkout (`_bmad/custom/.gitignore` ignores `*.user.toml`)
 and skills fall back to repo-root `_bmad-output/` as the output folder — which pollutes the
 multi-project layout. **Set an active project before invoking write-skills.**
 
-Every project has a `.bmad-config.toml`; all 14 are present.
+Every project has a `.bmad-config.toml`; all **8** active Smith stations are present.
 
 ---
 
@@ -331,7 +338,11 @@ tree. Everything was recovered intact **only because the agents checked**.
 
 ## Multi-Project Layout
 
-**14 projects.** Every one has `.bmad-config.toml` + `planning-artifacts/` + `implementation-artifacts/`.
+**8 active Smith-station projects** under `_bmad-output/projects/` (atlas, doctor, herald, marshal,
+mason, scribe, steward, warden). Every one has `.bmad-config.toml` + `planning-artifacts/` +
+`implementation-artifacts/`. Earlier peers (`local-recipes` as a BMAD project slug, genesis,
+deckcraft, unity-/wasm- stacks, …) were dissolved or archived — see `_bmad-output/PROJECTS.md`
+and `archive/` for the historical map; do not invent a 14-project live tree from older docs.
 
 ```
 _bmad-output/
@@ -340,81 +351,73 @@ _bmad-output/
 ├── implementation-artifacts  -> projects/<active>/implementation-artifacts  (gitignored symlink)
 │
 └── projects/
-    ├── local-recipes/                         # ★ active — the conda-forge packaging factory
-    │   ├── project-context.md                 # foundational rules every BMAD agent reads on spawn
-    │   ├── SYNC-RUNBOOK.md                    # detector finding → reconciler skill mapping
-    │   ├── .bmad-config.toml                  # layer 5 (project team, committed)
-    │   ├── planning-artifacts/                # PRD.md, architecture*.md, epics.md, specs/, this doc
+    ├── pyforge-atlas/   pyforge-doctor/   pyforge-herald/   pyforge-mason/
+    ├── pyforge-scribe/  pyforge-steward/  pyforge-warden/
+    │   ├── project-context.md             # station rulebook (legacy living doc; pin by hand)
+    │   ├── .bmad-config.toml              # layer 5 (project team, committed)
+    │   ├── planning-artifacts/            # PRD, architecture*, epics, specs/
     │   │   └── specs/spec-<slug>/{SPEC.md,.memlog.md,<companions>.md}
-    │   └── implementation-artifacts/          # Tier 3 — gitignored
-    │
-    ├── deckcraft/                    presenton-pixi-image/     pyforge-atlas/
-    ├── pyforge-doctor/               pyforge-genesis/          pyforge-herald/
-    ├── pyforge-marshal/              pyforge-mason/            pyforge-scribe/
-    ├── pyforge-steward/              pyforge-warden/
-    └── unity-data-stack/             wasm-analytics-stack/
+    │   └── implementation-artifacts/      # Tier 3 — gitignored
+    └── pyforge-marshal/
+        ├── project-context.md             # factory-wide rulebook (project_name: local-recipes)
+        ├── SYNC-RUNBOOK.md                # ONLY here — marshal-owned detector → reconciler map
+        ├── .bmad-config.toml
+        ├── planning-artifacts/
+        └── implementation-artifacts/
 ```
 
-Eight of the fourteen are **Smith** projects — the PyForge Guild's stations, each productizing one
-capability: Herald (visual media / the Design↔Code bridge), Marshal (orchestration, productizing
-bmad-loop), Atlas (the cf_atlas data pipeline), Warden (dependency compliance), Mason (packaging,
-wrapping the conda-forge-expert skill), Doctor (health and diagnostics), Scribe (team knowledge),
-Steward (platform/ops). Genesis is the operating-model installer. The remainder are product or
-stack projects. `PROJECTS.md` lists all 14 as `active`.
+The eight are **Smith** projects — the PyForge Guild's stations, each productizing one capability:
+Herald (visual media / the Design↔Code bridge), Marshal (orchestration, productizing bmad-loop),
+Atlas (the cf_atlas data pipeline), Warden (dependency compliance), Mason (packaging, wrapping the
+conda-forge-expert skill), Doctor (health and diagnostics), Scribe (team knowledge), Steward
+(platform/ops). Living factory-doc re-ground for `architecture-bmad-infra.md` + all eight
+`project-context.md` files is a **marshal** duty (SYNC-RUNBOOK / CAP-7), not a per-station relay.
 
 ### Spec ownership
 
-**22 Specs** across the 14 projects:
-
-| Project | Specs |
-|---|---|
-| `local-recipes` | **8** — enterprise-airgap, factory-console, fleet-stewardship, modernist-identity, multi-loop-isolation, packaging-factory, pyforge-marshal, regenerable-factory |
-| `pyforge-atlas` | 2 — spec-pyforge-atlas, spec-upstream-discovery |
-| each of the other 12 | 1 |
-
-`local-recipes/spec-pyforge-marshal` and `pyforge-marshal/spec-pyforge-marshal` are **different
-Specs with the same slug** — see the surface-checker's key rule below.
+Specs live under each station's `planning-artifacts/specs/spec-*/SPEC.md`. Live count as of this
+re-ground: **107** SPEC.md files across the 8 projects (includes promoted per-story specs). Treat
+the filesystem count as groundtruth — do not hard-code a portfolio total into other docs without
+re-counting.
 
 ### Artifact naming is not uniform
 
-A rebuild must not assume one shape:
+A rebuild must not assume one shape across stations:
 
-- **PRD**: 6 projects use a flat `prd.md` / `PRD.md` (local-recipes uses uppercase `PRD.md`);
-  8 use a `prds/` subdirectory.
-- **Architecture**: 5 projects use a flat `architecture.md`; 9 use an `architecture/` subdirectory.
-- **Epics**: 12 projects have `epics.md`; `unity-data-stack` and `wasm-analytics-stack` have none
-  (both are PRD+architecture depth — stories decompose when scheduled).
-- **Per-story specs**: 63 tracked, all in two projects — pyforge-atlas 32, pyforge-warden 31. Every
-  other project has 0. Each of those two carries a `specs/README.md` recording provenance and, for
-  the regenerated ones, that they are contract-only reconstructions.
+- **PRD**: some stations use a flat `prd.md` / `PRD.md`; most Smiths use a dated `prds/` subdirectory.
+- **Architecture**: mix of flat `architecture.md` / `architecture-*.md` and dated `architecture/` trees.
+- **Epics**: every active Smith carries `epics.md` (and often epic-scoped companions).
+- **Per-story specs**: promoted into tracked `planning-artifacts/specs/` after merge (durable, not
+  Tier-3). Counts move with every promotion — recount rather than cite a frozen portfolio total.
 
 ### `_bmad-output/PROJECTS.md`
 
-Sections: *Active project switching* · *Config layering* (the 6-row table) · *Projects* (a
-`| Slug | Status | Description |` table, all 14 rows `active`) · *Adding a new project* (5 steps) ·
+Sections: *Active project switching* · *Config layering* (the 6-row table) · *Projects* (slug /
+status / description for the live stations + dissolved/archived peers) · *Adding a new project* ·
 *Reading another project's artifacts (without switching)* · *Running a skill against a non-active
 project (without switching globally)*.
 
 Reading another project's artifacts needs no switch — read the file path directly. Only **writes**
-need the active project set.
+need the active project set (or `BMAD_ACTIVE_PROJECT=<slug>` / `--project` without touching the
+shared switcher).
 
 ---
 
 ## Installed Skills
 
-`.claude/skills/` holds **93 directories = 89 real skills + 4 non-skill support directories**. A
-real skill is a directory containing `SKILL.md`; the resolver and Claude Code's `Skill` tool read
-them at runtime.
+`.claude/skills/` holds **94 directories = 90 real skills + 4 nonskill support directories**. A real
+skill is a directory containing `SKILL.md`; the resolver and Claude Code's `Skill` tool read them
+at runtime.
 
 | Family | Count |
 |---|---|
-| `bmad-*` (BMAD installer, bmm + core) | **51** |
-| `skf-*` (Skill Forge module, separately managed) | **16** |
+| `bmad-*` (BMAD installer, bmm + core) | **52** (32 active + **20** deprecated v7-removal forwarders) |
+| `skf-*` (Skill Forge module) | **16** |
 | Engineering-practice (not BMAD-installer) | **21** |
 | Repo-specific | **1** (`conda-forge-expert`) |
-| **Total real skills** | **89** |
+| **Total real skills** | **90** |
 
-### BMAD agent personas (6 — bmm module)
+### BMAD agent personas (5 — bmm module; tech-writer retired in 6.11)
 
 Defined in `_bmad/config.toml` under `[agents.bmad-agent-<role>]`, each with `name`, `title`, `icon`,
 `description`. Invoked via the `bmad-agent-<role>` skill name.
@@ -425,116 +428,114 @@ Defined in `_bmad/config.toml` under `[agents.bmad-agent-<role>]`, each with `na
 | `bmad-agent-architect` | System Architect | Winston | 🏗️ |
 | `bmad-agent-dev` | Senior Software Engineer | Amelia | 💻 |
 | `bmad-agent-pm` | Product Manager | John | 📋 |
-| `bmad-agent-tech-writer` | Technical Writer | Paige | 📚 |
 | `bmad-agent-ux-designer` | UX Designer | Sally | 🎨 |
 
-**These six are not the same layer as the Smiths.** The eight Smiths (Herald · Marshal · Atlas ·
+**Historical gloss (6.11):** `bmad-agent-tech-writer` / **Paige** shipped in earlier 6.x installs and
+is **retired** — no skill directory and no `[agents.*]` entry remain. Do not invoke or document it
+as current.
+
+**These five are not the same layer as the Smiths.** The eight Smiths (Herald · Marshal · Atlas ·
 Warden · Mason · Doctor · Scribe · Steward) are the *factory's stations* — accountable owners of a
-capability, each with its own project and Spec. Mary, John, Winston, Sally, Amelia and Paige are
+capability, each with its own project and Spec. Mary, John, Winston, Sally and Amelia are
 **Marshal's sub-agents on the floor**: personas the orchestration station spawns inside a single
 effort. Conflating the two layers is the standard reading error; the Smiths own capabilities, the
-BMAD six own turns of work.
+BMAD agents own turns of work.
 
-### Spec & planning (10)
+### Spec & planning (active)
 
-`bmad-spec` (**the Spec producer** — distils any intent input into the five-field contract plus
-companions, memlog-derived and preservation-validated), `bmad-prd`, `bmad-architecture`,
-`bmad-create-epics-and-stories`, `bmad-create-story`, `bmad-ux`, `bmad-product-brief`, `bmad-prfaq`,
-`bmad-check-implementation-readiness`, `bmad-sprint-planning`.
+`bmad-spec` (**the Spec producer**), `bmad-prd`, `bmad-architecture`,
+`bmad-create-epics-and-stories`, `bmad-ux`, `bmad-product-brief`, `bmad-prfaq`,
+`bmad-sprint-planning` (6.11 readiness gate absorbed the former
+`bmad-check-implementation-readiness` surface).
 
-### Discovery / customization (3)
+### Discovery / customization (active)
 
-`bmad-generate-project-context`, `bmad-document-project` (produced this doc set), `bmad-customize`.
+`bmad-project-context` — **6.11 successor** of `bmad-document-project` /
+`bmad-generate-project-context`. It maintains a **verified `AGENTS.md` block only**; it does **not**
+produce brownfield living docs (`architecture-*`, `project-overview`, `project-context.md`). Those
+are re-grounded by hand / plain agents on the marshal SYNC-RUNBOOK cadence. Also: `bmad-customize`.
 
-### Research (3)
+### Research (active)
 
-`bmad-domain-research`, `bmad-market-research`, `bmad-technical-research`.
+`bmad-deep-recon` — **6.11 consolidation** of the former domain / market / technical research
+skills (those three IDs survive only as deprecated forwarders).
 
-### Implementation (4)
+### Implementation (active)
 
-`bmad-quick-dev` (implement any intent against existing conventions), `bmad-dev-story` (context-filled
-story file), `bmad-dev-auto` (**one iteration of an unattended development loop**), `bmad-forge-idea`
-(persona-driven interrogation that hardens or kills an idea cheaply).
+`bmad-build` (was `bmad-quick-dev`) — implement any intent against existing conventions.
+`bmad-build-auto` (was `bmad-dev-auto`) — **one iteration of an unattended development loop**.
+`bmad-forge-idea` — persona-driven interrogation that hardens or kills an idea cheaply.
 
-`bmad-dev-auto` is the unattended entry point and has a strict **HALT protocol**: it ends a turn only
-by halting with an explicit terminal `status`, written either into `{spec_file}`'s frontmatter (plus
-an `## Auto Run Result` section) or, when no spec file is known, into
-`{implementation_artifacts}/bmad-dev-auto-result-<slug-or-timestamp>.md`. Subagents must be invoked
-**synchronously** — a backgrounded subagent never hands control back and stalls the run.
+`bmad-build-auto` ends a turn only by halting with an explicit terminal `status`, written either
+into `{spec_file}`'s frontmatter (plus an `## Auto Run Result` section) or, when no spec file is
+known, into a result file under implementation-artifacts. Subagents must be invoked
+**synchronously**.
 
-### Review (7 directories, mid-consolidation)
+Many active skills (`bmad-build` among them) **must** run
+`uv run …/_bmad/scripts/render_skill.py --project-root … --skill …` on activation and then follow
+the printed absolute `workflow.md` — they do not execute source Markdown in-place.
 
-`bmad-review` is the consolidated multi-lens reviewer. Its `customize.toml` defines five
-`[[workflow.lenses]]`, each loading a `references/lens-*.md` from the skill root:
+### Review (active + shims)
 
-| Lens | Content type | Notes |
-|---|---|---|
-| `adversarial` | code / any artifact | attitude-driven cynical review |
-| `edge-case-hunter` | code / any artifact | method-driven branch + boundary walk |
-| `verification-gap` | code | claims vs. evidence |
-| `structure` | docs | cuts, reorganization, simplification |
-| `prose` | docs | `after = "structure"` — runs once structure lands |
+`bmad-review` is the consolidated multi-lens reviewer (adversarial, edge-case-hunter,
+verification-gap, structure, prose). `bmad-code-review` remains a separate adversarial code-review
+workflow. The former standalone lens / editorial skill IDs are deprecated forwarders (see table).
 
-Output is **one JSON array of findings**, each carrying its `lens` and a `location`. Independent
-lenses run in parallel via subagents; `prose` waits on `structure`.
+### Sprint + retro + loop support
 
-**The consolidation is incomplete, and the doc set should say so.** Only
-`bmad-review-verification-gap` carries the deprecation notice and forwards (6 lines).
-`bmad-review-adversarial-general` (37 lines), `bmad-review-edge-case-hunter` (73),
-`bmad-editorial-review-prose` (86), `bmad-editorial-review-structure` (179) and `bmad-code-review`
-(92) all still ship **full independent `SKILL.md` bodies** and remain independently invocable. Two
-paths to the same review therefore exist; expect divergence until the remaining five are cut over.
+`bmad-sprint-planning`, `bmad-correct-course`, `bmad-retrospective`, `bmad-loop-setup`,
+`bmad-loop-resolve`, `bmad-loop-sweep`. (`bmad-sprint-status` is a deprecated forwarder.)
 
-### Sprint + retro (4)
-
-`bmad-sprint-planning`, `bmad-sprint-status`, `bmad-correct-course`, `bmad-retrospective`.
-
-### Loop support (3)
-
-`bmad-loop-setup` (installs/configures the loop module in a project), `bmad-loop-resolve`
-(**interactive** escalation resolution — a human is present and the agent *should* ask;
-invoked as `/bmad-loop-resolve <story-key>` when a run pauses on a CRITICAL escalation),
-`bmad-loop-sweep` (automation-only deferred-work ledger triage returning a machine-readable
-partition; also migrates pre-DW-format ledgers with `--migrate`).
-
-### Process / facilitation (7)
+### Process / facilitation
 
 `bmad-advanced-elicitation`, `bmad-brainstorming`, `bmad-checkpoint-preview`, `bmad-help`,
-`bmad-index-docs`, `bmad-party-mode`, `bmad-shard-doc`. Plus `bmad-qa-generate-e2e-tests` for QA
-automation.
+`bmad-party-mode`, `bmad-qa-generate-e2e-tests`. (**6.11 removed `bmad-index-docs`** with no
+replacement — maintain `index.md` by hand. **`bmad-shard-doc` is also gone** — no skill directory
+and no deprecated forwarder; do not invoke it.)
 
-### Deprecated `bmad-*` skills (5)
+### Deprecated `bmad-*` skills (20 — committed v7 removal list)
 
-| Deprecated | Consolidated into | Notice |
-|---|---|---|
-| `bmad-create-prd` | `bmad-prd` (create intent) | "will be removed in v7" |
-| `bmad-edit-prd` | `bmad-prd` (update intent) | "will be removed in v7" |
-| `bmad-validate-prd` | `bmad-prd` (validate intent) | "will be removed in v7" |
-| `bmad-create-architecture` | `bmad-architecture` (create intent) | "will be removed in v7" |
-| `bmad-review-verification-gap` | `bmad-review` | forwards |
+These are the IDs the CAP-1 regression guard tracks. Each ships a stub `SKILL.md` that forwards to
+its 6.11 successor. They still occupy skill directories and count toward the 52.
 
-Each ships a stub `SKILL.md` that forwards to its successor. They still occupy skill directories, so
-they count toward the 51.
+| Deprecated shim | Forwards to / note |
+|---|---|
+| `bmad-quick-dev` | `bmad-build` |
+| `bmad-dev-auto` | `bmad-build-auto` |
+| `bmad-create-story` | `bmad-build` |
+| `bmad-dev-story` | `bmad-build` |
+| `bmad-create-prd` | `bmad-prd` (create) |
+| `bmad-edit-prd` | `bmad-prd` (update) |
+| `bmad-validate-prd` | `bmad-prd` (validate) |
+| `bmad-create-architecture` | `bmad-architecture` |
+| `bmad-market-research` | `bmad-deep-recon` |
+| `bmad-domain-research` | `bmad-deep-recon` |
+| `bmad-technical-research` | `bmad-deep-recon` |
+| `bmad-sprint-status` | `bmad-sprint-planning` (status surfaces) |
+| `bmad-document-project` | `bmad-project-context` (AGENTS.md only — not brownfield docs) |
+| `bmad-generate-project-context` | `bmad-project-context` |
+| `bmad-review-adversarial-general` | `bmad-review` |
+| `bmad-review-edge-case-hunter` | `bmad-review` |
+| `bmad-review-verification-gap` | `bmad-review` |
+| `bmad-editorial-review` | `bmad-review` |
+| `bmad-editorial-review-prose` | `bmad-review` |
+| `bmad-editorial-review-structure` | `bmad-review` |
 
-> **Corrections to the previous revision of this doc:** it listed `bmad-distillator` and
-> `bmad-create-ux-design` in its category lists. **Neither exists.** The UX skill is `bmad-ux`; there
-> is no distillator (`bmad-spec` is the distillation surface). It also had never heard of
-> `bmad-spec`, `bmad-architecture`, `bmad-prd`, `bmad-dev-auto`, `bmad-forge-idea`, `bmad-review`,
-> `bmad-loop-resolve`, `bmad-loop-setup`, `bmad-loop-sweep`, or any of the 16 `skf-*` skills.
+Shims stay installed until the v7 cut; live instruction text must use the 6.11 names (historical
+mentions keep a same-line gloss).
 
 ### Skill Forge — `skf-*` (16)
 
-A separately-managed module (`_bmad/skf/`, version **2.0.1**, tracked in its own
-`_bmad/_config/skf-manifest.yaml` and **not** in `manifest.yaml`). It compiles code repositories and
-docs into version-pinned, provenance-backed agent skills.
+Separately managed module (`_bmad/skf/`, version **2.1.0** per `_bmad/_config/manifest.yaml`
+module `skf` — prefer that over `_bmad/_config/skf-manifest.yaml`, which can lag). Compiles
+repositories and docs into version-pinned, provenance-backed agent skills. Its
+`forge_data_folder` points at
+`_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data` (Tier-3, gitignored).
 
-`skf-setup`, `skf-forger` (the Ferris persona), `skf-analyze-source`, `skf-brief-skill`,
-`skf-create-skill`, `skf-quick-skill`, `skf-create-stack-skill`, `skf-verify-stack`,
-`skf-refine-architecture`, `skf-test-skill`, `skf-audit-skill`, `skf-update-skill`,
-`skf-export-skill`, `skf-rename-skill`, `skf-drop-skill`, `skf-campaign`.
-
-Its `forge_data_folder` points into `_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data`
-— i.e. Tier-3, gitignored, correctly.
+`skf-setup`, `skf-forger`, `skf-analyze-source`, `skf-brief-skill`, `skf-create-skill`,
+`skf-quick-skill`, `skf-create-stack-skill`, `skf-verify-stack`, `skf-refine-architecture`,
+`skf-test-skill`, `skf-audit-skill`, `skf-update-skill`, `skf-export-skill`, `skf-rename-skill`,
+`skf-drop-skill`, `skf-campaign`.
 
 ### Engineering practice (21 — not BMAD-installer)
 
@@ -548,67 +549,89 @@ Its `forge_data_folder` points into `_bmad-output/projects/pyforge-atlas/impleme
 
 ### Repo-specific (1)
 
-`conda-forge-expert` — the Part 1 skill. Drives every conda-forge task; `CLAUDE.md` mandates that
-BMAD agents invoke it for any conda-forge work.
+`conda-forge-expert` — the Part 1 skill (**v8.84.0** at this re-ground). Drives every conda-forge
+task; `CLAUDE.md` mandates that BMAD agents invoke it for any conda-forge work.
 
-### Non-skill support directories (4)
+### Nonskill support directories (4)
 
-These sit in `.claude/skills/` but contain **no `SKILL.md`** and are not skills:
+These sit in `.claude/skills/` but contain **no top-level `SKILL.md`** and are not skills:
 
-| Directory | Contents | Status |
-|---|---|---|
-| `cf-atlas-legacy/` | `8.78.0/`, `active/` — versioned legacy skill store | intentional |
-| `knowledge/` | shared knowledge notes (`agentskills-spec.md`, `provenance-tracking.md`, …) | intentional |
-| `shared/` | `data/`, `references/`, `scripts/`, `health-check.md`, `_known-workarounds.yaml` | intentional |
-| `data/` | only `conda-forge-expert/feedstock_cache/` with 3 stale JSON files | **stray** — clean-up deferred |
+| Directory | Role |
+|---|---|
+| `cf-atlas-legacy/` | versioned legacy skill store (`active/`, pinned versions) |
+| `cfe-recipe-generation/` | recipe-generation support tree (not a Claude Skill entry) |
+| `knowledge/` | shared knowledge notes |
+| `shared/` | shared `data/`, `references/`, `scripts/`, health-check helpers |
 
-Only `data/` is a stray. The previous revision described it as the sole non-skill directory and
-computed a "65 = 64 + 1 stray" total; both the total and the singular were wrong.
+A prior revision listed a stray top-level `data/` as a current nonskill directory — **that is not
+current**. Do not count `data/` as one of the four.
 
 ### Skill count math
 
 ```
-  51  bmad-*            (includes 5 deprecated forwarding stubs)
+  52  bmad-*            (32 active + 20 deprecated forwarders)
   16  skf-*
   21  engineering-practice
    1  conda-forge-expert
  ───
-  89  real skills
- + 4  non-skill support dirs (cf-atlas-legacy, data, knowledge, shared)
+  90  real skills
+ + 4  nonskill dirs (cf-atlas-legacy, cfe-recipe-generation, knowledge, shared)
  ───
-  93  directories in .claude/skills/
+  94  directories in .claude/skills/
 ```
 
 ---
 
 ## Installer Layout (`_bmad/`)
 
-> **This section replaces the previous revision's "BMAD Workflow Phases" section, which described a
-> `_bmad/bmm/{1-analysis,2-plan-workflows,3-solutioning,4-implementation}/` directory tree. That
-> tree does not exist.** In a 6.10.0 install `_bmad/bmm/` contains exactly two files. BMAD 6.x is
-> skill-based: the workflows live in `.claude/skills/`, and the module directories carry only
-> configuration and help indexes.
+> BMAD 6.x is skill-based: workflows live in `.claude/skills/`, and the module directories carry
+> configuration, help indexes, and (in 6.11) the **render** snapshot tree. The old
+> `_bmad/bmm/{1-analysis,2-plan-workflows,…}/` phase directory tree does not exist.
 
 ```
 _bmad/
 ├── config.toml            # layer 1 (installer team) — [agents.*] descriptors live here
 ├── _config/
-│   ├── manifest.yaml      # installation.version 6.10.0, modules core+bmm, ides [claude-code]
-│   ├── skf-manifest.yaml  # the skf module's own manifest (v2.0.1, ~80 KB) — NOT in manifest.yaml
+│   ├── manifest.yaml      # installation.version 6.11.0, modules core+bmm+skf, ides [claude-code]
+│   ├── skf-manifest.yaml  # Skill Forge detail manifest
 │   ├── skill-manifest.csv
 │   ├── files-manifest.csv
 │   └── bmad-help.csv
 ├── bmm/                   # config.yaml + module-help.csv  (NO phase directories)
 ├── core/                  # config.yaml + core module assets
 ├── custom/                # customization + active-project marker (below)
-├── scripts/               # resolve_config.py · resolve_customization.py · memlog.py
-└── skf/                   # the Skill Forge module tree (config.yaml, module.yaml, knowledge/, shared/, skf-*/)
+├── render/                # gitignored / local — immutable skill snapshots from render_skill.py
+├── scripts/               # resolve_config.py · resolve_customization.py · memlog.py · render_skill.py
+└── skf/                   # Skill Forge module tree
 ```
 
-The four-phase mental model (analysis → plan → solutioning → implementation) is still a fair
-description of how a project *traverses* the skills, but it is not a directory layout and nothing
-enforces it. Skills within each stage are independent and can run in any order — which is precisely
-what the memlog-derivation model is designed to tolerate.
+### Render pipeline (`render_skill.py`)
+
+6.11 skills that ship a `workflow.md` (and related Markdown sources) are **not** executed from the
+mutable skill tree. On activation the skill runs:
+
+```bash
+uv run --no-cache "{project-root}/_bmad/scripts/render_skill.py" \
+  --project-root "{project-root}" --skill "{skill-root}"
+```
+
+`render_skill.py`:
+
+1. Loads the skill's declared Markdown sources + six-layer central config + three-layer
+   per-skill customization (`customize.toml` / `_bmad/custom/<skill>.toml`).
+2. Substitutes `{{config.*}}`, `{{.token}}`, `{workflow.*}`, and `[[bmad-snapshot:…]]` tokens.
+3. Publishes an **immutable** snapshot under
+   `_bmad/render/<skill-name>/<project-slug>-<root_hash>/<generation_hash>/` with a content-addressed
+   `manifest.json` (renderer SHA, source SHAs, resolved values, output hashes).
+4. Prints `read and follow <absolute-path>/workflow.md` — the agent follows **that** file only.
+
+Snapshots are regenerable local artifacts (typically gitignored). Re-running with identical inputs
+reuses the same generation hash; changing config, customization, or skill sources yields a new
+directory. This is how policy knobs and project-layer TOML reach the agent without mutating the
+installed skill package.
+
+The four-phase mental model (analysis → plan → solutioning → implementation) remains a fair
+description of how a project *traverses* the skills, but it is not a directory layout.
 
 ---
 
@@ -622,7 +645,7 @@ _bmad/custom/
 ├── config.toml              # layer 3 (global custom team) — currently comments only
 ├── config.user.toml         # layer 4 (global custom user, gitignored) — absent
 ├── .gitignore               # ignores *.user.toml
-├── .active-project          # active-project marker (gitignored, single line: "local-recipes")
+├── .active-project          # active-project marker (gitignored, single-line slug)
 ├── bmad-agent-dev.toml      # per-skill override for Amelia
 └── bmad-agent-pm.toml       # per-skill override for John
 ```
@@ -636,10 +659,9 @@ highest priority first:
 3. {skill-root}/customize.toml            # skill defaults
 ```
 
-Same merge rules as the global resolver. The skill name is derived from the basename of the skill
-directory. This is how `bmad-review` gets its lens set, and how `bmad-generate-project-context` and
-`bmad-document-project` resolve their `workflow` blocks (`activation_steps_prepend`,
-`persistent_facts`, `on_complete`).
+Same merge rules as the global resolver. The skill name is the basename of the skill directory.
+This is how `bmad-review` gets its lens set, and how `bmad-project-context` (and other rendered
+skills) resolve `{workflow.*}` tokens into the snapshot `render_skill.py` publishes.
 
 The two committed overrides both re-aim a BMAD persona at this factory:
 
@@ -891,8 +913,8 @@ The `bmad-ui` env is `linux-64` only and consumes locally-built packages from th
 
 ### BMAD dependency pins (`pixi.toml`)
 
-`bmad-method >=6.10.0` · `bmad-builder >=2.1.0` · `bmad-creative-intelligence-suite >=0.2.1` ·
-`bmad-dashboard >=1.2.2.dev0` · `bmad-loop >=0.9.0` ·
+`bmad-method >=6.11.0` · `bmad-builder >=2.1.0` · `bmad-creative-intelligence-suite >=0.2.1` ·
+`bmad-dashboard >=1.2.2.dev0` · `bmad-loop >=0.11.0` ·
 `bmad-method-test-architecture-enterprise >=1.19.1` · `bmad-method-wds-expansion >=0.4.3` ·
 `bmad-module-template >=0.1.0` · `bmad-utility-skills >=2.0.0` · `bmad-labs-skills >=1.0.0.dev0`.
 Plus `tmux >=3.7b_` for the loop's agent sessions.
@@ -1000,9 +1022,10 @@ the CHANGELOG nor the Spec memlog is a `spec_surface_check.py` finding.
         ┌───────┴────────┐
         │ attended       │ unattended
         ▼                ▼
-4a. bmad-quick-dev   4b. bmad-loop drives DEV→VERIFY→REVIEW→VERIFY→COMMIT
-    / bmad-dev-story     in a loop home (~/.bmad-loops/<slug>), one worktree
+4a. bmad-build       4b. bmad-loop drives DEV→VERIFY→REVIEW→VERIFY→COMMIT
+    / bmad-build-auto    in a loop home (~/.bmad-loops/<slug>), one worktree
                          + branch per story, squash-merged
+                         (deprecated shims: bmad-quick-dev / bmad-dev-auto)
                 │
                 ▼
 5. Every agent reads project-context.md (foundational rules) on spawn
@@ -1170,15 +1193,16 @@ See `integration-architecture.md` for full cross-part contracts. Summary:
 
 ## Rebuild checklist for Part 4
 
-1. **Run the BMAD installer** (`bmad-method >=6.10.0`) in a fresh repo. It writes:
+1. **Run the BMAD installer** (`bmad-method >=6.11.0`) in a fresh repo. It writes:
    - `_bmad/config.toml` (Layer 1) and, optionally, `_bmad/config.user.toml` (Layer 2)
    - `_bmad/_config/` (`manifest.yaml`, `skill-manifest.csv`, `files-manifest.csv`, `bmad-help.csv`)
    - `_bmad/bmm/` and `_bmad/core/` — **config + help CSV only; no phase directories**
-   - `_bmad/scripts/{resolve_config,resolve_customization,memlog}.py`
-   - `.claude/skills/bmad-*` (51 skills at 6.10.0, including 5 deprecated forwarding stubs)
-2. **Install the Skill Forge module** (`skf` v2.0.1) if wanted → `_bmad/skf/` +
-   `_bmad/_config/skf-manifest.yaml` + 16 `.claude/skills/skf-*`. Point its `forge_data_folder` at a
-   Tier-3 (gitignored) path.
+   - `_bmad/scripts/{resolve_config,resolve_customization,memlog,render_skill}.py`
+   - `.claude/skills/bmad-*` (52 skills at 6.11.0: 32 active + 20 deprecated v7-removal forwarders;
+     5 agent personas — tech-writer retired)
+2. **Install the Skill Forge module** (`skf` v2.1.0 per `manifest.yaml`) if wanted → `_bmad/skf/` +
+   `_bmad/_config/skf-manifest.yaml` + 16 `.claude/skills/skf-*`. Point `forge_data_folder` at a
+   Tier-3 path (here: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data`).
 3. **Add engineering-practice skills** (21): copy from upstream or author. Not BMAD-installer-managed.
 4. **Add `conda-forge-expert`** (Part 1) under `.claude/skills/conda-forge-expert/` — the repo-specific
    addition that ties Parts 1–3 to BMAD.
@@ -1196,11 +1220,12 @@ See `integration-architecture.md` for full cross-part contracts. Summary:
    project table, adding a project, reading/running against a non-active project).
 10. **Seed Tier 0**: author `docs/dreams/<slug>.md` for each effort, then run `bmad-spec` to derive
     `planning-artifacts/specs/spec-<slug>/`. Nothing downstream is legitimate without a Spec.
-11. **Author `project-context.md`** via `bmad-generate-project-context`, and give it a `source_pin`.
-12. **Install the loop harness**: `bmad-loop >=0.9.0` + `tmux >=3.7b_` in `pixi.toml`;
-    `.bmad-loop/policy.toml`; `.bmad-loop/bmad_loop_hook.py` wired in `.claude/settings.json` on
-    SessionStart / Stop / SessionEnd / PreCompact; gitignore `.bmad-loop/runs/`. Make every
-    `[verify]` command `--frozen`.
+11. **Author or refresh agent instructions** via `bmad-project-context` (writes the verified
+    `AGENTS.md` block). Living brownfield docs (`architecture-*`, station `project-context.md`) are
+    re-grounded by hand / plain agents — give each a `source_pin`; marshal owns the cadence.
+12. **Install the loop harness**: `bmad-loop >=0.11.0` + `tmux >=3.7b_` in `pixi.toml`;
+    `.bmad-loop/policy.toml` (or marshal-rendered harness policy); gitignore `.bmad-loop/runs/`.
+    Make every `[verify]` command `--frozen`. Skills that render must be able to write `_bmad/render/`.
 13. **Add `scripts/bmad-loop-worktree`** with a short `DEFAULT_LOOP_HOME_ROOT` (`~/.bmad-loops`) and a
     `BMAD_LOOP_HOME_ROOT` override. Long paths break the build before they break anything else.
 14. **Add the detectors**: `scripts/bmad_drift_check.py`, `scripts/spec_surface_check.py` (+
