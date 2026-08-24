@@ -129,16 +129,15 @@ deferred:
 Status: done
 PR: https://github.com/rxm7706/local-recipes/pull/711
 Merge: fbe1bc935af445da8c9aa9742d98980a4a7514a2
-Merge policy: admin merge () — GitHub Actions billing blocks CI; local tests green before merge.
-Summary: CAP-1 wall-clock ceiling fallback in  from promoted-spec / via local git timestamps; doctor 8.1–8.4 timing marks (111/48/49/47); wall-clock never on ; metric/note name the final−baseline ceiling;  refreshes on re-run.
+Merge policy: admin merge (`gh pr merge 711 --merge --admin --repo rxm7706/local-recipes`) — GitHub Actions billing blocks CI; local tests green before merge.
+Summary: CAP-1 wall-clock ceiling fallback in scan_timing from promoted-spec baseline_revision/final_revision via local git timestamps; doctor 8.1–8.4 timing marks (111/48/49/47); wall-clock never on velocity.bars; metric/note name the final−baseline ceiling; derived:true refreshes on re-run.
 Files:
--  — helpers +  wall-clock merge
--  — I/O matrix + mixed-path + guards
--  — regenerated ()
+- docs/dashboard/generate.py — helpers + scan_timing wall-clock merge
+- .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py — I/O matrix + mixed-path + guards
+- docs/dashboard/data.js — regenerated (--source git)
 - story spec — contract, triage, deferred
 Verification:
-- 
-no tests ran in 0.00s — **32 passed**
--  — doctor 8.1–8.4 present; metric names ceiling
+- pixi run -e local-recipes pytest meta dashboard timing/render/resolve tests -q — 32 passed
+- python docs/dashboard/generate.py --source git — doctor 8.1–8.4 present; metric names ceiling
 Follow-up review recommendation: true (patched high=1; score 3×4 medium + 3 low = 15 ≥ 5)
-Finalize: ledger key  → done (this chore).
+Finalize: ledger key 23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields → done (PR #712, merge fb62f3a42343088f4dc7b3de7afcfae6a4694477).
