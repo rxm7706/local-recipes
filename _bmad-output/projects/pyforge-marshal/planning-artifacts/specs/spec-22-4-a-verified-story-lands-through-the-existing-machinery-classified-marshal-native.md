@@ -2,8 +2,9 @@
 title: A verified story lands through the existing machinery, classified marshal-native
 type: feature
 created: '2026-08-23'
-status: ready
+status: done
 updated: '2026-08-23'
+final_revision: b4c32b80df
 context: []
 warnings: []
 baseline_revision: b2c47f209a
@@ -42,3 +43,19 @@ baseline_revision: b2c47f209a
 
 - `pixi run -e pyforge-marshal pyforge-marshal-test` green
 - Regression: unverified dispatch does not advance ledger or promote spec
+
+## Auto Run Result
+
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/704
+Merge: b4c32b80df3b52fecf2b46b8d3fe6368dae5aeb0
+Merge policy: admin merge (`gh pr merge 704 --merge --admin --repo rxm7706/local-recipes`) — GitHub Actions billing blocks CI; local tests green before merge.
+Summary: Story 22.4 (FR-193 CAP-4) wires verified dispatch landing through existing Epic 4 composition: `dispatch_land` opens/merges PR with FR-187 `render_merge_subject`, `dispatch_land_finalize` subprocess runs `deploy promote` + `_promote_sprint_ledger` (AD-9: supervisor never imports cli). Unverified verification refuses land (`MRS-DISP-014`); marshal-native classification pinned via `marshal_native_merged_keys`.
+Files:
+- `core/dispatch_landing.py` — pure landing eligibility + marshal-native subject check
+- `dispatch_land.py` — forge PR merge edge (no cli import)
+- `dispatch_land_finalize/__main__.py` — promote + ledger subprocess (cli composition)
+- `dispatch_supervisor/__main__.py` — land after VERIFIED, journal `dispatch-land`
+- `tests/unit/test_dispatch_landing.py` — verified land + unverified refusal regression
+Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` — **6184 passed**, 12 deselected.
+Out of scope (Stories 22.5–22.6): overlap guard, attach/resume.
