@@ -236,10 +236,15 @@ from pyforge.marshal.core.chain_regen import (
     MINIMAL_SKIP_PHASES,
     OrchestratedPhaseOutcome,
     apply_orphans_hook,
+    apply_preserved_code_statuses,
+    ledger_file,
     load_journal,
+    parse_ledger_statuses,
     preserve_code_status_hook,
     run_orchestrated_chain,
+    snapshot_code_statuses,
     stage_hook,
+    write_ledger_statuses,
 )
 
 
@@ -449,10 +454,162 @@ def test_no_auto_commit_even_when_requested(tmp_path: Path):
 
 
 def test_cap_stubs_are_noop(tmp_path: Path):
+    # CAP-2 hook snapshots when called with one arg; CAP-4/5 remain no-op.
     assert preserve_code_status_hook({"a": "done"}) == {"a": "done"}
     assert apply_orphans_hook((), apply=True) == 0
     assert stage_hook((), stage=True) == 0
 
+
+
+
+# ---------------------------------------------------------------------------
+# Story 21.3 — CAP-2 code-status preservation
+# ---------------------------------------------------------------------------
+
+
+class _EpicsWipeInvoker(_RecordingInvoker):
+    """On epics phase, rewrite the ledger with a regenerated key set (all backlog)."""
+
+    def __init__(
+        self,
+        *,
+        regenerated: dict[str, str],
+        blocked_at: str | None = None,
+        fail_times: int = 0,
+    ) -> None:
+        super().__init__(blocked_at=blocked_at, fail_times=fail_times)
+        self._regenerated = dict(regenerated)
+
+    def invoke_planning_skill(
+        self,
+        skill: str,
+        *,
+        root: Path,
+        project: str,
+        dream: Path,
+        phase: str,
+        run_dir: Path,
+    ) -> object:
+        result = super().invoke_planning_skill(
+            skill,
+            root=root,
+            project=project,
+            dream=dream,
+            phase=phase,
+            run_dir=run_dir,
+        )
+        if phase == "epics" and getattr(result, "status", None) in ("complete", "done"):
+            write_ledger_statuses(ledger_file(root, project), self._regenerated)
+        return result
+
+
+def test_apply_preserved_round_trip_unit():
+    preserved = {
+        "1-1-demo": "done",
+        "1-2-wip": "in-progress",
+        "1-3-old": "backlog",
+    }
+    current = {
+        "1-1-demo": "backlog",  # regen wiped
+        "1-2-wip": "backlog",
+        "1-4-new": "backlog",  # new key
+        # 1-3-old retired — absent
+    }
+    merged = apply_preserved_code_statuses(preserved, current)
+    assert merged == {
+        "1-1-demo": "done",
+        "1-2-wip": "in-progress",
+        "1-4-new": "backlog",
+    }
+    assert "1-3-old" not in merged
+    # opt-out path helper: snapshot alone is identity copy
+    assert snapshot_code_statuses(preserved) == preserved
+
+
+def test_preserve_survives_full_and_minimal_regen(tmp_path: Path):
+    before = {
+        "1-1-demo": "done",
+        "1-2-wip": "in-progress",
+        "1-3-old": "backlog",
+    }
+    _seed_project(tmp_path, "acme", statuses=before)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    regenerated = {
+        "1-1-demo": "backlog",
+        "1-2-wip": "backlog",
+        "1-4-new": "backlog",
+    }
+
+    for mode in ("full", "minimal"):
+        write_ledger_statuses(ledger_file(tmp_path, "acme"), before)
+        invoker = _EpicsWipeInvoker(regenerated=regenerated)
+        report = run_orchestrated_chain(
+            root=tmp_path,
+            project="acme",
+            dream=dream,
+            invoker=invoker,
+            mode=mode,  # type: ignore[arg-type]
+            preserve_code_status=True,
+        )
+        assert report.status == "complete"
+        after = parse_ledger_statuses(
+            ledger_file(tmp_path, "acme").read_text(encoding="utf-8")
+        )
+        assert after["1-1-demo"] == "done"
+        assert after["1-2-wip"] == "in-progress"
+        assert after["1-4-new"] == "backlog"
+        assert "1-3-old" not in after
+        # byte-identical for matching keys
+        assert after["1-1-demo"] == before["1-1-demo"]
+        assert after["1-2-wip"] == before["1-2-wip"]
+
+
+def test_preserve_opt_out_leaves_regenerated_statuses(tmp_path: Path):
+    before = {"1-1-demo": "done", "1-2-wip": "in-progress"}
+    _seed_project(tmp_path, "acme", statuses=before)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    regenerated = {"1-1-demo": "backlog", "1-2-wip": "backlog", "1-4-new": "backlog"}
+    invoker = _EpicsWipeInvoker(regenerated=regenerated)
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="minimal",
+        preserve_code_status=False,
+    )
+    assert report.status == "complete"
+    assert report.preserve_code_status_hook is False
+    after = parse_ledger_statuses(
+        ledger_file(tmp_path, "acme").read_text(encoding="utf-8")
+    )
+    assert after == regenerated
+
+
+def test_preserve_default_true_and_never_auto_commits(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    # default preserve_code_status=True
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=_RecordingInvoker(),
+        mode="minimal",
+    )
+    assert report.preserve_code_status_hook is True
+    assert report.auto_commit is False
+    snap = Path(report.run_dir) / "code-status-snapshot.yaml"
+    assert snap.is_file()
+    with pytest.raises(ValueError, match="auto_commit"):
+        run_orchestrated_chain(
+            root=tmp_path,
+            project="acme",
+            dream=dream,
+            invoker=_RecordingInvoker(),
+            mode="minimal",
+            auto_commit=True,
+        )
 
 def test_cli_planning_help_registers():
     from pyforge.marshal.cli.main import _build_parser

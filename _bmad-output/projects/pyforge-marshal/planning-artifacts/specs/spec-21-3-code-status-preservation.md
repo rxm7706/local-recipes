@@ -2,11 +2,11 @@
 title: Code-status preservation
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 updated: '2026-08-23'
 context: []
 warnings: []
-baseline_revision: fe29c1b1b6
+baseline_revision: 12be18be5a65bf2f4f9a1af2b3ab9442e039dd26
 ---
 
 <intent-contract>
@@ -41,3 +41,11 @@ baseline_revision: fe29c1b1b6
 
 - `pixi run -e pyforge-marshal pyforge-marshal-test` green
 - Fixture: pre-seeded done stories survive Full and Minimal regen
+
+## Auto Run Result
+
+Status: in-progress
+
+Summary: Implemented CAP-2 code-status preservation for \`marshal planning chain-regenerate\`: snapshot ledger statuses before the chain, persist \`code-status-snapshot.yaml\` for resume safety, re-apply after the epics phase (before orphan report) by stable story id. New keys → backlog; retired keys not resurrected; \`preserve_code_status\` defaults true with \`--no-preserve-code-status\` opt-out. Never auto-commits.
+
+Verification: \`pixi run -e pyforge-marshal pyforge-marshal-test\` → 6268 passed, 12 deselected.
