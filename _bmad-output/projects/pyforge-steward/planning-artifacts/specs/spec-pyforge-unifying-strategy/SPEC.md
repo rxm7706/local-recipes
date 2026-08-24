@@ -12,11 +12,13 @@ companions:
   - console-parity-inventory.md
   - ../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
+  - ../../research/technical-pyforge-unifying-strategy-dependency-currency-2026-08-24.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-python-agent-platform
 surface:
   - src/platform/**
   - src/shared/packages/django-pyforge/**
+  - src/shared/packages/django-*/**
   - src/shared/packages/pyforge-core/**
   - src/shared/packages/pyforge-scribe/**
   - services/**
@@ -29,7 +31,6 @@ surface:
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
 open_questions:
-  - liquibase-7791-fixed
   - mcp-client-revision
   - mcp-tasks-runtime
   - lane1-serves-dw-h3
@@ -55,7 +56,7 @@ shared identity, no shared vocabulary, and no way for one station to tell anothe
 happened. The Canopy — `src/platform/`, already live with OIDC SSO, two agentic engines mounted on
 isolated schemas, and exactly one station portal — proved the shape works. This SPEC extends it
 from one portal to eight, gives every station a web face, a service face and a shared command
-grammar, and connects them with an event fabric so the estate behaves as one system.
+grammar, and connects them with an event backbone so the estate behaves as one system.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema
 change to be auditable rather than incidental, identity to be revocable rather than cached, and
@@ -82,7 +83,8 @@ they are why this is not merely a UI project.
 
 - **CAP-3 — Eight portals, one session.**
   - **intent:** Every station is reachable as a Lane 2 application under the one host, so an
-    operator moves between stations without re-authenticating or changing origin.
+    operator moves between stations without re-authenticating or changing origin. Each portal is a
+    **reusable Django app** in its station's own distribution, not an app in the host project.
   - **success:** All eight portal URLs resolve behind a single session, and adding or removing a
     portal changes no host code outside that portal's own registration.
 
@@ -186,8 +188,14 @@ they are why this is not merely a UI project.
 - **Always:** `spec-python-agent-platform` CAP-1..6 are shipped and binding. This SPEC extends
   them; `convergence.md` decides which side of the line a surface falls on.
 - **Always:** Django `>=5.2.15,<6` and Python `3.12.*`. Django 6 is unavailable. conda-forge ships
-  exactly one qualifying Django build, two patch releases behind upstream, with zero headroom — a
-  dependency that demands a newer 5.2 patch is blocked until a feedstock maintenance branch exists.
+  exactly one qualifying build, two security patch releases behind upstream. **Audited 2026-08-24:
+  5.2.16 and 5.2.17 carry seven CVEs, one rated high — and every affected path is unreachable here
+  (no `contrib.gis`, no cache middleware, no `URLField`, no `set_language` route). A currency gap,
+  not a live exposure.** The earlier claim that no feedstock maintenance branch exists was **wrong**:
+  `django-feedstock` carries a `5.x` branch registered in `abi_migration_branches`, and this repo's
+  maintainer authored the 5.2.15 bump on it. Catching up is a one-file version+sha256 PR, so the pin
+  should move to `>=5.2.17,<6` — scanners key on version strings, not reachability, and an SBOM
+  declaring seven unremediated CVEs is a finding regardless.
 - **Always:** every **Python/pixi** dependency resolves from conda-forge. The egress-blocked build
   is a gate, not a warning; a PyPI-only package is new feedstock work and must be scheduled as such.
   This governs the dependency graph, not every artifact in the namespace — container images are
@@ -223,11 +231,34 @@ they are why this is not merely a UI project.
 - **Always:** CAP-9 adds a Helm hook Job beside the shipped `migrate-job.yaml`, at a lower
   hook-weight, on the same platform image. It does not introduce a chart pattern, a second image,
   or an init container.
+- **Always:** the `liquibase` feedstock targets **5.0.4 or later**. 5.0.2 and 5.0.3 carry the
+  `runInTransaction="false"` search-path defect (issue 7791, fixed in 5.0.4), and 5.0.4 is
+  additionally the first release whose GPG signature verifies against the rotated signing key.
+- **Never:** `preserveSchemaCase` is enabled, and schema names are never mixed-case. Liquibase
+  issue **7624 is open**: with that flag on PostgreSQL, `defaultSchemaName` is double-quoted into a
+  schema that does not exist, and DDL then lands **silently in `public`**. Django's naming
+  conventions already give us lowercase, so this costs nothing and prevents the worst available
+  failure mode — wrong-schema DDL that raises no error.
 - **Never:** a station portal owns chrome. Chrome lives in CAP-1's package; a portal that ships its
   own app switcher or base layout has violated the contract.
 - **Never:** a portal calls a service with a raw request or a trusted identity header. CAP-6's
   client is the only path.
-- **Never:** a station is declared complete on fewer than five tiers. The Dream's symmetry is CLI
+- **Never:** a station is declared complete on fewer than five tiers.
+- **Always:** a station portal is a reusable Django app following
+  [Django's convention](https://docs.djangoproject.com/en/6.0/intro/reusable-apps/) — distribution
+  `django-<station>`, module `django_<station>_<app>`, app label `<station>_<app>`. **One
+  distribution per station holding one or more apps** (the `django-allauth` shape), living beside
+  `django-pyforge` in `src/shared/packages/`. The compound label is required, not stylistic:
+  Django demands unique labels across `INSTALLED_APPS`, so a bare `<station>` label cannot survive
+  that station owning a second app.
+- **Never:** an existing model moves between apps. New concerns become sibling apps in the same
+  distribution. Adding a sibling costs nothing; moving a model costs a table rename plus
+  content-type and migration-history surgery — and after CAP-9 that becomes a governed changeset
+  rather than a Django migration.
+- Note that `src/shared/packages/` holds **two families under two conventions**, and they should not
+  be reconciled: station CLI/library packages are `pyforge-<station>` over the `pyforge.<station>`
+  namespace, while Django reusable apps are `django-*` over `django_*`. `django-pyforge` is correct
+  as it stands. The Dream's symmetry is CLI
   (CAP-5), portal (CAP-3), service (CAP-4), domain skill (CAP-15) and persona (CAP-16); a station
   missing any of the five is unfinished, whatever its ledger says.
 - **Always:** the eight station portals mount under a uniform `/stations/<name>/` prefix, decided
@@ -283,8 +314,12 @@ database role is provably incapable of altering its own schema.
 
 ## Open Questions
 
-- **liquibase-7791-fixed** — is the multi-schema `default-schema-name` regression on 5.0.3 fixed in
-  5.0.4? Must be verified before any multi-schema changeset lands.
+- ~~**liquibase-7791-fixed**~~ — **answered 2026-08-24: yes, fixed in 5.0.4**, corroborated by both
+  the merged PR (an ancestor of the `v5.0.4` tag) and the release notes. The question was also
+  **framed too broadly**: the defect only ever affected changesets marked
+  `runInTransaction="false"`, never in-transaction ones, so the gate covers the exception
+  (`CREATE INDEX CONCURRENTLY`, `ALTER TYPE … ADD VALUE`) rather than multi-schema work generally.
+  It surfaced a larger hazard in its place — open issue 7624, now a `Never:` constraint above.
 - **mcp-client-revision** — which MCP protocol revision do our agent clients actually speak? A
   `2026-07-28`-only server rejects handshake-era clients and vice versa.
 - **mcp-tasks-runtime** — does the official `mcp` Python SDK ship a server-side Tasks runtime yet?

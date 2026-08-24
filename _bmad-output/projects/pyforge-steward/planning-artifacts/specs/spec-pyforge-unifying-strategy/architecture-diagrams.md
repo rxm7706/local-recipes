@@ -34,7 +34,7 @@ graph TB
         CLI["pyforge CLI<br/>CAP-5"]
         CLIENT["pyforge.core.client<br/>CAP-6"]
         VZ["Vizro Lane 3<br/>CAP-7"]
-        EV["Redis Streams fabric<br/>CAP-8"]
+        EV["Redis Streams backbone<br/>CAP-8"]
         SK["8 domain skills<br/>CAP-15 — 1 of 8 today"]
         PER["8 station personas<br/>CAP-16 — 0 of 8 today"]
         SUP["Run-state supervisor<br/>CAP-17 — added 2026-08-24"]
@@ -134,7 +134,7 @@ graph LR
     class Test carve
 ```
 
-## Event fabric (CAP-8, RFC-4 + BS-6)
+## Event backbone (CAP-8, RFC-4 + BS-6)
 
 ```mermaid
 graph LR

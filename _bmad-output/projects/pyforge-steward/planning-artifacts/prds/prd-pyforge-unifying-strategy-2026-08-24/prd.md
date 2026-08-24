@@ -299,6 +299,62 @@ working. **CAP-3.**
   removal in this chain.
 - No inbound reference to `/compliance/` anywhere in the repo is left pointing at a 404.
 
+#### FR-9b: Station portals are reusable Django apps under one naming scheme
+
+`compliance_face` is repackaged as a reusable Django app following
+[Django's reusable-app convention](https://docs.djangoproject.com/en/6.0/intro/reusable-apps/), and
+that convention becomes the scheme every station's portal follows. **CAP-3.**
+
+The triple, for warden:
+
+| | Name |
+|---|---|
+| Distribution | `django-warden`, at `src/shared/packages/django-warden/` |
+| Module | `django_warden_fabric` |
+| App label | `warden_fabric` |
+
+**Consequences (testable):**
+- No identifier spelled `compliance_face` survives anywhere in `src/`.
+- **One distribution per station, holding one or more apps** — the `django-allauth` shape. A second
+  warden surface becomes a sibling app inside `django-warden`, not a second distribution.
+- Every station portal's app label is `<station>_<app>`, so labels are unique across
+  `INSTALLED_APPS` for any number of stations and apps, and no label collides with a Django contrib
+  app.
+- It installs as an in-repo path dependency — **not** a conda-forge feedstock, since it is
+  first-party and never leaves the repo.
+- A migration carries the app-label change: the model's table, its `django_migrations` rows and its
+  `django_content_type` row all move, and applying it to a populated database preserves every
+  existing job row.
+- Warden's two shipped specs that name the old app still resolve — no dangling reference is left in
+  `_bmad-output/projects/pyforge-warden/`.
+
+**Notes:** Ruled 2026-08-24. **Sequencing is the whole point of putting this here.** The app carries
+`label = "compliance_face"`, so renaming it is a table rename plus content-type and
+migration-history updates. Today that is an ordinary Django migration. Once CAP-9 lands the
+application role loses DDL rights and the same rename becomes a governed Liquibase changeset — so
+this must precede §4.9, and folding it into FR-9a's move costs one disruption instead of two.
+
+Two properties of the scheme are load-bearing and should not be simplified away later:
+
+- **The label is `warden_fabric`, not `warden`.** A per-station label cannot survive a station
+  owning a second app, and Django requires labels to be unique in `INSTALLED_APPS`. The compound
+  form reserves room for `warden_baseline` beside it at no cost.
+- **New concerns get new sibling apps; existing models never move between apps.** Moving a model
+  later costs exactly what this FR is paying now. Adding a sibling app costs nothing. So the estate
+  starts at one app per station without ever having to pay a split.
+
+`[NOTE FOR PM]` this is the only requirement in the PRD that renames shipped, working code. It earns
+its place by riding along with a move that was happening anyway; it would be hard to justify alone.
+
+This also settles a question the PRD had left implicit: `src/shared/packages/` holds **two families
+under two conventions** — station CLI/library packages (`pyforge-warden` → `pyforge.warden`, entry
+point `warden = "pyforge.warden.cli:main"`) and Django reusable apps (`django-*` → `django_*`).
+`django-pyforge` is correct as it stands; it is a reusable app, not a CLI package.
+
+One editorial change followed: CAP-8's backbone was called the "event fabric" in four places, which
+would have read confusingly beside `warden_fabric` in the same architecture diagram. It is now
+uniformly the **event backbone**, which was already the dominant term.
+
 #### FR-10: A portal holds no station logic
 
 A portal renders and dispatches; the station's behaviour stays in the station. **CAP-3, CAP-6.**
@@ -493,13 +549,41 @@ The governed-changeset tool resolves from conda-forge like every other Python/pi
 **CAP-9.**
 
 **Consequences (testable):**
-- A recipe exists and builds; the tool is available in the platform environment.
+- A recipe exists and builds at **5.0.4 or later**; the tool is available in the platform
+  environment.
 - The PostgreSQL JDBC driver is **vendored into the recipe** — recent Community releases stopped
   bundling it and the package manager fetches it over the network, which an air gap forbids.
 - No new container image is introduced.
+- A `runInTransaction="false"` changeset applied against a non-default schema lands in that schema,
+  demonstrated against a live PostgreSQL instance.
 
 **Notes:** Per repo Rule 1, this story's dev session invokes `conda-forge-expert`. This FR **gates
 the rest of §4.9** — the epic opens with packaging work, not platform work.
+
+The version floor is not arbitrary. 5.0.2 and 5.0.3 carry a defect where `SET LOCAL SEARCH_PATH`
+is a no-op outside a transaction, so non-transactional changesets silently resolved in the wrong
+schema; it is fixed in 5.0.4. Separately, 5.0.4 is the **first release whose GPG signature verifies
+against the rotated signing key**, which decides the recipe's verification step. The last
+consequence exists because the fix is currently verified by a reviewer's report rather than by our
+own observation — cheap to close, and CAP-9 rests on it.
+
+#### FR-21a: Schema resolution cannot fail silently
+
+Schema targeting is configured so that a misresolution is impossible rather than merely unlikely.
+**CAP-9.**
+
+**Consequences (testable):**
+- `preserveSchemaCase` is disabled and no schema name is mixed-case — a check fails if either
+  changes.
+- The connection carries its own schema targeting rather than relying on the tool's search-path
+  manipulation.
+- The pre-upgrade Job connects directly to PostgreSQL, not through a transaction-pooling proxy.
+
+**Notes:** `[NOTE FOR PM]` this FR exists because of an **open, unfixed** upstream issue: with
+`preserveSchemaCase` enabled the schema name is double-quoted into one that does not exist, and DDL
+then applies silently to `public`. Silent wrong-schema DDL is the worst available failure mode for
+this feature, and the mitigation costs nothing because Django's naming conventions already produce
+lowercase. Do not let a later story turn this flag on for a formatting reason.
 
 #### FR-22: The application role cannot alter its own schema
 
@@ -870,8 +954,8 @@ external constraint, not a goal we chose.
 
 - **SM-C1 — Do not optimize portal count.** Eight portals that render but hold station logic is a
   worse outcome than six that are properly thin. Counterbalances SM-1; enforced by FR-10.
-- **SM-C2 — Do not optimize event throughput.** The fabric's value is durability, ordering and
-  quarantine. A faster fabric that drops or double-applies has failed. Counterbalances the CAP-8
+- **SM-C2 — Do not optimize event throughput.** The backbone's value is durability, ordering and
+  quarantine. A faster backbone that drops or double-applies has failed. Counterbalances the CAP-8
   work; enforced by FR-17, FR-18, FR-29.
 - **SM-C3 — Do not optimize for the skill/persona count.** Eight shallow skills that no agent
   actually follows satisfies SM-5 and delivers nothing. Counterbalances SM-5; enforced by FR-37's
@@ -888,9 +972,14 @@ external constraint, not a goal we chose.
   has failed design review.
 - **Statelessness.** Replicas are capacity; any pod is disposable. This rules out pod-local media
   (FR-8) and per-process caches.
-- **Runtime floor.** Django `>=5.2.15,<6` and Python `3.12.*`. **Zero headroom** — conda-forge
-  ships exactly one qualifying Django build, two patch releases behind upstream, with no feedstock
-  maintenance branch. A dependency demanding a newer patch is blocked, not negotiable. See OQ-6.
+- **Runtime floor.** Django `>=5.2.15,<6` and Python `3.12.*`. Zero headroom — conda-forge ships
+  exactly one qualifying build, two **security** patch releases behind upstream. Audited
+  2026-08-24: seven CVEs across 5.2.16 and 5.2.17, one rated high, and **every affected path is
+  unreachable here**. A currency gap rather than a live exposure — but the pin should still move to
+  `>=5.2.17,<6`, because scanners key on version strings rather than reachability and an SBOM
+  declaring seven unremediated CVEs is a finding whatever the analysis says. The feedstock's `5.x`
+  maintenance branch exists and this repo's maintainer has bumped it before, so this is a one-file
+  PR, not chain scope.
 - **Import boundary.** `src/platform/` consumes the factory's published conda packages and never
   imports factory source.
 - **Ingress timing.** Any long-lived response keeps alive well under 30 seconds. The platform's
@@ -943,29 +1032,41 @@ control they cannot.
 
 ## 11. Open Questions
 
-**Still open — all three under research as of 2026-08-24:**
+**Still open:**
 
-1. **Liquibase multi-schema regression** — is the `default-schema-name` regression fixed in the
-   release the feedstock targets? Must be verified before any multi-schema changeset lands. Blocks
-   part of §4.9, and may change which version FR-21 packages.
-2. **MCP client revision** — which protocol revision do our agent clients actually speak? A
+1. **MCP client revision** — which protocol revision do our agent clients actually speak? A
    server pinned to one revision rejects clients of another. Blocks FR-11's conformance target.
-3. **MCP resumable-operation runtime** — does the official SDK ship a server-side runtime for it
+   Under research.
+2. **MCP resumable-operation runtime** — does the official SDK ship a server-side runtime for it
    yet? The largest gap between CAP-4's recommended pattern and shippable code. Blocks FR-12's
    mechanism, not its requirement — the FR stands either way, and an interim mechanism must be
-   replaceable without rewriting it.
-4. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
+   replaceable without rewriting it. Under research.
+3. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
    is *not* the CMS's own API, so this is a real compatibility question. Jointly owned with atlas.
+4. **One tracking schema or one per application?** `liquibaseSchemaName` decides where the
+   changelog and lock tables live. Shared means a **global** migration lock; per-schema means a
+   per-application one — which determines whether two applications can migrate concurrently.
+   **New, surfaced by the Liquibase research; decide in the architecture pass.**
 
 **Answered 2026-08-24:**
+
+0. ~~**Liquibase multi-schema regression**~~ — **fixed in 5.0.4**, corroborated by both the merged
+   PR and the release notes. The question was framed too broadly: the defect only affected
+   `runInTransaction="false"` changesets, never in-transaction ones. It surfaced a worse hazard in
+   its place — an **open** issue where `preserveSchemaCase` causes DDL to land silently in
+   `public` — now bound as FR-21a.
 
 5. ~~**Portal URL scheme**~~ — **uniform `/stations/<name>/` for all eight**, with
    `compliance_face` moving from `/compliance/` behind a permanent redirect. One rule beats eight
    exceptions, and the registration seam enforces it (FR-2, FR-9, FR-9a). The cost is a migration
    of a shipped URL, which the redirect absorbs.
-6. ~~**Django patch-level exposure**~~ — **audit commissioned 2026-08-24**, in flight. If 5.2.16 or
-   5.2.17 carries a security fix this escalates from a constraint to a risk, and a `django-feedstock`
-   5.2 maintenance branch becomes a seventh packaging item.
+6. ~~**Django patch-level exposure**~~ — **audited 2026-08-24: a currency gap, not an exposure.**
+   5.2.16 and 5.2.17 are both security releases carrying seven CVEs, one rated high — and every
+   affected path is unreachable here. The premise underneath the question was also wrong: the
+   feedstock's `5.x` maintenance branch **does** exist and this repo's maintainer has already
+   bumped it, so moving the pin to `>=5.2.17,<6` is a one-file PR rather than the seventh packaging
+   item it was sized as. Recommended, not required: scanners read version strings, not
+   reachability.
 7. ~~**Console parity classification**~~ — answered by the FR-6 inventory, and the question it
    raised in turn is **also** answered: live run state and journal-derived timing **stay on the
    front door**, which means building the supervisor that makes them deployable. That is
@@ -979,13 +1080,13 @@ Every capability has at least one FR; every FR names a capability.
 |---|---|---|---|
 | CAP-1 | FR-1, FR-2, FR-3 | CAP-10 | FR-18, FR-26..FR-29, FR-42 |
 | CAP-2 | FR-4..FR-8 | CAP-11 | FR-30 |
-| CAP-3 | FR-2, FR-9, FR-9a, FR-10 | CAP-12 | FR-3, FR-5, FR-31, FR-32 |
+| CAP-3 | FR-2, FR-9, FR-9a, FR-9b, FR-10 | CAP-12 | FR-3, FR-5, FR-31, FR-32 |
 | CAP-4 | FR-11, FR-12 | CAP-13 | FR-33, FR-34 |
 | CAP-5 | FR-13 | CAP-14 | FR-35, FR-36 |
 | CAP-6 | FR-10, FR-14, FR-15 | CAP-15 | FR-37, FR-39 |
 | CAP-7 | FR-16 | CAP-16 | FR-38, FR-39 |
 | CAP-8 | FR-17..FR-20, FR-29 | CAP-17 | FR-40, FR-41, FR-42 |
-| CAP-9 | FR-21..FR-25 | | |
+| CAP-9 | FR-21, FR-21a, FR-22..FR-25 | | |
 
 ## 13. Assumptions Index
 

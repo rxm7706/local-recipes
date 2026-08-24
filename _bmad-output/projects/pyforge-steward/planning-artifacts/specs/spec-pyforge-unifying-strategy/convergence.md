@@ -170,7 +170,7 @@ Each line is evidence-confirmed absent, not assumed.
    `pyproject.toml`; eight per-station scripts (`marshal`, `herald`, `warden`, …) exist instead.
 7. **Vizro Lane 3 behind the host** — atlas's Vizro dashboard is a build-time object with no
    server task and no reverse proxy; `src/platform/config/urls.py` has no atlas route.
-8. **Redis Streams event fabric** — Redis is present for Celery and cache only; no `XADD`/
+8. **Redis Streams event backbone** — Redis is present for Celery and cache only; no `XADD`/
    `XAUTOCLAIM`, no CloudEvents envelope, no DLQ, no loop-depth ceiling (RFC-4, BS-6).
 9. **RFC-1** worker-pool separation over the existing in-host FastAPI seam.
 10. **RFC-2** `redis-broker` (`noeviction`) split from `redis-cache` (`allkeys-lru`).
