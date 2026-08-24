@@ -971,7 +971,42 @@ graph LR
     - **Kubernetes Lifecycle Hook:** Executed as an init-container or pre-upgrade Helm Job (`liquibase update`) before Django or FastAPI microservices boot, preventing schema race conditions during rolling deployments.
     - **Zero-ORM DDL Coupling:** Application frameworks (Django, FastAPI, SQLAlchemy) consume existing schemas as read/write targets but are strictly prohibited from generating runtime DDL alterations.
 
-### 2. Edge Case Failure Protections
+### 2. Production Blind Spot Audit & Distributed Systems Hardening (BS-1 to BS-8)
+
+To eliminate distributed state collisions, protocol timeouts, and token decay hazards across the 10 layers, the architecture codifies the following 8 resilience invariants:
+
+```mermaid
+graph TD
+    subgraph Storage["Storage & Datastores"]
+        BS1["BS-1: Scribe Storage Engine (SQLite Local -> PostgreSQL OCP)"]
+        BS5["BS-5: DuckDB Process Boundary (Single-Writer / Multi-Reader)"]
+        BS8["BS-8: Cross-Datastore Idempotent Startup Reconciliation"]
+    end
+
+    subgraph Protocols["Protocols & Networking"]
+        BS2["BS-2: MCP/SSE Keep-Alive Frames & 30m Route Timeout"]
+        BS4["BS-4: PyBreaker Circuit Breaking & Stale-While-Revalidate HTMX"]
+        BS6["BS-6: Schema-Versioned CloudEvents Envelope"]
+        BS7["BS-7: PydanticFormErrorBridge for Inline HTMX 422 Errors"]
+    end
+
+    subgraph Auth["Identity & Delegation"]
+        BS3["BS-3: Async OAuth2 RFC 8693 Token Delegation for Long Sprints"]
+    end
+```
+
+| Blind Spot # | Architectural Risk & Failure Mode | Mandated Engineering Mitigation |
+| :--- | :--- | :--- |
+| **BS-1 (Scribe Multi-Pod Storage)** | Multi-pod OpenShift deployments mounting SQLite over NFS/CephFS (`ReadWriteMany`) throw `database is locked` and corrupt B-trees under concurrent agent writes. | **Dual-Driver Scribe Engine:** Local development uses SQLite (`sqlite:///scribe.db`); production OpenShift mode binds to PostgreSQL (`scribe_schema`) using `pgvector` and relational graph tables. |
+| **BS-2 (MCP / SSE Route Timeouts)** | Ingress routers (HAProxy / Envoy) terminate silent SSE connections after 30s–60s during heavy 5-minute build or AST scans, severing agent workflows. | **Keep-Alive Heartbeats & Extended Route Timeouts:** FastAPI emits SSE comment pings (`:keepalive\n\n`) every 15s; OpenShift routes declare `haproxy.router.openshift.io/timeout: 30m`. |
+| **BS-3 (Async Token Expiry in Long Sprints)** | Keycloak JWT access tokens expire after 15m; 2-hour autonomous Marshal sprints or Mason builds fail with 401s when reporting completion. | **Scoped Task Token Delegation (RFC 8693):** Celery tasks receive an immutable `delegation_context` (`idp_subject`) and use Keycloak `client_credentials` with Token Exchange to mint scoped internal execution tokens. |
+| **BS-4 (Cascading Synchronous 500s)** | A crash or restart in `pyforge-warden-service` causes Django HTTPX worker threads to hang, cascading into a 504 outage for the entire Guildhall at `/`. | **PyBreaker & Stale-While-Revalidate Fallbacks:** Django HTTPX clients implement PyBreaker with 500ms fail-fast thresholds; HTMX views render graceful degraded badges (`"Compute restarting — cached 10m ago"`). |
+| **BS-5 (DuckDB Concurrent Writer Thrashing)** | Concurrent Celery ingestion tasks attempting simultaneous writes to `atlas.duckdb` trigger file-lock contention and unhandled exceptions. | **Strict Single-Writer Ingestion Worker:** Only a single dedicated ingestion worker writes to DuckDB; all FastAPI services and Vizro dashboards mount DuckDB in **Strict Read-Only Mode** (`read_only=True`). |
+| **BS-6 (Event Schema Drift & Deserialization)** | Upgraded stations emitting v2 events crash legacy consumer stations with Pydantic `ValidationError` deserialization panics. | **Forward-Compatible CloudEvents Envelope:** Standard envelope carries `schema_version: "2.x"` with generic payload dictionaries; schema validation is executed in domain adapters, not at the stream boundary. |
+| **BS-7 (Pydantic 422 to HTMX Form Mapping)** | FastAPI HTTP 422 JSON errors (`loc: ["body", "version"]`) fail to map back to Django template form fields, showing generic failure toasts. | **`PydanticFormErrorBridge` in `django-pyforge`:** Automatically unpacks HTTP 422 JSON error arrays into standard Django `forms.ValidationError` dictionaries for inline HTMX field highlighting. |
+| **BS-8 (Cross-Datastore PITR Recovery Gap)** | Restoring PostgreSQL from backup while Redis Streams or MinIO contain newer state causes orphaned builds and missing database records. | **Idempotent Startup State Reconciliation:** Microservices execute startup reconciliation sweeps (e.g. Mason scans MinIO on boot to re-index database records, treating PostgreSQL as the canonical anchor). |
+
+### 3. Edge Case Failure Protections
 
 | Failure Scenario | Mitigation Pattern |
 | :--- | :--- |
@@ -1027,3 +1062,4 @@ graph LR
 - **2026-08-23** — The 3 Operational Planes Architecture Formalization: unified the 10 platform layers into three macro operational planes (UI & Routing Plane, Compute & Agent Plane, Data & Infrastructure Plane) with an overarching Mermaid system topology showing direct client-to-service and agent-to-MCP execution paths.
 - **2026-08-23** — Adversarial Architecture & Red Team Hardening Directives: codified 5 mandatory pre-implementation RFCs (FastAPI REST vs. MCP worker process separation, dedicated Redis broker vs. cache instances, scoped identity token delegation, Redis Streams PEL dead-letter queue with max loop-depth limits, and single-source PostgreSQL DDL governance via Liquibase).
 - **2026-08-23** — HashiCorp Vault Enterprise Secrets Management Integration: designated HashiCorp Vault as the authoritative enterprise credential and secret lifecycle engine, managing dynamic database credentials, Keycloak client secrets, and Kubernetes/OpenShift External Secrets Operator (ESO) in-memory secret injection under `restricted-v2` SCC.
+- **2026-08-23** — Production Blind Spot Hardening (BS-1 to BS-8): codified 8 critical distributed systems mitigations—Scribe dual-driver storage engine (SQLite local vs PostgreSQL OCP), MCP/SSE keep-alive frames with 30m route timeouts, async OAuth2 RFC 8693 token delegation for long sprints, PyBreaker circuit breaking with stale HTMX fallbacks, DuckDB single-writer process boundary, schema-versioned CloudEvents envelopes, `PydanticFormErrorBridge` for HTMX 422 errors, and cross-datastore idempotent startup reconciliation.
