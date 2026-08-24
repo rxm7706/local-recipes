@@ -119,16 +119,16 @@ graph TD
         Lane3["Lane 3: Isolated Vizro / Panel Dashboards"]
         Host --> Lane1
         Host --> Lane2
-        Host -.->|Reverse Proxy (Steward)| Lane3
+        Host -.->|"Reverse Proxy (Steward)"| Lane3
     end
 
     subgraph Plane2["2. Compute & Agent Plane (Execution Fabric)"]
         Microservices["9 Paired FastAPI Station Microservices (:800x)"]
         MCPAgents["Agentic Layer: MCP Servers (SSE / Stdio)"]
         CLI["Unified CLI Surface: pyforge <station>"]
-        Lane2 -->|HTMX / Async HTTPX Client| Microservices
-        MCPAgents -->|MCP Protocol Tools & Prompts| Microservices
-        CLI -->|Direct Local or Remote REST API| Microservices
+        Lane2 -->|"HTMX / Async HTTPX Client"| Microservices
+        MCPAgents -->|"MCP Protocol Tools & Prompts"| Microservices
+        CLI -->|"Direct Local or Remote REST API"| Microservices
     end
 
     subgraph Plane3["3. Data & Infrastructure Plane (State & Persistence)"]
