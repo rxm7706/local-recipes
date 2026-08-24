@@ -421,6 +421,10 @@ Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clust
 * **Enterprise Identity Provider (IdP):**
   * Red Hat Keycloak, Microsoft Entra ID (Azure AD), Okta, or PingFederate configured with OIDC.
   * JWT tokens validated on `idp_subject` and corporate group claims (`resource_access.pyforge.roles`).
+* **HashiCorp Vault Enterprise Secrets Management:**
+  * **Central Credential Vault:** All sensitive credentials (PostgreSQL passwords, Keycloak client secrets, Redis auth, Artifactory tokens, and private keys) managed under `secret/data/pyforge/*`.
+  * **OpenShift Vault Agent & External Secrets Operator (ESO):** Automated, dynamic secret injection and rotation into in-memory `/vault/secrets/` volumes compliant with `restricted-v2` SCC.
+  * **Dynamic Database Credentials:** Short-lived, automatically rotatable PostgreSQL credentials for Django platform host and FastAPI compute services.
 * **Corporate TLS & CA Truststore:**
   * Internal enterprise Root/Intermediate CA bundle mounted into `/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem` (automatically consumed by Python `truststore` and Node.js).
 * **Enterprise Container Registry:**
@@ -680,9 +684,10 @@ Governed by `pixi.toml` and verified via `pixi run -e local-recipes llms-full-ch
 * **Celery & Redis (`redis-py`):** Asynchronous task queue (`noeviction` memory policy) and event bus.
 * **PostgreSQL (`psycopg2` / `psycopg`) with `pgvector`:** Relational database, multi-schema isolation (`langflow_schema`, `dbgpt_schema`), and vector embeddings.
 * **MinIO (`>=7.2.20`):** S3-compatible local/enterprise artifact and wheel storage.
+* **HashiCorp Vault & `hvac`:** Enterprise secrets management, dynamic database credential leasing, and runtime token injection.
 * **OpenTelemetry SDK/API (`>=1.44.0`):** Distributed tracing and APM.
 * **`truststore` (`>=0.10.4`):** Native OS CA certificate store integration (Windows CryptoAPI, macOS Keychain, Linux OpenSSL).
-* **`go-sops` & `age`:** Secret encryption and credential vaulting.
+* **`go-sops` & `age`:** Developer-local secret encryption and offline credential vaulting.
 
 ### 9. Developer Experience, QA & Testing Kit
 * **Typer (`>=0.27.1`) & Rich (`>=14.3.4`):** Powers the universal `pyforge` CLI with interactive tables and progress bars.
@@ -739,7 +744,7 @@ graph LR
     end
 
     subgraph Steward["pyforge-steward (DevOps/Keys)"]
-        L8["go-sops + age -> GitOps Secret Encryption"]
+        L8["HashiCorp Vault + SOPS -> Enterprise Secrets & Keys"]
     end
 
     subgraph Warden["pyforge-warden & Doctor"]
@@ -754,7 +759,7 @@ graph LR
 4. **`markitdown` (Microsoft) $\rightarrow$ `pyforge-herald` & `pyforge-scribe`:** Unified multi-format ingestion converting Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), and PDF into clean markdown for Wagtail Corporate Brain and Scribe memory.
 5. **`graphviz2drawio` $\rightarrow$ `pyforge-herald`:** Programmatically converts Graphviz `.dot` pipelines into editable Draw.io XML (`.drawio`) files for enterprise architect reviews and PowerPoint decks.
 6. **`filelock` $\rightarrow$ `pyforge-marshal` & `pyforge-scribe`:** Cross-platform file locking preventing database corruption and race conditions when multiple autonomous AI agents or git worktrees run concurrently.
-7. **`go-sops` & `age` $\rightarrow$ `pyforge-steward`:** GitOps-style secret encryption for Keycloak realm configs, database credentials, and Artifactory API tokens using X25519 `age` keys.
+7. **HashiCorp Vault & `go-sops` $\rightarrow$ `pyforge-steward`:** Enterprise secret lifecycle management via HashiCorp Vault (dynamic database credentials, Keycloak tokens) combined with offline X25519 `age`/SOPS local vaulting.
 8. **`pandera` $\rightarrow$ `pyforge-warden` & `pyforge-mason`:** Statistical and schema validation for Polars/Pandas dataframes, enforcing strict structural contracts on parsed lockfiles and CycloneDX SBOM feeds.
 9. **`taplo`, `sqlfluff` & `yamllint` $\rightarrow$ `pyforge-doctor` & `pyforge-warden`:** Syntax linting suite validating `pixi.toml`, `recipe.yaml`, and DuckDB SQL queries during preflight checks (`pyforge doctor check --syntax`).
 10. **`playwright` $\rightarrow$ `pyforge-herald` & `pyforge-testing-kit`:** Headless browser automation capturing high-resolution PDF exports and PNG thumbnails of interactive `.dc.html` slides and Vizro dashboards for automated broadcast proclamations.
@@ -1021,3 +1026,4 @@ graph LR
 - **2026-08-23** — Empirical Multi-Python Resolution Benchmark: executed standalone `pixi lock` solver benchmarks across the entire 1,000+ package estate for Python 3.12, 3.13, and 3.14, confirming 100% solver success across all three Python minor versions with complete binary C-extension availability.
 - **2026-08-23** — The 3 Operational Planes Architecture Formalization: unified the 10 platform layers into three macro operational planes (UI & Routing Plane, Compute & Agent Plane, Data & Infrastructure Plane) with an overarching Mermaid system topology showing direct client-to-service and agent-to-MCP execution paths.
 - **2026-08-23** — Adversarial Architecture & Red Team Hardening Directives: codified 5 mandatory pre-implementation RFCs (FastAPI REST vs. MCP worker process separation, dedicated Redis broker vs. cache instances, scoped identity token delegation, Redis Streams PEL dead-letter queue with max loop-depth limits, and single-source PostgreSQL DDL governance via Liquibase).
+- **2026-08-23** — HashiCorp Vault Enterprise Secrets Management Integration: designated HashiCorp Vault as the authoritative enterprise credential and secret lifecycle engine, managing dynamic database credentials, Keycloak client secrets, and Kubernetes/OpenShift External Secrets Operator (ESO) in-memory secret injection under `restricted-v2` SCC.
