@@ -66,6 +66,25 @@ Recorded here because acceptance criteria must not be written against a false pr
    introducing FastAPI.
 5. **`pyforge-atlas` already has MCP.** The Dream treats the MCP tier as uniformly unbuilt; atlas
    ships `build_server()`. The residual is the other seven stations plus the SSE transport.
+6. **Wagtail is not absent from the estate — and this pass said it was.** Correction to this
+   file's own residual item 1, found 2026-08-24. Atlas owns the Dream
+   `docs/dreams/wagtail-corporate-brain.md` (`status: specified`) and the Spec
+   `spec-wagtail-corporate-brain` (CAP-1..3), and Epic 16 stories 16.1/16.2 are **`done`**:
+   `pyforge/atlas/factory/lasuite.py` ships `LaSuiteConfig`, `resolve_lasuite_config`,
+   `LaSuiteClient` (create/update/get/list over a Wagtail REST shape) and `WikiSyncer`, plus
+   `tools/lasuite_bringup.py`. The original claim was true of `src/platform/` and was wrongly
+   generalised to the repo; the grep that produced it dismissed every `wagtail` hit outside
+   `src/platform/` as warden test-corpus fixtures, and atlas's client did not match on that term.
+   **What is still true:** no Wagtail *server* runs anywhere, and no CMS is mounted at `/`. So
+   CAP-2's build is unaffected — but its relationship to atlas is not, and there are two live
+   consequences. First, atlas has a **consumer waiting on exactly this server**: deferred-work
+   entry `DW-H3` is an attended bring-up of a live La Suite/Wagtail instance, and CAP-2 may
+   satisfy it outright rather than atlas standing up a second one. Second, `LaSuiteClient`
+   already **froze a REST contract** (`POST /api/v1/documents/`, `PATCH`/`GET
+   /api/v1/documents/{id}/`, `GET /api/v1/documents/all/`, Bearer auth) — which is La Suite Docs'
+   API, *not* Wagtail's own, so "Wagtail REST shape" in atlas's spec should not be read as a
+   guarantee that a Wagtail instance satisfies that client unmodified. Recorded as the open
+   question `lane1-serves-dw-h3`.
 
 ## The RFC-5 conflict (operator-accepted, recorded here in full)
 

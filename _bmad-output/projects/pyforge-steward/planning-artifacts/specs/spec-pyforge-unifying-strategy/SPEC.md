@@ -32,6 +32,7 @@ open_questions:
   - mcp-client-revision
   - mcp-tasks-runtime
   - console-parity-inventory
+  - lane1-serves-dw-h3
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -225,6 +226,8 @@ they are why this is not merely a UI project.
   `enterprise-multi-agent-orchestration` and `asgi-multiplexer-monolith`.
 - **Not** a replacement for any station's CLI. CAP-5 dispatches to them; it does not absorb them,
   and a station binary remains a first-class entry point.
+- **Not** atlas's `spec-wagtail-corporate-brain`. That Spec is atlas's and its Epic 16 is `done`;
+  CAP-2 may end up *serving* its `DW-H3` consumer, but it does not absorb, re-mint or supersede it.
 - **Not** the adoption of CodeRed CMS. Ruled out 2026-08-24 on maintenance evidence; Lane 1 is
   Wagtail alone.
 - **Not** a general-purpose multi-tenancy model. CAP-7's isolation is row-level for analytical
@@ -263,6 +266,10 @@ database role is provably incapable of altering its own schema.
   `2026-07-28`-only server rejects handshake-era clients and vice versa.
 - **mcp-tasks-runtime** — does the official `mcp` Python SDK ship a server-side Tasks runtime yet?
   This is the largest gap between CAP-4's recommended pattern and shippable code.
+- **lane1-serves-dw-h3** — can CAP-2's CMS satisfy atlas's `DW-H3` (its attended live
+  La Suite/Wagtail bring-up), so the estate runs one instance rather than two? Atlas's shipped
+  `LaSuiteClient` froze a **La Suite Docs** REST contract, which is not Wagtail's own API, so this
+  is a real compatibility question and not a formality. Owned jointly with atlas.
 - **console-parity-inventory** — which of Marshal's console views have no runtime equivalent under
   CAP-2? The supersede ruling of 2026-08-24 settled *that* it is retired; this settles *what has to
   exist first*. Answered by an inventory pass in Phase 4, not by research.
