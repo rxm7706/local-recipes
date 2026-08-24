@@ -97,7 +97,7 @@ development_status:
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
-  22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: backlog
+  22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: done
   22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal: backlog
   23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: backlog
   23-2-wall-clock-is-never-blended-with-active-compute: backlog
