@@ -1,5 +1,6 @@
 """Meta: `docs/dashboard/generate.py` wall-clock fallback + metric-class
-separation (marshal Stories 23.1 / 23.2, FR-194 CAP-1 / CAP-2).
+separation + coverage caption partitioning (marshal Stories 23.1 / 23.2 / 23.3,
+FR-194 CAP-1 / CAP-2 / CAP-3).
 
 Loads the REAL `generate.py` via importlib (same pattern as
 `test_dashboard_resolve_project.py`) and covers the 23.1 I/O & Edge-Case
@@ -583,3 +584,136 @@ def test_index_html_wires_per_story_class_and_css():
         'data-metric="active-compute"',
     ):
         assert needle in html, f"missing render wiring: {needle!r}"
+
+
+# --- Story 23.3: coverage caption partitions by true reason (CAP-3) ------------
+
+
+def test_velocity_sub_partitions_absence_classes(gen, tmp_path, monkeypatch):
+    """Mixed line: caption names wall-clock / spec-no-revs / no-spec — never predates."""
+    baseline, final, expected_wc = _git_init_with_two_commits(tmp_path)
+    git_cwd = tmp_path / "gitrepo"
+    root = tmp_path / "tree"
+    _write_story_spec(root, "pyforge-fixture", "8", "2",
+                      baseline=baseline, final=final)
+    _write_story_spec(root, "pyforge-fixture", "8", "3",
+                      baseline=None, final=None, slug="no-revs")
+    # 8.4 has no spec file → no-spec-at-all
+
+    loop_home = tmp_path / "loop-home"
+    run = loop_home / ".bmad-loop" / "runs" / "r1"
+    run.mkdir(parents=True)
+    journal = [
+        {"kind": "session-start", "ts": 1_000.0, "task_id": "t1",
+         "story_key": "8-1-journal"},
+        {"kind": "session-end", "ts": 1_180.0, "task_id": "t1"},
+    ]
+    (run / "journal.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in journal) + "\n", encoding="utf-8")
+
+    monkeypatch.setattr(gen, "REPO_ROOT", root)
+    monkeypatch.setattr(gen, "LOOP_HOMES", {"fixture": loop_home})
+    original_ceiling = gen.wall_clock_ceiling_minutes
+    monkeypatch.setattr(
+        gen, "wall_clock_ceiling_minutes",
+        lambda b, f, *, cwd=None: original_ceiling(b, f, cwd=git_cwd))
+
+    projects = {
+        "fixture": _proj([
+            ["8.1", "done", "Journal"],
+            ["8.2", "done", "Wall-clock"],
+            ["8.3", "done", "No revs"],
+            ["8.4", "done", "No spec"],
+        ]),
+    }
+    gen.scan_timing(projects)
+    sub = projects["fixture"]["velocity"]["sub"].lower()
+    assert "journal-measured" in sub
+    assert "wall-clock-derived" in sub
+    assert "spec-without-revision-fields" in sub
+    assert "no-spec-at-all" in sub
+    assert "predates" not in sub
+
+
+def test_revision_bearing_spec_never_predates_in_caption(gen, tmp_path, monkeypatch):
+    """Unresolvable rev fields still classify wall-clock-derived — not predates."""
+    root = tmp_path / "tree"
+    _write_story_spec(
+        root, "pyforge-fixture", "9", "1",
+        baseline="deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+        final="cafebabecafebabecafebabecafebabecafebabe",
+    )
+    monkeypatch.setattr(gen, "REPO_ROOT", root)
+    monkeypatch.setattr(gen, "LOOP_HOMES", {})
+    empty = tmp_path / "emptygit"
+    empty.mkdir()
+    subprocess.run(["git", "init"], cwd=empty, check=True, capture_output=True)
+    original_ceiling = gen.wall_clock_ceiling_minutes
+    monkeypatch.setattr(
+        gen, "wall_clock_ceiling_minutes",
+        lambda b, f, *, cwd=None: original_ceiling(b, f, cwd=empty))
+
+    loop_home = tmp_path / "loop-home"
+    run = loop_home / ".bmad-loop" / "runs" / "r1"
+    run.mkdir(parents=True)
+    journal = [
+        {"kind": "session-start", "ts": 0.0, "task_id": "t1",
+         "story_key": "9-2-journal"},
+        {"kind": "session-end", "ts": 60.0, "task_id": "t1"},
+    ]
+    (run / "journal.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in journal) + "\n", encoding="utf-8")
+    monkeypatch.setattr(gen, "LOOP_HOMES", {"fixture": loop_home})
+
+    projects = {
+        "fixture": _proj([
+            ["9.1", "done", "Rev-bearing absent"],
+            ["9.2", "done", "Journal"],
+        ]),
+    }
+    gen.scan_timing(projects)
+    sub = projects["fixture"]["velocity"]["sub"]
+    assert "predates" not in sub.lower()
+    assert "wall-clock-derived" in sub.lower()
+
+
+def test_partition_timing_coverage_counts(gen, tmp_path, monkeypatch):
+    root = tmp_path / "tree"
+    _write_story_spec(root, "pyforge-fixture", "1", "2",
+                      baseline=None, final=None, slug="bare")
+    monkeypatch.setattr(gen, "REPO_ROOT", root)
+    proj = _proj([
+        ["1.1", "done", "Journal"],
+        ["1.2", "done", "No revs"],
+        ["1.3", "done", "No spec"],
+        ["1.4", "in-progress", "In flight"],
+        ["1.5", "done", "Wall-clock"],
+    ])
+    parts = gen.partition_timing_coverage(
+        "fixture", proj, {"1.1"}, {"1.5"})
+    assert parts[gen.TIMING_COVERAGE_JOURNAL] == 1
+    assert parts[gen.TIMING_COVERAGE_WALL_CLOCK] == 1
+    assert parts[gen.TIMING_COVERAGE_SPEC_NO_REVS] == 1
+    assert parts[gen.TIMING_COVERAGE_NO_SPEC] == 1
+    assert sum(parts.values()) == 4  # in-flight excluded
+
+
+def test_velocity_sub_full_coverage_omits_absence_detail(gen, tmp_path, monkeypatch):
+    loop_home = tmp_path / "loop-home"
+    run = loop_home / ".bmad-loop" / "runs" / "r1"
+    run.mkdir(parents=True)
+    journal = [
+        {"kind": "session-start", "ts": 0.0, "task_id": "t1",
+         "story_key": "2-1-only"},
+        {"kind": "session-end", "ts": 120.0, "task_id": "t1"},
+    ]
+    (run / "journal.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in journal) + "\n", encoding="utf-8")
+    monkeypatch.setattr(gen, "LOOP_HOMES", {"fixture": loop_home})
+    monkeypatch.setattr(gen, "derive_wall_clock_per_story", lambda *a, **k: {})
+    projects = {"fixture": _proj([["2.1", "done", "Only"]])}
+    gen.scan_timing(projects)
+    sub = projects["fixture"]["velocity"]["sub"]
+    assert "journal-measured" in sub
+    assert "predates" not in sub.lower()
+    assert "not plotted" not in sub.lower()

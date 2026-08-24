@@ -2791,6 +2791,12 @@ _MIXED_METRIC = (
 TIMING_CLASS_ACTIVE = "active-compute"
 TIMING_CLASS_WALL_CLOCK = "wall-clock-ceiling"
 
+# CAP-3 coverage caption partitions (Story 23.3) — align with 23.1/23.2 metric classes.
+TIMING_COVERAGE_JOURNAL = "journal-measured"
+TIMING_COVERAGE_WALL_CLOCK = "wall-clock-derived"
+TIMING_COVERAGE_SPEC_NO_REVS = "spec-without-revision-fields"
+TIMING_COVERAGE_NO_SPEC = "no-spec-at-all"
+
 
 def _timing_total_label_active(mins: int) -> str:
     if mins >= 60:
@@ -2864,15 +2870,10 @@ def wall_clock_ceiling_minutes(
     return mins if mins > 0 else None
 
 
-def story_spec_revision_fields(
+def _story_spec_path(
     pkey: str, sid: str, *, repo_root: Path | None = None,
-) -> tuple[str, str] | None:
-    """`(baseline_revision, final_revision)` from the matching promoted story spec.
-
-    Looks up `_bmad-output/projects/<dir>/planning-artifacts/specs/spec-{e}-{n}-*.md`
-    via `resolve_project`. Missing file / ambiguous multi-match / fields /
-    `NO_VCS` → None (silent skip — never pick silently among collisions).
-    """
+) -> Path | None:
+    """Unique promoted story spec file, or None if missing / ambiguous."""
     root = repo_root or REPO_ROOT
     m = re.match(r"^(\d+)\.(\d+)$", sid)
     if not m:
@@ -2888,17 +2889,128 @@ def story_spec_revision_fields(
         / "planning-artifacts" / "specs"
     )
     matches = sorted(specs_dir.glob(f"spec-{m.group(1)}-{m.group(2)}-*.md"))
-    # Prefer plain story-spec files over accidental directory collisions.
     files = [p for p in matches if p.is_file()]
-    # Ambiguous: more than one matching story-spec — refuse rather than guess.
     if len(files) != 1:
         return None
-    fm = _frontmatter_scalars(files[0], ("baseline_revision", "final_revision"))
+    return files[0]
+
+
+def story_spec_revision_fields(
+    pkey: str, sid: str, *, repo_root: Path | None = None,
+) -> tuple[str, str] | None:
+    """`(baseline_revision, final_revision)` from the matching promoted story spec.
+
+    Looks up `_bmad-output/projects/<dir>/planning-artifacts/specs/spec-{e}-{n}-*.md`
+    via `resolve_project`. Missing file / ambiguous multi-match / fields /
+    `NO_VCS` → None (silent skip — never pick silently among collisions).
+    """
+    spec_path = _story_spec_path(pkey, sid, repo_root=repo_root)
+    if spec_path is None:
+        return None
+    fm = _frontmatter_scalars(spec_path, ("baseline_revision", "final_revision"))
     baseline = _unquote_fm(fm.get("baseline_revision", ""))
     final = _unquote_fm(fm.get("final_revision", ""))
     if not baseline or not final or baseline == "NO_VCS" or final == "NO_VCS":
         return None
     return baseline, final
+
+
+def _story_has_resolvable_revision_fields(
+    pkey: str, sid: str, *, repo_root: Path | None = None,
+) -> bool:
+    """True when the promoted spec carries non-sentinel baseline/final fields."""
+    spec_path = _story_spec_path(pkey, sid, repo_root=repo_root)
+    if spec_path is None:
+        return False
+    fm = _frontmatter_scalars(spec_path, ("baseline_revision", "final_revision"))
+    baseline = _unquote_fm(fm.get("baseline_revision", ""))
+    final = _unquote_fm(fm.get("final_revision", ""))
+    return bool(
+        baseline and final and baseline != "NO_VCS" and final != "NO_VCS")
+
+
+def _classify_story_timing_coverage(
+    pkey: str,
+    sid: str,
+    status: str,
+    bar_sids: set[str],
+    wall_clock_sids: set[str],
+    *,
+    repo_root: Path | None = None,
+) -> str | None:
+    """Return one CAP-3 coverage class, or None for in-flight / non-applicable."""
+    if sid in bar_sids:
+        return TIMING_COVERAGE_JOURNAL
+    if sid in wall_clock_sids:
+        return TIMING_COVERAGE_WALL_CLOCK
+    if status != "done":
+        return None
+    if _story_has_resolvable_revision_fields(pkey, sid, repo_root=repo_root):
+        # Revision-bearing hand-driven — never "predates instrumentation".
+        return TIMING_COVERAGE_WALL_CLOCK
+    if _story_spec_path(pkey, sid, repo_root=repo_root) is not None:
+        return TIMING_COVERAGE_SPEC_NO_REVS
+    return TIMING_COVERAGE_NO_SPEC
+
+
+def partition_timing_coverage(
+    pkey: str,
+    proj: dict,
+    bar_sids: set[str],
+    wall_clock_sids: set[str],
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, int]:
+    """Count stories in each CAP-3 coverage class for caption partitioning."""
+    counts: dict[str, int] = {}
+    for epic in proj.get("epics", []):
+        for story in epic.get("stories", []):
+            if len(story) < 2:
+                continue
+            sid, status = story[0], story[1]
+            cls = _classify_story_timing_coverage(
+                pkey, sid, status, bar_sids, wall_clock_sids,
+                repo_root=repo_root)
+            if cls is None:
+                continue
+            counts[cls] = counts.get(cls, 0) + 1
+    return counts
+
+
+def _velocity_coverage_sub_caption(
+    n_bars: int,
+    n_stories: int,
+    partitions: dict[str, int],
+) -> str:
+    """Velocity-axis coverage caption — four true classes, never 'predates'."""
+    inflight = (
+        ". A story still in flight contributes only its CLOSED sessions, "
+        "so its bar is a floor, not a total."
+    )
+    base = (
+        "Active agent-compute per story (dev + review; excludes "
+        "gate-pause wait) — derived from this line's bmad-loop journals. "
+        f"{n_bars} of {n_stories} stories journal-measured on this axis"
+    )
+    if n_bars >= n_stories:
+        return base + inflight
+    parts: list[str] = []
+    wc = partitions.get(TIMING_COVERAGE_WALL_CLOCK, 0)
+    if wc:
+        parts.append(
+            f"{wc} wall-clock-derived on the timing strip only "
+            "(a different metric — see the timing strip)"
+        )
+    snr = partitions.get(TIMING_COVERAGE_SPEC_NO_REVS, 0)
+    if snr:
+        parts.append(
+            f"{snr} spec-without-revision-fields deliberately absent"
+        )
+    ns = partitions.get(TIMING_COVERAGE_NO_SPEC, 0)
+    if ns:
+        parts.append(f"{ns} no-spec-at-all deliberately absent")
+    detail = "; ".join(parts) if parts else "remainder deliberately absent"
+    return base + f"; {detail} — not plotted on this axis" + inflight
 
 
 def _sid_from_journal_key(key: str) -> str:
@@ -3044,27 +3156,21 @@ def scan_timing(projects: dict) -> None:
             median = bar_mins[len(bar_mins) // 2] if len(bar_mins) % 2 else \
                 round((bar_mins[len(bar_mins) // 2 - 1]
                        + bar_mins[len(bar_mins) // 2]) / 2)
+            bar_sids = {sid for sid, _ in bars}
+            coverage_parts = partition_timing_coverage(
+                pkey, proj, bar_sids, set(wall_clock))
             velocity_obj = {
                 "derived": True,
                 # The in-flight caveat has to live HERE too, not only on `timing.note`:
                 # velocity is now derivable on a line whose timing is curated (atlas), so
                 # the note that used to carry this never reaches the reader.
                 #
-                # COVERAGE IS STATED, never implied. A graph showing 2 bars on a line with
-                # 38 stories reads as data loss unless it says why. Only loop-driven stories
-                # have journals: atlas's waves 0-H ran in a web session and were never
-                # measured for active compute, and their wall-clock numbers (PR timestamps,
-                # gate waits included) are a DIFFERENT metric that must not share this axis.
-                # Wall-clock CAP-1 marks stay OFF this axis (timing strip only).
-                "sub": (f"Active agent-compute per story (dev + review; excludes "
-                        f"gate-pause wait) — derived from this line's bmad-loop journals. "
-                        f"{len(bars)} of {len(st)} stories measured"
-                        + ("" if len(bars) == len(st) else
-                           "; the rest predate loop instrumentation and carry wall-clock "
-                           "only (a different metric — see the timing strip), so they are "
-                           "deliberately absent rather than plotted on this axis")
-                        + ". A story still in flight contributes only its CLOSED sessions, "
-                          "so its bar is a floor, not a total."),
+                # COVERAGE IS STATED, never implied. CAP-3 partitions by true absence
+                # class (journal-measured / wall-clock-derived /
+                # spec-without-revision-fields / no-spec-at-all) — never lump revision-
+                # bearing hand-driven stories under "predates instrumentation".
+                "sub": _velocity_coverage_sub_caption(
+                    len(bars), len(st), coverage_parts),
                 "bars": bars,
                 "foot": [
                     [f"~{median} min", "median / story", "var(--done)"],
