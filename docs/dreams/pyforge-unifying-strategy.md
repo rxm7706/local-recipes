@@ -551,6 +551,86 @@ result: ComplianceResult = await client.post("/api/v1/compliance/check", payload
 
 ---
 
+## Comprehensive Technology Stack & Library Catalog
+
+Governed by `pixi.toml` and verified via `pixi run -e local-recipes llms-full-check`, the PyForge estate builds on a curated, battle-tested library stack:
+
+### 1. Platform Host, Web Frameworks & Content Layer
+* **Django (`5.2.x` / `6.x`):** Core enterprise platform host (`src/platform/`).
+* **Wagtail (`7.4.x`) + CodeRed CMS (`coderedcms 6.0.x`):** Powers the Guildhall and Corporate Brain at `/` (Lane 1).
+* **`django-lasuite` (`0.0.27`):** Foundation for reusable apps, OIDC middleware, and the universal Guildhall App Switcher banner.
+* **FastAPI (`0.135.x`) / Starlette / Uvicorn:** Powers the 9 paired station microservices (`:8000–:8009`).
+* **Daphne & Django Channels (`4.3.x`):** ASGI WebSocket and Server-Sent Events (SSE) streaming engine.
+* **WhiteNoise:** Zero-CDN, fully air-gapped static asset server.
+
+### 2. Autonomous Agent, Multi-Agent & MCP Ecosystem
+* **`mcp` (`>=2.0.0`):** Anthropic's official Python Model Context Protocol SDK (SSE and stdio transports).
+* **`fastmcp` (`>=2.14.x` / `3.x`):** High-level decorator framework for rapid MCP tool/resource creation.
+* **`pydantic-ai` (`>=2.33.0`):** Type-safe autonomous agent orchestration.
+* **`agno` (`>=2.6.22`):** Multi-agent framework for collaborative task routing.
+* **`claude-agent-acp` & `anthropic` (`>=0.76.0`):** Native Claude agent integration.
+* **`google-genai` (`>=2.19.0`):** Google Gemini SDK and Antigravity tooling.
+* **`github-copilot-sdk` & `a2a-sdk` / `fasta2a`:** Agent-to-Agent communication protocols.
+* **`langchain-anthropic` & `langchain-mcp-adapters`:** MCP bridge tooling for LangChain agents.
+* **`django-mcp-server`:** Direct MCP tool leasing from Django models and services.
+
+### 3. AI Workflows, Local LLMs & Semantic Search
+* **Langflow (`>=1.3.x`):** Visual AI pipeline and agent workflow builder mounted as an ASGI app.
+* **DB-GPT (`>=0.8.x`):** Multi-model database knowledge base and agent copilot.
+* **`sentence-transformers` & `transformers` (`>=5.15.x`):** Local embedding generation and text representation.
+* **`llama.cpp` (`>=10380`) & `ollama-python`:** Fully local, offline LLM inference.
+* **`rank-bm25`:** Hybrid lexical keyword search complementing vector retrieval.
+* **`diffusers` & `accelerate`:** Multi-modal image generation and local GPU acceleration.
+
+### 4. Dataflow, Analytics & Graph Intelligence
+* **DuckDB (`>=1.5.5`):** Columnar analytical engine powering Atlas package queries.
+* **Polars (`>=1.43.x`), Pandas & PyArrow (`>=24.0.0`):** High-speed tabular data processing.
+* **Kedro (`>=1.5.0`) & `kedro-datasets`:** Declarative data pipelines for Atlas.
+* **Dagster (`>=1.13.x`):** Data asset orchestration.
+* **Ibis Framework (`>=12.0.0`):** Unified Python dataframe interface compiling to DuckDB, Postgres, and SQLite.
+* **`getdaft` (`>=0.6.13`):** Distributed multimodal dataframe processing.
+* **Great Expectations & Pandera:** Schema and data quality validation.
+
+### 5. Dashboards, Visualization & UI Analytics (Lane 3)
+* **Vizro (`>=0.1.60`), `vizro-ai` & `vizro-mcp`:** Declarative analytics dashboards reverse-proxied by Steward.
+* **Kedro-Viz (`>=12.4.0`):** Interactive data pipeline visualization graph.
+* **Panel (`>=1.9.4`) & Panel Graphic Walker:** Exploratory visual data analysis.
+* **Bokeh & `bokeh-django`:** High-performance interactive browser plotting.
+* **Plotly, Matplotlib, Graphviz & `mermaid-py` / `d2`:** Multi-format programmatic diagramming.
+
+### 6. Presentation Studio, Documents & Media Engines
+* **Marp CLI (`>=4.2.3`):** Markdown-to-presentation slide compiler.
+* **`pptxgenjs` (`>=4.0.1`) & `python-pptx` (`>=1.0.2`):** Native PowerPoint presentation deck generators.
+* **PyMuPDF (`>=1.28.x`), PyPDF & `pdfplumber`:** PDF extraction and parsing.
+* **`mammoth`, `python-docx` & `openpyxl`:** Office Word and Excel document manipulation.
+* **Pandoc (`>=3.10.x`) & `markdownify`:** Universal document and markdown converter.
+* **Tesseract OCR & `pytesseract` / Poppler:** Offline optical character recognition.
+* **Pillow (`>=12.3.0`):** Image processing engine.
+
+### 7. Packaging, Build Engines & DevSecOps Compliance
+* **Pixi (`>=0.77.0`) & `rattler` / `py-rattler-build`:** Fast Rust-based Conda/PyPI environment manager.
+* **Conda-Build, Conda-Smithy & Grayskull:** Official conda-forge recipe builders and linters.
+* **`deptry` & `osv-scanner`:** Dependency hygiene, unused import detection, and OSV CVE vulnerability scanning.
+* **AppThreat Vuln-DB & `cyclonedx-bom` / `cyclonedx-python-lib`:** Local offline CVE database and SBOM generation.
+
+### 8. Asynchronous Tasks, Database & Enterprise Infrastructure
+* **Celery & Redis (`redis-py`):** Asynchronous task queue (`noeviction` memory policy) and event bus.
+* **PostgreSQL (`psycopg2` / `psycopg`) with `pgvector`:** Relational database, multi-schema isolation (`langflow_schema`, `dbgpt_schema`), and vector embeddings.
+* **MinIO (`>=7.2.20`):** S3-compatible local/enterprise artifact and wheel storage.
+* **OpenTelemetry SDK/API (`>=1.44.0`):** Distributed tracing and APM.
+* **`truststore` (`>=0.10.4`):** Native OS CA certificate store integration (Windows CryptoAPI, macOS Keychain, Linux OpenSSL).
+* **`go-sops` & `age`:** Secret encryption and credential vaulting.
+
+### 9. Developer Experience, QA & Testing Kit
+* **Typer (`>=0.27.1`) & Rich (`>=14.3.4`):** Powers the universal `pyforge` CLI with interactive tables and progress bars.
+* **Ruff (`>=0.16.4`), Pyright & Mypy:** Instant linting, formatting, and strict type checking.
+* **Pytest (`>=9.1.1`), `pytest-cov`, `pytest-mock`, `pytest-xdist`:** Test runners and parallelization.
+* **Playwright (`>=1.62.1`):** End-to-end browser automation for UI portal testing.
+* **Copier:** Project scaffolding and recipe migration templating.
+* **Sqlfluff, Yamllint & Taplo:** SQL, YAML, and TOML linters.
+
+---
+
 ---
 
 ## The Station Planning Artifact Inventory & Upstream Grounding
@@ -760,3 +840,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Container Delivery Modes Formalization: codified the 3 deployment topologies powered by a single Pixi-built container image (`pyforge-container`): Mode A (Single All-in-One Podman Container), Mode B (Local Podman Pod with `pgvector` and Keycloak), and Mode C (Multi-Container Distributed OpenShift/K8s).
 - **2026-08-23** — Enterprise Server Infrastructure & OCP Sizing Specifications: codified the complete production cluster sizing (16–32 vCPUs, 32–64 GB RAM, minimum 3 worker nodes), block and object storage requirements (PostgreSQL `pgvector`, Redis persistence, S3/MinIO mirrors), OpenShift Route edge TLS, internal cluster DNS, and `restricted-v2` SCC security compliance.
 - **2026-08-23** — Feature Flags & Canary Delivery Architecture: embedded a 5-tier progressive delivery engine into the runtime—featuring OpenFeature `FlagContext` evaluations across Django UI, FastAPI microservices, MCP agent tool gating, and CLI flags, paired with percentage rollouts, shadow mode, and Doctor automated circuit-breaker auto-rollbacks.
+- **2026-08-23** — Technology Stack & Library Catalog Integration: documented the complete, curated 9-tier library ecosystem derived from `pixi.toml` spanning Django/Wagtail web layer, Anthropic/FastMCP agent SDKs, Langflow/DB-GPT AI engines, DuckDB/Polars/Kedro data stack, Vizro/Panel dashboards, document/media converters, DevSecOps supply-chain tools, and QA fixtures.
