@@ -29,7 +29,7 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `25-7` | launching |
+| marshal | `25-7` | [20e87c08-76d1-4a60-a176-4877ea6d62e5](20e87c08-76d1-4a60-a176-4877ea6d62e5) |
 
 ## Dispatch sequencing (operator — 2026-08-24)
 
