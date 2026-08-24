@@ -1036,6 +1036,57 @@ graph TD
 
 ---
 
+## The Canopy & 8-Station 5-Tier Symmetry Matrix
+
+PyForge is architecturally structured as **The Central Platform Canopy (Platform Web Host + AI Agent Platform)** governing the **8 Canonical Spoke Stations**, where every station possesses complete **5-Tier Symmetry**:
+
+```mermaid
+graph TD
+    subgraph Canopy["THE CANOPY: Platform Host & AI Agent Platform (Lane 1 at /)"]
+        Guildhall["Guildhall Web Canopy: Django + Wagtail CRX + django-pyforge App Switcher"]
+        AgentPlatform["PyForge Agent Platform: Langflow + DB-GPT + Multi-Agent Council Router"]
+    end
+
+    subgraph Spokes["THE 8 SPOKE STATIONS (5-Tier Symmetry: CLI + Portal + Service + Skill + Agent)"]
+        S1["1. Warden: Compliance & Gatekeeper"]
+        S2["2. Atlas: Package Intelligence & Graph"]
+        S3["3. Mason: Build Engine & Wheel Smith"]
+        S4["4. Marshal: Loop Commander & Seed Installer"]
+        S5["5. Doctor: Fleet Diagnostics & Healer"]
+        S6["6. Herald: Stage Orator & Presentations"]
+        S7["7. Scribe: Team Memory & Archivist"]
+        S8["8. Steward: Platform Ops & Custodian"]
+    end
+
+    Guildhall -->|"Mounts 8 Zero-Model Portals"| Spokes
+    AgentPlatform -->|"Orchestrates 8 Station Agents via MCP"| Spokes
+```
+
+### 1. The Central Canopy (`pyforge_host` / `pyforge-agent-platform`)
+* **The Human Canopy (Guildhall / Lane 1 at `/`):**
+  * Root web entry point powered by Django + Wagtail CRX (Corporate Brain) + `django-pyforge`.
+  * Universal App Switcher banner linking all 8 station portals.
+  * Central Keycloak OIDC Single Sign-On (SSO) and HashiCorp Vault secrets bridge.
+* **The Agent Canopy (`pyforge-agent-platform`):**
+  * Central Multi-Agent Orchestration Canopy powered by Langflow & DB-GPT.
+  * Cross-station semantic router directing operator intents to the appropriate station agent.
+  * Shared ChromaDB and PostgreSQL `pgvector` multi-agent memory store.
+
+### 2. The 8 Station 5-Tier Symmetry Matrix
+
+| # | Station | 🖥️ Unified CLI | 🌐 Web Portal (Lane 2) | ⚡ Microservice & MCP | 🧠 Domain Skill (`SKILL.md`) | 🤖 Station Agent Persona |
+| :-: | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | **`warden`** | `pyforge warden` | `pyforge_warden_portal` | `:8004` (FastAPI/MCP) | `pyforge-warden` | **`Agent-Warden`** (Compliance) |
+| **2** | **`atlas`** | `pyforge atlas` | `pyforge_atlas_portal` | `:8003` (FastAPI/MCP) | `pyforge-atlas` | **`Agent-Atlas`** (Intelligence) |
+| **3** | **`mason`** | `pyforge mason` | `pyforge_mason_portal` | `:8007` (FastAPI/MCP) | `pyforge-mason` | **`Agent-Mason`** (Build/Wheels) |
+| **4** | **`marshal`** | `pyforge marshal` | `pyforge_marshal_portal` | `:8002` (FastAPI/MCP) | `pyforge-marshal` | **`Agent-Marshal`** (Loop/Seed) |
+| **5** | **`doctor`** | `pyforge doctor` | `pyforge_doctor_portal` | `:8008` (FastAPI/MCP) | `pyforge-doctor` | **`Agent-Doctor`** (Fleet Healer) |
+| **6** | **`herald`** | `pyforge herald` | `pyforge_herald_portal` | `:8006` (FastAPI/MCP) | `pyforge-herald` | **`Agent-Herald`** (Presentations) |
+| **7** | **`scribe`** | `pyforge scribe` | `pyforge_scribe_portal` | `:8005` (FastAPI/MCP) | `pyforge-scribe` | **`Agent-Scribe`** (Memory/AST) |
+| **8** | **`steward`** | `pyforge steward` | `pyforge_steward_portal` | `:8001` (FastAPI/MCP) | `pyforge-steward` | **`Agent-Steward`** (Ops/Secrets) |
+
+---
+
 ## Constraints / Non-goals
 
 - **Not a fragile monolithic SPA:** We use server-driven Django + HTMX + Wagtail CRX with pluggable reusable apps (`django-pyforge`) and reverse-proxied Vizro analytics containers rather than a fragile JavaScript monolith.
@@ -1082,3 +1133,4 @@ graph TD
 - **2026-08-23** — Adversarial Architecture & Red Team Hardening Directives: codified 5 mandatory pre-implementation RFCs (FastAPI REST vs. MCP worker process separation, dedicated Redis broker vs. cache instances, scoped identity token delegation, Redis Streams PEL dead-letter queue with max loop-depth limits, and single-source PostgreSQL DDL governance via Liquibase).
 - **2026-08-23** — HashiCorp Vault Enterprise Secrets Management Integration: designated HashiCorp Vault as the authoritative enterprise credential and secret lifecycle engine, managing dynamic database credentials, Keycloak client secrets, and Kubernetes/OpenShift External Secrets Operator (ESO) in-memory secret injection under `restricted-v2` SCC.
 - **2026-08-23** — Production Blind Spot Hardening (BS-1 to BS-8): codified 8 critical distributed systems mitigations—Scribe dual-driver storage engine (SQLite local vs PostgreSQL OCP), MCP/SSE keep-alive frames with 30m route timeouts, async OAuth2 RFC 8693 token delegation for long sprints, PyBreaker circuit breaking with stale HTMX fallbacks, DuckDB single-writer process boundary, schema-versioned CloudEvents envelopes, `PydanticFormErrorBridge` for HTMX 422 errors, and cross-datastore idempotent startup reconciliation.
+- **2026-08-23** — The Canopy & 8-Station 5-Tier Symmetry Formalization: codified the platform topology as The Central Canopy (`pyforge_host` / `guildhall` + `pyforge-agent-platform`) governing the 8 canonical spoke stations (`warden`, `atlas`, `mason`, `marshal`, `doctor`, `herald`, `scribe`, `steward`), establishing complete 5-tier symmetry (CLI + Web Portal + FastAPI/MCP Service + Domain Skill + Autonomous Agent Persona) across every station.
