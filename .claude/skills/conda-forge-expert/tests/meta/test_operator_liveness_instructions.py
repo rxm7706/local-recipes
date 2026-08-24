@@ -2,6 +2,9 @@
 or a bare ``grep 'bmad-loop run'`` as the liveness answer (Marshal Story 24.2,
 FR-195 CAP-2 / spec-bmad-loop-liveness-footgun).
 
+Also gates UNSUPERVISED follow-up documentation (Story 24.3, CAP-3): wherever
+UNSUPERVISED is explained, the CAP-2 one-command check must be named.
+
 Scans team-memory carriers under ``.claude/memory/`` — the checked-in operator
 runbook surface agents load every session via ``CLAUDE.md``'s ``@.claude/memory/
 MEMORY.md`` import. User-local auto-memory is out of scope (promotion is manual).
@@ -18,6 +21,11 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[5]
 MEMORY_ROOT = REPO_ROOT / ".claude" / "memory"
 PRIMARY_DOC = MEMORY_ROOT / "reference" / "fleet-landing-pass-liveness.md"
+FLEET_PICTURE = REPO_ROOT / "scripts" / "fleet_picture.py"
+MARSHAL_STATUS = (
+    REPO_ROOT
+    / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py"
+)
 
 # Files scanned for forbidden prescriptions (relative to MEMORY_ROOT).
 SCAN_GLOBS = ("reference/*.md", "feedback/*.md", "project/*.md")
@@ -80,3 +88,26 @@ def test_fleet_landing_pass_liveness_doc_is_primary_answer():
 def test_memory_index_links_fleet_landing_pass_liveness():
     index = (MEMORY_ROOT / "MEMORY.md").read_text(encoding="utf-8")
     assert "fleet-landing-pass-liveness" in index
+
+
+def test_unsupervised_follow_up_documented_in_primary_doc():
+    """CAP-3: UNSUPERVISED explanation must name the one-command liveness check."""
+    text = PRIMARY_DOC.read_text(encoding="utf-8")
+    assert "UNSUPERVISED" in text
+    assert "bmad-loop status" in text and "bmad-loop list --json" in text
+    assert "2026-08-15" in text or "raw `bmad-loop run`" in text
+
+
+def test_fleet_picture_unsupervised_attention_cites_liveness_follow_up():
+    text = FLEET_PICTURE.read_text(encoding="utf-8")
+    assert "UNSUPERVISED_LIVENESS_FOLLOWUP" in text
+    assert "bmad-loop status" in text and "bmad-loop list --json" in text
+    assert 'hstate == "unsupervised"' in text
+    assert "verify engine liveness first" in text
+
+
+def test_marshal_status_help_cites_unsupervised_liveness_follow_up():
+    text = MARSHAL_STATUS.read_text(encoding="utf-8")
+    assert "UNSUPERVISED" in text
+    assert "bmad-loop status" in text and "bmad-loop list --json" in text
+    assert "fleet-landing-pass-liveness" in text

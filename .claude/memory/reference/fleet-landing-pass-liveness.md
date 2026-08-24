@@ -7,10 +7,10 @@ metadata:
 
 PyForge fleet landing passes call `pixi run -e local-recipes fleet-picture` first,
 then **STEP 2 — verify engine liveness** for every station fleet-picture labels
-RUNNING (or whenever a single action needs a cheap confirm). The supported answer
-is one documented command — never hand-parse `engine.pid`, never `ps -p $(cat
-engine.pid)`, and never a bare `grep 'bmad-loop run'` (that misses `resume` and
-`resolve`, the 2026-08-14 mason incident).
+RUNNING **or UNSUPERVISED** (or whenever a single action needs a cheap confirm).
+The supported answer is one documented command — never hand-parse `engine.pid`,
+never `ps -p $(cat engine.pid)`, and never a bare `grep 'bmad-loop run'` (that
+misses `resume` and `resolve`, the 2026-08-14 mason incident).
 
 ## Primary check (always use this first)
 
@@ -39,6 +39,27 @@ misread the station as dead. The primary check above still answers **alive**
 because `list --json` keys off upstream's pid-reuse-safe probe, not argv text.
 Do not fall back to hand-parsed `engine.pid` or a run-only grep.
 
+## UNSUPERVISED rows (CAP-3)
+
+`marshal status` / fleet-picture label a run **UNSUPERVISED** when Marshal did
+not spawn its supervisor sidecar (a raw `bmad-loop run`/`resume`/`resolve`, or a
+crashed sidecar). That label is **supervision** state, not engine liveness — the
+engine may still be working (2026-08-15: a raw `bmad-loop run` with no sidecar
+was correctly UNSUPERVISED while the engine was alive).
+
+**Before** assuming a re-spin is needed, run the **Primary check** above in that
+station's loop home. Outcomes:
+
+- `list --json` shows `running` → engine is alive; use `marshal factory resume
+  <slug>` to re-attach supervision (not bare `bmad-loop resume` — see
+  [[bmad-loop-escalation-and-landing-traps]] trap 5).
+- `stopped` → engine is dead; `marshal factory spin pyforge-<slug>` (or resume
+  if the run directory is still the active one).
+- `unknown` → do not coerce; treat as unverified.
+
+Marshal code may use the same answer via `HarnessPort.engine_liveness(project,
+run_id)` on demand — never wired into the fleet sweep (NFR-14).
+
 ## Optional corroboration only (never primary)
 
 If cheap process corroboration is still useful after the primary check, match
@@ -61,6 +82,7 @@ Story 5.8's sidecar fallback) — not substitutes for engine liveness.
 - `cat engine.pid` / `ps -p $(cat engine.pid)` — two-token identity breaks `ps -p`
 - bare `grep 'bmad-loop run'` — misses `resume` and `resolve --resume`
 - inferring liveness from `marshal status` / fleet-picture RUNNING alone
+- treating UNSUPERVISED as proof the engine is dead (supervision ≠ liveness)
 
 Related: [[bmad-loop-escalation-and-landing-traps]] (trap 5 — bare resume vs
-`marshal factory resume`; CAP-3 in Story 24.3 covers UNSUPERVISED double-check).
+`marshal factory resume`).

@@ -289,7 +289,12 @@ def add_status_subparser(subparsers: argparse._SubParsersAction) -> None:
             "(or just --project SLUG), reports runtime state (idle/running/"
             "paused-on-escalation/stopped/unsupervised), the current story, "
             "elapsed time, and budget consumed -- derived entirely from "
-            "journals and run state, never a hand-maintained file (AD-5)."
+            "journals and run state, never a hand-maintained file (AD-5). "
+            "UNSUPERVISED means no Marshal supervisor sidecar (supervision "
+            "state, not engine liveness) -- verify with "
+            "`bmad-loop status <run_id> --json` + `bmad-loop list --json` "
+            "in the loop home before re-spinning (see "
+            ".claude/memory/reference/fleet-landing-pass-liveness.md)."
         ),
     )
     parser.add_argument(
