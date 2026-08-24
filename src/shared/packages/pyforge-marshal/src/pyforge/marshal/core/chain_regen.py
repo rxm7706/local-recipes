@@ -11,13 +11,17 @@ report, per-project scope). Story 21.2 extends this module with the Full /
 minimal orchestrated chain (journal resume, FR-52 skill seam, orphan
 manifest). Story 21.3 implements CAP-2 code-status preservation (snapshot
 before regen; re-apply after epics by stable story id; default on; never
-auto-commit) — still never absorbing skill logic, never ``scripts/bmad-switch``.
+auto-commit). Story 21.4 implements CAP-4 review-gated orphan cleanup
+(``orphans.json``/``.md`` always; disk deletes only with ``--apply-orphans``;
+optional ``--stage`` indexes regenerated + orphan-rm paths; never commit /
+push) — still never absorbing skill logic, never ``scripts/bmad-switch``.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import shutil
 import uuid
 from datetime import datetime, timezone
 from collections.abc import Callable, Mapping, Sequence
@@ -801,16 +805,128 @@ def reapply_code_statuses_after_epics(
     return merged
 
 
-def apply_orphans_hook(orphans: Sequence[OrphanRef], *, apply: bool) -> int:
-    """CAP-4 stub (Story 21.4): never deletes; returns 0."""
-    del orphans, apply
-    return 0
+def orphan_delete_units(root: Path, orphans: Sequence[OrphanRef]) -> tuple[Path, ...]:
+    """Resolve deletable orphan units from the manifest.
+
+    Only ``kind=spec`` paths are deletable. Epic citations point at
+    ``epics.md`` and must never be removed. File paths under a ``spec-*``
+    directory collapse to that directory so the whole orphaned folder goes.
+    """
+    units: set[Path] = set()
+    root_res = root.resolve()
+    for orphan in orphans:
+        if orphan.kind != "spec":
+            continue
+        raw = Path(orphan.path)
+        path = raw if raw.is_absolute() else (root / raw)
+        try:
+            resolved = path.resolve()
+        except OSError:
+            resolved = path
+        collapsed: Path | None = None
+        for candidate in (resolved, *resolved.parents):
+            try:
+                rel = candidate.relative_to(root_res)
+            except ValueError:
+                continue
+            parts = rel.parts
+            if (
+                len(parts) >= 2
+                and parts[-1].startswith("spec-")
+                and parts[-2] == "specs"
+            ):
+                collapsed = candidate
+                break
+        units.add(collapsed if collapsed is not None else resolved)
+    return tuple(sorted(units, key=lambda p: str(p)))
 
 
-def stage_hook(paths: Sequence[Path], *, stage: bool) -> int:
-    """CAP-4/5 stub (Story 21.4/21.5): never ``git add``; returns 0."""
-    del paths, stage
-    return 0
+def apply_orphans_hook(
+    orphans: Sequence[OrphanRef],
+    *,
+    apply: bool,
+    root: Path | None = None,
+) -> int:
+    """CAP-4 (Story 21.4): disk-delete orphan units only when ``apply`` is true.
+
+    Never commits or pushes. Returns the number of units removed. Empty
+    orphan lists and ``apply=False`` are no-ops (return 0).
+    """
+    if not apply or not orphans:
+        return 0
+    base = root if root is not None else Path.cwd()
+    deleted = 0
+    for unit in orphan_delete_units(base, orphans):
+        if not unit.exists():
+            continue
+        if unit.is_dir():
+            shutil.rmtree(unit)
+        elif unit.is_file():
+            unit.unlink()
+        else:
+            continue
+        deleted += 1
+    return deleted
+
+
+# Callable injected by the CLI/adapters layer (AD-4: core must not import
+# ``subprocess``). ``update=True`` means stage deletions of tracked paths
+# (``git add -u --``); otherwise stage paths as-is (``git add --``).
+# Never commits. Returns the number of paths successfully handed to git.
+StageIndexFn = Callable[[Path, Sequence[str], bool], int]
+
+
+def stage_hook(
+    paths: Sequence[Path | str],
+    *,
+    stage: bool,
+    root: Path | None = None,
+    stager: StageIndexFn | None = None,
+) -> int:
+    """CAP-4 (Story 21.4): stage regenerated / orphan-rm paths; never commit.
+
+    Core only resolves relative paths and classifies existing vs missing
+    entries. The actual ``git add`` / ``git add -u`` calls are performed by
+    ``stager`` (wired from ``adapters/vcs_git.py`` by the CLI). Returns the
+    number of path arguments handed to the stager (0 when ``stage`` is false,
+    ``paths`` is empty, or no stager is provided).
+    """
+    if not stage or not paths or stager is None:
+        return 0
+    base = (root if root is not None else Path.cwd()).resolve()
+    existing: list[str] = []
+    missing: list[str] = []
+    for raw in paths:
+        path = Path(raw)
+        if not path.is_absolute():
+            path = base / path
+        try:
+            rel = str(path.resolve().relative_to(base))
+        except ValueError:
+            rel = str(path)
+        if path.exists():
+            existing.append(rel)
+        else:
+            missing.append(rel)
+    staged = 0
+    if existing:
+        staged += stager(base, existing, False)
+    if missing:
+        staged += stager(base, missing, True)
+    return staged
+
+
+def planning_stage_paths(root: Path, project: str) -> tuple[Path, ...]:
+    """Paths under planning-artifacts eligible for ``--stage`` (excl. journals)."""
+    planning = planning_dir(root, project)
+    if not planning.is_dir():
+        return ()
+    out: list[Path] = []
+    for child in sorted(planning.iterdir()):
+        if child.name == ".chain-regen":
+            continue
+        out.append(child)
+    return tuple(out)
 
 
 def run_orchestrated_chain(
@@ -826,6 +942,7 @@ def run_orchestrated_chain(
     preserve_code_status: bool = True,
     apply_orphans: bool = False,
     stage: bool = False,
+    stager: StageIndexFn | None = None,
 ) -> OrchestratedChainReport:
     """Orchestrate Full/minimal planning-chain regeneration with journal resume.
 
@@ -1027,9 +1144,14 @@ def run_orchestrated_chain(
             orphans = find_orphans(root, project)
             write_orphan_manifest(run_dir, orphans)
             orphan_written = True
-            apply_orphans_hook(orphans, apply=apply_orphans)
+            apply_orphans_hook(orphans, apply=apply_orphans, root=root)
 
-    stage_hook((), stage=stage)
+    stage_paths: list[Path] = []
+    if stage:
+        stage_paths.extend(planning_stage_paths(root, project))
+        if apply_orphans:
+            stage_paths.extend(orphan_delete_units(root, orphans))
+    stage_hook(stage_paths, stage=stage, root=root, stager=stager)
 
     journal = _journal_replace(
         journal,
