@@ -165,6 +165,19 @@ method ... extend ``RunStatusSnapshot``'s return value if the current shape
 doesn't expose per-task ``phase``/``commit_sha``, rather than adding a
 second, overlapping bmad-loop-state-reading method").
 
+Story 24.1 (engine liveness primitive, FR-195 CAP-1, spec-bmad-loop-liveness-
+footgun) adds ``engine_liveness`` -- the ``HarnessPort`` counterpart spec-3-7's
+deferred double-drive entry names as missing: answers "is run X's engine
+alive?" by shelling out to the installed ``bmad-loop`` CLI's versioned
+``--json`` surfaces (``status <run_id> --json`` gates run readability;
+``list --json`` carries ``discover_runs``'s liveness-aware per-run
+``status`` -- ``running``/``interrupted``/``unknown``/… -- because
+``status_document``'s own ``status`` field is run-state-only and cannot
+distinguish a live engine from an interrupted one). Never reads
+``engine.pid``, never imports ``bmad_loop`` internals. Returns honest
+tri-state ``alive``/``dead``/``unknown``; ``unknown`` is never coerced.
+On-demand only -- not wired into ``marshal status``'s fleet sweep (NFR-14).
+
 Story 6.4 (adapter probe with a machine-scoped record, FR-43, AD-31/AD-34/
 AD-37) adds ``adapter_probe`` -- a bundled observation of what a named
 adapter actually supports on THIS machine, mirroring ``UsageSnapshot``/
@@ -192,7 +205,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
+
+EngineLiveness = Literal["alive", "dead", "unknown"]
 
 
 @dataclass(frozen=True)
@@ -717,6 +732,20 @@ class HarnessPort(Protocol):
         ``commit_sha`` (never only the deferred ones), which
         ``supervisor/durability.py::classify_push_triggers`` needs to detect
         a story crossing a stage boundary between two consecutive reads."""
+        ...
+
+    def engine_liveness(self, project: Path, run_id: str) -> EngineLiveness:
+        """Whether the harness run ``run_id`` names has a live engine process
+        (Story 24.1, FR-195 CAP-1) -- ``run_id`` is the HARNESS's own self-
+        minted run id, the SAME one ``stop``/``resume``/``usage_snapshot`` take,
+        never Marshal's own journal ``run_id``. Shells out to ``bmad-loop
+        status <run_id> --json`` (run-dir readability gate) and ``bmad-loop
+        list --json`` (liveness-aware ``discover_runs`` status for that
+        ``run_id``) -- never reads ``engine.pid``, never imports ``bmad_loop``
+        internals. Never raises: any subprocess/parse failure or an absent/
+        unreadable run directory degrades to ``"unknown"``; a recognized list
+        status maps to ``"alive"``/``"dead"``/``"unknown"`` honestly, with
+        ``"unknown"`` never coerced to either verdict."""
         ...
 
     def resolution_reference(
