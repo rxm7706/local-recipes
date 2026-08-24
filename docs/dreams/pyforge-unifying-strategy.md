@@ -1,18 +1,51 @@
 ---
 title: PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture
 type: dream
-owner: herald
+owner: steward
 status: dreamt
 ---
 
 # PyForge Unifying Strategy
 
+## Grounding (2026-08-24)
+
+This Dream was written as though the Canopy were greenfield. It is not. The grounding below
+is **authoritative over the architecture prose that follows**, which was drafted before the
+audit; where they disagree, this section wins.
+
+**Owner: `steward`.** The Canopy is not a ninth station and gets no project of its own —
+Charter §5 stands, the roster stays at eight. Steward carries the through-line.
+
+**The host already exists.** `src/platform/` is a live cookiecutter-django project with an
+ASGI seam, `django-allauth` OIDC SSO, Langflow and DB-GPT mounted as pluggable apps on
+isolated PostgreSQL schemas, warden's `compliance_face` portal mounted, a Helm chart with an
+OCP overlay, a Containerfile, and the 15-factor baseline. Steward epics 10, 11, 12 and 16 are
+`done` end to end — only `12-7` (live-cluster verification) is outstanding, and it is
+permanently skipped pending a cluster.
+
+**Naming follows reality.** `pyforge_host` and `pyforge-agent-platform` are role names in the
+prose below; the shipped artifact is **`src/platform/`** (settings in `config/`, shared app in
+`platformapp/`). No rename is minted — renaming a shipped Django root, its settings module,
+imports, Containerfile and chart buys no capability.
+
+**Eight stations, one Canopy.** Earlier entries in the realization log count "9 stations" by
+including the Canopy. The Canopy is not a station: eight spokes (`warden`, `atlas`, `mason`,
+`marshal`, `doctor`, `herald`, `scribe`, `steward`) plus the Canopy they mount into.
+
+**Scope is the residual, not the estate.** This Dream's chain binds
+`spec-python-agent-platform` as prior art and mints nothing that duplicates its CAP-1..6. What
+is genuinely unbuilt: Wagtail/CodeRed Lane 1 and the Guildhall, the `django-pyforge` shared
+package, seven remaining station portals plus the `compliance_face → warden_portal` rename,
+the `services/` FastAPI+MCP tier, Vizro Lane 3 proxying, `pyforge.core.client`, the unified
+`pyforge <station> <noun> <verb>` CLI, the Redis Streams event fabric, Keycloak RBAC, Vault,
+OpenFeature canary delivery, RFC-1..5 and BS-1..8.
+
 ## The Dream
 
-We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building disconnected apps; we are building **one enterprise Platform Canopy (`pyforge_host` + `pyforge-agent-platform`) that mounts the 8 canonical capability stations**, powered by **Pixi** as the unified package and environment manager.
+We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building disconnected apps; we are building **one enterprise Platform Canopy (`src/platform/` — the host and agent platform) that mounts the 8 canonical capability stations**, powered by **Pixi** as the unified package and environment manager.
 
 By placing a unified **Django + Wagtail/CodeRed CMS (CRX)** application at the center and delegating heavy lifting to **FastAPI / MCP microservices**, we achieve a flawless separation of concerns:
-- **The Host (`pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, and reverse-proxying.
+- **The Host (`src/platform/`, role name `pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, and reverse-proxying.
 - **The Microservices & MCP Layer (`services/`):** Handles compute, long-running batch jobs, sandboxed builds, and AI agentic tool access via native Model Context Protocol (MCP).
 
 ```mermaid
@@ -1062,12 +1095,12 @@ graph TD
     AgentPlatform -->|"Orchestrates 8 Station Agents via MCP"| Spokes
 ```
 
-### 1. The Central Canopy (`pyforge_host` / `pyforge-agent-platform`)
+### 1. The Central Canopy (`src/platform/` — role names `pyforge_host` / `pyforge-agent-platform`)
 * **The Human Canopy (Guildhall / Lane 1 at `/`):**
   * Root web entry point powered by Django + Wagtail CRX (Corporate Brain) + `django-pyforge`.
   * Universal App Switcher banner linking all 8 station portals.
   * Central Keycloak OIDC Single Sign-On (SSO) and HashiCorp Vault secrets bridge.
-* **The Agent Canopy (`pyforge-agent-platform`):**
+* **The Agent Canopy (`src/platform/` engine mounts — role name `pyforge-agent-platform`):**
   * Central Multi-Agent Orchestration Canopy powered by Langflow & DB-GPT.
   * Cross-station semantic router directing operator intents to the appropriate station agent.
   * Shared ChromaDB and PostgreSQL `pgvector` multi-agent memory store.
@@ -1134,3 +1167,14 @@ graph TD
 - **2026-08-23** — HashiCorp Vault Enterprise Secrets Management Integration: designated HashiCorp Vault as the authoritative enterprise credential and secret lifecycle engine, managing dynamic database credentials, Keycloak client secrets, and Kubernetes/OpenShift External Secrets Operator (ESO) in-memory secret injection under `restricted-v2` SCC.
 - **2026-08-23** — Production Blind Spot Hardening (BS-1 to BS-8): codified 8 critical distributed systems mitigations—Scribe dual-driver storage engine (SQLite local vs PostgreSQL OCP), MCP/SSE keep-alive frames with 30m route timeouts, async OAuth2 RFC 8693 token delegation for long sprints, PyBreaker circuit breaking with stale HTMX fallbacks, DuckDB single-writer process boundary, schema-versioned CloudEvents envelopes, `PydanticFormErrorBridge` for HTMX 422 errors, and cross-datastore idempotent startup reconciliation.
 - **2026-08-23** — The Canopy & 8-Station 5-Tier Symmetry Formalization: codified the platform topology as The Central Canopy (`pyforge_host` / `guildhall` + `pyforge-agent-platform`) governing the 8 canonical spoke stations (`warden`, `atlas`, `mason`, `marshal`, `doctor`, `herald`, `scribe`, `steward`), establishing complete 5-tier symmetry (CLI + Web Portal + FastAPI/MCP Service + Domain Skill + Autonomous Agent Persona) across every station.
+- **2026-08-24** — Grounding audit, ownership assignment and rescope (see § Grounding, which is authoritative over the pre-audit architecture prose). Ten decisions, operator-directed:
+  1. **Owner `herald` → `steward`.** The Dream's mass is platform hosting, deployment and estate custody — steward's mandate. Charter §5: owning is the post, not the product.
+  2. **The Canopy is `src/platform/`; no new project, no governance act.** The audit found the host already built and steward epics 10/11/12/16 `done` (only `12-7` outstanding, permanently skipped for want of a cluster). `pyforge-agent-platform` existed nowhere but this file — a name invented for a thing that already shipped under another.
+  3. **The chain is rescoped** from greenfield-estate to an extension binding `spec-python-agent-platform` as prior art, minting nothing that duplicates CAP-1..6. Within that boundary decomposition is exhaustive.
+  4. **Naming follows reality** — `src/platform/` is canonical, `pyforge_host`/`pyforge-agent-platform` demoted to role names. No rename story is minted.
+  5. **Eight stations plus the Canopy**, settling this log's own 9-vs-8 inconsistency; the Canopy is not a station.
+  6. **RFC-5 (Liquibase) is accepted as written**, which reopens shipped Epic 11 — 11.1's `RunSQL` and 11.2's data migration provisioned `langflow_schema`/`dbgpt_schema` through Django, exactly what RFC-5 forbids. `bmad-correct-course` decides the ledger shape; the Spec must resolve whether Django's own built-in apps (`auth`, `sessions`, `contenttypes`) are carved out of the zero-ORM-DDL rule.
+  7. **Steward owns the cross-station slices outright**, including marshal's `pyforge.core.client` (confirmed absent — `pyforge.core` ships `atomic_write`/`errors`/`landing_evidence`/`process`/`report`/`verdict`, no client) and herald's Lane 1. `compliance_face` already living in `src/platform/` establishes the pattern.
+  8. **The residual is evidence-confirmed**, not assumed: no `django-pyforge` package, no `services/` tier (FastAPI exists only as an in-host ASGI seam), one of eight portals mounted, no Wagtail anywhere, no `[project.scripts]` on `pyforge-core`.
+  9. **`docs/dreams/README.md` corrected** — its `guild`-reserved-for-two-Dreams text predates the 2026-08-08 closure of `guild_dreams` at one (`pyforge-genesis` absorbed into the Charter).
+  10. **Detector baseline recorded before any edit**, so pre-existing red is not attributed to this chain: `dream-chain-check` fails on this Dream having no Spec (the gap this chain closes) plus two other steward Dreams; `chain-completeness-check` 10 fails; `chain-layers-audit-check --project pyforge-steward` fails staleness + orphans with 15/15 layers present; `bmad-drift-check` one `pin-missing` fail and 41 warns; `dreams-hygiene-check` warn-only, 27 warns, none against this Dream.
