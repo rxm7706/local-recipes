@@ -15,7 +15,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 21 of 57 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 21 of 57 stories journal-measured on this axis; 36 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -635,7 +635,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 29 of 61 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 29 of 61 stories journal-measured on this axis; 12 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 17 spec-without-revision-fields deliberately absent; 3 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1306,7 +1306,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 58 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 58 stories journal-measured on this axis; 44 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1837,7 +1837,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 162 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 162 stories journal-measured on this axis; 8 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 72 spec-without-revision-fields deliberately absent; 18 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -2084,12 +2084,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "155/162",
+            "156/162",
             "stories complete",
             "var(--done)"
           ],
           [
-            "7",
+            "6",
             "remaining",
             ""
           ]
@@ -2099,8 +2099,8 @@ window.DASHBOARD_DATA = {
         "derived": true,
         "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
         "total": 7332,
-        "totalLabel": "~122.2 h active compute · ~7.8 h wall-clock ceiling",
-        "note": "Derived from 58 journal-measured + 7 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
+        "totalLabel": "~122.2 h active compute · ~8.0 h wall-clock ceiling",
+        "note": "Derived from 58 journal-measured + 8 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -2166,7 +2166,8 @@ window.DASHBOARD_DATA = {
           "11.2": 240,
           "11.3": 38,
           "22.4": 15,
-          "23.1": 26
+          "23.1": 26,
+          "23.2": 12
         },
         "perStoryClass": {
           "1.1": "active-compute",
@@ -2233,7 +2234,8 @@ window.DASHBOARD_DATA = {
           "11.2": "wall-clock-ceiling",
           "11.3": "wall-clock-ceiling",
           "22.4": "wall-clock-ceiling",
-          "23.1": "wall-clock-ceiling"
+          "23.1": "wall-clock-ceiling",
+          "23.2": "wall-clock-ceiling"
         },
         "epicMin": {
           "E1": 1343,
@@ -2252,12 +2254,12 @@ window.DASHBOARD_DATA = {
           "E10": 92,
           "E11": 332,
           "E22": 15,
-          "E23": 26
+          "E23": 38
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "23.2"
+        "at": "23.3"
       },
       "epics": [
         {
@@ -3148,7 +3150,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "23.2",
-              "pending",
+              "done",
               "Wall-clock is never blended with active-compute"
             ],
             [
@@ -3239,7 +3241,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 37 of 47 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 37 of 47 stories journal-measured on this axis; 3 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 6 spec-without-revision-fields deliberately absent; 1 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -3826,7 +3828,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 11 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 11 stories journal-measured on this axis; 7 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -3986,7 +3988,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 74 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 74 stories journal-measured on this axis; 4 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 39 spec-without-revision-fields deliberately absent; 12 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "8.1",
@@ -5276,7 +5278,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-24 02:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-24 02:49 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8294,7 +8296,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 155,
+          "done": 156,
           "total": 162,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
@@ -9023,7 +9025,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "155/162",
+        "progress": "156/162",
         "complete": 13,
         "of": 13,
         "chainAudit": {
@@ -24943,7 +24945,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 23.2",
+        "line": "paused 23.3",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -29322,8 +29324,8 @@ window.DASHBOARD_DATA = {
       "subject": "feat(marshal): Story 21.5 configurable per-project CAP-5 invocation"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-24 02:42 UTC",
-    "generatedEpoch": 1787539379
+    "generatedAt": "2026-08-24 02:49 UTC",
+    "generatedEpoch": 1787539784
   },
   "storySpecs": [
     {
@@ -29346,8 +29348,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 155,
-      "tracked": 108,
+      "done": 156,
+      "tracked": 109,
       "gap": 47
     },
     {
@@ -29470,14 +29472,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 155,
-        "backlog": 7,
+        "done": 156,
+        "backlog": 6,
         "blocked": 0,
         "total": 162,
-        "next": "23-2-wall-clock-is-never-blended-with-active-compute",
+        "next": "23-3-the-coverage-caption-partitions-by-true-reason",
         "blockedKeys": [],
         "backlogKeys": [
-          "23-2-wall-clock-is-never-blended-with-active-compute",
           "23-3-the-coverage-caption-partitions-by-true-reason",
           "24-1-marshal-gains-the-missing-liveness-primitive",
           "24-2-the-operator-answer-is-one-documented-command",
@@ -29745,8 +29746,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 504,
-      "backlog": 8,
+      "done": 505,
+      "backlog": 7,
       "blocked": 0,
       "total": 512
     }
@@ -29789,13 +29790,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 162,
-        "done": 155,
+        "done": 156,
         "blocked": 0,
         "epics": 25,
         "epicsDone": 22,
         "complete": false,
         "running": false,
-        "projected": 155
+        "projected": 156
       },
       {
         "key": "mason",
@@ -29844,7 +29845,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 512,
-      "done": 504,
+      "done": 505,
       "blocked": 0,
       "epics": 109,
       "epicsDone": 105
@@ -29852,7 +29853,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 504
+      "projected": 505
     }
   }
 };
