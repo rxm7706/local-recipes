@@ -631,6 +631,73 @@ Governed by `pixi.toml` and verified via `pixi run -e local-recipes llms-full-ch
 
 ---
 
+## Station-by-Station Packaging & Configuration Audit
+
+An audit across all station packages in `src/shared/packages/` and `src/platform/` confirms unified packaging standards and dependency spine bindings:
+
+| Station Package | Build Backend | CLI Entrypoint (`project.scripts`) | Key Runtime Dependencies | Leaf Spine Binding |
+| :--- | :--- | :--- | :--- | :---: |
+| **`pyforge-core`** | `hatchling` | `pyforge` (Root CLI Dispatcher) | *Pure stdlib / minimal leaf* | 🏛️ **Spine** |
+| **`pyforge-warden`** | `hatchling` | `warden = "pyforge.warden.cli:main"` | `cyclonedx-python-lib`, `packageurl-python`, `license-expression`, `jsonschema`, `PyYAML`, `packaging` | ✅ `pyforge-core` |
+| **`pyforge-marshal`** | `hatchling` | `marshal = "pyforge.marshal.cli.main:main"`, `marshal-mcp = "pyforge.marshal.mcp.server:main"` | `bmad-loop`, `copier`, `psutil`, `tomlkit`, `jsonschema`, `packaging`, `PyYAML` | ✅ `pyforge-core` |
+| **`pyforge-steward`** | `hatchling` | `steward = "pyforge.steward.cli:main"` | `PyYAML`, `packaging` | ✅ `pyforge-core` |
+| **`pyforge-atlas`** | `hatchling` | `pyforge-atlas = "pyforge.atlas.__main__:main"` | `kedro`, `kedro-datasets`, `kedro-dagster`, `duckdb`, `ibis-framework`, `pandas`, `pyarrow`, `vizro`, `dagster`, `bokeh`, `starlette` | ✅ `pyforge-core` |
+| **`pyforge-scribe`** | `hatchling` | `scribe = "pyforge.scribe.cli:main"` | `typer`, `pydantic` | ✅ `pyforge-core` |
+| **`pyforge-herald`** | `hatchling` | `herald = "pyforge.herald.cli:main"` | `mcp`, `httpx2`, `playwright`, `pillow`, `python-pptx` | ✅ `pyforge-core` |
+| **`pyforge-mason`** | `hatchling` | `mason = "pyforge.mason.cli:main"` | `packaging`, `PyYAML` | ✅ `pyforge-core` |
+| **`pyforge-doctor`** | `hatchling` | `doctor = "pyforge.doctor.__main__:main"` | `mcp`, `jsonschema`, `PyYAML` | ✅ `pyforge-core` |
+| **`pyforge-testing-kit`** | `hatchling` | *(Shared test fixtures & harnesses)* | *Pure stdlib / minimal leaf* | ✅ Shared test kit |
+
+---
+
+## High-Leverage Library Integration & Station Opportunity Matrix
+
+An audit of the full repository catalog (`library-llms-full.md`) reveals 10 high-value installed libraries that can be leveraged across station features:
+
+```mermaid
+graph LR
+    subgraph Scribe["pyforge-scribe (Team Memory)"]
+        L1["cocoindex & graphifyy -> AST Codebase Indexing"]
+        L2["markitdown -> Multi-Format Doc Ingestion"]
+    end
+
+    subgraph Marshal["pyforge-marshal (Orchestrator)"]
+        L3["openlineage-python -> End-to-End Run Lineage"]
+        L4["filelock -> Multi-Agent Worktree Safety"]
+    end
+
+    subgraph Atlas["pyforge-atlas (Intelligence)"]
+        L5["boring-semantic-layer (BSL) -> Semantic Metrics"]
+    end
+
+    subgraph Herald["pyforge-herald (Presentations)"]
+        L6["graphviz2drawio -> Editable .drawio Exports"]
+        L7["playwright -> Headless Slide Thumbnail Previews"]
+    end
+
+    subgraph Steward["pyforge-steward (DevOps/Keys)"]
+        L8["go-sops + age -> GitOps Secret Encryption"]
+    end
+
+    subgraph Warden["pyforge-warden & Doctor"]
+        L9["pandera -> Dataframe & SBOM Contract Validation"]
+        L10["taplo + sqlfluff -> Manifest & Query Preflight Linter"]
+    end
+```
+
+1. **`cocoindex` & `graphifyy` $\rightarrow$ `pyforge-scribe`:** Fast AST graph extraction and incremental semantic code indexing (`pyforge scribe index`), linking codebase functions directly to the PRDs and Dreams that spawned them.
+2. **`openlineage-python` $\rightarrow$ `pyforge-marshal` & `pyforge-steward`:** Emits standard OpenLineage pipeline events across the autonomous loop, tracking complete operational lineage (`Dream -> Spec -> Mason Build -> Warden Audit -> Steward Deploy`).
+3. **`boring-semantic-layer` (BSL) $\rightarrow$ `pyforge-atlas`:** Exposes certified semantic business metrics over DuckDB (`package_download_velocity`, `ecosystem_cve_risk_score`) for Vizro dashboards and AI agent queries without raw SQL.
+4. **`markitdown` (Microsoft) $\rightarrow$ `pyforge-herald` & `pyforge-scribe`:** Unified multi-format ingestion converting Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`), and PDF into clean markdown for Wagtail Corporate Brain and Scribe memory.
+5. **`graphviz2drawio` $\rightarrow$ `pyforge-herald`:** Programmatically converts Graphviz `.dot` pipelines into editable Draw.io XML (`.drawio`) files for enterprise architect reviews and PowerPoint decks.
+6. **`filelock` $\rightarrow$ `pyforge-marshal` & `pyforge-scribe`:** Cross-platform file locking preventing database corruption and race conditions when multiple autonomous AI agents or git worktrees run concurrently.
+7. **`go-sops` & `age` $\rightarrow$ `pyforge-steward`:** GitOps-style secret encryption for Keycloak realm configs, database credentials, and Artifactory API tokens using X25519 `age` keys.
+8. **`pandera` $\rightarrow$ `pyforge-warden` & `pyforge-mason`:** Statistical and schema validation for Polars/Pandas dataframes, enforcing strict structural contracts on parsed lockfiles and CycloneDX SBOM feeds.
+9. **`taplo`, `sqlfluff` & `yamllint` $\rightarrow$ `pyforge-doctor` & `pyforge-warden`:** Syntax linting suite validating `pixi.toml`, `recipe.yaml`, and DuckDB SQL queries during preflight checks (`pyforge doctor check --syntax`).
+10. **`playwright` $\rightarrow$ `pyforge-herald` & `pyforge-testing-kit`:** Headless browser automation capturing high-resolution PDF exports and PNG thumbnails of interactive `.dc.html` slides and Vizro dashboards for automated broadcast proclamations.
+
+---
+
 ---
 
 ## The Station Planning Artifact Inventory & Upstream Grounding
@@ -841,3 +908,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Enterprise Server Infrastructure & OCP Sizing Specifications: codified the complete production cluster sizing (16–32 vCPUs, 32–64 GB RAM, minimum 3 worker nodes), block and object storage requirements (PostgreSQL `pgvector`, Redis persistence, S3/MinIO mirrors), OpenShift Route edge TLS, internal cluster DNS, and `restricted-v2` SCC security compliance.
 - **2026-08-23** — Feature Flags & Canary Delivery Architecture: embedded a 5-tier progressive delivery engine into the runtime—featuring OpenFeature `FlagContext` evaluations across Django UI, FastAPI microservices, MCP agent tool gating, and CLI flags, paired with percentage rollouts, shadow mode, and Doctor automated circuit-breaker auto-rollbacks.
 - **2026-08-23** — Technology Stack & Library Catalog Integration: documented the complete, curated 9-tier library ecosystem derived from `pixi.toml` spanning Django/Wagtail web layer, Anthropic/FastMCP agent SDKs, Langflow/DB-GPT AI engines, DuckDB/Polars/Kedro data stack, Vizro/Panel dashboards, document/media converters, DevSecOps supply-chain tools, and QA fixtures.
+- **2026-08-23** — Packaging Audit & High-Leverage Opportunity Matrix: completed an audit of all station `pyproject.toml` files, verifying `hatchling` build systems and `pyforge-core` leaf spine bindings across all 9 stations, and mapped top 10 underutilized repository libraries (`cocoindex`, `openlineage`, `BSL`, `markitdown`, `graphviz2drawio`, `filelock`, `go-sops`, `pandera`, `taplo`, `playwright`) to specific station capabilities.
