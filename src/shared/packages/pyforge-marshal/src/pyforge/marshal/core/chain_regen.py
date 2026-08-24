@@ -14,7 +14,10 @@ before regen; re-apply after epics by stable story id; default on; never
 auto-commit). Story 21.4 implements CAP-4 review-gated orphan cleanup
 (``orphans.json``/``.md`` always; disk deletes only with ``--apply-orphans``;
 optional ``--stage`` indexes regenerated + orphan-rm paths; never commit /
-push) — still never absorbing skill logic, never ``scripts/bmad-switch``.
+push). Story 21.5 (FR-192 CAP-5) documents the per-station parameter surface
+so the same workflow runs against any project by ``project`` / dream /
+``mode`` / preserve / stage / apply_orphans / resume only — never a
+hardcoded station slug, never ``scripts/bmad-switch``, never auto-commit.
 """
 
 from __future__ import annotations
@@ -417,6 +420,7 @@ def _rel(root: Path, path: Path) -> str:
 
 # ---------------------------------------------------------------------------
 # Story 21.2 — orchestrated Full / minimal chain (FR-192 CAP-1)
+# Story 21.5 — CAP-5 parameter surface / defaults (any station by params)
 # ---------------------------------------------------------------------------
 
 OrchestratedPhase = Literal[
@@ -450,6 +454,30 @@ FULL_CHAIN_PHASES: tuple[OrchestratedPhase, ...] = (
     "orphan_report",
 )
 MINIMAL_SKIP_PHASES: frozenset[OrchestratedPhase] = frozenset({"research", "brief"})
+
+
+def cap5_defaults() -> dict[str, object]:
+    """Return the CAP-5 (Story 21.5) default parameter matrix.
+
+    Keys match ``run_orchestrated_chain`` / CLI semantics:
+
+    - ``mode`` / ``chain_mode``: ``\"full\"``
+    - ``preserve_code_status``: ``True``
+    - ``stage``: ``False``
+    - ``apply_orphans``: ``False``
+    - ``resume``: ``False``
+    - ``auto_commit``: ``False`` (not offered; rejected if True)
+    """
+    return {
+        "mode": "full",
+        "chain_mode": "full",
+        "preserve_code_status": True,
+        "stage": False,
+        "apply_orphans": False,
+        "resume": False,
+        "auto_commit": False,
+    }
+
 
 # First attempt + up to 2 retries ⇒ maximum 3 attempts.
 MAX_PHASE_RETRIES = 2
@@ -946,9 +974,22 @@ def run_orchestrated_chain(
 ) -> OrchestratedChainReport:
     """Orchestrate Full/minimal planning-chain regeneration with journal resume.
 
-    Never auto-commits. Never calls ``scripts/bmad-switch``. Never
-    hand-overwrites memlog-derived artifacts — skill phases go through
-    ``invoker``.
+    CAP-5 (Story 21.5) parameter surface — same workflow for any station:
+
+    - ``project``: ``project_slug`` (physical tree
+      ``_bmad-output/projects/<slug>/planning-artifacts/``; never hardcoded)
+    - ``dream``: ``dream_path``
+    - ``mode``: ``chain_mode`` (``full`` default | ``minimal``)
+    - ``preserve_code_status``: default ``True``
+    - ``stage``: default ``False``
+    - ``apply_orphans``: default ``False``
+    - ``resume``: continue latest incomplete journal for ``project``
+    - ``auto_commit``: must stay ``False`` (raises if ``True``; not offered)
+
+    Cross-station / multi-slug: callers pass literal physical paths under
+    each slug and rely on the invoker for ``BMAD_ACTIVE_PROJECT=<slug>`` per
+    invoke — never ``scripts/bmad-switch``. Never hand-overwrites
+    memlog-derived artifacts — skill phases go through ``invoker``.
     """
     if auto_commit:
         raise ValueError(
