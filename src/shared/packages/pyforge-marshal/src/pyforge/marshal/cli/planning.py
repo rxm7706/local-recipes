@@ -98,8 +98,7 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
             "invoker; no LLM)."
         ),
     )
-    # CAP-2/4/5 stub flags — accepted so CAP-1 CLI shape is forward-compatible,
-    # but they only flip no-op hooks.
+    # CAP-2 preserve flag + CAP-4 orphan apply/stage gates (CAP-5 polish is 21.5).
     regen.add_argument(
         "--preserve-code-status",
         action=argparse.BooleanOptionalAction,
@@ -109,12 +108,18 @@ def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
     regen.add_argument(
         "--apply-orphans",
         action="store_true",
-        help="CAP-4 stub: accepted but never deletes (report only).",
+        help=(
+            "CAP-4: delete orphaned spec artifacts from disk after the orphan "
+            "manifest is written (default: leave on disk). Never commits."
+        ),
     )
     regen.add_argument(
         "--stage",
         action="store_true",
-        help="CAP-4/5 stub: accepted but never git-adds.",
+        help=(
+            "CAP-4: git-add regenerated planning paths and orphan deletions "
+            "into the index without committing (default: leave unstaged)."
+        ),
     )
     regen.set_defaults(handler=run_planning_chain_regenerate)
 
@@ -148,6 +153,8 @@ def run_planning_chain_regenerate(args: argparse.Namespace) -> int:
         invoker = PlanSkillInvoker()
 
     try:
+        from ..adapters.vcs_git import stage_index_paths
+
         report = run_orchestrated_chain(
             root=root,
             project=slug,
@@ -159,6 +166,7 @@ def run_planning_chain_regenerate(args: argparse.Namespace) -> int:
             preserve_code_status=bool(args.preserve_code_status),
             apply_orphans=bool(args.apply_orphans),
             stage=bool(args.stage),
+            stager=stage_index_paths if args.stage else None,
         )
     except FileNotFoundError as exc:
         findings.append(

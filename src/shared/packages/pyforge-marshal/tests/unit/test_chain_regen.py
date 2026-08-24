@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import pytest
@@ -237,6 +238,7 @@ from pyforge.marshal.core.chain_regen import (
     OrchestratedPhaseOutcome,
     apply_orphans_hook,
     apply_preserved_code_statuses,
+    find_orphans,
     ledger_file,
     load_journal,
     parse_ledger_statuses,
@@ -453,11 +455,220 @@ def test_no_auto_commit_even_when_requested(tmp_path: Path):
         )
 
 
-def test_cap_stubs_are_noop(tmp_path: Path):
-    # CAP-2 hook snapshots when called with one arg; CAP-4/5 remain no-op.
+def test_cap4_empty_hooks_are_noop():
+    # Empty inputs remain no-ops even when flags are true.
     assert preserve_code_status_hook({"a": "done"}) == {"a": "done"}
     assert apply_orphans_hook((), apply=True) == 0
     assert stage_hook((), stage=True) == 0
+
+
+# ---------------------------------------------------------------------------
+# Story 21.4 — CAP-4 orphan detection with review-gated cleanup
+# ---------------------------------------------------------------------------
+
+
+def _seed_orphan_spec(tmp_path: Path, project: str = "acme") -> Path:
+    """Plant a dream-missing orphaned spec folder under planning-artifacts."""
+    planning = tmp_path / "_bmad-output" / "projects" / project / "planning-artifacts"
+    planning.mkdir(parents=True, exist_ok=True)
+    (tmp_path / "docs" / "dreams").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "docs" / "dreams" / "demo.md").write_text("# demo\n", encoding="utf-8")
+    orphan_dir = planning / "specs" / "spec-orphan"
+    orphan_dir.mkdir(parents=True)
+    (orphan_dir / "SPEC.md").write_text(
+        "---\nowner-dream: docs/dreams/missing-forever.md\n---\n# Orphan\n",
+        encoding="utf-8",
+    )
+    (planning / "epics.md").write_text(
+        "# Epics\n\nDepends on spec-orphan.\n",
+        encoding="utf-8",
+    )
+    (planning / "sprint-status-ledger.yaml").write_text(
+        "development_status:\n  1-1-demo: backlog\n",
+        encoding="utf-8",
+    )
+    return orphan_dir
+
+
+def test_apply_orphans_default_leaves_disk(tmp_path: Path):
+    orphan_dir = _seed_orphan_spec(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=_RecordingInvoker(),
+        mode="minimal",
+        apply_orphans=False,
+    )
+    assert report.status == "complete"
+    assert report.orphan_manifest_written is True
+    assert any(o.kind == "spec" and "spec-orphan" in o.path for o in report.orphans)
+    assert orphan_dir.is_dir()
+    assert (orphan_dir / "SPEC.md").is_file()
+    payload = json.loads((Path(report.run_dir) / "orphans.json").read_text(encoding="utf-8"))
+    assert any(row["kind"] == "spec" for row in payload)
+    md = (Path(report.run_dir) / "orphans.md").read_text(encoding="utf-8")
+    assert "spec-orphan" in md
+
+
+def test_apply_orphans_deletes_spec_folder_only(tmp_path: Path):
+    orphan_dir = _seed_orphan_spec(tmp_path)
+    epics = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "planning-artifacts"
+        / "epics.md"
+    )
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=_RecordingInvoker(),
+        mode="minimal",
+        apply_orphans=True,
+    )
+    assert report.status == "complete"
+    assert report.apply_orphans_hook is True
+    assert not orphan_dir.exists()
+    # Epic citations are never deleted — only named in the manifest.
+    assert epics.is_file()
+    assert "spec-orphan" in epics.read_text(encoding="utf-8")
+
+
+def test_apply_orphans_hook_direct_unit_delete(tmp_path: Path):
+    orphan_dir = _seed_orphan_spec(tmp_path)
+    orphans = find_orphans(tmp_path, "acme")
+    assert orphans
+    assert apply_orphans_hook(orphans, apply=False, root=tmp_path) == 0
+    assert orphan_dir.is_dir()
+    deleted = apply_orphans_hook(orphans, apply=True, root=tmp_path)
+    assert deleted >= 1
+    assert not orphan_dir.exists()
+
+
+def test_stage_indexes_without_commit(tmp_path: Path):
+    import subprocess
+
+    from pyforge.marshal.adapters.vcs_git import stage_index_paths
+
+    orphan_dir = _seed_orphan_spec(tmp_path)
+    # Real git repo so stage_hook can index.
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "test"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "seed"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    # Dirty regenerated path that should be staged.
+    planning = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    (planning / "prd.md").write_text("# regenerated prd\n", encoding="utf-8")
+
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=_RecordingInvoker(),
+        mode="minimal",
+        apply_orphans=True,
+        stage=True,
+        stager=stage_index_paths,
+    )
+    assert report.status == "complete"
+    assert report.stage_hook is True
+    assert not orphan_dir.exists()
+
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "prd.md" in staged
+    assert "spec-orphan" in staged
+    # Never committed by the orchestrator — HEAD still the seed commit.
+    log = subprocess.run(
+        ["git", "log", "--oneline"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert log.count("\n") == 0
+    assert "seed" in log
+
+
+def test_stage_without_apply_does_not_delete(tmp_path: Path):
+    import subprocess
+
+    from pyforge.marshal.adapters.vcs_git import stage_index_paths
+
+    orphan_dir = _seed_orphan_spec(tmp_path)
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "test"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "seed"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    planning = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    (planning / "architecture.md").write_text("# arch\n", encoding="utf-8")
+
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=_RecordingInvoker(),
+        mode="minimal",
+        apply_orphans=False,
+        stage=True,
+        stager=stage_index_paths,
+    )
+    assert report.status == "complete"
+    assert orphan_dir.is_dir()
+    staged = subprocess.run(
+        ["git", "diff", "--cached", "--name-only"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "architecture.md" in staged
+    # Orphan still on disk — deletion not staged.
+    assert "spec-orphan" not in staged or orphan_dir.is_dir()
 
 
 

@@ -73,7 +73,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
@@ -1100,3 +1100,28 @@ class GitVcs:
                 f"git rev-list --count returned non-integer {raw!r} in "
                 f"{worktree_path}"
             ) from exc
+
+
+def stage_index_paths(
+    repo_root: Path,
+    paths: Sequence[str],
+    update: bool = False,
+) -> int:
+    """Story 21.4 CAP-4: stage paths into the index without committing.
+
+    ``update=False`` → ``git add -- <paths>`` (new/modified).
+    ``update=True`` → ``git add -u -- <paths>`` (tracked deletions/mods).
+    Returns the number of path arguments accepted (0 on empty input or
+    non-zero git exit). Never runs ``git commit`` / ``git push``.
+    """
+    if not paths:
+        return 0
+    cmd = ["git", "-C", str(repo_root), "add"]
+    if update:
+        cmd.append("-u")
+    cmd.append("--")
+    cmd.extend(str(p) for p in paths)
+    result = _run(cmd)
+    if result.returncode != 0:
+        return 0
+    return len(tuple(paths))
