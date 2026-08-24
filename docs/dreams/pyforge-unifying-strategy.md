@@ -389,7 +389,7 @@ Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clust
 | **Analytics Dashboards** (`Vizro / Panel`) | 1–2 replicas | 1 vCPU / 2 vCPU | 2 GB / 4 GB | Scaled on active concurrent viewers |
 | **PostgreSQL (`pgvector` + multi-schema)** | 1 primary + 1 standby | 4 vCPU / 8 vCPU | 8 GB / 16 GB | Crunchy Data / CloudNativePG Operator |
 | **Redis (`noeviction` Broker & Cache)** | 3-node Sentinel / HA | 2 vCPU / 4 vCPU | 4 GB / 8 GB | In-memory with RDB persistence |
-| **Total Recommended Capacity (HA Production)** | — | **16 to 32 vCPUs** | **32 to 64 GB RAM** | Minimum 3 Worker Nodes |
+| **Total Recommended Capacity (HA Production)** | — | **32 to 64 vCPUs** | **64 to 128 GB RAM** | Minimum 3 Worker Nodes (supports peak concurrent vector embedding & batch builds) |
 
 ### 2. Persistent Storage (CSI / PVC)
 
@@ -938,7 +938,26 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 
 ## Adversarial Architecture & Red Team Hardening Directives
 
-A rigorous Red Team architecture review evaluated the 10-layer topology across 6 enterprise stress-test lenses, codifying the following systemic mitigations and pre-implementation directives:
+A rigorous Red Team architecture review evaluated the 10-layer topology across 6 enterprise stress-test lenses (Topology, State, Security, Agentic Fabric, Dependency Complexity, and Disaster Recovery), establishing the following vulnerability matrix, systemic mitigations, and pre-implementation directives:
+
+```mermaid
+quadrantChart
+    title PyForge Architectural Vulnerability Matrix
+    x-axis Low Probability --> High Probability
+    y-axis Low Blast Radius --> Catastrophic Blast Radius
+    quadrant-1 Immediate Fix Required
+    quadrant-2 High Risk
+    quadrant-3 Monitor
+    quadrant-4 Annoyance
+    "Blind Spot 1: Scribe SQLite in Multi-Node OCP": [0.85, 0.95]
+    "Blind Spot 2: OpenShift SSE Router Timeout Disconnects": [0.90, 0.85]
+    "Blind Spot 3: Long-Running Sprint OIDC Token Expiry": [0.95, 0.75]
+    "Blind Spot 4: Django-FastAPI Synchronous Cascading 500s": [0.75, 0.80]
+    "Blind Spot 5: DuckDB Concurrent Writer Lock Thrashing": [0.70, 0.70]
+    "Blind Spot 6: Event Bus Schema Drift & Deserialization Panics": [0.60, 0.80]
+    "Blind Spot 7: Pydantic 422 to Django HTMX Form Mapping Gap": [0.85, 0.40]
+    "Blind Spot 8: Cross-Datastore Point-in-Time Recovery Gap": [0.35, 0.90]
+```
 
 ### 1. The 5 Pre-Implementation Remediation Directives (RFC Architecture)
 
