@@ -49,8 +49,11 @@ Recorded here because acceptance criteria must not be written against a false pr
    (`specs/spec-pyforge-herald/SPEC.md:137`). The live Guildhall is Marshal's static
    `docs/dashboard/` (`spec-factory-console`, `shipped`). Herald's own web surface is a shipped
    **React + Vite** app at `src/shared/packages/pyforge-herald/web/` (Epic 7 `done`) — not a CMS.
-   Any Wagtail Lane 1 work therefore lands against **Marshal's** console ownership, and the
-   handoff must be negotiated, not assumed.
+   Any Wagtail Lane 1 work therefore lands against **Marshal's** console ownership.
+   **Resolved 2026-08-24: supersede.** CAP-2 retires the console rather than coexisting with it, so
+   the handoff is a migration with a parity gate, and `spec-factory-console` is corrected in this
+   chain's Phase 5. Herald's non-goal is unaffected — it never owned the console — and Herald's
+   React web surface is out of scope entirely, being the Moments UI rather than Lane 1.
 2. **Scribe is not SQLite.** BS-1 mandates a dual-driver engine on the premise that "local
    development uses SQLite". Scribe actually ships `FlatFileGraphStore` — a single JSON file at
    `.claude/data/pyforge-scribe/graph.json` (`graph_store.py`, Story 2-1 `done`). There is no
@@ -74,17 +77,27 @@ Two **shipped, `done`** stories do exactly what it prohibits:
 - **Story 11.1** provisions `langflow_schema` with a Django `RunSQL` migration.
 - **Story 11.2** provisions `dbgpt_schema` with a Django data migration.
 
-The operator accepted RFC-5 **as written** on 2026-08-24, which reopens both. `bmad-correct-course`
-decides the ledger shape (new superseding epic vs. reopening Epic 11). Two questions the Spec must
-answer rather than inherit:
+RFC-5 was accepted **as written** on 2026-08-24 and then **revised the same day**, once Phase-2
+research established the literal directive is not implementable: `post_migrate` is the only
+supported mechanism populating `django_content_type`, `auth_permission` and `django_site`, and
+`create_test_db` builds every test database by running `migrate`. Either reopens both stories
+regardless. `bmad-correct-course` decides the ledger shape (new superseding epic vs. reopening
+Epic 11). `resilience-invariants.md` carries the binding form; the two questions below are settled
+there rather than left to inherit:
 
 - **Django's own built-in apps** (`auth`, `sessions`, `contenttypes`, `admin`, `allauth`) generate
-  DDL through `django_migrations`. Either "zero-ORM DDL coupling" extends to them — meaning
-  Liquibase must reproduce Django's entire built-in migration graph — or they are carved out and
-  RFC-5 governs only the estate-owned schemas. There is no third option.
-- **Ordering.** RFC-5 puts `liquibase update` in an init-container/pre-upgrade Helm job before
-  Django boots. Story 12.1's chart contract is `done` and AD-4/AD-17 topology is declared HARD by
-  `spec-platform-fifteen-factors`; the hook must land as a seam, not a chart rewrite.
+  DDL through `django_migrations`. The revision resolves this by moving enforcement off the
+  framework and onto the **database role** — the app role is DML-only and a separate migration role
+  holds DDL — so the question stops being "which apps are carved out" and becomes "which role runs
+  what", which an auditor can actually verify. **Test databases are carved out entirely.**
+- **Ordering.** The revision puts `liquibase update` in a Helm **pre-upgrade Job**, explicitly *not*
+  an init container: N replicas each running an init container contend on `DATABASECHANGELOGLOCK`,
+  whose default wait is 5 minutes. Django's `migrate --fake` still runs afterwards so `post_migrate`
+  fires. Story 12.1's chart contract is `done` and AD-4/AD-17 topology is HARD per
+  `spec-platform-fifteen-factors`; the hook lands as a seam, not a chart rewrite.
+- **Delivery vehicle is unresolved.** Liquibase is not on conda-forge. Whether it arrives as a
+  feedstock or as the Job's container image turns on whether this repo's air-gap policy governs
+  images at all — under research as of 2026-08-24, and CAP-9 cannot be scheduled until it lands.
 
 ## Adjacent-not-absorbed
 
@@ -100,6 +113,10 @@ answer rather than inherit:
 - **Story 12-7** (live-cluster verification) is permanently `skip_on_blocked` pending a cluster.
   It gates verification of the Tier-3 chart items, not this chain's scope.
 - **`bmad-drift-check` `pin-missing`** and 41 warnings are the pre-2026-08-24 baseline.
+- **Marshal's `spec-factory-console` is absorbed as a correction, not as scope.** CAP-2 supersedes
+  the console it specifies, so that spec must be retired — but the *console's own* remaining
+  backlog, if any, is Marshal's and is not pulled into this chain. The correction says "superseded
+  by CAP-2"; it does not adopt Marshal's open work.
 
 ## The residual this Spec binds (for cross-check)
 
@@ -110,8 +127,9 @@ Each line is evidence-confirmed absent, not assumed.
    *(Wagtail does appear 158× under `src/`, but exclusively as warden's conda-recipe test-corpus
    fixtures — `tests/fixtures/corpus/recipes/wagtail-*` — plus 4 hits in atlas package metadata.
    That is inventory, not platform code; it does usefully confirm the `wagtail-*` conda-forge
-   ecosystem is packaged, which Phase 2 research should exploit.)* Contested surface: see
-   Correction 1.
+   ecosystem is packaged, which Phase 2 research should exploit.)* CodeRed dropped and Lane 1 set
+   to **supersede** Marshal's console, both ruled 2026-08-24 — so this line now carries a retirement
+   obligation as well as a build one. See Correction 1 and `Adjacent-not-absorbed`.
 2. **`django-pyforge` shared package** — absent from `src/shared/packages/`; the App Switcher,
    OIDC middleware and Modernist theme layout have no home.
 3. **Seven remaining station portals** + the `compliance_face → warden_portal` rename. One of
@@ -139,3 +157,9 @@ Each line is evidence-confirmed absent, not assumed.
 18. **BS-8** idempotent startup reconciliation — no MinIO/S3 in `pyforge-mason` at all.
 19. **Keycloak RBAC matrix**, **HashiCorp Vault**, and **OpenFeature canary delivery** — none
     present in `src/platform/` or any station package.
+20. **Tiers 4 and 5 of the Dream's own 5-tier symmetry**, caught on the Spec's preservation pass
+    rather than in the first sweep. **Domain skills: one of eight** — `conda-forge-expert` is
+    mason's and proves the shape; the other seven stations have none, and no station package
+    carries a `skills/` directory. **Agent personas: zero of eight** — the five `bmad-agent-*`
+    skills are BMAD roles (analyst, architect, dev, pm, ux-designer), not station personas. Bound
+    as CAP-15 and CAP-16.
