@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-24 ~03:30 CDT
+**Updated:** 2026-08-24 ~03:45 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,8 +18,8 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 1** · steward **12-7 only** (skipped) — **last story** |
-| Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
+| Backlog | steward **12-7 only** (skipped) |
+| Drained | atlas, doctor, herald, mason, scribe, **steward**, warden, **marshal** |
 
 ## Merge policy (operator override — 2026-08-23)
 
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `25-7` | [20e87c08-76d1-4a60-a176-4877ea6d62e5](20e87c08-76d1-4a60-a176-4877ea6d62e5) |
+| — | — | none — marshal Epic 25 complete; fleet drain complete except steward 12-7 skip |
 
 ## Dispatch sequencing (operator — 2026-08-24)
 
-**Last marshal story.** After `25-7` → marshal **DRAINED** → fleet drain complete (steward `12-7` remains skipped).
+**marshal DRAINED** after `25-7` / Epic 25. Fleet drain complete (steward `12-7` remains skipped).
 
 ## Operator skip
 
@@ -45,7 +45,8 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `25-6` | [#721](https://github.com/rxm7706/local-recipes/pull/721) merge `8d5e439f2d` ([Marshal 25-6](01b5aaf2-84e3-4096-ac4e-b37e1516b2d6)) · CAP-6 / DW-BL011-2 closed |
+| marshal | `25-7` | [#722](https://github.com/rxm7706/local-recipes/pull/722) merge `ac6c223c54` · **Epic 25 done** · CAP-7 · **marshal DRAINED** |
+| marshal | `25-6` | [#721](https://github.com/rxm7706/local-recipes/pull/721) merge `8d5e439f2d` · CAP-6 / DW-BL011-2 closed |
 | marshal | `24-3` | [#720](https://github.com/rxm7706/local-recipes/pull/720) merge `39cee7530c` · **Epic 24 done** |
 
 ```bash

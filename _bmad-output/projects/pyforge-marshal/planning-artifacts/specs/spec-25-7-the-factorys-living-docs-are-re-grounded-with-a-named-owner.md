@@ -145,9 +145,13 @@ deferred:
 
 Status: `done`
 
-**Summary.** Re-grounded `architecture-bmad-infra.md` to BMAD **6.11.0** (render pipeline, six-layer TOML, 5 agents, 20 shims, current skill set). Bumped all 8 station `project-context.md` pins to `BMAD 6.11.0 / conda-forge-expert v8.84.0`. SYNC-RUNBOOK names **marshal** as living-doc owner with cadence. Parent SPEC CAP-7 `open_questions` cleared; memlog records 2026-08-24 marshal-duty decision. AGENTS.md HOLD honored.
+**Summary.** Re-grounded `architecture-bmad-infra.md` to BMAD **6.11.0** (render pipeline, six-layer TOML, 5 agents, 20 shims, current skill set). Bumped all 8 station `project-context.md` pins to `BMAD 6.11.0 / conda-forge-expert v8.84.0`. SYNC-RUNBOOK names **marshal** as living-doc owner with cadence. Parent SPEC CAP-7 `open_questions` cleared; memlog records 2026-08-24 marshal-duty decision. AGENTS.md HOLD honored. Completes Epic 25 → **marshal DRAINED**.
 
 **Review.** Patches applied: 4 medium + 2 low (score 14 → `followup_review_recommended: true`). Deferred: 5. Rejected: 4. No intent_gap / bad_spec.
+
+**PR:** https://github.com/rxm7706/local-recipes/pull/722 — merged with `--merge --admin` (GitHub Actions billing blocker; docs-only verification green). **`maintenance` label applied.**
+
+**Merge SHA:** `ac6c223c54502be026398159ca24273cd93f4663` (implementation commit `be983f9a3e` on branch `marshal/25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner`).
 
 **Verification performed.**
 - architecture stale-string grep: only historical/gloss hits
@@ -156,6 +160,6 @@ Status: `done`
 - `open_questions: []`
 - `git diff --stat AGENTS.md` empty
 
-**PR / merge / finalize.** Filled after push (operator admin-merge policy — GitHub Actions billing blocker).
+**Finalize.** Sprint ledger: `25-7-…: done`, `epic-25: done`. Marshal station DRAINED (steward `12-7` remains operator-skipped).
 
-**Residual risks.** Deferrals above; thin station stubs are pin/status/ownership refreshes, not full rulebook rewrites.
+**Residual risks.** Deferrals in frontmatter; thin station stubs are pin/status/ownership refreshes, not full rulebook rewrites.
