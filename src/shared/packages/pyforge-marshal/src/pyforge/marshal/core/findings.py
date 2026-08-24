@@ -1514,6 +1514,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-018",
         "MRS-DISP-019",
         "MRS-DISP-020",
+        # Story 22.5 (factory dispatch station guard, FR-193 CAP-5): 021
+        # station already has a different in-flight story (ERROR); 022
+        # cross-station declared-surface overlap advisory (WARN).
+        "MRS-DISP-021",
+        "MRS-DISP-022",
     }
 )
 

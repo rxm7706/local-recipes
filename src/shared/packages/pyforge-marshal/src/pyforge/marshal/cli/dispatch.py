@@ -8,6 +8,7 @@ import json
 import os
 import secrets
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -26,6 +27,7 @@ from ..core.dispatch_completion import (
     judge_dispatch_completion,
     zombie_redispatch_evidence,
 )
+from ..core.spec_surface import parse_declared_surface
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..core.identity import normalize, render_feed_key
 from ..core.journal import JournalEntryId, Phase, build_entry, fold, mint_run_id, prepare_for_write
@@ -43,6 +45,15 @@ from .config import (
 
 if TYPE_CHECKING:
     from ..core.context import MarshalContext
+
+
+@dataclass(frozen=True)
+class DispatchPreflightConflict:
+    """A dispatch refusal with its registered finding code (Story 22.2/22.5)."""
+
+    code: str
+    message: str
+    in_flight_story_key: str
 
 _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "session.log"
@@ -279,7 +290,54 @@ def resolve_dispatch_session_verdict(
     )
 
 
-def live_dispatch_conflict(
+def _live_dispatch_evidence(
+    *,
+    journal: dispatch_core.DispatchJournalFacts,
+    verdict: DispatchSessionVerdict,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    effective_policy: policy.EffectivePolicy,
+    harness_reported_failure: bool = False,
+) -> str:
+    story_key = journal.story_key or "unknown"
+    if journal.baseline_head_sha is None or journal.worktree_path is None:
+        return zombie_redispatch_evidence(
+            story_key=story_key,
+            verdict=verdict,
+            git=DispatchGitFacts(
+                baseline_head_sha="",
+                current_head_sha="",
+                changed_paths=(),
+                branch_merged=False,
+                story_merged_on_main=False,
+            ),
+            session_alive=journal.session_pid is not None
+            and process.is_alive(journal.session_pid),
+            harness_reported_failure=harness_reported_failure,
+        ) or f"story {story_key!r} dispatch session is still live"
+    git_facts = gather_dispatch_git_facts(
+        vcs,
+        repo_root=repo_root,
+        worktree=Path(journal.worktree_path),
+        story_key=journal.story_key,
+        project_slug=slug,
+        baseline_head_sha=journal.baseline_head_sha,
+        merge_subject_template=effective_policy.merge_subject_template.value,
+    )
+    return zombie_redispatch_evidence(
+        story_key=story_key,
+        verdict=verdict,
+        git=git_facts,
+        session_alive=journal.session_pid is not None
+        and process.is_alive(journal.session_pid),
+        harness_reported_failure=harness_reported_failure,
+    ) or f"story {story_key!r} dispatch session is still live"
+
+
+def station_in_flight_conflict(
     *,
     fs: FsPort,
     vcs: VcsPort,
@@ -289,11 +347,12 @@ def live_dispatch_conflict(
     story_key: str,
     effective_policy: policy.EffectivePolicy,
     harness_reported_failure: bool = False,
-) -> str | None:
+) -> DispatchPreflightConflict | None:
+    """Refuse when the station already has any live in-flight story (22.5)."""
     feed_story = render_feed_key(normalize(story_key))
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
-        if journal.story_key != feed_story:
+        if journal.story_key is None:
             continue
         verdict = resolve_dispatch_session_verdict(
             fs=fs,
@@ -306,39 +365,128 @@ def live_dispatch_conflict(
         )
         if verdict != DispatchSessionVerdict.LIVE:
             continue
-        if journal.baseline_head_sha is None or journal.worktree_path is None:
-            return zombie_redispatch_evidence(
-                story_key=feed_story,
-                verdict=verdict,
-                git=DispatchGitFacts(
-                    baseline_head_sha="",
-                    current_head_sha="",
-                    changed_paths=(),
-                    branch_merged=False,
-                    story_merged_on_main=False,
-                ),
-                session_alive=journal.session_pid is not None
-                and process.is_alive(journal.session_pid),
-                harness_reported_failure=harness_reported_failure,
-            )
-        git_facts = gather_dispatch_git_facts(
-            vcs,
-            repo_root=repo_root,
-            worktree=Path(journal.worktree_path),
-            story_key=journal.story_key,
-            project_slug=slug,
-            baseline_head_sha=journal.baseline_head_sha,
-            merge_subject_template=effective_policy.merge_subject_template.value,
-        )
-        return zombie_redispatch_evidence(
-            story_key=feed_story,
+        evidence = _live_dispatch_evidence(
+            journal=journal,
             verdict=verdict,
-            git=git_facts,
-            session_alive=journal.session_pid is not None
-            and process.is_alive(journal.session_pid),
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            effective_policy=effective_policy,
             harness_reported_failure=harness_reported_failure,
         )
+        in_flight = journal.story_key
+        if in_flight == feed_story:
+            return DispatchPreflightConflict(
+                code="MRS-DISP-011",
+                message=f"refusing redispatch: {evidence}",
+                in_flight_story_key=in_flight,
+            )
+        return DispatchPreflightConflict(
+            code="MRS-DISP-021",
+            message=(
+                f"refusing dispatch: station {slug!r} already has in-flight "
+                f"story {in_flight!r} ({evidence})"
+            ),
+            in_flight_story_key=in_flight,
+        )
     return None
+
+
+def cross_station_surface_overlap_advisories(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    requested_slug: str,
+    requested_story_key: str,
+    requested_spec_text: str,
+) -> tuple[Finding, ...]:
+    """Loud WARN advisories for overlapping declared surfaces (Story 22.5)."""
+    requested_surface = parse_declared_surface(requested_spec_text)
+    feed_requested = render_feed_key(normalize(requested_story_key))
+    advisories: list[Finding] = []
+    for station_slug in dispatch_core.list_station_slugs(repo_root):
+        station_policy = _compose_policy(station_slug)
+        for run_dir in reversed(iter_dispatch_run_dirs(repo_root, station_slug)):
+            journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+            if journal.story_key is None:
+                continue
+            if (
+                station_slug == requested_slug
+                and journal.story_key == feed_requested
+            ):
+                continue
+            verdict = resolve_dispatch_session_verdict(
+                fs=fs,
+                vcs=vcs,
+                process=process,
+                repo_root=repo_root,
+                slug=station_slug,
+                journal=journal,
+                effective_policy=station_policy,
+            )
+            if verdict != DispatchSessionVerdict.LIVE:
+                continue
+            in_flight_spec = dispatch_core.resolve_story_spec_path(
+                repo_root, station_slug, journal.story_key
+            )
+            if in_flight_spec is None:
+                continue
+            try:
+                in_flight_text = in_flight_spec.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            in_flight_surface = parse_declared_surface(in_flight_text)
+            overlapping = dispatch_core.find_declared_surface_overlaps(
+                requested_surface, in_flight_surface
+            )
+            if not overlapping:
+                continue
+            advisories.append(
+                Finding(
+                    code="MRS-DISP-022",
+                    severity=Severity.WARN,
+                    message=dispatch_core.format_surface_overlap_advisory(
+                        in_flight_station=station_slug,
+                        in_flight_story_key=journal.story_key,
+                        requested_station=requested_slug,
+                        requested_story_key=feed_requested,
+                        overlapping=overlapping,
+                    ),
+                )
+            )
+            break
+    return tuple(advisories)
+
+
+def live_dispatch_conflict(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    effective_policy: policy.EffectivePolicy,
+    harness_reported_failure: bool = False,
+) -> str | None:
+    """Same-story live redispatch refusal (Story 22.2); delegates to CAP-5 guard."""
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        effective_policy=effective_policy,
+        harness_reported_failure=harness_reported_failure,
+    )
+    if conflict is None or conflict.code != "MRS-DISP-011":
+        return None
+    return conflict.message.removeprefix("refusing redispatch: ")
 
 
 def run_dispatch(
@@ -440,7 +588,7 @@ def run_dispatch(
     data["model"] = model
     data["budget_env"] = dict(budget_env)
 
-    conflict = live_dispatch_conflict(
+    conflict = station_in_flight_conflict(
         fs=fs,
         vcs=vcs,
         process=process,
@@ -452,12 +600,25 @@ def run_dispatch(
     if conflict is not None:
         findings.append(
             Finding(
-                code="MRS-DISP-011",
+                code=conflict.code,
                 severity=Severity.ERROR,
-                message=f"refusing redispatch: {conflict}",
+                message=conflict.message,
             )
         )
+        data["in_flight_story"] = conflict.in_flight_story_key
         return _emit(args, data, findings)
+
+    findings.extend(
+        cross_station_surface_overlap_advisories(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            requested_slug=slug,
+            requested_story_key=render_feed_key(story_key),
+            requested_spec_text=spec_text,
+        )
+    )
 
     try:
         worktree = _ensure_dispatch_worktree(vcs, repo_root, slug, render_feed_key(story_key))
