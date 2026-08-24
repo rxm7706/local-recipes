@@ -9,8 +9,9 @@ and reports orphans without deleting them.
 Story 17.4 owns the four-phase dry-run contract (order, guard reuse, orphan
 report, per-project scope). Story 21.2 extends this module with the Full /
 minimal orchestrated chain (journal resume, FR-52 skill seam, orphan
-manifest) — still never absorbing skill logic, never ``scripts/bmad-switch``,
-never auto-commit.
+manifest). Story 21.3 implements CAP-2 code-status preservation (snapshot
+before regen; re-apply after epics by stable story id; default on; never
+auto-commit) — still never absorbing skill logic, never ``scripts/bmad-switch``.
 """
 
 from __future__ import annotations
@@ -701,11 +702,103 @@ def verify_code_linkage(root: Path, project: str) -> OrchestratedPhaseOutcome:
     )
 
 
+_CODE_STATUS_VALUES = frozenset({"done", "in-progress", "backlog"})
+_SNAPSHOT_NAME = "code-status-snapshot.yaml"
+
+
+def snapshot_code_statuses(statuses: Mapping[str, str]) -> dict[str, str]:
+    """Snapshot development statuses keyed by stable story id (CAP-2)."""
+    return {str(k): str(v) for k, v in statuses.items()}
+
+
+def apply_preserved_code_statuses(
+    preserved: Mapping[str, str],
+    current: Mapping[str, str],
+) -> dict[str, str]:
+    """Re-apply preserved statuses onto regenerated story keys.
+
+    Matching keys keep the pre-regen status byte-identical. New keys start
+    as ``backlog``. Retired keys are not resurrected. Never invents status
+    for unmatched keys beyond the backlog default for newcomers.
+    """
+    out: dict[str, str] = {}
+    for key in current:
+        if key in preserved:
+            out[key] = preserved[key]
+        else:
+            out[key] = "backlog"
+    return out
+
+
+def write_ledger_statuses(path: Path, statuses: Mapping[str, str]) -> None:
+    """Rewrite the ``development_status:`` map in-place. Never git-commits."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    head = ""
+    if path.is_file():
+        existing = path.read_text(encoding="utf-8")
+        if "development_status:" in existing:
+            head = existing.split("development_status:", 1)[0]
+        else:
+            head = existing.rstrip() + "\n"
+    body = "".join(f"  {k}: {v}\n" for k, v in sorted(statuses.items()))
+    path.write_text(head + "development_status:\n" + body, encoding="utf-8")
+
+
+def save_code_status_snapshot(run_dir: Path, statuses: Mapping[str, str]) -> Path:
+    """Persist the pre-regen snapshot beside the journal (resume-safe)."""
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / _SNAPSHOT_NAME
+    lines = ["development_status:"]
+    for key, val in sorted(statuses.items()):
+        lines.append(f"  {key}: {val}")
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
+def load_code_status_snapshot(run_dir: Path) -> dict[str, str] | None:
+    path = run_dir / _SNAPSHOT_NAME
+    if not path.is_file():
+        return None
+    return parse_ledger_statuses(path.read_text(encoding="utf-8"))
+
+
 def preserve_code_status_hook(
     statuses_before: Mapping[str, str],
+    statuses_after: Mapping[str, str] | None = None,
 ) -> Mapping[str, str]:
-    """CAP-2 stub (Story 21.3): return statuses unchanged."""
-    return dict(statuses_before)
+    """CAP-2 (Story 21.3): snapshot or re-apply preserved code statuses.
+
+    With one argument (legacy call site): return a snapshot copy.
+    With ``statuses_after``: re-apply preserved values onto regenerated keys.
+    """
+    if statuses_after is None:
+        return snapshot_code_statuses(statuses_before)
+    return apply_preserved_code_statuses(statuses_before, statuses_after)
+
+
+def reapply_code_statuses_after_epics(
+    *,
+    root: Path,
+    project: str,
+    preserved: Mapping[str, str],
+) -> dict[str, str]:
+    """After epics generation, restore preserved statuses onto the ledger.
+
+    Runs before the orphan report. Writes the ledger only — never commits.
+    """
+    lp = ledger_file(root, project)
+    current: dict[str, str] = {}
+    if lp.is_file():
+        current = parse_ledger_statuses(lp.read_text(encoding="utf-8"))
+    # Empty current means the regen left no story keys (or deleted the
+    # ledger). Do not resurrect retired keys from the snapshot — CAP-2
+    # only re-applies onto keys that still exist after epics regen.
+    if not current:
+        return {}
+    merged = apply_preserved_code_statuses(preserved, current)
+    write_ledger_statuses(lp, merged)
+    return merged
 
 
 def apply_orphans_hook(orphans: Sequence[OrphanRef], *, apply: bool) -> int:
@@ -809,7 +902,14 @@ def run_orchestrated_chain(
     if lp.is_file():
         before = parse_ledger_statuses(lp.read_text(encoding="utf-8"))
     if preserve_code_status:
-        preserve_code_status_hook(before)
+        # Resume: prefer the snapshot taken at the start of this run so a
+        # mid-chain ledger wipe cannot poison the preserved map.
+        loaded_snap = load_code_status_snapshot(run_dir)
+        if loaded_snap is not None:
+            before = loaded_snap
+        else:
+            before = dict(preserve_code_status_hook(before))
+            save_code_status_snapshot(run_dir, before)
 
     outcomes: list[OrchestratedPhaseOutcome] = []
     orphans: tuple[OrphanRef, ...] = ()
@@ -828,6 +928,13 @@ def run_orchestrated_chain(
                     attempts=_safe_int(prior.get("attempts", 0), default=0),
                 )
             )
+            # Resume safety: epics may have completed before CAP-2 reapply ran.
+            if phase == "epics" and preserve_code_status and prior_status == "complete":
+                reapply_code_statuses_after_epics(
+                    root=root,
+                    project=project,
+                    preserved=before,
+                )
             continue
 
         if mode == "minimal" and phase in MINIMAL_SKIP_PHASES:
@@ -908,6 +1015,13 @@ def run_orchestrated_chain(
             status="in_progress",
         )
         save_journal(run_dir, journal)
+
+        if phase == "epics" and preserve_code_status:
+            reapply_code_statuses_after_epics(
+                root=root,
+                project=project,
+                preserved=before,
+            )
 
         if phase == "orphan_report":
             orphans = find_orphans(root, project)
