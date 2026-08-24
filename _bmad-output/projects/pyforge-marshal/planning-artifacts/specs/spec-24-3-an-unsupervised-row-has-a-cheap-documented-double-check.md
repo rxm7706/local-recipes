@@ -2,11 +2,11 @@
 title: An UNSUPERVISED row has a cheap documented double-check
 type: docs+feature
 created: '2026-08-24'
-status: ready
+status: shipped
 updated: '2026-08-24'
 context: []
 warnings: []
-baseline_revision: d7047f4c68
+baseline_revision: 39cee7530c
 ---
 
 <intent-contract>
@@ -40,3 +40,11 @@ baseline_revision: d7047f4c68
 
 - `test_operator_liveness_instructions.py` or sibling gate green
 - grep: UNSUPERVISED docs cite follow-up command
+
+## Auto Run Result
+
+Status: shipped
+PR: https://github.com/rxm7706/local-recipes/pull/720 (admin merge — GitHub Actions billing blocker; local tests green: meta 13 passed)
+Merge SHA: `39cee7530c16ac3d17aeb031e726c4a877097e4b`
+Implementation: CAP-3 UNSUPERVISED section in `fleet-landing-pass-liveness.md`; fleet-picture ATTENTION split for unsupervised vs stopped; `marshal status --help` cites follow-up; 3 new meta tests in `test_operator_liveness_instructions.py`. `derive_home_state` unchanged.
+Completes Epic 24 (FR-195 CAP-1/CAP-2/CAP-3 all shipped via Stories 24.1–24.3).
