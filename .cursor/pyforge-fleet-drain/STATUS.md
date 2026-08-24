@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-24 ~03:00 CDT
+**Updated:** 2026-08-24 ~03:30 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 2** · steward **12-7 only** (skipped) — **final stretch** |
+| Backlog | **marshal 1** · steward **12-7 only** (skipped) — **last story** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `25-6` | [01b5aaf2-84e3-4096-ac4e-b37e1516b2d6](01b5aaf2-84e3-4096-ac4e-b37e1516b2d6) |
+| marshal | `25-7` | launching |
 
 ## Dispatch sequencing (operator — 2026-08-24)
 
-**Epic 24 complete.** Epic 25: `25-6` → `25-7` → marshal **DRAINED**.
+**Last marshal story.** After `25-7` → marshal **DRAINED** → fleet drain complete (steward `12-7` remains skipped).
 
 ## Operator skip
 
@@ -45,9 +45,8 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `24-3` | [#720](https://github.com/rxm7706/local-recipes/pull/720) merge `39cee7530c` ([Marshal 24-3](6f6cbc47-608d-4d14-bd66-795f56adc3eb)) · **Epic 24 done** |
-| marshal | `24-2` | [#719](https://github.com/rxm7706/local-recipes/pull/719) merge `6e2d536f3f` |
-| marshal | `24-1` | [#718](https://github.com/rxm7706/local-recipes/pull/718) merge `67ae6237a4` |
+| marshal | `25-6` | [#721](https://github.com/rxm7706/local-recipes/pull/721) merge `8d5e439f2d` ([Marshal 25-6](01b5aaf2-84e3-4096-ac4e-b37e1516b2d6)) · CAP-6 / DW-BL011-2 closed |
+| marshal | `24-3` | [#720](https://github.com/rxm7706/local-recipes/pull/720) merge `39cee7530c` · **Epic 24 done** |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary

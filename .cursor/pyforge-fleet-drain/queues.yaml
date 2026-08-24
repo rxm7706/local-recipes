@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 2
-    next: 25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided
+    remaining_count: 1
+    next: 25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner
     queue:
-    - 25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided
     - 25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner
   mason:
     project: pyforge-mason
