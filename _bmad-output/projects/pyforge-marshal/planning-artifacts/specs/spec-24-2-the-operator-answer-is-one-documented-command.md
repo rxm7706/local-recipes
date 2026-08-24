@@ -48,4 +48,4 @@ Status: shipped
 PR: https://github.com/rxm7706/local-recipes/pull/719 (admin merge — GitHub Actions billing blocker; local tests green: meta 6 passed, pyforge-marshal 6291 passed)
 Merge SHA: `6e2d536f3ffced7a82b5249305cd37eccc3030d9`
 Implementation: `.claude/memory/reference/fleet-landing-pass-liveness.md` (STEP 2 primary check); team-memory carrier updates; `test_operator_liveness_instructions.py` meta gate.
-Finalize SHA: pending (this commit)
+Finalize SHA: `ff1c82c5fa5deed3d06c5045306f19a86c25e40d`
