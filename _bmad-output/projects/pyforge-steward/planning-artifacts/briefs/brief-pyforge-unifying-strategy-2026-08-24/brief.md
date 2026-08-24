@@ -1,111 +1,129 @@
 ---
-title: "Product Brief: PyForge Enterprise Platform"
+title: "Product Brief: the Canopy mounts the eight stations"
 status: "ready"
 created: "2026-08-23"
 updated: "2026-08-24"
 chain: "pyforge-unifying-strategy"
-author: "herald"
+author: "steward"
+supersedes: "the 2026-08-23 pre-audit draft of this file (herald), written on a greenfield premise the audit disproved"
 inputs:
   - "docs/dreams/pyforge-unifying-strategy.md"
-  - "prfaq.md"
+  - "../../specs/spec-pyforge-unifying-strategy/SPEC.md"
+  - "../../specs/spec-pyforge-unifying-strategy/convergence.md"
+  - "../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md"
+  - "../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md"
 ---
 
-# Product Brief: PyForge Enterprise Platform
+# Product Brief: the Canopy mounts the eight stations
 
-## 1. Executive Summary & Vision
+> **This is an extension brief, not a product-launch brief.** The platform it describes is
+> partly built and running. Everything below is scoped to the residual — what `convergence.md`
+> proves is genuinely absent. Where this brief and the 2026-08-23 draft disagree, this one wins;
+> that draft was written before the audit and assumed a greenfield.
 
-**PyForge** is a unified, enterprise-grade developer and autonomous AI operating system designed to eliminate fragmentation in managing Python and conda package supply chains, recipe synthesis, compliance gating, and diagnostic remediation.
+## The problem, stated honestly
 
-By structuring the estate as **The Central Canopy (`pyforge_host` / Guildhall + `pyforge-agent-platform`)** governing **8 specialized Spoke Stations** (`warden`, `atlas`, `mason`, `marshal`, `doctor`, `herald`, `scribe`, `steward`), PyForge introduces universal **5-Tier Symmetry** (CLI, Web Portal, Compute Microservice/MCP, Domain Skill, and Autonomous Agent Persona).
+PyForge is eight capability stations. Each shipped as a genuinely good command-line tool and
+stopped there. The operator who wants to see compliance findings, package health, fleet status and
+build queues opens eight terminals, holds eight mental models, and gets no help from the estate in
+relating them. Nothing tells another station that something happened.
 
-```mermaid
-graph TD
-    subgraph Canopy["THE CANOPY: Platform Web Host & AI Agent Platform (Lane 1 at /)"]
-        Guildhall["Guildhall Web Canopy: Django + Wagtail CRX + django-pyforge App Switcher"]
-        AgentPlatform["PyForge Agent Platform: Langflow + DB-GPT + Multi-Agent Council Router"]
-    end
+The Canopy already proved the fix is available. `src/platform/` is live: a Django host with OIDC
+single sign-on, Langflow and DB-GPT mounted as pluggable apps on isolated PostgreSQL schemas, a
+Helm chart with an OpenShift overlay, and **one** station portal — warden's, at `/compliance/`.
+One of eight. The pattern works and simply has not been repeated.
 
-    subgraph Spokes["THE 8 SPOKE STATIONS (5-Tier Symmetry)"]
-        S1["1. Warden: Compliance & Policy Gatekeeper"]
-        S2["2. Atlas: Package Intelligence & Graph"]
-        S3["3. Mason: Build Engine & Wheel Smith"]
-        S4["4. Marshal: Loop Commander & Seed Installer"]
-        S5["5. Doctor: Fleet Diagnostics & Healer"]
-        S6["6. Herald: Stage Orator & Presentations"]
-        S7["7. Scribe: Team Memory & Archivist"]
-        S8["8. Steward: Platform Ops & Custodian"]
-    end
+Riding on top of that is a governance problem that is not a UI problem at all. The deployment
+target is air-gapped and regulated, which means schema change has to be auditable rather than
+incidental, access has to be revocable rather than cached, and a failing dependency has to degrade
+its caller rather than take down its neighbours. Those are the Dream's RFC and blind-spot
+directives, and they are why this is more than a front-end effort.
 
-    Guildhall -->|"Mounts 8 Zero-Model Portals"| Spokes
-    AgentPlatform -->|"Orchestrates 8 Station Agents via MCP"| Spokes
-```
+## Who it is for
 
----
+| Who | Reaches the estate through | What is broken for them today |
+|---|---|---|
+| **Packaging / platform engineer** | Eight separate station CLIs | No shared grammar; every station has its own verbs and its own output shape. |
+| **Compliance auditor** | Warden's portal — the one that exists | Can see compliance and nothing else. No path from a finding to the package, build or fleet context around it. |
+| **Platform operator** | `kubectl`, Helm, and the shipped chart | Schema change is whatever Django's migration graph did; no separate authority, and the app's own database role can alter its own schema. |
+| **Autonomous agent** | Atlas's MCP server — the only one | Seven stations have no programmatic face at all, and long operations die with the connection. |
 
-## 2. Target Personas & Use Cases
+The agent is a first-class user here, not a nice-to-have. Five of the sixteen capabilities exist
+mainly to make the estate legible to something that is not a human.
 
-| Persona | Primary Interface | Key Problem Solved | Core PyForge Value |
-| :--- | :--- | :--- | :--- |
-| **Packaging Engineer / Dev** | Universal CLI (`pyforge mason build`) & Mason Portal | Broken compilers, conflicting C-extension flags, slow manual builds. | Automated multi-Python wheel matrix builds, local-to-remote transparent execution. |
-| **SecOps / Compliance Auditor** | Warden Portal & Compliance Scorecards | Disconnected SARIF scans, unmapped licenses, manual gate waivers. | Continuous SPDX license solving, CycloneDX SBOM validation, 1-click waiver tracking. |
-| **DevOps / Platform Operator** | Steward Portal & Fleet Health Console | Ingress routing drift, static secret sprawl, runaway cloud consumption. | HashiCorp Vault dynamic database leases, OpenShift `restricted-v2` SCC deployment, Keycloak RBAC. |
-| **Autonomous AI Agent** | Model Context Protocol (`/mcp/sse`) & Domain Skills | Lack of deterministic tool contracts, blind retries, hallucinated commands. | Grounded `SKILL.md` SOP runbooks, structured MCP tool leasing, rate-limiting circuit breakers. |
+## What we are actually building
 
----
+Fourteen of the sixteen capabilities extend the host outward: a shared chrome package so portals
+stop reinventing navigation, a CMS-managed front door, the seven missing portals, a service face
+per station, one command grammar over the eight existing CLIs, a client that carries the end
+user's identity as a signed assertion instead of a trusted header, and an event backbone so one
+station's action can be another's input.
 
-## 3. The 3 Operational Planes & 10 Platform Layers
+Two capabilities close a gap the Dream stated and this brief's predecessor dropped: the Dream
+promises **five-tier symmetry** — CLI, portal, service, domain skill, agent persona — and the
+estate has one domain skill of eight and zero station personas. A station missing any of the five
+is unfinished, whatever its ledger says.
 
-1. **UI & Routing Plane (Browser Surface):**
-   * **Lane 1 (Root `/`):** Wagtail CRX-powered Guildhall Knowledge Base & Corporate Brain.
-   * **Lane 2 (`/stations/{station}/`):** 8 Pluggable zero-model Django reusable apps rendered via HTMX.
-   * **Lane 3 (`/analytics/{station}/`):** Isolated Vizro/Panel analytics containers reverse-proxied with auth headers.
-2. **Compute & Agent Plane (Execution Fabric):**
-   * **Microservices:** 8 Paired FastAPI compute services (`:8001–:8008`) exposing REST and MCP SSE streams.
-   * **Worker Pool Separation (RFC-1):** Low-latency REST pool (500ms timeout budget) decoupled from persistent MCP streaming pool.
-   * **CLI Dispatcher:** Unified Typer/Rich CLI (`pyforge <station> <noun> <verb>`).
-3. **Data & Infrastructure Plane (Persistence & Governance):**
-   * **Database DDL (RFC-5):** Single-source Liquibase changelogs (`db/changelog/`) with zero runtime ORM alterations.
-   * **Secrets Engine:** HashiCorp Vault dynamic credential leasing + Kubernetes External Secrets Operator.
-   * **Decoupled Redis (RFC-2):** `redis-broker` (`noeviction`) for Celery and Redis Streams; `redis-cache` (`allkeys-lru`) for web sessions and rate limiting.
-   * **Data Engines:** Multi-schema PostgreSQL `pgvector`, columnar DuckDB (strict single-writer boundary), Scribe SQLite/PostgreSQL dual-driver, and MinIO S3 object mirrors.
+Underneath, the governance work: DDL authority enforced by database privilege rather than
+convention, queue and cache separated so they cannot evict each other, roles sourced from the
+identity provider, secrets from a secret manager, feature flags evaluated offline, and Scribe's
+knowledge graph moved off a single JSON file.
 
----
+## What success looks like
 
-## 4. Quantified Target Outcomes & Success Metrics
+Deliberately stated as observable end states rather than percentages. We have no baseline
+measurements for this estate, so a number here would be invented.
 
-* **80% Reduction in Supply-Chain Maintenance Time:** Automated detection (Doctor) $ightarrow$ Build (Mason) $ightarrow$ Audit (Warden) $ightarrow$ Publish (Marshal) loops eliminate manual glue scripts.
-* **Sub-500ms UI Response Latency:** Zero-model HTMX portals with persistent HTTP/2 connection pooling deliver near-instantaneous partial page swaps.
-* **100% Deterministic Compliance Gates:** All builds automatically evaluated against CycloneDX SBOM and SPDX license expression policies before deployment.
-* **Zero Runaway AI Agent Failures:** `X-PyForge-Loop-Depth <= 5` and Redis token-bucket rate limiters prevent runaway hallucination loops.
-* **100% Native Cross-Platform Parity:** Pixel-identical developer execution across Linux (`linux-64`), macOS (`osx-arm64-min`), and Windows (`win-64`).
+- An operator signs in once and moves from the front door to any station portal to an analytical
+  board showing only their own rows, without re-authenticating or leaving the origin.
+- An agent drives a station over MCP, survives a proxy disconnect during a multi-minute build, and
+  still collects its result.
+- One station's action arrives as an event another station consumes; a poisoned event lands in a
+  dead-letter queue instead of retrying forever.
+- The whole thing deploys into an egress-blocked namespace carrying only PostgreSQL, Redis and the
+  platform images — and the application's database role is provably incapable of altering its own
+  schema.
 
----
+Each capability in `SPEC.md` carries its own success criterion, written so it fails when the
+capability is absent. An invariant with no test that fails without it is not implemented.
 
-## 5. Implementation Roadmap & Milestones
+## What makes this hard
 
-```mermaid
-gantt
-    title PyForge Enterprise Implementation Roadmap
-    dateFormat  YYYY-MM-DD
-    section Phase 1: Foundation
-    django-pyforge & Guildhall Host        :p1_1, 2026-09-01, 14d
-    Liquibase DDL & HashiCorp Vault Setup  :p1_2, 2026-09-08, 14d
-    section Phase 2: Compute & Portals
-    8 FastAPI Microservices & Worker Pools :p2_1, 2026-09-22, 21d
-    8 Django Reusable HTMX Portals         :p2_2, 2026-09-29, 21d
-    section Phase 3: Agentic Fabric
-    8 Station Domain Skills & MCP Servers  :p3_1, 2026-10-20, 14d
-    Marshal Multi-Agent Loop Engine        :p3_2, 2026-10-27, 14d
-    section Phase 4: Production Hardening
-    OpenShift restricted-v2 SCC Deployment:p4_1, 2026-11-10, 14d
-    Disaster Recovery & Scale Verification :p4_2, 2026-11-17, 14d
-```
+**Six new conda-forge recipes gate real work.** Five OpenFeature packages plus Liquibase are
+absent from conda-forge — OpenFeature is absent from anaconda.org entirely. Two epics therefore
+open with packaging work rather than platform work, and each of those stories must invoke
+`conda-forge-expert`.
 
----
+**One capability reopens shipped code.** Governed DDL contradicts two `done` stories that
+provisioned schemas through Django migrations. That correction is not optional, and the literal
+directive turned out to be unimplementable — Django's `post_migrate` is the only supported way to
+populate content types, permissions and sites, so `migrate` has to keep running. The revised form
+moves enforcement to the database role, which is the only control an auditor can actually verify.
 
-## 6. Downstream Pipeline Readiness
+**The front door displaces something that works.** Lane 1 supersedes Marshal's shipped console
+rather than sitting beside it, so it carries a migration obligation: parity proven before the old
+build path is removed.
 
-This Product Brief feeds directly into:
-1. **`ux-pyforge-unifying-strategy.md`:** Detailed UI wireframes and cross-station operator journey maps.
-2. **`party-mode-pyforge-unifying-strategy.md`:** Council of the 8 Station Agents consensus and contract agreement.
-3. **`bmad-spec`:** Generation of the machine-checkable Unit of Contract and Acceptance Oracles.
+**The Django pin has no headroom.** conda-forge's 5.2 line stopped at 5.2.15 while upstream shipped
+5.2.16 and 5.2.17. Exactly one build satisfies our pin, two patch releases behind, with no
+maintenance branch on the feedstock. Whether those releases carry security fixes has not been
+audited and should be.
+
+**Five questions are open and named**, including whether the official MCP SDK yet ships a
+server-side Tasks runtime — the largest gap between the recommended design and shippable code —
+and whether our new front door can serve the live-Wagtail consumer atlas has been waiting on.
+
+## What this is not
+
+Not a rewrite of the host, not a ninth station, not a replacement for any station's CLI, and not a
+re-decision of the monolith-versus-microservices topology, which is settled elsewhere. It does not
+adopt CodeRed CMS, whose upstream has been dormant since 2025 and supports a Wagtail version two
+minor releases behind current. It does not absorb atlas's own Wagtail Spec.
+
+## Where this goes next
+
+The PRD traces functional requirements to the sixteen capability IDs so nothing floats. The
+architecture pass fixes the invariants the pieces have to agree on — the portal registration seam,
+the client's token-minting contract, the event envelope, the DDL pipeline. Epics group by delivery
+seam and begin at **Epic 18**; Steward runs to 17 today. `addendum.md` holds the depth that belongs
+downstream rather than here.

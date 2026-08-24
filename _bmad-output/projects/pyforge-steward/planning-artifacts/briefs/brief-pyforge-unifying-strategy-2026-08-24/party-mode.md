@@ -1,14 +1,21 @@
 ---
 title: "Party Mode Council of the 8 Station Agents: PyForge Enterprise Platform"
-status: "ready"
+status: "superseded"
 created: "2026-08-23"
 updated: "2026-08-24"
 chain: "pyforge-unifying-strategy"
 author: "marshal"
+superseded_by: "../../specs/spec-pyforge-unifying-strategy/SPEC.md"
 inputs:
   - "docs/dreams/pyforge-unifying-strategy.md"
   - "brief.md"
 ---
+
+> **Pre-audit elicitation, retained.** Written 2026-08-23 against the earlier draft of `brief.md`.
+> Unlike its two siblings in this bundle it carries no stale technical claims — it is a
+> perspective-gathering exercise, and the concerns the eight station voices raise remain live
+> input. Marked superseded only because the brief it was written against has been rewritten and
+> `SPEC.md` now binds.
 
 # Party Mode: Council of the 8 Station Agents
 

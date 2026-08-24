@@ -1,13 +1,24 @@
 ---
 title: "PRFAQ: PyForge Enterprise Platform & Unified Agentic Operating System"
-status: "ready"
+status: "superseded"
 created: "2026-08-23"
 updated: "2026-08-24"
 chain: "pyforge-unifying-strategy"
 stage: "verdict"
+superseded_by: "../../specs/spec-pyforge-unifying-strategy/SPEC.md"
 inputs:
   - "docs/dreams/pyforge-unifying-strategy.md"
 ---
+
+> **Pre-audit — retained as the working-backwards exercise, not as a description of the system.**
+> Written 2026-08-23, before the convergence audit found `src/platform/` already shipped and before
+> Phase-2 research invalidated four Dream directives. Its narrative value survives; several of its
+> technical claims do not. Specifically wrong here: `pyforge_host` is a role name, not an artifact;
+> Lane 2 portals do not live at `/stations/{station}/` (warden's is at `/compliance/`); the
+> `:8001–:8008` port assignments were never real; Wagtail **CRX** was dropped when CodeRed proved
+> unmaintained; and the BS-1 answer below describes a SQLite/PostgreSQL dual driver that does not
+> exist — Scribe ships a single flat JSON file. The binding contract is `SPEC.md`; the corrections
+> are tabulated in `addendum.md`.
 
 # PyForge Unveils the First Unified Developer & AI Operating System for Modern Python & Conda Packaging
 

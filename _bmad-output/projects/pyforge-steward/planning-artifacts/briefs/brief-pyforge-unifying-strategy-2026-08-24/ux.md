@@ -1,14 +1,23 @@
 ---
 title: "UX Design & Cross-Station Operator Journeys: PyForge Enterprise Platform"
-status: "ready"
+status: "superseded"
 created: "2026-08-23"
 updated: "2026-08-24"
 chain: "pyforge-unifying-strategy"
 author: "herald"
+superseded_by: "../../specs/spec-pyforge-unifying-strategy/SPEC.md"
 inputs:
   - "docs/dreams/pyforge-unifying-strategy.md"
   - "brief.md"
 ---
+
+> **Pre-audit — the journeys hold, two surface details do not.** Written 2026-08-23 against the
+> earlier draft of `brief.md`, which has since been rewritten. The operator journeys and the
+> three-lane framing remain useful input to the architecture pass. Two things are stale: **Wagtail
+> CRX** (CodeRed was dropped 2026-08-24 as unmaintained — Wagtail alone carries Lane 1), and the
+> Lane 2 URL shape `/stations/{station}/`, which was never real. Warden's shipped portal mounts at
+> `/compliance/`, so the portal URL scheme is an open design point for CAP-3 rather than a settled
+> convention. See `addendum.md`.
 
 # UX Design & Cross-Station Operator Journeys
 
