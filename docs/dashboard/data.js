@@ -779,10 +779,10 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "derived": true,
-        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 3629,
-        "totalLabel": "~60.5 h active compute",
-        "note": "Derived from 29 measured stories; a story still in flight contributes only its closed sessions.",
+        "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
+        "total": 4489,
+        "totalLabel": "~74.8 h combined marks",
+        "note": "Derived from 29 journal-measured + 11 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.1": 101,
           "1.2": 65,
@@ -812,7 +812,18 @@ window.DASHBOARD_DATA = {
           "11.1": 68,
           "11.2": 63,
           "11.3": 96,
-          "11.4": 93
+          "11.4": 93,
+          "8.1": 111,
+          "8.2": 48,
+          "8.3": 49,
+          "8.4": 47,
+          "11.5": 35,
+          "11.6": 37,
+          "11.7": 62,
+          "12.3": 342,
+          "12.4": 51,
+          "12.5": 37,
+          "14.1": 41
         },
         "epicMin": {
           "E1": 715,
@@ -820,7 +831,10 @@ window.DASHBOARD_DATA = {
           "E7": 840,
           "E9": 178,
           "E10": 218,
-          "E11": 320
+          "E11": 454,
+          "E8": 255,
+          "E12": 430,
+          "E14": 41
         }
       },
       "lineState": {
@@ -2009,12 +2023,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "143/162",
+            "154/162",
             "stories complete",
             "var(--done)"
           ],
           [
-            "19",
+            "8",
             "remaining",
             ""
           ]
@@ -2022,10 +2036,10 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "derived": true,
-        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 7332,
-        "totalLabel": "~122.2 h active compute",
-        "note": "Derived from 58 measured stories; a story still in flight contributes only its closed sessions.",
+        "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
+        "total": 7771,
+        "totalLabel": "~129.5 h combined marks",
+        "note": "Derived from 58 journal-measured + 6 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -2084,7 +2098,13 @@ window.DASHBOARD_DATA = {
           "14.2": 223,
           "14.3": 97,
           "14.4": 101,
-          "16.1": 76
+          "16.1": 76,
+          "10.7": 35,
+          "10.8": 57,
+          "11.1": 54,
+          "11.2": 240,
+          "11.3": 38,
+          "22.4": 15
         },
         "epicMin": {
           "E1": 1343,
@@ -2095,14 +2115,16 @@ window.DASHBOARD_DATA = {
           "E7": 326,
           "E8": 512,
           "E9": 560,
-          "E10": 335,
+          "E10": 427,
           "E14": 457,
-          "E16": 76
+          "E16": 76,
+          "E11": 332,
+          "E22": 15
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "21.1"
+        "at": "23.1"
       },
       "epics": [
         {
@@ -2921,27 +2943,27 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "21.1",
-              "pending",
+              "done",
               "Chain-completeness audit mode extends layer-presence into full CAP-3 coverage"
             ],
             [
               "21.2",
-              "pending",
+              "done",
               "Orchestrated chain regeneration"
             ],
             [
               "21.3",
-              "pending",
+              "done",
               "Code-status preservation"
             ],
             [
               "21.4",
-              "pending",
+              "done",
               "Orphan detection with review-gated cleanup"
             ],
             [
               "21.5",
-              "pending",
+              "done",
               "Configurable per-project invocation"
             ]
           ]
@@ -2952,32 +2974,32 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "22.1",
-              "pending",
+              "done",
               "The dispatch verb launches one governed, isolated story session"
             ],
             [
               "22.2",
-              "pending",
+              "done",
               "Completion is judged from git and process facts, and a zombie is never redispatched"
             ],
             [
               "22.3",
-              "pending",
+              "done",
               "Verification is the product — no landing on a self-report"
             ],
             [
               "22.4",
-              "pending",
+              "done",
               "A verified story lands through the existing machinery, classified marshal-native"
             ],
             [
               "22.5",
-              "pending",
+              "done",
               "One story in flight per station; stations in parallel; overlap is loud"
             ],
             [
               "22.6",
-              "pending",
+              "done",
               "The dispatched run survives its operator, and its journal carries the timing signal"
             ]
           ]
@@ -3260,10 +3282,10 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "derived": true,
-        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 4180,
-        "totalLabel": "~69.7 h active compute",
-        "note": "Derived from 37 measured stories; a story still in flight contributes only its closed sessions.",
+        "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
+        "total": 4342,
+        "totalLabel": "~72.4 h combined marks",
+        "note": "Derived from 37 journal-measured + 3 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "1.2": 91,
           "1.3": 402,
@@ -3301,14 +3323,18 @@ window.DASHBOARD_DATA = {
           "5.2": 48,
           "5.3": 79,
           "5.4": 14,
-          "5.5": 284
+          "5.5": 284,
+          "6.2": 75,
+          "6.3": 51,
+          "6.4": 36
         },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
           "E3": 860,
           "E4": 264,
-          "E5": 458
+          "E5": 458,
+          "E6": 162
         }
       },
       "lineState": {
@@ -3868,12 +3894,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "73/74",
+            "74/74",
             "stories complete",
             "var(--done)"
           ],
           [
-            "1",
+            "0",
             "remaining",
             ""
           ]
@@ -3881,10 +3907,10 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "derived": true,
-        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2987,
-        "totalLabel": "~49.8 h active compute",
-        "note": "Derived from 19 measured stories; a story still in flight contributes only its closed sessions.",
+        "metric": "active agent-compute from bmad-loop journals; wall-clock ceiling (final_revision − baseline_revision commit timestamps; includes idle before dispatch) for hand-driven stories with revision fields — never the same class",
+        "total": 3209,
+        "totalLabel": "~53.5 h combined marks",
+        "note": "Derived from 19 journal-measured + 4 wall-clock-ceiling stories; wall-clock is a ceiling spanning baseline→final commit timestamps (includes idle before dispatch), not active agent-compute. Journal bars still in flight contribute only closed sessions.",
         "perStory": {
           "8.1": 182,
           "8.2": 61,
@@ -3904,18 +3930,23 @@ window.DASHBOARD_DATA = {
           "10.2": 84,
           "10.3": 280,
           "10.4": 91,
-          "11.1": 184
+          "11.1": 184,
+          "11.2": 71,
+          "11.3": 47,
+          "11.4": 44,
+          "12.1": 60
         },
         "epicMin": {
           "E8": 584,
           "E9": 1642,
           "E10": 577,
-          "E11": 184
+          "E11": 346,
+          "E12": 60
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "17.2"
+        "state": "complete",
+        "at": ""
       },
       "epics": [
         {
@@ -4385,7 +4416,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "17.2",
-              "pending",
+              "done",
               "steward setup/initrepo take the machine to green"
             ]
           ]
@@ -5034,7 +5065,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-23 22:23 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-24 02:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5998,6 +6029,14 @@ window.DASHBOARD_DATA = {
       "archived_reason": "absorbed"
     },
     {
+      "slug": "pyforge-unifying-strategy",
+      "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
+      "status": "dreamt",
+      "owner": "herald",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "pyforge-warden-compliance-gates",
       "title": "\"Dream — PyForge Warden: Compliance Gates\"",
       "status": "archived",
@@ -6020,14 +6059,6 @@ window.DASHBOARD_DATA = {
         "project": "_bmad-output/projects/pyforge-warden",
         "program": "warden"
       }
-    },
-    {
-      "slug": "pyforge-web-surface-strategy",
-      "title": "One PyForge web surface strategy — portals, dashboards, and the Guildhall stop competing",
-      "status": "dreamt",
-      "owner": "herald",
-      "type": "dream",
-      "chain": {}
     },
     {
       "slug": "python-agent-platform",
@@ -6672,7 +6703,7 @@ window.DASHBOARD_DATA = {
       "title": "fleet chain completeness",
       "caps": 5,
       "companions": 0,
-      "updated": "2026-08-22",
+      "updated": "2026-08-23",
       "dream": "fleet-chain-completeness",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness"
     },
@@ -8019,7 +8050,7 @@ window.DASHBOARD_DATA = {
           "stories": 18,
           "state": "in-progress",
           "note": "next free slot",
-          "done": 78,
+          "done": 79,
           "total": 80,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
@@ -8052,7 +8083,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 143,
+          "done": 154,
           "total": 162,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
@@ -8781,7 +8812,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "143/162",
+        "progress": "154/162",
         "complete": 13,
         "of": 13,
         "chainAudit": {
@@ -9318,7 +9349,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "73/74",
+        "progress": "74/74",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -13119,10 +13150,10 @@ window.DASHBOARD_DATA = {
         }
       },
       {
-        "label": "web-surface-strategy",
-        "slug": "pyforge-web-surface-strategy",
+        "label": "unifying-strategy",
+        "slug": "pyforge-unifying-strategy",
         "project": "pyforge-herald",
-        "dream": "pyforge-web-surface-strategy",
+        "dream": "pyforge-unifying-strategy",
         "owner": "herald",
         "stages": {
           "dream": "2026-08-23",
@@ -15921,7 +15952,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-22T05:39",
+          "spec": "2026-08-23T18:15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -15975,7 +16006,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 4,
+        "openQuestions": 0,
         "overtaken": false,
         "na": [
           "dream",
@@ -24472,8 +24503,8 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
-        "slug": "pyforge-web-surface-strategy",
-        "title": "One PyForge web surface strategy — portals, dashboards, and the Guildhall stop competing",
+        "slug": "pyforge-unifying-strategy",
+        "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
         "status": "dreamt",
         "owner": "herald",
         "blockedOn": "",
@@ -24647,8 +24678,8 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "pyforge-web-surface-strategy",
-            "title": "One PyForge web surface strategy — portals, dashboards, and the Guildhall stop competing",
+            "slug": "pyforge-unifying-strategy",
+            "title": "PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -24701,7 +24732,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "paused 21.1",
+        "line": "paused 23.1",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -25391,7 +25422,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "paused 17.2",
+        "line": "complete",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -29074,14 +29105,14 @@ window.DASHBOARD_DATA = {
     "running": [],
     "lastShipped": {
       "station": "marshal",
-      "story": "20.8",
-      "epoch": 1787522307,
-      "sha": "b6addf95e",
-      "subject": "feat(core): shared landing-evidence grammar (marshal story 20.8)"
+      "story": "21.5",
+      "epoch": 1787536271,
+      "sha": "5227971d1",
+      "subject": "feat(marshal): Story 21.5 configurable per-project CAP-5 invocation"
     },
     "runningAvailable": false,
-    "generatedAt": "2026-08-23 22:23 UTC",
-    "generatedEpoch": 1787523839
+    "generatedAt": "2026-08-24 02:16 UTC",
+    "generatedEpoch": 1787537789
   },
   "storySpecs": [
     {
@@ -29104,8 +29135,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 143,
-      "tracked": 96,
+      "done": 154,
+      "tracked": 107,
       "gap": 47
     },
     {
@@ -29122,9 +29153,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-steward",
-      "done": 78,
+      "done": 79,
       "tracked": 50,
-      "gap": 28
+      "gap": 29
     },
     {
       "station": "pyforge-warden",
@@ -29189,7 +29220,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "slug": "spec-fleet-chain-completeness",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md"
           },
           {
@@ -29228,21 +29259,21 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 143,
-        "backlog": 19,
+        "done": 154,
+        "backlog": 8,
         "blocked": 0,
         "total": 162,
-        "next": "21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage",
+        "next": "23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields",
         "blockedKeys": [],
         "backlogKeys": [
-          "21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage",
-          "21-2-orchestrated-chain-regeneration",
-          "21-3-code-status-preservation",
-          "21-4-orphan-detection-with-review-gated-cleanup",
-          "21-5-configurable-per-project-invocation",
-          "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session",
-          "22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched",
-          "22-3-verification-is-the-product-no-landing-on-a-self-report"
+          "23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields",
+          "23-2-wall-clock-is-never-blended-with-active-compute",
+          "23-3-the-coverage-caption-partitions-by-true-reason",
+          "24-1-marshal-gains-the-missing-liveness-primitive",
+          "24-2-the-operator-answer-is-one-documented-command",
+          "24-3-an-unsupervised-row-has-a-cheap-documented-double-check",
+          "25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided",
+          "25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner"
         ],
         "state": "ready"
       },
@@ -29304,15 +29335,14 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-secure-live-dashboards/SPEC.md"
           }
         ],
-        "done": 78,
-        "backlog": 2,
+        "done": 79,
+        "backlog": 1,
         "blocked": 0,
         "total": 80,
         "next": "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
         "blockedKeys": [],
         "backlogKeys": [
-          "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
-          "17-2-steward-setup-initrepo-take-the-machine-to-green"
+          "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster"
         ],
         "state": "ready"
       },
@@ -29505,8 +29535,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 491,
-      "backlog": 21,
+      "done": 503,
+      "backlog": 9,
       "blocked": 0,
       "total": 512
     }
@@ -29543,10 +29573,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 162,
-        "done": 143,
+        "done": 154,
         "blocked": 0,
         "epics": 25,
-        "epicsDone": 20,
+        "epicsDone": 22,
         "complete": false
       },
       {
@@ -29570,10 +29600,10 @@ window.DASHBOARD_DATA = {
       {
         "key": "steward",
         "stories": 80,
-        "done": 78,
+        "done": 79,
         "blocked": 0,
         "epics": 17,
-        "epicsDone": 15,
+        "epicsDone": 16,
         "complete": false
       },
       {
@@ -29588,10 +29618,10 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 512,
-      "done": 491,
+      "done": 503,
       "blocked": 0,
       "epics": 109,
-      "epicsDone": 102
+      "epicsDone": 105
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`)."
   }
