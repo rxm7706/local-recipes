@@ -1,16 +1,19 @@
 ---
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
 project_name: 'pyforge-doctor'
 project_phase: 'in-progress'
 user_name: 'rxm7706'
-date: '2026-08-01'
+date: '2026-08-24'
 sections_completed: ['overview', 'status']
 ---
 
 # Project Context for AI Agents — Doctor
 
-_Critical rules and patterns for Fleet Diagnostic & Readiness Monitor. This project is currently 5/12 stories (E1 complete)._
+_Critical rules and patterns for Fleet Diagnostic & Readiness Monitor. Ledger: mostly done, few backlog (re-ground 2026-08-24)._
 
-**Status:** 5/12 stories (E1 complete)
+**Status:** sprint-status-ledger — **148** done · **6** backlog · **32** optional (incl. epics); stories mostly done, a few backlog epics remain.
+
+**Living docs:** re-ground of `architecture-bmad-infra.md` + the 8 station `project-context.md` rulebooks is a **marshal** SYNC-RUNBOOK duty (CAP-7 decision 2026-08-24) — not a per-station relay. Pins use `source_pin: BMAD 6.11.0 / conda-forge-expert v8.84.0`.
 
 ---
 
@@ -37,7 +40,7 @@ This is the Fleet Diagnostic & Readiness Monitor station within the PyForge Guil
 
 All stories in this project must pass:
 1. **Local verification:** Run the station's test suite (if exists).
-2. **Readiness gate:** `bmad-check-implementation-readiness` at epic completion.
+2. **Readiness gate:** `bmad-sprint-planning` readiness gate (6.11; former check-implementation-readiness absorbed) at epic completion.
 3. **Integration gate:** All dependent stories must complete before downstream gates.
 
 ---

@@ -1,14 +1,15 @@
 ---
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
 project_name: 'pyforge-atlas'
 project_phase: 'shipped'
 user_name: 'rxm7706'
-date: '2026-08-04'
+date: '2026-08-24'
 sections_completed: ['technology_stack', 'critical_implementation_rules', 'testing_patterns', 'execution_model', 'code_grounded_patterns']
 ---
 
 # Project Context for AI Agents — pyforge-atlas
 
-_Critical rules and patterns that AI agents must follow when implementing code in this project. This is the Kedro/Dagster/DuckDB migration of cf_atlas, currently shipped (31/31 stories complete as of 2026-07-25)._
+_Critical rules and patterns for pyforge-atlas (Kedro/Dagster/DuckDB cf_atlas migration). sprint-status-ledger: **166** done · **12** optional (incl. epics) — done-heavy / shipped core; re-ground 2026-08-24 (BMAD 6.11.0 / CFE v8.84.0). Living factory-doc re-ground is a **marshal** SYNC-RUNBOOK duty (not per-station)._
 
 ---
 

@@ -4,6 +4,12 @@
 portrays the live `local-recipes` repo, and can be **caught up after _any_ out-of-band change**
 (Claude, a human, a direct commit — anything that bypassed BMAD).
 
+**Recurring owner (living factory docs):** **marshal** (CAP-7 decision **2026-08-24**).
+After every CFE MINOR / `surface-changed` detector trip, and at least once per BMAD core minor
+bump, marshal re-grounds `architecture-bmad-infra.md` + the **8** station `project-context.md`
+pins (`source_pin` / marshal's `last_synced_skill_version`). Stations do **not** each own a
+relay — this is factory-governance surface, not a per-station chore.
+
 ## The guarantee — and its honest limit
 
 No static script can *prove* prose docs are semantically correct against an evolving repo. The
@@ -36,6 +42,13 @@ detector trips).
   retro that bumps the skill; that bump is the re-sync trigger).
 - **After any out-of-band change** to the source-of-truth surface (`recipes/`, `.claude/skills/`,
   `.claude/tools/`, `pixi.toml`, `docs/specs/`) — the baseline check (`surface-changed`) detects it.
+- **At least once per BMAD core minor bump** (e.g. 6.10 → 6.11) — marshal re-grounds living factory
+  docs even if the detector has not yet tripped on a skill pin.
+- **Living-doc cadence (marshal-owned, 2026-08-24):** when any of the triggers above fire,
+  marshal re-grounds `_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md`
+  and all eight `_bmad-output/projects/*/project-context.md` rulebooks (bump `source_pin`; for
+  marshal also bump `last_synced_skill_version`). Do **not** fan this out as eight independent
+  station stories.
 - **In the test suite** — `tests/meta/test_bmad_artifacts_in_sync.py` enforces *integrity* (not
   currency) so a corrupt pin / misplaced file / uncovered doc fails fast.
 
@@ -68,8 +81,8 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml docs/specs
 | `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's an **intake spec**, `git mv` it to `docs/specs/` (Tier 1); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see CLAUDE.md "three tiers" + `AGENTS.md`.) |
 | `docs-specs-nonmd` | docs/specs | `docs/specs/` holds Tier-1 markdown intake specs only — move the non-`.md` file out. |
 | `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`; for `project-context.md` regenerate with **`bmad-project-context`** (6.11 successor of `bmad-generate-project-context`; note it maintains an `AGENTS.md` block, not `project-context.md` — an existing `project-context.md` is read as legacy input) |
-| `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | re-ground by hand or with a plain read-only agent, then bump each `source_pin` — **6.11 removed `bmad-document-project`** and its successor `bmad-project-context` does NOT produce brownfield docs (the deeper capability is promised upstream, not shipped) |
-| `pin-behind` (context) | `project-context.md` | **`bmad-project-context`** (writes the `AGENTS.md` block; `project-context.md` is a frozen legacy artifact — reconcile its pin by hand) |
+| `pin-behind` / `count-stale` / `phase-list-stale` (living: `architecture-*`, `source-tree-analysis`, `project-overview`, `integration-architecture`, `*-guide`, `project-parts.json`) | living | **marshal** re-grounds by hand or with a plain read-only agent, then bumps each `source_pin` — **6.11 removed `bmad-document-project`** and its successor `bmad-project-context` does NOT produce brownfield docs (the deeper capability is promised upstream, not shipped). Cadence: after CFE MINOR / `surface-changed` / BMAD core minor (see When to run) |
+| `pin-behind` (context) | `project-context.md` (×8 stations) | **marshal** reconciles pins by hand (`source_pin`; marshal also `last_synced_skill_version`) — **not** a per-station relay. `bmad-project-context` writes only the `AGENTS.md` block (HOLD that managed block unless a separate story owns it); treat station `project-context.md` as a frozen legacy rulebook refreshed on the marshal cadence |
 | `pin-behind` (plan) | `PRD.md`, `epics.md` | **`bmad-correct-course`** → **`bmad-edit-prd`** / **`bmad-create-epics-and-stories`** (structural: new epics/stories for net-new capabilities, not a number swap) |
 | `pin-behind` (snapshot) | `validation-report-PRD.md`, `implementation-readiness-report.md` | regenerate fresh: **`bmad-prd`** (validate intent), **`bmad-sprint-planning`** readiness gate (6.11 absorbed `bmad-check-implementation-readiness`; PASS/CONCERNS/FAIL, finds artifacts by content not filename globs) (a gate is only meaningful re-run against current artifacts — never number-patch a dated snapshot) |
 | `stale-rule` | any | hand-fix the rule, then add the bad pattern to `STALE_RULE_PATTERNS` in `sources/factory.py` (the ported verdict's own copy — `scripts/bmad_drift_check.py` no longer carries this constant) so it can never silently return |
@@ -84,14 +97,17 @@ The index (`index.md`) is refreshed **last**, after all moves and refreshes — 
 
 The detector catches *mechanically extractable* drift. Semantic correctness (a rule that's wrong,
 a claim that's false, a plan missing whole capability clusters) is re-grounded by **running the
-BMAD brownfield skill against the live repo**:
+appropriate BMAD skills — or, for brownfield living docs, a plain re-ground agent under marshal
+ownership**:
 
 ```
 # 6.11: bmad-document-project is removed and bmad-project-context does NOT
-# re-derive brownfield docs. Re-derive architecture-*, source-tree-analysis,
-# project-overview, project-parts with plain read-only agents grounded in the
-# live repo; bmad-project-context maintains only the AGENTS.md block.
-bmad-project-context         # refresh/audit the verified AGENTS.md block
+# re-derive brownfield docs. Marshal owns living-doc re-ground of
+# architecture-bmad-infra.md + the 8× project-context.md pins (CAP-7,
+# 2026-08-24) via plain read-only agents grounded in the live repo.
+# bmad-project-context maintains only the AGENTS.md block (do not edit that
+# managed block from this runbook unless a dedicated story lifts the HOLD).
+bmad-project-context         # refresh/audit the verified AGENTS.md block (separate HOLD)
 ```
 
 For high-stakes reconciliations, follow with an adversarial pass (`bmad-review` — 6.11 consolidates the adversarial / edge-case-hunter / verification-gap lenses) or a fan-out of read-only verification agents that check each

@@ -1,16 +1,19 @@
 ---
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
 project_name: 'pyforge-scribe'
-project_phase: 'in-progress'
+project_phase: 'shipped'
 user_name: 'rxm7706'
-date: '2026-08-01'
+date: '2026-08-24'
 sections_completed: ['overview', 'status']
 ---
 
 # Project Context for AI Agents — Scribe
 
-_Critical rules and patterns for Event Attribution & Ledger. This project is currently 9/9 stories (in design phase)._
+_Critical rules and patterns for Event Attribution & Ledger. Ledger: all stories done — design-complete (re-ground 2026-08-24)._
 
-**Status:** 9/9 stories (in design phase)
+**Status:** sprint-status-ledger — **28** done · **0** backlog · **6** optional (incl. epics); design-complete / all stories done.
+
+**Living docs:** re-ground of `architecture-bmad-infra.md` + the 8 station `project-context.md` rulebooks is a **marshal** SYNC-RUNBOOK duty (CAP-7 decision 2026-08-24) — not a per-station relay. Pins use `source_pin: BMAD 6.11.0 / conda-forge-expert v8.84.0`.
 
 ---
 
@@ -37,7 +40,7 @@ This is the Event Attribution & Ledger station within the PyForge Guild.
 
 All stories in this project must pass:
 1. **Local verification:** Run the station's test suite (if exists).
-2. **Readiness gate:** `bmad-check-implementation-readiness` at epic completion.
+2. **Readiness gate:** `bmad-sprint-planning` readiness gate (6.11; former check-implementation-readiness absorbed) at epic completion.
 3. **Integration gate:** All dependent stories must complete before downstream gates.
 
 ---

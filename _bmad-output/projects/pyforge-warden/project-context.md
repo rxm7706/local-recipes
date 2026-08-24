@@ -1,16 +1,19 @@
 ---
+source_pin: 'BMAD 6.11.0 / conda-forge-expert v8.84.0'
 project_name: 'pyforge-warden'
-project_phase: 'shipped'
+project_phase: 'shipped-core'  # original 31-story core shipped; residual backlog remains
 user_name: 'rxm7706'
-date: '2026-08-01'
+date: '2026-08-24'
 sections_completed: ['overview', 'status']
 ---
 
 # Project Context for AI Agents — Warden
 
-_Critical rules and patterns for Compliance Gate & Project Orchestration. This project is currently 31/31 stories, 2026-07-24 retro._
+_Critical rules and patterns for Compliance Gate & Project Orchestration. Ledger: mostly done (re-ground 2026-08-24)._
 
-**Status:** 31/31 stories, 2026-07-24 retro
+**Status:** sprint-status-ledger — **96** done · **4** backlog · **4** optional (incl. epics); **core shipped**, residual backlog (do not treat as zero-work).
+
+**Living docs:** re-ground of `architecture-bmad-infra.md` + the 8 station `project-context.md` rulebooks is a **marshal** SYNC-RUNBOOK duty (CAP-7 decision 2026-08-24) — not a per-station relay. Pins use `source_pin: BMAD 6.11.0 / conda-forge-expert v8.84.0`.
 
 ---
 
@@ -37,7 +40,7 @@ This is the Compliance Gate & Project Orchestration station within the PyForge G
 
 All stories in this project must pass:
 1. **Local verification:** Run the station's test suite (if exists).
-2. **Readiness gate:** `bmad-check-implementation-readiness` at epic completion.
+2. **Readiness gate:** `bmad-sprint-planning` readiness gate (6.11; former check-implementation-readiness absorbed) at epic completion.
 3. **Integration gate:** All dependent stories must complete before downstream gates.
 
 ---
