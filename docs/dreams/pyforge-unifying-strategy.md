@@ -370,6 +370,80 @@ Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clust
 
 ---
 
+## Feature Flags, Progressive Canary Delivery & Auto-Rollback by Design
+
+To ensure zero-downtime, safe iterative experimentation, and gradual feature rollouts across all 9 stations, PyForge embeds an enterprise **Feature Flagging and Canary Delivery Engine** directly into the core runtime:
+
+```mermaid
+flowchart TD
+    subgraph ControlPlane["1. Control Plane & Management"]
+        AdminUI["Guildhall Admin & CLI (pyforge flags set ...)"]
+        FlagDB["PostgreSQL (Flag Definitions & Audit Trail)"]
+        AdminUI --> FlagDB
+    end
+
+    subgraph FlagFabric["2. High-Velocity Flag Fabric (Redis Invalidation)"]
+        FlagDB -->|Sync on Change| RedisFlags["Redis Key-Value Cache (pyforge:flags)"]
+        RedisFlags -->|Pub/Sub Invalidation| MemoryCache["In-Memory Local LRU Cache (Sub-microsecond)"]
+    end
+
+    subgraph Surfaces["3. Station Execution Surfaces (OpenFeature Standard)"]
+        MemoryCache --> DjangoPortals["Django & Wagtail (UI Blocks, Menus, HTMX Views)"]
+        MemoryCache --> FastAPIServices["FastAPI Microservices (Endpoint & Algorithm Branching)"]
+        MemoryCache --> MCPAgents["MCP Servers (Dynamic Tool Leasing & Gating)"]
+        MemoryCache --> UnifiedCLI["CLI (Experimental Subcommands & Beta Flags)"]
+        MemoryCache --> CeleryWorkers["Celery (Shadow Execution & Worker Routing)"]
+    end
+
+    subgraph Observability["4. Doctor Health & Auto-Rollback Circuit Breakers"]
+        FastAPIServices --> OTel["OpenTelemetry Metrics (Error Rate & Latency)"]
+        OTel --> DoctorEngine["Doctor Station (Anomaly Detector)"]
+        DoctorEngine -->|Auto-kill flag on >1% error spike| RedisFlags
+    end
+```
+
+### 1. Unified Flag Evaluation Context (`pyforge.core.flags`)
+
+Flags are evaluated dynamically against a standardized **Evaluation Context** containing the user's identity, role, station, and environment:
+
+```python
+from pydantic import BaseModel
+
+class FlagContext(BaseModel):
+    user_id: str | None = None          # Keycloak idp_subject or "anonymous"
+    email: str | None = None            # Developer / operator email
+    roles: list[str] = []               # ["pyforge-admin", "beta-tester", "maintainer"]
+    station: str = "warden"             # Target station namespace
+    environment: str = "production"     # "local", "staging", "production"
+    agent_id: str | None = None         # "antigravity", "claude-code", "cursor", "bmad"
+    percentage_bucket: int | None = None # MurmurHash(user_id) % 100 for canary rollouts
+```
+
+### 2. Standard Integration Across Every Station Surface
+
+* **Django Portals & Wagtail CMS (Lane 1 & 2):** Conditional template tags (`{% if_flag_active "warden:v2_dependency_graph" %}`) and view decorators dynamically hide/reveal experimental UI components.
+* **FastAPI Compute Microservices (Layer 5):** FastAPI dependencies inject the active `FlagContext` to switch algorithms or activate beta endpoints on the fly.
+* **MCP Servers for Autonomous AI Agents (Layer 6):** Dynamically register or lease bleeding-edge agent tools only to authorized agents or beta testers.
+* **Unified CLI (Terminal Surface):** Experimental subcommands and preview flags check the local flag configuration (`pyforge flags list`, `pyforge flags set ...`).
+
+### 3. Canary Testing & Progressive Delivery Strategies
+
+| Canary Strategy | Operational Pattern | Use Case |
+| :--- | :--- | :--- |
+| **Percentage Rollout** | Gradually scale traffic: `1% → 5% → 25% → 50% → 100%` using consistent user hash buckets (`MurmurHash3(user_id) % 100`). | Rolling out new dependency solvers in Mason or package graph pipelines in Atlas. |
+| **Role-Gated Early Access** | Activated exclusively for users with Keycloak role `pyforge-admin` or `beta-maintainer`. | Pre-release testing of new portal views or Wagtail StreamField blocks. |
+| **Shadow Mode (Dark Launching)** | The microservice runs both the old and new engines in parallel in the background, diffs the outputs, and logs discrepancies without affecting the user's live response. | Verifying that Warden's new SARIF generator produces identical outputs to the legacy scanner before live release. |
+| **OpenShift Route Canary** | OpenShift Route traffic splitting at the network edge: `spec.to.weight: 90` (Stable) vs `spec.alternateBackends[0].weight: 10` (Canary Pods). | Zero-downtime blue/green infrastructure and container upgrades. |
+
+### 4. Automated Circuit Breakers (Doctor Auto-Rollback)
+
+To ensure high availability in production, the **Doctor station** acts as the automated safety supervisor:
+1. **Telemetry Stream:** OpenTelemetry continuously emits error rates, latency p99, and panic metrics tagged with active flag names (`feature_flag="warden:fast_ast_parser"`).
+2. **Anomaly Detection:** If the canary feature triggers an error spike (>1% failure rate or >500ms latency degradation), Doctor detects the regression within 10 seconds.
+3. **Automated Kill-Switch:** Doctor publishes a high-priority `feature.circuit_breaker.tripped` event to Redis Streams, immediately setting the flag to `0%` (OFF) across all nodes with zero human intervention.
+
+---
+
 ---
 
 ## 1. Inter-Station Event Bus & Message Fabric
@@ -685,3 +759,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — LocalStack Philosophy & Cross-Platform Guarantees: codified 100% native Linux/macOS/Windows execution guarantees via Pixi (`linux-64`, `win-64`, `osx-arm64-min`) and articulated PyForge's design alignment with the LocalStack emulator model (100% offline, zero cloud bills, sub-millisecond agent inner loops, and strict local-to-OCP 15-Factor environment parity).
 - **2026-08-23** — Container Delivery Modes Formalization: codified the 3 deployment topologies powered by a single Pixi-built container image (`pyforge-container`): Mode A (Single All-in-One Podman Container), Mode B (Local Podman Pod with `pgvector` and Keycloak), and Mode C (Multi-Container Distributed OpenShift/K8s).
 - **2026-08-23** — Enterprise Server Infrastructure & OCP Sizing Specifications: codified the complete production cluster sizing (16–32 vCPUs, 32–64 GB RAM, minimum 3 worker nodes), block and object storage requirements (PostgreSQL `pgvector`, Redis persistence, S3/MinIO mirrors), OpenShift Route edge TLS, internal cluster DNS, and `restricted-v2` SCC security compliance.
+- **2026-08-23** — Feature Flags & Canary Delivery Architecture: embedded a 5-tier progressive delivery engine into the runtime—featuring OpenFeature `FlagContext` evaluations across Django UI, FastAPI microservices, MCP agent tool gating, and CLI flags, paired with percentage rollouts, shadow mode, and Doctor automated circuit-breaker auto-rollbacks.
