@@ -235,6 +235,34 @@ def gather_dispatch_journal_facts(
             gate_val = entry.payload.get("failed_gate")
             if isinstance(gate_val, str):
                 verification_failed_gate = gate_val
+    story_started_at: str | None = None
+    story_ended_at: str | None = None
+    baseline_revision: str | None = None
+    final_revision: str | None = None
+    preserve_ref: str | None = None
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_TIMING):
+        if entry.phase == Phase.OUTCOME:
+            raw_started = entry.payload.get("story_started_at")
+            if isinstance(raw_started, str):
+                story_started_at = raw_started
+            raw_ended = entry.payload.get("story_ended_at")
+            if isinstance(raw_ended, str):
+                story_ended_at = raw_ended
+            raw_baseline = entry.payload.get("baseline_revision")
+            if isinstance(raw_baseline, str):
+                baseline_revision = raw_baseline
+            raw_final = entry.payload.get("final_revision")
+            if isinstance(raw_final, str):
+                final_revision = raw_final
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_PRESERVE):
+        if entry.phase == Phase.OUTCOME:
+            raw_ref = entry.payload.get("preserve_ref")
+            if isinstance(raw_ref, str):
+                preserve_ref = raw_ref
+    if baseline_revision is None and baseline_head_sha is not None:
+        baseline_revision = baseline_head_sha
+    if story_started_at is None and launched_at is not None:
+        story_started_at = _format_entry_ts(launched_at)
     return dispatch_core.DispatchJournalFacts(
         story_key=story_key,
         session_pid=session_pid,
@@ -246,6 +274,11 @@ def gather_dispatch_journal_facts(
         completion_verdict=completion_verdict,
         verification_verdict=verification_verdict,
         verification_failed_gate=verification_failed_gate,
+        story_started_at=story_started_at,
+        story_ended_at=story_ended_at,
+        baseline_revision=baseline_revision,
+        final_revision=final_revision,
+        preserve_ref=preserve_ref,
     )
 
 
@@ -818,4 +851,359 @@ def run_dispatch(
         except FsError:
             pass
 
+    return _emit(args, data, findings)
+
+
+def _spawn_dispatch_supervisor(
+    *,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    run_id: str,
+    session_pid: int,
+    worktree: Path,
+    story_key: str,
+    baseline_head_sha: str,
+    merge_subject_template: str,
+    run_dir: Path,
+) -> int | None:
+    supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
+    try:
+        return process.spawn_detached(
+            [
+                sys.executable,
+                "-m",
+                "pyforge.marshal.dispatch_supervisor",
+                str(repo_root),
+                slug,
+                run_id,
+                str(session_pid),
+                str(worktree),
+                story_key,
+                baseline_head_sha,
+                merge_subject_template,
+                str(supervisor_log),
+            ],
+            cwd=repo_root,
+            log_path=supervisor_log,
+        )
+    except ProcessError:
+        return None
+
+
+def _load_latest_dispatch_context(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    slug: str,
+) -> tuple[Path, Path, str, dispatch_core.DispatchJournalFacts, policy.EffectivePolicy] | None:
+    del process
+    try:
+        repo_root = vcs.repo_common_root(Path.cwd())
+    except VcsCommandError:
+        return None
+    run_dir = latest_dispatch_run_dir(repo_root, slug)
+    if run_dir is None:
+        return None
+    journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+    if journal.story_key is None or journal.worktree_path is None:
+        return None
+    if journal.session_pid is None or journal.baseline_head_sha is None:
+        return None
+    return repo_root, run_dir, run_dir.name, journal, _compose_policy(slug)
+
+
+def _ensure_dispatch_supervision(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    run_dir: Path,
+    run_id: str,
+    slug: str,
+    journal: dispatch_core.DispatchJournalFacts,
+    effective_policy: policy.EffectivePolicy,
+    operator_kind: str,
+) -> tuple[int | None, list[Finding], dict[str, object]]:
+    """Re-spawn dispatch supervisor when dead; journal operator attach/resume."""
+    findings: list[Finding] = []
+    data: dict[str, object] = {
+        "slug": slug,
+        "run_id": run_id,
+        "story_key": journal.story_key,
+    }
+    session_alive = (
+        journal.session_pid is not None and process.is_alive(journal.session_pid)
+    )
+    supervisor_alive = (
+        journal.supervisor_pid is not None
+        and process.is_alive(journal.supervisor_pid)
+    )
+    verdict = resolve_dispatch_session_verdict(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        journal=journal,
+        effective_policy=effective_policy,
+    )
+    data["session_alive"] = session_alive
+    data["supervisor_alive"] = supervisor_alive
+    data["completion_verdict"] = verdict.value if verdict is not None else None
+    if verdict not in {DispatchSessionVerdict.LIVE, None}:
+        findings.append(
+            Finding(
+                code="MRS-DISP-023",
+                severity=Severity.ERROR,
+                message=(
+                    f"no live dispatch to recover on station {slug!r}: "
+                    f"completion verdict is {verdict.value if verdict else 'unknown'!r}"
+                ),
+            )
+        )
+        return None, findings, data
+    if not session_alive and verdict != DispatchSessionVerdict.LIVE:
+        findings.append(
+            Finding(
+                code="MRS-DISP-023",
+                severity=Severity.ERROR,
+                message=(
+                    f"no live dispatch session on station {slug!r} "
+                    f"(session pid {journal.session_pid} is not alive)"
+                ),
+            )
+        )
+        return None, findings, data
+    new_supervisor_pid: int | None = journal.supervisor_pid
+    if not supervisor_alive:
+        respawned = _spawn_dispatch_supervisor(
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            run_id=run_id,
+            session_pid=journal.session_pid,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+            run_dir=run_dir,
+        )
+        if respawned is None:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-024",
+                    severity=Severity.WARN,
+                    message=(
+                        "dispatch session is live but completion supervisor "
+                        "could not be re-spawned; run continues unsupervised"
+                    ),
+                )
+            )
+        else:
+            new_supervisor_pid = respawned
+            data["supervisor_pid"] = respawned
+            writer_id = _writer_id()
+            kind = (
+                dispatch_core.KIND_DISPATCH_OPERATOR_ATTACH
+                if operator_kind == "attach"
+                else dispatch_core.KIND_DISPATCH_OPERATOR_RESUME
+            )
+            entry = build_entry(
+                id=JournalEntryId(writer_id, 0),
+                ts=_format_entry_ts(_now_utc()),
+                run_id=run_id,
+                kind=kind,
+                phase=Phase.OBSERVATION,
+                payload={
+                    "supervisor_pid": respawned,
+                    "session_pid": journal.session_pid,
+                    "reconciled_unsupervised": not supervisor_alive,
+                },
+            )
+            try:
+                _append_entry(fs, run_dir, entry, fsync=True)
+            except FsError as exc:
+                findings.append(
+                    Finding(
+                        code="MRS-DISP-025",
+                        severity=Severity.WARN,
+                        message=f"supervision recovered but operator journal failed: {exc}",
+                    )
+                )
+    data["log"] = str(run_dir / _LOG_FILENAME)
+    return new_supervisor_pid, findings, data
+
+
+def add_factory_dispatch_attach_subparser(factory_subparsers: argparse._SubParsersAction) -> None:
+    parser = factory_subparsers.add_parser(
+        "dispatch-attach",
+        help="Recover supervision and follow a live dispatch session log (Story 22.6).",
+        description=(
+            "Re-spawns the dispatch completion supervisor when it died, journals "
+            "the operator attach, then execs tail on the session log — never "
+            "busy-waits in Python."
+        ),
+    )
+    parser.add_argument("slug", help="The BMAD project slug (station).")
+    parser.set_defaults(handler=run_dispatch_attach)
+
+
+def add_factory_dispatch_resume_subparser(factory_subparsers: argparse._SubParsersAction) -> None:
+    parser = factory_subparsers.add_parser(
+        "dispatch-resume",
+        help="Re-spawn dispatch supervision without blocking (Story 22.6).",
+        description=(
+            "Re-spawns the dispatch completion supervisor when it died and "
+            "returns promptly — unsupervised git progress is reconciled by "
+            "the supervisor from facts, not operator session state."
+        ),
+    )
+    parser.add_argument("slug", help="The BMAD project slug (station).")
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_dispatch_resume)
+
+
+def run_dispatch_attach(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    vcs: VcsPort | None = None,
+    process: ProcessPort | None = None,
+) -> int:
+    fs = fs if fs is not None else LocalFs()
+    vcs = vcs if vcs is not None else GitVcs()
+    process = process if process is not None else PosixProcess()
+    slug = args.slug
+    if not policy._is_valid_project_slug(slug):
+        finding = Finding(
+            code="MRS-DISP-001",
+            severity=Severity.ERROR,
+            message=f"malformed project slug {slug!r}",
+        )
+        try:
+            print(
+                f"error: {finding.code} [{finding.severity.value}] {finding.message}",
+                file=sys.stderr,
+                flush=True,
+            )
+        except (OSError, UnicodeEncodeError):
+            _suppress_downstream_pipe_close()
+        return exit_code_for(compute_verdict((finding,)))
+    loaded = _load_latest_dispatch_context(fs=fs, vcs=vcs, process=process, slug=slug)
+    if loaded is None:
+        finding = Finding(
+            code="MRS-DISP-023",
+            severity=Severity.ERROR,
+            message=f"no dispatch run found for station {slug!r}",
+        )
+        try:
+            print(
+                f"error: {finding.code} [{finding.severity.value}] {finding.message}",
+                file=sys.stderr,
+                flush=True,
+            )
+        except (OSError, UnicodeEncodeError):
+            _suppress_downstream_pipe_close()
+        return exit_code_for(compute_verdict((finding,)))
+    repo_root, run_dir, run_id, journal, effective_policy = loaded
+    _, findings, data = _ensure_dispatch_supervision(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        run_dir=run_dir,
+        run_id=run_id,
+        slug=slug,
+        journal=journal,
+        effective_policy=effective_policy,
+        operator_kind="attach",
+    )
+    if any(f.severity == Severity.ERROR for f in findings):
+        try:
+            for finding in findings:
+                if finding.severity == Severity.ERROR:
+                    print(
+                        f"error: {finding.code} [{finding.severity.value}] {finding.message}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+        except (OSError, UnicodeEncodeError):
+            _suppress_downstream_pipe_close()
+        return exit_code_for(compute_verdict(tuple(findings)))
+    log_path = Path(str(data["log"]))
+    try:
+        os.execvp("tail", ["tail", "-F", str(log_path)])
+    except OSError as exc:
+        finding = Finding(
+            code="MRS-DISP-026",
+            severity=Severity.ERROR,
+            message=f"cannot exec tail on dispatch log {log_path!r}: {exc}",
+        )
+        try:
+            print(
+                f"error: {finding.code} [{finding.severity.value}] {finding.message}",
+                file=sys.stderr,
+                flush=True,
+            )
+        except (OSError, UnicodeEncodeError):
+            _suppress_downstream_pipe_close()
+        return exit_code_for(compute_verdict((finding,)))
+    return 0
+
+
+def run_dispatch_resume(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    vcs: VcsPort | None = None,
+    process: ProcessPort | None = None,
+) -> int:
+    fs = fs if fs is not None else LocalFs()
+    vcs = vcs if vcs is not None else GitVcs()
+    process = process if process is not None else PosixProcess()
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-DISP-001",
+                severity=Severity.ERROR,
+                message=f"malformed project slug {slug!r}",
+            )
+        )
+        return _emit(args, data, findings)
+    loaded = _load_latest_dispatch_context(fs=fs, vcs=vcs, process=process, slug=slug)
+    if loaded is None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-023",
+                severity=Severity.ERROR,
+                message=f"no dispatch run found for station {slug!r}",
+            )
+        )
+        return _emit(args, data, findings)
+    repo_root, run_dir, run_id, journal, effective_policy = loaded
+    _, sup_findings, sup_data = _ensure_dispatch_supervision(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        run_dir=run_dir,
+        run_id=run_id,
+        slug=slug,
+        journal=journal,
+        effective_policy=effective_policy,
+        operator_kind="resume",
+    )
+    findings.extend(sup_findings)
+    data.update(sup_data)
     return _emit(args, data, findings)

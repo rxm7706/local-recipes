@@ -22,6 +22,14 @@ from ..core.dispatch_completion import (
     has_git_progress,
     judge_dispatch_completion,
 )
+from ..core.dispatch_preserve import (
+    failed_patch_path,
+    relative_preserve_ref,
+)
+from ..core.dispatch_survival import (
+    build_timing_record,
+    timing_record_payload,
+)
 from ..core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
@@ -63,6 +71,126 @@ def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
     if prepared.sidecar_relative_path is not None:
         fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
+
+
+def _launch_story_started_ts(folded, run_id: str) -> str | None:
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        if entry.run_id == run_id and entry.phase == Phase.INTENT:
+            return entry.ts
+    return None
+
+
+def _journal_dispatch_timing(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    story_key: str,
+    story_started_at: str,
+    story_ended_at: str,
+    baseline_revision: str,
+    final_revision: str,
+) -> int:
+    record = build_timing_record(
+        story_key=story_key,
+        story_started_at=story_started_at,
+        story_ended_at=story_ended_at,
+        baseline_revision=baseline_revision,
+        final_revision=final_revision,
+    )
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=story_ended_at,
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_TIMING,
+        phase=Phase.INTENT,
+        payload=timing_record_payload(record),
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=story_ended_at,
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_TIMING,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={**timing_record_payload(record), "ok": True},
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal timing for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
+def _journal_dispatch_preserve(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    story_key: str,
+    worktree: Path,
+    baseline_head_sha: str,
+) -> int:
+    try:
+        patch_body = vcs.worktree_unified_patch(worktree, baseline_sha=baseline_head_sha)
+    except VcsCommandError as exc:
+        print(
+            f"dispatch supervisor: preserve capture failed for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+        return counter
+    if not patch_body.strip():
+        return counter
+    patch_path = failed_patch_path(run_dir, story_key)
+    try:
+        fs.ensure_dir(patch_path.parent)
+        fs.write_text_atomic(patch_path, patch_body)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot write preserve patch for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+        return counter
+    preserve_ref = relative_preserve_ref(run_dir, patch_path)
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_PRESERVE,
+        phase=Phase.INTENT,
+        payload={"preserve_ref": preserve_ref, "story_key": story_key},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_PRESERVE,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={"preserve_ref": preserve_ref, "ok": True},
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal preserve for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
 
 
 def gather_dispatch_git_facts(
@@ -515,6 +643,32 @@ def run_dispatch_supervisor(
                 file=sys.stderr,
             )
             return 1
+        ended_at = _format_entry_ts(_now_utc())
+        started_at = _launch_story_started_ts(folded, run_id) or ended_at
+        counter = _journal_dispatch_timing(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter + 1,
+            story_key=story_key,
+            story_started_at=started_at,
+            story_ended_at=ended_at,
+            baseline_revision=git_facts.baseline_head_sha,
+            final_revision=git_facts.current_head_sha,
+        )
+        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(git_facts):
+            counter = _journal_dispatch_preserve(
+                fs=fs,
+                vcs=vcs,
+                run_dir=run_dir,
+                run_id=run_id,
+                writer_id=writer_id,
+                counter=counter,
+                story_key=story_key,
+                worktree=worktree,
+                baseline_head_sha=baseline_head_sha,
+            )
         return 0
 
 

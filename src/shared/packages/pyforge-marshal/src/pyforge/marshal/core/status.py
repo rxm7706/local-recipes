@@ -982,6 +982,14 @@ class FleetHomeFacts:
     # failed gate; self-report is never the verdict input.
     dispatch_verification_verdict: str | None = None
     dispatch_verification_failed_gate: str | None = None
+    # Story 22.6 (dispatch operator survival, FR-193 CAP-6): supervision and
+    # per-story timing / preserve refs from the dispatch journal alone.
+    dispatch_supervisor_alive: bool = False
+    dispatch_story_started_at: str | None = None
+    dispatch_story_ended_at: str | None = None
+    dispatch_baseline_revision: str | None = None
+    dispatch_final_revision: str | None = None
+    dispatch_preserve_ref: str | None = None
 
 
 def _apply_dispatch_overlay(
@@ -1010,6 +1018,17 @@ def _apply_dispatch_overlay(
         patched["dispatch_verification_failed_gate"] = (
             facts.dispatch_verification_failed_gate
         )
+    patched["dispatch_supervisor_alive"] = facts.dispatch_supervisor_alive
+    if facts.dispatch_story_started_at is not None:
+        patched["dispatch_story_started_at"] = facts.dispatch_story_started_at
+    if facts.dispatch_story_ended_at is not None:
+        patched["dispatch_story_ended_at"] = facts.dispatch_story_ended_at
+    if facts.dispatch_baseline_revision is not None:
+        patched["dispatch_baseline_revision"] = facts.dispatch_baseline_revision
+    if facts.dispatch_final_revision is not None:
+        patched["dispatch_final_revision"] = facts.dispatch_final_revision
+    if facts.dispatch_preserve_ref is not None:
+        patched["dispatch_preserve_ref"] = facts.dispatch_preserve_ref
     return patched
 
 

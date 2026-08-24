@@ -651,10 +651,18 @@ def _merge_dispatch_overlay(
     if run_dir is None:
         return facts
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
-    if journal.session_pid is None and journal.completion_verdict is None:
+    if (
+        journal.session_pid is None
+        and journal.completion_verdict is None
+        and journal.story_key is None
+    ):
         return facts
     alive = (
         journal.session_pid is not None and process.is_alive(journal.session_pid)
+    )
+    supervisor_alive = (
+        journal.supervisor_pid is not None
+        and process.is_alive(journal.supervisor_pid)
     )
     elapsed: float | None = None
     if journal.launched_at is not None:
@@ -681,6 +689,12 @@ def _merge_dispatch_overlay(
         dispatch_completion_verdict=completion_verdict,
         dispatch_verification_verdict=journal.verification_verdict,
         dispatch_verification_failed_gate=journal.verification_failed_gate,
+        dispatch_supervisor_alive=supervisor_alive,
+        dispatch_story_started_at=journal.story_started_at,
+        dispatch_story_ended_at=journal.story_ended_at,
+        dispatch_baseline_revision=journal.baseline_revision,
+        dispatch_final_revision=journal.final_revision,
+        dispatch_preserve_ref=journal.preserve_ref,
     )
 
 

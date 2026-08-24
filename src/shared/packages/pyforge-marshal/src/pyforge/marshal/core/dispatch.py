@@ -18,9 +18,13 @@ from .policy import EffectivePolicy
 
 KIND_DISPATCH_LAUNCH = "dispatch-launch"
 KIND_DISPATCH_SUPERVISOR_ATTACH = "dispatch-supervisor-attach"
+KIND_DISPATCH_OPERATOR_ATTACH = "dispatch-operator-attach"
+KIND_DISPATCH_OPERATOR_RESUME = "dispatch-operator-resume"
 KIND_DISPATCH_COMPLETION = "dispatch-completion"
 KIND_DISPATCH_VERIFICATION = "dispatch-verification"
 KIND_DISPATCH_LAND = "dispatch-land"
+KIND_DISPATCH_TIMING = "dispatch-timing"
+KIND_DISPATCH_PRESERVE = "dispatch-preserve"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"
@@ -43,6 +47,11 @@ class DispatchJournalFacts:
     verification_failed_gate: str | None = None
     landing_verdict: str | None = None
     harness_self_report_shipped: bool = False
+    story_started_at: str | None = None
+    story_ended_at: str | None = None
+    baseline_revision: str | None = None
+    final_revision: str | None = None
+    preserve_ref: str | None = None
 
 
 def canonical_repo_root(repo_root: Path) -> Path:

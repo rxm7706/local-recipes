@@ -1519,6 +1519,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # cross-station declared-surface overlap advisory (WARN).
         "MRS-DISP-021",
         "MRS-DISP-022",
+        # Story 22.6 (dispatch operator survival, FR-193 CAP-6): 023 no live
+        # dispatch to attach/resume (ERROR); 024 supervisor re-spawn failed
+        # (WARN); 025 operator journal failed (WARN); 026 tail exec failed
+        # (ERROR).
+        "MRS-DISP-023",
+        "MRS-DISP-024",
+        "MRS-DISP-025",
+        "MRS-DISP-026",
     }
 )
 
