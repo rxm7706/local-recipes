@@ -383,6 +383,55 @@ def test_blocked_halts_without_later_phases(tmp_path: Path):
     assert "architecture" in names
     assert "epics" not in names
     assert "orphan_report" not in names
+    assert report.orphan_manifest_written is True
+    assert (Path(report.run_dir) / "orphans.json").is_file()
+
+
+def test_transient_failure_retries_then_completes(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    invoker = _RecordingInvoker(fail_times=1)
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="full",
+    )
+    assert report.status == "complete"
+    by_name = {p.name: p for p in report.phases}
+    assert by_name["spec"].attempts == 2
+    assert by_name["spec"].status == "complete"
+
+
+def test_exhausted_failures_halt_chain(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    # First attempt + 2 retries = 3 failures exhaust MAX_PHASE_RETRIES.
+    invoker = _RecordingInvoker(fail_times=3)
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="full",
+    )
+    assert report.status == "failed"
+    names = [p.name for p in report.phases]
+    assert names == ["spec"]
+    assert report.phases[0].attempts == 3
+    assert "prd" not in names
+    assert report.orphan_manifest_written is True
+
+
+def test_parse_status_markers_and_silent_exit():
+    from pyforge.marshal.adapters.skill_invoke_harness import _parse_status
+
+    assert _parse_status("STATUS: COMPLETE\nok", 0) == "complete"
+    assert _parse_status("STATUS:BLOCKED", 0) == "blocked"
+    assert _parse_status("STATUS: failed\n", 0) == "failed"
+    assert _parse_status("no marker at all", 0) == "failed"
+    assert _parse_status("", 1) == "failed"
 
 
 def test_no_auto_commit_even_when_requested(tmp_path: Path):

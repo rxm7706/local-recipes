@@ -13,6 +13,7 @@ needs a ``complete`` / ``blocked`` / ``failed`` result before advancing.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -27,6 +28,10 @@ class SkillInvokeError(PyforgeError, Exception):
 
 
 _CURSOR_AGENT_BINARY = "cursor"
+# Live skill phases can take a long time; bound so a hung agent cannot
+# freeze the orchestrator forever. Override via MARSHAL_SKILL_TIMEOUT.
+_DEFAULT_SKILL_TIMEOUT_S = 3600.0
+_STATUS_RE = re.compile(r"STATUS:\s*(BLOCKED|FAILED|COMPLETE)\b", re.IGNORECASE)
 
 
 class PlanSkillInvoker:
@@ -120,6 +125,7 @@ class HarnessSkillInvoker:
         ]
         child_env = {**os.environ, "BMAD_ACTIVE_PROJECT": project}
         log_path = run_dir / f"phase_{phase}_{skill}.log"
+        timeout_s = _skill_timeout_s()
         try:
             run_dir.mkdir(parents=True, exist_ok=True)
             with open(log_path, "wb") as log_file:
@@ -131,7 +137,13 @@ class HarnessSkillInvoker:
                     stderr=subprocess.STDOUT,
                     env=child_env,
                     check=False,
+                    timeout=timeout_s,
                 )
+        except subprocess.TimeoutExpired as exc:
+            return SkillInvokeResult(
+                status="failed",
+                detail=f"skill harness timed out after {timeout_s}s: {exc}",
+            )
         except (OSError, ValueError) as exc:
             raise SkillInvokeError(
                 f"cannot launch skill harness {argv!r}: {exc}"
@@ -149,14 +161,31 @@ class HarnessSkillInvoker:
         )
 
 
+def _skill_timeout_s() -> float:
+    raw = os.environ.get("MARSHAL_SKILL_TIMEOUT", "").strip()
+    if not raw:
+        return _DEFAULT_SKILL_TIMEOUT_S
+    try:
+        value = float(raw)
+    except ValueError:
+        return _DEFAULT_SKILL_TIMEOUT_S
+    return value if value > 0 else _DEFAULT_SKILL_TIMEOUT_S
+
+
 def _parse_status(log_text: str, returncode: int) -> str:
-    upper = log_text.upper()
-    if "STATUS:BLOCKED" in upper:
-        return "blocked"
-    if "STATUS:FAILED" in upper:
+    """Map harness log + exit code to ``complete`` / ``blocked`` / ``failed``.
+
+    Explicit ``STATUS:`` markers win (whitespace-tolerant). Bare exit 0
+    without a marker is ``failed`` so a silent/partial agent run cannot
+    advance the chain as success.
+    """
+    del returncode  # markers are authoritative; bare exit is never success
+    match = _STATUS_RE.search(log_text)
+    if match is None:
         return "failed"
-    if "STATUS:COMPLETE" in upper:
-        return "complete"
-    if returncode == 0:
-        return "complete"
-    return "failed"
+    token = match.group(1).upper()
+    if token == "BLOCKED":
+        return "blocked"
+    if token == "FAILED":
+        return "failed"
+    return "complete"

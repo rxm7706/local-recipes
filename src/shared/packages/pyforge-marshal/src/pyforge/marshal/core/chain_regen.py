@@ -762,6 +762,11 @@ def run_orchestrated_chain(
         loaded = load_journal(existing)
         if loaded is None:
             raise FileNotFoundError(f"state.yaml missing in {existing}")
+        if loaded.project and loaded.project != project:
+            raise ValueError(
+                f"journal project {loaded.project!r} does not match "
+                f"--project {project!r}"
+            )
         run_dir = existing
         journal = loaded
         phase_state: dict[str, dict[str, object]] = {
@@ -820,7 +825,7 @@ def run_orchestrated_chain(
                     status=prior_status,  # type: ignore[arg-type]
                     detail=str(prior.get("detail", "resumed: already finished")),
                     skill=str(prior.get("skill", "") or ""),
-                    attempts=int(prior.get("attempts", 0) or 0),
+                    attempts=_safe_int(prior.get("attempts", 0), default=0),
                 )
             )
             continue
@@ -856,7 +861,7 @@ def run_orchestrated_chain(
             dream=dream_path,
             run_dir=run_dir,
             invoker=invoker,
-            prior_attempts=int(prior.get("attempts", 0) or 0),
+            prior_attempts=_safe_int(prior.get("attempts", 0), default=0),
         )
         outcomes.append(outcome)
         phase_state[phase] = {
@@ -875,6 +880,11 @@ def run_orchestrated_chain(
             )
             save_journal(run_dir, journal)
             orphans = find_orphans(root, project)
+            try:
+                write_orphan_manifest(run_dir, orphans)
+                orphan_written = True
+            except OSError:
+                orphan_written = False
             return OrchestratedChainReport(
                 project=project,
                 dream=str(dream_path),
@@ -884,7 +894,7 @@ def run_orchestrated_chain(
                 status=outcome.status,  # type: ignore[arg-type]
                 phases=tuple(outcomes),
                 orphans=orphans,
-                orphan_manifest_written=False,
+                orphan_manifest_written=orphan_written,
                 auto_commit=False,
                 preserve_code_status_hook=preserve_code_status,
                 apply_orphans_hook=apply_orphans,
@@ -954,7 +964,7 @@ def _execute_orchestrated_phase(
         return OrchestratedPhaseOutcome(
             name="orphan_report",
             status="complete",
-            detail="orphan manifest written (report only; no delete)",
+            detail="orphan report phase (manifest written by orchestrator)",
             attempts=1,
         )
 
@@ -1022,6 +1032,13 @@ def _journal_replace(
         apply_orphans=journal.apply_orphans,
         stage=journal.stage,
     )
+
+
+def _safe_int(value: object, *, default: int = 0) -> int:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
 
 
 def _yaml_quote(value: str) -> str:

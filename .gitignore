@@ -745,6 +745,8 @@ scripts/.spec-surface-baseline.json.tmp
 _bmad/config.user.toml
 _bmad/custom/.active-project
 _bmad-output/projects/*/implementation-artifacts/
+# Story 21.2 chain-regen run journals + orphan manifests (local scratch).
+_bmad-output/projects/*/planning-artifacts/.chain-regen/
 # ...and the same path as a SYMLINK. The trailing-slash rule above matches only
 # real directories, so in a bmad-loop home — where `bmad-loop-worktree` creates
 # implementation-artifacts as a Tier-3 BACKLINK to the main checkout — the path

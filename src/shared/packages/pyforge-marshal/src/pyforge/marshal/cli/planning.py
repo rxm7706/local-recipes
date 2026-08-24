@@ -22,9 +22,10 @@ from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
 
-_MRS_PLAN_001 = "MRS-CHAIN-001"
-_MRS_PLAN_002 = "MRS-CHAIN-002"
-_MRS_PLAN_003 = "MRS-CHAIN-002"
+# Reuse Story 17.4 codes where meanings align; 005 is planning-only blocked.
+_MRS_PLAN_001 = "MRS-CHAIN-001"  # missing / unevaluable inputs
+_MRS_PLAN_002 = "MRS-CHAIN-005"  # skill blocked mid-chain (halt)
+_MRS_PLAN_003 = "MRS-CHAIN-002"  # phase failure after retries
 
 
 def add_planning_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -128,6 +129,17 @@ def run_planning_chain_regenerate(args: argparse.Namespace) -> int:
         dream = (root / dream).resolve()
     mode = "minimal" if args.minimal else "full"
 
+    if not slug or "/" in slug or "\\" in slug or ".." in slug:
+        findings.append(
+            Finding(
+                code=_MRS_PLAN_001,
+                severity=Severity.ERROR,
+                message=f"invalid project slug: {slug!r}",
+                path=str(root),
+            )
+        )
+        return _emit(args, findings, report=None)
+
     if args.live:
         from ..adapters.skill_invoke_harness import HarnessSkillInvoker
 
@@ -164,6 +176,20 @@ def run_planning_chain_regenerate(args: argparse.Namespace) -> int:
                 code=_MRS_PLAN_001,
                 severity=Severity.ERROR,
                 message=str(exc),
+                path=str(root),
+            )
+        )
+        return _emit(args, findings, report=None)
+    except Exception as exc:  # noqa: BLE001 — envelope, never raw traceback
+        from ..adapters.skill_invoke_harness import SkillInvokeError
+
+        if not isinstance(exc, (SkillInvokeError, OSError)):
+            raise
+        findings.append(
+            Finding(
+                code=_MRS_PLAN_003,
+                severity=Severity.ERROR,
+                message=f"skill harness error: {exc}",
                 path=str(root),
             )
         )
