@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-24 ~01:00 CDT
+**Updated:** 2026-08-24 ~02:00 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 4** · steward **12-7 only** (skipped) — **marshal-only drain** |
+| Backlog | **marshal 3** · steward **12-7 only** (skipped) — **marshal-only drain** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `24-2` | [068a887f-c2e2-4cdd-b1c6-2598bcdc304f](068a887f-c2e2-4cdd-b1c6-2598bcdc304f) |
+| marshal | `24-3` | launching |
 
 ## Dispatch sequencing (operator — 2026-08-24)
 
-Epic 24: `24-2` → `24-3` → Epic 25 (`25-6`, `25-7`).
+Epic 24 last story `24-3` in flight → then Epic 25 (`25-6`, `25-7`).
 
 ## Operator skip
 
@@ -45,8 +45,8 @@ Epic 24: `24-2` → `24-3` → Epic 25 (`25-6`, `25-7`).
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `24-1` | [#718](https://github.com/rxm7706/local-recipes/pull/718) merge `67ae6237a4` ([Marshal 24-1](1ca7ee92-378c-4a36-8279-85f0b97426d9)) · `HarnessPort.engine_liveness` |
-| marshal | `23-3` | [#716](https://github.com/rxm7706/local-recipes/pull/716) merge `e47efc11e19` · **Epic 23 done** |
+| marshal | `24-2` | [#719](https://github.com/rxm7706/local-recipes/pull/719) merge `6e2d536f3f` ([Marshal 24-2](068a887f-c2e2-4cdd-b1c6-2598bcdc304f)) · landing-pass liveness docs |
+| marshal | `24-1` | [#718](https://github.com/rxm7706/local-recipes/pull/718) merge `67ae6237a4` · `HarnessPort.engine_liveness` |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
