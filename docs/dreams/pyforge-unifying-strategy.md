@@ -106,7 +106,42 @@ The central `django-pyforge` banner dynamically queries `apps.get_app_configs()`
 
 ---
 
-## The Complete 10-Layer PyForge Platform Topology
+## The 3 Operational Planes & Complete 10-Layer Platform Topology
+
+The Hub-and-Spoke Enterprise Architecture groups the 10 platform layers into **three distinct operational planes**:
+
+```mermaid
+graph TD
+    subgraph Plane1["1. UI & Routing Plane (Browser Surface)"]
+        Host["Central Host: Django + django-allauth (SSO)"]
+        Lane1["Lane 1: Wagtail CRX / Guildhall (Root /)"]
+        Lane2["Lane 2: 9 Pluggable Station Portal Apps"]
+        Lane3["Lane 3: Isolated Vizro / Panel Dashboards"]
+        Host --> Lane1
+        Host --> Lane2
+        Host -.->|Reverse Proxy (Steward)| Lane3
+    end
+
+    subgraph Plane2["2. Compute & Agent Plane (Execution Fabric)"]
+        Microservices["9 Paired FastAPI Station Microservices (:800x)"]
+        MCPAgents["Agentic Layer: MCP Servers (SSE / Stdio)"]
+        CLI["Unified CLI Surface: pyforge <station>"]
+        Lane2 -->|HTMX / Async HTTPX Client| Microservices
+        MCPAgents -->|MCP Protocol Tools & Prompts| Microservices
+        CLI -->|Direct Local or Remote REST API| Microservices
+    end
+
+    subgraph Plane3["3. Data & Infrastructure Plane (State & Persistence)"]
+        Queue["Async Task Queue: Celery + Redis (noeviction)"]
+        Data["Multi-Model Data Layer: Postgres (pgvector) + DuckDB + SQLite"]
+        Gov["Security & Observability: Warden Gates + Doctor Auto-Remedy"]
+        Microservices --> Queue
+        Microservices --> Data
+        Microservices --> Gov
+    end
+```
+
+### The 10 Platform Layers
 
 1. **Content & Presentation Layer (Lane 1):** Wagtail + CodeRed CMS (CRX) at root (`/`), hosting the Guildhall, Corporate Brain, and Herald presentation stages (`.dc.html`, Marp, PPTX, Vite).
 2. **Pluggable Web Portal Layer (Lane 2):** 9 Reusable Django Apps (`portals/`) rendering HTMX views, interactive forms, and approvals with zero domain database models.
@@ -938,3 +973,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Technology Stack & Library Catalog Integration: documented the complete, curated 9-tier library ecosystem derived from `pixi.toml` spanning Django/Wagtail web layer, Anthropic/FastMCP agent SDKs, Langflow/DB-GPT AI engines, DuckDB/Polars/Kedro data stack, Vizro/Panel dashboards, document/media converters, DevSecOps supply-chain tools, and QA fixtures.
 - **2026-08-23** — Packaging Audit & High-Leverage Opportunity Matrix: completed an audit of all station `pyproject.toml` files, verifying `hatchling` build systems and `pyforge-core` leaf spine bindings across all 9 stations, and mapped top 10 underutilized repository libraries (`cocoindex`, `openlineage`, `BSL`, `markitdown`, `graphviz2drawio`, `filelock`, `go-sops`, `pandera`, `taplo`, `playwright`) to specific station capabilities.
 - **2026-08-23** — Empirical Multi-Python Resolution Benchmark: executed standalone `pixi lock` solver benchmarks across the entire 1,000+ package estate for Python 3.12, 3.13, and 3.14, confirming 100% solver success across all three Python minor versions with complete binary C-extension availability.
+- **2026-08-23** — The 3 Operational Planes Architecture Formalization: unified the 10 platform layers into three macro operational planes (UI & Routing Plane, Compute & Agent Plane, Data & Infrastructure Plane) with an overarching Mermaid system topology showing direct client-to-service and agent-to-MCP execution paths.
