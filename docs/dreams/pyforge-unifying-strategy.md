@@ -312,6 +312,64 @@ graph TD
 
 ---
 
+## Enterprise Server Infrastructure & OpenShift (OCP) Sizing Specifications
+
+Deploying PyForge across enterprise Kubernetes and Red Hat OpenShift (OCP) clusters adheres to the following server infrastructure, storage, and networking specifications:
+
+### 1. Cluster Compute & Sizing Recommendations
+
+| Component | Pod / Replica Count | CPU (Requests / Limits) | Memory (Requests / Limits) | Scaling Strategy |
+| :--- | :---: | :---: | :---: | :--- |
+| **Platform Web Host** (`Django + Wagtail CRX`) | 2–4 replicas | 2 vCPU / 4 vCPU | 2 GB / 4 GB | Horizontal Pod Autoscaler (HPA) on CPU/Traffic |
+| **Station Compute Services** (9 `FastAPI + MCP`) | 1–2 replicas per station | 1 vCPU / 2 vCPU each | 1 GB / 2 GB each | Scaled independently per station load |
+| **Async Task Workers** (`Celery` for Mason/Warden) | 2–8 replicas | 2 vCPU / 4 vCPU | 4 GB / 8 GB | Scaled on Redis Queue depth |
+| **Analytics Dashboards** (`Vizro / Panel`) | 1–2 replicas | 1 vCPU / 2 vCPU | 2 GB / 4 GB | Scaled on active concurrent viewers |
+| **PostgreSQL (`pgvector` + multi-schema)** | 1 primary + 1 standby | 4 vCPU / 8 vCPU | 8 GB / 16 GB | Crunchy Data / CloudNativePG Operator |
+| **Redis (`noeviction` Broker & Cache)** | 3-node Sentinel / HA | 2 vCPU / 4 vCPU | 4 GB / 8 GB | In-memory with RDB persistence |
+| **Total Recommended Capacity (HA Production)** | — | **16 to 32 vCPUs** | **32 to 64 GB RAM** | Minimum 3 Worker Nodes |
+
+### 2. Persistent Storage (CSI / PVC)
+
+| Storage Class | Usage / Destination | Capacity | Access Mode |
+| :--- | :--- | :---: | :---: |
+| **Block Storage (SSD / NVMe)** | PostgreSQL Data (`public`, `langflow_schema`, `dbgpt_schema`) | 100 GB – 500 GB | `ReadWriteOnce` (RWO) |
+| **Block Storage (SSD)** | Redis Append-Only Persistence | 20 GB – 50 GB | `ReadWriteOnce` (RWO) |
+| **Object Storage (S3 / MinIO / Artifactory)** | Wheel mirror caches, conda tarballs, presentation exports, and Scribe graph dumps | 500 GB – 2 TB | S3 API / REST |
+
+### 3. Networking, Ingress & Routing
+
+* **Edge TLS Routing (`OpenShift Route`):**
+  * Single external ingress route: `https://pyforge.internal.company.com` (TLS terminated at edge via corporate wildcard certificate with `X-Forwarded-Proto` and `X-Forwarded-For` injection).
+* **Internal Cluster Service Mesh / DNS:**
+  * Microservices communicate privately over cluster DNS:
+    * `http://pyforge-warden-service.pyforge.svc.cluster.local:8004`
+    * `http://pyforge-atlas-service.pyforge.svc.cluster.local:8003`
+    * `http://pyforge-postgres.pyforge.svc.cluster.local:5432`
+    * `http://pyforge-redis.pyforge.svc.cluster.local:6379`
+
+### 4. Enterprise Security & Identity Integrations
+
+* **OpenShift `restricted-v2` SCC Compliance (Hardened Container Contract):**
+  * `runAsNonRoot: true` (Arbitrary non-root UID dynamically assigned by OpenShift namespace).
+  * `allowPrivilegeEscalation: false`
+  * `seccompProfile: RuntimeDefault`
+  * `capabilities: drop: ["ALL"]`
+  * `readOnlyRootFilesystem: true` (with `/tmp` and static cache mounted as ephemeral emptyDirs).
+* **Enterprise Identity Provider (IdP):**
+  * Red Hat Keycloak, Microsoft Entra ID (Azure AD), Okta, or PingFederate configured with OIDC.
+  * JWT tokens validated on `idp_subject` and corporate group claims (`resource_access.pyforge.roles`).
+* **Corporate TLS & CA Truststore:**
+  * Internal enterprise Root/Intermediate CA bundle mounted into `/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem` (automatically consumed by Python `truststore` and Node.js).
+* **Enterprise Container Registry:**
+  * Internal Red Hat Quay, JFrog Artifactory, or Harbor for image pulls and vulnerability scanning.
+
+### 5. Observability & Platform Telemetry
+
+* **Metrics & Traces:** OpenTelemetry Collector / Prometheus scraping `/metrics` and `/healthz` endpoints across Django and FastAPI.
+* **Distributed Logging:** OpenShift Logging (Vector / Loki / Elasticsearch) capturing JSON structured logs (`structlog`) with `trace_id` and `request_id` correlation across all 9 stations.
+
+---
+
 ---
 
 ## 1. Inter-Station Event Bus & Message Fabric
@@ -626,3 +684,4 @@ An adversarial review of each station's PRD reveals critical **product-level bli
 - **2026-08-23** — Renamed to `pyforge-unifying-strategy.md`: elevated document scope to reflect the holistic unifying strategy encompassing product vision, web UI, compute microservices, MCP agent fabric, unified CLI, and cross-station architecture.
 - **2026-08-23** — LocalStack Philosophy & Cross-Platform Guarantees: codified 100% native Linux/macOS/Windows execution guarantees via Pixi (`linux-64`, `win-64`, `osx-arm64-min`) and articulated PyForge's design alignment with the LocalStack emulator model (100% offline, zero cloud bills, sub-millisecond agent inner loops, and strict local-to-OCP 15-Factor environment parity).
 - **2026-08-23** — Container Delivery Modes Formalization: codified the 3 deployment topologies powered by a single Pixi-built container image (`pyforge-container`): Mode A (Single All-in-One Podman Container), Mode B (Local Podman Pod with `pgvector` and Keycloak), and Mode C (Multi-Container Distributed OpenShift/K8s).
+- **2026-08-23** — Enterprise Server Infrastructure & OCP Sizing Specifications: codified the complete production cluster sizing (16–32 vCPUs, 32–64 GB RAM, minimum 3 worker nodes), block and object storage requirements (PostgreSQL `pgvector`, Redis persistence, S3/MinIO mirrors), OpenShift Route edge TLS, internal cluster DNS, and `restricted-v2` SCC security compliance.
