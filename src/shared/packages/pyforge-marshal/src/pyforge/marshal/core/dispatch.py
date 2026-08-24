@@ -1,7 +1,12 @@
-"""Pure dispatch path helpers and journal kinds (Story 22.1, FR-193 CAP-1)."""
+"""Pure dispatch path helpers and journal kinds (Story 22.1, FR-193 CAP-1).
+
+Story 22.5 (FR-193 CAP-5) adds declared-surface overlap detection for
+cross-station concurrent dispatch advisories.
+"""
 
 from __future__ import annotations
 
+import fnmatch
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -154,3 +159,77 @@ def dispatch_worktree_path(repo_root: Path, slug: str, story_key: str) -> Path:
 
 def sanitize_worktree_name(repo_root: Path, slug: str, story_key: str) -> str:
     return dispatch_worktree_path(repo_root, slug, story_key).name
+
+
+def list_station_slugs(repo_root: Path) -> tuple[str, ...]:
+    """BMAD project slugs under ``_bmad-output/projects/`` (Story 22.5)."""
+    projects = canonical_repo_root(repo_root) / "_bmad-output" / "projects"
+    if not projects.is_dir():
+        return ()
+    try:
+        return tuple(sorted(p.name for p in projects.iterdir() if p.is_dir()))
+    except OSError:
+        return ()
+
+
+def _glob_probe_paths(glob: str) -> tuple[str, ...]:
+    """Sample concrete paths a glob might match (overlap heuristic only)."""
+    cleaned = glob.rstrip("/")
+    if cleaned.endswith("/**"):
+        base = cleaned[:-3]
+        return (base, f"{base}/x", f"{base}/x/y")
+    if cleaned.endswith("/*"):
+        base = cleaned[:-2]
+        return (base, f"{base}/x")
+    if any(ch in cleaned for ch in "*?[]"):
+        concrete = cleaned.replace("**", "x").replace("*", "x").replace("?", "x")
+        return (concrete,)
+    return (cleaned,)
+
+
+def declared_globs_overlap(glob_a: str, glob_b: str) -> bool:
+    """True when two declared surface globs could match the same path."""
+    if glob_a == glob_b:
+        return True
+    stem_a = glob_a.rstrip("*").rstrip("/")
+    stem_b = glob_b.rstrip("*").rstrip("/")
+    if stem_a == stem_b:
+        return True
+    if stem_a.startswith(stem_b + "/") or stem_b.startswith(stem_a + "/"):
+        return True
+    for probe in _glob_probe_paths(glob_a) + _glob_probe_paths(glob_b):
+        if fnmatch.fnmatch(probe, glob_a) and fnmatch.fnmatch(probe, glob_b):
+            return True
+    return False
+
+
+def find_declared_surface_overlaps(
+    left: tuple[str, ...] | None,
+    right: tuple[str, ...] | None,
+) -> tuple[tuple[str, str], ...]:
+    """Pairs of overlapping globs between two declared surfaces (Story 22.5)."""
+    if left is None or right is None:
+        return ()
+    pairs: list[tuple[str, str]] = []
+    for glob_a in left:
+        for glob_b in right:
+            if declared_globs_overlap(glob_a, glob_b):
+                pairs.append((glob_a, glob_b))
+    return tuple(pairs)
+
+
+def format_surface_overlap_advisory(
+    *,
+    in_flight_station: str,
+    in_flight_story_key: str,
+    requested_station: str,
+    requested_story_key: str,
+    overlapping: tuple[tuple[str, str], ...],
+) -> str:
+    pair_desc = ", ".join(f"{left!r} ∩ {right!r}" for left, right in overlapping)
+    return (
+        "LOUD ADVISORY: declared frozen surfaces overlap between in-flight "
+        f"story {in_flight_story_key!r} on station {in_flight_station!r} and "
+        f"requested dispatch {requested_story_key!r} on "
+        f"{requested_station!r}: {pair_desc}"
+    )

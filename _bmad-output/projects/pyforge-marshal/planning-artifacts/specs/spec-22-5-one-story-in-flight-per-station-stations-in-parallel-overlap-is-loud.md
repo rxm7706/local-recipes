@@ -2,11 +2,11 @@
 title: One story in flight per station; stations in parallel; overlap is loud
 type: feature
 created: '2026-08-23'
-status: ready
+status: in-progress
 updated: '2026-08-23'
 context: []
 warnings: []
-baseline_revision: 79d8152f93
+baseline_revision: 3aa7e3925046c71f755c2b63716495ffbf6e7850
 ---
 
 <intent-contract>
