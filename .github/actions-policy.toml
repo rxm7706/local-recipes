@@ -1,0 +1,28 @@
+# Global GitHub Actions master switch for this private repo.
+#
+# GitHub does not read this file. Apply it with:
+#   python scripts/apply_actions_policy.py --fix
+# Default (no --fix) is a read-only check that the live repo matches this file.
+#
+# enabled = false  → PUT actions/permissions enabled=false. No billed minutes.
+# enabled = true   → turn Actions back on, then enable ONLY allow_when_enabled
+#                    (every other workflow stays disabled_manually).
+#
+# Already applied live 2026-08-24 (spending limit / failed payment). Flip this
+# file and re-run --fix when billing is restored — do not toggle the GitHub
+# UI by hand or the file and the live switch will drift.
+#
+# GitHub-owned "Dependabot Updates" / "Dependency Graph" cannot be disabled
+# (API 422). They do not start billed jobs while the master switch is false.
+
+enabled = false
+
+# First workflows to turn back on. Both are ubuntu, minutes-cheap, and the
+# ones this repo actually relies on for recipe PRs / spec drift.
+# Leave disabled until then: Test macOS (macos-15-large), Test Windows,
+# Test Linux / Test All, Platform CI, Coverage gates, Dashboard (daily cron),
+# Herald live demo (weekly + PR), Kedro-Viz publish, Sync PyPI mappings.
+allow_when_enabled = [
+    "staged-recipes-linter.yml",
+    "detectors.yml",
+]
