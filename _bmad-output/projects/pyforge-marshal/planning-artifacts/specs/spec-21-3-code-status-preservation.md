@@ -2,7 +2,7 @@
 title: Code-status preservation
 type: feature
 created: '2026-08-23'
-status: in-progress
+status: done
 updated: '2026-08-23'
 context: []
 warnings: []
@@ -44,8 +44,15 @@ baseline_revision: 12be18be5a65bf2f4f9a1af2b3ab9442e039dd26
 
 ## Auto Run Result
 
-Status: in-progress
+Status: done
 
 Summary: Implemented CAP-2 code-status preservation for `marshal planning chain-regenerate`: snapshot ledger statuses before the chain, persist `code-status-snapshot.yaml` for resume safety, re-apply after the epics phase (before orphan report) by stable story id. New keys → backlog; retired keys not resurrected; `preserve_code_status` defaults true with `--no-preserve-code-status` opt-out. Never auto-commits.
 
+Files changed:
+- `core/chain_regen.py` — snapshot/re-apply helpers + post-epics wiring
+- `cli/planning.py` — CAP-2 flag help (no longer stub)
+- `tests/unit/test_chain_regen.py` — preserve round-trip, Full/Minimal, opt-out
+
 Verification: `pixi run -e pyforge-marshal pyforge-marshal-test` → 6268 passed, 12 deselected.
+
+Admin merge: PR https://github.com/rxm7706/local-recipes/pull/708 merge SHA `765497a06bbece166315db908a9a5aa83ebc7677` via `gh pr merge --merge --admin` (GitHub Actions billing blocks CI; local tests green).
