@@ -111,10 +111,9 @@ stations:
   marshal:
     project: pyforge-marshal
     drained: false
-    remaining_count: 14
-    next: 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
+    remaining_count: 13
+    next: 22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal
     queue:
-    - 22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud
     - 22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal
     - 21-2-orchestrated-chain-regeneration
     - 21-3-code-status-preservation
