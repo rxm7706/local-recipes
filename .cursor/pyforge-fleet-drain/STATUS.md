@@ -1,17 +1,17 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-24 ~03:50 CDT
+**Updated:** 2026-08-24 00:05 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
 
 | Field | Value |
 |-------|--------|
-| `owner` | `parent-chat` |
-| `held_since` | 2026-08-23T09:40-05:00 |
-| `state` | `drained` |
+| `owner` | — |
+| `held_since` | — |
+| `state` | `released` |
 
-**HARD:** Do not launch another fleet-drain coordinator Task. Lock released — campaign complete for actionable backlog.
+**Lock is free.** No coordinator is held. The 2026-08-23 `parent-chat` claim was released 2026-08-24 on campaign completion. A future coordinator may claim it per [COORDINATOR.md](./COORDINATOR.md) § Claim / release.
 
 ## Campaign
 
