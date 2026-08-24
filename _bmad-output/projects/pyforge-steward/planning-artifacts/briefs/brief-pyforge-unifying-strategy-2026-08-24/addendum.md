@@ -1,8 +1,16 @@
 ---
 title: "Addendum — depth for the PRD and architecture passes"
+status: "ready"
 chain: "pyforge-unifying-strategy"
+parent: "brief.md"
 created: "2026-08-24"
 updated: "2026-08-24"
+inputs:
+  - "docs/dreams/pyforge-unifying-strategy.md"
+  - "../../specs/spec-pyforge-unifying-strategy/SPEC.md"
+  - "../../specs/spec-pyforge-unifying-strategy/convergence.md"
+  - "../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md"
+  - "../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md"
 ---
 
 # Addendum
@@ -32,10 +40,13 @@ errors are the kind a downstream pass would reintroduce from the Dream's own pro
 
 These are facts about the work, not preferences, and each one dictates ordering.
 
-1. **Packaging precedes platform in two epics.** CAP-13 needs five OpenFeature recipes plus a
-   `cachebox` 5.x build (conda-forge ships 6.2.5; the provider pins `<6`). CAP-9 needs a
-   `liquibase` recipe with the PostgreSQL JDBC driver vendored. Per repo Rule 1, every one of those
-   stories invokes `conda-forge-expert`.
+1. **Packaging precedes platform in two epics — six builds, not six new recipes.** CAP-13 needs
+   four new OpenFeature feedstocks (`openfeature-sdk`, `openfeature-flagd-api`,
+   `openfeature-flagd-core`, `openfeature-provider-flagd`) plus a `cachebox` 5.x build — conda-forge
+   ships 6.2.5 and the provider pins `<6`, so that fifth one is a **downgrade build on an existing
+   feedstock**, not a new recipe, and should be sized as such. CAP-9 needs a `liquibase` recipe with
+   the PostgreSQL JDBC driver vendored, the sixth. Per repo Rule 1, every one of those stories
+   invokes `conda-forge-expert`.
 2. **CAP-1 precedes CAP-2 and CAP-3.** Chrome lives in the shared package; a portal built before it
    exists will grow its own and violate the contract.
 3. **CAP-6 precedes CAP-4's consumers.** Portals must not reach services before the identity-carrying
@@ -46,10 +57,22 @@ These are facts about the work, not preferences, and each one dictates ordering.
 5. **CAP-9's changeset extraction gate has no prior art.** No team is documented running Liquibase
    as schema authority for a Django app; the `sqlmigrate` extraction check is ours to build, and
    should be sized as invention rather than integration.
+6. **Phase 5 is eight correct-course runs, not one.** Every station spec records its Canopy
+   obligations — one `bmad-correct-course` run per station — and Marshal's run additionally retires
+   `spec-factory-console`, which the CMS front door supersedes. Each run pins
+   `BMAD_ACTIVE_PROJECT` and writes to a physical `projects/<slug>/` path, never through the shared
+   `planning-artifacts` symlink. Separately, `bmad-correct-course` — **not** the epic pass — decides
+   the ledger shape for reopening stories 11.1 and 11.2: a new superseding epic, or a reopened
+   Epic 11.
+7. **Audit 5.2.16 and 5.2.17 for security content before relying on the pin.** conda-forge's single
+   qualifying Django build is two patch releases behind upstream. Whether that gap is a security
+   exposure or only a feature gap is unaudited, and the answer decides whether a 5.2 maintenance
+   branch on `django-feedstock` is chain scope or a nice-to-have. Owned by the architecture pass.
 
 ## Design decisions already made, with their reasons
 
-Recorded so the architecture pass does not relitigate them.
+Sourced from the two 2026-08-24 research files in `inputs:`. Recorded so the architecture pass
+confirms them rather than relitigating them.
 
 - **Pre-upgrade Job, never an init container.** Two independent arguments: N replicas each running
   an init container contend on `DATABASECHANGELOGLOCK` (default wait 5 minutes), and the shipped
@@ -65,7 +88,10 @@ Recorded so the architecture pass does not relitigate them.
 - **PyBreaker plus a ~40-line async wrapper.** Its async support is Tornado-coroutine, not asyncio:
   an `httpx.AsyncClient` coroutine passed to `breaker.call()` records a false success and the
   circuit never trips. The alternatives were `aiocircuitbreaker` (packaged, dormant since 2022) and
-  `purgatory` (maintained, unpackaged) — neither worth it for forty lines.
+  `purgatory` (maintained, unpackaged) — neither worth it for forty lines. Note also that its Redis
+  state transitions use plain `setnx`/`set`/`incr` with no Lua and no `WATCH`, so cross-replica
+  transitions are **not atomic**: treat `fail_max` as coarse protection, never as exact-count
+  semantics, and do not specify a test that asserts an exact failure count.
 - **`django-lasuite` for OIDC only.** It is OIDC/DRF/malware plumbing with no app switcher and no
   theme. La Suite's own switcher ships as npm/React with a service-list endpoint unreachable
   air-gapped. `django-pyforge` is ours to build.
@@ -73,7 +99,7 @@ Recorded so the architecture pass does not relitigate them.
 ## Deployment constraints CAP-2 inherits
 
 Documented Wagtail requirements for multi-replica operation. All solvable, none optional, and the
-last one is the one that bites.
+OIDC group-mapping one is the one that bites.
 
 - Media must leave the pod filesystem (object storage or RWX). Remote storage does not fully
   offload it — originals are re-read whenever a rendition is generated.
@@ -89,12 +115,14 @@ last one is the one that bites.
   claims onto a group holding that permission is required work with no first-party guidance. Pair
   with `WAGTAILUSERS_PASSWORD_ENABLED = False` and `WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False`.
 - `WAGTAILADMIN_LOGIN_URL` (6.0, extended in 7.1 to cover logout) is the supported allauth hook.
-  Most community material predates it and describes URLconf-override workarounds — do not follow it.
+  Most community material predates it and describes URLconf-override workarounds — do not follow
+  those.
 
 ## Adjacent, deliberately not absorbed
 
 - Ledger rollup drift: warden `epic-7`/`epic-8` and mason epics 2–3 read `backlog` while their
-  stories read `done`. Pre-existing, cross-station.
+  stories read `done`. Flagged so nobody mistakes a `backlog` rollup for remaining scope.
+  Pre-existing, cross-station.
 - Atlas never adopted `spec-secure-live-dashboards` despite being named its first adopter. CAP-7
   consumes that pattern; making atlas adopt it is atlas's story.
 - Story 12-7 is permanently `skip_on_blocked` pending a live cluster.

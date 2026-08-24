@@ -215,13 +215,19 @@ first-party guidance for this; treat it as real work, not configuration.
 #### FR-6: Console parity is inventoried before anything is removed
 
 Every view the retired console offers is enumerated and classified as runtime-reproducible or
-build-time-only **before** the cutover. **CAP-2.**
+build-time-only **before** the cutover. **CAP-2. Satisfied 2026-08-24** by
+`specs/spec-pyforge-unifying-strategy/console-parity-inventory.md`.
 
 **Consequences (testable):**
 - An inventory artifact exists listing every console view with its data source and classification.
+  **Done:** 23 surfaces — 14 runtime-reproducible, 7 build-time-only, 3 mixed.
 - Any view classified build-time-only is escalated as a scope decision rather than silently
-  dropped.
+  dropped. **Done:** the seven reduce to four decisions, recorded in the inventory.
 - The inventory is the cutover's precondition: FR-7 cannot start until it is complete.
+
+**Notes:** The four decisions are live run state (three surfaces, one decision), detector verdicts,
+curated editorial content, and journal-derived timing. The fifth build-time-only item — the
+committed-snapshot delivery model — is not a loss to mitigate; removing it is the point of CAP-2.
 
 #### FR-7: The old build path is removed, not unlinked
 
@@ -229,10 +235,21 @@ After parity, the console's generation pipeline is deleted — not merely delist
 **CAP-2.**
 
 **Consequences (testable):**
-- The generator no longer runs in CI, and its scheduled trigger is gone.
-- No inbound reference to the retired path remains in docs, workflows, or READMEs.
+- The generator, its four pixi tasks, its scheduled workflow trigger, and the committed data blob
+  are gone.
+- No inbound reference to the retired path remains in docs, workflows, specs, presentations,
+  scripts or tests.
+- The co-published Kedro-Viz tree **survives** — it has its own workflow and no inbound link from
+  the console, so it is not part of this obligation and must not be deleted with it.
+- Downstream parsers of the committed data blob are identified and migrated first.
 - `spec-factory-console` is marked superseded in the same chain — a superseded spec still claiming
   ownership is a worse outcome than two consoles.
+
+**Notes:** `[NOTE FOR PM]` the inventory found **over 100 inbound references** to the console path
+across dreams, specs, presentations, pixi tasks, workflows, tests and scripts — including the
+Charter's own accountability gate. The reference sweep is its own story, not cleanup at the end of
+another one. The inventory recommends splitting this feature's retirement into three stories:
+inventory (done), parity build, removal.
 
 #### FR-8: Media and cache survive multiple replicas
 
@@ -610,14 +627,16 @@ Runtime secrets are delivered by a secret manager. **CAP-12.**
 The flag interface and its provider resolve from conda-forge. **CAP-13.**
 
 **Consequences (testable):**
-- Five recipes exist and build.
-- A dependency version conflict introduced by the provider is resolved rather than pinned around
-  silently.
+- Four new feedstocks exist and build: `openfeature-sdk`, `openfeature-flagd-api`,
+  `openfeature-flagd-core`, `openfeature-provider-flagd`.
+- A `cachebox` 5.x build exists — conda-forge ships 6.2.5 and the provider pins `<6`.
+- The version conflict is resolved by that build rather than pinned around silently.
 
-**Notes:** These packages are absent from anaconda.org **entirely** — a global search returns zero
-results. Per repo Rule 1 each of these stories invokes `conda-forge-expert`. Like FR-21, this FR
-**gates the rest of its feature**. A known conflict exists: the provider pins a dependency below
-the version conda-forge ships, so one of the five is a downgrade build, not a straight port.
+**Notes:** The four OpenFeature packages are absent from anaconda.org **entirely** — a global
+search returns zero results. `cachebox` is a different task: the feedstock exists at the wrong
+version, so it is a **downgrade build, not a new recipe**, and sizing it as a fifth new recipe
+overstates it. Per repo Rule 1 each of these stories invokes `conda-forge-expert`. Like FR-21, this
+FR **gates the rest of its feature**.
 
 #### FR-34: One flag flips three surfaces, offline
 
@@ -736,9 +755,9 @@ gated on external packaging, one because it is a migration that should not be ru
 - **Governed schema change (§4.9)** — gated on a feedstock, reopens shipped stories, and has no
   prior art. Deferring it does not weaken the MVP's demonstration; rushing it risks the estate's
   database.
-- **Flags (§4.11 FR-33, FR-34)** — gated on five absent feedstocks. `[NOTE FOR PM]` this is the
-  one deferral most likely to be regretted, because flags would de-risk every other rollout in the
-  chain. If packaging lands early, pull it forward.
+- **Flags (§4.11 FR-33, FR-34)** — gated on four absent feedstocks plus a downgrade build.
+  `[NOTE FOR PM]` this is the one deferral most likely to be regretted, because flags would
+  de-risk every other rollout in the chain. If packaging lands early, pull it forward.
 - **Lane 1 supersession (§4.2)** — the front door itself is MVP-adjacent, but retiring the console
   is a migration with a parity precondition. The build may land in MVP; **the removal may not**.
 - **Semantic recall (FR-36)** — durability (FR-35) is the urgent half of CAP-14.
@@ -822,6 +841,14 @@ epic pass must honour rather than rediscover them.
 4. **FR-6 precedes FR-7.** Inventory before removal, unconditionally.
 5. **FR-13 and FR-11 precede FR-38.** A persona has nothing to act through otherwise.
 
+6. **The inventory (FR-6) precedes the parity build, which precedes the removal (FR-7).** Three
+   stories, in that order. The inventory is done; the removal carries the 100+ reference sweep and
+   the spec correction, and must not start until the parity build proves the reproducible surfaces.
+7. **Phase 5 is eight `bmad-correct-course` runs, not one** — one per station, recording each
+   station's Canopy obligations, with Marshal's additionally retiring `spec-factory-console`. That
+   skill, not the epic pass, also decides the ledger shape for reopening the two `done` stories
+   FR-22 contradicts: a new superseding epic, or a reopened Epic 11.
+
 **Change-management guardrail.** §4.2 removes something that works today. The guardrail is FR-6's
 inventory as a hard precondition and FR-7's requirement that removal be real. A "temporarily keep
 both" outcome is the failure mode to guard against — it is how a supersession becomes a permanent
@@ -842,8 +869,9 @@ control they cannot.
 - **Atlas's MCP server** — brought to the current specification by FR-11 rather than duplicated.
 - **Atlas's waiting CMS consumer** — OQ-5 asks whether FR-4's instance can serve it, so the estate
   runs one CMS rather than two. Jointly owned with atlas.
-- **Six new feedstocks** — five for FR-33, one for FR-21. Each is a `conda-forge-expert` session
-  under repo Rule 1.
+- **Six conda-forge builds** — five for FR-33 (four new feedstocks plus a `cachebox` downgrade
+  build on an existing one), one new recipe for FR-21. Each is a `conda-forge-expert` session under
+  repo Rule 1.
 
 ## 11. Open Questions
 
@@ -861,8 +889,12 @@ control they cannot.
    is *not* the CMS's own API, so this is a real compatibility question. Jointly owned.
 6. **Django patch-level exposure** — do the two upstream patch releases we cannot reach carry
    security fixes? Unaudited. If yes, this escalates from a constraint to a risk.
-7. **Console parity classification** — resolved by the FR-6 inventory pass, in flight at the time
-   of writing. Any build-time-only view escalates to a scope decision.
+7. ~~**Console parity classification**~~ — **answered 2026-08-24** by the FR-6 inventory. It
+   raises one *new* question in its place: **do live run state and journal-derived timing belong on
+   the front door at all**, or do they stay a local-only view? Answering "yes, on the front door"
+   requires a loop-supervisor service the estate does not have, which would be new scope. The
+   published board already degrades honestly here, so "local-only" is the cheaper answer and the
+   one the inventory leans toward. **Decide in the architecture pass.**
 
 ## 12. Traceability
 

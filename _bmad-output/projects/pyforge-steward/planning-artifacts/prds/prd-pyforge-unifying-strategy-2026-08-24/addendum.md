@@ -75,8 +75,11 @@ sidecar, no daemon, no egress.
 The in-process WASM alternative is independently ruled out: its runtime dependency is not on
 conda-forge, so it could not enter the boundary regardless of preference.
 
-The five recipes are not five straight ports. The provider pins a dependency **below** the version
-conda-forge ships, so one is a deliberate downgrade build. Size it accordingly.
+The five builds are not five new recipes. Four are — `openfeature-sdk`, `openfeature-flagd-api`,
+`openfeature-flagd-core`, `openfeature-provider-flagd`, none of which exists anywhere on
+anaconda.org. The fifth, `cachebox`, already has a feedstock at 6.2.5 while the provider pins
+`<6`, so it is a deliberate **downgrade build on an existing feedstock**. Different task, different
+size; do not schedule it as a fifth new recipe.
 
 ### FR-26 — the circuit breaker wrapper
 
@@ -124,7 +127,7 @@ All solvable, none optional, and the last is the one that bites.
 
 | Rejected | For | Why |
 |---|---|---|
-| CodeRed CMS | Lane 1 | Upstream dormant since 2025; supports a CMS version two minor releases behind current. Adopting it would import an unmaintained dependency into a regulated estate. |
+| CodeRed CMS | Lane 1 | Upstream dormant since 2025; supports Wagtail only through 7.1 against a current 7.4.3 LTS — three minor releases behind. Adopting it would import an unmaintained dependency into a regulated estate. |
 | SSE dual-endpoint transport | Service faces | Deprecated twice over; a current compliant server rejects the GET half with `405`. |
 | Init container for governed DDL | Deploy ordering | Changelog-lock contention across replicas, *and* readiness deadlock with `--wait`. |
 | Upstream Liquibase container image | FR-21 | New third-party image class with no mirroring precedent here, and still requires a derived image for the JDBC driver. |

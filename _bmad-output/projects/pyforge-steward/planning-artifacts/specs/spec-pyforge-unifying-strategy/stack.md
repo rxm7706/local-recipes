@@ -53,7 +53,9 @@ consume them through this channel.
 | `liquibase` | CAP-9 | **Not on conda-forge** — sole anaconda.org hit is third-party `maize-genetics/liquibase` 4.21.0, 0 downloads, two majors behind Community 5.0.4. **Feedstock committed 2026-08-24.** Shape precedent: `apache-tika` (Maven jars into `$PREFIX/share/java/…`, `openjdk` run-dep, CLI wrapper), one of ~12 JVM recipes already here. `openjdk` 25.0.2 clears the Java 17+ floor. **Vendor the PostgreSQL JDBC driver** — 5.0 Community stopped bundling it and LPM fetches over the network. |
 
 Nothing OpenFeature-related exists anywhere on anaconda.org: a global search returns zero results.
-Five recipes is the committed cost of CAP-13, ruled 2026-08-24; `liquibase` is a sixth for CAP-9,
+Five *builds* are the committed cost of CAP-13, ruled 2026-08-24 — four new feedstocks plus the
+`cachebox` 5.x downgrade on an existing one, which is a different size of task and should not be
+scheduled as a fifth new recipe. `liquibase` is a sixth build for CAP-9,
 committed the same day. **Both epics therefore open with packaging work, not platform work** — a
 sequencing fact the epic pass has to honour rather than discover.
 

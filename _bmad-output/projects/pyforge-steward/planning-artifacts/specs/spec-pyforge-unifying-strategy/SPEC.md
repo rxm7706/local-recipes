@@ -9,6 +9,7 @@ companions:
   - resilience-invariants.md
   - stack.md
   - architecture-diagrams.md
+  - console-parity-inventory.md
   - ../../research/technical-pyforge-unifying-strategy-research-2026-08-24.md
   - ../../research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
@@ -31,7 +32,6 @@ open_questions:
   - liquibase-7791-fixed
   - mcp-client-revision
   - mcp-tasks-runtime
-  - console-parity-inventory
   - lane1-serves-dw-h3
 ---
 
@@ -201,10 +201,13 @@ they are why this is not merely a UI project.
   is cluster-wide with no per-route override, and HAProxy governs streaming responses by
   `timeout client`/`timeout server`, not `timeout tunnel`. A route timeout annotation is
   defence-in-depth, never the mechanism.
-- **Always:** CAP-13's packages do not exist on conda-forge today, and neither does Liquibase.
-  **Six recipes must land first** — five OpenFeature-related plus `liquibase` — and per repo Rule 1
-  every one of those stories invokes `conda-forge-expert`. CAP-9 and CAP-13 are each blocked on
-  their own feedstocks, so both epics open with packaging work rather than platform work.
+- **Always:** **six conda-forge builds must land first**, and they are not six new recipes. Five
+  serve CAP-13: four new feedstocks (`openfeature-sdk`, `openfeature-flagd-api`,
+  `openfeature-flagd-core`, `openfeature-provider-flagd`, none present anywhere on anaconda.org)
+  plus a `cachebox` **5.x downgrade build on the existing feedstock**, which ships 6.2.5 against
+  the provider's `<6` pin. The sixth is a new `liquibase` recipe for CAP-9. Per repo Rule 1 every
+  one of those stories invokes `conda-forge-expert`. CAP-9 and CAP-13 are each blocked on their own
+  packaging, so both epics open with packaging work rather than platform work.
 - **Always:** CAP-9 adds a Helm hook Job beside the shipped `migrate-job.yaml`, at a lower
   hook-weight, on the same platform image. It does not introduce a chart pattern, a second image,
   or an init container.
@@ -270,9 +273,14 @@ database role is provably incapable of altering its own schema.
   La Suite/Wagtail bring-up), so the estate runs one instance rather than two? Atlas's shipped
   `LaSuiteClient` froze a **La Suite Docs** REST contract, which is not Wagtail's own API, so this
   is a real compatibility question and not a formality. Owned jointly with atlas.
-- **console-parity-inventory** — which of Marshal's console views have no runtime equivalent under
-  CAP-2? The supersede ruling of 2026-08-24 settled *that* it is retired; this settles *what has to
-  exist first*. Answered by an inventory pass in Phase 4, not by research.
+- ~~**console-parity-inventory**~~ — **answered 2026-08-24** by `console-parity-inventory.md`.
+  Twenty-three surfaces: 14 runtime-reproducible, 7 build-time-only, 3 mixed. The seven reduce to
+  **four decisions** — live run state (three surfaces, one decision), detector verdicts, curated
+  editorial content, and journal-derived timing — plus the committed-snapshot model, which is not a
+  loss to mitigate but the property CAP-2 exists to remove. Two findings change scope: the retired
+  build path has **100+ inbound references** across the repo and needs its own story, and the
+  co-published Kedro-Viz tree is **not** part of the parity obligation (no inbound link from the
+  console, separate workflow) and must not be deleted with it.
 - ~~**liquibase-airgap-policy**~~ — **answered 2026-08-24.** Two boundaries, both binding:
   conda channels govern the Python/pixi graph, `spec-python-agent-platform` CAP-6 governs
   deployment images and already admits non-conda third-party images. See
