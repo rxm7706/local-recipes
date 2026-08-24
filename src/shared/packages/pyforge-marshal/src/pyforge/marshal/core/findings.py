@@ -1477,10 +1477,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # MRS-CHAIN-001 missing planning tree (WARN/UNEVALUABLE);
         # 002 phase failure (ERROR); 003 done-key regression refuse (ERROR);
         # 004 orphan candidate reported, not deleted (WARN).
+        # Story 21.2: 005 skill blocked mid-chain (ERROR; planning verb halt).
         "MRS-CHAIN-001",
         "MRS-CHAIN-002",
         "MRS-CHAIN-003",
         "MRS-CHAIN-004",
+        "MRS-CHAIN-005",
         # Story 22.1 (factory dispatch, FR-193 CAP-1):
         # MRS-DISP-001 malformed slug (ERROR); 002 malformed story (ERROR);
         # 003 harness missing (ERROR); 004 repo root (ERROR); 005 spec

@@ -6,13 +6,19 @@ promote-sprint-status guard, runs an injectable phase runner in dependency
 order, applies the existing ``regressions`` guard before any ledger write,
 and reports orphans without deleting them.
 
-Live BMAD-skill backends remain Epic 21.2 (Spec Q1). This module owns the
-marshal-side contract: order, guard reuse, orphan report, per-project scope.
+Story 17.4 owns the four-phase dry-run contract (order, guard reuse, orphan
+report, per-project scope). Story 21.2 extends this module with the Full /
+minimal orchestrated chain (journal resume, FR-52 skill seam, orphan
+manifest) — still never absorbing skill logic, never ``scripts/bmad-switch``,
+never auto-commit.
 """
 
 from __future__ import annotations
 
+import json
 import re
+import uuid
+from datetime import datetime, timezone
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -403,3 +409,696 @@ def _rel(root: Path, path: Path) -> str:
         return str(path.resolve().relative_to(root.resolve()))
     except ValueError:
         return str(path)
+
+# ---------------------------------------------------------------------------
+# Story 21.2 — orchestrated Full / minimal chain (FR-192 CAP-1)
+# ---------------------------------------------------------------------------
+
+OrchestratedPhase = Literal[
+    "spec",
+    "research",
+    "brief",
+    "prd",
+    "architecture",
+    "epics",
+    "code_linkage",
+    "orphan_report",
+]
+ChainMode = Literal["full", "minimal"]
+OrchestratedStatus = Literal[
+    "pending",
+    "complete",
+    "skipped",
+    "blocked",
+    "failed",
+]
+ChainRunStatus = Literal["in_progress", "complete", "blocked", "failed"]
+
+FULL_CHAIN_PHASES: tuple[OrchestratedPhase, ...] = (
+    "spec",
+    "research",
+    "brief",
+    "prd",
+    "architecture",
+    "epics",
+    "code_linkage",
+    "orphan_report",
+)
+MINIMAL_SKIP_PHASES: frozenset[OrchestratedPhase] = frozenset({"research", "brief"})
+
+# First attempt + up to 2 retries ⇒ maximum 3 attempts.
+MAX_PHASE_RETRIES = 2
+
+_ORCHESTRATED_SKILLS: dict[OrchestratedPhase, str | None] = {
+    "spec": "bmad-spec",
+    "research": "bmad-deep-recon",
+    "brief": "bmad-product-brief",
+    "prd": "bmad-prd",
+    "architecture": "bmad-architecture",
+    "epics": "bmad-create-epics-and-stories",
+    "code_linkage": None,
+    "orphan_report": None,
+}
+
+
+@dataclass(frozen=True)
+class OrchestratedPhaseOutcome:
+    """One Full/minimal chain phase result."""
+
+    name: OrchestratedPhase
+    status: OrchestratedStatus
+    detail: str = ""
+    skill: str = ""
+    attempts: int = 0
+
+
+@dataclass(frozen=True)
+class ChainJournal:
+    """Persisted run journal (``state.yaml`` under ``.chain-regen/<run-id>/``)."""
+
+    run_id: str
+    project: str
+    dream: str
+    mode: ChainMode
+    status: ChainRunStatus
+    current_phase: OrchestratedPhase | None
+    phases: Mapping[str, Mapping[str, object]]
+    auto_commit: bool = False
+    preserve_code_status: bool = True
+    apply_orphans: bool = False
+    stage: bool = False
+
+
+@dataclass(frozen=True)
+class OrchestratedChainReport:
+    """Result of one ``planning chain-regenerate`` invocation."""
+
+    project: str
+    dream: str
+    mode: ChainMode
+    run_id: str
+    run_dir: str
+    status: ChainRunStatus
+    phases: tuple[OrchestratedPhaseOutcome, ...]
+    orphans: tuple[OrphanRef, ...]
+    orphan_manifest_written: bool
+    auto_commit: bool
+    preserve_code_status_hook: bool
+    apply_orphans_hook: bool
+    stage_hook: bool
+
+
+class SkillPhaseInvoker(Protocol):
+    """Injectable FR-52 skill seam (CLI wires ``SkillInvokePort`` here)."""
+
+    def invoke_planning_skill(
+        self,
+        skill: str,
+        *,
+        root: Path,
+        project: str,
+        dream: Path,
+        phase: str,
+        run_dir: Path,
+    ) -> object:
+        """Return an object with ``.status`` and ``.detail``.
+
+        ``status`` must be one of ``complete`` / ``blocked`` / ``failed``.
+        Must never call ``scripts/bmad-switch``.
+        """
+        ...
+
+
+def skill_for_orchestrated(phase: OrchestratedPhase) -> str | None:
+    return _ORCHESTRATED_SKILLS[phase]
+
+
+def chain_regen_root(root: Path, project: str) -> Path:
+    return planning_dir(root, project) / ".chain-regen"
+
+
+def new_run_id() -> str:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"{stamp}_{uuid.uuid4().hex[:8]}"
+
+
+def write_orphan_manifest(
+    run_dir: Path,
+    orphans: Sequence[OrphanRef],
+) -> tuple[Path, Path]:
+    """Write ``orphans.json`` + ``orphans.md`` (report only; never deletes)."""
+    run_dir.mkdir(parents=True, exist_ok=True)
+    json_path = run_dir / "orphans.json"
+    md_path = run_dir / "orphans.md"
+    payload = [
+        {"kind": o.kind, "path": o.path, "reason": o.reason} for o in orphans
+    ]
+    json_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    lines = [
+        "# Orphan report",
+        "",
+        "Review-gated candidates. Nothing was deleted.",
+        "",
+    ]
+    if not orphans:
+        lines.append("_No orphans detected._")
+    else:
+        for o in orphans:
+            lines.append(f"- **{o.kind}** `{o.path}` — {o.reason}")
+    lines.append("")
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    return json_path, md_path
+
+
+def load_journal(run_dir: Path) -> ChainJournal | None:
+    path = run_dir / "state.yaml"
+    if not path.is_file():
+        return None
+    data = _parse_simple_yaml(path.read_text(encoding="utf-8"))
+    phases_raw = data.get("phases")
+    phases: dict[str, Mapping[str, object]] = {}
+    if isinstance(phases_raw, dict):
+        for key, val in phases_raw.items():
+            if isinstance(val, dict):
+                phases[str(key)] = dict(val)
+    current = data.get("current_phase")
+    mode = str(data.get("mode", "full"))
+    if mode not in ("full", "minimal"):
+        mode = "full"
+    status = str(data.get("status", "in_progress"))
+    if status not in ("in_progress", "complete", "blocked", "failed"):
+        status = "in_progress"
+    current_phase: OrchestratedPhase | None
+    if current in (None, "", "null"):
+        current_phase = None
+    else:
+        current_phase = str(current)  # type: ignore[assignment]
+    return ChainJournal(
+        run_id=str(data.get("run_id", "")),
+        project=str(data.get("project", "")),
+        dream=str(data.get("dream", "")),
+        mode=mode,  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
+        current_phase=current_phase,
+        phases=phases,
+        auto_commit=False,
+        preserve_code_status=bool(data.get("preserve_code_status", True)),
+        apply_orphans=bool(data.get("apply_orphans", False)),
+        stage=bool(data.get("stage", False)),
+    )
+
+
+def save_journal(run_dir: Path, journal: ChainJournal) -> Path:
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / "state.yaml"
+    lines = [
+        f"run_id: {journal.run_id}",
+        f"project: {journal.project}",
+        f"dream: {_yaml_quote(journal.dream)}",
+        f"mode: {journal.mode}",
+        f"status: {journal.status}",
+        (
+            f"current_phase: {journal.current_phase}"
+            if journal.current_phase
+            else "current_phase: null"
+        ),
+        "auto_commit: false",
+        f"preserve_code_status: {'true' if journal.preserve_code_status else 'false'}",
+        f"apply_orphans: {'true' if journal.apply_orphans else 'false'}",
+        f"stage: {'true' if journal.stage else 'false'}",
+        "phases:",
+    ]
+    for name in FULL_CHAIN_PHASES:
+        entry = dict(journal.phases.get(name, {}))
+        status = entry.get("status", "pending")
+        attempts = entry.get("attempts", 0)
+        detail = str(entry.get("detail", "")).replace("\n", " ")
+        skill = entry.get("skill", "") or "null"
+        lines.append(f"  {name}:")
+        lines.append(f"    status: {status}")
+        lines.append(f"    attempts: {attempts}")
+        lines.append(f"    skill: {skill}")
+        lines.append(f"    detail: {_yaml_quote(detail)}")
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
+def find_latest_incomplete_run(root: Path, project: str) -> Path | None:
+    base = chain_regen_root(root, project)
+    if not base.is_dir():
+        return None
+    candidates: list[tuple[str, Path]] = []
+    for child in base.iterdir():
+        if not child.is_dir():
+            continue
+        journal = load_journal(child)
+        if journal is None or journal.status == "complete":
+            continue
+        candidates.append((child.name, child))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def verify_code_linkage(root: Path, project: str) -> OrchestratedPhaseOutcome:
+    """Read-only code-linkage verify — never edits implementation code."""
+    planning = planning_dir(root, project)
+    epics = planning / "epics.md"
+    if not epics.is_file():
+        return OrchestratedPhaseOutcome(
+            name="code_linkage",
+            status="complete",
+            detail="read-only verify: epics.md absent (nothing to link)",
+            attempts=1,
+        )
+    try:
+        text = epics.read_text(encoding="utf-8")
+    except OSError as exc:
+        return OrchestratedPhaseOutcome(
+            name="code_linkage",
+            status="failed",
+            detail=f"cannot read epics.md: {exc}",
+            attempts=1,
+        )
+    cites = sorted(
+        {f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)}
+    )
+    present = _present_spec_ids(planning / "specs")
+    missing = [c for c in cites if c not in present]
+    return OrchestratedPhaseOutcome(
+        name="code_linkage",
+        status="complete",
+        detail=(
+            f"read-only verify: {len(cites)} spec cite(s); "
+            f"{len(missing)} missing"
+        ),
+        attempts=1,
+    )
+
+
+def preserve_code_status_hook(
+    statuses_before: Mapping[str, str],
+) -> Mapping[str, str]:
+    """CAP-2 stub (Story 21.3): return statuses unchanged."""
+    return dict(statuses_before)
+
+
+def apply_orphans_hook(orphans: Sequence[OrphanRef], *, apply: bool) -> int:
+    """CAP-4 stub (Story 21.4): never deletes; returns 0."""
+    del orphans, apply
+    return 0
+
+
+def stage_hook(paths: Sequence[Path], *, stage: bool) -> int:
+    """CAP-4/5 stub (Story 21.4/21.5): never ``git add``; returns 0."""
+    del paths, stage
+    return 0
+
+
+def run_orchestrated_chain(
+    *,
+    root: Path,
+    project: str,
+    dream: Path,
+    invoker: SkillPhaseInvoker,
+    mode: ChainMode = "full",
+    resume: bool = False,
+    run_id: str | None = None,
+    auto_commit: bool = False,
+    preserve_code_status: bool = True,
+    apply_orphans: bool = False,
+    stage: bool = False,
+) -> OrchestratedChainReport:
+    """Orchestrate Full/minimal planning-chain regeneration with journal resume.
+
+    Never auto-commits. Never calls ``scripts/bmad-switch``. Never
+    hand-overwrites memlog-derived artifacts — skill phases go through
+    ``invoker``.
+    """
+    if auto_commit:
+        raise ValueError(
+            "auto_commit is not offered; regeneration output stays unstaged"
+        )
+
+    planning = planning_dir(root, project)
+    if not planning.is_dir():
+        raise FileNotFoundError(f"planning-artifacts missing: {planning}")
+    dream_path = dream if dream.is_file() else (root / dream)
+    if not dream_path.is_file():
+        raise FileNotFoundError(f"dream not found: {dream}")
+
+    if resume:
+        existing = find_latest_incomplete_run(root, project)
+        if existing is None:
+            raise FileNotFoundError(
+                "no incomplete chain-regen journal under "
+                f"{chain_regen_root(root, project)}"
+            )
+        loaded = load_journal(existing)
+        if loaded is None:
+            raise FileNotFoundError(f"state.yaml missing in {existing}")
+        if loaded.project and loaded.project != project:
+            raise ValueError(
+                f"journal project {loaded.project!r} does not match "
+                f"--project {project!r}"
+            )
+        run_dir = existing
+        journal = loaded
+        phase_state: dict[str, dict[str, object]] = {
+            k: dict(v) for k, v in loaded.phases.items()
+        }
+        mode = journal.mode
+        preserve_code_status = journal.preserve_code_status
+        apply_orphans = journal.apply_orphans
+        stage = journal.stage
+    else:
+        rid = run_id or new_run_id()
+        run_dir = chain_regen_root(root, project) / rid
+        run_dir.mkdir(parents=True, exist_ok=True)
+        phase_state = {
+            name: {
+                "status": "pending",
+                "attempts": 0,
+                "skill": skill_for_orchestrated(name) or "",
+                "detail": "",
+            }
+            for name in FULL_CHAIN_PHASES
+        }
+        journal = ChainJournal(
+            run_id=rid,
+            project=project,
+            dream=_rel(root, dream_path),
+            mode=mode,
+            status="in_progress",
+            current_phase=FULL_CHAIN_PHASES[0],
+            phases=phase_state,
+            auto_commit=False,
+            preserve_code_status=preserve_code_status,
+            apply_orphans=apply_orphans,
+            stage=stage,
+        )
+        save_journal(run_dir, journal)
+
+    before: dict[str, str] = {}
+    lp = ledger_file(root, project)
+    if lp.is_file():
+        before = parse_ledger_statuses(lp.read_text(encoding="utf-8"))
+    if preserve_code_status:
+        preserve_code_status_hook(before)
+
+    outcomes: list[OrchestratedPhaseOutcome] = []
+    orphans: tuple[OrphanRef, ...] = ()
+    orphan_written = False
+
+    for phase in FULL_CHAIN_PHASES:
+        prior = phase_state.get(phase, {})
+        prior_status = str(prior.get("status", "pending"))
+        if prior_status in ("complete", "skipped"):
+            outcomes.append(
+                OrchestratedPhaseOutcome(
+                    name=phase,
+                    status=prior_status,  # type: ignore[arg-type]
+                    detail=str(prior.get("detail", "resumed: already finished")),
+                    skill=str(prior.get("skill", "") or ""),
+                    attempts=_safe_int(prior.get("attempts", 0), default=0),
+                )
+            )
+            continue
+
+        if mode == "minimal" and phase in MINIMAL_SKIP_PHASES:
+            outcome = OrchestratedPhaseOutcome(
+                name=phase,
+                status="skipped",
+                detail="skipped by --minimal (research/brief)",
+                skill=skill_for_orchestrated(phase) or "",
+                attempts=0,
+            )
+            outcomes.append(outcome)
+            phase_state[phase] = {
+                "status": "skipped",
+                "attempts": 0,
+                "skill": outcome.skill,
+                "detail": outcome.detail,
+            }
+            journal = _journal_replace(
+                journal,
+                current_phase=phase,
+                phases=phase_state,
+                status="in_progress",
+            )
+            save_journal(run_dir, journal)
+            continue
+
+        outcome = _execute_orchestrated_phase(
+            phase=phase,
+            root=root,
+            project=project,
+            dream=dream_path,
+            run_dir=run_dir,
+            invoker=invoker,
+            prior_attempts=_safe_int(prior.get("attempts", 0), default=0),
+        )
+        outcomes.append(outcome)
+        phase_state[phase] = {
+            "status": outcome.status,
+            "attempts": outcome.attempts,
+            "skill": outcome.skill,
+            "detail": outcome.detail,
+        }
+
+        if outcome.status in ("blocked", "failed"):
+            journal = _journal_replace(
+                journal,
+                current_phase=phase,
+                phases=phase_state,
+                status=outcome.status,  # type: ignore[arg-type]
+            )
+            save_journal(run_dir, journal)
+            orphans = find_orphans(root, project)
+            try:
+                write_orphan_manifest(run_dir, orphans)
+                orphan_written = True
+            except OSError:
+                orphan_written = False
+            return OrchestratedChainReport(
+                project=project,
+                dream=str(dream_path),
+                mode=mode,
+                run_id=journal.run_id,
+                run_dir=str(run_dir),
+                status=outcome.status,  # type: ignore[arg-type]
+                phases=tuple(outcomes),
+                orphans=orphans,
+                orphan_manifest_written=orphan_written,
+                auto_commit=False,
+                preserve_code_status_hook=preserve_code_status,
+                apply_orphans_hook=apply_orphans,
+                stage_hook=stage,
+            )
+
+        journal = _journal_replace(
+            journal,
+            current_phase=phase,
+            phases=phase_state,
+            status="in_progress",
+        )
+        save_journal(run_dir, journal)
+
+        if phase == "orphan_report":
+            orphans = find_orphans(root, project)
+            write_orphan_manifest(run_dir, orphans)
+            orphan_written = True
+            apply_orphans_hook(orphans, apply=apply_orphans)
+
+    stage_hook((), stage=stage)
+
+    journal = _journal_replace(
+        journal,
+        current_phase=None,
+        phases=phase_state,
+        status="complete",
+    )
+    save_journal(run_dir, journal)
+
+    if not orphan_written:
+        orphans = find_orphans(root, project)
+
+    return OrchestratedChainReport(
+        project=project,
+        dream=str(dream_path),
+        mode=mode,
+        run_id=journal.run_id,
+        run_dir=str(run_dir),
+        status="complete",
+        phases=tuple(outcomes),
+        orphans=orphans,
+        orphan_manifest_written=orphan_written,
+        auto_commit=False,
+        preserve_code_status_hook=preserve_code_status,
+        apply_orphans_hook=apply_orphans,
+        stage_hook=stage,
+    )
+
+
+def _execute_orchestrated_phase(
+    *,
+    phase: OrchestratedPhase,
+    root: Path,
+    project: str,
+    dream: Path,
+    run_dir: Path,
+    invoker: SkillPhaseInvoker,
+    prior_attempts: int,
+) -> OrchestratedPhaseOutcome:
+    skill = skill_for_orchestrated(phase)
+
+    if phase == "code_linkage":
+        return verify_code_linkage(root, project)
+
+    if phase == "orphan_report":
+        return OrchestratedPhaseOutcome(
+            name="orphan_report",
+            status="complete",
+            detail="orphan report phase (manifest written by orchestrator)",
+            attempts=1,
+        )
+
+    assert skill is not None
+    attempts = prior_attempts
+    last_detail = ""
+    while attempts <= MAX_PHASE_RETRIES:
+        attempts += 1
+        result = invoker.invoke_planning_skill(
+            skill,
+            root=root,
+            project=project,
+            dream=dream,
+            phase=phase,
+            run_dir=run_dir,
+        )
+        status = str(getattr(result, "status", "failed"))
+        last_detail = str(getattr(result, "detail", ""))
+        # Map SkillInvokePort vocabulary onto orchestrated statuses.
+        if status in ("complete", "done"):
+            return OrchestratedPhaseOutcome(
+                name=phase,
+                status="complete",
+                detail=last_detail,
+                skill=skill,
+                attempts=attempts,
+            )
+        if status == "blocked":
+            return OrchestratedPhaseOutcome(
+                name=phase,
+                status="blocked",
+                detail=last_detail,
+                skill=skill,
+                attempts=attempts,
+            )
+        if attempts > MAX_PHASE_RETRIES:
+            break
+    return OrchestratedPhaseOutcome(
+        name=phase,
+        status="failed",
+        detail=last_detail
+        or f"phase {phase} failed after {attempts} attempt(s)",
+        skill=skill,
+        attempts=attempts,
+    )
+
+
+def _journal_replace(
+    journal: ChainJournal,
+    *,
+    current_phase: OrchestratedPhase | None,
+    phases: Mapping[str, Mapping[str, object]],
+    status: ChainRunStatus,
+) -> ChainJournal:
+    return ChainJournal(
+        run_id=journal.run_id,
+        project=journal.project,
+        dream=journal.dream,
+        mode=journal.mode,
+        status=status,
+        current_phase=current_phase,
+        phases=dict(phases),
+        auto_commit=False,
+        preserve_code_status=journal.preserve_code_status,
+        apply_orphans=journal.apply_orphans,
+        stage=journal.stage,
+    )
+
+
+def _safe_int(value: object, *, default: int = 0) -> int:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+
+
+def _yaml_quote(value: str) -> str:
+    if value == "":
+        return '""'
+    if any(ch in value for ch in (":", "#", "{", "}", "[", "]", ",", '"', "'", " ")):
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+    return value
+
+
+def _parse_simple_yaml(text: str) -> dict[str, object]:
+    """Minimal YAML subset reader for journal state (no PyYAML dependency)."""
+    root: dict[str, object] = {}
+    phases: dict[str, dict[str, object]] = {}
+    current_phase_key: str | None = None
+    in_phases = False
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip(" "))
+        line = raw_line.strip()
+        if indent == 0 and line == "phases:":
+            in_phases = True
+            root["phases"] = phases
+            current_phase_key = None
+            continue
+        if indent == 0 and ":" in line:
+            in_phases = False
+            current_phase_key = None
+            key, _, val = line.partition(":")
+            root[key.strip()] = _yaml_scalar(val.strip())
+            continue
+        if in_phases and indent == 2 and line.endswith(":"):
+            current_phase_key = line[:-1].strip()
+            phases[current_phase_key] = {}
+            continue
+        if (
+            in_phases
+            and indent >= 4
+            and current_phase_key is not None
+            and ":" in line
+        ):
+            key, _, val = line.partition(":")
+            phases[current_phase_key][key.strip()] = _yaml_scalar(val.strip())
+            continue
+    return root
+
+
+def _yaml_scalar(raw: str) -> object:
+    if raw in ("", "null", "~"):
+        return None
+    if raw in ("true", "True"):
+        return True
+    if raw in ("false", "False"):
+        return False
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ('"', "'"):
+        inner = raw[1:-1]
+        return inner.replace('\\"', '"').replace("\\\\", "\\")
+    try:
+        return int(raw)
+    except ValueError:
+        return raw

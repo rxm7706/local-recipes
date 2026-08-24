@@ -728,7 +728,7 @@ def test_real_record_port_is_classified_egress_true():
     assert EGRESS_PORTS["RecordPort"] is True
 
 
-def test_egress_ports_registry_has_exactly_the_ten_known_ports():
+def test_egress_ports_registry_has_exactly_the_known_ports():
     assert set(EGRESS_PORTS.keys()) == {
         "ProcessPort",
         "FsPort",
@@ -740,6 +740,7 @@ def test_egress_ports_registry_has_exactly_the_ten_known_ports():
         "NotifyPort",
         "ForgePort",
         "BuildHarnessPort",
+        "SkillInvokePort",
     }
 
 

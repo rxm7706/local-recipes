@@ -225,3 +225,253 @@ def test_cli_help_registers():
 def test_find_orphans_empty_when_dreams_present(tmp_path: Path):
     _seed_project(tmp_path, "acme")
     assert find_orphans(tmp_path, "acme") == ()
+
+
+# ---------------------------------------------------------------------------
+# Story 21.2 — orchestrated Full / minimal chain
+# ---------------------------------------------------------------------------
+
+from pyforge.marshal.core.chain_regen import (
+    FULL_CHAIN_PHASES,
+    MINIMAL_SKIP_PHASES,
+    OrchestratedPhaseOutcome,
+    apply_orphans_hook,
+    load_journal,
+    preserve_code_status_hook,
+    run_orchestrated_chain,
+    stage_hook,
+)
+
+
+class _RecordingInvoker:
+    def __init__(self, *, blocked_at: str | None = None, fail_times: int = 0) -> None:
+        self.calls: list[str] = []
+        self._blocked_at = blocked_at
+        self._fail_times = fail_times
+        self._failures_left = fail_times
+
+    def invoke_planning_skill(
+        self,
+        skill: str,
+        *,
+        root: Path,
+        project: str,
+        dream: Path,
+        phase: str,
+        run_dir: Path,
+    ) -> object:
+        del root, project, dream, run_dir
+        self.calls.append(skill)
+        if self._blocked_at is not None and phase == self._blocked_at:
+            return type("R", (), {"status": "blocked", "detail": "blocked by fixture"})()
+        if self._failures_left > 0:
+            self._failures_left -= 1
+            return type("R", (), {"status": "failed", "detail": "transient"})()
+        return type("R", (), {"status": "complete", "detail": f"ok:{skill}"})()
+
+
+def _seed_orchestrated(root: Path, slug: str = "acme") -> Path:
+    planning = _seed_project(root, slug, statuses={"1-1-demo": "done"})
+    return planning
+
+
+def test_full_phase_sequence(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    invoker = _RecordingInvoker()
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="full",
+    )
+    assert report.status == "complete"
+    assert [p.name for p in report.phases] == list(FULL_CHAIN_PHASES)
+    assert all(p.status == "complete" for p in report.phases)
+    assert invoker.calls == [
+        "bmad-spec",
+        "bmad-deep-recon",
+        "bmad-product-brief",
+        "bmad-prd",
+        "bmad-architecture",
+        "bmad-create-epics-and-stories",
+    ]
+    assert report.orphan_manifest_written is True
+    assert (Path(report.run_dir) / "state.yaml").is_file()
+    assert (Path(report.run_dir) / "orphans.json").is_file()
+    assert (Path(report.run_dir) / "orphans.md").is_file()
+    assert report.auto_commit is False
+
+
+def test_minimal_skips_research_and_brief(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    invoker = _RecordingInvoker()
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="minimal",
+    )
+    assert report.status == "complete"
+    assert report.mode == "minimal"
+    by_name = {p.name: p for p in report.phases}
+    for skipped in MINIMAL_SKIP_PHASES:
+        assert by_name[skipped].status == "skipped"
+    assert invoker.calls == [
+        "bmad-spec",
+        "bmad-prd",
+        "bmad-architecture",
+        "bmad-create-epics-and-stories",
+    ]
+
+
+def test_resume_from_journal(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    # First run blocks at prd.
+    blocked = _RecordingInvoker(blocked_at="prd")
+    first = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=blocked,
+        mode="full",
+    )
+    assert first.status == "blocked"
+    journal = load_journal(Path(first.run_dir))
+    assert journal is not None
+    assert journal.status == "blocked"
+    assert journal.phases["spec"]["status"] == "complete"
+    assert journal.phases["prd"]["status"] == "blocked"
+
+    # Resume with a healthy invoker — completed phases are not re-run.
+    resume_invoker = _RecordingInvoker()
+    second = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=resume_invoker,
+        mode="full",
+        resume=True,
+    )
+    assert second.status == "complete"
+    assert second.run_id == first.run_id
+    # spec/research/brief already complete → not re-invoked; prd onward are.
+    assert resume_invoker.calls == [
+        "bmad-prd",
+        "bmad-architecture",
+        "bmad-create-epics-and-stories",
+    ]
+
+
+def test_blocked_halts_without_later_phases(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    invoker = _RecordingInvoker(blocked_at="architecture")
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="full",
+    )
+    assert report.status == "blocked"
+    names = [p.name for p in report.phases]
+    assert "architecture" in names
+    assert "epics" not in names
+    assert "orphan_report" not in names
+    assert report.orphan_manifest_written is True
+    assert (Path(report.run_dir) / "orphans.json").is_file()
+
+
+def test_transient_failure_retries_then_completes(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    invoker = _RecordingInvoker(fail_times=1)
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="full",
+    )
+    assert report.status == "complete"
+    by_name = {p.name: p for p in report.phases}
+    assert by_name["spec"].attempts == 2
+    assert by_name["spec"].status == "complete"
+
+
+def test_exhausted_failures_halt_chain(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    # First attempt + 2 retries = 3 failures exhaust MAX_PHASE_RETRIES.
+    invoker = _RecordingInvoker(fail_times=3)
+    report = run_orchestrated_chain(
+        root=tmp_path,
+        project="acme",
+        dream=dream,
+        invoker=invoker,
+        mode="full",
+    )
+    assert report.status == "failed"
+    names = [p.name for p in report.phases]
+    assert names == ["spec"]
+    assert report.phases[0].attempts == 3
+    assert "prd" not in names
+    assert report.orphan_manifest_written is True
+
+
+def test_parse_status_markers_and_silent_exit():
+    from pyforge.marshal.adapters.skill_invoke_harness import _parse_status
+
+    assert _parse_status("STATUS: COMPLETE\nok", 0) == "complete"
+    assert _parse_status("STATUS:BLOCKED", 0) == "blocked"
+    assert _parse_status("STATUS: failed\n", 0) == "failed"
+    assert _parse_status("no marker at all", 0) == "failed"
+    assert _parse_status("", 1) == "failed"
+
+
+def test_no_auto_commit_even_when_requested(tmp_path: Path):
+    _seed_orchestrated(tmp_path)
+    dream = tmp_path / "docs" / "dreams" / "demo.md"
+    with pytest.raises(ValueError, match="auto_commit"):
+        run_orchestrated_chain(
+            root=tmp_path,
+            project="acme",
+            dream=dream,
+            invoker=_RecordingInvoker(),
+            mode="full",
+            auto_commit=True,
+        )
+
+
+def test_cap_stubs_are_noop(tmp_path: Path):
+    assert preserve_code_status_hook({"a": "done"}) == {"a": "done"}
+    assert apply_orphans_hook((), apply=True) == 0
+    assert stage_hook((), stage=True) == 0
+
+
+def test_cli_planning_help_registers():
+    from pyforge.marshal.cli.main import _build_parser
+
+    parser = _build_parser()
+    args = parser.parse_args(
+        [
+            "planning",
+            "chain-regenerate",
+            "--project",
+            "acme",
+            "--dream",
+            "docs/dreams/demo.md",
+            "--minimal",
+            "--format",
+            "json",
+        ]
+    )
+    assert args.command == "planning"
+    assert args.planning_command == "chain-regenerate"
+    assert args.project == "acme"
+    assert args.minimal is True

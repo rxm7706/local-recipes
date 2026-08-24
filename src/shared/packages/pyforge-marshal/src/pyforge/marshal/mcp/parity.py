@@ -28,6 +28,7 @@ CLI_ONLY_VERBS: frozenset[str] = frozenset(
     {
         "adapters",
         "chain",
+        "planning",
         "config",
         "deploy",
         "factory",
