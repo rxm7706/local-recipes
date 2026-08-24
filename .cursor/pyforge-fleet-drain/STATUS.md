@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-24 ~02:00 CDT
+**Updated:** 2026-08-24 ~03:00 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -18,7 +18,7 @@
 | Field | Value |
 |-------|--------|
 | Mode | `drain_to_zero` · merge-in-agent · **singleton coordinator** |
-| Backlog | **marshal 3** · steward **12-7 only** (skipped) — **marshal-only drain** |
+| Backlog | **marshal 2** · steward **12-7 only** (skipped) — **final stretch** |
 | Drained | atlas, doctor, herald, mason, scribe, **steward**, warden |
 
 ## Merge policy (operator override — 2026-08-23)
@@ -29,11 +29,11 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | Canonical agent |
 |---------|-------|-----------------|
-| marshal | `24-3` | [6f6cbc47-608d-4d14-bd66-795f56adc3eb](6f6cbc47-608d-4d14-bd66-795f56adc3eb) |
+| marshal | `25-6` | launching |
 
 ## Dispatch sequencing (operator — 2026-08-24)
 
-Epic 24 last story `24-3` in flight → then Epic 25 (`25-6`, `25-7`).
+**Epic 24 complete.** Epic 25: `25-6` → `25-7` → marshal **DRAINED**.
 
 ## Operator skip
 
@@ -45,8 +45,9 @@ Epic 24 last story `24-3` in flight → then Epic 25 (`25-6`, `25-7`).
 
 | Station | Story | PR |
 |---------|-------|-----|
-| marshal | `24-2` | [#719](https://github.com/rxm7706/local-recipes/pull/719) merge `6e2d536f3f` ([Marshal 24-2](068a887f-c2e2-4cdd-b1c6-2598bcdc304f)) · landing-pass liveness docs |
-| marshal | `24-1` | [#718](https://github.com/rxm7706/local-recipes/pull/718) merge `67ae6237a4` · `HarnessPort.engine_liveness` |
+| marshal | `24-3` | [#720](https://github.com/rxm7706/local-recipes/pull/720) merge `39cee7530c` ([Marshal 24-3](6f6cbc47-608d-4d14-bd66-795f56adc3eb)) · **Epic 24 done** |
+| marshal | `24-2` | [#719](https://github.com/rxm7706/local-recipes/pull/719) merge `6e2d536f3f` |
+| marshal | `24-1` | [#718](https://github.com/rxm7706/local-recipes/pull/718) merge `67ae6237a4` |
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary
