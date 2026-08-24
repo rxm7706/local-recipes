@@ -2,11 +2,11 @@
 title: The operator answer is one documented command
 type: docs+feature
 created: '2026-08-24'
-status: ready
+status: shipped
 updated: '2026-08-24'
 context: []
 warnings: []
-baseline_revision: ae09a259fa
+baseline_revision: 6e2d536f3f
 ---
 
 <intent-contract>
@@ -41,3 +41,11 @@ baseline_revision: ae09a259fa
 
 - `git grep` / drift: no bad prescriptions in tracked operator paths
 - Manual: mason resume scenario steps documented correctly
+
+## Auto Run Result
+
+Status: shipped
+PR: https://github.com/rxm7706/local-recipes/pull/719 (admin merge — GitHub Actions billing blocker; local tests green: meta 6 passed, pyforge-marshal 6291 passed)
+Merge SHA: `6e2d536f3ffced7a82b5249305cd37eccc3030d9`
+Implementation: `.claude/memory/reference/fleet-landing-pass-liveness.md` (STEP 2 primary check); team-memory carrier updates; `test_operator_liveness_instructions.py` meta gate.
+Finalize SHA: pending (this commit)
