@@ -3,11 +3,11 @@ from datetime import date
 from django_pyforge.portals import PortalConfig
 
 
-class ComplianceFaceConfig(PortalConfig):
+class WardenFabricConfig(PortalConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "compliance_face"
-    label = "compliance_face"
-    verbose_name = "Compliance factory web face"
+    name = "django_warden_fabric"
+    label = "warden_fabric"
+    verbose_name = "Warden fabric portal"
     default = True
 
     station_name = "warden"
@@ -18,4 +18,4 @@ class ComplianceFaceConfig(PortalConfig):
     backup = "pyforge-steward"
     work_class = "03"
     promotion_date = date(2026, 8, 22)
-    urlconf = "compliance_face.portal_urls"
+    urlconf = "django_warden_fabric.portal_urls"

@@ -8,6 +8,8 @@ from django.views import defaults as default_views
 from django.views.generic import TemplateView
 from health_check.views import HealthCheckView
 
+from config.legacy_compliance import redirect_to_warden
+
 urlpatterns = [
     path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(
@@ -20,12 +22,13 @@ urlpatterns = [
     # User management
     path("users/", include("platformapp.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
-    path("compliance/", include("compliance_face.urls")),
+    # Story 19.1: permanent prefix redirect (not a station roster).
+    path("compliance/<path:rest>", redirect_to_warden),
+    path("compliance/", redirect_to_warden),
     # Story 18.3: chrome mint path, not a station roster.
     path("assertion/", include("django_pyforge.assertion.urls")),
     # Story 18.1: pattern include, not a station roster. Portals mount
     # themselves from AppConfig discovery inside django_pyforge.urls.
-    # The /compliance/ → /stations/warden/ redirect is S-19.1.
     path("stations/", include("django_pyforge.urls")),
     # K8s liveness/readiness probe target (Story 10.1). Deliberately
     # unauthenticated at the app layer -- standard for a kubelet-probed

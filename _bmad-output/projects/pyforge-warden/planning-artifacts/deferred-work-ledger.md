@@ -539,7 +539,9 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   owner: pyforge-steward (S-19.1)
   blocked_by: steward Epic 18 chrome/registration seam (S-19.1 deps S-18.1)
   close_when: S-19.1 merges — no `compliance_face` identifier under `src/`, redirect live, app-label migration preserves job rows and migration history
-  status: open
+  status: closed
+  closed: 2026-08-24
+  closed_by: steward Story 19.1 (`django-warden` / `django_warden_fabric` / `warden_fabric`; `/compliance/` → `/stations/warden/` 308)
   recorded: 2026-08-24
 
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)

@@ -8,6 +8,23 @@ entirely (Epics 3 & 4 lost their whole spec set). For a spec-driven autonomous p
 the spec *is* the contract, so specs must be **durable and in every clone**. This
 directory (`planning-artifacts/specs/`, Tier-2, **git-tracked**) is that durable home.
 
+## Portal package rename (steward Story 19.1, 2026-08-24)
+
+Epic 8 specs (`spec-8-1-upload-runs-the-real-engines-async.md`,
+`spec-8-2-results-render-with-derived-progress.md`) name the shipped portal
+`compliance_face` at `src/platform/compliance_face/`. Those files remain the
+Epic 8 contract. Resolve the old names with this map:
+
+| Then | Now |
+|------|-----|
+| distribution / host app dir `compliance_face` | distribution `django-warden` at `src/shared/packages/django-warden/` |
+| Python module `compliance_face` | `django_warden_fabric` |
+| Django app label `compliance_face` | `warden_fabric` |
+| URL prefix `/compliance/` | `/stations/warden/` (old prefix is a permanent redirect) |
+
+Do not treat the historical Code Map paths as missing; they describe the
+shipped shape before steward 19.1.
+
 ## Convention (going forward)
 
 **Story specs are tracked here.** After a bmad-loop story merges, promote its spec from
