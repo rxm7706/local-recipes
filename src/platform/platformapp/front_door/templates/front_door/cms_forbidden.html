@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Wagtail admin forbidden{% endblock title %}
+{% block content %}
+  <h1>Wagtail admin forbidden</h1>
+  <p>
+    You are signed in but you lack the Wagtail-admin IdP group
+    (<code>{{ idp_group }}</code>). Ask an operator to add that group to your
+    IdP account.
+  </p>
+{% endblock content %}

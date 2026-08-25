@@ -207,6 +207,7 @@ dlt = ">=1.30.0,<2"                # Story 12.8: GitHub Projects V2 → github_m
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # Story 12.8: reuse sync.py GraphQL transport + keys host gate
 pytest = ">=8.0"                   # Story 12.8: github_metrics dlt ingest tests
 duckdb = ">=1.5.5,<2"              # Story 12.8: dry-run destination for github-metrics-dlt --dry-run
+wagtail = ">=7.4.3,<8.0"           # steward 20.1 / canopy AD-13: Lane 1 CMS on the Django host
 
 [feature.platform-dev]
 # --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
@@ -296,7 +297,7 @@ uvicorn = { version = "==0.35.0", extras = ["standard"] }
 uvicorn-worker = "==0.3.0"
 fastapi = "==0.141.1"
 django-health-check = "==3.24.0"
-django = "==5.1.11"
+django = "==5.2.15"  # steward 20.1: wagtail 7.4.3 requires django>=5.2 (was 5.1.11)
 django-environ = "==0.12.0"
 django-model-utils = "==5.0.0"
 django-allauth = { version = "==65.10.0", extras = ["mfa"] }
@@ -346,6 +347,8 @@ opentelemetry-instrumentation-wsgi = "==0.65b0"
 opentelemetry-instrumentation-celery = "==0.65b0"
 opentelemetry-instrumentation-psycopg = "==0.65b0"
 opentelemetry-instrumentation-redis = "==0.65b0"
+# steward 20.1 / canopy AD-13: Lane 1 CMS (pytest must import wagtail)
+wagtail = "==7.4.3"
 
 
 [feature.platform-image-pip]

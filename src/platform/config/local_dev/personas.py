@@ -19,6 +19,7 @@ from config.authorization.mapper import USERNAME_CLAIM
 __all__ = [
     "DESIGNATED_STAFF",
     "DESIGNATED_SUPERUSER",
+    "DESIGNATED_WAGTAIL_ADMIN",
     "PERSONAS",
     "Persona",
     "UnknownPersonaError",
@@ -30,6 +31,7 @@ __all__ = [
 
 DESIGNATED_STAFF: Final[str] = "<designated-staff-group>"
 DESIGNATED_SUPERUSER: Final[str] = "<designated-superuser-group>"
+DESIGNATED_WAGTAIL_ADMIN: Final[str] = "<designated-wagtail-admin-group>"
 
 
 class UnknownPersonaError(LookupError):
@@ -63,6 +65,14 @@ PERSONAS: Final[tuple[Persona, ...]] = (
         name="Reader Persona",
         groups=(),
     ),
+    Persona(
+        key="editor",
+        subject="local-dev:persona:editor",
+        username="editor-persona",
+        email="editor-persona@localhost.invalid",
+        name="Editor Persona",
+        groups=(DESIGNATED_WAGTAIL_ADMIN,),
+    ),
 )
 
 _BY_KEY: Final[dict[str, Persona]] = {persona.key: persona for persona in PERSONAS}
@@ -84,6 +94,7 @@ def resolve_groups(persona: Persona) -> tuple[str, ...]:
     designated = {
         DESIGNATED_STAFF: contract.staff_group,
         DESIGNATED_SUPERUSER: contract.superuser_group,
+        DESIGNATED_WAGTAIL_ADMIN: settings.WAGTAIL_ADMIN_IDP_GROUP,
     }
     return tuple(dict.fromkeys(designated.get(name, name) for name in persona.groups))
 
