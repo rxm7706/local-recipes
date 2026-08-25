@@ -9,6 +9,14 @@ def _provision_wagtail_admin_group(sender: AppConfig, **kwargs: object) -> None:
     provision_designated_groups()
 
 
+def _seed_detector_schedule(sender: AppConfig, **kwargs: object) -> None:
+    from platformapp.front_door.detector_jobs import (  # noqa: PLC0415
+        seed_detector_schedule,
+    )
+
+    seed_detector_schedule()
+
+
 class FrontDoorConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "platformapp.front_door"
@@ -20,4 +28,9 @@ class FrontDoorConfig(AppConfig):
             _provision_wagtail_admin_group,
             sender=self,
             dispatch_uid="front_door.provision_wagtail_admin_group",
+        )
+        post_migrate.connect(
+            _seed_detector_schedule,
+            sender=self,
+            dispatch_uid="front_door.seed_detector_schedule",
         )

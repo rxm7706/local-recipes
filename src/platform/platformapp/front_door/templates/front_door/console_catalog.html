@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ surface_id }}</title>
+  </head>
+  <body data-console-home="{{ surface_id }}" data-home-path="{{ home.path }}">
+    <h1>{{ surface_id }}</h1>
+    <ul>
+      {% for entry in entries %}
+        <li>{{ entry }}</li>
+      {% empty %}
+        <li class="empty">none</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>

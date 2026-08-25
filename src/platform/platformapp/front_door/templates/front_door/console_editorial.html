@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Console editorial</title>
+  </head>
+  <body data-console="editorial">
+    <h1>CMS editorial</h1>
+    <ul>
+      {% for page in pages %}
+        <li data-surface-id="{{ page.surface_id }}">{{ page.body|safe }}</li>
+      {% empty %}
+        <li class="empty">no published editorial pages</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
