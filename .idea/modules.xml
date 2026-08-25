@@ -475,6 +475,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/blinker@3.iml" filepath="$PROJECT_DIR$/.idea/blinker@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/bmad-dashboard.iml" filepath="$PROJECT_DIR$/.idea/bmad-dashboard.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/bmad-loop.iml" filepath="$PROJECT_DIR$/.idea/bmad-loop.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/bmad-loop@1.iml" filepath="$PROJECT_DIR$/.idea/bmad-loop@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/brotli.iml" filepath="$PROJECT_DIR$/.idea/brotli.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/brotli@1.iml" filepath="$PROJECT_DIR$/.idea/brotli@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/build.iml" filepath="$PROJECT_DIR$/.idea/build.iml" />
@@ -1406,6 +1407,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-mason.iml" filepath="$PROJECT_DIR$/.idea/pyforge-mason.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-scribe.iml" filepath="$PROJECT_DIR$/.idea/pyforge-scribe.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-steward.iml" filepath="$PROJECT_DIR$/.idea/pyforge-steward.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-testing-kit.iml" filepath="$PROJECT_DIR$/.idea/pyforge-testing-kit.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-warden.iml" filepath="$PROJECT_DIR$/.idea/pyforge-warden.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pygam.iml" filepath="$PROJECT_DIR$/.idea/pygam.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pygwalker.iml" filepath="$PROJECT_DIR$/.idea/pygwalker.iml" />
