@@ -19,6 +19,8 @@ pythonpath = [
     "../shared/packages/django-mason/src",
     "../shared/packages/django-scribe/src",
     "../shared/packages/django-steward/src",
+    # Story 23.1: atlas board imports pyforge.steward.dashboard at test time.
+    "../shared/packages/pyforge-steward/src",
 ]
 python_files = [
     "tests.py",

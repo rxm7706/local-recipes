@@ -96,6 +96,31 @@ def _pyforge_package_imports(tree: ast.AST) -> list[str]:
     return found
 
 
+def _pyforge_hit_module(hit: str) -> str:
+    if hit.startswith("from "):
+        return hit.removeprefix("from ").removesuffix(" import ...")
+    return hit.removeprefix("import ")
+
+
+def _atlas_pyforge_allowed(hit: str) -> bool:
+    """Atlas may import steward dashboard isolation + existing MCP (21.2).
+
+    ``pyforge.atlas.dashboard`` (Vizro CLI) and other stations stay forbidden.
+    """
+    module = _pyforge_hit_module(hit)
+    allowed = ("pyforge.steward.dashboard", "pyforge.atlas.mcp")
+    return any(
+        module == prefix or module.startswith(prefix + ".") for prefix in allowed
+    )
+
+
+def _disallowed_pyforge_imports(station: str, tree: ast.AST) -> list[str]:
+    hits = _pyforge_package_imports(tree)
+    if station != "atlas":
+        return hits
+    return [hit for hit in hits if not _atlas_pyforge_allowed(hit)]
+
+
 def _model_subclasses(tree: ast.AST) -> list[str]:
     found: list[str] = []
     for node in ast.walk(tree):
@@ -159,7 +184,9 @@ def test_new_portals_are_client_only_and_projection() -> None:
         root = _portal_tree(station)
         for path in _iter_py(root):
             tree = ast.parse(path.read_text(encoding="utf-8"))
-            offenders.extend(f"{path}: {hit}" for hit in _pyforge_package_imports(tree))
+            offenders.extend(
+                f"{path}: {hit}" for hit in _disallowed_pyforge_imports(station, tree)
+            )
             offenders.extend(f"{path}: {hit}" for hit in _raw_http_imports(tree))
             offenders.extend(
                 f"{path}: Model subclass {hit}" for hit in _model_subclasses(tree)
