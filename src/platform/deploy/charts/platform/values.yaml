@@ -34,8 +34,10 @@ imagePullSecrets: []
 # ResourceQuota) reject or throttle pods without explicit resources.
 resources: {}
 
-# AD-12: the chart NEVER renders a Secret and carries no credential
-# defaults. This names a PRE-CREATED Secret in the release namespace that
+# AD-12 / canopy AD-19 (Story 26.2): the chart NEVER renders a Secret and
+# carries no credential defaults — values hold Secret *names and keys*,
+# never secret *values*. A check over `helm template` fails if a value
+# appears. This names a PRE-CREATED Secret in the release namespace that
 # must hold exactly these keys:
 #   DJANGO_SECRET_KEY -- Django's SECRET_KEY
 #   DATABASE_URL      -- the whole django-environ 12-factor database URL

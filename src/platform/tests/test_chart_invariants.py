@@ -5,8 +5,10 @@ the OCP overlay (`deploy/overlays/ocp/`) must stay a thin Route; the
 platform-image pods (web, worker, migrate) must carry the OCP
 `restricted-v2` contract with no fixed UID anywhere; and the namespace
 inventory must be exactly PostgreSQL + Redis + the platform image + the
-DB-GPT sidecar (AD-1, Story 12.5). This module makes those invariants
-tests over parsed `helm template` output rather than conventions.
+DB-GPT sidecar (AD-1, Story 12.5). Story 26.2 / canopy AD-19 adds that
+rendered manifests carry secretKeyRefs, never secret *values*. This module
+makes those invariants tests over parsed `helm template` output rather
+than conventions.
 
 Story 9.6's discipline applies: every real proof's assertion logic lives
 in a shared helper, and each of the eight assertion-bearing helpers has at
@@ -23,6 +25,7 @@ verification used.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -58,6 +61,38 @@ _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
 # Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
 _SIDECAR_COMPONENT = "dbgpt"
 _REDIS_COMPONENTS = frozenset({"redis-cache", "redis-broker"})
+# Story 26.2 / canopy AD-19: env names that must be secretKeyRef, never `value`.
+_SECRET_ENV_NAMES = frozenset(
+    {
+        "DJANGO_SECRET_KEY",
+        "DATABASE_URL",
+        "POSTGRES_PASSWORD",
+        "REDIS_PASSWORD",
+        "DBGPT_LLM_API_KEY",
+        "COMPONENT_OIDC_CLIENT_SECRET",
+    },
+)
+_SECRETISH_ENV_NAME = re.compile(
+    r"(PASSWORD|SECRET|TOKEN|API_KEY|APIKEY|CREDENTIAL|PRIVATE.?KEY)",
+    re.IGNORECASE,
+)
+# Unique payload injected via helm --set-string; templates must not emit it.
+_SECRET_VALUE_CANARY = "CANARY-26-2-SECRET-VALUE-NOT-FOR-RENDER"  # noqa: S105
+_VAULT_CSI_ANNOTATION_MARKERS = (
+    "vault.hashicorp.com/",
+    "agent-inject",
+    "secrets-store.csi.x-k8s.io/",
+)
+_SECRETS_HTTP_API_IMPORT = re.compile(
+    r"(?m)^\s*(?:from|import)\s+"
+    r"(hvac|azure\.keyvault|google\.cloud\.secretmanager)\b"
+    r"|boto3\.client\(\s*[\"']secretsmanager[\"']"
+    r"|SecretManagerServiceClient"
+    r"|hashicorp\.vault",
+)
+_CHART_VALUE_SECRET_KEYS = frozenset(
+    {"password", "secret", "secretkey", "apikey", "token", "clientsecret"},
+)
 
 requires_helm = pytest.mark.skipif(
     shutil.which("helm") is None,
@@ -364,6 +399,161 @@ def _collect_env_by_name(
         for entry in container.get("env") or []:
             env_by_name[entry["name"]] = entry
     return env_by_name
+
+
+def _iter_pod_containers(pod_spec: dict[str, Any]) -> list[dict[str, Any]]:
+    return list(pod_spec.get("containers") or []) + list(
+        pod_spec.get("initContainers") or [],
+    )
+
+
+def _is_secret_env_name(name: str) -> bool:
+    return name in _SECRET_ENV_NAMES or bool(_SECRETISH_ENV_NAME.search(name))
+
+
+def _collect_string_leaves(node: object) -> list[str]:
+    leaves: list[str] = []
+    if isinstance(node, str):
+        leaves.append(node)
+    elif isinstance(node, dict):
+        for child in node.values():
+            leaves.extend(_collect_string_leaves(child))
+    elif isinstance(node, list):
+        for child in node:
+            leaves.extend(_collect_string_leaves(child))
+    return leaves
+
+
+def _assert_no_secret_values_in_docs(
+    docs: list[dict[str, Any]],
+    *,
+    canary: str | None = None,
+) -> None:
+    """Story 26.2 / FR-32: rendered manifests carry names and keys, never
+    secret *values*. Fails if the canary appears anywhere, if a secret-named
+    env var uses inline ``value``, or if a Secret object is rendered.
+    """
+    assert docs, "empty render -- secret-value check would pass vacuously"
+    if canary:
+        for path, text in enumerate(_collect_string_leaves(docs)):
+            assert canary not in text, (
+                f"secret canary {canary!r} appeared in rendered YAML "
+                f"(leaf index {path}): {text!r}"
+            )
+    secret_kinds = [
+        (doc.get("kind"), (doc.get("metadata") or {}).get("name"))
+        for doc in docs
+        if doc.get("kind") == "Secret"
+    ]
+    assert not secret_kinds, (
+        f"chart rendered Secret objects (values would leak in git): {secret_kinds}"
+    )
+    by_component = _pod_specs_by_component(docs)
+    for component, pod_spec in by_component.items():
+        for container in _iter_pod_containers(pod_spec):
+            cname = container.get("name")
+            where = f"{component}/{cname}"
+            for entry in container.get("env") or []:
+                name = str(entry.get("name", ""))
+                inline = entry.get("value")
+                if canary and inline is not None and canary in str(inline):
+                    msg = f"{where}: env {name} inlined canary secret value"
+                    raise AssertionError(msg)
+                if not _is_secret_env_name(name):
+                    continue
+                if inline not in (None, ""):
+                    msg = (
+                        f"{where}: secret-named env {name} has inline value "
+                        f"{inline!r} -- must be secretKeyRef (canopy AD-19)"
+                    )
+                    raise AssertionError(msg)
+                ref = (entry.get("valueFrom") or {}).get("secretKeyRef") or {}
+                assert ref.get("name"), (
+                    f"{where}: secret-named env {name} missing secretKeyRef "
+                    f"name: {entry!r}"
+                )
+                assert ref.get("key"), (
+                    f"{where}: secret-named env {name} missing secretKeyRef "
+                    f"key: {entry!r}"
+                )
+
+
+def _assert_no_vault_csi_or_secrets_sidecar(docs: list[dict[str, Any]]) -> None:
+    """Canopy AD-19: Vault injector, secrets CSI, extra secrets sidecar
+    require a dated Dream — they must not appear in this chain's charts.
+    """
+    assert docs, "empty render -- vault/CSI check would pass vacuously"
+    for doc in docs:
+        kind = doc.get("kind")
+        name = (doc.get("metadata") or {}).get("name")
+        annotations = {
+            **((doc.get("metadata") or {}).get("annotations") or {}),
+            **(
+                ((doc.get("spec") or {}).get("template") or {})
+                .get("metadata", {})
+                .get("annotations")
+                or {}
+            ),
+        }
+        for key, value in annotations.items():
+            blob = f"{key}={value}"
+            for marker in _VAULT_CSI_ANNOTATION_MARKERS:
+                assert marker not in blob, (
+                    f"{kind} {name!r}: vault/CSI annotation {blob!r}"
+                )
+        if kind not in _WORKLOAD_KINDS:
+            continue
+        pod_spec = doc["spec"]["template"]["spec"]
+        for volume in pod_spec.get("volumes") or []:
+            csi = volume.get("csi") or {}
+            driver = str(csi.get("driver") or "")
+            assert "secrets-store" not in driver, (
+                f"{kind} {name!r}: secrets CSI volume {volume.get('name')!r} "
+                f"driver={driver!r}"
+            )
+        for container in _iter_pod_containers(pod_spec):
+            cname = str(container.get("name") or "")
+            image = str(container.get("image") or "")
+            assert "vault-agent" not in cname, (
+                f"{kind} {name!r}: extra secrets sidecar container {cname!r}"
+            )
+            image_name = image.rsplit("/", maxsplit=1)[-1].split(":", maxsplit=1)[0]
+            assert "vault" not in image_name, (
+                f"{kind} {name!r}: vault image on container {cname!r}: {image!r}"
+            )
+
+
+def _assert_chart_values_hold_no_secret_payloads(
+    values: dict[str, Any],
+    path: str = "",
+) -> None:
+    """Committed chart values name Secrets/keys; they must not hold passwords."""
+    for key, child in values.items():
+        child_path = f"{path}.{key}" if path else str(key)
+        if key.lower() in _CHART_VALUE_SECRET_KEYS and isinstance(child, str) and child:
+            msg = (
+                f"chart value {child_path} holds a secret payload {child!r} "
+                f"-- names/keys only (FR-32)"
+            )
+            raise AssertionError(msg)
+        if isinstance(child, dict):
+            _assert_chart_values_hold_no_secret_payloads(child, child_path)
+
+
+def _assert_app_does_not_call_secrets_http_api(root: Path) -> None:
+    """Runtime delivery is env/mounts (parent AD-12), not a secrets HTTP API."""
+    offenders: list[str] = []
+    skip_parts = frozenset({"tests", "compose"})
+    for path in sorted(root.rglob("*.py")):
+        if skip_parts.intersection(path.relative_to(root).parts):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if _SECRETS_HTTP_API_IMPORT.search(text):
+            offenders.append(str(path.relative_to(root)))
+    assert not offenders, (
+        f"platform app calls a secrets HTTP API (canopy AD-19 forbids it): "
+        f"{offenders}"
+    )
 
 
 def _collect_workload_images(docs: list[dict[str, Any]]) -> set[str]:
@@ -718,6 +908,43 @@ def test_redis_uses_existing_secret_password_and_wires_redis_url():
         broker_host=broker_host,
         cache_host=cache_host,
     )
+
+
+@requires_helm
+def test_rendered_manifests_carry_secret_refs_never_secret_values():
+    """Story 26.2 / FR-32 / canopy AD-19: helm template must not emit a
+    secret *value*. Canary --set-string values are unused chart paths;
+    if a template interpolates them the check fails.
+    """
+    yaml = _import_yaml()
+    values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
+    _assert_chart_values_hold_no_secret_payloads(values)
+
+    docs = _render(
+        _CORE_CHART,
+        "--set-string",
+        f"postgres.auth.password={_SECRET_VALUE_CANARY}",
+        "--set-string",
+        f"django.secretKey={_SECRET_VALUE_CANARY}",
+        "--set-string",
+        f"sidecar.llm.apiKey={_SECRET_VALUE_CANARY}",
+        release="platform",
+    )
+    _assert_no_secret_values_in_docs(docs, canary=_SECRET_VALUE_CANARY)
+    _assert_no_vault_csi_or_secrets_sidecar(docs)
+    by_component = _pod_specs_by_component(docs)
+    assert by_component, "core chart rendered no workloads"
+    secret_refs = 0
+    for pod_spec in by_component.values():
+        for container in _iter_pod_containers(pod_spec):
+            for entry in container.get("env") or []:
+                if (entry.get("valueFrom") or {}).get("secretKeyRef"):
+                    secret_refs += 1
+    assert secret_refs, "core chart rendered no secretKeyRef env entries"
+
+    overlay_docs = _render(_OVERLAY_CHART, release="platform")
+    _assert_no_secret_values_in_docs(overlay_docs, canary=_SECRET_VALUE_CANARY)
+    _assert_no_vault_csi_or_secrets_sidecar(overlay_docs)
 
 
 @requires_helm
@@ -1330,3 +1557,135 @@ def test_redis_empty_dir_check_fails_when_a_pvc_volume_is_present():
 
     with pytest.raises(AssertionError, match="emptyDir"):
         _assert_redis_persistence_is_empty_dir(contaminated_docs)
+
+
+def _synthetic_workload(
+    component: str,
+    *,
+    env: list[dict[str, Any]] | None = None,
+    annotations: dict[str, str] | None = None,
+    volumes: list[dict[str, Any]] | None = None,
+    extra_containers: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    containers: list[dict[str, Any]] = [
+        {"name": component, "image": "platform:latest", "env": env or []},
+    ]
+    containers.extend(extra_containers or [])
+    return {
+        "kind": "Deployment",
+        "metadata": {
+            "name": f"platform-{component}",
+            "labels": {"app.kubernetes.io/component": component},
+        },
+        "spec": {
+            "template": {
+                "metadata": {
+                    "labels": {"app.kubernetes.io/component": component},
+                    "annotations": annotations or {},
+                },
+                "spec": {
+                    "containers": containers,
+                    "volumes": volumes or [],
+                },
+            },
+        },
+    }
+
+
+def test_secret_value_check_fails_on_inline_env_value():
+    """A secret-named env var with `value:` (not secretKeyRef) must raise."""
+    docs = [
+        _synthetic_workload(
+            "web",
+            env=[{"name": "DJANGO_SECRET_KEY", "value": "hunter2-not-a-ref"}],
+        ),
+    ]
+    with pytest.raises(AssertionError, match="inline value"):
+        _assert_no_secret_values_in_docs(docs)
+
+
+def test_secret_value_check_fails_when_canary_appears():
+    """An injected secret canary anywhere in the render must raise."""
+    docs = [
+        _synthetic_workload(
+            "web",
+            env=[{"name": "DJANGO_ALLOWED_HOSTS", "value": _SECRET_VALUE_CANARY}],
+        ),
+    ]
+    with pytest.raises(AssertionError, match="canary"):
+        _assert_no_secret_values_in_docs(docs, canary=_SECRET_VALUE_CANARY)
+
+
+def test_secret_value_check_fails_on_a_rendered_secret_object():
+    """A chart-emitted Secret would put values in git -- must raise."""
+    docs = [
+        _synthetic_workload("web"),
+        {
+            "kind": "Secret",
+            "metadata": {"name": "platform-secrets"},
+            "stringData": {"DJANGO_SECRET_KEY": "leaked"},
+        },
+    ]
+    with pytest.raises(AssertionError, match="Secret objects"):
+        _assert_no_secret_values_in_docs(docs)
+
+
+def test_vault_csi_check_fails_on_injector_annotation():
+    docs = [
+        _synthetic_workload(
+            "web",
+            annotations={"vault.hashicorp.com/agent-inject": "true"},
+        ),
+    ]
+    with pytest.raises(AssertionError, match="vault/CSI"):
+        _assert_no_vault_csi_or_secrets_sidecar(docs)
+
+
+def test_vault_csi_check_fails_on_secrets_store_volume():
+    docs = [
+        _synthetic_workload(
+            "web",
+            volumes=[
+                {
+                    "name": "secrets-store",
+                    "csi": {"driver": "secrets-store.csi.k8s.io"},
+                },
+            ],
+        ),
+    ]
+    with pytest.raises(AssertionError, match="secrets CSI"):
+        _assert_no_vault_csi_or_secrets_sidecar(docs)
+
+
+def test_vault_csi_check_fails_on_vault_agent_sidecar():
+    docs = [
+        _synthetic_workload(
+            "web",
+            extra_containers=[
+                {"name": "vault-agent", "image": "hashicorp/vault:1.15"},
+            ],
+        ),
+    ]
+    with pytest.raises(AssertionError, match="secrets sidecar"):
+        _assert_no_vault_csi_or_secrets_sidecar(docs)
+
+
+def test_chart_values_check_fails_on_a_password_payload():
+    with pytest.raises(AssertionError, match="secret payload"):
+        _assert_chart_values_hold_no_secret_payloads(
+            {"postgres": {"auth": {"password": "supersecret"}}},
+        )
+
+
+def test_secrets_http_api_check_fails_on_hvac_import(tmp_path: Path):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "vault_client.py").write_text(
+        "import hvac\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(AssertionError, match="secrets HTTP API"):
+        _assert_app_does_not_call_secrets_http_api(tmp_path)
+
+
+def test_app_does_not_call_secrets_http_api():
+    _assert_app_does_not_call_secrets_http_api(_PLATFORM_DIR)
