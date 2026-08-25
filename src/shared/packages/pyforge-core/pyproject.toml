@@ -10,11 +10,13 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# Story 14.1 scaffolds an empty leaf: zero third-party runtime dependencies,
-# by design (SPEC-pyforge-core Constraints: "Leaf or nothing"). Primitive
-# extraction (atomic write, verdict lattice, report envelope, exception
-# root, subprocess guard) is Stories 14.2-14.4 and must not add one here.
+# Leaf: zero third-party runtime dependencies (SPEC-pyforge-core CAP-1).
+# Story 32.1 adds the stdlib hook-spec / entry-point loader in this package;
+# do not add pluggy or setuptools here.
 dependencies = []
+
+[project.entry-points."pyforge.core.hooks"]
+dummy = "pyforge.core.hooks:DummyPlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
