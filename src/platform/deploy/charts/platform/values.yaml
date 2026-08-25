@@ -129,8 +129,8 @@ postgres:
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
 
-# Redis (official image, Deployment, emptyDir -- cache + Celery broker,
-# nothing durable).
+# Redis (official image, two Deployments, emptyDir -- redis-cache evicts,
+# redis-broker does not; still Redis-the-kind under parent AD-1).
 redis:
   image:
     registry: ""
@@ -139,10 +139,23 @@ redis:
     pullPolicy: IfNotPresent
   # Key in existingSecret holding the Redis AUTH password (Story 12.6).
   passwordSecretKey: REDIS_PASSWORD
+  cache:
+    maxmemory: 64mb
+    maxmemoryPolicy: allkeys-lru
+  broker:
+    maxmemoryPolicy: noeviction
   # Same rationale as postgres.runAsUser; nulled by the OCP overlay.
   runAsUser: 999
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
+
+# Wagtail media (Story 20.2 / canopy AD-13). ReadWriteMany; Django
+# FileSystemStorage. Not an object-store backend.
+media:
+  mountPath: /media
+  persistence:
+    size: 8Gi
+    storageClassName: ""
 
 # DB-GPT sidecar (Story 10.5 image, Story 12.5 chart membership).
 # Pattern B: Celery/REST from platform pods, never an ASGI mount. The

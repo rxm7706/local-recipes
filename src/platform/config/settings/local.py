@@ -1,3 +1,8 @@
+from config.authorization.claims import ClaimsContract
+from config.local_dev.keys import DEV_KEY_DIR
+from config.local_dev.keys import JWKS_FILENAME
+from platformapp.front_door.lane1_runtime import locmem_cache_aliases
+
 from .base import *  # noqa: F403
 from .base import CLAIMS_CONTRACT
 from .base import INSTALLED_APPS
@@ -6,10 +11,6 @@ from .base import OIDC_AUDIENCE
 from .base import OIDC_ISSUER
 from .base import OIDC_JWKS_URL
 from .base import env
-
-from config.authorization.claims import ClaimsContract
-from config.local_dev.keys import DEV_KEY_DIR
-from config.local_dev.keys import JWKS_FILENAME
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -26,12 +27,7 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]  # noqa: S104
 # CACHES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "",
-    },
-}
+CACHES = locmem_cache_aliases()
 
 # EMAIL
 # ------------------------------------------------------------------------------
@@ -86,7 +82,9 @@ CLAIMS_CONTRACT = ClaimsContract(
     superuser_group=CLAIMS_CONTRACT.superuser_group or "platform-superuser",
 )
 
-_DEV_JWKS_LOCATION = "" if OIDC_ISSUER.strip() else (DEV_KEY_DIR / JWKS_FILENAME).as_uri()
+_DEV_JWKS_LOCATION = (
+    "" if OIDC_ISSUER.strip() else (DEV_KEY_DIR / JWKS_FILENAME).as_uri()
+)
 OIDC_JWKS_URL = OIDC_JWKS_URL.strip() or _DEV_JWKS_LOCATION
 OIDC_ISSUER = OIDC_ISSUER.strip() or "https://local-dev.invalid/realms/platform"
 OIDC_AUDIENCE = OIDC_AUDIENCE.strip() or "platform-web"

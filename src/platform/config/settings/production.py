@@ -3,6 +3,8 @@ import sys
 from config.observability.logging import build_logging_config
 from config.startup import run_stage_one
 from config.startup.stage_one import refuse_required_settings
+from platformapp.front_door.lane1_runtime import channel_layers_for_broker
+from platformapp.front_door.lane1_runtime import django_cache_aliases
 
 from .base import *  # noqa: F403
 from .base import DATABASES
@@ -10,7 +12,8 @@ from .base import DEBUG
 from .base import DJANGO_LOG_FORMAT
 from .base import DJANGO_LOG_LEVEL
 from .base import INSTALLED_APPS
-from .base import REDIS_URL
+from .base import REDIS_BROKER_URL
+from .base import REDIS_CACHE_URL
 from .base import env
 
 # CAP-3 / steward 16.2: named required-env refusals *before* django-environ
@@ -29,20 +32,10 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["platform.internal"])
 # ------------------------------------------------------------------------------
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 
-# CACHES
+# CACHES (redis-cache only — Celery/Channels stay on REDIS_BROKER_URL)
 # ------------------------------------------------------------------------------
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            # Mimicking memcache behavior.
-            # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
-            "IGNORE_EXCEPTIONS": True,
-        },
-    },
-}
+CACHES = django_cache_aliases(REDIS_CACHE_URL)
+CHANNEL_LAYERS = channel_layers_for_broker(REDIS_BROKER_URL)
 
 # SECURITY
 # ------------------------------------------------------------------------------

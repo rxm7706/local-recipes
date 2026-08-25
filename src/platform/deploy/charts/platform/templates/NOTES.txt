@@ -10,12 +10,15 @@ REQUIRED PRE-CREATED SECRET (this chart never renders one -- AD-12):
     POSTGRES_PASSWORD  The same <password>, consumed by the postgres
                        container itself.
     REDIS_PASSWORD     Redis AUTH password (Story 12.6); wired into
-                       REDIS_URL for platform pods and --requirepass here.
+                       REDIS_BROKER_URL / REDIS_CACHE_URL / REDIS_URL
+                       (broker alias) and --requirepass on both Redis pods.
 
 In-cluster service DNS names (compose DATABASE_URL from these):
-  PostgreSQL  {{ include "platform.postgres.fullname" . }}:5432
-  Redis       {{ include "platform.redis.fullname" . }}:6379  (REDIS_URL is wired automatically)
-  Web         {{ include "platform.fullname" . }}:{{ .Values.service.port }}
+  PostgreSQL     {{ include "platform.postgres.fullname" . }}:5432
+  Redis broker   {{ include "platform.redisBroker.fullname" . }}:6379
+  Redis cache    {{ include "platform.redisCache.fullname" . }}:6379
+  Media PVC      {{ include "platform.media.pvcName" . }} (ReadWriteMany)
+  Web            {{ include "platform.fullname" . }}:{{ .Values.service.port }}
 
 Exposure flows:
 {{- if .Values.ingress.enabled }}

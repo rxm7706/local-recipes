@@ -1,0 +1,19 @@
+# Wagtail media ReadWriteMany PVC (canopy AD-13). Django FileSystemStorage
+# writes here; object-store backends are forbidden. Mounted on web + worker,
+# never emptyDir.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "platform.media.pvcName" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.media.persistence.size | quote }}
+  {{- with .Values.media.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}

@@ -1,35 +1,29 @@
-# Redis 7 (official image) -- cache + Celery broker (AD-1: Redis carries
-# both duties; not a licence for a fourth piece of infrastructure).
-# Deployment + emptyDir, not a StatefulSet: nothing durable lives here
-# (compose.yml's `redis` service persisted nothing either).
-#
-# Same security posture split as postgres: restricted fields fixed here,
-# only runAsUser values-driven (999 = the official image's redis UID;
-# nulled by the OCP overlay). No fsGroup: emptyDir is world-writable.
+# Two Redis Deployments, same image class (canopy AD-10 / parent AD-1):
+# redis-cache evicts (allkeys-lru); redis-broker does not (noeviction).
+# emptyDir only -- Redis stays ephemeral (Story 12.6).
+{{- range $role := tuple "cache" "broker" }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "platform.redis.fullname" . }}
+  name: {{ include "platform.redis.roleFullname" (dict "root" $ "role" $role) }}
   labels:
-    {{- include "platform.labels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    {{- include "platform.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: redis-{{ $role }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "platform.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: redis
+      {{- include "platform.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: redis-{{ $role }}
   template:
     metadata:
       labels:
-        {{- include "platform.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: redis
+        {{- include "platform.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: redis-{{ $role }}
     spec:
-      # The DATA services' own SA (serviceaccount.yaml): an operator
-      # granting a laxer SCC to postgres/redis on OCP binds it to this
-      # subject without widening the platform pods' restricted-v2 posture.
-      serviceAccountName: {{ include "platform.dataServiceAccountName" . }}
-      {{- with .Values.imagePullSecrets }}
+      serviceAccountName: {{ include "platform.dataServiceAccountName" $ }}
+      {{- with $.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -37,27 +31,32 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-        {{- /* nil-check, not `with`-truthiness: an explicit 0 must
-             render, only null/absent may drop the key */}}
-        {{- if not (kindIs "invalid" .Values.redis.runAsUser) }}
-        runAsUser: {{ .Values.redis.runAsUser }}
+        {{- if not (kindIs "invalid" $.Values.redis.runAsUser) }}
+        runAsUser: {{ $.Values.redis.runAsUser }}
         {{- end }}
       containers:
         - name: redis
-          image: {{ include "platform.imageRef" (dict "image" .Values.redis.image "path" "redis.image") }}
-          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
-          # AUTH from existingSecret (Story 12.6); $(REDIS_PASSWORD) expands
-          # at container start per the Kubernetes env-var substitution rule.
+          image: {{ include "platform.imageRef" (dict "image" $.Values.redis.image "path" "redis.image") }}
+          imagePullPolicy: {{ $.Values.redis.image.pullPolicy }}
           env:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "platform.existingSecretName" . | quote }}
-                  key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
+                  name: {{ include "platform.existingSecretName" $ | quote }}
+                  key: {{ required "redis.passwordSecretKey is required" $.Values.redis.passwordSecretKey | quote }}
           command:
             - redis-server
             - --requirepass
             - $(REDIS_PASSWORD)
+            {{- if eq $role "cache" }}
+            - --maxmemory
+            - {{ required "redis.cache.maxmemory is required" $.Values.redis.cache.maxmemory | quote }}
+            - --maxmemory-policy
+            - {{ required "redis.cache.maxmemoryPolicy is required" $.Values.redis.cache.maxmemoryPolicy | quote }}
+            {{- else }}
+            - --maxmemory-policy
+            - {{ required "redis.broker.maxmemoryPolicy is required" $.Values.redis.broker.maxmemoryPolicy | quote }}
+            {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -85,7 +84,7 @@ spec:
                 - ping
             initialDelaySeconds: 5
             periodSeconds: 5
-          {{- with .Values.redis.resources }}
+          {{- with $.Values.redis.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -95,3 +94,4 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
+{{- end }}
