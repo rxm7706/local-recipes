@@ -6,11 +6,9 @@ Google's [`osv-scanner`](https://github.com/google/osv-scanner) (known CVEs)
 over Python / Conda / Pixi manifests, emitting one schema-validated
 `ComplianceReport` and acting as a strict CI/CD exit-code gate.
 
-**Status:** all 31 stories shipped (E1–E6) — the six-axis compliance gate
-(hygiene / security / license / currency + baseline & grandfathering +
-fix-PR actuator) is live. Epic 9 Story 9.1 publishes the PR-gate hook book
-on `pyforge.core.hooks`; plugins are **not** invoked by `warden scan` yet
-(Story 9.2). Specified in
+**Status:** Epics 1–8 shipped. Epic 9 Story 9.2 wraps those engines as the
+default plugin bundle on `pyforge.core.hooks` and registers optional
+commercial scanners as stubs. Specified in
 [`docs/specs/pyforge-warden.md`](../../../../docs/specs/pyforge-warden.md).
 
 ## Develop
@@ -74,7 +72,7 @@ default `fail-on-kev` gate: until the KEV feed is provisioned (or that gate
 is explicitly disabled), a default-config scan composes `indeterminate` on
 the vulnerability axis rather than a trusted verdict.
 
-## PR-gate hook book (Story 9.1)
+## PR-gate hook book (Stories 9.1–9.2)
 
 Warden publishes named hook specs on the shared FR-43 API
 (`pyforge.core.hooks`). Scanner authors attach Checkmarx/Sonar/GHAS-shaped
@@ -90,8 +88,20 @@ plugins here; they do **not** fork Warden or mint a second loader.
 `PluginRegistry.register` / `load_entry_points`. There is no
 `pyforge.warden.hooks` or `pyforge.warden.plugins` group.
 
-**Not invoked by `warden scan` yet.** Story 9.1 publishes the specs only.
-`load_entry_points` is not wired into the CLI scan loop; that is Story 9.2.
+**Default plugin bundle:** Null, Deptry, OSV, License, and Currency — the
+same factories `register_engine` already lists. `warden scan` selects those
+factories from in-tree plugins and still runs them on the existing thread
+pool (including the hygiene filter that skips `DeptryEngine` when there is
+no adjacent Python source).
+
+**Optional scanners** (`checkmarx`, `sonar`, `blackduck`, `ghas`,
+`profile-local`) are stubs. A default run does not require them. Enable
+with `WARDEN_OPTIONAL_SCANNERS` (comma-separated ids). Enabling an optional
+scanner may add `plugin_findings`; it cannot replace the Warden verdict
+(only `publish_pr_gate_verdict`, owner `"warden"`, publishes the PR-gate).
+A successful optional-plugin scan is not a competing PR-gate. Missing or
+not-enabled optionals are omitted, not an error — Story 9.3 still owns the
+absence-as-failure CI test.
 
 **Scanner-author example.** A plugin is a `HookPlugin`: `hook_spec` (one of
 the three names above), `owner` (the scanner, e.g. `"checkmarx"` — never
@@ -119,7 +129,9 @@ checkmarx-scan = "my_scanner.plugin:CheckmarxScanPlugin"
 (`publish_pr_gate_verdict`, owner `"warden"`). A plugin that does not own
 the verdict spec raises `SecondVerdictError`. Hooks do not project exit
 codes; `verdict.py` remains sole owner of the lattice + `exit_code_for`.
+`warden scan` may publish the composed `status` after lattice compose; it
+does not let plugins set the process exit code.
 
-**In-tree engines:** Deptry / OSV / license / currency stay listed in
-`engines.py` `register_engine` until Story 9.2. This story does not extract
-them into plugins.
+**In-tree engines:** Deptry / OSV / license / currency remain listed in
+`engines.py` `register_engine`. Story 9.2 wraps those factories; it does
+not rewrite the engine classes.
