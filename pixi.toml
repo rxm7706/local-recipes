@@ -219,6 +219,12 @@ openfeature-flagd-api = ">=1.0.0"
 openfeature-flagd-core = ">=1.0.0"
 openfeature-provider-flagd = ">=0.5.0,<0.5.1"
 cachebox = ">=5.1,<6"
+# Story 27.1 (FR-21, canopy AD-16): Liquibase on the env the platform
+# image consumes. Do not author recipes — liquibase 5.0.4 and
+# liquibase-postgresql 42.7.13 (vendored JDBC) are on SelfExplainML.
+# Helm Job / DML role is Story 27.2.
+liquibase = ">=5.0.4"
+liquibase-postgresql = ">=42.7.13"
 
 [feature.platform-dev]
 # --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
