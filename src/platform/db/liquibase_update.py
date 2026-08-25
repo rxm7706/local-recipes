@@ -49,6 +49,30 @@ def jdbc_url_from_migration_database_url(database_url: str) -> tuple[str, str, s
     return jdbc, username, password
 
 
+def ensure_liquibase_schema(database_url: str) -> None:
+    """Create ``liquibase`` before Liquibase opens ``databasechangelog``.
+
+    ``liquibaseSchemaName`` does not create the schema; a missing schema
+    fails the Job with ``schema "liquibase" does not exist`` (CRC 12.7).
+    """
+    import psycopg2  # noqa: PLC0415 -- image/conda env; not a render-path import
+
+    parsed = urlparse(database_url)
+    conn = psycopg2.connect(
+        host=parsed.hostname,
+        port=parsed.port or 5432,
+        dbname=(parsed.path or "").lstrip("/") or "platform",
+        user=unquote(parsed.username or ""),
+        password=unquote(parsed.password or ""),
+    )
+    try:
+        conn.autocommit = True
+        with conn.cursor() as cursor:
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS liquibase")
+    finally:
+        conn.close()
+
+
 def liquibase_update_argv(database_url: str) -> list[str]:
     jdbc, username, password = jdbc_url_from_migration_database_url(database_url)
     return [
@@ -71,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write("MIGRATION_DATABASE_URL is required\n")
         return 2
     try:
+        jdbc_url_from_migration_database_url(database_url)
+        ensure_liquibase_schema(database_url)
         cmd = liquibase_update_argv(database_url)
     except ValueError as exc:
         sys.stderr.write(f"{exc}\n")

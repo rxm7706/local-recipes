@@ -2251,7 +2251,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
-## DW-CANOPY-2026-08-24 — Phase 5 Canopy obligations recorded (atlas station); `lane1-serves-dw-h3` still open
+## DW-CANOPY-2026-08-24 — Phase 5 Canopy obligations recorded (atlas station); `lane1-serves-dw-h3` answered no (2026-08-25)
 
 - source_spec: `docs/dreams/pyforge-unifying-strategy.md` Phase 5; `sprint-change-proposal-2026-08-24-canopy.md`
   summary: Headless/express `bmad-correct-course` for station **pyforge-atlas** records how atlas
@@ -2265,21 +2265,23 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
     - five-tier: CLI exists; steward Epics 19/21/29 supply portal `/stations/atlas/`, MCP face, SKF skill, persona — no second chrome or extra public port in atlas
   joint_open_question:
     id: lane1-serves-dw-h3
-    status: open
+    status: answered-no
+    answered: 2026-08-25
     parties: [pyforge-steward, pyforge-atlas]
-    question: Whether Canopy Lane 1 (Guildhall Wagtail at `/`) serves, replaces, or merely coexists with
+    question: Whether Canopy Lane 1 (Guildhall Wagtail) serves, replaces, or merely coexists with
       the Epic 16 / `spec-wagtail-corporate-brain` narrow DW-H3 contract (`LaSuiteClient` frozen REST —
-      `POST /api/v1/documents/` etc.). **Not answered in this pass.**
-    constraint: Canopy Lane 1 must **not** absorb or re-mint `spec-wagtail-corporate-brain`. Epic 16's
-      contract and Wagtail's own API/admin surface are distinct until steward and atlas jointly resolve
-      `lane1-serves-dw-h3`.
-  dw_h3: DW-H3 (live Wagtail/La Suite server + credential + httpx opener bring-up) remains **open** —
-    unchanged by this entry; closes only when the attended bring-up runs and passes per Epic 16 / DW-H3.
-  evidence: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`; steward
-    `planning-artifacts/epics.md` § *Phase 5 scope* (open question stays joint, out of steward stories)
+      `POST /api/v1/documents/` etc.).
+    answer: **No.** Host Wagtail is `/cms/` (admin, documents, images, pages). Those routes are not
+      the La Suite Docs REST client. Lane 1 does not satisfy DW-H3. Constraint unchanged: Canopy
+      Lane 1 must **not** absorb or re-mint `spec-wagtail-corporate-brain`.
+  dw_h3: DW-H3 (live server that speaks `LaSuiteClient` REST + credential + httpx opener bring-up)
+    remains **open** — unchanged by this answer; closes only when the attended bring-up runs and
+    passes per Epic 16 / DW-H3.
+  evidence: steward `spec-pyforge-unifying-strategy/SPEC.md` Open Questions 2026-08-25;
+    `src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py`
   status: open
-  verified: 2026-08-24 — obligations applied to atlas Tier-2 planning artifacts; `lane1-serves-dw-h3`
-    explicitly **not** resolved; no answer invented for whether Lane 1 serves DW-H3.
+  verified: 2026-08-25 — `lane1-serves-dw-h3` answered **no**; DW-H3 still open; canopy MCP/board/DuckDB
+    obligations unchanged.
 
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 

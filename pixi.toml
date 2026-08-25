@@ -430,12 +430,12 @@ text-unidecode = "==1.3"
 fido2 = "==2.2.1"
 qrcode = "==8.2"
 uvicorn-worker = "==0.4.0"
-# steward 21.2 — official MCP SDK on the image pip layer (platform-ci-test parity)
-mcp = "==2.0.0"
+# steward 21.2 wanted MCP on this layer; python-agent-platform's conda env
+# now already provides mcp / sse-starlette / python-multipart (observed
+# 2026-08-25: pip --no-deps uninstalled mcp 1.28.1, sse-starlette 3.4.8,
+# python-multipart 0.0.32). Keep only the extras conda does not ship.
 mcp-types = "==2.0.0"
 httpx2 = "==2.12.0"
-sse-starlette = "==3.0.2"
-python-multipart = "==0.0.20"
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own

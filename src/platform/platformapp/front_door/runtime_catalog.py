@@ -5,7 +5,26 @@ from __future__ import annotations
 from pathlib import Path
 
 _FRONT_DOOR = Path(__file__).resolve().parent
-REPO_ROOT = _FRONT_DOOR.parents[3]
+
+
+def _repo_root() -> Path:
+    """Monorepo root when present; Django project root in the platform image.
+
+    ``parents[3]`` is the checkout (``src/platform/platformapp/front_door``).
+    The Containerfile copies the app to ``/app/platformapp/front_door``, which
+    has no fourth parent — ``IndexError`` crashed the worker on CRC (12.7).
+    """
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "pixi.toml").is_file():
+            return candidate
+        if (candidate / "docs" / "dreams").is_dir():
+            return candidate
+        if (candidate / "manage.py").is_file() and (candidate / "platformapp").is_dir():
+            return candidate
+    return _FRONT_DOOR.parents[1]
+
+
+REPO_ROOT = _repo_root()
 
 
 def catalog_entries(surface_id: str, root: Path | None = None) -> list[str]:

@@ -1,9 +1,9 @@
 ---
 spec: pyforge-unifying-strategy
-status: ready
+status: in-progress
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-08-24"
+updated: "2026-08-25"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -23,7 +23,6 @@ surface:
   - src/shared/packages/django-*/**
   - src/shared/packages/pyforge-core/**
   - src/shared/packages/pyforge-scribe/**
-  - services/**
   - .claude/skills/pyforge-*/**
   - recipes/openfeature-*/**
   - recipes/cachebox/**
@@ -32,14 +31,15 @@ surface:
   - environment.yaml
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
-open_questions:
-  - lane1-serves-dw-h3
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
 > preservation-validated contract for what to build, test, and validate. The Dream in `sources:`
 > carries the decision trail — ten operator rulings dated 2026-08-24, the RFC/blind-spot
-> derivations, and the pre-audit architecture prose this contract deliberately compresses.
+> derivations, the pre-audit architecture prose this contract deliberately compresses, and
+> Grounding dated 2026-08-25 (fleet drain + attended CRC). Correct-course:
+> `sprint-change-proposal-2026-08-25-drain-bind.md`.
 
 > **This SPEC extends `spec-python-agent-platform`, it does not replace it.** That Spec's CAP-1..6
 > are shipped and binding; nothing here re-mints them. `convergence.md` is the authority on which
@@ -53,10 +53,12 @@ open_questions:
 each shipped as an excellent command-line tool and stopped there. An operator who wants to see
 compliance findings, package health, fleet status and build queues holds eight terminals and no
 shared identity, no shared vocabulary, and no way for one station to tell another that something
-happened. The Canopy — `src/platform/`, already live with OIDC SSO, two agentic engines mounted on
-isolated schemas, and exactly one station portal — proved the shape works. This SPEC extends it
-from one portal to eight, gives every station a web face, a service face and a shared command
-grammar, and connects them with an event backbone so the estate behaves as one system.
+happened. The Canopy — `src/platform/` — proved the shape works. **The 2026-08-24–25 canopy drain
+landed the extension in code** (chrome, eight portals, host MCP faces, CLI dispatch, events,
+flags, governed-DDL *path*, five-tier check, CAP-18 hooks). Steward **12-7 `/ht/` 200** is
+dated. What remains outside this chain: pip-layer fold (`spec-platform-image-one-pixi-env`),
+Q5 measures (`docs/dreams/build-league-scorecard.md`, unpublished), RFC-5 residual DDL not
+yet in Liquibase. Not a `services/` rewrite.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema
 change to be auditable rather than incidental, identity to be revocable rather than cached, and
@@ -97,12 +99,15 @@ they are why this is not merely a UI project.
 
 - **CAP-4 — Every station has a service face.**
   - **intent:** Each station exposes its capabilities to programmatic and agent callers over a
-    current-specification MCP endpoint, with long operations surviving connection loss.
+    current-specification MCP endpoint **on the host ASGI** (`POST /stations/<name>/mcp`), with
+    long operations surviving connection loss. **Not** a `services/` process-per-station topology.
   - **success:** An agent completes a multi-minute station operation across a simulated ingress
     disconnect and still retrieves the result.
   - *(The criterion is deliberately stated as an outcome, not a mechanism. The MCP Tasks extension
     would be the natural vehicle and has no server-side runtime to build on — so binding the
-    capability to Tasks would block it on upstream. See the `start`/`get` constraint below.)*
+    capability to Tasks would block it on upstream. See the `start`/`get` constraint below.
+    Drain 2026-08-25: eight faces mounted; atlas-only `start`/`get` on 21.3 — do not re-mint the
+    mounts.)*
 
 - **CAP-5 — One command grammar.**
   - **intent:** A single entry point dispatches `pyforge <station> <noun> <verb>` to the eight
@@ -140,6 +145,11 @@ they are why this is not merely a UI project.
   - **success:** The application's database role provably cannot execute `CREATE`, `ALTER` or
     `DROP`, and a schema change authored without a corresponding governed changeset fails the
     build. *(Reopens shipped work — see Constraints and `convergence.md`.)*
+    **Live residual (CRC 2026-08-25, not a new CAP):** schema `liquibase` must exist before
+    tracking tables; Django contrib (`contenttypes`, `auth`, `sessions`) belongs **in** the
+    changelog (27.3 maps first-party apps only; `users.0001` FKs `auth_group`); Agent Canopy
+    mounts must not `CREATE TABLE` on import. `/ht/` 200 is steward **12-7**, not a substitute
+    for those holes.
 
 - **CAP-10 — Failure is contained.**
   - **intent:** A failing dependency degrades its caller instead of cascading, concurrent writers
@@ -218,7 +228,8 @@ they are why this is not merely a UI project.
     named commercial scanner plugin present.
   - *(Correct-course 2026-08-24, later the same day. Operator: this is the missing
     story — it does not exist in Canopy 18–30. Those epics stay chrome/portals/MCP/DDL;
-    they must not violate this capability.)*
+    they must not violate this capability. Drain: Epic 32 + peer hook stories **landed**;
+    do not re-mint a second plugin API.)*
 
 ## Constraints
 
@@ -278,16 +289,17 @@ they are why this is not merely a UI project.
   `2026-07-28` core deliberately removed sessions.
 - **Always:** a task handle is treated as a **capability** — opaque, high-entropy, TTL'd. Without
   sessions, anyone presenting the handle can read the task.
-- **Always:** **six conda-forge builds must land first**, and they are not six new recipes. Five
-  serve CAP-13: four new feedstocks (`openfeature-sdk`, `openfeature-flagd-api`,
-  `openfeature-flagd-core`, `openfeature-provider-flagd`, none present anywhere on anaconda.org)
-  plus a `cachebox` **5.x downgrade build on the existing feedstock**, which ships 6.2.5 against
-  the provider's `<6` pin. The sixth is a new `liquibase` recipe for CAP-9. Per repo Rule 1 every
-  one of those stories invokes `conda-forge-expert`. CAP-9 and CAP-13 are each blocked on their own
-  packaging, so both epics open with packaging work rather than platform work.
+- **Always:** **six conda-forge builds were the packaging open of this chain.** Stories 26.3 and
+  27.1 are ledger-`done` as operator-gate work. That does **not** claim CRC `/ht/` 200 or that
+  every OpenFeature/Liquibase package is on conda-forge `main` for every consumer. Do not
+  re-open Epics 26/27 as “start with packaging.” CAP-9 live holes are listed on CAP-9 success.
 - **Always:** CAP-9 adds a Helm hook Job beside the shipped `migrate-job.yaml`, at a lower
   hook-weight, on the same platform image. It does not introduce a chart pattern, a second image,
-  or an init container.
+  or an init container. The Job **creates schema `liquibase`** before Liquibase opens
+  `databasechangelog` (`liquibaseSchemaName` does not create it). Django contrib tables required
+  by first-party FKs are explicit changesets, not a silent `migrate` carve-out.
+- **Never:** a Langflow/DB-GPT (or other Agent Canopy) process emits boot-time DDL. Governed
+  schema is the Liquibase Job, not SQLAlchemy `create_all` on import.
 - **Always:** the `liquibase` feedstock targets **5.0.4 or later**. 5.0.2 and 5.0.3 carry the
   `runInTransaction="false"` search-path defect (issue 7791, fixed in 5.0.4), and 5.0.4 is
   additionally the first release whose GPG signature verifies against the rotated signing key.
@@ -315,6 +327,12 @@ they are why this is not merely a UI project.
   (SonarQube, Checkmarx, Black Duck, GHAS, profile-local tools) register as **Warden plugins**
   implementing Warden-owned **hook specifications**. Profile settings choose which plugins
   load. This is not a requirement to re-template Warden as a Kedro project.
+- **Always:** parallel BMAD writes use `BMAD_ACTIVE_PROJECT` and physical
+  `_bmad-output/projects/<slug>/` paths; **never** `scripts/bmad-switch` from a fan-out. Story
+  specs are tracked in `planning-artifacts/specs/` after merge. One story in flight per station.
+  Merge is `--merge` (never squash). `--admin` is a CI billing adapter when local tests are
+  green, not a second quality verdict. Peer stations implement CAP-18 as **one process-hook
+  story**; they do not copy steward Epics 18–30.
 - **Never:** a scanner plugin publishes a competing pass/fail that bypasses Warden, and the core
   gate never fails solely because a named scanner plugin is absent.
 - **Never:** fork a process to swap a vendor, or let a plugin publish a second verdict for a
@@ -348,6 +366,8 @@ they are why this is not merely a UI project.
 
 ## Non-goals
 
+- **Not** a `services/` FastAPI farm or nine public `:800x` processes. CAP-4 mounts on the host
+  ASGI. Celery + Redis is the out-of-request pool (RFC-1 revised).
 - **Not** a rewrite of the host. `src/platform/` stands; this SPEC extends it. No rename of
   `pyforge_host`, no relocation of `config/` or `platformapp/`.
 - **Not** a ninth station or a ninth BMAD project. The Canopy is steward's surface; the roster
@@ -356,8 +376,9 @@ they are why this is not merely a UI project.
   `enterprise-multi-agent-orchestration` and `asgi-multiplexer-monolith`.
 - **Not** a replacement for any station's CLI. CAP-5 dispatches to them; it does not absorb them,
   and a station binary remains a first-class entry point.
-- **Not** atlas's `spec-wagtail-corporate-brain`. That Spec is atlas's and its Epic 16 is `done`;
-  CAP-2 may end up *serving* its `DW-H3` consumer, but it does not absorb, re-mint or supersede it.
+- **Not** atlas's `spec-wagtail-corporate-brain`. That Spec is atlas's and its Epic 16 is `done`.
+  **2026-08-25:** Lane 1 does **not** serve `DW-H3` (`lane1-serves-dw-h3` answered no). This chain
+  does not absorb, re-mint or supersede that Spec.
 - **Not** the adoption of CodeRed CMS. Ruled out 2026-08-24 on maintenance evidence; Lane 1 is
   Wagtail alone.
 - **Not** a general-purpose multi-tenancy model. CAP-7's isolation is row-level for analytical
@@ -411,10 +432,24 @@ database role is provably incapable of altering its own schema.
   `fastmcp >=3.4.7,<4` and `mcp >=1.24,<2.0` so servers start. CAP-4 service faces are built on
   the official `mcp` SDK (`>=2.0.0`) on the one ASGI process; that story lifts the ceiling.
   Bound as architecture AD-5.
-- **lane1-serves-dw-h3** — can CAP-2's CMS satisfy atlas's `DW-H3` (its attended live
-  La Suite/Wagtail bring-up), so the estate runs one instance rather than two? Atlas's shipped
-  `LaSuiteClient` froze a **La Suite Docs** REST contract, which is not Wagtail's own API, so this
-  is a real compatibility question and not a formality. Owned jointly with atlas.
+- ~~**lane1-serves-dw-h3**~~ — **answered 2026-08-25: no.** CAP-2 Wagtail is `/cms/` (admin,
+  documents, images, pages) on the host ASGI process. Atlas `LaSuiteClient` is frozen to La Suite
+  Docs REST: `POST /api/v1/documents/`, `PATCH`/`GET /api/v1/documents/{id}/`,
+  `GET /api/v1/documents/all/`, Bearer token
+  (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py`). Those routes are not
+  Wagtail's API. Lane 1 does **not** satisfy `DW-H3`. DW-H3 stays atlas's attended bring-up of a
+  server that speaks that contract (or a future adapter Dream). This chain does not absorb
+  `spec-wagtail-corporate-brain`. Estate may run two CMS faces.
+- ~~**Q5 measure set**~~ — **parked 2026-08-25**, not an unbounded Canopy OQ. Operating-model
+  Q5 remains in force (optimize to **published** measures; never invent). The measure set and
+  board live under sibling Dream `docs/dreams/build-league-scorecard.md` (`status: dreamt`) and
+  `spec-build-league-scorecard` (`status: draft`). No CAP-18 board. Herald / Atlas / Marshal /
+  Doctor consume later.
+- ~~**12-7 live `/ht/`**~~ — **answered 2026-08-25:** attended CRC, Helm `platform` **deployed**,
+  Liquibase + `migrate --fake` Complete, `https://platform.apps-crc.testing/ht/` **200**. Record:
+  `spec-12-1-the-vanilla-chart-with-an-ocp-overlay-verification-2026-08-25.md`. Residual findings
+  (sidecar image, `platform_app`, mcp 1.x vs 2.0, CRC PVC sizes) stay in that record; they do not
+  reopen this question.
 - ~~**console-parity-inventory**~~ — **answered 2026-08-24** by `console-parity-inventory.md`.
   Twenty-three surfaces: 14 runtime-reproducible, 7 build-time-only, 3 mixed. The seven reduce to
   **four decisions** — live run state (three surfaces, one decision), detector verdicts, curated

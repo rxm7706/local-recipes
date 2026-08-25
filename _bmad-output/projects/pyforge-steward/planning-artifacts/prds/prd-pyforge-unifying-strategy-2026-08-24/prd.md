@@ -1,8 +1,8 @@
 ---
 title: "PRD: the Canopy mounts the eight stations"
-status: "ready"
+status: "in-progress"
 created: "2026-08-24"
-updated: "2026-08-24"
+updated: "2026-08-25"
 chain: "pyforge-unifying-strategy"
 owner: "steward"
 extends: "spec-python-agent-platform"
@@ -42,9 +42,9 @@ same eight stations through one grammar and one service shape, and survives the 
 mid-build. A station's action becomes an event another station acts on. All of it inside an
 egress-blocked namespace where the application cannot alter its own schema.
 
-The Canopy already proved this is reachable. `src/platform/` runs today with OIDC single sign-on,
-two agentic engines on isolated schemas, a Helm chart with an OpenShift overlay — and **one** of
-eight station portals. This chain finishes the shape.
+The Canopy already proved this is reachable. **The 2026-08-25 drain landed the eight portals,
+chrome, host MCP faces, dispatch, events, and the governed-DDL path in code.** Remaining: steward
+**12-7** live `/ht/` after Liquibase, and the RFC-5 holes CRC showed — not a `services/` rewrite.
 
 ## 2. Target User
 
@@ -1135,19 +1135,21 @@ control they cannot.
 - **The existing compliance portal** — becomes one of the eight (FR-9). URL scheme is bound:
   `/stations/<name>/` with `/compliance/` redirect (FR-9a). OQ-4 is answered.
 - **Atlas's MCP server** — brought to the current specification by FR-11 rather than duplicated.
-- **Atlas's waiting CMS consumer** — OQ-5 asks whether FR-4's instance can serve it, so the estate
-  runs one CMS rather than two. Jointly owned with atlas.
+- **Atlas's waiting CMS consumer** — OQ-5 / `lane1-serves-dw-h3` **answered 2026-08-25: no.**
+  Host Wagtail `/cms/` does not satisfy `LaSuiteClient` Docs REST. DW-H3 stays atlas.
 - **Packaging (FR-21, FR-33)** — operator-owned conda-forge recipes (canopy AD-16; Stories 26.3
   and 27.1 stay blocked). Not in-chain CFE sessions for Canopy implementation.
 
 ## 11. Open Questions
 
-**Still open:**
+**Still open:** none.
 
-1. **Can Lane 1 serve atlas's waiting consumer?** (`lane1-serves-dw-h3`) Atlas's shipped client
-   froze a REST contract that is *not* the CMS's own API, so this is a real compatibility
-   question. Jointly owned with atlas. Epic 20 (Lane 1 exists) can proceed; this chain does not
-   absorb `spec-wagtail-corporate-brain`.
+**Answered 2026-08-25:**
+
+1. ~~**Can Lane 1 serve atlas's waiting consumer?** (`lane1-serves-dw-h3`)~~ — **no.** Atlas's
+   shipped `LaSuiteClient` froze La Suite Docs REST (`POST /api/v1/documents/` etc.), which is
+   *not* host Wagtail `/cms/`. Epic 20 (Lane 1 exists) is independent. This chain does not
+   absorb `spec-wagtail-corporate-brain`. DW-H3 stays atlas attended bring-up.
 
 **Answered 2026-08-24:**
 

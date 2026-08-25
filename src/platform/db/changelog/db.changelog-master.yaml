@@ -15,10 +15,16 @@ databaseChangeLog:
       file: changes/python-agent-platform-5-django-pyforge-0003-run-state-timing.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/python-agent-platform-15-django-contrib-auth-contenttypes.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/python-agent-platform-6-users-0001-initial.sql
       relativeToChangelogFile: true
   - include:
       file: changes/python-agent-platform-7-users-0002-idp-subject.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-16-wagtail-taggit.sql
       relativeToChangelogFile: true
   - include:
       file: changes/python-agent-platform-8-front-door-0001-homepage.sql

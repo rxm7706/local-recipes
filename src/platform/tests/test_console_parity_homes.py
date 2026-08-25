@@ -149,6 +149,16 @@ def test_seed_skipped_when_beat_not_installed() -> None:
         seed_detector_schedule()
 
 
+def test_seed_skipped_when_beat_tables_missing() -> None:
+    from django.db.utils import ProgrammingError
+
+    with patch(
+        "django_celery_beat.models.IntervalSchedule.objects.get_or_create",
+        side_effect=ProgrammingError("relation does not exist"),
+    ):
+        seed_detector_schedule()
+
+
 def test_editorial_home_reads_cms(client: Client) -> None:
     empty = client.get("/console/editorial/")
     assert "no published editorial pages" in empty.content.decode()

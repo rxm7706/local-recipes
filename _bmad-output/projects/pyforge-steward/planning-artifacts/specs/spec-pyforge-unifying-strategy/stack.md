@@ -2,7 +2,7 @@
 title: "Stack and the conda-forge gate"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-24"
+updated: "2026-08-25"
 ---
 
 # Stack — and the conda-forge gate
@@ -55,8 +55,9 @@ Nothing OpenFeature-related exists anywhere on anaconda.org: a global search ret
 Five *builds* are the committed cost of CAP-13, ruled 2026-08-24 — four new feedstocks plus the
 `cachebox` 5.x downgrade on an existing one, which is a different size of task and should not be
 scheduled as a fifth new recipe. `liquibase` is a sixth build for CAP-9,
-committed the same day. **Both epics therefore open with packaging work, not platform work** — a
-sequencing fact the epic pass has to honour rather than discover.
+committed the same day. **Stories 26.3 and 27.1 are ledger-`done` (2026-08-25).** Do not
+re-open those epics as “start with packaging.” CRC did not close live CAP-9 (`/ht/` after
+Liquibase).
 
 ## Two supply boundaries, not one
 

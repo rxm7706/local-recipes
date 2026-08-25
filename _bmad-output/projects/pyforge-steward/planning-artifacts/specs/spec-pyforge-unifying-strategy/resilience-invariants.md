@@ -2,7 +2,7 @@
 title: "Resilience invariants — RFC-1..5 and BS-1..8"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-24"
+updated: "2026-08-25"
 ---
 
 # Resilience invariants
@@ -71,6 +71,13 @@ package, `liquimigrate`, last released in 2016 and predates Django 2.0. And Djan
    `apache-tika` is the exact shape to copy, and the PostgreSQL JDBC driver must be **vendored into
    the recipe** because 5.0 Community stopped bundling it and LPM fetches over the network.
    Per repo Rule 1 that story's dev session invokes `conda-forge-expert`.
+
+7. **Create schema `liquibase` before tracking tables.** `liquibaseSchemaName` does not create
+   it. CRC 2026-08-25 failed with `schema "liquibase" does not exist`.
+8. **Django contrib DDL is in the changelog**, not a silent `migrate` carve-out. 27.3's
+   `sqlmigrate` map gates first-party apps; `users.0001` FKs `auth_group` / `auth_permission`.
+9. **Agent Canopy mounts must not emit boot-time DDL** (Langflow/SQLAlchemy `CREATE TABLE` on
+   import). That is the zero-ORM-DDL rule in the engine, not only Django.
 
 **The hook this needs is already shipped**, which is what made the feedstock the cheap option.
 `src/platform/deploy/charts/platform/templates/migrate-job.yaml` is a

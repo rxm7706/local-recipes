@@ -36,7 +36,7 @@ development_status:
   12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined: done
   12-5-the-db-gpt-sidecar-joins-the-chart: done
   12-6-redis-is-hardened-still-ephemeral: done
-  12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: backlog
+  12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster: done
   12-8-github-projects-v2-lands-in-github-metrics-via-dlt: done
   12-9-ocp-as-a-portability-profile: done
   13-1-workspace-verbs-over-git-worktree: done

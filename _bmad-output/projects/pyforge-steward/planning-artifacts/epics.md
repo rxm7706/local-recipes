@@ -1277,7 +1277,7 @@ container, zero improvised steps.
 
 # Chain: pyforge-unifying-strategy (Epics 18–30)
 
-Headless/express 2026-08-24. Steward ledger already occupies Epics 1–17; this chain **appends**. Cite **parent AD-n** (python-agent-platform) vs **canopy AD-n** (unifying-strategy spine). Packaging FRs are **blocked on the operator** (canopy AD-16) — not sized as recipe stories. Phase 5 (`bmad-correct-course` × 8, Marshal retires `spec-factory-console`) is **not** an epic. Open question `lane1-serves-dw-h3` stays out of stories.
+Headless/express 2026-08-24. Steward ledger already occupies Epics 1–17; this chain **appends**. Cite **parent AD-n** (python-agent-platform) vs **canopy AD-n** (unifying-strategy spine). Packaging FRs are **blocked on the operator** (canopy AD-16) — not sized as recipe stories. Phase 5 (`bmad-correct-course` × 8, Marshal retires `spec-factory-console`) is **not** an epic. Open question `lane1-serves-dw-h3` stayed out of stories and was **answered no** 2026-08-25.
 
 ## Requirements Inventory (Canopy)
 
@@ -1413,6 +1413,10 @@ FR-44: Warden Epic 9 — PR-gate plugins (not a steward story)
 FR-45: Epic 32.2 + peer station process-hook epics
 
 ## Epic List (Canopy)
+
+**2026-08-25 drain:** stories 18.1–32.2 are ledger-`done`. Epic *rollup* keys may still read
+`backlog` (pre-existing). Do not re-dispatch. Live leftover is steward **12-7** plus CAP-9 CRC
+holes. Peers implement CAP-18 as one process-hook story; they do not copy this list.
 
 ### Epic 18: Chrome and the trusted client
 An operator sees one estate chrome, and every portal-to-service call carries a verifiable user.
@@ -1942,8 +1946,9 @@ S-27.1 stay **blocked** on operator-owned packaging (canopy AD-16).
 
 **Phase 5 scope:** This block records steward obligations. Peer stations (atlas, marshal,
 warden, doctor, herald, mason, scribe) run their own Phase 5 course-correction proposals;
-Marshal additionally retires `spec-factory-console`. Open question `lane1-serves-dw-h3` stays
-joint with atlas — not answered in steward stories.
+Marshal additionally retires `spec-factory-console`. Open question `lane1-serves-dw-h3` stayed
+joint with atlas — **answered no 2026-08-25** (Wagtail `/cms/` ≠ La Suite Docs REST); not a
+steward story.
 
 ## Epic 31: Non-module suite pieces install by class
 

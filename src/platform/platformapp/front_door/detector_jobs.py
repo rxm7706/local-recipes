@@ -64,18 +64,25 @@ def cache_age_label(captured_at: datetime | None, *, now: datetime) -> str:
 def seed_detector_schedule(**_kwargs: object) -> None:
     if not apps.is_installed("django_celery_beat"):
         return
+    from django.db.utils import ProgrammingError  # noqa: PLC0415
     from django_celery_beat.models import IntervalSchedule  # noqa: PLC0415
     from django_celery_beat.models import PeriodicTask  # noqa: PLC0415
 
-    schedule, _created = IntervalSchedule.objects.get_or_create(
-        every=1,
-        period=IntervalSchedule.HOURS,
-    )
-    PeriodicTask.objects.update_or_create(
-        name=BEAT_TASK_NAME,
-        defaults={
-            "interval": schedule,
-            "task": BEAT_TASK_PATH,
-            "enabled": True,
-        },
-    )
+    try:
+        schedule, _created = IntervalSchedule.objects.get_or_create(
+            every=1,
+            period=IntervalSchedule.HOURS,
+        )
+        PeriodicTask.objects.update_or_create(
+            name=BEAT_TASK_NAME,
+            defaults={
+                "interval": schedule,
+                "task": BEAT_TASK_PATH,
+                "enabled": True,
+            },
+        )
+    except ProgrammingError:
+        # Liquibase ships first-party + contrib/wagtailcore only; celery-beat
+        # tables are not in the changelog. migrate --fake still emits
+        # post_migrate (CRC 12.7).
+        return

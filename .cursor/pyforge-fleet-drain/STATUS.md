@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-25 08:35 CDT
+**Updated:** 2026-08-25 13:50 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md) · [SEQUENCING.md](./SEQUENCING.md)
 
 ## Coordinator lock (singleton)
@@ -9,7 +9,7 @@
 |-------|--------|
 | `owner` | parent-chat (this Cursor session — **the only orchestrator**) |
 | `held_since` | 2026-08-24T21:20-05:00 |
-| `state` | drained |
+| `state` | complete (drain queues **0**; steward 12-7 `/ht/` 200) |
 
 **HARD:** Do **not** launch a background coordinator Task, `marshal drain`, or a second parent chat that dispatches. Hourly `fleet-picture` is a **report loop only** — it must not dispatch stories. Dispatch agents (e.g. steward 18-1) are workers, not coordinators.
 
@@ -21,7 +21,7 @@ Canopy tranche reopen. Previous campaign was complete except steward `12-7`. New
 |-------|--------|
 | Mode | `drain_to_zero` (skip-listed keys only remain at exit) |
 | Sequence | Wave 0 `18-1` → Wave 1 `32-1` → Wave 2 seven peers + steward `18-2` |
-| Skips | `12-7` only (attended CRC / live OCP). 26-3…27-4 shipped |
+| Skips | none (12-7 unblocked: CRC Running + `crc start -p` complete) |
 
 ## Merge policy
 
@@ -33,11 +33,15 @@ Stopped (loop PID `3794219` terminated). Report-only; do not restart unless the 
 
 ## In-flight
 
-None. Actionable drain is complete on `origin/main` (`2b720bd461`). Remaining steward story key: **`12-7` skip** — do not dispatch.
+None. Steward `12-7` **done** (CRC `/ht/` 200, Liquibase + migrate Complete, ledger synced).
 
 ## Blocked
 
 None.
+
+## Operator skip
+
+None. Campaign drain queues **0**.
 
 ## Recently merged (Wave 2)
 
@@ -85,13 +89,11 @@ None.
 | steward | `31-3` | [#809](https://github.com/rxm7706/local-recipes/pull/809) `047bfa9cfe` · ledger [#810](https://github.com/rxm7706/local-recipes/pull/810) `ce01ee04d6` |
 | steward | `32-2` | [#811](https://github.com/rxm7706/local-recipes/pull/811) `127d380bfe` · ledger [#812](https://github.com/rxm7706/local-recipes/pull/812) `62db654dd3` |
 
-## Operator skip
+## Next after 12-7 (queued 2026-08-25)
 
-| Story | Reason |
-|-------|--------|
-| steward `12-7` | Live OCP — `skip_on_blocked` |
-| steward `26-3` | Operator-owned OpenFeature / cachebox feedstocks |
-| steward `27-1` | Operator-owned Liquibase ≥5.0.4 feedstock |
+Fold the Containerfile pip layer into a single `pixi install -e python-agent-platform` (PyPI extras on that feature, lock-time overlap, no `pip install --no-deps`). **Pixitainer** is in scope as a *re-eval of the Docker backend*, not as a drop-in for today’s pip `RUN`. **Specified 2026-08-25:** [Dream](../../docs/dreams/platform-image-one-pixi-env.md) + [SPEC](../../_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-image-one-pixi-env/SPEC.md) (`ready`). Queue note: [NEXT-AFTER-12-7.md](./NEXT-AFTER-12-7.md). Do not implement until that spec is the build input.
+
+Q5 measures parked: `docs/dreams/build-league-scorecard.md` (draft spec, unpublished metrics). `lane1-serves-dw-h3` answered **no**.
 
 ```bash
 python3 .cursor/pyforge-fleet-drain/generate-queues.py --summary

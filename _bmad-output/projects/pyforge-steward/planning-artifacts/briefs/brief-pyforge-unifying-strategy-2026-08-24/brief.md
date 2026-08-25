@@ -137,11 +137,11 @@ unreachable here). The earlier claim that no feedstock maintenance branch exists
 move to `>=5.2.17,<6` when that build publishes — scanners key on version strings. Not a Canopy
 story.
 
-**One named question remains open:** whether Wagtail Lane 1 also serves atlas DW-H3
-(`lane1-serves-dw-h3`). Atlas's client speaks La Suite Docs REST, not Wagtail's API. Epic 20 can
-proceed; this chain does not absorb `spec-wagtail-corporate-brain`. MCP Tasks has **no** SDK
-runtime; CAP-4 ships `start`/`get` over PostgreSQL (research closed that OQ). Portal URL scheme
-is closed (FR-9a).
+**Lane 1 does not serve atlas DW-H3** (`lane1-serves-dw-h3`, **answered no 2026-08-25**).
+Atlas's client speaks La Suite Docs REST, not Wagtail `/cms/`. Epic 20 can proceed; this chain
+does not absorb `spec-wagtail-corporate-brain`. DW-H3 stays atlas attended bring-up. MCP Tasks has
+**no** SDK runtime; CAP-4 ships `start`/`get` over PostgreSQL (research closed that OQ). Portal URL
+scheme is closed (FR-9a).
 
 ## What this is not
 

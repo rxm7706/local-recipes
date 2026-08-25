@@ -123,6 +123,12 @@ SDKs/
 .claude/settings.local.json
 .claude/data/
 .claude/skills/data/
+# Agent worktrees are extra checkouts (often with their own `.pixi/` envs).
+# Without this, `COPY . /app` ships retired worktrees — observed 2026-08-25
+# during Story 12.7's platform image build (`buildah-copier` walking
+# `.claude/worktrees/.retired-worktrees-*/**/.pixi`).
+.claude/worktrees/
+.cursor/worktrees/
 **/conf/local/*
 !**/conf/local/.gitkeep
 **/conf/**/*credentials*

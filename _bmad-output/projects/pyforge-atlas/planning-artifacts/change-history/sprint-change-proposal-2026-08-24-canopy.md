@@ -100,3 +100,11 @@ Consolidates Phase 5 canopy obligations and explicitly leaves **`lane1-serves-dw
 4. No artifact re-scopes `spec-wagtail-corporate-brain` into Canopy Lane 1.
 
 **Routed to:** steward Epics 18–30 for Canopy build; atlas maintains local contracts only.
+
+## 6. Addendum — `lane1-serves-dw-h3` answered (2026-08-25)
+
+**Answer: no.** Host Wagtail is `/cms/`. Atlas `LaSuiteClient` is La Suite Docs REST
+(`POST /api/v1/documents/` etc. in `src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py`). Lane 1 does not satisfy DW-H3.
+DW-H3 remains open until the attended bring-up of a server that speaks that contract.
+`spec-wagtail-corporate-brain` is not absorbed. Recorded on steward unifying SPEC, atlas
+`epics.md` canopy obligations, and `DW-CANOPY-2026-08-24`.

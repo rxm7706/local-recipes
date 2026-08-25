@@ -57,6 +57,8 @@ def test_schema_names_are_lowercase_and_exactly_four() -> None:
     assert "langflow_schema" in created
     assert "dbgpt_schema" in created
     assert "liquibase" in PROPERTIES.read_text(encoding="utf-8")
+    source = (DB_ROOT / "liquibase_update.py").read_text(encoding="utf-8")
+    assert "CREATE SCHEMA IF NOT EXISTS liquibase" in source
 
 
 def test_changeset_ids_are_distribution_seq() -> None:

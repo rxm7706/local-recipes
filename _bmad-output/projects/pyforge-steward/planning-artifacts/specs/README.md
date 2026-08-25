@@ -10,8 +10,9 @@ committed here as the source of record.
 **Status (2026-08-08):** all 18 stories (Epics 1-4) have a spec here — no
 promotion gap.
 
-This directory also holds Dream-level Specs for two Steward-owned satellite
+This directory also holds Dream-level Specs for Steward-owned satellite
 Dreams (`spec-unified-container/SPEC.md`, `spec-bmad-module-provisioning/SPEC.md`,
-distinct from the per-story `spec-<epic>-<story>-...md` files above) — both
-`status: draft`, both fold-in-ready per their own readiness signals. See
+`spec-platform-image-one-pixi-env/SPEC.md` (`ready`, 2026-08-25),
+`spec-build-league-scorecard/SPEC.md` (`draft`, Q5 parked),
+distinct from the per-story `spec-<epic>-<story>-...md` files above). See
 `_bmad-output/DREAM-TRIAGE-2026-08-08.md`.

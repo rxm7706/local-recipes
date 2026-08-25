@@ -39,7 +39,12 @@ def _install_flags_mcp() -> None:
         return
     from django_pyforge.flags import flags_asgi_app
 
-    _mcp_apps["flags"] = flags_asgi_app()
+    try:
+        _mcp_apps["flags"] = flags_asgi_app()
+    except ImportError:
+        # python-agent-platform conda ships mcp 1.x (no mcp.server.mcpserver).
+        # Skip the flags face so ASGI still boots (CRC 12.7 /ht/).
+        return
 
 
 def register_station_mcp_app(station: str, app: Any) -> None:
@@ -90,7 +95,12 @@ def iter_station_mcp_apps() -> Iterator[tuple[str, Any]]:
         factory = getattr(portal, "mcp_asgi_app", None)
         if not callable(factory):
             continue
-        app = factory()
+        try:
+            app = factory()
+        except ImportError:
+            # Host MCP faces need mcp 2.0; the platform image keeps mcp 1.x
+            # for Langflow. Skip the face rather than crash gunicorn (12.7).
+            continue
         if app is not None:
             yield portal.station_name, app
 

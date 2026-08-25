@@ -2,8 +2,8 @@
 title: "Convergence — pyforge-unifying-strategy"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-24"
-status: "ready"
+updated: "2026-08-25"
+status: "in-progress"
 ---
 
 # Convergence — what is already covered, and by what
@@ -33,10 +33,10 @@ is exhaustive.
 | Vanilla Helm chart + OCP overlay, GKE portability, hardened Redis | CAP-1/CAP-6; Stories 12.1, 12.2, 12.6, 12.9 (all `done`) | `src/platform/deploy/charts/platform/`; image passes `restricted-v2` (arbitrary UID, no root). |
 | The 15-factor baseline | `spec-platform-fifteen-factors` CAP-1..5; steward Epic 16 (`done`) | Pixi as sole dependency authority, two-stage startup validation, structlog + OTel, policy-as-test-suite. |
 | Health probes for K8s | Story 10.1 + 11.1 (`done`) | `src/platform/config/fastapi_app.py` → `GET /api/health`; `/ht/` via `django-health-check`; probes wired in `deploy/charts/platform/templates/platform-deployment.yaml`. |
-| One station portal, mounted and working | warden Stories 8-1, 8-2 (`done`) | `src/platform/compliance_face/` — async upload → warden engines via Celery → JSON report; mounted in `INSTALLED_APPS` and at `/compliance/` in `config/urls.py`. **This is the pattern the other seven portals follow.** |
+| Station portals | warden 8-1/8-2 then canopy Epic 19 (`done`) | Eight Lane-2 shells under `/stations/<name>/`; warden left `/compliance/` as a permanent redirect. |
 | A role-isolated live-dashboard pattern | `spec-secure-live-dashboards`; steward Epic 9 (`9-1`..`9-7` all `done`) | `src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/` — middleware, cache, filtering, export, audit trail. **Built, but never adopted — see residual.** |
 | An MCP server, proving the pattern | atlas (shipped) | `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` `build_server()`. MCP is not greenfield; the residual is per-station reach, not the mechanism. |
-| Shared stdlib primitives for the estate | `spec-pyforge-core` CAP-1..7; marshal Epic 14 (`done`) | `pyforge.core` ships `atomic_write`, `errors`, `verdict`, `report`, `process`, `landing_evidence`. **`client` is NOT among them — see residual.** |
+| Shared stdlib primitives for the estate | `spec-pyforge-core` CAP-1..7; marshal Epic 14 (`done`); canopy 18.3 | `pyforge.core` ships `atomic_write`, `errors`, `verdict`, `report`, `process`, `landing_evidence`, hooks. Trusted client is CAP-6 / Story 18.3 — do not re-mint. |
 | All-stations-in-one-image delivery | `unified-container` (dream `realized`); steward Epic 7 (`done`) | The Dream's "Mode A single all-in-one container" is this, already shipped. |
 
 ## Corrections — the Dream asserts things that are not true of this repo
@@ -75,16 +75,9 @@ Recorded here because acceptance criteria must not be written against a false pr
    `tools/lasuite_bringup.py`. The original claim was true of `src/platform/` and was wrongly
    generalised to the repo; the grep that produced it dismissed every `wagtail` hit outside
    `src/platform/` as warden test-corpus fixtures, and atlas's client did not match on that term.
-   **What is still true:** no Wagtail *server* runs anywhere, and no CMS is mounted at `/`. So
-   CAP-2's build is unaffected — but its relationship to atlas is not, and there are two live
-   consequences. First, atlas has a **consumer waiting on exactly this server**: deferred-work
-   entry `DW-H3` is an attended bring-up of a live La Suite/Wagtail instance, and CAP-2 may
-   satisfy it outright rather than atlas standing up a second one. Second, `LaSuiteClient`
-   already **froze a REST contract** (`POST /api/v1/documents/`, `PATCH`/`GET
-   /api/v1/documents/{id}/`, `GET /api/v1/documents/all/`, Bearer auth) — which is La Suite Docs'
-   API, *not* Wagtail's own, so "Wagtail REST shape" in atlas's spec should not be read as a
-   guarantee that a Wagtail instance satisfies that client unmodified. Recorded as the open
-   question `lane1-serves-dw-h3`.
+   **2026-08-25:** CAP-2 Wagtail *is* mounted on the host (Epic 20). **`lane1-serves-dw-h3` is
+   answered no:** host `/cms/` is not `LaSuiteClient`'s `/api/v1/documents/` contract. DW-H3
+   remains atlas attended bring-up. This chain does not absorb `spec-wagtail-corporate-brain`.
 
 ## The RFC-5 conflict (operator-accepted, recorded here in full)
 
@@ -138,8 +131,9 @@ there rather than left to inherit:
 - **Steward Dreams without Specs** — `bmad-suite-install-class-wiring` and
   `ocp-as-a-portability-profile` both fail `dream-chain-check` today. Same station, unrelated
   chains, not absorbed.
-- **Story 12-7** (live-cluster verification) is permanently `skip_on_blocked` pending a cluster.
-  It gates verification of the Tier-3 chart items, not this chain's scope.
+- **Story 12-7** (live-cluster verification) **closed 2026-08-25**. Route / SCC / official
+  postgres:17+redis:7 UID, Liquibase + `migrate --fake`, `/ht/` 200. See
+  `spec-12-1-the-vanilla-chart-with-an-ocp-overlay-verification-2026-08-25.md`.
 - **`bmad-drift-check` `pin-missing`** and 41 warnings are the pre-2026-08-24 baseline.
 - **Marshal's `spec-factory-console` is absorbed as a correction, not as scope.** CAP-2 supersedes
   the console it specifies, so that spec must be retired — but the *console's own* remaining
@@ -148,48 +142,32 @@ there rather than left to inherit:
 
 ## The residual this Spec binds (for cross-check)
 
-Each line is evidence-confirmed absent, not assumed.
+Each line was evidence-confirmed absent on **2026-08-24**. The **2026-08-25 canopy drain** landed
+the code for items 1–20 except as noted. Do not re-mint them. Steward **12-7** closed 2026-08-25
+(`/ht/` 200). Residual CRC findings (sidecar, `platform_app`, mcp dual-era on the image) are
+recorded on the 12.7 verification file, not as a drain-queue story.
 
-1. **Wagtail + CodeRed CMS Lane 1** — absent from `src/platform/`: not in `INSTALLED_APPS`, not in
-   `pyproject.toml`, not in `requirements/`, and no StreamField block anywhere in the repo.
-   *(Wagtail does appear 158× under `src/`, but exclusively as warden's conda-recipe test-corpus
-   fixtures — `tests/fixtures/corpus/recipes/wagtail-*` — plus 4 hits in atlas package metadata.
-   That is inventory, not platform code; it does usefully confirm the `wagtail-*` conda-forge
-   ecosystem is packaged, which Phase 2 research should exploit.)* CodeRed dropped and Lane 1 set
-   to **supersede** Marshal's console, both ruled 2026-08-24 — so this line now carries a retirement
-   obligation as well as a build one. See Correction 1 and `Adjacent-not-absorbed`.
-2. **`django-pyforge` shared package** — absent from `src/shared/packages/`; the App Switcher,
-   OIDC middleware and Modernist theme layout have no home.
-3. **Seven remaining station portals** + the `compliance_face → warden_portal` rename. One of
-   eight mounted today; no `src/platform/portals/` directory exists.
-4. **`services/` FastAPI + MCP tier** — no repo-root `services/`, no standalone FastAPI app
-   outside `src/platform/`, no SSE/MCP transport for seven of eight stations.
-5. **`pyforge.core.client`** — the shared data-contract SDK RFC-3 standardizes on. Not in
-   `pyforge.core`, not in `spec-pyforge-core`'s CAPs, not in its non-goals.
-6. **Unified `pyforge <station> <noun> <verb>` CLI** — no `pyforge` entry point in any
-   `pyproject.toml`; eight per-station scripts (`marshal`, `herald`, `warden`, …) exist instead.
-7. **Vizro Lane 3 behind the host** — atlas's Vizro dashboard is a build-time object with no
-   server task and no reverse proxy; `src/platform/config/urls.py` has no atlas route.
-8. **Redis Streams event backbone** — Redis is present for Celery and cache only; no `XADD`/
-   `XAUTOCLAIM`, no CloudEvents envelope, no DLQ, no loop-depth ceiling (RFC-4, BS-6).
-9. **RFC-1** worker-pool separation over the existing in-host FastAPI seam.
-10. **RFC-2** `redis-broker` (`noeviction`) split from `redis-cache` (`allkeys-lru`).
-11. **RFC-3** signed internal JWT delegation with `delegated_by` claim (BS-3, RFC 8693).
-12. **RFC-5** Liquibase DDL governance, including the Epic 11 retro-fit — see conflict above.
-13. **BS-1** scribe flat-file → PostgreSQL/pgvector, premise corrected per Correction 2.
-14. **BS-2** SSE keep-alive frames + 30m OCP route timeout.
-15. **BS-4** PyBreaker circuit breaking — no `pybreaker` import anywhere in `src/`.
-16. **BS-5** DuckDB single-writer discipline — production code calls bare `duckdb.connect()`;
-    no `read_only=True` on any DuckDB file handle.
-17. **BS-7** `PydanticFormErrorBridge` for inline HTMX 422 mapping.
-18. **BS-8** idempotent startup reconciliation — no MinIO/S3 in `pyforge-mason` at all.
-19. **Keycloak RBAC matrix**, **HashiCorp Vault**, and **OpenFeature canary delivery** — none
-    present in `src/platform/` or any station package.
-20. **Tiers 4 and 5 of the Dream's own 5-tier symmetry**, caught on the Spec's preservation pass
-    rather than in the first sweep. **Domain skills: one of eight** — `conda-forge-expert` is
-    mason's and proves the shape; the other seven stations have none, and no station package
-    carries a `skills/` directory. **Agent personas: zero of eight** — the five `bmad-agent-*`
-    skills are BMAD roles (analyst, architect, dev, pm, ux-designer), not station personas. Bound
-    as CAP-15 and CAP-16. **Operating-model Q2 (2026-08-24):** this residual is the **03 shape of
-    the eight stations**, not a mandate to mint skill+persona+portal for 01/02 work. Completeness
-    is "an 03 capability missing a tier", not "any task missing a tier."
+1. **Wagtail Lane 1** — **landed** (Epic 20). CodeRed stayed dropped. `lane1-serves-dw-h3`
+   **answered no** (2026-08-25): La Suite Docs REST ≠ host Wagtail `/cms/`.
+2. **`django-pyforge`** — **landed** (Epic 18).
+3. **Eight portals + warden rename / `/compliance/` redirect** — **landed** (Epic 19).
+4. **MCP faces** — **landed on host ASGI** (`POST /stations/<name>/mcp`). **Never** a repo-root
+   `services/` process farm (item 4's "no `services/`" observation stays true *and* is now a
+   non-goal).
+5. **Identity client** — **landed** (Story 18.3); lives with chrome/`django-pyforge` +
+   `pyforge.core`, not a ninth package.
+6. **`pyforge` dispatch** — **landed** (Epic 22).
+7. **Lane 3 row isolation** — **landed** (Epic 23) as the secure-dashboard pattern through the
+   host; atlas adopting Vizro as its own board remains atlas's story.
+8. **Redis Streams / CloudEvents** — **landed** (Epic 24) on redis-broker.
+9–18. **RFC-1..5 / BS-1..8 path** — **landed** as steward 21/25/27/28 (RFC-1 remains Celery, not
+   two HTTP processes). **RFC-5 live Job** is not green on CRC.
+19. **Revoke + secret references + FILE flags** — **landed** (Epic 26). Full Keycloak Token
+    Exchange / Vault agent remain caveats on BS-3, not a reason to re-build chrome.
+20. **CAP-15/16/29 five-tier check** — **landed** for the 03 stations (skills + personas + gate).
+
+## Drain bind (2026-08-25)
+
+Peer stations drained on **one CAP-18 process-hook story** each after steward 32-1. They do not
+clone Epics 18–30. Campaign engine was worktree `bmad-build-auto` under a singleton coordinator;
+marshal Epic 22 verbs exist as product. Host never imports `pyforge.*`.

@@ -20,8 +20,10 @@ Charter §5 stands, the roster stays at eight. Steward carries the through-line.
 ASGI seam, `django-allauth` OIDC SSO, Langflow and DB-GPT mounted as pluggable apps on
 isolated PostgreSQL schemas, warden's `compliance_face` portal mounted, a Helm chart with an
 OCP overlay, a Containerfile, and the 15-factor baseline. Steward epics 10, 11, 12 and 16 are
-`done` end to end — only `12-7` (live-cluster verification) is outstanding, and it is
-permanently skipped pending a cluster.
+`done` end to end, including **`12-7`**, which **closed 2026-08-25** on attended CRC: Route / SCC /
+official postgres:17 + redis:7 under assigned UID / PVCs Bound / Liquibase + `migrate --fake` /
+`/ht/` **200** (dated record in the 12.1 spec orbit). Residual CRC findings (sidecar image,
+`platform_app`, mcp 1.x vs 2.0 on the image) stay on that record.
 
 **Naming follows reality.** `pyforge_host` and `pyforge-agent-platform` are role names in the
 prose below; the shipped artifact is **`src/platform/`** (settings in `config/`, shared app in
@@ -33,12 +35,23 @@ including the Canopy. The Canopy is not a station: eight spokes (`warden`, `atla
 `marshal`, `doctor`, `herald`, `scribe`, `steward`) plus the Canopy they mount into.
 
 **Scope is the residual, not the estate.** This Dream's chain binds
-`spec-python-agent-platform` as prior art and mints nothing that duplicates its CAP-1..6. What
-is genuinely unbuilt: Wagtail/CodeRed Lane 1 and the Guildhall, the `django-pyforge` shared
-package, seven remaining station portals plus the `compliance_face → warden_portal` rename,
-the `services/` FastAPI+MCP tier, Vizro Lane 3 proxying, `pyforge.core.client`, the unified
-`pyforge <station> <noun> <verb>` CLI, the Redis Streams event fabric, Keycloak RBAC, Vault,
-OpenFeature canary delivery, RFC-1..5 and BS-1..8.
+`spec-python-agent-platform` as prior art and mints nothing that duplicates its CAP-1..6.
+The 2026-08-24 residual list below is **historical** — the canopy drain (steward Epics 18–32
+plus eight peer process-hook stories) shipped most of it. Architecture mermaid still
+describes a greenfield `services/` FastAPI farm; **Grounding + the architecture spine win.**
+
+**Still open after the drain (do not re-mint shipped CAPs):**
+- Steward **`12-7`**: **closed 2026-08-25** (`/ht/` 200). Residual findings on the dated 12.1 verification record (sidecar image, `platform_app`, mcp dual-era on CRC).
+- RFC-5 **holes CRC showed** — contrib + `liquibase` schema + wagtailcore 0001 are in the changelog; remaining Wagtail/celery-beat DDL is still `migrate --fake` history only.
+- **Q5 measure set** — **parked**, not a Canopy SPEC OQ. Unpublished; do not invent metrics.
+  Sibling: `docs/dreams/build-league-scorecard.md` + `spec-build-league-scorecard` (draft).
+- ~~**`lane1-serves-dw-h3`**~~ — **answered 2026-08-25: no.** Host Wagtail `/cms/` is not
+  `LaSuiteClient` Docs REST. DW-H3 stays atlas attended bring-up.
+- Pip-layer fold: `docs/dreams/platform-image-one-pixi-env.md` → `spec-platform-image-one-pixi-env`
+  (`ready`). Do not code from the queue note alone.
+- **Do not build `services/` as nine public FastAPI processes.** MCP and portal compute
+  mount on the host ASGI (`POST /stations/<name>/mcp`). That is the modular-monolith
+  ruling, not a deferred microservice program.
 
 **Operating model is estate-wide (2026-08-24, Q1).**
 The operating model first written as
@@ -106,12 +119,17 @@ repo's pipeline table.
   - **The board is not a new CAP in this chain.** Herald (narrative) + Atlas
     (metrics) + Marshal (velocity) + Doctor (SLO burn) consume the rules later
     under a sibling Dream. Steward discovery already has owner / `work_class`
-    for the denominator. Do not mint CAP-18 for a scorecard UI in this pass.
-  - **Measure set is deferred (2026-08-24).** The operator will draft Build
-    League and the Balanced Product Scorecard later. The published rules must
-    cover **human, agent, and team** dimensions — not human-only delivery
-    velocity. Until that draft lands, do not invent metrics or optimize to
-    unpublished ones (Q5 Never: still holds).
+    for the denominator. **Never:** a scorecard UI capability in this chain.
+    **CAP-18 is the hook-spec + plugin-registration contract** in `pyforge-core`
+    (not a board). The number was reused later the same day; do not read Q5 as
+    “there is no CAP-18.”
+  - **Measure set is deferred (2026-08-24) and parked (2026-08-25).** The
+    operator will draft Build League and the Balanced Product Scorecard later.
+    The published rules must cover **human, agent, and team** dimensions — not
+    human-only delivery velocity. Until that draft lands, do not invent metrics
+    or optimize to unpublished ones (Q5 Never: still holds). Home:
+    `docs/dreams/build-league-scorecard.md`. Not a remaining Canopy open
+    question.
 - **Path B is the Agent Canopy, not Tachyon (2026-08-24, Q6).** 03 Path A is
   deterministic code (Django / FastAPI / Celery). Path B is agentic work through
   CAP-16 station personas and the Agent Canopy (Langflow / DB-GPT mounts).
@@ -148,15 +166,103 @@ repo's pipeline table.
   `settings` register which plugins load (WFT vs local). **Never:** a plugin
   publishes a competing pass/fail that bypasses Warden. **Never:** require a
   named scanner in the core gate — absence of Checkmarx is not a failed Warden
-  run. **Never:** re-template Warden as a Kedro project in order to honor this.
+  run.   **Never:** re-template Warden as a Kedro project in order to honor this.
+
+**Canopy fleet drain (2026-08-24–25) — how the estate actually landed.**
+Worktrees + `bmad-build-auto`, merge-in-agent; **not** `bmad-loop` as the campaign
+engine. Marshal Epic 22 (dispatch verbs) shipped as product; this campaign still ran
+from `.cursor/pyforge-fleet-drain/` as the interim coordinator. Both can exist;
+**Never:** two coordinators (parent chat **and** `marshal drain`) on the same tree.
+
+- **Shipped on the host (steward 18–32, ledgers `done`):** `django-pyforge` chrome;
+  eight Lane-2 shells under `/stations/<name>/` (warden off `/compliance/` with a
+  permanent redirect); Wagtail Lane 1 (**not** CodeRed); CAP-17 supervisor in
+  PostgreSQL; eight MCP faces on **host ASGI** (dual-era POST, GET 405); `pyforge`
+  dispatch grammar; CloudEvents on **redis-broker** (not the cache); BS-4..8
+  containment; revoke-next-request + secret *references* in manifests; OpenFeature
+  FILE path; Liquibase Job + `sqlmigrate` gate + test-DB `migrate` carve-out;
+  Scribe PostgreSQL driver; SKF domain skills + personas + 03 five-tier check;
+  factory-console generator removed; class-keyed suite install; CAP-18 registry
+  in `pyforge-core`.
+- **Peers drained on one Canopy obligation each** (warden 9.1–9.3 PR-gate book;
+  atlas/mason/marshal/doctor/herald/scribe process-hook extract). They **do not**
+  copy steward Epics 18–30 into their `epics.md`. **Never:** a station is “Canopy
+  complete” only because its CLI package is excellent — 03 still owes five tiers,
+  which steward 29 gated; peer hook stories are CAP-18, not a second Guildhall.
+- **Parallel agents (HARD):** `BMAD_ACTIVE_PROJECT=<slug>` per invocation; write
+  `_bmad-output/projects/<slug>/…` **literally**; **never** `scripts/bmad-switch`
+  from a fan-out. Story specs are **tracked** in `planning-artifacts/specs/` after
+  merge (not left in gitignored `implementation-artifacts/`).
+- **One story in flight per station; stations in parallel.** Overlap is a defect.
+  Unlock: peer hooks waited on steward **32-1**; then Wave 2 eight-wide; steward
+  serial for the rest.
+- **Git / CI:** `gh pr merge --merge` (**never squash** — squash destroyed Epic 10
+  archaeology). Non-`recipes/` PRs take the `maintenance` label. `pixi.toml` change
+  regenerates `environment.yaml` on the same PR. `--admin` only when Actions
+  billing blocks required checks **and** local tests are green — that is a
+  steward-profile CI adapter, **not** a second quality verdict beside Warden.
+- **Host import boundary holds:** `src/platform/` does not import `pyforge.*`;
+  portals speak through `django-pyforge` clients; MCP apps register via AppConfig.
+- **MCP runtime is hybrid until the stopgap lifts:** host faces on the official
+  `mcp` SDK; some factory CLIs still on `fastmcp` 3.x + `mcp` 1.x. **Never:**
+  FastMCP 4-beta from PyPI as the air-gap host face. **Never:** `/mcp/sse` as the
+  current contract (POST `/stations/<name>/mcp`).
+- **Modular monolith, not nine `:800x` services.** The mermaid’s `services/` layer
+  is role language. Compute that must stay out of Django request threads is Celery
+  + Redis (already on the host image), not a new process-per-station topology.
+
+**Attended CRC clarified the Mode C contract (2026-08-25).**
+Story 12.7 on CRC 2.63 / OCP 4.22 (Ubuntu host, operator proceeded) is live evidence, not a
+new product. Architecture mermaid below is still pre-audit; this block wins.
+
+- **Official data images under `restricted-v2` are the Mode C default.** `postgres:17` and
+  `redis:7` ran with overlay-nulled `runAsUser`/`fsGroup` and SCC-assigned UID. **Never:**
+  treat Bitnami or RH catalog images as required for UID compliance. HA operators
+  (Crunchy / CloudNativePG / Sentinel) remain a *sizing* option for production, not the
+  proof that official images cannot run.
+- **Two Helm releases, one image family, two image *names*.** Core chart + Route overlay is
+  the OCP shape. The host image (`src/platform/Containerfile`) is **not** the DB-GPT sidecar
+  image. Empty `sidecar.image.registry` resolves to Docker Hub by name — **Never:** a
+  Golden Path deploy that implies a public pull for the sidecar. Mode C “one image, many
+  entrypoints” is the *host* (web / worker / Liquibase / fake-migrate), not a claim that
+  Langflow/DB-GPT sidecars are the same OCI artifact.
+- **The host image is large on purpose.** Langflow and DB-GPT stay in
+  `python-agent-platform`; do not “slim CRC” by stripping the Agent Canopy. Build context
+  is the repo (git-archive or equivalent) — not a walk of `.claude/worktrees`.
+- **Pixi materializes the image; pip is a residual seam, not Mode A.** Story 10.3 already
+  rejected conda-forge `pixitainer` (SIF / Ubuntu, pixi left in the image) for this UBI /
+  `restricted-v2` contract. Overlapping pip extras that uninstall conda packages are a
+  **build failure**, not a second env. Folding extras into one `pixi install` is a follow-up
+  Dream→spec, not a CRC shortcut.
+- **RFC-5 least-bad is confirmed, and two holes closed.** Liquibase is a Helm
+  **hook Job** (weight −1) on the **platform image**, then `migrate --fake` — not an
+  initContainer. `liquibaseSchemaName` does **not** create schema `liquibase`; the Job must
+  create it before `databasechangelog`. Django contrib (`contenttypes`, `auth`, `sessions`)
+  is **not** a carve-out from the changelog: `users.0001` FKs `auth_group` /
+  `auth_permission`, and the 27.3 `sqlmigrate` map gates **first-party** apps only, so
+  contrib DDL is an explicit Liquibase changeset (not a silent `migrate`). App role
+  `platform_app` (DML) vs migration role `platform` (DDL) remains the auditor control —
+  **Never:** claim 12.7 as 27-2 closeout if `DATABASE_URL` still uses the migration role.
+- **Agent Canopy mounts must not emit boot-time DDL.** Live web crash:
+  SQLAlchemy/`a2a_checkpoints` from the Langflow process while Liquibase was incomplete.
+  That is the zero-ORM-DDL rule failing in the *engine*, not only in Django. **Never:**
+  treat `/ht/` 200 as “schema governed” if an engine still `CREATE TABLE`s on import.
+- **Laptop CRC is not production sizing.** Hostpath PVCs ignore Helm `size` (Bound at
+  remaining VM disk). That is a CRC provisioner fact for `cluster-bringup`, not a change
+  to CSI capacity in the mermaid below. `readOnlyRootFilesystem: true` in the prose below
+  is **not** what the shipped Containerfile proves (writable `$HOME` / `.langflow` /
+  media; `/app` stays 0755). Do not raise RO-root to a 12.7 success signal.
 
 ## The Dream
 
 We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building disconnected apps; we are building **one enterprise Platform Canopy (`src/platform/` — the host and agent platform) that mounts the 8 canonical capability stations**, powered by **Pixi** as the unified package and environment manager.
 
-By placing a unified **Django + Wagtail/CodeRed CMS (CRX)** application at the center and delegating heavy lifting to **FastAPI / MCP microservices**, we achieve a flawless separation of concerns:
-- **The Host (`src/platform/`, role name `pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, and reverse-proxying.
-- **The Microservices & MCP Layer (`services/`):** Handles compute, long-running batch jobs, sandboxed builds, and AI agentic tool access via native Model Context Protocol (MCP).
+By placing a unified **Django + Wagtail** application at the center (CodeRed dropped
+2026-08-24) and mounting station portals and MCP faces **on the same host ASGI**, we
+keep identity, chrome, and dispatch in one process. Heavy work stays on Celery + Redis.
+The pre-audit `services/` FastAPI farm is **not** the delivery shape (Grounding).
+- **The Host (`src/platform/`, role name `pyforge_host`):** Handles identity (`django-allauth` OIDC/SSO), session state, global design system/assets (WhiteNoise, Bootstrap, HTMX), CMS content routing, Lane 2 portals, and station MCP mounts.
+- **Station compute (packages + Celery, not `services/` processes):** Domain logic lives in `pyforge-<station>` / `django-<station>` packages; the host does not import `pyforge.*`. Agentic tool access is `POST /stations/<name>/mcp` on the host.
 
 ```mermaid
 graph TD
@@ -1133,6 +1239,8 @@ graph LR
     - **Kubernetes Lifecycle Hook:** Executed as an init-container or pre-upgrade Helm Job (`liquibase update`) before Django or FastAPI microservices boot, preventing schema race conditions during rolling deployments.
     - **Zero-ORM DDL Coupling:** Application frameworks (Django, FastAPI, SQLAlchemy) consume existing schemas as read/write targets but are strictly prohibited from generating runtime DDL alterations.
 
+  *(2026-08-24/25 Grounding supersedes this bullet's “init-container or Job” and “all DDL via Liquibase as written.” Least-bad RFC-5 + CRC: hook Job on the platform image, contrib tables in the changelog, `liquibase` schema created before tracking tables, engines must not DDL on boot.)*
+
 ### 2. Production Blind Spot Audit & Distributed Systems Hardening (BS-1 to BS-8)
 
 To eliminate distributed state collisions, protocol timeouts, and token decay hazards across the 10 layers, the architecture codifies the following 8 resilience invariants:
@@ -1340,3 +1448,6 @@ graph TD
 - **2026-08-24** — Operator: hooks and plugins are an **architecture principle** (replaceable layers; hook into processes), not only a Warden/Kedro-project rule. Bound as canopy **AD-21** + Dream Grounding + SPEC Always. Q8 remains the PR-gate instance.
 - **2026-08-24** — canopy AD-14 scoped to **03** (title + rule). Matches Epic 29 / FR-39. 01/02 outside this AD.
 - **2026-08-24** — `bmad-product-brief` **Update** on `briefs/brief-pyforge-unifying-strategy-2026-08-24/` (not Create). OM table in brief addendum; first-ready five-tier and packaging lines reversed in memlog.
+- **2026-08-25** — Steward **12-7 closed** on CRC: Helm `platform` deployed, Liquibase + `migrate --fake` Complete, `https://platform.apps-crc.testing/ht/` **200**. Dated record updated. Drain queues **0** backlog. Next: pip-layer fold is Dream → spec (`NEXT-AFTER-12-7.md`), not silent Containerfile rewrite.
+- **2026-08-25** — **Fleet drain takeaways folded into Grounding** (not a second Dream). Canopy Epics 18–32 + eight peer CAP-18 hook stories landed; 08-24 “genuinely unbuilt” list is historical. Confirmed: modular monolith (no `services/` process farm); CAP-18 = hooks not scorecard; parallel-agent switch mutex; tracked story specs; `--merge` never squash; peer stations drain on one obligation, they do not clone steward 18–30. Campaign engine was worktree `bmad-build-auto` under a singleton coordinator; marshal Epic 22 verbs exist as product.
+- **2026-08-25** — Pip-layer fold specified: `docs/dreams/platform-image-one-pixi-env.md` + `spec-platform-image-one-pixi-env` (`ready`). Q5 measures parked on `docs/dreams/build-league-scorecard.md` (unpublished; do not invent). `lane1-serves-dw-h3` **answered no** (Wagtail `/cms/` ≠ La Suite Docs REST).

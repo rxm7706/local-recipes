@@ -132,7 +132,7 @@ The DB-GPT sidecar (AD-6 bounded exception, PVC + singleton) is deliberately abs
 - `cd src/platform && ruff check tests/test_chart_invariants.py && ruff format --check tests/test_chart_invariants.py && mypy platformapp config tests` -- expected: clean
 
 **Manual checks (if no CLI):**
-- A real cluster deploy (OCP Route admission, SCC enforcement) is AD-16 Tier 3 — attended-only and OUT OF REACH here; this story verifies by lint + render + parsed-manifest invariants and says so honestly. Live red/green: temporarily violate an invariant in a scratch render (e.g. add `runAsUser` to the web pod) and watch the real test go RED, then restore GREEN; evidence in Dev Notes.
+- A real cluster deploy (OCP Route admission, SCC enforcement) is AD-16 Tier 3 — attended-only for Story 12.1 itself. **Story 12.7 live record (2026-08-25):** `spec-12-1-the-vanilla-chart-with-an-ocp-overlay-verification-2026-08-25.md` in this folder. Live red/green of *render* tests: temporarily violate an invariant in a scratch render (e.g. add `runAsUser` to the web pod) and watch the real test go RED, then restore GREEN; evidence in Dev Notes.
 
 ## Auto Run Result
 

@@ -2,14 +2,14 @@
 title: "Architecture diagrams"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-24"
+updated: "2026-08-25"
 ---
 
 # Architecture diagrams
 
 Companion to `SPEC.md` — Spec Law rule 2 keeps diagrams out of the kernel. These render the
-contract, not the aspiration: **solid** boxes are shipped and covered by `spec-python-agent-platform`
-or a station's own spec; **dashed** boxes are this chain's residual.
+contract: **solid** boxes are shipped (`spec-python-agent-platform` **or** this chain's drain,
+2026-08-25). **Dashed** leftover is live proof only (12-7 `/ht/`, RFC-5 CRC holes).
 
 ## The Canopy as it stands and as it extends
 
@@ -23,21 +23,22 @@ graph TB
         FastAPIseam["config/fastapi_app.py<br/>in-host /api/health"]
         LF["langflow_integration<br/>langflow_schema"]
         DG["dbgpt_integration<br/>dbgpt_schema"]
-        CF["compliance_face<br/>warden portal — 1 of 8"]
+        CF["warden portal<br/>django-warden — 8 of 8 prefix"]
+        L1["Wagtail Lane 1"]
+        P7["Eight portals /stations/{name}/"]
+        DP["django-pyforge chrome"]
+        SVC["MCP on host ASGI"]
+        CLI["pyforge CLI"]
+        CLIENT["trusted client CAP-6"]
+        SD["Lane 3 row isolation"]
+        EV["CloudEvents on redis-broker"]
+        SK["domain skills CAP-15"]
+        PER["personas CAP-16"]
+        SUP["supervisor CAP-17"]
     end
 
-    subgraph Residual["This chain's residual"]
-        DP["django-pyforge<br/>CAP-1 shared chrome"]
-        L1["Wagtail Lane 1<br/>CAP-2"]
-        P7["7 more portals<br/>CAP-3"]
-        SVC["MCP on host ASGI<br/>CAP-4 — not a services/ process"]
-        CLI["pyforge CLI<br/>CAP-5"]
-        CLIENT["pyforge.core.client<br/>CAP-6"]
-        SD["secure-dashboard pattern<br/>CAP-7"]
-        EV["Redis Streams backbone<br/>CAP-8"]
-        SK["8 domain skills<br/>CAP-15 — 03 stations; 1 of 8 today"]
-        PER["8 station personas<br/>CAP-16 — 03 stations; 0 of 8 today"]
-        SUP["Run-state supervisor<br/>CAP-17 — added 2026-08-24"]
+    subgraph Residual["Live leftover after drain (2026-08-25)"]
+        LIVE["12-7 /ht/ after Liquibase<br/>CAP-9 CRC holes"]
     end
 
     User --> Host
@@ -45,28 +46,28 @@ graph TB
     Host --> LF
     Host --> DG
     Host --> CF
-    Host -.-> L1
-    Host -.-> P7
-    CF -.->|rename| P7
-    DP -.-> CF
-    DP -.-> P7
-    DP -.-> L1
-    CF -.-> CLIENT
-    P7 -.-> CLIENT
-    CLIENT -.-> SVC
-    FastAPIseam -.->|same ASGI; RFC-1 is Celery workers| SVC
-    SVC -.-> EV
-    Host -.-> SD
-    CLI -.-> SVC
-    PER -.->|"acts only through"| CLI
-    PER -.->|"and through"| SVC
-    SK -.-> PER
-    Host -.->|"queries — never reads a filesystem"| SUP
+    Host --> L1
+    Host --> P7
+    DP --> CF
+    DP --> P7
+    DP --> L1
+    CF --> CLIENT
+    P7 --> CLIENT
+    CLIENT --> SVC
+    FastAPIseam -->|same ASGI; RFC-1 is Celery workers| SVC
+    SVC --> EV
+    Host --> SD
+    CLI --> SVC
+    PER -->|"acts only through"| CLI
+    PER -->|"and through"| SVC
+    SK --> PER
+    Host -->|"queries — never reads a filesystem"| SUP
+    Host -.-> LIVE
 
     classDef shipped fill:#1a3a52,stroke:#4a9eda,color:#fff
     classDef residual fill:#3a2a1a,stroke:#daa54a,color:#fff,stroke-dasharray: 5 3
-    class Host,Auth,FastAPIseam,LF,DG,CF shipped
-    class DP,L1,P7,SVC,CLI,CLIENT,SD,EV,SK,PER residual
+    class Host,Auth,FastAPIseam,LF,DG,CF,DP,L1,P7,SVC,CLI,CLIENT,SD,EV,SK,PER,SUP shipped
+    class LIVE residual
 ```
 
 ## Request path and the identity chain (CAP-6)

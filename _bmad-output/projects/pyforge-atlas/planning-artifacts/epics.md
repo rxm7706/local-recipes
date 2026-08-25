@@ -1668,13 +1668,13 @@ Recorded by `sprint-change-proposal-2026-08-24-canopy.md` (Phase 5,
 Epics 18–30 own Canopy implementation on `src/platform/`. **No Epic 18 here** — atlas must
 not copy steward stories.
 
-1. **`lane1-serves-dw-h3` (joint open question with steward — NOT answered here).** Epic 16
+1. **`lane1-serves-dw-h3` — answered 2026-08-25: no.** Epic 16
    (`spec-wagtail-corporate-brain`) and the frozen `LaSuiteClient` REST contract
    (`POST /api/v1/documents/`, `PATCH /api/v1/documents/{id}/`, `GET /api/v1/documents/{id}/`,
    `GET /api/v1/documents/all/`) define atlas's narrow DW-H3 bring-up contract. They are **not**
-   Wagtail's own admin/API surface. Canopy Lane 1 must **not** absorb or re-mint
-   `spec-wagtail-corporate-brain`; resolution stays a **joint** steward↔atlas open question
-   (`lane1-serves-dw-h3`). DW-H3 remains open until the attended bring-up runs.
+   Wagtail's own admin/API surface (`/cms/` on the host). Canopy Lane 1 does **not** absorb or
+   re-mint `spec-wagtail-corporate-brain` and does **not** satisfy DW-H3. DW-H3 remains open
+   until the attended bring-up of a server that speaks that REST contract runs.
 
 2. **MCP — mount, do not duplicate.** Atlas already ships `build_server()` (Story 3.3). Steward
    Story **21.2** (*Atlas MCP on the host, dual-era*) brings that face onto the host ASGI at

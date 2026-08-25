@@ -317,7 +317,7 @@ flowchart LR
 | Capability | Lives in | Governed by |
 |---|---|---|
 | CAP-1 chrome | `django-pyforge` | canopy AD-1, AD-3 |
-| CAP-2 Lane 1 | Wagtail on host | canopy AD-13, AD-10, Deferred: `lane1-serves-dw-h3` |
+| CAP-2 Lane 1 | Wagtail on host | canopy AD-13, AD-10; `lane1-serves-dw-h3` **no** (2026-08-25) |
 | CAP-3 portals | `django-<station>` | canopy AD-1, AD-2, AD-4, AD-18 |
 | CAP-4 MCP | `mcp` SDK on host ASGI | canopy AD-5, AD-6, AD-12, AD-10 |
 | CAP-5 CLI grammar | `pyforge-core` | canopy AD-14, AD-18 |
@@ -339,7 +339,7 @@ flowchart LR
 
 | Item | Why it can wait | Revisit when |
 |---|---|---|
-| `lane1-serves-dw-h3` | Atlas's `LaSuiteClient` is a frozen Docs REST contract, not Wagtail's API. Absorbing it here would re-mint atlas's spec. | Phase 5 atlas `bmad-correct-course`, jointly with steward |
+| `lane1-serves-dw-h3` | **Answered 2026-08-25: no.** `LaSuiteClient` Docs REST ≠ host Wagtail `/cms/`. Absorbing it here would re-mint atlas's spec. DW-H3 stays atlas attended bring-up. | Only if a new adapter Dream is written |
 | Per-schema Liquibase tracking | One sequential Helm Job does not need concurrent migrators | A second migration Job is proposed |
 | MCP Tasks extension (SEP-2663) | No server-side runtime on conda-forge | Official `mcp` SDK ships Tasks; swap wire layer over the same PostgreSQL store |
 | FastMCP 4 / dual-era on FastMCP | Beta, unpackaged | Not before CAP-4 `mcp` faces exist |
