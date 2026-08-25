@@ -18,7 +18,7 @@ import typer
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
 from pyforge.scribe.compile import compile_graph, default_store_path
-from pyforge.scribe.graph_store import FlatFileGraphStore
+from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
     PromotionProposal,
@@ -276,7 +276,7 @@ def recall_cmd(
     """Answer from the compiled graph with a resolvable citation, or report
     no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
     repo_root = Path.cwd()
-    store = FlatFileGraphStore(default_store_path(repo_root))
+    store = open_graph_store(default_store_path(repo_root))
     result = recall_answer(query, store, repo_root=repo_root)
     if result.grounded:
         typer.echo(result.text)
