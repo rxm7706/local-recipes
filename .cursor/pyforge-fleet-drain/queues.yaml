@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 38
-    next: 18-3-two-clients-one-rs256-assertion
+    remaining_count: 37
+    next: 19-1-warden-moves-and-is-renamed
     queue:
-    - 18-3-two-clients-one-rs256-assertion
     - 19-1-warden-moves-and-is-renamed
     - 19-2-seven-more-portal-shells-under-the-prefix
     - 20-1-wagtail-publishes-without-a-deploy
