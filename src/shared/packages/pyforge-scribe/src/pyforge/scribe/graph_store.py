@@ -63,8 +63,9 @@ class GraphStore(Protocol):
     `invalidate_edge` (mark a prior node's validity as ended -- supersession,
     never deletion, AD-4). Read: `query_by_citation` (resolve a citation path
     back to its node(s)), `iter_nodes` (full scan, e.g. for `recall.py`'s
-    lexical matching). `reset`/`commit` bound one compile run's write
-    transaction.
+    lexical matching), `query_similar` (semantic nearest-neighbor; the JSON
+    adapter may return an empty list when embeddings are not persisted).
+    `reset`/`commit` bound one compile run's write transaction.
     """
 
     def reset(self) -> None: ...
@@ -76,6 +77,8 @@ class GraphStore(Protocol):
     def query_by_citation(self, citation: str) -> list[GraphNode]: ...
 
     def iter_nodes(self) -> Iterator[GraphNode]: ...
+
+    def query_similar(self, query: str, *, limit: int = 8) -> list[GraphNode]: ...
 
     def commit(self) -> None: ...
 
@@ -160,6 +163,10 @@ class FlatFileGraphStore:
         on this iteration order (`recall.py`) get identical results across
         runs and operators (FR-13)."""
         return iter(sorted(self._nodes.values(), key=lambda n: n.id))
+
+    def query_similar(self, query: str, *, limit: int = 8) -> list[GraphNode]:
+        """JSON path is lexical-only — embeddings live on PostgreSQL/pgvector."""
+        return []
 
     def commit(self) -> None:
         """Atomically persist the full in-memory node set.
