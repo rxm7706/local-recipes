@@ -185,7 +185,7 @@ decomposed to PRD/Architecture/Epics.
 capabilities) — mixed disposition, folded in 2026-08-02 from its own former
 dream file. Two capabilities already shipped this session: CAP-1 (the
 dashboard's `tea` glob corrected to `src/shared/packages/<slug>/tests/**/test_*.py`,
-verified on disk in `docs/dashboard/generate.py`) and CAP-2 (real, generated
+verified on disk in `pyforge.doctor.sources.fleet_scan`) and CAP-2 (real, generated
 `test-architecture.md` for all 8 stations, replacing the six boilerplate
 stand-ins a prior bulk commit had fabricated). CAP-5 (test architecture stays
 current as stories land) is an ongoing practice, not a one-time build. **CAP-3

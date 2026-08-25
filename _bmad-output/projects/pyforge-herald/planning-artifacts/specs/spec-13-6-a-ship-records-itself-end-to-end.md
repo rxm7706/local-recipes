@@ -57,7 +57,7 @@ arbitrary (non-Django) ASGI app -- that gap is recorded as new deferred-work, no
   `dashboard.yml`'s combined-trigger style). Each starts `webhook_host:application` via daphne
   (or runs `herald scheduler run` directly) against a scratch, job-local `.herald/herald.db`.
 - `on-ship` derives station+story from the real triggering commit using this repo's own
-  already-established attribution convention (mirrors `docs/dashboard/generate.py`'s
+  already-established attribution convention (mirrors `pyforge.doctor.sources.fleet_scan`'s
   `_LOOP_DONE`/`_QUALIFIED_STORY` patterns: a `Merge bmad-loop/.../N-M-... into
   loop/pyforge-<station>` commit, or a `<station>: story N.N` subject prefix) -- never a new,
   invented parsing rule. A commit matching neither pattern is not a ship: the job recognizes

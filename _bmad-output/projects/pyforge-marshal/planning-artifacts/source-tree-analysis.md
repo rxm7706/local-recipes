@@ -681,7 +681,7 @@ Counts here are **churny and never gated** — they move with every packaging se
 | Working on a `pyforge` dist | `src/shared/packages/<dist>/pyproject.toml` + its `pixi.toml` | `src/pyforge/<module>/` (PEP 420 — no namespace `__init__.py`) |
 | Adding a library / dependency | `docs/reference/library-llms-full.md` | `pixi run -e local-recipes llms-full-check` |
 | Reconciling these BMAD docs | `_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md` | `pixi run -e local-recipes bmad-drift-check` + `scripts/spec_surface_check.py` |
-| Publishing the program console | `docs/dashboard/generate.py` | `.github/workflows/dashboard.yml` → GitHub Pages |
+| Publishing the program console | `pyforge.doctor.sources.fleet_scan` | `.github/workflows/dashboard.yml` → GitHub Pages |
 
 ---
 

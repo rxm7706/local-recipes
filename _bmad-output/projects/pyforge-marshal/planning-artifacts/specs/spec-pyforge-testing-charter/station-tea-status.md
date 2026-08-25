@@ -28,7 +28,7 @@ sprint-status-ledger migration note, since removed).
 
 ## Why the dashboard under-reports this
 
-`docs/dashboard/generate.py`'s `_stage_globs()` `tea` entry (added in the
+`pyforge.doctor.sources.fleet_scan`'s `_stage_globs()` `tea` entry (added in the
 same commit, kept — the addition itself is legitimate) points at
 `_bmad-output/projects/<slug>/tests/test_*.py` and `**/*.spec.ts`. That
 planning-scaffold directory holds only mocks and fixtures (Marshal) or empty

@@ -1,4 +1,4 @@
-"""Meta: `docs/dashboard/generate.py` wall-clock fallback + metric-class
+"""Meta: `pyforge.doctor.sources.fleet_scan` wall-clock fallback + metric-class
 separation + coverage caption partitioning (marshal Stories 23.1 / 23.2 / 23.3,
 FR-194 CAP-1 / CAP-2 / CAP-3).
 
@@ -27,7 +27,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
-GENERATE_PY = REPO_ROOT / "docs" / "dashboard" / "generate.py"
+GENERATE_PY = REPO_ROOT / "scripts" / "fleet_scan.py"
 INDEX_HTML = REPO_ROOT / "docs" / "dashboard" / "index.html"
 
 
@@ -47,7 +47,7 @@ def _load_generate():
 @pytest.fixture
 def gen():
     if not GENERATE_PY.is_file():
-        pytest.skip("docs/dashboard/generate.py not present in this checkout")
+        pytest.skip("pyforge.doctor.sources.fleet_scan not present in this checkout")
     return _load_generate()
 
 
@@ -569,21 +569,14 @@ def test_timing_chip_css_class_helper(gen):
     assert gen.timing_chip_css_class(None, "1.1") == ""
 
 
-def test_index_html_wires_per_story_class_and_css():
-    """Static render surface exposes class labels the reader needs (CAP-2)."""
+def test_index_html_is_retirement_stub():
+    """Steward 30.2: Guildhall render wiring is gone; stub points at /console/."""
     if not INDEX_HTML.is_file():
         pytest.skip("docs/dashboard/index.html not present")
     html = INDEX_HTML.read_text(encoding="utf-8")
-    for needle in (
-        "perStoryClass",
-        "epicMinWallClock",
-        "wall-clock-ceiling",
-        "active-compute",
-        "timingClassLegend",
-        "timingChipTitle",
-        'data-metric="active-compute"',
-    ):
-        assert needle in html, f"missing render wiring: {needle!r}"
+    assert "perStoryClass" not in html
+    assert "/console/" in html
+    assert "kedro-viz" in html
 
 
 # --- Story 23.3: coverage caption partitions by true reason (CAP-3) ------------

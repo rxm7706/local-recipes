@@ -60,7 +60,7 @@ tab, in one of its three jobs.
 - **`on-ship` silently does nothing (job green, no POST step ran):** the
   triggering commit's subject matched neither this repo's own
   `bmad-loop`-merge convention nor the `<station>: story N.N` convention
-  (`docs/dashboard/generate.py`'s own `_LOOP_DONE`/`_QUALIFIED_STORY`
+  (`pyforge.doctor.sources.fleet_scan`'s own `_LOOP_DONE`/`_QUALIFIED_STORY`
   patterns) — check the "Derive station + story" step's own log line
   (`subject: ... matched: False ...`). This is the documented, intentional
   no-op (Boundaries & Constraints: "A commit matching neither pattern is

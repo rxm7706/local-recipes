@@ -62,7 +62,7 @@ def test_ledger_merely_mentioning_the_key_in_a_comment_still_refuses(tmp_path, m
     """Review finding (Blind Hunter, reproduced against the real parser): a
     naive substring check (`"development_status:" in text`) is satisfied by
     a COMMENT merely mentioning the key, or any longer identifier ending in
-    it -- while `docs/dashboard/generate.py::parse_sprint_status` (the real
+    it -- while `pyforge.doctor.sources.fleet_scan::parse_sprint_status` (the real
     consumer) only recognizes a line whose stripped text is exactly
     `development_status:`. That mismatch would let a malformed ledger pass
     this guard and then silently parse to zero statuses downstream -- the

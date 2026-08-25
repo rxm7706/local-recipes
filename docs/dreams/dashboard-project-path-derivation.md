@@ -14,7 +14,7 @@ status: archived
 
 ## The Dream
 
-`docs/dashboard/generate.py` and `index.html` build almost every link and
+`pyforge.doctor.sources.fleet_scan` and `index.html` build almost every link and
 `have`/`gaps` detection by string-gluing a roster slug straight onto
 `_bmad-output/projects/<slug>/planning-artifacts/...`. That held while every
 chain's slug matched a live project directory 1:1. It stopped holding the

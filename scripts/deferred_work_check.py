@@ -17,6 +17,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+DETECTOR = None  # Story 6.9 residual CLI; verdicts live in pyforge.doctor.sources
+
 
 def main() -> int:
     cmd = [sys.executable, "-m", "pyforge.doctor.sources", "deferred-work"]

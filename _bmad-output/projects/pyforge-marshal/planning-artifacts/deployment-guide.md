@@ -535,7 +535,7 @@ actions/checkout@v4 (fetch-depth: 0 — full history)
         ↓
 actions/setup-python@v5 (3.12)
         ↓
-python docs/dashboard/generate.py --source git
+Lane 1 /console/ (Guildhall generator retired) --source git
         ↓
 actions/configure-pages@v5
         ↓
@@ -552,7 +552,7 @@ Two design decisions to preserve:
 2. **`--source git` only upgrades, never downgrades.** It derives DONE state from `main` commit
    subjects. The **committed `data.js` is the seed/floor** — it carries the hand-curated narrative
    plus in-flight and gated state that git history cannot derive. Refresh the seed deliberately with
-   `pixi run dashboard-gen` (which reads the live per-project `sprint-status.yaml` files); never
+   `retired-console-check` (which reads the live per-project `sprint-status.yaml` files); never
    assume the deployed site can be reconstructed from `data.js` alone, or vice versa.
 
 Permissions required by the job: `contents: read`, `pages: write`, `id-token: write`.

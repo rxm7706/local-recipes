@@ -11,7 +11,7 @@ runs on the Wave-0 harness (`scripts/bmad-loop-worktree local-recipes`).
 | 1 | 1.1 | Surface-manifest convention (CAP-1): retrofit `surface:` onto multi-loop-isolation + design-code-bridge kernels | gated |
 | 1 | 1.2 | `scripts/spec_surface_check.py` v1 (CAP-3): coverage + allowlist + drift baseline, pixi task | gated |
 | 2 | 2.1 | Pilot backfill: factory-console kernel + surface manifest (`docs/dashboard/**`) | gated |
-| 2 | 2.2 | Regeneration drill on `docs/dashboard/generate.py` (CAP-4) | gated |
+| 2 | 2.2 | Regeneration drill on `pyforge.doctor.sources.fleet_scan` (CAP-4) | gated |
 | 3 | 3.1 | Backfill: enterprise-airgap (grounds: `docs/reference/enterprise-deployment.md`, `_http.py` routing) | auto |
 | 3 | 3.2 | Backfill: modernist-identity (grounds: DS project, deck engine files) | auto |
 | 4 | 4.1 | Deep backfill: packaging-factory — `bmad-document-project` over the CFE skill surface, then kernel (+Rule 1) | auto |

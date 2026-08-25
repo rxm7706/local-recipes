@@ -23,6 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 REQUIREMENTS_DIR = REPO_ROOT / "src" / "platform" / "requirements"
 FORBIDDEN = ("base.txt", "local.txt", "production.txt")
 FEATURE = "platform-ci-test"
+DETECTOR = {"scope": "repo"}
 
 
 def run() -> tuple[list[dict], dict]:

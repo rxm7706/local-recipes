@@ -15,7 +15,7 @@ reads truth instead of guessing. It is the same move this repo already made for
 `deferred-work-ledger.md` in atlas and doctor, for the same reason.
 
 The twin is written in the SAME shape the Tier-3 feed uses, so
-`generate.py:parse_sprint_status` reads it unchanged — no second parser to drift.
+``fleet_scan.parse_sprint_status`` reads it unchanged — no second parser to drift.
 
 Idempotent: re-running with no upstream change rewrites nothing, so it is safe in
 a pre-commit hook or a loop's post-story step.
@@ -43,7 +43,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-GENERATE = REPO_ROOT / "docs" / "dashboard" / "generate.py"
+GENERATE = REPO_ROOT / "scripts" / "fleet_scan.py"
 LEDGER_NAME = "sprint-status-ledger.yaml"
 
 _HEADER = """\
@@ -57,7 +57,7 @@ _HEADER = """\
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: {project}

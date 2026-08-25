@@ -19,7 +19,7 @@ difficulty: 'heavy'
 
 ## Intent
 
-**Problem:** `docs/dashboard/generate.py` maps a roster/campaign slug to its real
+**Problem:** `pyforge.doctor.sources.fleet_scan` maps a roster/campaign slug to its real
 `_bmad-output/projects/<dir>` tree through five independent, hand-authored mechanisms
 (`PROJECT_SOURCES`, `_KEY_SLUG_OVERRIDE` re-derived at 5 call sites, `CAMPAIGN_PROJECT_OVERRIDE`,
 `IMPL_CAMPAIGN`'s per-entry `epics_path` present on only 3 of 9 rows, `IMPL_CAMPAIGN_LEDGER`),
@@ -81,20 +81,20 @@ in this spec's Code Map might depend on — HALT and report before renaming/remo
 
 ## Code Map
 
-- `docs/dashboard/generate.py:44-66` -- hand-authored `PROJECT_SOURCES` + its `TODO`; becomes a
+- `pyforge.doctor.sources.fleet_scan:44-66` -- hand-authored `PROJECT_SOURCES` + its `TODO`; becomes a
   derived view over `resolve_project()`.
-- `docs/dashboard/generate.py:184,212,291,594,641,2052` -- `_KEY_SLUG_OVERRIDE` and its five
+- `pyforge.doctor.sources.fleet_scan:184,212,291,594,641,2052` -- `_KEY_SLUG_OVERRIDE` and its five
   independent `f"pyforge-{key}"`-fallback call sites (`scan_projects`, `check_project_coverage`,
   `apply_tracked_ledger`, `build_fleet_progress`, `scan_readiness`); collapse onto the resolver.
-- `docs/dashboard/generate.py:1046-1050,1062` -- `CAMPAIGN_PROJECT_OVERRIDE`, folds into the one
+- `pyforge.doctor.sources.fleet_scan:1046-1050,1062` -- `CAMPAIGN_PROJECT_OVERRIDE`, folds into the one
   table.
-- `docs/dashboard/generate.py:1089-1119` -- `IMPL_CAMPAIGN`'s per-entry `epics_path` (only 3 of
+- `pyforge.doctor.sources.fleet_scan:1089-1119` -- `IMPL_CAMPAIGN`'s per-entry `epics_path` (only 3 of
   9 rows today); every row must carry a resolver-computed value (possibly `None`).
-- `docs/dashboard/generate.py:1134-1138` -- `IMPL_CAMPAIGN_LEDGER`, folds into the one table via
+- `pyforge.doctor.sources.fleet_scan:1134-1138` -- `IMPL_CAMPAIGN_LEDGER`, folds into the one table via
   a `ledger_path` field.
-- `docs/dashboard/generate.py:2876-2883` -- `build_status()`'s hand-landed-attribution substring
+- `pyforge.doctor.sources.fleet_scan:2876-2883` -- `build_status()`'s hand-landed-attribution substring
   match against `PROJECT_SOURCES` keys; logic unchanged, now iterates the derived key set.
-- `docs/dashboard/generate.py:2893` (`main`) -- top-level call sites that invoke the resolver
+- `pyforge.doctor.sources.fleet_scan:2893` (`main`) -- top-level call sites that invoke the resolver
   over roster/campaign data must let an unresolvable-slug failure reach a non-zero exit.
 - `docs/dashboard/index.html:1060-1097` -- the two JS special cases to remove: the
   `r.slug === "pyforge-genesis"` redirect (~1069-1071) and the `"epics_path" in r`
@@ -110,23 +110,23 @@ in this spec's Code Map might depend on — HALT and report before renaming/remo
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `docs/dashboard/generate.py` -- add a `ProjectResolution` record + `resolve_project(slug)`
+- [x] `pyforge.doctor.sources.fleet_scan` -- add a `ProjectResolution` record + `resolve_project(slug)`
   + one `_PROJECT_OVERRIDES` table (dissolved/absorbed entries only) + a named exception for an
   unresolvable slug -- the one resolver, one override table (CAP-1).
-- [x] `docs/dashboard/generate.py` -- replace the five `_KEY_SLUG_OVERRIDE` call sites (lines
+- [x] `pyforge.doctor.sources.fleet_scan` -- replace the five `_KEY_SLUG_OVERRIDE` call sites (lines
   212, 291, 594, 641, 2052) with `resolve_project()` calls; compute `PROJECT_SOURCES` as a
   derived dict at module load (drop the hand-authored literal + its `TODO`) -- CAP-2, and keeps
   the attribute present for pyforge-doctor's dynamic read.
-- [x] `docs/dashboard/generate.py` -- fold `CAMPAIGN_PROJECT_OVERRIDE`, `IMPL_CAMPAIGN`'s ad hoc
+- [x] `pyforge.doctor.sources.fleet_scan` -- fold `CAMPAIGN_PROJECT_OVERRIDE`, `IMPL_CAMPAIGN`'s ad hoc
   `epics_path` entries, and `IMPL_CAMPAIGN_LEDGER` into `_PROJECT_OVERRIDES`; campaign-row
   builders call `resolve_project()` instead -- collapses the remaining override surfaces (CAP-1).
-- [x] `docs/dashboard/generate.py` -- emit each row's resolved `epics_path`/`redirect` (and the
+- [x] `pyforge.doctor.sources.fleet_scan` -- emit each row's resolved `epics_path`/`redirect` (and the
   existing `planning_project`-shaped field where applicable) into every roster/campaign entry
   written to `data.js`, for all rows, not just the 3 that have it today -- CAP-3.
 - [x] `docs/dashboard/index.html` -- remove the `r.slug === "pyforge-genesis"` special case and
   the `"epics_path" in r` fallback-concatenation; read the resolved fields shipped in `data.js`
   directly -- CAP-3, JS never re-derives.
-- [x] `docs/dashboard/generate.py` -- let an unresolvable-slug exception from `resolve_project()`
+- [x] `pyforge.doctor.sources.fleet_scan` -- let an unresolvable-slug exception from `resolve_project()`
   propagate to a non-zero `main()` exit that prints the offending slug -- FR-143.
 - [x] New unit tests for `resolve_project()` covering every I/O Matrix scenario above (bare-key,
   slug≠directory override, dissolved/no-tree, newly-discovered directory, unresolvable slug).
@@ -191,9 +191,9 @@ for `pyforge-doctor`'s attribute-shape pin).
 ## Verification
 
 **Commands:**
-- `pixi run -e local-recipes dashboard-gen` -- expected: exits 0, per-project resolution/match
+- `retired-console-check` -- expected: exits 0, per-project resolution/match
   summary prints, `data.js` regenerates with resolved fields on every row.
-- `pixi run -e local-recipes dashboard-check` -- expected: renders clean, same line/dream/chain
+- `retired-console-check` -- expected: renders clean, same line/dream/chain
   counts as before this change.
 - New `resolve_project()` unit tests -- expected: all I/O Matrix scenarios pass, including the
   unresolvable-slug case exiting non-zero and naming the slug.
@@ -210,7 +210,7 @@ Status: done
 Blocking condition: none
 
 **Summary:** Consolidated five independent hand-authored slug->project-directory mechanisms
-in `docs/dashboard/generate.py` into one `resolve_project(slug) -> ProjectResolution` function
+in `pyforge.doctor.sources.fleet_scan` into one `resolve_project(slug) -> ProjectResolution` function
 backed by one `_PROJECT_OVERRIDES` table (CAP-1). `PROJECT_SOURCES` is now derived via the same
 tracked-`epics.md` discovery `scan_projects()` uses, not hand-declared (CAP-2). Every
 planning/build-campaign row now ships its resolver-computed `epics_path`/`redirect` fields in
@@ -222,7 +222,7 @@ module attributes with equivalent shape for `pyforge-doctor`'s dynamic-load cons
 untouched and still 26/26 green.
 
 **Files changed:**
-- `docs/dashboard/generate.py` -- the resolver, override table, and every call-site consolidation.
+- `pyforge.doctor.sources.fleet_scan` -- the resolver, override table, and every call-site consolidation.
 - `docs/dashboard/index.html` -- removed both slug->path JS special cases.
 - `docs/dashboard/data.js` -- regenerated (resolved fields on every row; rendered board content
   otherwise unchanged, verified by controlled before/after diff).
@@ -249,9 +249,9 @@ cleanup, and one documentation-only fix) within the same mechanism this story al
 and already tested -- no security, data-integrity, or API-surface impact.
 
 **Verification performed:**
-- `pixi run -e local-recipes dashboard-gen` -- exit 0, `[resolve] 18 slug(s) resolved (4 via
+- `retired-console-check` -- exit 0, `[resolve] 18 slug(s) resolved (4 via
   override, 14 default)`.
-- `pixi run -e local-recipes dashboard-check` -- renders clean.
+- `retired-console-check` -- renders clean.
 - 18/18 new `resolve_project()`/`_validate_project_overrides()`/`_discovered_board_keys()` unit
   tests pass; 1/1 existing render-smoke test passes.
 - `pyforge-doctor`'s `test_sources_board_dashboard_drift.py` -- 26/26 pass, package untouched.

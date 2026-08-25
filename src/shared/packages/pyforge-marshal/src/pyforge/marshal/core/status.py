@@ -1686,7 +1686,7 @@ def render_ledger_advancements(
     comment block, every non-matching entry, blank lines, ordering -- is
     reproduced BYTE-FOR-BYTE: this function never invents a new key, never
     re-renders the map, never reorders entries, and never touches the
-    header ``scripts/promote_sprint_status.py``/``generate.py::parse_
+    header ``scripts/promote_sprint_status.py``/``fleet_scan.py::parse_
     sprint_status`` both depend on (this story's own Boundaries, verbatim).
     No YAML library is used at all -- a full re-render is explicitly
     forbidden by that same Boundaries bullet, so this is plain line-level

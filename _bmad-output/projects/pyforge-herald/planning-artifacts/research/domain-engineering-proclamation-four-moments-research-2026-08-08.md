@@ -216,7 +216,7 @@ unshipped half of proclamation.
 
 The factory now has two dashboard surfaces with opposite epistemics:
 
-- **Marshal's Guildhall** (`docs/dashboard/generate.py`, successor to the archived
+- **Marshal's Guildhall** (`pyforge.doctor.sources.fleet_scan`, successor to the archived
   [[artifact-console]] per `factory-console.md`): *derived* truth. "Nothing on the
   console is hand-maintained... if the repo moved, the console already knows."
   Its failure mode is derivation bugs — exactly what Marshal's

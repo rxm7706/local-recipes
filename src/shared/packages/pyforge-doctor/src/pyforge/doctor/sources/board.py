@@ -861,26 +861,6 @@ def gather_chain_layers_audit(
 def _gather_chain_layers_audit(
     target: Path, project: str
 ) -> tuple[Finding, ...]:
-    gen_path = target / "docs" / "dashboard" / "generate.py"
-    if not gen_path.is_file():
-        return (
-            Finding(
-                source=Source.CHAIN_LAYERS_AUDIT,
-                check="chain-layers-audit-unevaluable",
-                status=DoctorStatus.WARN,
-                message=(
-                    "docs/dashboard/generate.py missing — chain layer "
-                    "audit cannot be evaluated"
-                ),
-                evidence={
-                    "kind": "chain-layers-audit-unevaluable",
-                    "project": project,
-                    "detail": "generate.py missing",
-                    "subject": "docs/dashboard/generate.py",
-                },
-            ),
-        )
-
     try:
         gen = _load_dashboard_generate(target)
     except Exception as exc:  # noqa: BLE001 -- unevaluable, never crash
@@ -890,14 +870,14 @@ def _gather_chain_layers_audit(
                 check="chain-layers-audit-unevaluable",
                 status=DoctorStatus.WARN,
                 message=(
-                    f"docs/dashboard/generate.py failed to load — "
+                    f"fleet_scan failed to load — "
                     f"chain layer audit cannot be evaluated ({exc})"
                 ),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
                     "project": project,
                     "detail": str(exc),
-                    "subject": "docs/dashboard/generate.py",
+                    "subject": "pyforge.doctor.sources.fleet_scan",
                 },
             ),
         )
@@ -1119,7 +1099,7 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
                     "every open Spec is decomposed, and epics, ledger and board agree"
                     if board is not None
                     else "every open Spec is decomposed and epics and ledger agree; "
-                         "the board (data.js) could not be read, so INV-C was NOT "
+                         "INV-C (Guildhall data.js) is retired, so INV-C was NOT "
                          "evaluated"
                 ),
                 evidence={"projects": n, "board_read": board is not None},
@@ -1143,7 +1123,7 @@ def _gather_chain_completeness(target: Path) -> tuple[Finding, ...]:
     )
 
 
-# === gather_dashboard_drift (scope="runtime") ===============================
+# === gather_dashboard_drift (scope="repo", FR-7 reintroduction gate) ========
 #
 # Ported from scripts/dashboard_drift_check.py -- see that script's own module
 # docstring for the full three-way rationale (stale-done, missing-story,
@@ -1215,17 +1195,20 @@ def _load_foreign_module(path: Path, mod_name: str):
 
 
 def _load_dashboard_generate(target: Path):
-    """Import ``target/docs/dashboard/generate.py`` so its parsers are REUSED,
-    never reimplemented (see ``_load_foreign_module`` for the loading
-    mechanics). ``parse_sprint_status``/``dashboard_id_to_status``/
-    ``PROJECT_SOURCES`` etc. already encode the feed-key -> board-id mapping;
-    duplicating them here would let the two drift, which is the class of bug
-    the original script -- and this port -- exist to catch.
+    """Import ``target/scripts/fleet_scan.py`` (parsers extracted from the
+    retired Guildhall generator) and point it at ``target``.
     """
-    return _load_foreign_module(
-        target / "docs" / "dashboard" / "generate.py",
-        "_doctor_board_dashboard_generate",
+    gen = _load_foreign_module(
+        target / "scripts" / "fleet_scan.py",
+        "_doctor_board_fleet_scan",
     )
+    root = target.resolve()
+    gen.REPO_ROOT = root
+    if hasattr(gen, "DREAMS_DIR"):
+        gen.DREAMS_DIR = root / "docs" / "dreams"
+    if hasattr(gen, "_PIXI_TASKS"):
+        gen._PIXI_TASKS = None
+    return gen
 
 
 def _load_data_js(target: Path) -> dict:
@@ -1417,8 +1400,8 @@ def _check_project_dashboard_drift(
                         f"{key}:{sid} is '{feed}' in the sprint feed but "
                         f"'{status}' on the board — the committed baseline is behind. "
                         f"`--source git` never downgrades, so this will NOT self-heal "
-                        f"at deploy: run `pixi run -e local-recipes dashboard-gen` and "
-                        f"commit data.js."
+                        f"at deploy: story status lives on Lane 1 /console/ "
+                        f"(Guildhall data.js retired)."
                     ),
                 })
 
@@ -1468,60 +1451,73 @@ def _no_system_exit(fn):
         ) from exc
 
 
-def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
-    """Judge whether the committed ``data.js`` and its tracked ledger twins
-    still match the (gitignored, LOCAL-ONLY) Tier-3 sprint feeds -- the
-    library form of ``scripts/dashboard_drift_check.py``'s own ``main()``,
-    minus the print/exit CLI surface.
+_RETIRED_CONSOLE_FILES = (
+    Path("docs/dashboard/generate.py"),
+    Path("docs/dashboard/data.js"),
+    Path("docs/dashboard/check_render.js"),
+    Path("scripts/dashboard_watch.py"),
+)
+_RETIRED_CONSOLE_TASKS = (
+    "dashboard-gen",
+    "dashboard-watch",
+    "dashboard-check",
+    "dashboard-drift-check",
+)
 
-    ``scope="runtime"`` -- the epic's first (Design Notes): no dispatcher
-    exists yet to call this gather, so it self-guards with
-    ``sources.degrade_on_exception`` wrapped around its own host-state reads
-    (dynamically loading ``generate.py``, parsing ``data.js``, globbing the
-    Tier-3 feeds) rather than relying on an external wrapper that does not
-    exist in this story. Every failure mode the original script
-    printed-and-exited on -- a missing/unparseable ``data.js``, an unreadable
-    Tier-3 feed, a missing twin -- becomes a Finding inside this gather
-    itself; nothing here raises out to the caller.
+
+def gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
+    """FR-7 reintroduction gate: the Guildhall generator and its four pixi
+    tasks must stay gone. Kedro-Viz is out of scope.
     """
     return degrade_on_exception(
         Source.DASHBOARD_DRIFT,
         "dashboard-drift",
-        lambda: _no_system_exit(lambda: _gather_dashboard_drift(target)),
+        lambda: _gather_dashboard_drift(target),
     )
 
 
 def _gather_dashboard_drift(target: Path) -> tuple[Finding, ...]:
-    gen = _load_dashboard_generate(target)
-    data = _load_data_js(target)
-    # Derived ONCE and passed down. Deriving it a second time inside
-    # `_check_dashboard_drift` meant the count reported in the OK finding's
-    # evidence and the set actually scanned could silently disagree the moment
-    # either copy was edited.
-    projects = _board_projects(data, target)
-    raw = _check_dashboard_drift(target, gen, projects)
-    if not raw:
-        return (
-            Finding(
-                source=Source.DASHBOARD_DRIFT,
-                check="dashboard-drift",
-                status=DoctorStatus.OK,
-                message=(
-                    "the committed data.js matches the feeds, every epics.md story "
-                    "is on the board, and every tracked ledger matches its Tier-3 feed"
-                ),
-                evidence={"projects": len(projects)},
-            ),
-        )
-    return tuple(
+    findings: list[Finding] = []
+    for rel in _RETIRED_CONSOLE_FILES:
+        path = target / rel
+        if path.is_file():
+            findings.append(
+                Finding(
+                    source=Source.DASHBOARD_DRIFT,
+                    check="dashboard-drift",
+                    status=DoctorStatus.FAIL,
+                    message=f"retired Guildhall path reintroduced: {rel.as_posix()}",
+                    evidence={"kind": "retired-console-reintroduced", "path": rel.as_posix()},
+                )
+            )
+    pixi = target / "pixi.toml"
+    if pixi.is_file():
+        text = pixi.read_text(encoding="utf-8")
+        for task in _RETIRED_CONSOLE_TASKS:
+            needle = f"[feature.local-recipes.tasks.{task}]"
+            if needle in text:
+                findings.append(
+                    Finding(
+                        source=Source.DASHBOARD_DRIFT,
+                        check="dashboard-drift",
+                        status=DoctorStatus.FAIL,
+                        message=f"retired pixi task reintroduced: {task}",
+                        evidence={"kind": "retired-console-task", "task": task},
+                    )
+                )
+    if findings:
+        return tuple(findings)
+    return (
         Finding(
             source=Source.DASHBOARD_DRIFT,
-            check=item["kind"],
-            status=DoctorStatus.WARN if item.get("warn") else DoctorStatus.FAIL,
-            message=item["detail"],
-            evidence={"project": item["project"]},
-        )
-        for item in raw
+            check="dashboard-drift",
+            status=DoctorStatus.OK,
+            message=(
+                "Guildhall generator, data.js, and the four dashboard pixi "
+                "tasks stay gone"
+            ),
+            evidence={"retired": True},
+        ),
     )
 
 
@@ -1752,31 +1748,29 @@ def gather_check_layout(target: Path) -> tuple[Finding, ...]:
     assertions are permanent code in this module now (see the section header
     above), so there is nothing left to fail to load.
     """
-    try:
-        data_js = target / "docs" / "dashboard" / "data.js"
-        if not data_js.is_file():
-            return _layout_warn(f"{data_js} is absent — run `dashboard-gen` first", target)
-    except OSError as exc:  # a permission/loop error on the stat itself
-        return _layout_warn(
-            f"data.js could not be stat'd — {exc.__class__.__name__}: {exc}", target
+    retired = target / "docs" / "dashboard" / "data.js"
+    generator = target / "docs" / "dashboard" / "generate.py"
+    if retired.is_file() or generator.is_file():
+        return (
+            Finding(
+                source=Source.CHECK_LAYOUT,
+                check=_LAYOUT_CHECK,
+                status=DoctorStatus.FAIL,
+                message="retired Guildhall console blob reintroduced",
+                evidence={
+                    "data_js": retired.is_file(),
+                    "generate_py": generator.is_file(),
+                },
+            ),
         )
-
-    try:
-        from playwright.sync_api import sync_playwright
-    except Exception as exc:  # noqa: BLE001 -- an INSTALLED-but-broken
-        # playwright raises far more than ImportError (an ABI RuntimeError, an
-        # OSError for a missing libnss3.so). This import sits OUTSIDE the
-        # degrade_on_exception wrap below, so a narrow `except ImportError`
-        # let those escape the gather entirely -- breaking this function's own
-        # documented "never a raised exception" contract.
-        return _layout_warn(
-            f"playwright is not usable — {exc.__class__.__name__}: {exc}", target
-        )
-
-    return degrade_on_exception(
-        Source.CHECK_LAYOUT,
-        _LAYOUT_CHECK,
-        lambda: _run_check_layout(target, sync_playwright),
+    return (
+        Finding(
+            source=Source.CHECK_LAYOUT,
+            check=_LAYOUT_CHECK,
+            status=DoctorStatus.OK,
+            message="Guildhall layout gate retired with the generator; Kedro-Viz is not measured",
+            evidence={"retired": True},
+        ),
     )
 
 

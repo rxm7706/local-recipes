@@ -83,7 +83,7 @@ genesis-installer.md` (the Dream itself, dense), `docs/dreams/pyforge-marshal.md
 `docs/dreams/one-front-door.md` (92-113, wiki-links), `docs/dreams/README.md` (159, 163),
 `_bmad-output/PROJECTS.md` (64, via "the installer"/`spec-genesis-installer`, not the literal
 hyphenated string), `_bmad-output/CHARTER-ALIGNMENT-PLAN.md` (57), `marshal-policy.toml` (36,
-comment), `docs/dashboard/generate.py` (638, 928-950 — the dashboard row this Dream targets for
+comment), `pyforge.doctor.sources.fleet_scan` (638, 928-950 — the dashboard row this Dream targets for
 removal), `docs/dashboard/index.html` (1041-1042, JS comment).
 
 ## The three smaller namespaces — facts, no decision made here

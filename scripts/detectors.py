@@ -10,7 +10,7 @@ detectors and no two agreed:
 `check_layout` from all of them. That is the shape a hand-written list always
 takes: it omits exactly the newest thing, because adding a detector and
 remembering every place that names it are separate acts and only the first is
-forced. `docs/dashboard/generate.py` already derives a task's *command* from
+forced. `pyforge.doctor.sources.fleet_scan` already derives a task's *command* from
 `pixi.toml` "DERIVED, never declared twice" — but the list of detectors above it
 was typed by hand, and that was the bug.
 
@@ -205,7 +205,7 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     ("ledger-regression", "ledger-regression-check"),
     ("story-status", "story-status-check"),
     ("chain-completeness", "chain-completeness-check"),
-    ("dashboard-drift", "dashboard-drift-check"),
+    ("dashboard-drift", "retired-console-check"),
     ("check-layout", "dashboard-layout-check"),
     ("dream-chain", "dream-chain-check"),
     ("spec-surface", "spec-surface-check"),

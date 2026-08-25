@@ -3,7 +3,7 @@
 Covers the I/O matrix's happy-path build, underlying-task-failure, and
 bare-`deploy`-degrade rows, both at the primitive level (`build_dashboard`
 directly) and through the CLI (`main(["deploy", "dashboard", "--build"])`).
-The real `pixi run -e local-recipes dashboard-gen` invocation is never
+The real `retired-console-check` invocation is never
 exercised here — `cmd` is overridden with a fast fixture command (this
 story's own spec, "Design Notes": the real `local-recipes` env is ~9.8GB).
 """

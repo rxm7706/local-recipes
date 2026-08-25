@@ -27,7 +27,7 @@ deferred: []
 
 **Always:** Physical writes under `_bmad-output/projects/pyforge-steward/` plus the Code Map. `BMAD_ACTIVE_PROJECT=pyforge-steward`. Homes are Lane 1 or `/stations/<name>/`. Detector page reads cached rows + age, never implies a per-request check. Editorial GET reads published Wagtail pages. Live run chip / in-flight / timing use `query_board` via `/runs/` only. Parent AD-2: no `import pyforge` under `src/platform/`. Tests fail if a runtime-reproducible or mixed inventory row has no named home.
 
-**Block If:** Implementation would delete `docs/dashboard/generate.py`, pixi dashboard tasks, the dashboard workflow trigger, or `docs/dashboard/data.js`; or would start Story 30.2 inbound-ref sweep; or would require MinIO / a fifth PostgreSQL schema.
+**Block If:** Implementation would delete `pyforge.doctor.sources.fleet_scan`, pixi dashboard tasks, the dashboard workflow trigger, or `docs/dashboard/data.js`; or would start Story 30.2 inbound-ref sweep; or would require MinIO / a fifth PostgreSQL schema.
 
 **Never:** Story 30.2. Kedro-Viz tree edits or deletion. `pyforge.*` under `src/platform/`. Filesystem scrape of `~/.bmad-loops`, tmux, or journals. Presenting detector subprocess output as request-time truth.
 
@@ -59,7 +59,7 @@ deferred: []
 - `src/platform/platformapp/front_door/templates/front_door/` — console templates
 - `src/shared/packages/django-{doctor,herald,steward,marshal}/.../home.html` — `data-console-home` markers
 - `src/platform/tests/test_console_parity_homes.py` — I/O matrix
-- Read-only: `docs/dashboard/generate.py`, `docs/dashboard/data.js`, `docs/dashboard/kedro-viz/**`, pixi dashboard tasks, `tests/meta/test_no_pyforge_import.py`, supervisor `query_board`
+- Read-only: `pyforge.doctor.sources.fleet_scan`, `docs/dashboard/data.js`, `docs/dashboard/kedro-viz/**`, pixi dashboard tasks, `tests/meta/test_no_pyforge_import.py`, supervisor `query_board`
 
 ## Tasks & Acceptance
 

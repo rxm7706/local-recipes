@@ -133,7 +133,7 @@ def _build_parser() -> argparse.ArgumentParser:
             f"valid only for source {_LAYERS_AUDIT_SOURCE!r}: run the "
             "per-project CAP-3 chain audit (layer presence + coherence + "
             "staleness + orphan-freedom checkpoints), seeded from "
-            "docs/dashboard/generate.py. Requires --project. "
+            "pyforge.doctor.sources.fleet_scan. Requires --project. "
             "Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3."
         ),
     )

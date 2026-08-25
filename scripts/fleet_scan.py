@@ -1,29 +1,9 @@
 #!/usr/bin/env python3
-"""Refresh docs/dashboard/data.js — the committed Warden+Atlas program console.
+"""Fleet/chain/sprint parsers extracted from the retired Guildhall generator.
 
-Two sources (`--source`):
-
-* `sprint-status` (default, LOCAL) — reads each project's
-  `sprint-status.yaml` and sets every mapped story to its full status
-  (done / active / gated / pending). Richest view, but those files are Tier-3
-  **gitignored / local-only**, so this mode can't run in CI.
-
-* `git` (hands-off, CI-safe) — derives the DONE story set from `main`'s commit
-  subjects (bmad-loop merge commits + atlas `story(...)` / `GN:`/`HN:` commits).
-  It only ever UPGRADES a story to `done`; it never downgrades (an in-flight
-  `active`/`gated` state isn't derivable from history, so those stay at their
-  committed baseline). This is what the GitHub Pages workflow runs at deploy
-  time against a full-history checkout, so the published site auto-updates as
-  stories merge to `main` — no bot commit-back needed.
-
-Both modes ALSO rescan `docs/dreams/*.md` frontmatter into `data["dreams"]`
-(slug/title/status) — the Dreamscape lifecycle board. Unknown or missing
-`status:` values are warned about here (this scan doubles as the Dream
-frontmatter detector) and passed through raw; the front-end buckets them
-under `dreamt`.
-
-Local refresh:  python docs/dashboard/generate.py            (or: pixi run dashboard-gen)
-CI (in-workflow): python docs/dashboard/generate.py --source git
+Steward Story 30.2 deleted ``docs/dashboard/generate.py``. Chain-layers audit,
+sprint-ledger sync, and marshal land/deploy still need the parsers. The
+``data.js`` write CLI is retired — ``main()`` exits nonzero.
 """
 from __future__ import annotations
 
@@ -98,9 +78,19 @@ _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
 _ATLAS_GH = re.compile(r"\b([GH]\d+):")
 # Regenerable-factory program: per-story commits `rf(<id>): …` on main.
 
+def _discover_repo_root() -> Path:
+    here = Path(__file__).resolve()
+    for ancestor in here.parents:
+        if (ancestor / "pixi.toml").is_file() and (ancestor / "docs" / "dreams").is_dir():
+            return ancestor
+    if here.parent.name == "scripts":
+        return here.parent.parent
+    return here.parent  # fixture / non-checkout load; callers overwrite REPO_ROOT
+
+
 HERE = Path(__file__).resolve().parent
-DATA_JS = HERE / "data.js"
-REPO_ROOT = HERE.parent.parent  # repo root = two levels up from docs/dashboard/
+REPO_ROOT = _discover_repo_root()
+DATA_JS = REPO_ROOT / "docs" / "dashboard" / "data.js"  # retired; writers unused
 
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
@@ -2269,7 +2259,7 @@ def scan_pitch() -> list[dict]:
 # ---- command center (SDLC phase-grouped view) --------------------------------
 
 def scan_readiness() -> dict:
-    """"What can actually be launched right now" — the question the board could not
+    """What can actually be launched right now" — the question the board could not
     answer before 2026-08-08.
 
     Distinct from the Command Center, which reports whether an ARTIFACT EXISTS per SDLC
@@ -2278,7 +2268,7 @@ def scan_readiness() -> dict:
     UNKNOWN rather than green.
 
     Derived entirely from the tracked ledgers via `parse_sprint_status` (never a regex:
-    atlas keys stories `a1-`/`b2-` by design, and an `^\d+-\d+` assumption produced
+    atlas keys stories `a1-`/`b2-` by design, and an `^\\d+-\\d+` assumption produced
     three wrong findings on 2026-08-08, one of them published and retracted).
     """
     rows, totals = [], collections.Counter()
@@ -3488,18 +3478,12 @@ def _resolve_roster_slugs() -> tuple[int, int]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--source", choices=["sprint-status", "git"], default="sprint-status",
-        help="sprint-status (default, local, richest) | git (hands-off, CI, done-only)",
+    print(
+        "retired: Guildhall generate.py is gone (steward 30.2). "
+        "Use Lane 1 /console/ and steward deploy dashboard for Kedro-Viz.",
+        file=sys.stderr,
     )
-    args = ap.parse_args()
-
-    try:
-        return _generate(args)
-    except UnresolvableProjectError as exc:
-        print(f"\n[resolve] FAIL — {exc}")
-        return 1
+    return 2
 
 
 def _generate(args: argparse.Namespace) -> int:

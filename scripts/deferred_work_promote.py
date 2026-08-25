@@ -192,7 +192,7 @@ def _project_slug_map() -> dict[str, str]:
     (e.g. `--project doctor`, not `--project pyforge-doctor`), mirroring
     `sprint-ledger-sync`'s own `--project KEY` convention exactly per
     Boundaries ("Scope per --project the same way sprint-ledger-sync
-    does"; `docs/dashboard/generate.py::PROJECT_SOURCES`'s keys are the
+    does"; `pyforge.doctor.sources.fleet_scan::PROJECT_SOURCES`'s keys are the
     same short form). A directory not shaped `pyforge-<name>` maps to
     itself -- defensive, not expected to trigger for the 8 real projects.
 

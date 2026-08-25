@@ -124,7 +124,7 @@ compile.
     `_bmad-output/projects/local-recipes/`, which is what caused the
     misdiagnosis. Fix CLAUDE.md's two mentions to `pyforge-marshal` instead.
   - **success:** CLAUDE.md's text matches where `bmad_drift_check.py`,
-    `pixi.toml`, and `docs/dashboard/generate.py` actually read from.
+    `pixi.toml`, and `pyforge.doctor.sources.fleet_scan` actually read from.
   - **note:** A relocation was executed, then reverted in full (verified via
     `git status` and a post-revert `bmad-drift-check --integrity-only` pass)
     before this branch went anywhere. Left here for the record.
@@ -141,7 +141,7 @@ compile.
 
 - **CAP-10 — herald brief/architecture directory rename (found via the fleet
   dashboard, added after reopening).**
-  - **intent:** `docs/dashboard/generate.py`'s fleet scan reports real gaps
+  - **intent:** `pyforge.doctor.sources.fleet_scan`'s fleet scan reports real gaps
     `['brief', 'arch']` for herald — pre-existing on `main`, not introduced by
     this branch. `_stage_globs()` expects
     `briefs/brief-pyforge-herald-*/brief*.md` and
@@ -157,12 +157,12 @@ compile.
     the archived dashboard snapshot) untouched. Regenerate and commit
     `docs/dashboard/data.js` (generated file — never hand-edited) as the
     final step.
-  - **success:** `docs/dashboard/generate.py --source sprint-status` reports
+  - **success:** `pyforge.doctor.sources.fleet_scan --source sprint-status` reports
     `pyforge-herald` `gaps: []`.
 
 - **CAP-11 — currency-check grace period (found via user report of universal
   "outdated" readings after CAP-10).**
-  - **intent:** `_currency()`'s `_FEEDS` loop in `docs/dashboard/generate.py`
+  - **intent:** `_currency()`'s `_FEEDS` loop in `pyforge.doctor.sources.fleet_scan`
     flags any positive timestamp difference — zero grace period. Every
     `spec`/`prd` finding across all 8 stations is 0–1 days, because a spec's
     `.memlog.md` gets a fresh `updated:` on every append, far more often than
@@ -219,7 +219,7 @@ compile.
   reads this path" check immediately before moving — not just trust in the
   Dream's original 2026-08-02 audit, which can go stale as tooling changes
   underfoot.
-- `docs/dashboard/data.js` is generated (`docs/dashboard/generate.py`) — never
+- `docs/dashboard/data.js` is generated (`pyforge.doctor.sources.fleet_scan`) — never
   hand-edited. CAP-10 regenerates it as a final step, not a manual patch.
 - CAP-12 never silently bumps a currency date to satisfy the detector —
   each re-stamp requires an actual read of both sides of the pair first.
@@ -238,7 +238,7 @@ compile.
 Re-running the same audit method (the 5-agent sweep's grep/read checks) across
 all 9 `pyforge-*` planning trees finds zero remaining Cluster 1/2/3 items from
 `docs/dreams/bmad-output-hygiene.md`, and `bmad_drift_check.py` / `dream_chain_check.py`
-still exit 0. `docs/dashboard/generate.py --source sprint-status`'s fleet scan
+still exit 0. `pyforge.doctor.sources.fleet_scan --source sprint-status`'s fleet scan
 reports zero `gaps` for all 9 stations and only genuine, honestly-surfaced
 `staleBy` findings (doctor's FR-10..13 architecture gap, mason's FR-47..50
 gap, warden's point-in-time readiness snapshot) — never noise from a

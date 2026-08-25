@@ -159,7 +159,7 @@ intent runs on `claude-design`, an MCP outside the governed tool surface — rec
 *HER-4..HER-10 (Moment 1 deck family):*
 - 9 Design projects seeded (one per pyforge station), all bound to Modernist design system; 9 prototypes authored and iterated per six-act framework.
 - 9 × 6 artifact sets (54 total) exported and tracked: `.dc.html`, marp `.md`, `.pptx`, narration `.md`, infographics `.svg`, built outputs (gitignored).
-- All 9 HTML decks render without error (`pixi run dashboard-check` passes); all 9 PPTX files open and edit in Microsoft PowerPoint; all infographics render as inline SVG (zero raster).
+- All 9 HTML decks render without error (`retired-console-check` passes); all 9 PPTX files open and edit in Microsoft PowerPoint; all infographics render as inline SVG (zero raster).
 - All 9 narration scripts extracted and available for manticore; zero manual file transfers (design-code-bridge automation end-to-end); all etagged transfers validated.
 - Total tracked footprint: ~144 files (9 stations × ~16 files) vs. ~270 unoptimized (62% reduction).
 

@@ -101,7 +101,7 @@ The duties are already being done — **by hand, without a name.**
 
 ## The estate today
 
-**The Pages console deploys** — today a hand-run `dashboard-gen` + push.
+**The operator console is Lane 1 `/console/`** — Guildhall `dashboard-gen` is retired. Kedro-Viz still deploys via `steward deploy dashboard`.
 **The pixi environment estate** — with its `environment.yaml` sync discipline.
 **The air-gap routing machinery** — truststore + JFrog chains, awaiting an operator.
 

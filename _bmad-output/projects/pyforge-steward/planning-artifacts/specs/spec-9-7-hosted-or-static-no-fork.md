@@ -993,7 +993,7 @@ rather than inherited:
   guard exists to catch a board git will silently drop, never to make a git worktree a
   precondition for writing a file. The coverage observation is real but is a test-rigor note.
 - `[low]` `[reject]` The `created_dirs` ancestor-cleanup branch is unreachable in production
-  (`repo_root()` only returns a directory where `docs/dashboard/generate.py` is a file, so only
+  (`repo_root()` only returns a directory where `pyforge.doctor.sources.fleet_scan` is a file, so only
   the leaf board dir can ever be freshly created), and the test proving it monkeypatches
   `repo_root()` to a directory the real one would have raised on. Accurate, but both the behavior
   and that test are explicitly required by this spec's pass-2 and pass-5 amendments; removing

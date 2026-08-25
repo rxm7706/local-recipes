@@ -48,7 +48,7 @@ with a structural (AST-based) test, matching this package's existing
   relative to `repo_root()`), never the `_bmad-output/planning-artifacts` symlink target
   (that symlink is per-worktree global state and may point at a different project).
 - `build_dashboard()` itself and the underlying `dashboard-gen` pixi task are unchanged
-  — AD-1 forbids `deploy.py` from reimplementing `docs/dashboard/generate.py`'s own
+  — AD-1 forbids `deploy.py` from reimplementing `pyforge.doctor.sources.fleet_scan`'s own
   ledger-consumption logic; this story only adds a presence/shape precondition in front
   of the existing wrap.
 - Existing conformance tests that drive `deploy dashboard` through a scratch git repo
@@ -60,7 +60,7 @@ with a structural (AST-based) test, matching this package's existing
 plus its existing test fixtures; no ambiguity requires a human decision.
 
 **Never:**
-- Never modify `docs/dashboard/generate.py` (repo-wide, shared by all 8 stations; out
+- Never modify `pyforge.doctor.sources.fleet_scan` (repo-wide, shared by all 8 stations; out
   of this story's declared Surface and far beyond XS effort).
 - Never add branching logic in `deploy.py` on any story-status vocabulary value
   (`done`, `in-progress`, `backlog`, `blocked`, `pending`, `active`, `gated`) — that
@@ -108,7 +108,7 @@ plus its existing test fixtures; no ambiguity requires a human decision.
   (`_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml`)
   and a `_tracked_ledger_refusal(*, cwd) -> str | None` helper that returns a refusal
   message (missing file / unreadable / no `development_status:` block) or `None` --
-  wraps the CI-safe pattern already used for the `docs/dashboard/generate.py` marker.
+  wraps the CI-safe pattern already used for the `pyforge.doctor.sources.fleet_scan` marker.
 - [x] `deploy.py` -- call `_tracked_ledger_refusal(cwd=root)` at the top of
   `_run_dashboard`, before `build_dashboard()`; on a non-`None` result return
   `DutyResult(ok=False, summary=f"deploy dashboard: refused — {refusal}")` immediately.
@@ -156,7 +156,7 @@ plus its existing test fixtures; no ambiguity requires a human decision.
   - `[medium]` `[patch]` Blind Hunter + Edge Case Hunter (independently): the new `except OSError` refusal branch had zero test coverage. Added `test_unreadable_ledger_refuses_before_build` (permission-denied via `chmod 0o000`, skips gracefully if running as root).
   - `[medium]` `[patch]` Blind Hunter: every happy-path fixture wrote a bare `development_status:\n` with no entries or comment preamble, unlike the real tracked ledger's multi-line `#`-comment header. Added `test_ledger_with_a_realistic_comment_header_proceeds_to_build` using the real file's actual header shape.
   - `[low]` `[patch]` Blind Hunter: the ledger's relative-path string was duplicated across 5 files with no single source of truth. All four test files now import `_STEWARD_LEDGER_RELATIVE_PATH` from `pyforge.steward.deploy` instead of re-declaring the literal.
-  - `[medium]` `[defer]` Blind Hunter: the guard only covers `steward deploy dashboard` (manual/local path) — the actually-published GitHub Pages dashboard is built by `.github/workflows/dashboard.yml` running `generate.py --source git` directly, which never invokes `steward` and still silently continues past a missing ledger. Out of this story's declared Surface (`deploy.py`, `tests/` only; closing it needs `docs/dashboard/generate.py`, repo-wide/shared by 7 other stations). Logged to `deferred-work.md`.
+  - `[medium]` `[defer]` Blind Hunter: the guard only covers `steward deploy dashboard` (manual/local path) — the actually-published GitHub Pages dashboard is built by `.github/workflows/dashboard.yml` running `generate.py --source git` directly, which never invokes `steward` and still silently continues past a missing ledger. Out of this story's declared Surface (`deploy.py`, `tests/` only; closing it needs `pyforge.doctor.sources.fleet_scan`, repo-wide/shared by 7 other stations). Logged to `deferred-work.md`.
   - `[low]` `[reject]` Blind Hunter + Edge Case Hunter (both, different framings): the AST invariant test only forecloses `ast.Compare`-against-literal and a fixed import denylist — a dict/lookup-table, `match/case`, or an unlisted parsing library could still derive status undetected. Matches this file's existing precedent tests' rigor exactly (also finite import denylists / single-pattern AST checks); expanding indefinitely against every possible circumvention has no natural stopping point.
   - `[low]` `[reject]` Blind Hunter: three "missing ledger refuses" tests look similar but each exercises a genuinely distinct code path (bare, `--build`, `--dry-run`) downstream of the same guard call — not redundant.
   - `[low]` `[reject]` Blind Hunter: refusal-message path formatting untested for symlinks/long worktree paths — speculative, no identified failure mode beyond `Path.__str__` behaving as documented.

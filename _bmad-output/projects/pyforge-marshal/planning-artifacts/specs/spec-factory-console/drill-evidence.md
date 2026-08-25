@@ -1,7 +1,7 @@
 # Regeneration drill — 2026-07-23 (spec-regenerable-factory CAP-4, story rf(2.2))
 
 **Verdict: PASS.** A clean-room subagent (no repo access; input = `console-contract.md`
-alone) rebuilt `docs/dashboard/generate.py` (293 lines). Verification: both scripts run
+alone) rebuilt `pyforge.doctor.sources.fleet_scan` (293 lines). Verification: both scripts run
 against identical inputs; `data.js` outputs byte-identical after timestamp
 normalization (`DATA EQUIVALENT`); `--source git` mode ran green (25 dreams scanned,
 correct tallies). Production keeps the original (battle-tested); this rebuilt artifact

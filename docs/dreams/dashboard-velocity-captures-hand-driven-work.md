@@ -9,7 +9,7 @@ status: specified
 
 ## The Dream
 
-The factory console's velocity chart (`docs/dashboard/generate.py`'s `# ---- delivery
+The factory console's velocity chart (`pyforge.doctor.sources.fleet_scan`'s `# ---- delivery
 timing / velocity (derived from bmad-loop run journals) ----` section) shows "active
 agent-compute per story" — but only for stories that ran through `bmad-loop`, because it is
 literally "derived from every loop home's journals" (per-run session logs bmad-loop itself

@@ -195,7 +195,7 @@ Supporting criteria:
 - **`docs/dashboard/`** (program console, its own Dream `factory-console.md`, not a BMAD
   project here): the console Herald "proclaims from" in the persona ideal. `updates compile`
   and the dashboard's `generate.py` sync logic likely converge — **[OPEN QUESTION]** whether
-  `herald updates compile` supersedes or feeds `docs/dashboard/generate.py`'s sprint-status
+  `herald updates compile` supersedes or feeds `pyforge.doctor.sources.fleet_scan`'s sprint-status
   sync, deferred to Architecture.
 
 ## Roadmap Thinking
@@ -250,7 +250,7 @@ and last to touch a release (`broadcast`), with nothing the factory does staying
 1. Exact schema of the `updates compile` output artifact and the notables/infographics split.
 2. Whether `compile` scopes to one active BMAD project or reads cross-project (via Marshal).
 3. Channel-adapter credential/ownership model for `broadcast` (Herald vs. Steward).
-4. Whether `herald updates compile` supersedes or feeds `docs/dashboard/generate.py`'s existing
+4. Whether `herald updates compile` supersedes or feeds `pyforge.doctor.sources.fleet_scan`'s existing
    sprint-status sync.
 5. Whether `herald deck generate` (Dream→deck rendering, distinct from `deck seed`) is a
    distinct V-tier or folds into the seed capability.

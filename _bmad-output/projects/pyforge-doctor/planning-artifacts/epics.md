@@ -508,7 +508,7 @@ S-6.1 is the profile, and nothing else starts until it passes.
 1. `scripts/detectors.py` discovers detectors by AST-scanning `scripts/*.py`. Moving them
    into `pyforge.doctor.sources.*` returns an empty registry — the registry must be
    rewritten (S-6.2), and it is itself currently ungoverned.
-2. `docs/dashboard/generate.py:650` does `from bmad_drift_check import …` for
+2. `pyforge.doctor.sources.fleet_scan:650` does `from bmad_drift_check import …` for
    `GUILD_DREAMS`/`STATIONS`. PR #317 created that import deliberately to kill a
    hand-mirrored copy that had already caused a false positive. Moving `bmad_drift_check`
    breaks board generation unless the shared constants move first (S-6.8).
@@ -688,9 +688,9 @@ installed library — the invariant is preserved by a different mechanism, not d
 ### Story 6.8: `bmad_drift` comes home without breaking the board
 
 **Type:** change • **Effort:** M • **Deps:** S-6.6 • **FR/AD:** FR-15
-**Surface:** `sources/factory.py`, `docs/dashboard/generate.py`, `tests/`
+**Surface:** `sources/factory.py`, `pyforge.doctor.sources.fleet_scan`, `tests/`
 
-**Given** `docs/dashboard/generate.py` imports `GUILD_DREAMS`/`STATIONS` from
+**Given** `pyforge.doctor.sources.fleet_scan` imports `GUILD_DREAMS`/`STATIONS` from
 `scripts/bmad_drift_check.py`
 **When** that detector moves
 **Then** the shared constants have exactly one home and both consumers derive from it

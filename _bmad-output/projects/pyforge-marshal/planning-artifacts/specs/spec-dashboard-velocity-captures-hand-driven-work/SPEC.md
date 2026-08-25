@@ -4,7 +4,7 @@ spec: dashboard-velocity-captures-hand-driven-work
 status: draft
 owner-dream: docs/dreams/dashboard-velocity-captures-hand-driven-work.md
 surface:
-  - docs/dashboard/generate.py
+  - pyforge.doctor.sources.fleet_scan
   - docs/dashboard/index.html
   - docs/dashboard/data.js
 companions:
@@ -20,7 +20,7 @@ open_questions:
 
 > **Canonical contract.** This SPEC and `signal-inventory.md` are the complete,
 > preservation-validated contract for the work. The Dream in frontmatter is its origin; the
-> code facts below were verified against `docs/dashboard/generate.py`,
+> code facts below were verified against `pyforge.doctor.sources.fleet_scan`,
 > `.claude/skills/bmad-dev-auto/step-03-implement.md`/`step-04-review.md`, and
 > `pyforge.marshal.cli.deploy` on 2026-08-21.
 
@@ -28,7 +28,7 @@ open_questions:
 
 ## Why
 
-A pain to solve. The console's velocity chart (`docs/dashboard/generate.py::scan_timing`,
+A pain to solve. The console's velocity chart (`pyforge.doctor.sources.fleet_scan::scan_timing`,
 ~L2730) derives "active agent-compute per story" exclusively from bmad-loop run journals —
 `session-start`/`session-end` pairs (matched by `task_id`) in
 `~/.bmad-loops/<slug>/.bmad-loop/runs/*/journal.jsonl`. A story completed by any other route —

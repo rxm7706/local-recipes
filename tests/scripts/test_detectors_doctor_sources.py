@@ -37,7 +37,7 @@ if str(_DOCTOR_SRC) not in sys.path:
     sys.path.insert(0, str(_DOCTOR_SRC))
 
 # `scripts/` has no `__init__.py` -- reach detectors.py the same way
-# `docs/dashboard/generate.py` reaches its own scripts/ siblings.
+# `pyforge.doctor.sources.fleet_scan` reaches its own scripts/ siblings.
 _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
@@ -121,15 +121,13 @@ def test_run_doctor_sources_returns_ten_unknown_rows_when_unimportable(monkeypat
 
 
 def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
-    # dashboard-drift is the one scope="runtime" source among the ten
-    # (sources.REGISTRY); --scope repo must exclude it, mirroring
-    # discover()'s own scope filter for scanned detectors.
+    # Steward 30.2: dashboard-drift is repo-scope (reintroduction gate).
     repo_rows = detectors._run_doctor_sources("repo")
     all_rows = detectors._run_doctor_sources("all")
 
     assert len(all_rows) == 10
-    assert len(repo_rows) == 9
-    assert "dashboard-drift" not in {row["name"] for row in repo_rows}
+    assert len(repo_rows) == 10
+    assert "dashboard-drift" in {row["name"] for row in repo_rows}
     assert "dashboard-drift" in {row["name"] for row in all_rows}
 
 

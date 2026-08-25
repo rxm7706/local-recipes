@@ -184,7 +184,7 @@ The core insight: **One source of truth (Design prototype) → Multiple delivera
 - [ ] Build outputs (fragments.json, dist/, assets/, .mp4) gitignored and regenerable.
 
 **Quality & Rendering**
-- [ ] All 9 HTML decks render without error; `pixi run dashboard-check` passes for all.
+- [ ] All 9 HTML decks render without error; `retired-console-check` passes for all.
 - [ ] All 9 PPTX files open and edit in Microsoft PowerPoint; fonts, colors, layouts preserved.
 - [ ] All infographics render as inline SVG (zero raster `.png`/`.jpg` images).
 

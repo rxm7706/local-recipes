@@ -4,7 +4,7 @@ spec: dashboard-project-path-derivation
 status: draft
 owner-dream: docs/dreams/dashboard-project-path-derivation.md
 surface:
-  - docs/dashboard/generate.py
+  - pyforge.doctor.sources.fleet_scan
   - docs/dashboard/index.html
 sources:
   - ../../../../../docs/dreams/dashboard-project-path-derivation.md
@@ -16,13 +16,13 @@ open_questions:
 
 > **Canonical contract.** This SPEC is the complete contract for the work. The Dream in
 > frontmatter is its origin; the code facts below were verified against
-> `docs/dashboard/generate.py` on 2026-08-08.
+> `pyforge.doctor.sources.fleet_scan` on 2026-08-08.
 
 # The dashboard derives project paths — slug ≠ directory stops being a bug factory
 
 ## Why
 
-`docs/dashboard/generate.py` string-glues slugs onto `_bmad-output/projects/<slug>/...` in
+`pyforge.doctor.sources.fleet_scan` string-glues slugs onto `_bmad-output/projects/<slug>/...` in
 several independent places, each with its own patch for the slug≠directory cases:
 
 - `PROJECT_SOURCES` (line ~45) — a hardcoded dashboard-key → `sprint-status.yaml` path dict,
@@ -96,7 +96,7 @@ the pattern fix the Dream deferred.
 ## Non-goals
 
 - **Fixing the `GUILD_DREAMS` duplication.** The tuple is deliberately mirrored in
-  `scripts/bmad_drift_check.py:620` and `docs/dashboard/generate.py:640` (flagged in
+  `scripts/bmad_drift_check.py:620` and `pyforge.doctor.sources.fleet_scan:640` (flagged in
   `docs/governance/spec-pyforge-genesis/SPEC.md`'s own Constraints). Related debt, same
   smell, different surface — not absorbed here.
 - **Fixing `station_order` / `station_info` hardcoding in `scan_command_center`

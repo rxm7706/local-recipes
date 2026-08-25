@@ -18,7 +18,7 @@ A story landing on a loop-home's branch does not, by itself, make the
 dashboard or the tracked ledger show it as done. Two separate manual steps
 have to run afterward: `python3 scripts/promote_sprint_status.py` (copies the
 loop-home's live Tier-3 `sprint-status.yaml` into the tracked
-`sprint-status-ledger.yaml`) and `python3 docs/dashboard/generate.py
+`sprint-status-ledger.yaml`) and `Lane 1 /console/ (Guildhall generator retired)
 --source sprint-status` (regenerates `data.js` from the current state).
 Nothing enforces that either happens, and nothing reminds anyone they
 haven't — the dashboard just quietly keeps showing whatever story was
@@ -61,7 +61,7 @@ remembering.
 - Three live incidents this session, all the same shape: story lands on the
   loop-home branch, dashboard/tracked-ledger stay stale until a human
   notices and asks. Fixed each time with `promote_sprint_status.py` +
-  `docs/dashboard/generate.py --source sprint-status` + a small
+  `pyforge.doctor.sources.fleet_scan --source sprint-status` + a small
   `maintenance` PR (PRs #236 [closed, superseded by later work before it
   merged], #240, and the inline fix folded into PR #237's own diff for the
   `8-5` case).

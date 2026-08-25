@@ -1,13 +1,13 @@
-# Console contract — normative behavior of `docs/dashboard/generate.py`
+# Console contract — normative behavior of `pyforge.doctor.sources.fleet_scan`
 
 Companion to SPEC.md (CAP-1..4). A rebuild from THIS FILE ALONE must be
 behavior-equivalent. Python stdlib only; the script lives at
-`docs/dashboard/generate.py` and resolves paths relative to itself
+`pyforge.doctor.sources.fleet_scan` and resolves paths relative to itself
 (`HERE = dirname of the script`; `REPO_ROOT = HERE/../..`; `DATA_JS = HERE/data.js`).
 
 ## CLI
 
-`python docs/dashboard/generate.py [--source {sprint-status,git}]`
+`Lane 1 /console/ (Guildhall generator retired) [--source {sprint-status,git}]`
 (default `sprint-status`). Exit 0 on success. argparse; description may cite
 the module docstring.
 

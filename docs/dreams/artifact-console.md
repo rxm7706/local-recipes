@@ -21,7 +21,7 @@ build step, or hosting.
 of record must not be: it lived outside version control, could not be
 regenerated from repo state, and drifted the moment anyone landed a commit. Its
 successor — [[factory-console]], now the **Guildhall** — is generated from the
-repo by `docs/dashboard/generate.py`, published to GitHub Pages, and governed by
+repo by `pyforge.doctor.sources.fleet_scan`, published to GitHub Pages, and governed by
 a Spec whose surface check reds when the code moves without the contract. Same
 intent, durable substrate.
 

@@ -21,7 +21,7 @@ baseline_revision: 3f4b28838bdbca05c7f425450c19d2d8240358f9
 
 ## Boundaries & Constraints
 
-**Always:** Reuse `docs/dashboard/generate.py` `FLEET_STAGES` + `_stage_globs` + `_resolve` (via `_load_dashboard_generate`); report every layer that computation names; scope globs to one named project; read-only; fixture-covered; distinct from `--dreams` and INV-0..3 / INV-A..D.
+**Always:** Reuse `pyforge.doctor.sources.fleet_scan` `FLEET_STAGES` + `_stage_globs` + `_resolve` (via `_load_dashboard_generate`); report every layer that computation names; scope globs to one named project; read-only; fixture-covered; distinct from `--dreams` and INV-0..3 / INV-A..D.
 
 **Block If:** Generating a second independent layer graph becomes necessary to satisfy ACs.
 
@@ -37,13 +37,13 @@ baseline_revision: 3f4b28838bdbca05c7f425450c19d2d8240358f9
 | Isolation | Two projects under target; audit A only | Findings/evidence name only A; B paths not required | No error |
 | Wrong host source | `--layers` on non-`chain-completeness` | argparse error exit 2 | CLI rejects |
 | Conflict with INV path | `chain-completeness` without `--layers` | Existing INV-A..D gather unchanged | No error |
-| Missing generate.py | target lacks `docs/dashboard/generate.py` | Unevaluable WARN | degrade, never raise |
+| Missing generate.py | target lacks `pyforge.doctor.sources.fleet_scan` | Unevaluable WARN | degrade, never raise |
 
 </intent-contract>
 
 ## Code Map
 
-- `docs/dashboard/generate.py` — seed only: `FLEET_STAGES` (~1569), `_stage_globs` (~1900), `_resolve` (~1757), `FLEET_NA` / `FLEET_UX` / `GOVERNANCE_DIR`; do not fork globs
+- `pyforge.doctor.sources.fleet_scan` — seed only: `FLEET_STAGES` (~1569), `_stage_globs` (~1900), `_resolve` (~1757), `FLEET_NA` / `FLEET_UX` / `GOVERNANCE_DIR`; do not fork globs
 - `src/.../sources/board.py` — `_load_dashboard_generate` (~922); add `gather_chain_layers_audit(target, project)`; temporarily set `mod.REPO_ROOT = target` so `_resolve` hits the fixture/live tree
 - `src/.../sources/__main__.py` — `--layers` + `--project` on `chain-completeness` (mirror `--dreams` on `dream-chain`)
 - `src/.../models.py` — `Source.CHAIN_LAYERS_AUDIT = "chain-layers-audit"`
@@ -101,7 +101,7 @@ Status: done
 PR: https://github.com/rxm7706/local-recipes/pull/665
 Merge: f318609126250b40f41e82ecb20f2f9819faf6e7
 CLI spelling: `chain-completeness --layers --project <slug>` (seeded from generate.py FLEET_STAGES).
-Summary: Added read-only `chain-completeness --layers --project <slug>` audit mode on pyforge-doctor board sources. Layer presence/absence is seeded from `docs/dashboard/generate.py` (`FLEET_STAGES` / `_stage_globs` / `_resolve`) — no second derivation. Distinct from INV-A..D and `--dreams`.
+Summary: Added read-only `chain-completeness --layers --project <slug>` audit mode on pyforge-doctor board sources. Layer presence/absence is seeded from `pyforge.doctor.sources.fleet_scan` (`FLEET_STAGES` / `_stage_globs` / `_resolve`) — no second derivation. Distinct from INV-A..D and `--dreams`.
 Files:
 - `board.py` — `gather_chain_layers_audit`
 - `__main__.py` — `--layers` / `--project` CLI

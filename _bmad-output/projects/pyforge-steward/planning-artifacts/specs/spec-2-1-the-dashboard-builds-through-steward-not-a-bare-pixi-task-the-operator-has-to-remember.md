@@ -13,18 +13,18 @@ warnings: []
 
 ## Intent
 
-**Problem:** `docs/dashboard/data.js` today is only refreshed by an operator remembering to run `pixi run dashboard-gen` (or the raw `python docs/dashboard/generate.py`) by hand — there is no Steward-owned entrypoint for the first duty (`deploy`) at all; `resolve_duty("deploy")` still returns `NullDuty`.
+**Problem:** `docs/dashboard/data.js` today is only refreshed by an operator remembering to run `retired-console-check` (or the raw `Lane 1 /console/ (Guildhall generator retired)`) by hand — there is no Steward-owned entrypoint for the first duty (`deploy`) at all; `resolve_duty("deploy")` still returns `NullDuty`.
 
-**Approach:** Add `deploy.py`, this epic's single file (mirrors `keys.py`'s precedent), with a `build_dashboard()` primitive that invokes the exact `dashboard-gen` pixi task (`pixi run -e local-recipes dashboard-gen`) as a subprocess — AD-1: wrap, never reimplement `docs/dashboard/generate.py`'s logic. Wire a `DeployDuty` (`Duty`-conforming, mirrors `KeysDuty`) that `resolve_duty("deploy")` now returns, and a `steward deploy dashboard --build` CLI verb. A non-zero `dashboard-gen` exit is caught at the `DeployDuty` boundary and reported as a `DutyResult(ok=False, ...)`, never a crash (AD-8).
+**Approach:** Add `deploy.py`, this epic's single file (mirrors `keys.py`'s precedent), with a `build_dashboard()` primitive that invokes the exact `dashboard-gen` pixi task (`retired-console-check`) as a subprocess — AD-1: wrap, never reimplement `pyforge.doctor.sources.fleet_scan`'s logic. Wire a `DeployDuty` (`Duty`-conforming, mirrors `KeysDuty`) that `resolve_duty("deploy")` now returns, and a `steward deploy dashboard --build` CLI verb. A non-zero `dashboard-gen` exit is caught at the `DeployDuty` boundary and reported as a `DutyResult(ok=False, ...)`, never a crash (AD-8).
 
 ## Boundaries & Constraints
 
 **Always:**
-- `build_dashboard` shells out to `["pixi", "run", "-e", "local-recipes", "dashboard-gen"]` — the exact pixi task named in `pixi.toml`'s `[feature.local-recipes.tasks.dashboard-gen]` — never a reimplementation of `docs/dashboard/generate.py`'s own logic (AD-1). The command is injectable (`cmd: Sequence[str] | None = None`, defaulting to the real pixi invocation) so tests can substitute a fast fixture command without installing the 1102-package `local-recipes` env — the same "subprocess boundary mocked or run for real" latitude `test-architecture.md` already calls out for this story.
+- `build_dashboard` shells out to `["pixi", "run", "-e", "local-recipes", "dashboard-gen"]` — the exact pixi task named in `pixi.toml`'s `[feature.local-recipes.tasks.dashboard-gen]` — never a reimplementation of `pyforge.doctor.sources.fleet_scan`'s own logic (AD-1). The command is injectable (`cmd: Sequence[str] | None = None`, defaulting to the real pixi invocation) so tests can substitute a fast fixture command without installing the 1102-package `local-recipes` env — the same "subprocess boundary mocked or run for real" latitude `test-architecture.md` already calls out for this story.
 - `build_dashboard` uses `subprocess.run(..., check=True, capture_output=True, text=True)` — a non-zero exit raises `subprocess.CalledProcessError`, propagated (not swallowed) to `DeployDuty.run`'s boundary catch, mirroring `KeysDuty`'s existing `age`-failure handling.
 - `resolve_duty("deploy")` returns a real `DeployDuty` (lazy-imported inside `resolve_duty`, matching the `keys` precedent's import-time-isolation rationale, even though `deploy.py` has no fragile import-time bridge today — consistent dispatch shape).
 - `steward deploy` with no verb still degrades to `DutyResult(ok=True, ...)` naming available verbs (AD-7) — required for `test_cli.py`'s existing `test_each_duty_dispatches_and_succeeds` parametrization over all four `DUTIES` to keep passing unchanged.
-- `repo_root()` in `deploy.py` is a self-contained walk-up search (mirrors `keys.py`'s `locate_http_module`/`repo_root`, but keyed on `docs/dashboard/generate.py` rather than `_http.py` — `deploy.py` has no reason to import `keys.py`'s conda-forge-expert bridge).
+- `repo_root()` in `deploy.py` is a self-contained walk-up search (mirrors `keys.py`'s `locate_http_module`/`repo_root`, but keyed on `pyforge.doctor.sources.fleet_scan` rather than `_http.py` — `deploy.py` has no reason to import `keys.py`'s conda-forge-expert bridge).
 
 **Block If:** none.
 
@@ -53,7 +53,7 @@ warnings: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [x] `deploy.py` -- `repo_root()` (walk-up search keyed on `docs/dashboard/generate.py`)
+- [x] `deploy.py` -- `repo_root()` (walk-up search keyed on `pyforge.doctor.sources.fleet_scan`)
 - [x] `deploy.py` -- `build_dashboard(*, cwd, cmd=None)` -- subprocess wrap, `check=True`
 - [x] `deploy.py` -- `DeployDuty` (`name = "deploy"`, dispatches on `deploy_verb`, degrades on no/unknown verb per AD-7)
 - [x] `cli.py` -- `_add_deploy_subparsers` wiring `deploy dashboard --build`; `resolve_duty` returns `DeployDuty`
@@ -93,7 +93,7 @@ warnings: []
 
 ## Design Notes
 
-**Why the pixi task, not `python docs/dashboard/generate.py` directly:** the AC names the pixi task explicitly (`[feature.local-recipes.tasks.dashboard-gen]`), and going through `pixi run -e local-recipes` keeps this wrapper honest to "wrap, never reimplement" even though `generate.py` itself is stdlib-only — a future change to the task's own command (flags, env) is picked up automatically rather than needing a second edit in `deploy.py`.
+**Why the pixi task, not `Lane 1 /console/ (Guildhall generator retired)` directly:** the AC names the pixi task explicitly (`[feature.local-recipes.tasks.dashboard-gen]`), and going through `pixi run -e local-recipes` keeps this wrapper honest to "wrap, never reimplement" even though `generate.py` itself is stdlib-only — a future change to the task's own command (flags, env) is picked up automatically rather than needing a second edit in `deploy.py`.
 
 **Why `cmd` is injectable:** the real `local-recipes` env is ~9.8GB (per `.github/workflows/dashboard.yml`'s own comment) — a conformance test that had to `pixi install -e local-recipes` before every run would be prohibitively slow for a CLI wrapper this thin. The default remains the real invocation; only tests override it.
 

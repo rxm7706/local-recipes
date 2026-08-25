@@ -35,7 +35,7 @@ Before anything runs: **provisioned**. After everything ships: **operated**. In 
 | Duty | Today (by hand) | With the Steward |
 | --- | --- | --- |
 | **Provision** | pixi envs + `environment.yaml` sync | runners + envs ready before pre-flight |
-| **Deploy** | Pages console via `dashboard-gen` + push | services on platforms, hardened |
+| **Deploy** | Kedro-Viz via `steward deploy dashboard` + Pages; operator console is `/console/` | services on platforms, hardened |
 | **Hold the keys** | JFROG chain in env vars | audit · rotate · revoke, lifecycle-owned |
 | **Enforce ceilings** | numbers in wikis | machine-readable budgets with alerts |
 
