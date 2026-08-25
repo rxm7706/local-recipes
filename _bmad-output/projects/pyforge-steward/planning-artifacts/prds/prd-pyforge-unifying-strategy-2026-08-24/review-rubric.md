@@ -6,7 +6,7 @@ The FRs, glossary, and SM-5 already carry the 2026-08-24 operating-model bind (0
 
 ## Decision-readiness — adequate
 
-Trade-offs are named where they count: CodeRed dropped, RFC-5 unimplementable as written, Tasks replaced by `start`/`get`, packaging operator-owned in the OM but **not** in §10. Open Questions §11 still-open list is real (FastMCP vs `mcp` outage, `lane1-serves-dw-h3`, Liquibase tracking schema). Answered items include OQ-4. The failure is leftover prose that re-opens answered decisions.
+Trade-offs are named where they count: CodeRed dropped, RFC-5 unimplementable as written, Tasks replaced by `start`/`get`, packaging operator-owned in the OM but **not** in §10. Open Questions §11 still-open list is real (FastMCP vs `mcp` outage, Liquibase tracking schema). `lane1-serves-dw-h3` **answered no 2026-08-25**. Answered items include OQ-4. The failure is leftover prose that re-opens answered decisions.
 
 ### Findings
 - **high** Tail sections re-open answered decisions (§10, §14) — Integration still says the compliance portal “may need to move if OQ-4 chooses a uniform prefix”; §14 says architecture must fix “its URL scheme (OQ-4)” and that epics begin after. §11 already answers OQ-4; Epics 18–30 exist. *Fix:* PRD Update: rewrite §10 bullet and §14 to past tense / closed; point at FR-9a and Epic 18.
@@ -39,7 +39,7 @@ This PRD is chain-top. Glossary terms (`work_class`, hooks/plugins, Tachyon) are
 
 ### Findings
 - **high** Capability count drift (§2) — “five of the sixteen capabilities” after CAP-17 exists. Brief says seventeen. Traceability §12 lists CAP-1..17. *Fix:* change sixteen → seventeen.
-- **medium** §14 claims architecture and epic passes are still ahead — Spine is `final`; Epics 18–30 written; first dispatch S-18.1. *Fix:* “What comes next” = implement S-18.1; packaging tails wait; `lane1-serves-dw-h3` remains.
+- **medium** §14 claims architecture and epic passes are still ahead — Spine is `final`; Epics 18–30 written; first dispatch S-18.1. *Fix:* “What comes next” = implement S-18.1; packaging tails wait. `lane1-serves-dw-h3` **answered no 2026-08-25** (historical finding).
 
 ## Shape fit — strong
 

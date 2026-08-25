@@ -11,6 +11,9 @@ approach: Direct Adjustment
 
 # Sprint Change Proposal — Canopy obligations (atlas station)
 
+> **Footnote 2026-08-25:** Body text below left `lane1-serves-dw-h3` **open**. That is historical.
+> **§6 answers no** (Wagtail `/cms/` ≠ La Suite Docs REST). Do not reopen.
+
 ## 1. Issue Summary
 
 Phase 5 of `docs/dreams/pyforge-unifying-strategy.md` records how the Platform Canopy

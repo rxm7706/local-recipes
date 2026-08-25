@@ -57,3 +57,8 @@ SIF). Mason presenton still uses pixitainer for other images. This Dream re-eval
 
 - **2026-08-25** — Dream captured after 12-7 close. Intent from `NEXT-AFTER-12-7.md`. Spec:
   `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-platform-image-one-pixi-env/`.
+- **2026-08-25** — Host extras on `[feature.python-agent-platform.dependencies]` (conda-forge;
+  whitenoise `>=6.11`). Containerfile pip `--no-deps` removed; `platform_image_pip_layer.py`
+  tombstone (exit 2). CAP-3: keep hand-rolled Containerfile (`pixitainer-eval.md` dated fail table).
+- **2026-08-25** — SPEC shipped. `podman build` → `localhost/platform:one-pixi-env` (`8cbee8e8f879`).
+  Image imports `django_structlog` + `rjsmin` (py312). Next cluster: Liquibase `:17`/`:18`, not 12-7.

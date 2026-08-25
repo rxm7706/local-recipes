@@ -71,6 +71,7 @@ Peer stations receive their own Phase 5 proposals; Marshal additionally retires
   block and does not rewrite Epic 11 story text.
 - **Open question `lane1-serves-dw-h3`:** joint steward/atlas; **not answered here** — stays
   out of stories until resolved (see deferred-work ledger `DW-CANOPY-2026-08-24`).
+  *(Footnote 2026-08-25: answered **no**. See addendum at end of this proposal. Do not reopen.)*
 
 ### Out of scope (this station)
 
@@ -83,7 +84,7 @@ Peer stations receive their own Phase 5 proposals; Marshal additionally retires
 **Direct Adjustment (selected).** Keep all shipped Epic 1–17 stories `done`. Append Epics
 18–30 as the sole new build surface. Treat Epic 27 as the forward path for production DDL
 governance; do not re-run 11.1/11.2. Record packaging gates and the `lane1-serves-dw-h3`
-deferral in the ledger.
+deferral in the ledger. *(Footnote 2026-08-25: lane1 answered **no**; ledger records that.)*
 
 **Effort: Moderate** — artifact and obligation updates plus a large appended backlog; no
 rollback of merged code.
@@ -116,6 +117,7 @@ NEW: ## Canopy obligations (2026-08-24) — steward owns the Canopy; Epics 18–
 ```
 NEW: Ledger entry recording 11.1/11.2 NOT reopened; Epic 27 is superseding work;
      lane1-serves-dw-h3 remains open (joint atlas).
+     *(Footnote 2026-08-25: answered **no**. Historical NEW-block. Do not reopen.)*
 ```
 
 **Citation convention — all Canopy epics/stories/reviews:**
@@ -161,3 +163,11 @@ stories, sequenced by epic dependencies (18 before 19/20/21; 19.1 before Epic 27
 **Success criteria:** Canopy build proceeds from Epics 18–30 without Epic 11 regression;
 Epic 27 lands Liquibase + DML-only app role after S-19.1; reviews enforce parent vs canopy
 AD citation; `lane1-serves-dw-h3` stays tracked until atlas/steward joint resolution.
+*(Footnote 2026-08-25: resolved **no**; tracking closed. See addendum.)*
+
+## Addendum — `lane1-serves-dw-h3` answered (2026-08-25)
+
+**Answer: no.** Body text above left the question open on 2026-08-24. Host Wagtail `/cms/` is
+not `LaSuiteClient` Docs REST. DW-H3 stays atlas attended bring-up. Do not absorb
+`spec-wagtail-corporate-brain`. Load-bearing: unifying SPEC Open Questions, PRD §11, architecture
+spine deferred table.

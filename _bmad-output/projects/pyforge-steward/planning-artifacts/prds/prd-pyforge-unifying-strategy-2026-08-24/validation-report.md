@@ -52,6 +52,8 @@ Spine is final; Epics 18–30 written.
 
 Fix: next = S-18.1; packaging tails wait; `lane1-serves-dw-h3` remains.
 
+*(Footnote 2026-08-25: `lane1-serves-dw-h3` answered **no**. This 2026-08-24 finding is historical. Do not reopen.)*
+
 **Brief reconcile** — Agent-as-user hedge left in Assumptions Index
 
 Brief says the PRD confirmed the emphasis; the index still calls it unverified.

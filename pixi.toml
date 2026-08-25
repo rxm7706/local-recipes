@@ -225,6 +225,39 @@ cachebox = ">=5.1,<6"
 # Helm Job / DML role is Story 27.2.
 liquibase = ">=5.0.4"
 liquibase-postgresql = ">=42.7.13"
+# Host extras formerly pip / pypi-dependencies (spec-platform-image-one-pixi-env).
+# All of these have conda-forge feedstocks; overlap with Langflow fails at lock.
+# Not folded: mcp-types / httpx2 (would pull mcp 2.x; FastMCP 3.x still mcp<2).
+# django-allauth MFA extras are conda run-deps listed here (fido2, qrcode).
+# whitenoise: cookiecutter 6.9.0 was never on conda-forge (6.7 → 6.11).
+python-slugify = "==8.0.4"
+rcssmin = { version = "==1.1.2", build = "py312*" }
+whitenoise = ">=6.11"
+hiredis = "==3.2.1"
+django-celery-beat = "==2.8.1"
+django-environ = "==0.12.0"
+django-model-utils = "==5.0.0"
+django-allauth = "==65.10.0"
+django-crispy-forms = "==2.4"
+crispy-bootstrap5 = "==2025.6"
+django-compressor = "==4.5.1"
+django-redis = "==6.0.0"
+django-anymail = "==13.0.1"
+django-structlog = "==10.1.0"
+django-ipware = "==7.0.1"
+python-ipware = "==3.0.0"
+opentelemetry-instrumentation-django = "==0.65b0"
+opentelemetry-instrumentation-wsgi = "==0.65b0"
+opentelemetry-instrumentation-celery = "==0.65b0"
+django-timezone-field = "==7.2.2"
+python-crontab = "==3.3.0"
+cron-descriptor = "==2.1.0"
+django-appconf = "==1.2.0"
+rjsmin = { version = "==1.2.2", build = "py312*" }
+text-unidecode = "==1.3"
+fido2 = "==2.2.1"
+qrcode = "==8.2"
+uvicorn-worker = "==0.4.0"
 
 [feature.platform-dev]
 # --- platform-dev (AD-16, spec-python-agent-platform, Story 11.1) ---
@@ -381,61 +414,6 @@ openfeature-flagd-core = ">=1.0.0"
 openfeature-provider-flagd = "==0.5.0"
 cachebox = ">=5.1,<6"
 
-
-[feature.platform-image-pip]
-# --- platform-image-pip (Containerfile --no-deps pip layer) ---
-# SOLE authority for the pip packages layered onto the python-agent-platform
-# conda env in src/platform/Containerfile (steward Story 16.1 / CAP-5).
-# Not composed into an environment — scripts/platform_image_pip_layer.py reads
-# this table at image build time. Pins = (platform-ci-test base∪production
-# minus conda-provided packages) + image-only transitive extras. Edit here,
-# not in the Containerfile.
-platforms = ["linux-64"]
-
-[feature.platform-image-pip.dependencies]
-python = "3.12.*"
-
-[feature.platform-image-pip.pypi-dependencies]
-python-slugify = "==8.0.4"
-rcssmin = "==1.1.2"
-whitenoise = "==6.9.0"
-hiredis = "==3.2.1"
-django-celery-beat = "==2.8.1"
-django-environ = "==0.12.0"
-django-model-utils = "==5.0.0"
-django-allauth = { version = "==65.10.0", extras = ["mfa"] }
-django-crispy-forms = "==2.4"
-crispy-bootstrap5 = "==2025.6"
-django-compressor = "==4.5.1"
-django-redis = "==6.0.0"
-django-anymail = "==13.0.1"
-# CAP-2 / steward 16.3 — packages NOT already in python-agent-platform conda
-# (structlog / otel-api/sdk/exporter / instrumentation-asgi are conda-provided;
-# pip-layering them triggers the Containerfile uninstall guard).
-django-structlog = "==10.1.0"
-django-ipware = "==7.0.1"
-python-ipware = "==3.0.0"
-opentelemetry-instrumentation-django = "==0.65b0"
-opentelemetry-instrumentation-wsgi = "==0.65b0"
-opentelemetry-instrumentation-celery = "==0.65b0"
-# psycopg/redis instrumentors omitted from the image layer: pip --no-deps onto
-# the conda opentelemetry-instrumentation namespace breaks `dbapi` imports.
-# image-only transitive extras (previously hard-coded in Containerfile)
-django-timezone-field = "==7.2.2"
-python-crontab = "==3.3.0"
-cron-descriptor = "==2.1.0"
-django-appconf = "==1.2.0"
-rjsmin = "==1.2.2"
-text-unidecode = "==1.3"
-fido2 = "==2.2.1"
-qrcode = "==8.2"
-uvicorn-worker = "==0.4.0"
-# steward 21.2 wanted MCP on this layer; python-agent-platform's conda env
-# now already provides mcp / sse-starlette / python-multipart (observed
-# 2026-08-25: pip --no-deps uninstalled mcp 1.28.1, sse-starlette 3.4.8,
-# python-multipart 0.0.32). Keep only the extras conda does not ship.
-mcp-types = "==2.0.0"
-httpx2 = "==2.12.0"
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
@@ -771,9 +749,6 @@ dbgpt-sidecar = { features = ["dbgpt-sidecar"], no-default-feature = true }
 # mirrors requirements/{base,production,local}.txt; toggle pip fallback via
 # (Story 16.1: legacy pip backend removed — pixi platform-ci-test only.)
 platform-ci-test = { features = ["platform-ci-test"], no-default-feature = true }
-# Story 16.1: Containerfile --no-deps pip layer authority (resolved for lock hygiene;
-# not installed by CI — scripts/platform_image_pip_layer.py reads the feature table).
-platform-image-pip = { features = ["platform-image-pip"], no-default-feature = true }
 
 [environments.python-agent-platform]
 features = ["python-agent-platform"]

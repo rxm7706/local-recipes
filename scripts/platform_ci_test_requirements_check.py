@@ -3,8 +3,8 @@
 
 Steward Story 16.1 (CAP-5) retired ``src/platform/requirements/{base,local,production}.txt``
 as an install source. ``[feature.platform-ci-test.pypi-dependencies]`` in the
-repo-root ``pixi.toml`` is the CI/test authority; ``[feature.platform-image-pip]``
-owns the Containerfile pip layer.
+repo-root ``pixi.toml`` is the CI/test authority. The platform image uses
+``[feature.python-agent-platform.dependencies]`` (no pip layer).
 
 This detector fails if the retired requirement files are resurrected (so they
 cannot quietly become an install authority again). It does **not** reconcile
@@ -43,8 +43,8 @@ def run() -> tuple[list[dict], dict]:
                     "package": name,
                     "detail": (
                         f"{rel} must not exist; platform Python deps are owned by "
-                        f"[feature.{FEATURE}] / [feature.platform-image-pip] in pixi.toml "
-                        "(steward Story 16.1 / CAP-5)"
+                        f"[feature.{FEATURE}] and [feature.python-agent-platform] in pixi.toml "
+                        "(steward Story 16.1 / spec-platform-image-one-pixi-env)"
                     ),
                 }
             )
@@ -105,7 +105,7 @@ def main() -> int:
             print(f"  - {finding['detail']}", file=sys.stderr)
         print(
             "Remedy: delete the files and keep pins in pixi.toml "
-            f"([feature.{FEATURE}] / [feature.platform-image-pip]).",
+            f"([feature.{FEATURE}] / [feature.python-agent-platform]).",
             file=sys.stderr,
         )
     else:

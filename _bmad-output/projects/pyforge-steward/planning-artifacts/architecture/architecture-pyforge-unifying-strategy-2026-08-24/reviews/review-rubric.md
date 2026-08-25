@@ -105,6 +105,7 @@ Comment-only interpretation is now a Rule with Prevents. Spec *intent* still say
 - Canopy AD-16: CAP-9/13 block on channel packages; recipe authoring out of spine.
 - `mcp` SDK + dual-era + `start`/`get` over PostgreSQL; Wagtail Celery `BaseTaskBackend`.
 - `lane1-serves-dw-h3` Deferred jointly with atlas — matches SPEC’s remaining open question.
+  *(Footnote 2026-08-25: answered **no**. Do not reopen. Spine deferred table + unifying SPEC.)*
 - New canopy AD-18 (portal projections vs station-package writer) is a real CAP-3/4/5 fork-stopper; keep it.
 - Citation prefix `parent` vs `canopy` is load-bearing for epics — keep enforcing it.
 
@@ -152,7 +153,7 @@ Comment-only interpretation is now a Rule with Prevents. Spec *intent* still say
 | CAP | Governing AD(s) | Rubric |
 |---|---|---|
 | CAP-1 chrome | canopy 1, 3 | Covered |
-| CAP-2 Lane 1 | canopy 13, 10; Deferred `lane1-serves-dw-h3` | Covered (H1 closed) |
+| CAP-2 Lane 1 | canopy 13, 10; Deferred `lane1-serves-dw-h3` *(answered no 2026-08-25)* | Covered (H1 closed) |
 | CAP-3 portals | canopy 1, 2, 4, 18 | Covered |
 | CAP-4 MCP | canopy 5, 6, 12, 10 | Covered (H3 closed) |
 | CAP-5 CLI | canopy 14, 18 | Covered |
@@ -191,7 +192,7 @@ Comment-only interpretation is now a Rule with Prevents. Spec *intent* still say
 
 | Item | Revisit present? | Can two units still diverge? |
 |---|---|---|
-| `lane1-serves-dw-h3` | Yes — Phase 5 atlas + steward | No (joint course-correct) |
+| `lane1-serves-dw-h3` | Yes — Phase 5 atlas + steward *(answered **no** 2026-08-25; do not reopen)* | No (joint course-correct) |
 | Per-schema Liquibase tracking | Yes — second Job proposed | No |
 | MCP Tasks | Yes — official SDK Tasks | No (wire swap) |
 | FastMCP 4 | Yes — after CAP-4 mcp faces | No |

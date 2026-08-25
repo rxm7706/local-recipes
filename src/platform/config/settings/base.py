@@ -103,7 +103,7 @@ DJANGO_APPS = [
     "django.contrib.sites",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "django.contrib.humanize", # Handy template tags
+    "django.contrib.humanize",  # allauth MFA templates {% load humanize %} (image compress)
     "django.contrib.admin",
     "django.contrib.postgres",  # steward 20.1 / canopy AD-13: Wagtail PostgreSQL FTS
     "django.forms",
