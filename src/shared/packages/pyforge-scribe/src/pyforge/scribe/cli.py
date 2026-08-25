@@ -272,12 +272,18 @@ def graph_compile(
 @app.command("recall")
 def recall_cmd(
     query: str = typer.Argument(..., help="Natural-language question to recall an answer for."),
+    semantic: bool = typer.Option(
+        False,
+        "--semantic",
+        help="Rank by embedding similarity (durable GraphStore / pgvector).",
+    ),
 ) -> None:
     """Answer from the compiled graph with a resolvable citation, or report
     no grounded coverage (Story 2.4, AD-8) -- zero network calls (AD-6)."""
     repo_root = Path.cwd()
     store = open_graph_store(default_store_path(repo_root))
-    result = recall_answer(query, store, repo_root=repo_root)
+    mode = "semantic" if semantic else "lexical"
+    result = recall_answer(query, store, repo_root=repo_root, mode=mode)
     if result.grounded:
         typer.echo(result.text)
         typer.echo(f"[source: {result.citation}]")

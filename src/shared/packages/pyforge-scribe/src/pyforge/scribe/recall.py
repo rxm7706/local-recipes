@@ -68,16 +68,28 @@ def _tokenize(text: str) -> set[str]:
     return {token for token in _TOKEN_RE.findall(text.lower()) if token not in _STOPWORDS and len(token) > 1}
 
 
-def answer(query: str, store: GraphStore, *, repo_root: Path) -> RecallAnswer:
+def answer(
+    query: str,
+    store: GraphStore,
+    *,
+    repo_root: Path,
+    mode: str = "lexical",
+) -> RecallAnswer:
     """Deterministic, cited retrieval over the compiled graph (AD-6/AD-8).
 
     Only `is_current` nodes are candidates -- a superseded fact (Story 2.3)
     stays queryable via `store.query_by_citation()`/`iter_nodes()`, but
-    never surfaces here as if it were still current. Candidates are ranked
-    by query/node token-overlap (desc), tie-broken by node id (asc) for
-    reproducibility, then filtered by citation resolvability on the way
-    out -- an unresolvable top match is skipped, never returned.
+    never surfaces here as if it were still current. Lexical candidates are
+    ranked by query/node token-overlap (desc), tie-broken by node id (asc).
+    Semantic candidates come from `store.query_similar` (Story 28.2) — the
+    caller does not select a driver. Then citation resolvability filters
+    the ranked list -- an unresolvable top match is skipped, never returned.
     """
+    if mode == "semantic":
+        return _answer_semantic(query, store, repo_root=repo_root)
+    if mode != "lexical":
+        raise ValueError(f"unknown recall mode {mode!r}; expected 'lexical' or 'semantic'")
+
     query_tokens = _tokenize(query)
     if not query_tokens:
         return _no_grounded_answer()
@@ -98,6 +110,19 @@ def answer(query: str, store: GraphStore, *, repo_root: Path) -> RecallAnswer:
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
         # Unresolvable citation -- never surface an uncited/unverifiable answer; try the next candidate.
 
+    return _no_grounded_answer()
+
+
+def _answer_semantic(query: str, store: GraphStore, *, repo_root: Path) -> RecallAnswer:
+    if not query.strip():
+        return _no_grounded_answer()
+    for node in store.query_similar(query, limit=16):
+        if not node.is_current:
+            continue
+        if _citation_is_resolvable(node.citation, repo_root):
+            return RecallAnswer(
+                grounded=True, text=node.text, citation=node.citation, node_id=node.id
+            )
     return _no_grounded_answer()
 
 

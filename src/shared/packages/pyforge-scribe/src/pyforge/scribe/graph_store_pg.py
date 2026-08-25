@@ -7,7 +7,8 @@ lazily so declaring the CAP-18 entry point does not require the extra until
 
 Schema isolation: relations live in ``scribe_schema`` only. ``CREATE
 EXTENSION vector`` uses the same PostgreSQL instance (parent AD-1 — not a
-fourth kind). The ``embedding`` column is reserved for Story 28.2.
+fourth kind). Story 28.2 fills ``embedding`` on commit and ranks with
+``<=>`` (cosine distance).
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from pyforge.core.hooks import PluginError
+from pyforge.scribe.embeddings import embed_text, vector_literal
 from pyforge.scribe.graph_store import GRAPHSTORE_HOOK_SPEC, PG_GRAPHSTORE_OWNER
 from pyforge.scribe.models import GraphNode
 
@@ -163,6 +165,41 @@ class PostgresGraphStore:
     def iter_nodes(self) -> Iterator[GraphNode]:
         return iter(sorted(self._nodes.values(), key=lambda n: n.id))
 
+    def query_similar(self, query: str, *, limit: int = 8) -> list[GraphNode]:
+        vector = embed_text(query)
+        if vector is None or limit <= 0:
+            return []
+        _psycopg, sql = _import_psycopg()
+        literal = vector_literal(vector)
+        with self._connect() as conn:
+            rows = conn.execute(
+                sql.SQL(
+                    """
+                    SELECT id, kind, title, text, citation,
+                           valid_from, valid_until, superseded_by
+                    FROM {}
+                    WHERE embedding IS NOT NULL
+                      AND valid_until IS NULL
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT %s
+                    """
+                ).format(self._table()),
+                (literal, limit),
+            ).fetchall()
+        return [
+            GraphNode(
+                id=row[0],
+                kind=row[1],
+                title=row[2],
+                text=row[3],
+                citation=row[4],
+                valid_from=row[5],
+                valid_until=row[6],
+                superseded_by=row[7],
+            )
+            for row in rows
+        ]
+
     def commit(self) -> None:
         _psycopg, sql = _import_psycopg()
         snapshot = list(self._nodes.values())
@@ -171,13 +208,17 @@ class PostgresGraphStore:
                 conn.execute("SELECT pg_advisory_xact_lock(%s)", (_GRAPH_LOCK_KEY,))
                 conn.execute(sql.SQL("DELETE FROM {}").format(self._table()))
                 for node in snapshot:
+                    embedding = embed_text(f"{node.title} {node.text}")
+                    embedding_literal = (
+                        vector_literal(embedding) if embedding is not None else None
+                    )
                     conn.execute(
                         sql.SQL(
                             """
                             INSERT INTO {} (
                                 id, kind, title, text, citation,
                                 valid_from, valid_until, superseded_by, embedding
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULL)
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
                             """
                         ).format(self._table()),
                         (
@@ -189,6 +230,7 @@ class PostgresGraphStore:
                             node.valid_from,
                             node.valid_until,
                             node.superseded_by,
+                            embedding_literal,
                         ),
                     )
 
