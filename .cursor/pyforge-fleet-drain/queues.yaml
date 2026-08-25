@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 17
-    next: 28-2-semantic-recall
+    remaining_count: 16
+    next: 29-1-skf-domain-skills-from-station-packages
     queue:
-    - 28-2-semantic-recall
     - 29-1-skf-domain-skills-from-station-packages
     - 29-2-personas-act-only-through-grammar-and-mcp
     - 29-3-five-tier-check
