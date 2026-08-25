@@ -5656,7 +5656,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-25 02:00 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-25 02:07 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8819,7 +8819,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-14",
-          "sprint": "2026-08-22",
+          "sprint": "2026-08-24",
           "tea": "2026-08-20",
           "gates": "2026-08-10",
           "code": "2026-08-14",
@@ -8995,7 +8995,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-15",
-          "sprint": "2026-08-22",
+          "sprint": "2026-08-24",
           "tea": "2026-08-23",
           "gates": "2026-08-10",
           "code": "2026-08-13",
@@ -9171,7 +9171,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-24",
-          "sprint": "2026-08-22",
+          "sprint": "2026-08-24",
           "tea": "2026-08-22",
           "gates": "2026-08-10",
           "code": "2026-08-22",
@@ -9347,7 +9347,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-10",
           "context": "2026-08-24",
           "epics": "2026-08-24",
-          "sprint": "2026-08-23",
+          "sprint": "2026-08-24",
           "tea": "2026-08-23",
           "gates": "2026-08-10",
           "code": "2026-08-23",
@@ -9522,7 +9522,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-02",
-          "sprint": "2026-08-22",
+          "sprint": "2026-08-24",
           "tea": "2026-08-22",
           "gates": "2026-08-10",
           "code": "2026-08-14",
@@ -9707,7 +9707,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-02",
-          "sprint": "2026-08-22",
+          "sprint": "2026-08-24",
           "tea": "2026-08-22",
           "gates": "2026-08-10",
           "code": "2026-08-12",
@@ -10059,7 +10059,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-02",
-          "sprint": "2026-08-22",
+          "sprint": "2026-08-24",
           "tea": "2026-08-22",
           "gates": "2026-08-10",
           "code": "2026-08-12",
@@ -30318,8 +30318,8 @@ window.DASHBOARD_DATA = {
       "subject": "docs(marshal): UNSUPERVISED engine-liveness double-check (Story 24.3)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-25 02:00 UTC",
-    "generatedEpoch": 1787623216
+    "generatedAt": "2026-08-25 02:07 UTC",
+    "generatedEpoch": 1787623679
   },
   "storySpecs": [
     {
