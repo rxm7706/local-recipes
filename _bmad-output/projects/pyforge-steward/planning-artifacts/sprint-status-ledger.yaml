@@ -8,7 +8,7 @@
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: steward
@@ -101,7 +101,7 @@ development_status:
   3-3-the-operator-can-see-every-environment-that-exists-before-picking-one: done
   3-4-the-environment-yaml-sync-gate-is-one-command-away-not-a-remembered-incantation: done
   30-1-remaining-console-surfaces-have-a-home: done
-  30-2-delete-the-generator-and-its-inbound-refs: backlog
+  30-2-delete-the-generator-and-its-inbound-refs: done
   31-1-class-keyed-playbook-is-the-operator-path: backlog
   31-2-wired-or-not-is-class-correct: backlog
   31-3-fresh-clone-class-path-is-proven: backlog

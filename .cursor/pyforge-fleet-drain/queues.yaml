@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 12
-    next: 30-2-delete-the-generator-and-its-inbound-refs
+    remaining_count: 11
+    next: 31-1-class-keyed-playbook-is-the-operator-path
     queue:
-    - 30-2-delete-the-generator-and-its-inbound-refs
     - 31-1-class-keyed-playbook-is-the-operator-path
     - 31-2-wired-or-not-is-class-correct
     - 31-3-fresh-clone-class-path-is-proven
