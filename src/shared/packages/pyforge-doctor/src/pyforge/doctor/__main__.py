@@ -47,9 +47,10 @@ from pathlib import Path
 import jsonschema
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
-from . import fleet_surface, prescribe, score, sources
+from . import fleet_surface, score, sources
 from .checks import env_hygiene, registry
-from .models import DoctorReport, DoctorStatus, Finding, Partition, Prescription, Source
+from .hooks import build_prescriptions, gather_for_diagnose
+from .models import DoctorReport, DoctorStatus, Finding, Prescription, Source
 from .sources import atlas
 from .sources import backlog_intake
 from .sources import bmad_method
@@ -809,63 +810,6 @@ def _run_monitor(args: argparse.Namespace) -> int:
     return exit_code
 
 
-def _action_text(pf: prescribe.PartitionedFinding) -> str:
-    """Story 3.4's WHAT-TO-DO text, distinct from ``root_cause``'s WHY --
-    derived from the partition, never duplicating the root-cause string.
-
-    A clean (``DoctorStatus.OK``) ``Finding`` lands in ``ACTIONABLE`` too
-    (``prescribe._partition_one``'s "every Finding lands somewhere" rule),
-    but with ``reason="clean -- no remediation needed"`` -- review finding:
-    this branch used to render that case as ``"address X"`` regardless,
-    telling the operator to remediate something that already passed."""
-    if pf.partition is Partition.ACTIONABLE:
-        if pf.finding.status is DoctorStatus.OK:
-            return pf.reason
-        return f"address {pf.finding.check} ({pf.finding.source.value})"
-    if pf.partition is Partition.BLOCKED:
-        return f"blocked -- {pf.reason}"
-    return f"accepted risk -- {pf.reason}"  # Partition.ACCEPTED_RISK
-
-
-def _build_prescriptions(
-    findings: tuple[Finding, ...],
-) -> tuple[Prescription, ...]:
-    """Assembles one ``Prescription`` per gathered ``Finding`` (Story 3.1's
-    own "never a silent drop" rule extended to the full pipeline output):
-    the ``ACTIONABLE`` subset carries a real 1-based ``rank``/``rank_factors``
-    from ``prescribe.rank``; ``BLOCKED``/``ACCEPTED_RISK`` (and any
-    ``ACTIONABLE`` Finding TIED OUT of the ranked subset -- there is none,
-    ``rank`` covers every ``ACTIONABLE`` Finding by construction) carry
-    ``rank=None``/``rank_factors=None`` per the frozen schema's own
-    "populated by a later epic's ranking pass; null until then" framing,
-    here read as "null for anything ranking doesn't apply to." """
-    partitioned = prescribe.partition(findings)
-    ranked = prescribe.rank(partitioned)
-    rank_by_finding = {
-        id(rp.finding): (rp.rank, rp.rank_factors) for rp in ranked
-    }
-
-    prescriptions: list[Prescription] = []
-    for pf in partitioned:
-        rank_value, rank_factors = rank_by_finding.get(id(pf.finding), (None, None))
-        safe_upgrade_target, safe_upgrade_reason = prescribe.recommend_safe_upgrade(
-            pf.finding
-        )
-        prescriptions.append(
-            Prescription(
-                finding_ref=f"{pf.finding.source.value}:{pf.finding.check}",
-                partition=pf.partition,
-                rank=rank_value,
-                rank_factors=rank_factors,
-                action=_action_text(pf),
-                root_cause=prescribe.name_root_cause(pf.finding, findings),
-                safe_upgrade_target=safe_upgrade_target,
-                safe_upgrade_reason=safe_upgrade_reason,
-            )
-        )
-    return tuple(prescriptions)
-
-
 def _run_diagnose(args: argparse.Namespace) -> int:
     """Story 3.4: gather Findings for ``--target``, composing Epic 1's
     `checks` gather (when ``--target`` is ALSO an existing local directory
@@ -879,23 +823,22 @@ def _run_diagnose(args: argparse.Namespace) -> int:
     every gathered Finding becomes exactly one ``Prescription``, so a
     target with only ``blocked``/``accepted-risk`` Findings still reports
     them (Story 3.1's "never a silent drop" rule, extended here)."""
-    findings: tuple[Finding, ...] = ()
-    for axis in _DEFAULT_DIAGNOSE_AXES:
-        findings += atlas.gather(axis, target=args.target)
-
     # `Path("").is_dir()` resolves to the CWD and returns True (review
     # finding) -- `--target ""` would otherwise silently scope the local
     # engine/env checks to wherever `doctor` happens to be invoked from,
     # rather than the AC's own "when TARGET is ALSO an existing local
     # directory" intent for a genuinely-given target.
     target_path = Path(args.target) if args.target.strip() else None
-    if target_path is not None and target_path.is_dir():
-        findings += warden_source.gather(target_path)
-        findings += env_hygiene.gather(target_path)
+    directory_checks = target_path is not None and target_path.is_dir()
+    findings = gather_for_diagnose(
+        args.target,
+        directory_checks=directory_checks,
+        axes=_DEFAULT_DIAGNOSE_AXES,
+    )
 
     prescriptions: tuple[Prescription, ...] = ()
     if args.prescribe:
-        prescriptions = _build_prescriptions(findings)
+        prescriptions = build_prescriptions(findings)
 
     # Story 4.1: `diagnose` is the one verb that grades a single target's
     # OWN findings (the "composite health grade per dependency" framing) --
