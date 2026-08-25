@@ -60,7 +60,10 @@ _HELP = {
         "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx "
         "manifests; static: CAP-8/AD-10 static-export publish"
     ),
-    "provision": "environment and substrate provisioning",
+    "provision": (
+        "environment and substrate provisioning; non-module suite pieces "
+        "follow the class-keyed playbook (see provision --help)"
+    ),
     "budget": "cost budgeting and enforcement",
     "sync": "bidirectional GitHub Projects V2 <-> Jira Cloud reconciliation",
     "workspace": (
@@ -103,6 +106,21 @@ _HELP = {
 }
 
 
+# Story 31.1 / spec-bmad-suite-install-class-wiring CAP-1: operator path for
+# the six non-module suite pieces. Cited from install-class-playbook.md;
+# native commands live there (and in install-matrix.md), never invented here.
+INSTALL_CLASS_PLAYBOOK = (
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
+    "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+)
+_PROVISION_PLAYBOOK_EPILOG = (
+    "Non-module suite pieces (bmad-method, bmad-loop, skill-forge, labs, "
+    "dashboards, module-template) are not --module targets. Follow the "
+    "class-keyed playbook — pixi path, cited native wire, and steward "
+    f"verb/task per class: {INSTALL_CLASS_PLAYBOOK}"
+)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="steward",
@@ -117,6 +135,8 @@ def build_parser() -> argparse.ArgumentParser:
         elif name == "deploy":
             _add_deploy_subparsers(duty_parser)
         elif name == "provision":
+            duty_parser.formatter_class = argparse.RawDescriptionHelpFormatter
+            duty_parser.epilog = _PROVISION_PLAYBOOK_EPILOG
             _add_provision_subparsers(duty_parser)
         elif name == "budget":
             _add_budget_subparsers(duty_parser)
