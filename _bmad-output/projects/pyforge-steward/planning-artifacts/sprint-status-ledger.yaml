@@ -83,7 +83,7 @@ development_status:
   25-2-one-duckdb-writer: done
   25-3-validation-errors-render-inline: done
   25-4-restarts-reconcile: done
-  26-1-revoke-takes-effect-on-the-next-request: backlog
+  26-1-revoke-takes-effect-on-the-next-request: done
   26-2-manifests-carry-secret-references-only: backlog
   26-3-openfeature-packages-on-the-channel-operator-gate: backlog
   26-4-one-flag-flips-three-surfaces-without-a-redeploy: backlog
