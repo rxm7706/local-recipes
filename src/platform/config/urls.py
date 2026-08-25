@@ -21,6 +21,8 @@ urlpatterns = [
     path("users/", include("platformapp.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     path("compliance/", include("compliance_face.urls")),
+    # Story 18.3: chrome mint path, not a station roster.
+    path("assertion/", include("django_pyforge.assertion.urls")),
     # Story 18.1: pattern include, not a station roster. Portals mount
     # themselves from AppConfig discovery inside django_pyforge.urls.
     # The /compliance/ → /stations/warden/ redirect is S-19.1.
