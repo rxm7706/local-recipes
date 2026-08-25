@@ -96,6 +96,7 @@ import pytest
 
 import pyforge.mason.recipe as recipe_module
 from pyforge.mason.cfe import ImportFloorResult
+from pyforge.mason.engines.build_hooks import RattlerBuildPlugin
 from pyforge.mason.errors import CfeImportFloorError, CfeUnresolvedError, RecipeGenerationError
 from pyforge.mason.models import BuildResult, CfeResult, ShipState, ShipTargetResult
 from pyforge.mason.recipe import build, diagnose, new, optimize, scan, submit, update, validate
@@ -212,6 +213,42 @@ def test_build_native_happy_path_against_fake_cfe_root(fake_cfe_root, monkeypatc
     assert result.config == "linux64"
     assert result.artifact_dir == "build_artifacts/linux64"
     assert result.returncode == 0
+
+
+def test_build_native_stamps_rattler_build_via_the_default_hook(
+    fake_cfe_root, monkeypatch,
+):
+    """Native ``build()`` selects the default plugin and runs ``around``;
+    context ``engine`` is rattler-build and ``next`` is today's native
+    backend (no extra subprocess beyond the fixture)."""
+    _clear_fixture_env(monkeypatch)
+    monkeypatch.setattr("pyforge.mason.cfe.detect_native_build_config", lambda: "linux64")
+    engines: list[str] = []
+    real_call = RattlerBuildPlugin.call
+
+    def _spy(self, point, context):
+        assert point == "around"
+        assert callable(context.get("next"))
+        result = real_call(self, point, context)
+        engines.append(context.get("engine"))
+        return result
+
+    monkeypatch.setattr(RattlerBuildPlugin, "call", _spy)
+
+    result = build(
+        "recipes/foo",
+        docker=False,
+        config=None,
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=None,
+        cfe_timeout_arg=15.0,
+        environ={},
+        start_directory=Path("/does/not/matter"),
+    )
+
+    assert isinstance(result, BuildResult)
+    assert result.returncode == 0
+    assert engines == ["rattler-build"]
 
 
 def test_build_docker_happy_path_against_fake_cfe_root(fake_cfe_root, monkeypatch):

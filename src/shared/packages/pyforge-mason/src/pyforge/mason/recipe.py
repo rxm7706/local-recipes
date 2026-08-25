@@ -222,6 +222,7 @@ from pathlib import Path
 from typing import TextIO
 
 from . import cfe
+from .engines.build_hooks import select_build_engine_plugin
 from .errors import CfeImportFloorError, RecipeGenerationError
 from .models import BuildResult, CfeResult, ShipState, ShipTargetResult
 from .resolve import resolve_cfe_interpreter, resolve_cfe_root
@@ -388,8 +389,9 @@ def build(
     Resolves the CFE root and calls `cfe.ensure_cfe_root` -- raising
     `CfeUnresolvedError` before any subprocess spawns if it cannot be found
     (spec I/O matrix) -- then dispatches to `cfe.build_docker` (resolving
-    the CFE interpreter first) when `docker` is `True`, else straight to
-    `cfe.build_native`. `config` is only meaningful for the Docker path
+    the CFE interpreter first) when `docker` is `True`, else to the default
+    build-engine plugin's `around` whose `next` is `cfe.build_native`.
+    `config` is only meaningful for the Docker path
     (required there by `cli.py`'s own usage check, before this function is
     ever called); the native path always detects its own platform-variant
     config via `resolve.detect_native_build_config` inside `cfe.
@@ -414,12 +416,17 @@ def build(
             stderr_sink=stderr_sink,
         )
 
-    return cfe.build_native(
-        recipe_path,
-        root=resolved_root.root,
-        timeout=cfe_timeout_arg,
-        stderr_sink=stderr_sink,
-    )
+    plugin = select_build_engine_plugin()
+
+    def _native_next(_context: dict) -> BuildResult:
+        return cfe.build_native(
+            recipe_path,
+            root=resolved_root.root,
+            timeout=cfe_timeout_arg,
+            stderr_sink=stderr_sink,
+        )
+
+    return plugin.call("around", {"next": _native_next})
 
 
 def diagnose(
