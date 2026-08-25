@@ -503,3 +503,12 @@ status: open
   severity: medium
   promoted: 2026-08-24
   status: open
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 done; mason S-10.1 done (build-engine hook spec; today's engine is default plugin); no competing CI verdict

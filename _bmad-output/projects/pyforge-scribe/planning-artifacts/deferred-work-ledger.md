@@ -127,3 +127,12 @@ sibling ledgers and the detector both use.
   evidence: Phase 5 correct-course 2026-08-24; steward `epics.md` Epic 28 Stories 28.1–28.2; scribe `spec-2-1-graphstore-port-flat-file-adapter.md` (shipped); `technical-scribe-capture-promotion-graph-2026-08-08.md`. Scribe five-tier gaps (portal, MCP, skill, persona) delegate to steward Epics 19/21/29 — not scribe-local epics.
   status: open
   vehicle: `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` Epic 28
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 done; scribe S-4.1 done (GraphStore on shared contract; FlatFileGraphStore default plugin); no competing CI verdict

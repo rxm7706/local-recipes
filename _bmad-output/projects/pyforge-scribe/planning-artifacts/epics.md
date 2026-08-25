@@ -280,8 +280,9 @@ discipline — the next Scribe layer cannot re-miss them.
 
 ## Canopy obligations (2026-08-24)
 
-Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). Scribe-local
-epics **stop at Epic 3** — there is **no Epic 4** for graph backend or semantic recall.
+Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). CAP-14 graph
+backend and semantic recall stay **steward Epic 28** — not a scribe-local graph epic.
+**Epic 4** (later 2026-08-24) is CAP-18 `GraphStore` plugin *registration* only.
 
 | Obligation | Owner | Notes |
 |---|---|---|
@@ -289,3 +290,46 @@ epics **stop at Epic 3** — there is **no Epic 4** for graph backend or semanti
 | **CAP-14 / FR-36** — semantic recall (meaning, not only lexical overlap) | **steward Epic 28** (S-28.2) | Additive to shipped lexical recall; not a scribe-local epic. |
 | **Five-tier symmetry** — portal `/stations/scribe/`, MCP service face, SKF domain skill, station persona | **steward Epics 19, 21, 29** | CLI tier exists (`scribe`; unified `pyforge scribe` via steward Epic 22). No second chrome, no extra port. |
 | Scribe tracker | *This section only* | Thin cooperation note — implementation stories live in steward planning artifacts, not here. |
+
+## Operating-model obligations (2026-08-24)
+
+Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
+and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
+**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+the process owns hook specifications; a plugin implements or replaces a layer without
+a fork. Kedro
+[architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+*names* the split; it does not require this station to be a Kedro project. Warden owns
+PR-gate hook specs (Q8). This station owns its process hooks.
+
+**Always / Never (every station):**
+- Five-tier completeness is the **03** shape. 01/02 stay spec+script or spec+skill.
+- Guildhall / switcher must not tile `work_class` 01 or 02 as a station.
+- Golden Path: humans, CI, and agents invoke the same Pixi task names.
+- CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
+- Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
+- Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
+- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
+- Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
+
+**Scribe-local:** Graph-store / recall-backend plugins are station hooks (Story **4.1**). Memory completeness is not a PR quality gate. CAP-14 backing-store work remains steward Epic 28.
+
+**Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
+`change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
+steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+
+## Epic 4: GraphStore on the shared plugin contract
+
+**FR-45.** Deps: steward S-32.1. Cooperates with steward Epic 28; does not re-own PG/pgvector.
+
+### Story 4.1: Register GraphStore as CAP-18 plugins
+
+As a scribe operator,
+I want `FlatFileGraphStore` (and the Epic 28 PG driver) as plugins on the shared contract,
+So that swapping a recall store does not fork scribe.
+
+**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Given** the existing `GraphStore` port **When** this story completes **Then** today's flat-file backend is the default plugin
+**And** the durable PG driver (steward S-28.1) registers as a second plugin, not a fork
+**And** recall completeness is not published as a PR quality-gate verdict

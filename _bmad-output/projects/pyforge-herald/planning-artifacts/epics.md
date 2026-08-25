@@ -483,3 +483,45 @@ door. Portal projection of Moments data is steward **Epic 19**, not a herald Epi
 
 **Shipped work stands.** Epics 1–15 (deck bridge, CLI, Moments 2–4, live backend, deck QA, PPTX
 pipeline) remain **done**. Canopy integration is additive — no rollback of shipped herald stories.
+
+## Operating-model obligations (2026-08-24)
+
+Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
+and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
+**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+the process owns hook specifications; a plugin implements or replaces a layer without
+a fork. Kedro
+[architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+*names* the split; it does not require this station to be a Kedro project. Warden owns
+PR-gate hook specs (Q8). This station owns its process hooks.
+
+**Always / Never (every station):**
+- Five-tier completeness is the **03** shape. 01/02 stay spec+script or spec+skill.
+- Guildhall / switcher must not tile `work_class` 01 or 02 as a station.
+- Golden Path: humans, CI, and agents invoke the same Pixi task names.
+- CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
+- Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
+- Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
+- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
+- Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
+
+**Herald-local:** Deck/export format plugins (Marp, PPTX, .dc.html) are station hooks (Story **16.1**). Publish/export success is not a Warden verdict. Lane 1 CMS remains steward-owned.
+
+**Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
+`change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
+steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+
+## Epic 16: Exporter hook spec
+
+**FR-45.** Deps: steward S-32.1.
+
+### Story 16.1: Extract deck/export format plugins
+
+As a herald operator,
+I want Marp, PPTX, and `.dc.html` as exporter plugins on the shared contract,
+So that adding an export format does not fork herald.
+
+**Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Given** today's exporters **When** the hook spec lands **Then** they are the default plugins
+**And** export success is not published as a PR quality-gate verdict

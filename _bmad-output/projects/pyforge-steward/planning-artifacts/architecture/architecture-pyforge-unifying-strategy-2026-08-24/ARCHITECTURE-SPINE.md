@@ -31,6 +31,16 @@ is a reusable Django app that registers with the chrome package. Every new progr
 an MCP app mounted on the same process. Station *logic* stays in the factory packages
 (`pyforge-<station>`); the host never imports `pyforge.*`.
 
+**Operating-model bind (2026-08-24, approved).** Dream Grounding Q1–Q8 and
+`sprint-change-proposal-2026-08-24-operating-model.md` scope this spine: five-tier
+completeness is the **03** shape of the eight stations; Lane 2 remains HTMX (no
+DRF JSON:API on portals); CAP-8 envelopes carry `spec_id` + git sha + SBOM purl
+(Jira optional); **hooks and plugins are the replaceable-layer principle**
+(canopy AD-21); Warden is the sole PR-gate *verdict* (scanners are plugins on
+Warden-owned hook specs — an instance of AD-21, not the whole of it). Tachyon is
+a production LLM provider adapter, not Path B. No CAP-18. Scorecard measures
+remain unpublished.
+
 | Layer | Lives in | Role |
 |---|---|---|
 | Public edge | `src/platform/config/` (ASGI, URLconf, settings) | One process; OIDC session; mounts apps |
@@ -172,11 +182,11 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 - **Prevents:** pod-local media; per-replica rendition caches; Elasticsearch; password Wagtail admin
 - **Rule:** media on a Kubernetes `ReadWriteMany` PVC mounted at a fixed path; Django filesystem storage (default or `django-storages` FileSystemStorage) writes there. Renditions cache on `redis-cache`. Search is PostgreSQL FTS (`django.contrib.postgres`). Wagtail admin login is `WAGTAILADMIN_LOGIN_URL` through allauth/OIDC. IdP groups must map onto the Wagtail-admin permission; an authenticated user with no group is bounced. Password and email management stay off. An in-cluster MinIO/S3 Deployment, or a cloud object-store backend, is a fourth infra kind (parent AD-1) and a review-blocking finding until that parent AD is formally excepted.
 
-### AD-14 — Five tiers, or the station is not done `[ADOPTED]`
+### AD-14 — Five tiers, or the **03** station is not done `[ADOPTED]`
 
-- **Binds:** CAP-5, CAP-15, CAP-16, CAP-3, CAP-4
-- **Prevents:** a ledger `done` on CLI-only
-- **Rule:** CLI, portal, service, domain skill, persona. Personas act only through CAP-5 and CAP-4. CAP-5 dispatches to existing station binaries; it does not reimplement them.
+- **Binds:** CAP-5, CAP-15, CAP-16, CAP-3, CAP-4; Dream Grounding Q2
+- **Prevents:** a ledger `done` on CLI-only for an **03** station; reading this AD as applying to 01/02 work
+- **Rule:** An **03** station (the eight roster stations) is not done until CLI, portal, service, domain skill, and persona all exist. Personas act only through CAP-5 and CAP-4. CAP-5 dispatches to existing station binaries; it does not reimplement them. **01/02 work is complete at spec+script or spec+skill** and is outside this AD (Epic 29 / FR-39).
 
 ### AD-15 — Containment is tested per invariant `[ADOPTED]`
 
@@ -213,6 +223,12 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 - **Binds:** CAP-7, spec-secure-live-dashboards (`pyforge.steward.dashboard`)
 - **Prevents:** Vizro (or Dash/Flask) as a second isolation stack; atlas re-deriving row filters
 - **Rule:** Boards behind the host go through `pyforge.steward.dashboard`: filter-then-search (`filter_by_role` / `AccessDeclaration`), audit write, role-built navigation. Isolation mechanism is that library's, not re-derived. A second dashboard isolation stack — including a Vizro/Dash app that filters rows itself — is a review-blocking finding. The pattern binds at the ASGI boundary (secure-dashboard parent AD-8); a WSGI dashboard may mount through that adapter but does not own isolation. Atlas adopting the pattern for its *own* boards remains a non-goal; atlas Vizro CLI pages stay outside the host.
+
+### AD-21 — Hooks and plugins: replaceable layers `[ADOPTED]`
+
+- **Binds:** CAP-18; estate operating model (Dream Grounding principle + Q8); station plugin surfaces; CAP-1 registration; CAP-13 profile flags choose which plugins load
+- **Prevents:** forking a process to swap a vendor; baking a deployment-profile tool into core; treating the principle as “every package is a Kedro project”; treating Atlas pipeline hooks as Warden’s PR-gate book
+- **Rule:** As far as possible, every layer is replaceable. The process owns **hook specifications** (named before / after / around points). A **plugin** implements or replaces a layer without a fork. [Kedro](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) names the spec-vs-plugin split; only Atlas is already a Kedro project. Warden owns PR-gate hook specs; scanners implement them (Q8). Other stations own their process hooks (build engines, runners, stores, exporters, deploy-profile / LLM adapters). **Not plugin surfaces:** Pixi task names, Golden Path artifact identity, parent AD-1 infra kinds, parent AD-2 host import boundary, the Warden verdict itself. A plugin must not publish a second verdict for a process another owner specified.
 
 ## Consistency Conventions
 
@@ -317,6 +333,7 @@ flowchart LR
 | CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/` | canopy AD-14, AD-17 |
 | CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy AD-14, AD-17 |
 | CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy AD-12, AD-6 |
+| Cross-cutting | replaceable layers (hook specs + plugins) | canopy AD-21 |
 
 ## Deferred
 
@@ -331,7 +348,7 @@ flowchart LR
 | Scribe dual-driver internals | Port already exists; backing store is PostgreSQL | Story for CAP-14; no cross-station invariant beyond parent AD-1 |
 | Ledger shape for reopening 11.1 / 11.2 | `bmad-correct-course`, not this spine | Phase 5 steward run |
 | Keycloak Token Exchange / `RESOURCE_INDICATORS` | RFC-8707 flag is experimental; audience mapper is the documented interim | First CAP-6 client story that mints delegated tokens (BS-3) |
-| Additional CloudEvents extension attributes beyond `pyforgeloopdepth` | Stream, DLQ, ceiling, and `dataschema` are bound (canopy AD-8) | First producer that needs a new extension |
+| Additional CloudEvents extension attributes beyond `pyforgeloopdepth`, `spec_id`, git sha, SBOM purl, optional work-item id | Stream, DLQ, ceiling, `dataschema`, and Q4 identity fields are bound (canopy AD-8 + operating-model Q4) | First producer that needs a *further* extension |
 | Supervisor ingest wire from bmad-loop | Topology is bound; Marshal hook details are station-local | Marshal + CAP-17 story |
 | FILE flag env promotion overlays | canopy AD-11 binds one JSON schema, ConfigMap mount, and in-process watch; overlay *values* per env are ops | First CAP-13 import story |
 | Liquibase `DATABASECHANGELOGLOCK` stuck-lock runbook | Companion already names the need; owner is ops not a second DDL path | Before first production CAP-9 Job |

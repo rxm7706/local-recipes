@@ -71,6 +71,10 @@ they are why this is not merely a UI project.
     a portal uses to join the host.
   - **success:** Two portals render identical chrome from that one package with zero duplicated
     template or static files, proven by a test that fails if either portal ships its own copy.
+  - *(Correct-course 2026-08-24, operating-model Q3. The registration seam also carries owner
+    station slug, backup, `work_class`, and promotion date so Guildhall can refuse to tile 01/02
+    work. The SLA body is not a CAP-1 field — it stays in the 03 BMAD spec until Doctor or
+    Guildhall evaluates it. Never: a Steward SLA microservice. Never: Marshal stores SLAs.)*
 
 - **CAP-2 — Lane 1 is CMS-managed, and it is the only front door.**
   - **intent:** A public front door at `/` whose pages are edited and published without a code
@@ -87,6 +91,9 @@ they are why this is not merely a UI project.
     **reusable Django app** in its station's own distribution, not an app in the host project.
   - **success:** All eight portal URLs resolve behind a single session, and adding or removing a
     portal changes no host code outside that portal's own registration.
+  - *(Correct-course 2026-08-24, operating-model Q7. Lane 2 contract is HTMX. DRF JSON:API is
+    not a portal face — it stays on the Atlas / enterprise-data-models kinship. Compute JSON
+    is FastAPI via CAP-6's client.)*
 
 - **CAP-4 — Every station has a service face.**
   - **intent:** Each station exposes its capabilities to programmatic and agent callers over a
@@ -121,6 +128,10 @@ they are why this is not merely a UI project.
     consumer groups, poison-message quarantine, and a ceiling on cascade depth.
   - **success:** A poisoned event lands in the dead-letter queue instead of retrying forever, and a
     cyclic publish chain halts at the declared depth rather than running away.
+  - *(Correct-course 2026-08-24, operating-model Q4. Envelope fields for work
+    identity are `spec_id`, git sha, SBOM purl, and optional work-item id. Jira
+    is a steward-profile adapter, not a required CloudEvents field. Never:
+    reject or drop an event for lack of a Jira key.)*
 
 - **CAP-9 — Schema change is governed, not incidental.**
   - **intent:** Production schema change flows through one auditable authority, enforced by
@@ -163,16 +174,23 @@ they are why this is not merely a UI project.
     a relevant result that lexical token-overlap recall does not.
 
 - **CAP-15 — Every station teaches an agent its own work.**
-  - **intent:** Each station carries an agent-loadable domain skill encoding how that station's work
-    is actually done, following the shape one station already proves.
-  - **success:** An agent asked to perform a station's core task loads that station's skill and
-    follows it, demonstrated for a station that has no skill today.
+  - **intent:** Each **03** station capability carries an agent-loadable domain skill encoding how
+    that station's work is actually done, following the shape one station already proves. 01/02
+    work may stop at a spec + script or spec + skill and does not mint a station skill.
+  - **success:** An agent asked to perform a station's core **03** task loads that station's skill
+    and follows it, demonstrated for a station that has no skill today.
+  - *(Correct-course 2026-08-24, operating-model Q2. Five-tier completeness is the 03 shape, not
+    a mandate to build skill+persona+portal for every task.)*
 
 - **CAP-16 — Every station can be addressed as a persona.**
-  - **intent:** Each station exposes an autonomous persona that acts through that station's own
-    command grammar and service face rather than through ad-hoc tool calls.
-  - **success:** A persona completes a station task end to end using only CAP-5's grammar and
+  - **intent:** Each **03** station capability exposes an autonomous persona that acts through that
+    station's own command grammar and service face rather than through ad-hoc tool calls. 01/02
+    work does not mint a persona.
+  - **success:** A persona completes a station **03** task end to end using only CAP-5's grammar and
     CAP-4's service face, with no direct filesystem or ad-hoc HTTP access in the transcript.
+  - *(Correct-course 2026-08-24, operating-model Q2. Same scoping as CAP-15.)*
+  - *(Correct-course 2026-08-24, operating-model Q6. Path B is this persona + the Agent Canopy.
+    Tachyon is a production LLM provider adapter, not a persona and not a rename of CAP-16.)*
 
 - **CAP-17 — Run state is a service, not a local filesystem read.**
   - **intent:** In-flight execution state — which runs are live, how long they have been going, and
@@ -185,6 +203,22 @@ they are why this is not merely a UI project.
     and journal files directly, so three of its surfaces degraded to `unavailable` when published.
     Choosing to keep those surfaces is what makes this a capability rather than an answered
     question — see `console-parity-inventory.md`.)*
+
+- **CAP-18 — One hook-spec and plugin-registration shape.**
+  - **intent:** Eight stations do not invent eight plugin APIs. A shared contract in
+    `pyforge-core` names how a process publishes hook specifications and how a plugin
+    registers to implement or replace a layer. Warden owns the PR-gate hook book on that
+    contract; each station owns its process hooks (build engine, runner, store, exporter,
+    deploy profile, LLM provider). Kedro names the spec-vs-plugin split; it does not
+    require every station to be a Kedro project. **Not the scorecard** (no board, no
+    unpublished measures).
+  - **success:** A dummy plugin loads through the shared registration API; a station
+    package that ships a second registration mechanism fails the check; today's backend
+    is the default plugin for that process; a default Warden run stays green with no
+    named commercial scanner plugin present.
+  - *(Correct-course 2026-08-24, later the same day. Operator: this is the missing
+    story — it does not exist in Canopy 18–30. Those epics stay chrome/portals/MCP/DDL;
+    they must not violate this capability.)*
 
 ## Constraints
 
@@ -266,7 +300,25 @@ they are why this is not merely a UI project.
   own app switcher or base layout has violated the contract.
 - **Never:** a portal calls a service with a raw request or a trusted identity header. CAP-6's
   client is the only path.
-- **Never:** a station is declared complete on fewer than five tiers.
+- **Never:** an **03** capability is declared complete on fewer than five tiers. 01/02
+  deliverables are complete at spec + script/analysis or spec + skill. The eight stations are
+  03 and still owe all five tiers; new work is not a station.
+- **Always:** design processes as **hook specifications** plus **plugins**. As far as
+  possible every layer is replaceable: the process owns named hook points; a plugin
+  implements or replaces a layer without a fork (**CAP-18** is the shared contract).
+  [Kedro's architecture](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+  names the spec-vs-plugin split; it does not require every package to be a Kedro
+  project (canopy AD-21). Contracts (Pixi task names, Golden Path artifact identity,
+  parent infra kinds, host import boundary, Warden as the sole PR-gate verdict) are
+  not plugin surfaces.
+- **Always:** Warden is the only PR quality-gate verdict on the Golden Path. External scanners
+  (SonarQube, Checkmarx, Black Duck, GHAS, profile-local tools) register as **Warden plugins**
+  implementing Warden-owned **hook specifications**. Profile settings choose which plugins
+  load. This is not a requirement to re-template Warden as a Kedro project.
+- **Never:** a scanner plugin publishes a competing pass/fail that bypasses Warden, and the core
+  gate never fails solely because a named scanner plugin is absent.
+- **Never:** fork a process to swap a vendor, or let a plugin publish a second verdict for a
+  process another owner specified.
 - **Always:** a station portal is a reusable Django app following
   [Django's convention](https://docs.djangoproject.com/en/6.0/intro/reusable-apps/) — distribution
   `django-<station>`, module `django_<station>_<app>`, app label `<station>_<app>`. **One
@@ -281,9 +333,10 @@ they are why this is not merely a UI project.
 - Note that `src/shared/packages/` holds **two families under two conventions**, and they should not
   be reconciled: station CLI/library packages are `pyforge-<station>` over the `pyforge.<station>`
   namespace, while Django reusable apps are `django-*` over `django_*`. `django-pyforge` is correct
-  as it stands. The Dream's symmetry is CLI
-  (CAP-5), portal (CAP-3), service (CAP-4), domain skill (CAP-15) and persona (CAP-16); a station
-  missing any of the five is unfinished, whatever its ledger says.
+  as it stands. The Dream's **03** symmetry is CLI
+  (CAP-5), portal (CAP-3), service (CAP-4), domain skill (CAP-15) and persona (CAP-16); an 03
+  station missing any of the five is unfinished, whatever its ledger says. 01/02 work is not
+  measured against this matrix.
 - **Always:** the eight station portals mount under a uniform `/stations/<name>/` prefix, decided
   2026-08-24. `compliance_face` moves from its shipped `/compliance/` mount and leaves a permanent
   redirect; the app switcher derives its entries from the registration seam rather than from a

@@ -30,11 +30,31 @@ errors are the kind a downstream pass would reintroduce from the Dream's own pro
 | Lane 2 portals at `/stations/{station}/` | Warden's mounts at `/compliance/` | Asserted as inherited convention; it never was. **Decided 2026-08-24:** uniform `/stations/<name>/`, and the shipped portal moves behind a permanent redirect (FR-9a) and is repackaged as a reusable app (FR-9b) |
 | Eight FastAPI services on ports `:8001–:8008` | No port assignments exist anywhere in `src/platform/` | Invented. Port/binding topology is an architecture decision, not an inherited fact |
 | Wagtail CRX (CodeRed) carries Lane 1 | CodeRed dropped 2026-08-24 on maintenance evidence | Wagtail alone |
-| MCP over `/mcp/sse` | Deprecated twice over; a compliant server answers GET with `405` | Single POST `/mcp` on the official SDK, Tasks extension for long work |
+| MCP over `/mcp/sse` | Deprecated twice over; a compliant server answers GET with `405` | Single POST `/mcp` on the official SDK; long work is `start`/`get` over PostgreSQL until Tasks ships in the SDK |
 | Scribe has a SQLite/PostgreSQL dual driver | Scribe ships `FlatFileGraphStore` — one JSON file | BS-1's remediation is "flat-file → PostgreSQL/pgvector"; its stated failure mode had to be re-derived |
 | RFC-5: zero runtime ORM DDL, as written | Not implementable — `post_migrate` and `create_test_db` both require `migrate` | Enforcement moved to the database role; test databases carved out |
 | "80% reduction", "sub-500ms", "100% deterministic" | No baseline exists for any of them | Removed. Fabricated metrics survive into a PRD as requirements and then into acceptance criteria nobody can evaluate |
 | A dated Gantt through 2026-11 | No such schedule was ever agreed | Removed. Sequencing is expressed as dependency, not calendar |
+| Five-tier completeness for any work | **03 only** (Q2). 01/02 stay spec+script or spec+skill | canopy AD-14; Epic 29. Do not fail 01/02 for missing a portal. |
+| Packaging stories in this chain author OpenFeature/Liquibase recipes | Operator-owned. S-26.3 / S-27.1 do not author recipes | canopy AD-16 |
+| No `django-feedstock` 5.x branch | Branch exists. Pin catch-up is a version+sha256 PR | Currency gap, not chain packaging |
+
+## Operating model (bound 2026-08-24, after first ready)
+
+Dream Grounding is authoritative. This table is the brief's copy so a PRD/architecture reader
+does not re-derive pre-OM five-tier from this addendum's older sequencing list.
+
+| Bind | Brief consequence |
+|---|---|
+| Q1 Golden Path; WFT names as adapters | Same Pixi task. Harness / Splunk / Jira / Tachyon / named scanners are **plugins**. |
+| Q2 five-tier = 03 | The eight stations still owe five tiers. New work does not. |
+| Q3 owner vs SLA | Registration: owner, backup, `work_class`, promotion date. SLA body in the 03 spec. |
+| Q4 traceability | `spec_id` + git sha + SBOM purl; Jira optional. |
+| Q5 measurement | Rules in the Dream. Board = sibling Dream. No CAP-18. No unpublished metrics. |
+| Q6 Path B ≠ Tachyon | Path B = Agent Canopy + persona. Tachyon = production LLM adapter. |
+| Q7 Lane 2 is HTMX | FastAPI = compute. DRF on Atlas / data-models only. |
+| AD-21 hooks/plugins | Process owns hook specs; plugin replaces a layer without a fork. Kedro *names* the split. |
+| Q8 Warden sole PR verdict | Warden **owns** PR-gate hook specs; plugins implement. Missing scanner ≠ failed run. |
 
 ## Sequencing constraints the epic pass must honour
 
@@ -44,9 +64,9 @@ These are facts about the work, not preferences, and each one dictates ordering.
    four new OpenFeature feedstocks (`openfeature-sdk`, `openfeature-flagd-api`,
    `openfeature-flagd-core`, `openfeature-provider-flagd`) plus a `cachebox` 5.x build — conda-forge
    ships 6.2.5 and the provider pins `<6`, so that fifth one is a **downgrade build on an existing
-   feedstock**, not a new recipe, and should be sized as such. CAP-9 needs a `liquibase` recipe with
-   the PostgreSQL JDBC driver vendored, the sixth. Per repo Rule 1, every one of those stories
-   invokes `conda-forge-expert`.
+   feedstock**. CAP-9 needs `liquibase` ≥5.0.4 with PostgreSQL JDBC vendored. **S-26.3 and S-27.1
+   are operator gates** (canopy AD-16): they do not author recipes. Downstream stories wait on the
+   channel. Rule 1 still applies if the *operator* authors those recipes elsewhere.
 2. **CAP-1 precedes CAP-2 and CAP-3.** Chrome lives in the shared package; a portal built before it
    exists will grow its own and violate the contract.
 3. **CAP-6 precedes CAP-4's consumers.** Portals must not reach services before the identity-carrying
@@ -57,17 +77,13 @@ These are facts about the work, not preferences, and each one dictates ordering.
 5. **CAP-9's changeset extraction gate has no prior art.** No team is documented running Liquibase
    as schema authority for a Django app; the `sqlmigrate` extraction check is ours to build, and
    should be sized as invention rather than integration.
-6. **Phase 5 is eight correct-course runs, not one.** Every station spec records its Canopy
-   obligations — one `bmad-correct-course` run per station — and Marshal's run additionally retires
-   `spec-factory-console`, which the CMS front door supersedes. Each run pins
-   `BMAD_ACTIVE_PROJECT` and writes to a physical `projects/<slug>/` path, never through the shared
-   `planning-artifacts` symlink. Separately, `bmad-correct-course` — **not** the epic pass — decides
-   the ledger shape for reopening stories 11.1 and 11.2: a new superseding epic, or a reopened
-   Epic 11.
-7. **Audit 5.2.16 and 5.2.17 for security content before relying on the pin.** conda-forge's single
-   qualifying Django build is two patch releases behind upstream. Whether that gap is a security
-   exposure or only a feature gap is unaudited, and the answer decides whether a 5.2 maintenance
-   branch on `django-feedstock` is chain scope or a nice-to-have. Owned by the architecture pass.
+6. **Phase 5 is eight correct-course runs, not one — and they landed.** Canopy obligations plus
+   operating-model obligations (`DW-CANOPY-2026-08-24`, `DW-OM-2026-08-24`) are on every station.
+   Marshal's Canopy run retires `spec-factory-console`. Each run pinned `BMAD_ACTIVE_PROJECT` and
+   wrote a physical `projects/<slug>/` path. Ledger shape for reopening 11.1/11.2 remains
+   `bmad-correct-course`, not a new Canopy epic.
+7. **Django 5.2.16/5.2.17 are security releases; every affected path is unreachable here.** The
+   claim that no `5.x` branch exists was wrong. Catch-up is a feedstock PR, not Canopy scope.
 
 ## Design decisions already made, with their reasons
 
@@ -107,9 +123,8 @@ OIDC group-mapping one is the one that bites.
   per-process cache leaves each replica with a divergent rendition cache.
 - Search needs no new service: the database backend uses PostgreSQL full-text search and is
   documented as production-adequate. Requires `django.contrib.postgres` in `INSTALLED_APPS`.
-- Background tasks are an open decision. Since 6.4 Wagtail routes indexing and image work through
-  `django-tasks`, which ships database and RQ backends but **no Celery backend**. Decompose this
-  explicitly rather than inheriting the default by accident.
+- Background tasks: **Celery `BaseTaskBackend`** (canopy AD-10). Do not inherit django-tasks'
+  database or RQ backends. PyPI `django-tasks-celery` is Django 6-only and out of pin.
 - **OIDC users land with no groups**, and Wagtail's admin gates on `wagtailadmin.access_admin`
   rather than `is_staff` — so a user authenticates successfully and is still bounced. Mapping IdP
   claims onto a group holding that permission is required work with no first-party guidance. Pair

@@ -1,13 +1,56 @@
 # Steward — Canopy chain implementation readiness (2026-08-24)
 
-Gate of `spec-pyforge-unifying-strategy` (CAP-1..17, Epics 18–30) after Phase 5
-eight-station `bmad-correct-course`. Method: `bmad-sprint-planning` readiness
-gate — could a developer implement these epics without inventing decisions
-nothing records?
+Gate of `spec-pyforge-unifying-strategy` (CAP-1..18, Epics 18–30 plus Epic 32)
+after Phase 5 eight-station `bmad-correct-course` and the later-day CAP-18 bind.
+Method: `bmad-sprint-planning` readiness gate — could a developer implement
+these epics without inventing decisions nothing records?
 
-**Verdict: CONCERNS — proceed.** The plan is implementable as recorded. Two
-concerns are already bound as gates, not gaps. One open question is jointly
-deferred and does not block Epics 18–30.
+**Verdict: CONCERNS — proceed.** Packaging gates and `lane1-serves-dw-h3` remain
+the only concerns. CAP-18 is now decomposed (FR-43..45, steward Epic 32, Warden
+Epic 9, per-station process stories).
+
+## Re-stamp — operating model (2026-08-24, later the same day)
+
+Same implementability question after Dream Grounding Q1–Q8, steward
+`sprint-change-proposal-2026-08-24-operating-model.md` (approved), and **eight**
+station operating-model correct-courses (§6 revisited: not Warden-only).
+
+| Bound | Where a developer reads it |
+|---|---|
+| Q1 estate practice; Golden Path; WFT tools as adapters | Dream Grounding; steward SCP |
+| Q2 five-tier = 03 only | SPEC Never; PRD glossary + FR-37/38/39 + SM-5; Epic 29 / S-29.3 |
+| Q3 owner/`work_class` on discovery; SLA body in spec | SPEC CAP-1 note; PRD FR-1/2; S-18.1 / S-19.2 |
+| Q4 `spec_id` + git sha + SBOM purl; Jira optional | SPEC CAP-8; PRD FR-17; S-24.1 |
+| Q5 measurement in the OM; scorecard **unpublished** | Dream Grounding; do not invent metrics |
+| Q6 Path B = Agent Canopy + persona; Tachyon = LLM adapter | SPEC CAP-16; PRD glossary |
+| Q7 HTMX portal; FastAPI compute; DRF on Atlas data-models only | SPEC CAP-3; `stack.md` |
+| Hooks/plugins as replaceable-layer principle (AD-21); Q8 is the PR-gate instance | Dream Grounding; canopy AD-21; SPEC Always; all eight `epics.md` OM blocks |
+
+Station planning (all eight): `change-history/sprint-change-proposal-2026-08-24-operating-model.md`,
+`epics.md` § Operating-model obligations, **`DW-OM-2026-08-24`**. Warden owns PR-gate
+hook *specs*; plugins implement them. Every station records the Never: competing
+verdict. Atlas already *is* Kedro (pipeline hooks ≠ PR-gate book). Not a Kedro
+re-template of any station.
+
+No MUST-FIX from this pass. Scorecard numbers are explicitly deferred (human + agent +
+team). Do not implement S-29.3 against pre-OM “any missing tier fails” wording — the
+story ACs are already 03-scoped.
+
+## Re-stamp — CAP-18 hook specs (2026-08-24, later still)
+
+Operator: one shared plugin API, then Warden PR-gate retrofit, then station
+process hooks. **Not in Epics 18–30.** Bound as CAP-18 / FR-43–45.
+
+| Bound | Where a developer reads it |
+|---|---|
+| Shared hook-spec + registration in `pyforge-core` | SPEC CAP-18; PRD FR-43; steward **S-32.1** |
+| Warden PR-gate; scanners optional; green without Checkmarx | FR-44; Warden **Epic 9** |
+| Per-station process layer; today's backend = default plugin | FR-45; steward S-32.2; atlas 18.1; mason 10.1; marshal 26.1; doctor 17.1; herald 16.1; scribe 4.1 |
+| `DW-OM-2026-08-24` | Implementation `close_when`, not markdown-only |
+
+First chrome dispatch: **S-18.1**. First CAP-18 dispatch: **S-32.1** (may parallel
+18.1). Then Warden 9.x, then other station process stories. Do not regenerate the
+whole steward sprint feed.
 
 ## Artifact inventory
 
@@ -18,16 +61,18 @@ deferred and does not block Epics 18–30.
 | Brief | `briefs/brief-pyforge-unifying-strategy-2026-08-24/brief.md` | ready |
 | PRD | `prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md` | ready (this pass) |
 | Architecture | `architecture/architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` | final (prior pass) |
-| Epics | `epics.md` Epics 18–30 (13 epics, 35 stories) | appended; Epics 1–17 untouched |
+| Epics | `epics.md` Epics 18–32 (Epic 31 suite-install + Epic 32 CAP-18) | 18–30 unchanged in scope |
 | Phase 5 | eight `sprint-change-proposal-2026-08-24-canopy.md` + Canopy obligations + `DW-CANOPY-2026-08-24` | approved |
+| Operating model | steward SCP + PRD/epic/spine edits; eight station OM SCPs + `DW-OM-2026-08-24` | approved (same day; §6 revisited to all eight) |
+| CAP-18 hook specs | steward `sprint-change-proposal-2026-08-24-hook-specs.md` + eight station hook-spec SCPs | approved; retracts Warden “record only” |
 
 No UX artifact. Portal chrome is specified by canopy AD-1 / FR-1; no UX-only
 stories exist. Not a finding.
 
 ## Traceability
 
-PRD §12 covers CAP-1..17 → FR-1..FR-42 plus FR-9a/9b/21a. `epics.md` FR map
-covers the same set. Every FR has an epic; every Canopy epic names its FRs.
+PRD §12 covers CAP-1..18 → FR-1..FR-45 plus FR-9a/9b/21a. FR-44 is Warden Epic 9.
+FR-45 is steward S-32.2 plus peer station process stories. Every FR has an epic.
 
 FR-6 (inventory) is already delivered as `console-parity-inventory.md`; Epic 30
 is the cutover, not a second inventory. Packaging FRs (FR-21, FR-33) bind to
@@ -67,16 +112,17 @@ No MUST-FIX that would keep the Spec at `draft`. Open question stays listed.
 
 | Station | Last local epic | Load-bearing |
 |---|---|---|
-| steward | 30 | Epic 11 stays done; Epic 27 supersedes DDL producer only |
-| warden | 8 | Rename is S-19.1; `/compliance/` redirect |
-| marshal | 25 | `spec-factory-console` superseded → CAP-2; generator until S-30.2 |
-| atlas | 17 | `lane1-serves-dw-h3` **not answered**; Vizro CLI off-host |
-| mason | 9 | No MinIO; `conda-forge-expert` stays hand-authored |
-| scribe | 3 | No Epic 4; graph → steward Epic 28; `FlatFileGraphStore` only |
-| doctor | 16 | No Epic 17+ |
-| herald | 15 | No Epic 16+ |
+| steward | 30 | Epic 11 stays done; Epic 27 supersedes DDL producer only. OM: deploy-profile plugins. Last local epic still 30 (31 is suite-install, not Canopy). |
+| warden | 8 | Rename is S-19.1; `/compliance/` redirect. OM: owns PR-gate hook specs. |
+| marshal | 25 | `spec-factory-console` superseded → CAP-2; generator until S-30.2. OM: loop pass ≠ PR gate. |
+| atlas | 17 | `lane1-serves-dw-h3` **not answered**; Vizro CLI off-host. OM: already-Kedro pipeline hooks (reference shape, not PR-gate); DRF only on data-models. |
+| mason | 9 | No MinIO; `conda-forge-expert` stays hand-authored. OM: build-engine plugins ≠ Warden. |
+| scribe | 3 | No Epic 4; graph → steward Epic 28; `FlatFileGraphStore` only. OM: store/recall plugins. |
+| doctor | 16 | No Epic 17+. OM: remedy hooks are advisory / Warden inputs. |
+| herald | 15 | No Epic 16+. OM: export-format plugins. |
 
 ## Next
 
-Story 18.1 (`django-pyforge` chrome) is the first dispatchable story. S-26.3 and
-S-27.1 wait on the operator.
+Story 18.1 (`django-pyforge` chrome) is the first dispatchable story. S-18.1 now
+also carries owner / `work_class` / promotion date on the registration seam.
+S-26.3 and S-27.1 wait on the operator. Scorecard draft is not a Canopy story.

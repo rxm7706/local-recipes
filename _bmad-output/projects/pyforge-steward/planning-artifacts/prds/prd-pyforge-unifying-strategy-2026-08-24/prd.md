@@ -49,7 +49,7 @@ eight station portals. This chain finishes the shape.
 ## 2. Target User
 
 Four users, and the fourth is not a person. That is load-bearing rather than cute: five of the
-sixteen capabilities exist mainly to make the estate legible to something that is not a human, and
+eighteen capabilities exist mainly to make the estate legible to something that is not a human, and
 a requirement written only for the human reader will under-specify them.
 
 ### 2.1 Jobs To Be Done
@@ -106,8 +106,14 @@ Defined once. The rest of the document uses these exactly, and no synonyms.
 - **Lane 2** — a station's server-rendered portal, mounted under the Canopy as a Django app.
 - **Lane 3** — an analytical board surface, reached through the Canopy, isolated per user.
 - **Service face** — a station's programmatic endpoint, spoken over the current MCP specification.
-- **Five-tier symmetry** — a station is complete when it has all five of: CLI, portal, service
-  face, domain skill, persona. Fewer than five means unfinished.
+- **Five-tier symmetry** — an **03** station capability is complete when it has all five of: CLI,
+  portal, service face, domain skill, persona. The eight stations are 03. 01/02 work is complete
+  at spec + script/analysis or spec + skill and is not measured on this matrix.
+- **work_class** — 01 one-off, 02 short-term (spec + skill), 03 long-term (capability + owner +
+  SLA). Estate operating model (Dream Grounding Q1–Q2).
+- **Path A / Path B** — 03 is deterministic code (Path A) or agentic work through the Agent
+  Canopy and a station persona (Path B). **Tachyon** is a production LLM provider adapter, not
+  Path B and not a product.
 - **Domain skill** — an agent-loadable document encoding how a station's work is actually done.
 - **Persona** — an autonomous agent bound to one station, acting only through that station's
   command grammar and service face.
@@ -116,11 +122,17 @@ Defined once. The rest of the document uses these exactly, and no synonyms.
 - **Governed changeset** — a reviewed, versioned schema-change unit applied by an authority holding
   DDL privilege, distinct from the application's own migration bookkeeping.
 - **Feedstock** — a conda-forge recipe. Six are new work in this chain.
+- **Hooks and plugins** — architecture principle (canopy AD-21): a process owns
+  hook specifications; a plugin replaces or extends a layer without a fork.
+  Kedro names the split; it does not require a Kedro project. **CAP-18** is the
+  shared contract (not a scorecard). Q8 is the PR-gate instance (Warden owns
+  those specs; scanners are plugins).
 
 ## 4. Features
 
-Twelve features over sixteen capabilities. Grouped by delivery seam, which is also how the epic
-pass should group them.
+Fifteen features over eighteen capabilities (CAP-1..18). Grouped by delivery seam, which is also
+how the epic pass groups them. Canopy Epics 18–30 do **not** implement CAP-18; that is Epic 32
+plus Warden Epic 9 plus per-station process-hook stories.
 
 ---
 
@@ -147,6 +159,8 @@ A portal author installs one package and receives the estate's chrome. Realizes 
 - A test enumerates portal template and static directories and **fails** if any portal ships its
   own copy of a base layout, app-switcher template, or theme asset.
 - Removing the package from `INSTALLED_APPS` breaks both portals identically.
+- Registration carries owner station slug, backup, `work_class`, and promotion date. The SLA
+  body is not a chrome / AppConfig field (it stays in the 03 BMAD spec).
 
 #### FR-2: A portal registers itself without host edits
 
@@ -159,6 +173,8 @@ Adding or removing a station portal changes no host code outside that portal's o
 - Removing a portal leaves the host booting and the remaining portals rendering.
 - The app switcher's entries derive from what is registered, not from a hand-maintained list.
 - A portal registering outside the `/stations/<name>/` prefix fails a check.
+- The switcher and Guildhall do **not** tile a registration with `work_class` 01 or 02 as a
+  first-class station surface.
 
 #### FR-3: The switcher shows only what the user may reach
 
@@ -534,6 +550,8 @@ A published event reaches its consumers and survives a consumer restart. **CAP-8
 **Consequences (testable):**
 - An event published while a consumer is down is delivered when it returns.
 - A restart reconciles rather than duplicating — reprocessing does not double-apply effects.
+- The envelope carries `spec_id`, git sha, and SBOM purl, plus an optional work-item id. A
+  missing Jira key does **not** fail publish or drop the event (Dream Grounding Q4).
 
 #### FR-18: A poisoned event is quarantined, not retried forever
 
@@ -813,16 +831,17 @@ Recall finds a semantically relevant result that token-overlap search misses. **
 ### 4.13 The agent-facing tiers
 
 **Description.** The Dream promises five-tier symmetry — CLI, portal, service, domain skill,
-persona. The estate has one domain skill of eight and zero station personas, so two full tiers are
-missing and a station cannot be called complete without them. These are the capabilities most
-easily dropped as "documentation", which is exactly why the SPEC makes fewer-than-five a contract
-violation.
+persona — as the **03 shape of each of the eight stations**. The estate has one domain skill of
+eight and zero station personas, so two full tiers are missing and an 03 station cannot be called
+complete without them. 01/02 work does not owe this matrix. These are the capabilities most
+easily dropped as "documentation", which is exactly why the SPEC makes fewer-than-five on an
+**03 capability** a contract violation.
 
 **Functional Requirements:**
 
 #### FR-37: Each station carries a domain skill
 
-Every station has an agent-loadable skill encoding how its work is actually done. **CAP-15.**
+Every **03** station has an agent-loadable skill encoding how its work is actually done. **CAP-15.**
 
 **Consequences (testable):**
 - An agent asked to perform a station's core task loads that station's skill and follows it.
@@ -831,8 +850,8 @@ Every station has an agent-loadable skill encoding how its work is actually done
 
 #### FR-38: Each station is addressable as a persona
 
-Every station exposes a persona that acts only through that station's grammar and service face.
-**CAP-16.**
+Every **03** station exposes a persona that acts only through that station's grammar and service
+face. **CAP-16.** 01/02 work does not mint a persona.
 
 **Consequences (testable):**
 - A persona completes a station task end to end.
@@ -841,11 +860,13 @@ Every station exposes a persona that acts only through that station's grammar an
 
 #### FR-39: Five-tier completeness is checkable
 
-Station completeness is mechanically verifiable, not asserted. **CAP-15, CAP-16.**
+**03** station completeness is mechanically verifiable, not asserted. **CAP-15, CAP-16.**
 
 **Consequences (testable):**
-- A check enumerates all eight stations across all five tiers and reports which are missing.
-- The check fails when a station is declared complete with fewer than five.
+- A check enumerates all eight **03** stations across all five tiers and reports which are missing.
+  Denominator remains 8 × 5 = 40.
+- The check fails when an **03** station is declared complete with fewer than five.
+- The check does **not** fail 01/02 work for lacking a portal, service, skill, or persona.
 
 ---
 
@@ -900,6 +921,58 @@ liveness. **CAP-17, CAP-10.**
 and it is the one place this chain grew rather than converged. It is worth a deliberate look during
 the readiness gate: it is genuinely useful, and it is also the kind of scope that arrives late and
 is not sized with the same rigor as the rest.
+
+---
+
+### 4.15 One plugin API, then Warden, then station processes
+
+**Description.** Canopy Epics 18–30 mount chrome, portals, MCP, events, and DDL. They do not
+extract replaceable layers. **CAP-18** is the missing story: one hook-spec plus plugin-registration
+shape in `pyforge-core` so eight stations do not invent eight APIs. Warden is the first concrete
+retrofit (PR-gate hook specs; current scanners become optional plugins; default Warden stays green
+with no Checkmarx). Each station's package then extracts its process layer (build engine, runner,
+store, exporter, deploy profile, LLM provider); today's backend is the default plugin.
+
+**Functional Requirements:**
+
+#### FR-43: Shared hook-spec and plugin registration
+
+`pyforge-core` publishes one registration API and one documentation shape for hook
+specifications. Station packages consume it; they do not ship a second plugin loader.
+**CAP-18.**
+
+**Consequences (testable):**
+- A dummy plugin loads through the shared API.
+- A conformance check **fails** if a station package introduces a parallel registration
+  mechanism for the same class of extension.
+- Named hook points are before / after / around (or an equivalent documented set). A plugin
+  must not publish a second verdict for a process another owner specified.
+
+#### FR-44: Warden owns PR-gate hooks; scanners are optional plugins
+
+Warden owns the PR-gate hook specifications on the FR-43 contract. Existing scanners become
+plugins. A missing named scanner (including Checkmarx) is not a failed Warden run.
+**CAP-18.** Q8.
+
+**Consequences (testable):**
+- Default Warden / CI invocation is green with no named commercial scanner plugin installed.
+- Enabling an optional scanner plugin can change findings; it cannot replace the Warden verdict
+  with a second pass/fail published beside it.
+
+#### FR-45: Each 03 station extracts one process hook spec
+
+Each 03 station identifies a replaceable process layer, publishes a hook spec on the FR-43
+contract, and registers today's backend as the default plugin. Atlas **audits** existing Kedro
+hooks against the contract; it does not rebuild the pipeline or grow a pipeline PR-gate.
+**CAP-18.**
+
+**Consequences (testable):**
+- Swapping the vendor/backend for that layer does not require forking the station process.
+- Steward deploy-profile adapters (Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, Jira) are
+  plugins on this FR, not core stack.
+
+**Notes:** Order is FR-43, then FR-44, then FR-45 on the next process change (Warden first).
+Epics 18–30 must not violate CAP-18; they are not its implementation.
 
 ---
 
@@ -971,9 +1044,9 @@ external constraint, not a goal we chose.
 - **SM-4 — The egress-blocked deploy succeeds.** A build and deploy with external egress blocked
   completes end to end, carrying only PostgreSQL, Redis and the platform images. Binary; already
   the estate's existing gate. Validates FR-21, FR-33, and the air-gap constraint generally.
-- **SM-5 — Five tiers, eight stations.** The completeness check reports all eight stations with all
-  five tiers present. Countable, with a known denominator: 8 × 5 = 40. Validates FR-37, FR-38,
-  FR-39.
+- **SM-5 — Five tiers, eight 03 stations.** The completeness check reports all eight **03**
+  stations with all five tiers present. Countable, with a known denominator: 8 × 5 = 40.
+  01/02 work is outside the denominator. Validates FR-37, FR-38, FR-39.
 
 **Secondary**
 
@@ -984,6 +1057,9 @@ external constraint, not a goal we chose.
   chrome. Count: 0. Validates FR-1.
 - **SM-8 — CLI parity holds.** The generated matrix shows every station verb reachable both ways,
   and CI fails on divergence. Validates FR-13.
+- **SM-9 — One plugin API.** A dummy plugin loads through `pyforge-core`; a station-local second
+  registration API fails the check; default Warden is green with no named commercial scanner.
+  Validates FR-43, FR-44, FR-45.
 
 **Counter-metrics (do not optimize)**
 
@@ -1056,14 +1132,13 @@ control they cannot.
   on it. Group/claim mapping for CMS admin (FR-5) is **new work with no first-party guidance**.
 - **The shipped chart** — FR-24 adds a Job beside the existing migration hook, on the same image.
   The existing chart contract is not rewritten.
-- **The existing compliance portal** — becomes one of the eight (FR-9) and may need to move if OQ-4
-  chooses a uniform prefix.
+- **The existing compliance portal** — becomes one of the eight (FR-9). URL scheme is bound:
+  `/stations/<name>/` with `/compliance/` redirect (FR-9a). OQ-4 is answered.
 - **Atlas's MCP server** — brought to the current specification by FR-11 rather than duplicated.
 - **Atlas's waiting CMS consumer** — OQ-5 asks whether FR-4's instance can serve it, so the estate
   runs one CMS rather than two. Jointly owned with atlas.
-- **Six conda-forge builds** — five for FR-33 (four new feedstocks plus a `cachebox` downgrade
-  build on an existing one), one new recipe for FR-21. Each is a `conda-forge-expert` session under
-  repo Rule 1.
+- **Packaging (FR-21, FR-33)** — operator-owned conda-forge recipes (canopy AD-16; Stories 26.3
+  and 27.1 stay blocked). Not in-chain CFE sessions for Canopy implementation.
 
 ## 11. Open Questions
 
@@ -1129,7 +1204,7 @@ Every capability has at least one FR; every FR names a capability.
 | CAP-6 | FR-10, FR-14, FR-15 | CAP-15 | FR-37, FR-39 |
 | CAP-7 | FR-16 | CAP-16 | FR-38, FR-39 |
 | CAP-8 | FR-17..FR-20, FR-29 | CAP-17 | FR-40, FR-41, FR-42 |
-| CAP-9 | FR-21, FR-21a, FR-22..FR-25 | | |
+| CAP-9 | FR-21, FR-21a, FR-22..FR-25 | CAP-18 | FR-43, FR-44, FR-45 |
 
 ## 13. Assumptions Index
 
@@ -1145,9 +1220,9 @@ Every capability has at least one FR; every FR names a capability.
 
 ## 14. What Comes Next
 
-The architecture pass fixes the invariants these FRs have to agree on: the portal registration
-seam (FR-2) and its URL scheme (OQ-4), the client's assertion contract (FR-14), the event envelope
-(FR-17..FR-20), and the DDL pipeline's ordering (FR-24). Then epics group these twelve features by
-delivery seam, beginning at **Epic 18** — steward runs to 17 today. `addendum.md` carries the
-mechanism decisions already made, so the architecture pass confirms them rather than reopening
-them.
+Architecture spine and Canopy Epics **18–30** already exist. First Canopy dispatch remains
+**S-18.1** (chrome). **CAP-18** is a later-day bind: steward **Epic 32** (shared contract in
+`pyforge-core`, then steward deploy-profile plugins), **Warden Epic 9** (PR-gate retrofit),
+then each station's process-hook story. Do not regenerate the whole steward sprint feed
+(slug truncation). Packaging stays operator-owned (S-26.3, S-27.1). Scorecard remains a
+sibling Dream — CAP-18 is **not** that board.

@@ -865,3 +865,12 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   origin: Phase 5 bmad-correct-course, pyforge-steward, 2026-08-24
   severity: medium
   status: open
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 and S-32.2 done; Warden Epic 9 done (sole PR-gate); no station CI job publishes a pass/fail that bypasses Warden
