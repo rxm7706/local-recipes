@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 import structlog
 from allauth.core.exceptions import ImmediateHttpResponse
@@ -15,6 +13,7 @@ from django.http import HttpRequest
 
 from config.authorization.adapters import OIDCSocialAccountAdapter
 from config.authorization.adapters import claims_from
+from config.authorization.claims import read_group_claim
 from config.authorization.exceptions import ClaimsRejected
 from config.authorization.mapper import resolve_user
 from config.authorization.mapper import sync_for_interactive
@@ -22,6 +21,7 @@ from config.local_dev.personas import build_claims
 from config.local_dev.personas import get_persona
 from config.local_dev.tokens import mint_token
 from config.locality import RUNTIME_ENV_VAR
+from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from platformapp.users.provisioning import provision_designated_groups
 
 pytestmark = pytest.mark.django_db
@@ -90,12 +90,16 @@ def test_adapter_pre_social_login_establishes_session() -> None:
     account = SocialAccount(provider="openid_connect", uid=persona.subject, extra_data={"userinfo": claims})
     sociallogin = SocialLogin(account=account)
     request = HttpRequest()
-    request.session = MagicMock()
+    request.session = {}
 
     OIDCSocialAccountAdapter().pre_social_login(request, sociallogin)
 
     assert sociallogin.user.idp_subject == persona.subject
     assert sociallogin.user.is_staff is True
+    assert request.session[IDP_TOKEN_ROLES_SESSION_KEY] == read_group_claim(
+        claims,
+        "groups",
+    )
 
 
 def test_adapter_refuses_missing_identity_claim() -> None:

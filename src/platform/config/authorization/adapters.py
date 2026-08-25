@@ -13,7 +13,9 @@ from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
 from django.http import HttpResponseForbidden
+from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 
+from config.authorization.claims import read_group_claim
 from config.authorization.exceptions import ClaimsRejected
 from config.authorization.mapper import resolve_user
 from config.authorization.mapper import sync_for_interactive
@@ -69,6 +71,10 @@ class OIDCSocialAccountAdapter(DefaultSocialAccountAdapter):  # type: ignore[mis
             logger.warning("authorization.interactive_login_refused", reason=refusal.reason)
             raise ImmediateHttpResponse(self.refusal_response(request)) from refusal
         sociallogin.connect(request, user)
+        # Story 18.2 / canopy AD-15: persist this request's group-claim names
+        # into the session token-roles key. Not User.groups.
+        names = read_group_claim(claims, settings.CLAIMS_CONTRACT.group_claim) or []
+        request.session[IDP_TOKEN_ROLES_SESSION_KEY] = names
 
     def refusal_response(self, request: HttpRequest) -> HttpResponse:
         return HttpResponseForbidden(_REFUSAL_BODY)
