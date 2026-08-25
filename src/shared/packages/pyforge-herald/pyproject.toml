@@ -63,6 +63,11 @@ webhook-host = ["daphne>=4.2.2,<5.0"]
 [project.scripts]
 herald = "pyforge.herald.cli:main"
 
+[project.entry-points."pyforge.core.hooks"]
+herald-deck-export-marp = "pyforge.herald.exporters:MarpExportPlugin"
+herald-deck-export-pptx = "pyforge.herald.exporters:PptxExportPlugin"
+herald-deck-export-dc-html = "pyforge.herald.exporters:DcHtmlExportPlugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
