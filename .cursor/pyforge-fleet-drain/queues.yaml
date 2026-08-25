@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 33
-    next: 21-1-supervisor-tables-in-public
+    remaining_count: 32
+    next: 21-2-atlas-mcp-on-the-host-dual-era
     queue:
-    - 21-1-supervisor-tables-in-public
     - 21-2-atlas-mcp-on-the-host-dual-era
     - 21-3-start-get-survives-disconnect
     - 21-4-the-other-seven-mcp-faces
