@@ -191,6 +191,9 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Story 18.2 / canopy AD-15: copy this request's session token roles
+    # onto request.idp_roles. After SessionMiddleware so the session exists.
+    "django_pyforge.middleware.TokenRolesMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
