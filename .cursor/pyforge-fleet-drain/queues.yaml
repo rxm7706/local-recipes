@@ -167,11 +167,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 41
-    next: 18-1-django-pyforge-is-the-only-chrome
+    remaining_count: 39
+    next: 18-2-the-switcher-shows-only-what-the-user-may-reach
     queue:
-    - 18-1-django-pyforge-is-the-only-chrome
-    - 32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core
     - 18-2-the-switcher-shows-only-what-the-user-may-reach
     - 18-3-two-clients-one-rs256-assertion
     - 19-1-warden-moves-and-is-renamed
