@@ -94,7 +94,7 @@ development_status:
   28-1-postgresql-driver-behind-the-existing-port: done
   28-2-semantic-recall: done
   29-1-skf-domain-skills-from-station-packages: done
-  29-2-personas-act-only-through-grammar-and-mcp: backlog
+  29-2-personas-act-only-through-grammar-and-mcp: done
   29-3-five-tier-check: backlog
   3-1-any-named-pixi-environment-materializes-with-one-command: done
   3-2-a-bmad-loop-runner-and-its-environment-materialize-together: done
