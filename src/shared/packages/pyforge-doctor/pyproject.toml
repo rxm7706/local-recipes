@@ -46,5 +46,9 @@ gate = ["pyforge-warden"]
 [project.scripts]
 doctor = "pyforge.doctor.__main__:main"
 
+[project.entry-points."pyforge.core.hooks"]
+doctor-gather = "pyforge.doctor.hooks:DefaultGatherPlugin"
+doctor-prescribe = "pyforge.doctor.hooks:DefaultPrescribePlugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
