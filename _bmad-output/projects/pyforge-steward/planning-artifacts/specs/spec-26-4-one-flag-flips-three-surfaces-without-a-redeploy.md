@@ -2,7 +2,8 @@
 title: One flag flips three surfaces without a redeploy
 type: feature
 created: '2026-08-25'
-status: in-progress
+status: done
+shipped_ref: '61b31b3f29c978ffe2492f51923f7ab4e8ed6197'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -85,4 +86,8 @@ OpenFeature `set_provider` is process-global. Django and MCP share the ASGI proc
 
 ## Auto Run Result
 
-Status: in-progress
+Status: done
+PR: https://github.com/rxm7706/local-recipes/pull/815
+Merge SHA: 61b31b3f29c978ffe2492f51923f7ab4e8ed6197
+Verification: `pixi run -e platform-ci-test pytest src/platform/tests/test_openfeature_file_flags.py src/platform/tests/meta/test_no_pyforge_import.py` — 8 passed, 1 skipped (helm not on PATH locally)
+

@@ -161,12 +161,10 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 7
+    remaining_count: 5
     next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-    - 26-3-openfeature-packages-on-the-channel-operator-gate
-    - 26-4-one-flag-flips-three-surfaces-without-a-redeploy
     - 27-1-liquibase-on-the-channel-operator-gate
     - 27-2-pre-upgrade-job-and-dml-only-app-role
     - 27-3-stale-extraction-fails-ci
