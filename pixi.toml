@@ -2060,6 +2060,7 @@ pytest = ">=9.1.1"                       # test runner
 [feature.pyforge-scribe.dependencies]
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: graph_store.py::commit's mandatory run-dep (atomic_write_text)
+psycopg = ">=3.3.4"                      # Story 28.1: PostgresGraphStore (scribe_schema / pgvector); lazy-imported in graph_store_pg.py only
 hatchling = ">=1.32.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
