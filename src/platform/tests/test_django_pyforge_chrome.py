@@ -62,24 +62,34 @@ PROBE_TEMPLATES = (
     / "probe_portal"
     / "templates"
 )
+_SHARED = REPO_ROOT / "src" / "shared" / "packages"
 PORTAL_STATIC_AND_TEMPLATES = (
-    REPO_ROOT
-    / "src"
-    / "shared"
-    / "packages"
-    / "django-warden"
-    / "src"
-    / "django_warden_fabric",
-    REPO_ROOT
-    / "src"
-    / "shared"
-    / "packages"
-    / "django-pyforge"
-    / "src"
-    / "django_pyforge"
-    / "probe_portal",
+    _SHARED / "django-warden" / "src" / "django_warden_fabric",
+    _SHARED / "django-atlas" / "src" / "django_atlas_portal",
+    _SHARED / "django-doctor" / "src" / "django_doctor_portal",
+    _SHARED / "django-herald" / "src" / "django_herald_portal",
+    _SHARED / "django-marshal" / "src" / "django_marshal_portal",
+    _SHARED / "django-mason" / "src" / "django_mason_portal",
+    _SHARED / "django-scribe" / "src" / "django_scribe_portal",
+    _SHARED / "django-steward" / "src" / "django_steward_portal",
+    _SHARED / "django-pyforge" / "src" / "django_pyforge" / "probe_portal",
+    _SHARED / "django-pyforge" / "src" / "django_pyforge" / "workclass_probe",
 )
-EXPECTED_PORTALS = frozenset({"warden", "chrome-probe"})
+EXPECTED_PORTALS = frozenset(
+    {
+        "atlas",
+        "doctor",
+        "herald",
+        "marshal",
+        "mason",
+        "scribe",
+        "steward",
+        "warden",
+        "chrome-probe",
+        "infra-probe",
+    },
+)
+SWITCHER_PORTALS = EXPECTED_PORTALS - {"infra-probe"}
 
 
 def _portal_ns(fields: dict[str, object]) -> SimpleNamespace:
@@ -232,7 +242,8 @@ def test_missing_station_role_omits_that_station_from_the_switcher() -> None:
     request.idp_roles = ["warden"]
     html = _switcher_html(request)
     assert "/stations/warden/" in html
-    assert "/stations/chrome-probe/" not in html
+    for name in EXPECTED_PORTALS - {"warden"}:
+        assert f"/stations/{name}/" not in html
     assert {cfg.station_name for cfg in iter_portal_configs()} == EXPECTED_PORTALS
 
 
@@ -274,9 +285,10 @@ def test_switcher_uses_token_roles_not_django_groups() -> None:
 
 def test_empty_token_roles_on_the_next_request_list_no_stations() -> None:
     first = RequestFactory().get("/stations/warden/")
-    first.idp_roles = ["warden", "chrome-probe"]
+    first.idp_roles = list(EXPECTED_PORTALS)
     first_names = {portal.station_name for portal in chrome(first)["pyforge_portals"]}
-    assert first_names == EXPECTED_PORTALS
+    assert first_names == SWITCHER_PORTALS
+    assert "infra-probe" not in first_names
     second = RequestFactory().get("/stations/warden/")
     second.idp_roles = []
     assert list(chrome(second)["pyforge_portals"]) == []

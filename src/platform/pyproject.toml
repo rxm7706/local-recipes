@@ -12,6 +12,13 @@ addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib --ignore
 pythonpath = [
     "../shared/packages/django-pyforge/src",
     "../shared/packages/django-warden/src",
+    "../shared/packages/django-atlas/src",
+    "../shared/packages/django-doctor/src",
+    "../shared/packages/django-herald/src",
+    "../shared/packages/django-marshal/src",
+    "../shared/packages/django-mason/src",
+    "../shared/packages/django-scribe/src",
+    "../shared/packages/django-steward/src",
 ]
 python_files = [
     "tests.py",
