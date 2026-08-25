@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 35
-    next: 20-1-wagtail-publishes-without-a-deploy
+    remaining_count: 34
+    next: 20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue
     queue:
-    - 20-1-wagtail-publishes-without-a-deploy
     - 20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue
     - 21-1-supervisor-tables-in-public
     - 21-2-atlas-mcp-on-the-host-dual-era
