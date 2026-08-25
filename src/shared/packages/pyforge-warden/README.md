@@ -8,7 +8,9 @@ over Python / Conda / Pixi manifests, emitting one schema-validated
 
 **Status:** Epics 1–8 shipped. Epic 9 Story 9.2 wraps those engines as the
 default plugin bundle on `pyforge.core.hooks` and registers optional
-commercial scanners as stubs. Specified in
+commercial scanners as stubs. Story 9.3 pins that a default `warden scan`
+stays green when Checkmarx (and the other named commercial plugins) are
+absent. Specified in
 [`docs/specs/pyforge-warden.md`](../../../../docs/specs/pyforge-warden.md).
 
 ## Develop
@@ -72,7 +74,7 @@ default `fail-on-kev` gate: until the KEV feed is provisioned (or that gate
 is explicitly disabled), a default-config scan composes `indeterminate` on
 the vulnerability axis rather than a trusted verdict.
 
-## PR-gate hook book (Stories 9.1–9.2)
+## PR-gate hook book (Stories 9.1–9.3)
 
 Warden publishes named hook specs on the shared FR-43 API
 (`pyforge.core.hooks`). Scanner authors attach Checkmarx/Sonar/GHAS-shaped
@@ -100,8 +102,13 @@ with `WARDEN_OPTIONAL_SCANNERS` (comma-separated ids). Enabling an optional
 scanner may add `plugin_findings`; it cannot replace the Warden verdict
 (only `publish_pr_gate_verdict`, owner `"warden"`, publishes the PR-gate).
 A successful optional-plugin scan is not a competing PR-gate. Missing or
-not-enabled optionals are omitted, not an error — Story 9.3 still owns the
-absence-as-failure CI test.
+not-enabled optionals are omitted, not an error. Story 9.3 pins
+default-green-without-Checkmarx: a default `warden scan` (no
+`WARDEN_OPTIONAL_SCANNERS`) on a registry that has no Checkmarx/Sonar/Black
+Duck/GHAS/profile-local plugin exits green unless Warden's own engines fail.
+`tests/unit/test_default_warden_without_checkmarx.py` fails if that absence
+is treated as a Warden failure. Enabling `WARDEN_OPTIONAL_SCANNERS=checkmarx`
+is not the default run.
 
 **Scanner-author example.** A plugin is a `HookPlugin`: `hook_spec` (one of
 the three names above), `owner` (the scanner, e.g. `"checkmarx"` — never

@@ -42,7 +42,8 @@ OPTIONAL_SCANNER_IDS: tuple[str, ...] = (
 
 OPTIONAL_SCANNER_ID_SET: frozenset[str] = frozenset(OPTIONAL_SCANNER_IDS)
 
-# Story 9.3 hook: omit-not-error. Do not add the 9.3 negative CI test here.
+# Story 9.3 hook: omit-not-error. The fail-if-absence-is-failure CI test
+# lives in tests/unit/test_default_warden_without_checkmarx.py.
 OPTIONAL_ABSENT_IS_NOT_FAILURE: bool = True
 
 WARDEN_OPTIONAL_SCANNERS_ENV = "WARDEN_OPTIONAL_SCANNERS"
