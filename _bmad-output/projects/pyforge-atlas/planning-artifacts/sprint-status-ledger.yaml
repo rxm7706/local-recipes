@@ -40,7 +40,7 @@ development_status:
   16-2-httpx-opener-and-rehearsal: done
   17-1-the-from-scratch-run-is-a-chartered-capability: done
   17-2-handoffs-are-execution-ready: done
-  18-1-map-existing-kedro-hooks-to-cap-18: backlog
+  18-1-map-existing-kedro-hooks-to-cap-18: done
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done
   2-3-implement-incrementalparquetdataset-for-ttl-gating: done
