@@ -22,6 +22,7 @@ REPO_ROOT = POLICY_DIR.parents[3]
 
 PLATFORM_PYPROJECT = PLATFORM_ROOT / "pyproject.toml"
 PIXI_TOML = REPO_ROOT / "pixi.toml"
+PIXI_LOCK = REPO_ROOT / "pixi.lock"
 PLATFORM_CI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "platform-ci.yml"
 PLATFORM_TEST_SETUP_ACTION = (
     REPO_ROOT / ".github" / "actions" / "platform-test-setup" / "action.yml"
@@ -53,6 +54,37 @@ def platform_pyproject() -> dict[str, Any]:
 def pixi_manifest() -> dict[str, Any]:
     """Return the parsed repo-root ``pixi.toml``."""
     return load_toml(PIXI_TOML)
+
+
+def pixi_lock_text() -> str:
+    """Return raw ``pixi.lock`` text."""
+    return PIXI_LOCK.read_text(encoding="utf-8")
+
+
+def pixi_env_conda_urls(environment: str, lock_text: str | None = None) -> list[str]:
+    """Conda package URLs locked for ``environment`` (all platforms).
+
+    Walks the schema-v7 env block without loading the whole lock as YAML.
+    """
+    text = lock_text if lock_text is not None else pixi_lock_text()
+    header = f"  {environment}:"
+    lines = text.splitlines()
+    start: int | None = None
+    for index, line in enumerate(lines):
+        if line == header:
+            start = index
+            break
+    if start is None:
+        msg = f"pixi.lock has no environments.{environment} block"
+        raise AssertionError(msg)
+    urls: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.startswith("  ") and not line.startswith("    ") and line.endswith(":"):
+            break
+        stripped = line.strip()
+        if stripped.startswith("- conda:"):
+            urls.append(stripped.split("conda:", 1)[1].strip())
+    return urls
 
 
 def platform_ci_workflow() -> dict[str, Any]:

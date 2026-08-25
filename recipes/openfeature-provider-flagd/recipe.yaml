@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.5.2"
+  version: "0.5.0"
   python_min: "3.10"
 
 package:
@@ -11,10 +11,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openfeature-provider-flagd/openfeature_provider_flagd-${{ version }}.tar.gz
-  sha256: 6c10288afcca00a5889df475ddc03c09be53ba6d8f8060f1ba23e38fbc557054
+  sha256: d5cac8fb9194ccd454f67fa48da195b0e9d629c77493160b93fa2cf5400ec288
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,16 +24,16 @@ requirements:
     - pip
     - hatchling
     - hatch-protobuf
-    - grpcio-tools 1.82.1.*
+    - grpcio-tools 1.81.1.*
     - mypy-protobuf >=3,<4
-    - protobuf >=7.35.1,<8.0.0
+    - protobuf >=6.30.0,<7.0.0
   run:
     - python >=${{ python_min }}
     - cachebox <6.0.0,>=5.1.0
-    - grpcio >=1.82.1
+    - grpcio >=1.81.0
     - openfeature-flagd-core <2,>=1.0.0
     - openfeature-sdk >=0.8.2
-    - protobuf <8.0.0,>=7.35.1
+    - protobuf <7.0.0,>=6.30.0
     - pyyaml >=6.0.1
 
 tests:

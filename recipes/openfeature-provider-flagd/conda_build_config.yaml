@@ -1,0 +1,4 @@
+# Local + SelfExplainML solve: hatch-protobuf and the flagd siblings are
+# not on conda-forge. Do not submit this file to staged-recipes.
+channel_sources:
+  - conda-forge,SelfExplainML
