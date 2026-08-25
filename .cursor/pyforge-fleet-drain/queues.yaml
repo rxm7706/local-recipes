@@ -124,11 +124,10 @@ order_overrides:
 stations:
   atlas:
     project: pyforge-atlas
-    drained: false
-    remaining_count: 1
-    next: 18-1-map-existing-kedro-hooks-to-cap-18
-    queue:
-    - 18-1-map-existing-kedro-hooks-to-cap-18
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   doctor:
     project: pyforge-doctor
     drained: false
@@ -157,11 +156,10 @@ stations:
     queue: []
   scribe:
     project: pyforge-scribe
-    drained: false
-    remaining_count: 1
-    next: 4-1-register-graphstore-as-cap-18-plugins
-    queue:
-    - 4-1-register-graphstore-as-cap-18-plugins
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   steward:
     project: pyforge-steward
     drained: false
