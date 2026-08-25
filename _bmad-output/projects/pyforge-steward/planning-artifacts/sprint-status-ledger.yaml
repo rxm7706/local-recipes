@@ -90,7 +90,7 @@ development_status:
   27-1-liquibase-on-the-channel-operator-gate: done
   27-2-pre-upgrade-job-and-dml-only-app-role: done
   27-3-stale-extraction-fails-ci: done
-  27-4-test-databases-still-migrate: backlog
+  27-4-test-databases-still-migrate: done
   28-1-postgresql-driver-behind-the-existing-port: done
   28-2-semantic-recall: done
   29-1-skf-domain-skills-from-station-packages: done
