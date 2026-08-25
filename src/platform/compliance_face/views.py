@@ -14,6 +14,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
+from django_pyforge.access import require_station_role
 
 from .models import ComplianceJob
 from .phases import current_progress
@@ -39,6 +40,7 @@ def _blob_root() -> Path:
 
 
 @require_GET
+@require_station_role("warden")
 def chrome_home(request: HttpRequest) -> HttpResponse:
     """HTML face that extends django-pyforge chrome (Story 18.1)."""
     return render(request, "compliance_face/chrome.html")

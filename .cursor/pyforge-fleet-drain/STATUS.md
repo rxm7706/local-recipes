@@ -1,6 +1,6 @@
 # PyForge fleet drain — status snapshot
 
-**Updated:** 2026-08-24 00:05 CDT
+**Updated:** 2026-08-24 21:58 CDT
 **Playbook:** [PLAN.md](./PLAN.md) · [COORDINATOR.md](./COORDINATOR.md)
 
 ## Coordinator lock (singleton)
@@ -43,6 +43,7 @@ GitHub Actions billing blocks CI. Until restored: **local tests green → `gh pr
 
 | Station | Story | PR |
 |---------|-------|-----|
+| mason | `10-1` | [#734](https://github.com/rxm7706/local-recipes/pull/734) merge `eaddad8ad8` · **mason DRAINED** |
 | marshal | `25-7` | [#722](https://github.com/rxm7706/local-recipes/pull/722) / finalize [#723](https://github.com/rxm7706/local-recipes/pull/723) merge `5b09bbce14` ([Marshal 25-7](20e87c08-76d1-4a60-a176-4877ea6d62e5)) · **Epic 25 done** · **marshal DRAINED** |
 | marshal | `25-6` | [#721](https://github.com/rxm7706/local-recipes/pull/721) merge `8d5e439f2d` |
 | marshal | `24-3` | [#720](https://github.com/rxm7706/local-recipes/pull/720) merge `39cee7530c` · **Epic 24 done** |

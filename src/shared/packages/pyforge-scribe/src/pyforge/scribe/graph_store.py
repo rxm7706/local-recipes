@@ -41,13 +41,17 @@ import json
 import sys
 import tempfile
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, MutableMapping
 from datetime import datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.hooks import HookSpec, PluginError
 from pyforge.scribe.models import GraphNode
+
+GRAPHSTORE_HOOK_SPEC = HookSpec(name="pyforge.scribe.graph_store", owner="scribe")
+PG_GRAPHSTORE_OWNER = "steward"
 
 _LOCK_TIMEOUT_S = 10.0
 
@@ -74,6 +78,28 @@ class GraphStore(Protocol):
     def iter_nodes(self) -> Iterator[GraphNode]: ...
 
     def commit(self) -> None: ...
+
+
+class FlatFileGraphStorePlugin:
+    """CAP-18 registration adapter around ``FlatFileGraphStore`` (Story 4.1).
+
+    Lifecycle only -- ``call("around", context)`` reads ``context["store_path"]``
+    and writes ``context["store"]``. Persistence format is unchanged.
+    """
+
+    hook_spec: str = GRAPHSTORE_HOOK_SPEC.name
+    owner: str = GRAPHSTORE_HOOK_SPEC.owner
+
+    def call(self, point: str, context: MutableMapping[str, Any]) -> Any:
+        if point == "around":
+            store_path = context.get("store_path")
+            if store_path is None:
+                raise PluginError("graph-store plugin requires context['store_path']")
+            context["store"] = FlatFileGraphStore(store_path)
+            nxt = context.get("next")
+            if callable(nxt):
+                return nxt(context)
+        return context
 
 
 class FlatFileGraphStore:

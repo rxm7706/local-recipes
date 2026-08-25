@@ -106,7 +106,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness
+from ..adapters.harness_bmadloop import resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import deferred_work, identity, policy, promotion
 from ..core.identity import MalformedStoryKeyError, StoryKey
@@ -388,7 +388,7 @@ def run_land(
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
     forge = forge if forge is not None else GhForge()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
 

@@ -24,7 +24,7 @@ development_status:
   1-7-degradation-when-cfe-is-unavailable: done
   1-8-mason-doctor: done
   1-9-fake-cfe-root-fixture-and-test-harness: done
-  10-1-extract-the-build-engine-hook: backlog
+  10-1-extract-the-build-engine-hook: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done

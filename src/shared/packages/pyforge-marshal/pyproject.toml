@@ -46,6 +46,11 @@ marshal = "pyforge.marshal.cli.main:main"
 # absolute path — `marshal init` renders the basename into the home.
 marshal-mcp = "pyforge.marshal.mcp.server:main"
 
+# Story 26.1: today's loop runner is the default plugin on the shared
+# S-32.1 group. Do not add a parallel pyforge.marshal.hooks group.
+[project.entry-points."pyforge.core.hooks"]
+bmad-loop = "pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
