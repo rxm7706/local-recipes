@@ -109,6 +109,25 @@ def asgi_for_server(server: Any) -> Any:
     return DualEraPostOnlyASGI(starlette_app)
 
 
+_station_identity_servers: dict[str, Any] = {}
+
+
+def asgi_for_station(name: str) -> Any:
+    """Cached identity MCP face (``station_face``) wrapped by ``asgi_for_server``."""
+    server = _station_identity_servers.get(name)
+    if server is None:
+        from mcp.server.mcpserver import MCPServer  # noqa: PLC0415
+
+        server = MCPServer(f"pyforge-{name}")
+
+        @server.tool()
+        def station_face() -> str:
+            return name
+
+        _station_identity_servers[name] = server
+    return asgi_for_server(server)
+
+
 class DualEraPostOnlyASGI:
     """Reject non-POST; reject unsupported protocol revisions with ``-32022``."""
 

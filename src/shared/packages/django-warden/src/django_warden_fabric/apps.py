@@ -19,3 +19,8 @@ class WardenFabricConfig(PortalConfig):
     work_class = "03"
     promotion_date = date(2026, 8, 22)
     urlconf = "django_warden_fabric.portal_urls"
+
+    def mcp_asgi_app(self):
+        from django_pyforge.mcp_http import asgi_for_station  # noqa: PLC0415
+
+        return asgi_for_station(self.station_name)
