@@ -152,11 +152,10 @@ stations:
     - 26-1-extract-the-loop-runner-hook
   mason:
     project: pyforge-mason
-    drained: false
-    remaining_count: 1
-    next: 10-1-extract-the-build-engine-hook
-    queue:
-    - 10-1-extract-the-build-engine-hook
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   scribe:
     project: pyforge-scribe
     drained: false
