@@ -15,6 +15,9 @@ authors = [{ name = "rxm7706" }]
 # do not add pluggy or setuptools here.
 dependencies = []
 
+[project.scripts]
+pyforge = "pyforge.core.dispatch:main"
+
 [project.entry-points."pyforge.core.hooks"]
 dummy = "pyforge.core.hooks:DummyPlugin"
 

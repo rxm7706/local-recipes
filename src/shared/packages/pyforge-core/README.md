@@ -13,7 +13,28 @@ for the leaf contract, and
 for the hook-spec contract.
 
 **Status:** The leaf is no longer an empty 14.1 scaffold. Primitives live
-here; the canonical plugin group is `pyforge.core.hooks` only.
+here; the canonical plugin group is `pyforge.core.hooks` only. Story 22.1
+adds the unified `pyforge` console script (CAP-5 / FR-13): dispatch to
+existing station binaries, never a second implementation of station logic.
+
+## Unified CLI (`pyforge <station> <noun> <verb>`)
+
+`pyforge` maps the station token to that distribution's **primary** console
+script (`steward`, `warden`, `pyforge-atlas`, … — never a sibling `*-mcp`
+extra) and forwards the rest of argv through `PosixProcess`.
+
+```text
+pyforge steward keys list   →  steward keys list
+pyforge mason recipe build  →  mason recipe build
+```
+
+No station duty tables live in `pyforge.core.dispatch`. A verb added to a
+station CLI is reachable because forwarding has no allowlist; CI generates
+a parity matrix from sibling `pyproject.toml` files plus AST introspection
+(`add_parser` / Typer commands). If those two surfaces drift, the build
+fails. A CLI that cannot be introspected (atlas Kedro/Click today) must
+name a preparatory story (`spec-22-prep-atlas-kedro-cli-introspection`);
+silently omitting the station is a test failure.
 
 ## Develop
 
