@@ -24,10 +24,12 @@ logger: structlog.stdlib.BoundLogger = structlog.get_logger(__name__)
 
 STAFF_ROLE: Final = "staff"
 SUPERUSER_ROLE: Final = "superuser"
+WAGTAIL_ADMIN_ROLE: Final = "wagtail-admin"
 
 DESIGNATED_GROUP_PERMISSIONS: Final[dict[str, tuple[str, ...]]] = {
     STAFF_ROLE: ("users.view_user", "users.change_user"),
     SUPERUSER_ROLE: (),
+    WAGTAIL_ADMIN_ROLE: ("wagtailadmin.access_admin",),
 }
 
 
@@ -62,7 +64,13 @@ def provision_designated_groups(apps: StateApps | Apps | None = None) -> Provisi
     existing: list[str] = []
     attached = 0
 
-    for designated in _designated_groups(contract.staff_group, contract.superuser_group):
+    for designated in _designated_groups(
+        contract.staff_group,
+        contract.superuser_group,
+        settings.WAGTAIL_ADMIN_IDP_GROUP,
+    ):
+        if not designated.name:
+            continue
         group, was_created = group_model.objects.get_or_create(name=designated.name)
         (created if was_created else existing).append(designated.name)
 
@@ -84,11 +92,23 @@ def provision_designated_groups(apps: StateApps | Apps | None = None) -> Provisi
     return result
 
 
-def _designated_groups(staff_group: str, superuser_group: str) -> tuple[_DesignatedGroup, ...]:
+def _designated_groups(
+    staff_group: str,
+    superuser_group: str,
+    wagtail_admin_group: str,
+) -> tuple[_DesignatedGroup, ...]:
     by_name: dict[str, _DesignatedGroup] = {}
-    for role, name in ((STAFF_ROLE, staff_group), (SUPERUSER_ROLE, superuser_group)):
+    for role, name in (
+        (STAFF_ROLE, staff_group),
+        (SUPERUSER_ROLE, superuser_group),
+        (WAGTAIL_ADMIN_ROLE, wagtail_admin_group),
+    ):
         entry = by_name.get(name, _DesignatedGroup(name=name))
-        added = tuple(code for code in DESIGNATED_GROUP_PERMISSIONS[role] if code not in entry.codenames)
+        added = tuple(
+            code
+            for code in DESIGNATED_GROUP_PERMISSIONS[role]
+            if code not in entry.codenames
+        )
         by_name[name] = _DesignatedGroup(
             name=name,
             roles=(*entry.roles, role),

@@ -105,6 +105,7 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
     # "django.contrib.humanize", # Handy template tags
     "django.contrib.admin",
+    "django.contrib.postgres",  # steward 20.1 / canopy AD-13: Wagtail PostgreSQL FTS
     "django.forms",
 ]
 THIRD_PARTY_APPS = [
@@ -117,6 +118,20 @@ THIRD_PARTY_APPS = [
     # CAP-1 / steward 16.5: OIDC provider ships with django-allauth (no second framework).
     "allauth.socialaccount.providers.openid_connect",
     "django_celery_beat",
+    # steward 20.1 / canopy AD-13: Lane 1 CMS (standard Wagtail 7.4 set)
+    "wagtail.contrib.forms",
+    "wagtail.contrib.redirects",
+    "wagtail.embeds",
+    "wagtail.sites",
+    "wagtail.users",
+    "wagtail.snippets",
+    "wagtail.documents",
+    "wagtail.images",
+    "wagtail.search",
+    "wagtail.admin",
+    "wagtail",
+    "modelcluster",
+    "taggit",
     # Story 10.1: K8s liveness/readiness target at /ht/ -- PostgreSQL + Redis
     # (via the configured cache backend) only. health_check.storage is
     # deliberately omitted: it checks the default file storage backend, a
@@ -141,6 +156,8 @@ LOCAL_APPS = [
     # themselves via AppConfig (canopy AD-1).
     "django_pyforge",
     "platformapp.users",
+    # steward 20.1 / canopy AD-13: Lane 1 HomePage at /
+    "platformapp.front_door.apps.FrontDoorConfig",
     # Story 11.1: migration-only app provisioning `langflow_schema` (AD-5).
     # No models -- see langflow_integration/apps.py.
     "langflow_integration",
@@ -176,6 +193,19 @@ OIDC_PROVIDER_ID = env.str("COMPONENT_OIDC_PROVIDER_ID", default="oidc")
 # Unauthenticated requests redirect to the IdP, not a local password form.
 LOGIN_URL = reverse_lazy("openid_connect_login", kwargs={"provider_id": OIDC_PROVIDER_ID})
 CLAIMS_CONTRACT = load_claims_contract(env)
+# steward 20.1 / canopy AD-13: Wagtail admin is IdP-only (not a URLconf override).
+WAGTAILADMIN_LOGIN_URL = LOGIN_URL
+WAGTAILUSERS_PASSWORD_ENABLED = False
+WAGTAIL_EMAIL_MANAGEMENT_ENABLED = False
+WAGTAIL_PASSWORD_MANAGEMENT_ENABLED = False
+WAGTAIL_SITE_NAME = env.str("WAGTAIL_SITE_NAME", default="PyForge")
+WAGTAILADMIN_BASE_URL = env.str("WAGTAILADMIN_BASE_URL", default="http://localhost:8000")
+WAGTAIL_ADMIN_IDP_GROUP = env.str("COMPONENT_WAGTAIL_ADMIN_GROUP", default="wagtail-admin")
+WAGTAILSEARCH_BACKENDS = {
+    "default": {
+        "BACKEND": "wagtail.search.backends.database",
+    },
+}
 
 # PASSWORDS
 # ------------------------------------------------------------------------------
@@ -219,6 +249,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    # steward 20.1: signed-in users without the Wagtail-admin IdP group get 403,
+    # not Wagtail's default bounce to login.
+    "platformapp.front_door.middleware.WagtailAdminGroupRequiredMiddleware",
+    "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 ]
 
 # STATIC

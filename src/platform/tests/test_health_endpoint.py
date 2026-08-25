@@ -30,8 +30,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 from django.urls import resolve
-from django.urls import reverse
 from health_check.views import HealthCheckView
+from wagtail.views import serve
 
 if TYPE_CHECKING:
     from django.test import Client
@@ -64,9 +64,9 @@ def test_home_page_does_not_shadow_the_health_route() -> None:
     # `/ht/` is wired as a bare `path()` rather than an `include()`, so a
     # future `include()` at "" could swallow it without any other test
     # noticing. This has to assert FORWARD resolution of `/ht/` itself:
-    # `reverse("home")` would keep returning "/" while `/ht/` was being
-    # routed somewhere else entirely, so it proves nothing about the pair.
-    assert reverse("home") == "/"
+    # reversing a named home URL would keep returning "/" while `/ht/` was
+    # being routed somewhere else entirely, so it proves nothing about the pair.
+    assert resolve("/").func is serve
     # `view_class` is attached dynamically by `View.as_view()`'s closure, not
     # declared on the `Callable` django-stubs types `ResolverMatch.func` as.
     assert resolve("/ht/").func.view_class is HealthCheckView  # type: ignore[attr-defined]

@@ -9,19 +9,24 @@ from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.models import SocialLogin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
 from django.http import HttpRequest
+from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 
 from config.authorization.adapters import OIDCSocialAccountAdapter
 from config.authorization.adapters import claims_from
+from config.authorization.claims import ClaimsContract
 from config.authorization.claims import read_group_claim
 from config.authorization.exceptions import ClaimsRejected
 from config.authorization.mapper import resolve_user
 from config.authorization.mapper import sync_for_interactive
 from config.local_dev.personas import build_claims
 from config.local_dev.personas import get_persona
+from config.local_dev.personas import resolve_groups
 from config.local_dev.tokens import mint_token
 from config.locality import RUNTIME_ENV_VAR
-from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
+from platformapp.front_door.apps import FrontDoorConfig
+from platformapp.front_door.apps import _provision_wagtail_admin_group
 from platformapp.users.provisioning import provision_designated_groups
 
 pytestmark = pytest.mark.django_db
@@ -139,3 +144,62 @@ def test_sync_refuses_absent_group_claim() -> None:
 def test_provision_designated_groups_creates_rows() -> None:
     assert Group.objects.filter(name="platform-staff").exists()
     assert Group.objects.filter(name="platform-superuser").exists()
+    wagtail_group = Group.objects.get(name="wagtail-admin")
+    assert wagtail_group.permissions.filter(
+        content_type__app_label="wagtailadmin",
+        codename="access_admin",
+    ).exists()
+
+
+def test_provision_merges_wagtail_permission_when_group_matches_staff(
+    settings,
+) -> None:
+    settings.WAGTAIL_ADMIN_IDP_GROUP = settings.CLAIMS_CONTRACT.staff_group
+    provision_designated_groups()
+    group = Group.objects.get(name="platform-staff")
+    assert group.permissions.filter(codename="access_admin").exists()
+    assert group.permissions.filter(codename="view_user").exists()
+
+
+def test_editor_persona_resolves_wagtail_admin_group() -> None:
+    persona = get_persona("editor")
+    groups = resolve_groups(persona)
+    assert "wagtail-admin" in groups
+
+
+def test_sync_editor_gets_wagtail_admin_group_not_staff() -> None:
+    claims = build_claims(get_persona("editor"))
+    user = resolve_user(claims)
+    sync_for_interactive(user, claims)
+    user.refresh_from_db()
+    assert user.groups.filter(name="wagtail-admin").exists()
+    assert user.is_staff is False
+
+
+def test_provision_skips_when_claims_contract_unconfigured(settings) -> None:
+    settings.CLAIMS_CONTRACT = ClaimsContract("", "", "", "")
+    result = provision_designated_groups()
+    assert result.created == ()
+    assert result.permissions_attached == 0
+
+
+def test_provision_skips_blank_wagtail_admin_group_name(settings) -> None:
+    settings.WAGTAIL_ADMIN_IDP_GROUP = ""
+    provision_designated_groups()
+    assert not Group.objects.filter(name="").exists()
+
+
+def test_front_door_post_migrate_provisions_wagtail_group() -> None:
+    _provision_wagtail_admin_group(FrontDoorConfig)
+    assert Group.objects.filter(name="wagtail-admin").exists()
+
+
+def test_provision_skips_unresolved_permission(settings) -> None:
+    Permission.objects.filter(
+        content_type__app_label="wagtailadmin",
+        codename="access_admin",
+    ).delete()
+    provision_designated_groups()
+    group = Group.objects.get(name=settings.WAGTAIL_ADMIN_IDP_GROUP)
+    assert not group.permissions.filter(codename="access_admin").exists()
+

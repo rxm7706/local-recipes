@@ -7,11 +7,12 @@ from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
 from health_check.views import HealthCheckView
+from wagtail import urls as wagtail_urls
+from wagtail.admin import urls as wagtailadmin_urls
 
 from config.legacy_compliance import redirect_to_warden
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/home.html"), name="home"),
     path(
         "about/",
         TemplateView.as_view(template_name="pages/about.html"),
@@ -91,19 +92,15 @@ urlpatterns = [
         "ht/",
         HealthCheckView.as_view(checks=["health_check.Database", "health_check.Cache"]),
     ),
-    # Your stuff: custom urls includes go here
-    # ...
+    # steward 20.1: Wagtail admin at /cms/ so it does not collide with Django ADMIN_URL.
+    path("cms/", include(wagtailadmin_urls)),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
 if settings.DEBUG:
     # Static file serving when using Gunicorn + Uvicorn for local web socket development
     urlpatterns += staticfiles_urlpatterns()
-
-
-if settings.DEBUG:
-    # This allows the error pages to be debugged during development, just visit
-    # these url in browser to see how these error pages look like.
+    # Debug preview routes MUST be registered before the Wagtail catch-all.
     urlpatterns += [
         path(
             "400/",
@@ -129,3 +126,9 @@ if settings.DEBUG:
             path("__debug__/", include(debug_toolbar.urls)),
             *urlpatterns,
         ]
+
+# Lane 1 catch-all MUST be last so /ht/, /cms/, stations, and DEBUG previews win.
+urlpatterns += [
+    path("", include(wagtail_urls)),
+]
+

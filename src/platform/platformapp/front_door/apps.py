@@ -1,0 +1,23 @@
+from django.apps import AppConfig
+from django.db.models.signals import post_migrate
+from django.utils.translation import gettext_lazy as _
+
+from platformapp.users.provisioning import provision_designated_groups
+
+
+def _provision_wagtail_admin_group(sender: AppConfig, **kwargs: object) -> None:
+    provision_designated_groups()
+
+
+class FrontDoorConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "platformapp.front_door"
+    label = "front_door"
+    verbose_name = _("Front door")
+
+    def ready(self) -> None:
+        post_migrate.connect(
+            _provision_wagtail_admin_group,
+            sender=self,
+            dispatch_uid="front_door.provision_wagtail_admin_group",
+        )
