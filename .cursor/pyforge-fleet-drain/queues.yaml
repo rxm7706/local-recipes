@@ -138,11 +138,10 @@ stations:
     - 17-1-extract-gather-prescribe-source-plugins
   herald:
     project: pyforge-herald
-    drained: false
-    remaining_count: 1
-    next: 16-1-extract-deck-export-format-plugins
-    queue:
-    - 16-1-extract-deck-export-format-plugins
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   marshal:
     project: pyforge-marshal
     drained: false
