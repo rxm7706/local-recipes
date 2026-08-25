@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 23
-    next: 25-2-one-duckdb-writer
+    remaining_count: 22
+    next: 25-3-validation-errors-render-inline
     queue:
-    - 25-2-one-duckdb-writer
     - 25-3-validation-errors-render-inline
     - 25-4-restarts-reconcile
     - 26-1-revoke-takes-effect-on-the-next-request
