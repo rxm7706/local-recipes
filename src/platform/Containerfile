@@ -355,8 +355,16 @@ COPY src/platform/ /app/
 COPY src/shared/packages/django-pyforge/src/django_pyforge /app/django_pyforge
 # Steward 19.1: warden portal lives under src/shared; same COPY shape as chrome.
 COPY src/shared/packages/django-warden/src/django_warden_fabric /app/django_warden_fabric
-# Probe portal is a test fixture, not a production station shell.
-RUN rm -rf /app/django_pyforge/probe_portal
+# Steward 19.2: remaining station shells (projection-only chrome).
+COPY src/shared/packages/django-atlas/src/django_atlas_portal /app/django_atlas_portal
+COPY src/shared/packages/django-doctor/src/django_doctor_portal /app/django_doctor_portal
+COPY src/shared/packages/django-herald/src/django_herald_portal /app/django_herald_portal
+COPY src/shared/packages/django-marshal/src/django_marshal_portal /app/django_marshal_portal
+COPY src/shared/packages/django-mason/src/django_mason_portal /app/django_mason_portal
+COPY src/shared/packages/django-scribe/src/django_scribe_portal /app/django_scribe_portal
+COPY src/shared/packages/django-steward/src/django_steward_portal /app/django_steward_portal
+# Probe portals are test fixtures, not production station shells.
+RUN rm -rf /app/django_pyforge/probe_portal /app/django_pyforge/workclass_probe
 
 # Same `exec -- "$@"` pattern (and the same reason) as the repo-root
 # Containerfile's entrypoint: without the `--` terminator, a leading-dash

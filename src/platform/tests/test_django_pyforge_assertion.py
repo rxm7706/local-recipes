@@ -58,22 +58,18 @@ CORE_ASSERTION = (
     / "core"
     / "assertion.py"
 )
+_SHARED = REPO_ROOT / "src" / "shared" / "packages"
 PORTAL_TREES = (
-    REPO_ROOT
-    / "src"
-    / "shared"
-    / "packages"
-    / "django-warden"
-    / "src"
-    / "django_warden_fabric",
-    REPO_ROOT
-    / "src"
-    / "shared"
-    / "packages"
-    / "django-pyforge"
-    / "src"
-    / "django_pyforge"
-    / "probe_portal",
+    _SHARED / "django-warden" / "src" / "django_warden_fabric",
+    _SHARED / "django-atlas" / "src" / "django_atlas_portal",
+    _SHARED / "django-doctor" / "src" / "django_doctor_portal",
+    _SHARED / "django-herald" / "src" / "django_herald_portal",
+    _SHARED / "django-marshal" / "src" / "django_marshal_portal",
+    _SHARED / "django-mason" / "src" / "django_mason_portal",
+    _SHARED / "django-scribe" / "src" / "django_scribe_portal",
+    _SHARED / "django-steward" / "src" / "django_steward_portal",
+    _SHARED / "django-pyforge" / "src" / "django_pyforge" / "probe_portal",
+    _SHARED / "django-pyforge" / "src" / "django_pyforge" / "workclass_probe",
 )
 _BANNED_SECRET = re.compile(
     r"hmac|HS256|PYFORGE_INTERNAL_HS256|INTERNAL_HS256",
