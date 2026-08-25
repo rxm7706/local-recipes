@@ -2,7 +2,13 @@
 spec: bmad-suite-install-class-wiring
 status: ready
 owner-dream: docs/dreams/bmad-suite-install-class-wiring.md
-surface: []   # populated as Epic 31 lands (provision --help pointer, CAP-1 wired-or-not predicates)
+surface:
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/fresh_clone.py
+  - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py
+  - src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py
+  - .github/workflows/pyforge-steward-fresh-clone.yml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/install-class-playbook.md
 companions:
   - install-class-playbook.md
   - ../spec-bmad-suite-channel-product/install-matrix.md

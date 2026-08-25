@@ -20,7 +20,7 @@ not a boolean only `--module` targets can satisfy.
 | **bmad-loop** | uv-from-git tool / orchestrator | pixi pin (+ optional `uv tool install …@git`) | `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"` (matrix: README) — not on PyPI | existing `steward provision --runner bmad-loop --env …`; **not** `--module` | runner home / worktree provisionable |
 | **bmad-module-skill-forge** (skf) | Own npx installer (+ module into `_bmad`) | pixi pin (suite pixi gap closed 2026-08-22) | `npx bmad-module-skill-forge install` (matrix: README § Install; Node ≥22, Python ≥3.10, uv) | channel pin + native install; **`--module skf` refused** (Spec non-goal) | skf skills present via its own installer |
 | **bmad-labs-skills** | Claude plugin / `skills add` marketplace | optional pixi package | `npx skills add bmad-labs/skills` (matrix: README "Recommended") or `/plugin marketplace add …` | channel pin + CAP-4 matrix spot-check; **not** `--module` | plugin path documented; enabled only with operator consent |
-| **bmad-dashboard** / **mybmad-dashboard** | Build / self-host app | pixi `bmad-ui` feature | dashboard: Node 22+, `corepack prepare pnpm@10.26.2`, `pnpm install && pnpm build` (matrix: README); mybmad: `cd web && pnpm install`, `scripts/setup.sh` (web/README) | publish + pin + `pixi run bmad-dashboard-install` (VS Code); **not** `--module` | install task runnable (VS Code extension / web build) |
+| **bmad-dashboard** / **mybmad-dashboard** | Build / self-host app | pixi `bmad-ui` feature | dashboard: Node 22+, `corepack prepare pnpm@10.26.2`, `pnpm install && pnpm build` (matrix: README); mybmad: `cd web && pnpm install`, `scripts/setup.sh` (web/README) | Kedro-Viz via `steward deploy dashboard` (operator console is Lane 1 `/console/`; Guildhall generator retired). VS Code extension remains `pixi run bmad-dashboard-install` (bmad-ui, not Guildhall). **not** `--module` | install task runnable (Kedro-Viz / `steward deploy dashboard`; VS Code extension / web build still 31.2) |
 | **bmad-module-template** | GitHub template scaffold | channel mirror (optional) | GitHub **template repo** — "Use this template"; not an installable package (matrix) | channel completeness only; **no provision-into-repo** | scaffold N/A unless creating a new module repo |
 
 ## How then (operator path)
@@ -37,9 +37,34 @@ not a boolean only `--module` targets can satisfy.
    class-correct per this Spec's CAP-2). Template reports N/A in this
    monorepo.
 
-## Fresh-clone target (CAP-3)
+## Fresh-clone class-path (CAP-3) — recorded proof
 
-Method core installed, loop runner provisionable via `--runner`, skf
-skills present via its own installer, labs plugin path documented,
-dashboard install task runnable, template N/A unless scaffolding — zero
-improvised npm `Installer` class driving from a chat transcript.
+A fresh clone of this repo already carries method core and skill-forge
+skills in git. Follow this page — never a chat transcript that drives npm
+`Installer` classes. Native commands below are **cited** from
+`install-matrix.md`. Recorded proof: `steward provision --prove-class-path`
+(CI job `pyforge-steward-fresh-clone`).
+
+Operator console after 30.2: Lane 1 `/console/`. Kedro-Viz lives under
+`docs/dashboard/kedro-viz/` and publishes with `steward deploy dashboard`.
+The Guildhall generator and its four local-recipes pixi tasks (gen / watch /
+check / drift-check) are deleted — do not resurrect them.
+
+1. **bmad-method** — installer tree `_bmad/core` + `_bmad/bmm` (present on
+   clone). First-install native (not steward): `npx bmad-method install`.
+   Steward Epic 14 only upgrades an already-installed core.
+2. **bmad-loop** — native `uv tool install "bmad-loop[tui] @ git+https://github.com/bmad-code-org/bmad-loop.git@v0.11.0"`.
+   Steward wrap is `steward provision --runner bmad-loop` (flag stays; Story
+   5.1 reports rather than materializes). Provisionable predicate: runner
+   home `scripts/bmad-loop-worktree`.
+3. **bmad-module-skill-forge** — own installer native
+   `npx bmad-module-skill-forge install` (skills under `_bmad/skf` /
+   `.claude/skills/skf-*`). Never a `--module` target.
+4. **bmad-labs-skills** — plugin path documented:
+   `npx skills add bmad-labs/skills`. Enable only with operator consent.
+5. **dashboards** — runnable class path is `steward deploy dashboard`
+   (Kedro-Viz). Suite UI build-from-source remains
+   `corepack prepare pnpm@10.26.2` and `pnpm install && pnpm build`
+   (matrix). Not Guildhall `generate.py`.
+6. **bmad-module-template** — GitHub **Use this template**. Scaffold N/A
+   in this monorepo; do not provision the template into the tree.

@@ -373,8 +373,8 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
 
 def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None:
     """Add the `--list-modules`/`--module`/`--env`/`--runner`/`--list`/
-    `--json`/`--verify` flags (Epic 3's four stories, plus Epic 6 Story
-    6.1's `--module` and Story 6.2's `--list-modules`).
+    `--json`/`--verify`/`--prove-class-path` flags (Epic 3's four stories, plus Epic 6 Story
+    6.1's `--module` and Story 6.2's `--list-modules`; Story 31.3 CAP-3 proof).
 
     Unlike `keys`/`deploy`, `provision` has no verb subcommands — every
     action is a flag directly on the `provision` duty parser, matching each
@@ -399,6 +399,15 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         ),
     )
     provision_parser.add_argument(
+        "--prove-class-path",
+        action="store_true",
+        help=(
+            "prove the documented fresh-clone class-path (install-class CAP-3): "
+            "method core, loop --runner, skill-forge own installer, labs plugin "
+            "docs, steward deploy dashboard / Kedro-Viz, template N/A"
+        ),
+    )
+    provision_parser.add_argument(
         "--env", metavar="NAME", help="pixi environment name (pixi.toml's [environments] table)"
     )
     provision_parser.add_argument(
@@ -412,7 +421,7 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
     provision_parser.add_argument(
         "--json",
         action="store_true",
-        help="with --list, --module, or --list-modules, emit JSON instead of text",
+        help="with --list, --module, --list-modules, or --prove-class-path, emit JSON instead of text",
     )
     provision_parser.add_argument(
         "--verify", action="store_true", help="check environment.yaml against pixi.toml (the PR CI sync gate)"

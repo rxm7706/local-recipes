@@ -911,9 +911,20 @@ def _run_list_modules(ns: argparse.Namespace) -> DutyResult:
 # ── ProvisionDuty (Duty-protocol adapter) ───────────────────────────────────
 
 _PROVISION_HELP = (
-    "available flags: --list-modules [--json] | --module <name> [--json] | --env <name> | "
-    "--runner bmad-loop --env <name> | --list [--json] | --verify"
+    "available flags: --list-modules [--json] | --module <name> [--json] | "
+    "--prove-class-path [--json] | --env <name> | --runner bmad-loop --env <name> | "
+    "--list [--json] | --verify"
 )
+
+
+def _run_prove_class_path(ns: argparse.Namespace) -> DutyResult:
+    """`provision --prove-class-path` — Story 31.3 / install-class CAP-3."""
+    from .fresh_clone import prove
+
+    report = prove()
+    if getattr(ns, "json", False):
+        return DutyResult(ok=report.ok, summary=report.as_json())
+    return DutyResult(ok=report.ok, summary=report.summary())
 
 
 def _run_env(ns: argparse.Namespace) -> DutyResult:
@@ -1007,6 +1018,8 @@ class ProvisionDuty:
                 return _run_list_modules(ns)
             if getattr(ns, "module", None) is not None:
                 return _run_module(ns)
+            if getattr(ns, "prove_class_path", False):
+                return _run_prove_class_path(ns)
             if getattr(ns, "verify", False):
                 return _run_verify(ns)
             if getattr(ns, "list", False):
