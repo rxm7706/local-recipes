@@ -27,6 +27,7 @@ class RunState(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
     )
+    result = models.JSONField(null=True, blank=True)
 
     class Meta:
         db_table = "run_state"
@@ -57,6 +58,7 @@ class McpHandle(models.Model):
         related_name="handles",
     )
     expires_at = models.DateTimeField()
+    subject = models.CharField(max_length=255, default="")
 
     class Meta:
         db_table = "mcp_handles"
