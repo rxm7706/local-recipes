@@ -1,29 +1,56 @@
-"""FastMCP registration wrapper for the atlas MCP surface (Story B3).
+"""Official ``mcp`` SDK registration wrapper for the atlas MCP surface.
 
 ``kedro-mcp`` is wrapped-where-helpful, NEVER load-bearing (spec § 4.5 /
 § 5.5, FR-7, AD-1): nothing here (or anywhere in the package) imports
 ``kedro_mcp``, and the trigger/read surface (``tools.py``) works with it
-absent. ``fastmcp`` is imported LAZILY inside :func:`build_server` so this
+absent. ``mcp`` is imported LAZILY inside :func:`build_server` so this
 module — and the whole ``pyforge.atlas.mcp`` package — imports with
-neither ``fastmcp`` nor ``kedro_mcp`` installed. Registration is the only
-FastMCP-touching step, matching the legacy server's ``@mcp.tool()``
-patterns (``.claude/tools/conda_forge_server.py``, read-only reference).
+the SDK absent. Registration is the only SDK-touching step. Tool wrappers
+delegate 1:1 to ``tools.py`` (AD-7).
 """
 
 from __future__ import annotations
 
+import importlib
+import sys
+
 from pyforge.atlas.mcp import tools
 
 
-def build_server(name: str = "pyforge-atlas-atlas"):
-    """Build the FastMCP server exposing the thin B3 surface.
+def _official_mcp_server_class():
+    """Load ``MCPServer`` from the PyPI ``mcp`` SDK.
 
-    Tool wrappers delegate 1:1 to ``tools.py`` — the bodies stay the two
-    allowed shapes (AD-7): pipeline trigger + dataset read passthrough.
+    Atlas tests live under ``tests/mcp/`` and this package is
+    ``pyforge.atlas.mcp``, so ``mcp`` on ``sys.path`` is often not the SDK.
     """
-    from fastmcp import FastMCP  # lazy: registration-time only
+    from pathlib import Path
 
-    mcp = FastMCP(name)
+    saved_path = list(sys.path)
+    shadowed: dict[str, object] = {}
+    for entry in list(sys.path):
+        root = Path(entry)
+        normalized = str(root).replace("\\", "/")
+        if "site-packages" in normalized:
+            continue
+        if root.name == "mcp" or ((root / "mcp").exists() and not (root / "pyforge").is_dir()):
+            sys.path.remove(entry)
+    for key in list(sys.modules):
+        if key == "mcp" or key.startswith("mcp."):
+            location = (getattr(sys.modules[key], "__file__", "") or "").replace("\\", "/")
+            if "site-packages" not in location:
+                shadowed[key] = sys.modules.pop(key)
+    try:
+        return importlib.import_module("mcp.server.mcpserver").MCPServer
+    finally:
+        sys.path[:] = saved_path
+        sys.modules.update(shadowed)
+
+
+def build_server(name: str = "pyforge-atlas-atlas"):
+    """Build the official MCP server exposing the thin B3 surface."""
+    MCPServer = _official_mcp_server_class()
+
+    mcp = MCPServer(name)
 
     @mcp.tool()
     def run_core_pipeline() -> dict:

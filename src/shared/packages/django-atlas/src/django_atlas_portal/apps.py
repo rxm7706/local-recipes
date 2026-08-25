@@ -19,3 +19,8 @@ class AtlasPortalConfig(PortalConfig):
     work_class = "03"
     promotion_date = date(2026, 8, 24)
     urlconf = "django_atlas_portal.urls"
+
+    def mcp_asgi_app(self):
+        from django_atlas_portal.mcp_asgi import build_atlas_mcp_asgi
+
+        return build_atlas_mcp_asgi()

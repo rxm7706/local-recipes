@@ -23,3 +23,7 @@ class PortalConfig(AppConfig):
     work_class: str
     promotion_date: date
     urlconf: str
+
+    def mcp_asgi_app(self):  # noqa: PLR6301 -- optional hook; default is no MCP face
+        """Return a Streamable HTTP ASGI app, or ``None`` until the station registers one."""
+        return None
