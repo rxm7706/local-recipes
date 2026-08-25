@@ -118,7 +118,7 @@ existed only to say "there is no product here." That scaffolding was real vestig
 (dead test fixtures, a fabricated bulk-commit-era `test-architecture.md`), not a second
 naming mistake. The fix is not a new project; it is *no project* — the two Spec kernels move
 to `docs/governance/`, a plain documentation directory with no `.bmad-config.toml` and no
-Smith-shaped machinery to keep vestigially current. `docs/dashboard/generate.py` and
+Smith-shaped machinery to keep vestigially current. `pyforge.doctor.sources.fleet_scan` and
 `scripts/dream_chain_check.py` both special-case this location for the two `owner: guild`
 chains. The Dream files themselves (`docs/dreams/pyforge-genesis.md`,
 `docs/dreams/pyforge-charter.md`) are unchanged; only their Spec kernels' physical home moved.

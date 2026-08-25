@@ -18,7 +18,7 @@ deferred:
       CAP-2 only requires wall-clock vs active-compute class labels. Intent
       explicitly defers 23.3. Surfaced by blind-hunter + intent-alignment.
     location: >-
-      docs/dashboard/generate.py:scan_timing velocity.sub
+      pyforge.doctor.sources.fleet_scan:scan_timing velocity.sub
     severity: medium
   - summary: >-
       No runtime render fixture asserts emitted chip class HTML against mixed
@@ -37,7 +37,7 @@ deferred:
 
 **Problem:** Wall-clock fallback (23.1) must not appear as active agent-compute on the velocity chart — readers need to tell metric classes apart from chart/caption alone (FR-194 CAP-2).
 
-**Approach:** In `docs/dashboard/generate.py` + `index.html`, keep wall-clock-derived stories out of the active-compute bar series (or mark with a distinct class/series). Caption/legend makes the class readable without inspecting raw data. Preserve warden/atlas curated numbers byte-identical. Deps: 23.1 done (PR #711). Do not implement CAP-3 caption partitions (23.3) beyond what CAP-2 needs for class labeling.
+**Approach:** In `pyforge.doctor.sources.fleet_scan` + `index.html`, keep wall-clock-derived stories out of the active-compute bar series (or mark with a distinct class/series). Caption/legend makes the class readable without inspecting raw data. Preserve warden/atlas curated numbers byte-identical. Deps: 23.1 done (PR #711). Do not implement CAP-3 caption partitions (23.3) beyond what CAP-2 needs for class labeling.
 
 ## Acceptance Criteria
 
@@ -66,7 +66,7 @@ deferred:
 ## Code Map
 
 - Parent: `spec-dashboard-velocity-captures-hand-driven-work/SPEC.md` (CAP-2); 23.1 deferred medium finding on blended `total`/`epicMin`.
-- `docs/dashboard/generate.py` `scan_timing` — emit `perStoryClass`, split `epicMin` / `epicMinWallClock`, dual `totalLabel`, keep wall-clock off `velocity.bars`.
+- `pyforge.doctor.sources.fleet_scan` `scan_timing` — emit `perStoryClass`, split `epicMin` / `epicMinWallClock`, dual `totalLabel`, keep wall-clock off `velocity.bars`.
 - `docs/dashboard/index.html` — `.stime`/`.etime` class styles, `timingClassLegend`, chip titles, velocity `data-metric="active-compute"`.
 - Tests: `.claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py` (23.1 matrix + CAP-2 rows).
 - Curated fixtures live in committed `docs/dashboard/data.js` (`projects.warden` / `projects.atlas`).
@@ -74,7 +74,7 @@ deferred:
 ## Tasks & Acceptance
 
 **Execution:**
-- `docs/dashboard/generate.py` -- CAP-2 class map + unblended rollups; wall-clock never on velocity bars.
+- `pyforge.doctor.sources.fleet_scan` -- CAP-2 class map + unblended rollups; wall-clock never on velocity bars.
 - `docs/dashboard/index.html` -- class-visible chips, mixed legend, velocity bar metric attribute.
 - `.claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py` -- cover every I/O matrix row.
 - `docs/dashboard/data.js` -- regenerate; assert warden/atlas curated timing byte-identical.
@@ -93,7 +93,7 @@ Render surface = timing-strip class labels (not a second velocity series). Veloc
 
 **Commands:**
 - `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py .claude/skills/conda-forge-expert/tests/meta/test_dashboard_renders.py .claude/skills/conda-forge-expert/tests/meta/test_dashboard_resolve_project.py -q` -- expected: all PASS
-- `python docs/dashboard/generate.py --source git` -- expected: doctor dual totalLabel; no wall-clock sids on velocity bars; warden/atlas curated timing unchanged
+- `Lane 1 /console/ (Guildhall generator retired) --source git` -- expected: doctor dual totalLabel; no wall-clock sids on velocity bars; warden/atlas curated timing unchanged
 
 ## Spec Change Log
 
@@ -120,7 +120,7 @@ Merge: 6488062c317909e9b69c869f0b347ccb49b9600d
 Merge policy: admin merge () — GitHub Actions billing blocks CI; local tests green before merge.
 Summary: CAP-2 metric-class separation — wall-clock stays off velocity.bars; perStoryClass + chip/legend styling; split totalLabel; unblended epicMin / epicMinWallClock; data.js regenerated. Warden/atlas curated timing byte-identical.
 Files:
-- docs/dashboard/generate.py — perStoryClass, split rollups/labels, helpers
+- pyforge.doctor.sources.fleet_scan — perStoryClass, split rollups/labels, helpers
 - docs/dashboard/index.html — chip CSS/titles, mixed legend, epic dual chips, data-metric
 - docs/dashboard/data.js — regenerated (CAP-2 fields on derived lines)
 - .claude/skills/conda-forge-expert/tests/meta/test_dashboard_scan_timing_wall_clock.py — CAP-2 assertions
@@ -128,5 +128,5 @@ Review findings: 5 patches applied; 2 deferred (CAP-3 sub caption; runtime DOM f
 Follow-up review recommendation: true (patched high=1; score 3×2 medium + 2 low = 8 ≥ 5)
 Verification:
 - pixi run -e local-recipes pytest meta test_dashboard_scan_timing_wall_clock.py + test_dashboard_renders.py — 19 passed
-- pixi run -e local-recipes dashboard-gen — doctor dual totalLabel; no combined marks; curated warden/atlas timing unchanged
+- retired-console-check — doctor dual totalLabel; no combined marks; curated warden/atlas timing unchanged
 Finalize: ledger key 23-2-wall-clock-is-never-blended-with-active-compute → done (this chore).

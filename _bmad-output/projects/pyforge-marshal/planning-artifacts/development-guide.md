@@ -259,7 +259,7 @@ lives at `conf/base/knowledge.yml`.
 
 | Task | What it runs |
 |---|---|
-| `pixi run dashboard-gen` | Refresh `docs/dashboard/data.js` (the committed Guildhall console seed) from the live per-project `sprint-status.yaml` files |
+| `retired-console-check` | Fail if the retired Guildhall generator, `data.js`, or the four dashboard pixi tasks are reintroduced |
 | `pixi run dashboard-dryrun` | Build the BSL-driven Vizro dashboard **object** offline (no server, no `.run()`) and assert each expected component |
 | `pixi run vizro-ai-dryrun` | Offline, no-network, no-live-LLM assertion that the `query_vizro_ai` MCP tool is registered |
 | `pixi run deck-export` | Regenerate a deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp `.md` sources |

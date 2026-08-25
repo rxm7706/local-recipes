@@ -119,7 +119,7 @@ two open contradictions actually decided.
   - **intent:** Update the dashboard so the build-campaign section shows exactly
     one `pyforge-marshal` row (all 12 epics combined), with no second
     `genesis-installer` row and no remaining code reference to the retired name.
-  - **success:** `docs/dashboard/generate.py`'s `IMPL_CAMPAIGN` has one marshal
+  - **success:** `pyforge.doctor.sources.fleet_scan`'s `IMPL_CAMPAIGN` has one marshal
     entry, `IMPL_CAMPAIGN_LEDGER` drops the `genesis-installer` key, and
     `scripts/dashboard_drift_check.py` stays clean.
 - **CAP-8**

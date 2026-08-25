@@ -224,7 +224,7 @@ So that I never wonder whether an empty commit just landed for no reason.
 **When** `steward deploy dashboard` is run twice in a row with no source changes between runs
 **Then** the second (and first, if nothing changed) run results in **zero commits** — the FR-9 zero-commit-on-no-diff property, verified by asserting `git log` has no new commit after the run
 
-**Given** a change to `docs/dashboard/generate.py`'s output between runs
+**Given** a change to `pyforge.doctor.sources.fleet_scan`'s output between runs
 **When** `steward deploy dashboard` is run
 **Then** exactly one new commit is created, containing exactly the changed dashboard files, and the commit is pushed to the branch GitHub Pages already serves from (direct push, no new Actions workflow — per AD-4)
 

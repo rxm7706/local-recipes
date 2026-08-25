@@ -3094,7 +3094,7 @@ special case.
 
 ### Story 16.1: One resolver, derived sources, loud failures
 **Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-140, FR-141, FR-142, FR-143
-**Surface:** `docs/dashboard/generate.py`, `docs/dashboard/index.html`, `docs/dashboard/data.js`
+**Surface:** `pyforge.doctor.sources.fleet_scan`, `docs/dashboard/index.html`, `docs/dashboard/data.js`
 **Given** the dashboard build **Then** slug→path resolution lives in ONE function with one
 exception table; `PROJECT_SOURCES` is discovered (a new station appears with no hand edit; a
 dissolved project resolves to its owner); resolution ships computed in `data.js` (the JS
@@ -3490,7 +3490,7 @@ all-or-nothing renderer contract, offline derivation, honest bound captions.
 
 ### Story 23.1: Wall-clock fallback derivation from promoted-spec revision fields
 **Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-194 (spec-dashboard-velocity-captures-hand-driven-work, CAP-1)
-**Surface:** `docs/dashboard/generate.py` (`scan_timing`)
+**Surface:** `pyforge.doctor.sources.fleet_scan` (`scan_timing`)
 **Note:** the Spec's open question on the wall-clock bound (final−baseline overstates by
 the idle gap; first-commit-in-range understates) is resolved in-story; whichever bound is
 chosen, the caption states what is measured — never an unqualified "duration".
@@ -3503,7 +3503,7 @@ signal stays absent.
 
 ### Story 23.2: Wall-clock is never blended with active-compute
 **Type:** feature • **Effort:** S • **Deps:** S-23.1 • **FR/AD:** FR-194 (spec-dashboard-velocity-captures-hand-driven-work, CAP-2)
-**Surface:** `docs/dashboard/generate.py`, `docs/dashboard/index.html`
+**Surface:** `pyforge.doctor.sources.fleet_scan`, `docs/dashboard/index.html`
 **Given** a line mixing both metric classes **Then** a reader can tell each story's class
 from the rendered chart/caption alone — no wall-clock number appears as if it were active
 agent-compute (the atlas precedent `scan_timing`'s own comments already mandate), and
@@ -3901,8 +3901,9 @@ recurring owner + cadence — resolving the spec's open question with a dated en
 ## Canopy obligations (2026-08-24)
 
 Marshal station boundaries under the Canopy (`spec-pyforge-unifying-strategy`, steward-owned).
-Planning retirement of `spec-factory-console` is effective immediately; code deletion waits on
-steward Story **30.2**. Do **not** mint marshal Epics 26+ that duplicate steward Epics 18–30.
+Planning retirement of `spec-factory-console` is effective immediately; generator /
+pixi-task / `data.js` deletion is steward Story **30.2**. Do **not** mint marshal
+Epics 26+ that duplicate steward Epics 18–30.
 
 **Five-tier symmetry.** Marshal's CLI tier is shipped (`pyforge-marshal` / `marshal` verbs). The
 remaining tiers are steward-owned: **Epic 19** (eight portals, uniform prefix), **Epic 21**

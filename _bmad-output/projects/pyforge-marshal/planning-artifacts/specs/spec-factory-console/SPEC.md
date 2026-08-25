@@ -5,10 +5,12 @@ superseded_by: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/sp
 owner-dream: docs/dreams/factory-console.md
 program: regenerable-factory (Wave 2)
 surface:
-  - docs/dashboard/**
+  - docs/dashboard/README.md
+  - docs/dashboard/index.html
+  - docs/dashboard/kedro-viz/**
+  - scripts/fleet_scan.py
 surface-drift-exclude:
-  - docs/dashboard/data.js   # generated on every dashboard-gen run (regenerate-at-will)
-  - docs/dashboard/kedro-viz/**   # generated wholesale by `kedro viz build` + viz-publish-stage (atlas 12-2, FR-62); CI republishes it on every push touching atlas pipelines, and the asset filenames are content-hashed, so per-file governance would red this detector on every legitimate rebuild. Same regenerate-at-will class as data.js. The GENERATOR is governed (pixi tasks viz-build/viz-publish-stage + tools/normalize_viz_build.py under spec-pyforge-atlas); the OUTPUT is not.
+  - docs/dashboard/kedro-viz/**   # generated wholesale by `kedro viz build` + viz-publish-stage (atlas 12-2, FR-62); CI republishes it on every push touching atlas pipelines, and the asset filenames are content-hashed, so per-file governance would red this detector on every legitimate rebuild. The GENERATOR is governed (pixi tasks viz-build/viz-publish-stage + tools/normalize_viz_build.py under spec-pyforge-atlas); the OUTPUT is not.
 companions:
   - console-contract.md
 sources:
@@ -16,11 +18,11 @@ sources:
 open_questions: []
 ---
 
-> **Superseded 2026-08-24.** Lane 1 Wagtail (steward `spec-pyforge-unifying-strategy` CAP-2) is
-> the estate front door and supersedes this Spec as the binding contract for the Pages console.
-> The `docs/dashboard/` generator, pixi tasks, and `data.js` blob remain until steward Story
-> **30.2** after parity. `docs/dashboard/kedro-viz/**` is atlas-owned publish output and is out
-> of scope for this retirement.
+> **Superseded 2026-08-24; generator deleted 2026-08-25 (steward Story 30.2).**
+> Lane 1 Wagtail (steward `spec-pyforge-unifying-strategy` CAP-2) is
+> the estate front door. The Guildhall `generate.py`, four pixi tasks, scheduled
+> Pages regen, and `data.js` blob are **gone**. Operator surfaces: `/console/`.
+> `docs/dashboard/kedro-viz/**` is atlas-owned publish output and remains.
 
 # SPEC — factory console (program console + Dreamscape)
 
@@ -70,8 +72,7 @@ hand-maintained. Repo private, page public — the Pages workflow uploads ONLY
 
 ## Success signal
 
-`pixi run -e local-recipes dashboard-gen` (and `--source git`) regenerate
-`data.js` with correct counts and warnings; the Pages deploy publishes only
-`docs/dashboard/`; the regeneration drill (spec-regenerable-factory CAP-4)
-rebuilds `generate.py` from `console-contract.md` alone with equivalent
-output.
+Lane 1 `/console/` is the operator console. `retired-console-check` fails if
+the Guildhall generator, `data.js`, or the four retired pixi tasks return.
+Pages still publishes `docs/dashboard/` (Kedro-Viz + stub). The CAP-4
+regeneration drill is historical — `generate.py` is gone.

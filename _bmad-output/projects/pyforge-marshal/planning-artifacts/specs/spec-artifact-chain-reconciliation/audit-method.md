@@ -75,7 +75,7 @@ contract. Nothing silent.
 1. Fixes via owning skills only: `bmad-correct-course` (epic/story surgery),
    `bmad-sprint-planning` + `pixi run -e local-recipes sprint-ledger-sync`
    (ledger), `bmad-document-project` / `bmad-generate-project-context`
-   (arch/context), `pixi run -e local-recipes dashboard-gen` (board).
+   (arch/context), `retired-console-check` (board).
 2. Memlog entry in the owning Spec naming every changed path; scoped stamp
    that spec only.
 3. Blind lens-diverse parallel review: one structural hunter, one

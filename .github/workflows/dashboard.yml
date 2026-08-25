@@ -1,20 +1,14 @@
 name: Dashboard (GitHub Pages)
 
-# Publishes the Warden+Atlas program console (docs/dashboard/) to GitHub Pages,
-# FULLY HANDS-OFF: it regenerates data.js from git history at deploy time
-# (`generate.py --source git`) — no bot commit-back, no loop. The published site
-# refreshes on every push to main + a daily cron, so DONE stories appear as soon
-# as their merge/story commit lands on main. The committed data.js is only the
-# local seed (it also carries in-flight/gated state, which git can't derive).
-#
-# Why generate-at-deploy and not commit-back: committing the regenerated data.js
-# would push to main, which would re-trigger this workflow — an infinite loop.
+# Publishes docs/dashboard/ to GitHub Pages. Steward 30.2 retired the
+# Guildhall generator; this tree's live content is atlas Kedro-Viz under
+# kedro-viz/. Lane 1 /console/ is the operator console.
+# kedro-viz-publish.yml stages the export, then this workflow republishes
+# on push to main. No scheduled regen — there is no data.js to refresh.
 
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '17 6 * * *'   # daily ~06:17 UTC — backstop refresh
   workflow_dispatch:
 
 permissions:
@@ -34,43 +28,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0            # full history — generate.py --source git reads git log
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      # pixi is available in CI, as it is locally — via the LEAN `pyforge-ci` env
-      # (pixi, bmad-method, nodejs, gh + the build/publish surface: hatchling,
-      # python-build, pytest, pixi-build-python, pixi-build-rattler-build, twine).
-      # NOT `local-recipes`, which is 1102 packages / ~9.8 GB — a download per
-      # deploy against a 10 GB cache ceiling.
-      # The health detectors do not need any env: they are stdlib-only and shell
-      # out to `git` alone, so generate.py runs them directly (see _run_detector).
-      # Without that the published board reported every detector "could not run
-      # here" while they read green locally.
-      # locked, NOT frozen. `--locked` re-validates the whole workspace against
-      # the manifest, so a manifest edit landed without a relock fails HERE, loudly,
-      # instead of publishing a silently stale board. `--frozen` would skip that
-      # check entirely.
-      # It was briefly --frozen: the bmad-ui env declared a local ./build_artifacts
-      # channel, which pixi records as an ABSOLUTE path, so the lock carried a
-      # file:///home/<user>/… that exists on one machine and `--locked` died on
-      # every clean checkout. That channel is gone (zero packages ever came from
-      # it) and both `pixi install --locked` and `pixi lock --check` now pass in a
-      # detached worktree, so the stricter mode is back.
-      # pixi-version stays pinned to the lock's producer: good hygiene, and this
-      # workspace uses the pixi 0.71+ NAMED platform entry osx-arm64-min that
-      # older pixi cannot read. Bump it in step with pixi.lock.
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
           pixi-version: v0.77.0
           environments: pyforge-ci
           locked: true
           cache: true
-      - name: Regenerate data.js from git history (done-detection + live detectors)
-        run: python docs/dashboard/generate.py --source git
-      # The three Pages actions are a matched set — upload-pages-artifact wraps
-      # upload-artifact, and deploy-pages consumes what it produced. Bump together.
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

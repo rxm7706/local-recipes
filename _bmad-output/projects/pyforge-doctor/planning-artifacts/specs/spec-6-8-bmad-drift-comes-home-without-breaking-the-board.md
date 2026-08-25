@@ -9,7 +9,7 @@ context:
   - '{project-root}/_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md'
   - '{project-root}/_bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md'
   - '{project-root}/scripts/bmad_drift_check.py'
-  - '{project-root}/docs/dashboard/generate.py'
+  - '{project-root}/pyforge.doctor.sources.fleet_scan'
 ---
 
 ## Intent
@@ -18,22 +18,22 @@ Port `scripts/bmad_drift_check.py`'s judgement into Doctor as `sources/factory.p
 **tenth and last** of the re-homed verdicts, completing Epic 6's Charter §6 sweep. FR-15.
 
 This one carries a complication none of 6.4–6.7 did: the detector is not a leaf. It **owns
-constants a second consumer imports**. `docs/dashboard/generate.py:770` does
+constants a second consumer imports**. `pyforge.doctor.sources.fleet_scan:770` does
 
 ```python
 from bmad_drift_check import GUILD_DREAMS, STATIONS
 ```
 
 and the import is deliberate. `bmad_drift_check.py:653` records why: *"Mirrored in
-docs/dashboard/generate.py:GUILD_DREAMS; both change together."* A hand-mirrored copy is
+pyforge.doctor.sources.fleet_scan:GUILD_DREAMS; both change together."* A hand-mirrored copy is
 what produced the 2026-07-28 false positive; the import replaced it. Moving the detector
 without moving that contract would reintroduce the defect the import exists to prevent.
 
-**Surface:** `sources/factory.py`, `docs/dashboard/generate.py`, `tests/`
+**Surface:** `sources/factory.py`, `pyforge.doctor.sources.fleet_scan`, `tests/`
 
 ## Acceptance Criteria
 
-- **Given** `docs/dashboard/generate.py` imports `GUILD_DREAMS`/`STATIONS` from
+- **Given** `pyforge.doctor.sources.fleet_scan` imports `GUILD_DREAMS`/`STATIONS` from
   `scripts/bmad_drift_check.py`, **When** that detector moves, **Then** the shared constants
   have **exactly one home** and both consumers derive from it.
 - **And** no hand-mirrored copy is reintroduced — the 2026-07-28 false positive is the
@@ -65,7 +65,7 @@ hand-mirrored rather than imported**:
 
 Neither mirrored pair has diverged *yet*, so there is no live bug — which is exactly why
 they were easy to miss, and exactly the state `GUILD_DREAMS` was in on 2026-07-27. The
-source file even labels them: *"Mirrored in docs/dashboard/generate.py:DREAM_STATUSES"*.
+source file even labels them: *"Mirrored in pyforge.doctor.sources.fleet_scan:DREAM_STATUSES"*.
 "Mirrored" is the defect, written down as if it were the design.
 
 Moving only the imported pair would leave the story's own AC — *"the shared constants have
@@ -80,7 +80,7 @@ is what let two survive the first fix.
 
 Three candidate homes, and one is ruled out by an existing invariant:
 
-1. **Inside `sources/factory.py`** — then `docs/dashboard/generate.py` must import from
+1. **Inside `sources/factory.py`** — then `pyforge.doctor.sources.fleet_scan` must import from
    `pyforge.doctor`. **Ruled out:** `generate.py` runs under `local-recipes`, where
    `pyforge.doctor` is **not importable** (verified: `import pyforge.doctor` raises
    `ModuleNotFoundError` there, which is also why Story 6.7's conformance test reads

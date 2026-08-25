@@ -107,7 +107,7 @@ altitude: feature
 **Rule**:
 - **Tracked**: Design protos (1 each), Markdown (5–8 each), PPTX (2–4 each), Narration (1–2 each), SVG infographics (0–1 each) = ~144 total.
 - **Gitignored**: fragments.json, dist/, assets/, .mp4, node_modules, build caches (all regenerable in <15s for HTML, <60s for video).
-- **Verification**: `pixi run dashboard-check` validates all tracked artifacts render correctly. Build pipeline proves all gitignored artifacts regenerate deterministically.
+- **Verification**: `retired-console-check` validates all tracked artifacts render correctly. Build pipeline proves all gitignored artifacts regenerate deterministically.
 
 **[ADOPTED]** — Optimization strategy verified in spec appendix; no new infrastructure required.
 
@@ -297,7 +297,7 @@ Build Layer (Vite):
 
 ### HTML Deck Engine
 - **Regenerable**: Built from Markdown + tokens in <5s; not committed to git.
-- **Validation**: `pixi run dashboard-check` proves all 9 decks render without error.
+- **Validation**: `retired-console-check` proves all 9 decks render without error.
 - **Asset management**: Inline SVGs (no raster images); assets/ gitignored.
 
 ### Video Scripts

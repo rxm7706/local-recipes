@@ -40,7 +40,7 @@ warnings: []
 |----------|--------------|---------------------------|----------------|
 | No diff, run once | fresh build == committed tree | Zero commits; `ok=True`, "no diff" | No error |
 | No diff, run twice | same repo state, `deploy dashboard` run twice in a row | Zero commits BOTH times — `git log` identical before/after both runs | No error |
-| Real diff | `docs/dashboard/generate.py`'s output differs from the committed tree | Exactly ONE new commit, containing only the `docs/dashboard/` diff, pushed to the current branch | No error |
+| Real diff | `pyforge.doctor.sources.fleet_scan`'s output differs from the committed tree | Exactly ONE new commit, containing only the `docs/dashboard/` diff, pushed to the current branch | No error |
 | `git diff` itself fails | `cwd` not a git worktree | Nothing committed | `subprocess.CalledProcessError` → `DutyResult(ok=False, ...)` |
 | `git push` fails (e.g. no `origin`, rejected) | valid diff, commit succeeds, push fails | Commit exists locally; push failure surfaced, not swallowed | `subprocess.CalledProcessError` → `DutyResult(ok=False, ...)` — a known partial-completion state (commit made, push failed), documented in Design Notes, not silently retried |
 
@@ -61,7 +61,7 @@ warnings: []
 
 **Acceptance Criteria:**
 - Given a repo state where `docs/dashboard/`'s committed content already matches what a fresh build produces, when `steward deploy dashboard` is run twice in a row with no source changes between runs, then the second (and first) run results in zero commits.
-- Given a change to `docs/dashboard/generate.py`'s output between runs, when `steward deploy dashboard` is run, then exactly one new commit is created, containing exactly the changed dashboard files, and the commit is pushed to the branch GitHub Pages already serves from (direct push, no new Actions workflow — AD-4).
+- Given a change to `pyforge.doctor.sources.fleet_scan`'s output between runs, when `steward deploy dashboard` is run, then exactly one new commit is created, containing exactly the changed dashboard files, and the commit is pushed to the branch GitHub Pages already serves from (direct push, no new Actions workflow — AD-4).
 
 ## Spec Change Log
 
@@ -80,7 +80,7 @@ warnings: []
     `docs/dashboard/`. Considered fixing via `git add -N` (intent-to-add)
     before diffing, but that mutates the index as a side effect — which
     would break Story 2.3's own AC that `--dry-run` leaves `git status`
-    byte-for-byte unchanged. Not fixed: `docs/dashboard/generate.py`'s own
+    byte-for-byte unchanged. Not fixed: `pyforge.doctor.sources.fleet_scan`'s own
     docstring states it only ever refreshes the existing tracked `data.js`
     in place (confirmed by reading the real script, not assumed) — this is
     a real, currently-inert limitation of `dashboard_diff` against a

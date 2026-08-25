@@ -29,7 +29,7 @@ pixi *feature* level, not as package run-deps (`pixi.toml:1432,1508`), so
 standalone conda installs keep warden optional. Everything else the fleet
 "integrates" through is paths: `_bmad-output/projects/<slug>/…`,
 `docs/dreams/*.md` frontmatter, `~/.bmad-loops`, `git log`, `tmux ls` —
-which is exactly what `docs/dashboard/generate.py` reads (its
+which is exactly what `pyforge.doctor.sources.fleet_scan` reads (its
 `PROJECT_SOURCES` dict at :45 hardcodes the 9 keys, with a live TODO to
 derive them; the `dashboard-project-path-derivation` Dream documents the two
 bug shapes this already produced).
@@ -116,7 +116,7 @@ freezes them.
 The whole factory runs from: local pixi envs + git + tmux + gitignored local
 state + a *static* GitHub Pages console. That console is real prior art for
 the unified-UI ask and is more sophisticated than it looks:
-`docs/dashboard/generate.py` (2,630 lines) reads nine sprint feeds, the
+`pyforge.doctor.sources.fleet_scan` (2,630 lines) reads nine sprint feeds, the
 tracked ledger twin, epics files, dream frontmatter, `git log` merge
 subjects, live tmux/`~/.bmad-loops` run state, and the detector registry;
 `data.js` (13.8k lines) is a hand-curated narrative *seed* that git-mode

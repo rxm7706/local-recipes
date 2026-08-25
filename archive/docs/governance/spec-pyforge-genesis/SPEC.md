@@ -69,7 +69,7 @@ it declares no code.
   (`spec-pyforge-charter`, amendment discipline); this one records the Lexicon and
   membership. Nothing here ships as code.
 - **The mirror must not drift.** `GUILD_DREAMS` exists in `scripts/bmad_drift_check.py`
-  **and** `docs/dashboard/generate.py`. Updating one and not the other made the board warn
+  **and** `pyforge.doctor.sources.fleet_scan`. Updating one and not the other made the board warn
   on a Dream the Charter explicitly permits (2026-07-28). Duplicated constitutional
   constants are a standing hazard here.
 - **This project holds no station's work.** If a chain lands here that is owned by a Smith,

@@ -35,7 +35,7 @@ There is no external customer and no second human operator. Steward is not desig
 *Downscaled per the template's guidance for internal tooling with a single operator role — each duty gets a one-sentence journey rather than a full multi-beat narrative.*
 
 - **UJ-1.** The operator, having just read a Doctor-class finding about a credential leak, runs `steward keys audit --drift` and gets a report naming the exact code path that needs host-scoping, then fixes it and reruns to confirm clean. Realizes FR-4, FR-7.
-- **UJ-2.** The operator, having edited `docs/dashboard/generate.py`, runs `steward deploy dashboard` once and trusts that nothing happens if there's no real diff, and a clean reconciled commit+push happens if there is. Realizes FR-8–FR-11.
+- **UJ-2.** The operator, having edited `pyforge.doctor.sources.fleet_scan`, runs `steward deploy dashboard` once and trusts that nothing happens if there's no real diff, and a clean reconciled commit+push happens if there is. Realizes FR-8–FR-11.
 - **UJ-3.** A bmad-loop session, needing the `pyforge-atlas` environment for a new worktree, runs `steward provision --env pyforge-atlas` instead of recalling the raw `pixi install -e` invocation. Realizes FR-12, FR-13.
 - **UJ-4.** The operator, six months from now, runs `steward budget show` to remember what ceiling was declared and when, instead of grepping Dream files. Realizes FR-16, FR-17.
 
@@ -131,7 +131,7 @@ The `JFROG_API_KEY` cross-host leak pattern is closed as a named, automated regr
 
 **Consequences (testable):**
 - Running twice in a row with no source changes between runs results in zero commits on the second run.
-- A change to `docs/dashboard/generate.py`'s output is reflected in exactly one new commit.
+- A change to `pyforge.doctor.sources.fleet_scan`'s output is reflected in exactly one new commit.
 
 #### FR-10: Dry-run
 

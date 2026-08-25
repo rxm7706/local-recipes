@@ -1,8 +1,8 @@
 """Unit tests for ``board.gather_chain_layers_audit`` (Story 17.3 /
 FR-150 residual + FR-152).
 
-Seeds layer computation from a real ``docs/dashboard/generate.py`` copy
-under the fixture tree — never a second glob table. Covers presence /
+Seeds layer computation from ``pyforge.doctor.sources.fleet_scan``
+(extracted from the retired Guildhall generator). Covers presence /
 absence reporting, per-project isolation, and CLI ``--layers --project``.
 Distinct from INV-A..D and dreams-hygiene.
 """
@@ -22,8 +22,8 @@ try:
     _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
 except IndexError:
     _REPO_ROOT = None
-_HAVE_REAL_GENERATE = bool(
-    _REPO_ROOT and (_REPO_ROOT / "docs" / "dashboard" / "generate.py").is_file()
+_HAVE_REAL_SCAN = bool(
+    _REPO_ROOT and (_REPO_ROOT / "scripts" / "fleet_scan.py").is_file()
 )
 _HAVE_REAL_ROSTER = bool(
     _REPO_ROOT
@@ -31,18 +31,20 @@ _HAVE_REAL_ROSTER = bool(
 )
 
 pytestmark = pytest.mark.skipif(
-    not (_HAVE_REAL_GENERATE and _HAVE_REAL_ROSTER),
-    reason="real docs/dashboard/generate.py + guild-roster.json required",
+    not (_HAVE_REAL_SCAN and _HAVE_REAL_ROSTER),
+    reason="fleet_scan.py + guild-roster.json required",
 )
 
 
 def _install_generate(target: Path) -> None:
     assert _REPO_ROOT is not None
-    (target / "docs" / "dashboard").mkdir(parents=True, exist_ok=True)
+    (target / "scripts").mkdir(parents=True, exist_ok=True)
     (target / "docs" / "governance").mkdir(parents=True, exist_ok=True)
+    (target / "docs" / "dreams").mkdir(parents=True, exist_ok=True)
+    (target / "pixi.toml").write_text("[workspace]\nname = \"fixture\"\n", encoding="utf-8")
     shutil.copy(
-        _REPO_ROOT / "docs" / "dashboard" / "generate.py",
-        target / "docs" / "dashboard" / "generate.py",
+        _REPO_ROOT / "scripts" / "fleet_scan.py",
+        target / "scripts" / "fleet_scan.py",
     )
     shutil.copy(
         _REPO_ROOT / "docs" / "governance" / "guild-roster.json",

@@ -8,7 +8,7 @@ answers:
   - console-parity-inventory
 gates: "FR-7 (removal of the old build path) — this artifact is its precondition"
 inputs:
-  - "docs/dashboard/generate.py"
+  - "pyforge.doctor.sources.fleet_scan"
   - "docs/dashboard/index.html"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md"
 ---

@@ -81,4 +81,4 @@
 1. **Dashboard Contract:** Update from "SPEC-design-code-bridge" → "spec-herald-pitch"
 2. **Sprint Status:** May need regeneration if epic structure changed
 3. **Story Specs:** Review if new epics.md affected story IDs or status
-4. **Dashboard Data:** Run `pixi run -e local-recipes dashboard-gen` to sync
+4. **Dashboard Data:** Run `retired-console-check` to sync

@@ -1,4 +1,4 @@
-"""Meta: `docs/dashboard/generate.py`'s `resolve_project()` is the one place
+"""Meta: `pyforge.doctor.sources.fleet_scan`'s `resolve_project()` is the one place
 a roster/campaign slug becomes real filesystem state (marshal S-16.1,
 FR-140..143 -- spec-dashboard-project-path-derivation CAP-1..CAP-4).
 
@@ -26,7 +26,7 @@ import pytest
 
 # .claude/skills/conda-forge-expert/tests/meta/<file> -> repo root.
 REPO_ROOT = Path(__file__).resolve().parents[5]
-GENERATE_PY = REPO_ROOT / "docs" / "dashboard" / "generate.py"
+GENERATE_PY = REPO_ROOT / "scripts" / "fleet_scan.py"
 
 
 def _load_generate():
@@ -47,7 +47,7 @@ def _load_generate():
 @pytest.fixture(scope="module")
 def gen():
     if not GENERATE_PY.is_file():
-        pytest.skip("docs/dashboard/generate.py not present in this checkout")
+        pytest.skip("pyforge.doctor.sources.fleet_scan not present in this checkout")
     return _load_generate()
 
 

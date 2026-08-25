@@ -32,7 +32,7 @@ Act III: the duties are already being done — by hand, without a name.
 
 ## Scene 08 — The estate today
 
-Three working proofs: the Pages program console deploys — today a hand-run dashboard-gen plus push; the pixi environment estate with its environment.yaml sync discipline; and the air-gap routing machinery awaiting an operator. All Steward duties, done manually.
+Three working proofs: Lane 1 `/console/` is the operator console; Kedro-Viz still deploys via `steward deploy dashboard`; the pixi environment estate with its environment.yaml sync discipline; and the air-gap routing machinery awaiting an operator. All Steward duties, done manually.
 
 ## Scene 09 — Deploy services, not artifacts
 

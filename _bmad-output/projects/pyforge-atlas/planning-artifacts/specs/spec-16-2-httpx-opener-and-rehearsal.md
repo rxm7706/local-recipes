@@ -172,7 +172,7 @@ outside it).
 - [ ] `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md`
   -- remove open question 3 from the `open_questions` frontmatter list (leave items 1-2 untouched —
   Story 16.1 owns those, on its own unmerged branch), add a YAML comment above the list summarizing
-  the resolution (matches the documented convention `docs/dashboard/generate.py::_spec_open_questions`
+  the resolution (matches the documented convention `pyforge.doctor.sources.fleet_scan::_spec_open_questions`
   depends on: resolved items are removed, never left as a "RESOLVED:"-prefixed entry), and in the
   `## Open Questions` prose section replace the third bullet with a small `**Resolved:**` sub-block
   (not just an unheaded paragraph sitting among the two still-open items -- a reader scanning this

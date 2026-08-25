@@ -47,7 +47,7 @@ consolidations (a handful found, distinct from the bulk-commit problem) is archi
   `archive/_bmad-output/...` convention already used for today's satellite-chain moves.
 - `_bmad-output/PROJECTS.md`'s per-project `Dream:` pointers name the actual station-charter
   Dream file (`type: dream`), not a stale filename or a `type: practice` satellite.
-- The fleet dashboard (`docs/dashboard/generate.py --source sprint-status`) reports zero
+- The fleet dashboard (`pyforge.doctor.sources.fleet_scan --source sprint-status`) reports zero
   `gaps` for herald: its brief and architecture directories are named `brief-pyforge-herald-*`
   / `architecture-pyforge-herald-*`, matching every other station's convention and the
   `_stage_globs()` pattern that scores them.
@@ -95,8 +95,8 @@ moved — this section is the evidence base for the cleanup above, not yet acted
 ### Cluster 4 — the fleet dashboard reports a real gap for herald (found 2026-08-02, post-realization)
 
 The user reported the program console (`docs/dashboard/`) showing stations "out of date, missing
-artifacts, and a gap" for the 8 primary stations. Verified against `docs/dashboard/generate.py`'s
-own fleet scan (`python3 docs/dashboard/generate.py --source sprint-status`), confirmed **on
+artifacts, and a gap" for the 8 primary stations. Verified against `pyforge.doctor.sources.fleet_scan`'s
+own fleet scan (`Lane 1 /console/ (Guildhall generator retired) --source sprint-status`), confirmed **on
 `main`, before any of this Dream's cleanup** — not something the cleanup branch introduced:
 
 - **Herald has real gaps: `['brief', 'arch']`.** `_stage_globs()` looks for
@@ -120,7 +120,7 @@ own fleet scan (`python3 docs/dashboard/generate.py --source sprint-status`), co
 ### Cluster 5 — the currency ("feeds") check has no grace period, so every station reads stale
 
 Reported by the user after CAP-10: "now every station on the dashboard has something as
-outdated." Verified against `docs/dashboard/generate.py`'s `_currency()` on the regenerated
+outdated." Verified against `pyforge.doctor.sources.fleet_scan`'s `_currency()` on the regenerated
 `data.js` (2026-08-02, all 8 primary stations):
 
 | Station | `staleBy` findings (`stage` newer than `than`, gap) |

@@ -4,7 +4,7 @@ status: draft
 owner-dream: docs/dreams/sprint-status-auto-promote.md
 surface:
   - scripts/promote_sprint_status.py
-  - docs/dashboard/generate.py
+  - pyforge.doctor.sources.fleet_scan
 sources:
   - ../../../../../../docs/dreams/sprint-status-auto-promote.md
 open_questions:
@@ -21,7 +21,7 @@ A story landing on a loop-home branch does not, by itself, update the tracked
 ledger or the dashboard. Two manual commands must run afterward —
 `scripts/promote_sprint_status.py` (Tier-3 `sprint-status.yaml` →
 tracked `planning-artifacts/sprint-status-ledger.yaml`) and
-`docs/dashboard/generate.py --source sprint-status` — and nothing enforces or
+`pyforge.doctor.sources.fleet_scan --source sprint-status` — and nothing enforces or
 detects that they haven't. Three live incidents in one session (Stories 2.1,
 2.4, and the `8-5` block fix) all had the same shape: story done, dashboard
 stale, caught only because a human asked why. The trigger today is "someone

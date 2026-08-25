@@ -358,7 +358,7 @@ from one `podman run`. This section evaluates what that actually takes, given St
 This is the single most important shipped-code fact for the Dream. Every duty module locates
 the repo root by walking up from its own installed location to a marker file:
 `scripts/bmad-loop-worktree` (provision.py:62-78, budget.py:68-83),
-`docs/dashboard/generate.py` (deploy.py:47-62), and
+`pyforge.doctor.sources.fleet_scan` (deploy.py:47-62), and
 `.claude/skills/conda-forge-expert/scripts/_http.py` (keys.py:81-97). `keys.py` goes
 further: **at import time** it inserts the CFE scripts dir onto `sys.path` and does
 `from _http import auth_headers_for` (keys.py:100-104), raising if no checkout encloses it —

@@ -2,8 +2,8 @@
 mirrors `keys.py`'s "one module per duty" precedent.
 
 Story 2.1 slice: `build_dashboard` — a thin `subprocess` wrap of the existing
-`dashboard-gen` pixi task (`pixi run -e local-recipes dashboard-gen`), never a
-reimplementation of `docs/dashboard/generate.py`'s own logic (AD-1). `DeployDuty`
+`dashboard-gen` pixi task (`retired-console-check`), never a
+reimplementation of `pyforge.doctor.sources.fleet_scan`'s own logic (AD-1). `DeployDuty`
 is the `Duty`-conforming adapter `cli.py`'s `resolve_duty("deploy")` now
 returns, wiring `steward deploy dashboard --build`.
 
@@ -29,7 +29,7 @@ tracked ledger is missing or unreadable). The guard checks only the file's
 presence and shape (a `development_status:` block exists) — never an
 individual story-status value — so this module still performs zero status
 derivation of its own (AD-1: that computation stays inside the wrapped
-`dashboard-gen` subprocess / `docs/dashboard/generate.py`).
+`dashboard-gen` subprocess / `pyforge.doctor.sources.fleet_scan`).
 
 Story 9.5 slice (CAP-6, AD-5, AD-8): `DeploymentTopology` + `check_shareable_
 state` implement AD-5's refusal — "any cross-worker shared state that cannot
@@ -83,7 +83,7 @@ from .interfaces import DutyResult
 # outside a local-recipes checkout, which `cli.py`'s `resolve_duty` docstring
 # already flags as a reason NOT to import it eagerly from an unrelated duty) ──
 
-_DASHBOARD_GENERATE_MARKER = Path("docs/dashboard/generate.py")
+_DASHBOARD_GENERATE_MARKER = Path("docs/dashboard/kedro-viz/index.html")
 _DASHBOARD_RELATIVE_PATH = Path("docs/dashboard")
 
 
@@ -91,7 +91,7 @@ def repo_root() -> Path:
     """Return the local-recipes checkout root.
 
     Walks up from this file's own resolved location looking for
-    `docs/dashboard/generate.py` — robust to whatever depth the installed/
+    `docs/dashboard/kedro-viz/index.html` — robust to whatever depth the installed/
     editable `pyforge-steward` package ends up at relative to the repo root,
     same rationale as `keys.py`'s `locate_http_module`.
     """
@@ -107,23 +107,17 @@ def repo_root() -> Path:
 
 # ── Build primitive (FR-8, Story 2.1) ───────────────────────────────────────
 
-_DEFAULT_BUILD_CMD: tuple[str, ...] = ("pixi", "run", "-e", "local-recipes", "dashboard-gen")
+_DEFAULT_BUILD_CMD: tuple[str, ...] = ("true",)
 
 
 def build_dashboard(
     *, cwd: str | Path, cmd: Sequence[str] | None = None
 ) -> subprocess.CompletedProcess[str]:
-    """Run the `dashboard-gen` pixi task as a subprocess (AD-1).
+    """Run a no-op build (Kedro-Viz is staged by atlas `viz-publish-stage`).
 
-    `cmd` defaults to the real invocation (`pixi run -e local-recipes
-    dashboard-gen`) — the exact pixi task named in `pixi.toml`'s
-    `[feature.local-recipes.tasks.dashboard-gen]`. Overridable so a test can
-    substitute a fast fixture command without installing the ~9.8GB
-    `local-recipes` env (see this story's spec, "Design Notes").
-
-    Raises `subprocess.CalledProcessError` on a non-zero exit — propagated,
-    not swallowed — caught only at `DeployDuty`'s boundary (mirrors
-    `KeysDuty`'s existing `age`-failure handling).
+    Story 30.2 retired `dashboard-gen`. `steward deploy dashboard` still
+    diffs and commits `docs/dashboard/` (Kedro-Viz + stub). `cmd` remains
+    injectable for tests.
     """
     return subprocess.run(
         list(cmd) if cmd is not None else list(_DEFAULT_BUILD_CMD),
@@ -329,7 +323,7 @@ def _tracked_ledger_refusal(*, cwd: str | Path) -> str | None:
     — never an individual story key or status value, so this stays a
     precondition check, not the story-status derivation AD-1 forbids
     `deploy.py` from doing (that computation stays inside the wrapped
-    `dashboard-gen` subprocess / `docs/dashboard/generate.py`).
+    `dashboard-gen` subprocess / `pyforge.doctor.sources.fleet_scan`).
 
     Review finding: the shape check used to be a bare substring test
     (`"development_status:" in text`), which a comment merely MENTIONING the

@@ -134,7 +134,7 @@ bring-up; this definition specifies the *required* shape, not a proof it already
 - reject: 2 (low 2)
 - addressed_findings:
   - `[high]` `[patch]` `open_questions` frontmatter left 2 "RESOLVED"-prefixed items as block-list
-    entries, which `docs/dashboard/generate.py::_spec_open_questions` counts structurally (blind to
+    entries, which `pyforge.doctor.sources.fleet_scan::_spec_open_questions` counts structurally (blind to
     the prefix) — shrunk the frontmatter list to only the genuinely-open item and moved the
     resolution summary to a preceding YAML comment, matching this repo's own documented convention.
   - `[medium]` `[patch]` the DW-H1-dependency "RESOLVED" label overstated completeness (only the

@@ -45,7 +45,7 @@ def fake_repo(tmp_path, monkeypatch) -> Path:
     """A scratch directory standing in for `repo_root()`, with `docs/
     dashboard/` already present -- mirrors this repo's own real layout,
     where that directory always exists (`repo_root()` itself locates the
-    checkout by finding `docs/dashboard/generate.py`)."""
+    checkout by finding `pyforge.doctor.sources.fleet_scan`)."""
     root = tmp_path / "repo"
     (root / "docs" / "dashboard").mkdir(parents=True)
     monkeypatch.setattr("pyforge.steward.deploy.repo_root", lambda: root)

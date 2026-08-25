@@ -1347,7 +1347,7 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
   summary: timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says they are different classes.
   evidence: CAP-1 places both on timing.perStory honestly named; full visual/series separation is Story 23.2 (CAP-2). Surfaced by blind-hunter; not a fabricate risk.
-  location: docs/dashboard/generate.py:scan_timing
+  location: pyforge.doctor.sources.fleet_scan:scan_timing
   origin: spec-deferred 2d5dc03c245d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -1358,7 +1358,7 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
   summary: Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.
   evidence: Pre-existing journal key convention; loop homes emit N-M-slug keys. Edge-case hunter only; not introduced by CAP-1 derivation logic beyond shared _sid_from_journal_key.
-  location: docs/dashboard/generate.py:_sid_from_journal_key
+  location: pyforge.doctor.sources.fleet_scan:_sid_from_journal_key
   origin: spec-deferred a67ea55883b2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -1369,7 +1369,7 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
   summary: Velocity panel `sub` still lumps unmeasured stories under "predate loop instrumentation"; full absence-class partitioning is Story 23.3 (CAP-3).
   evidence: CAP-2 only requires wall-clock vs active-compute class labels. Intent explicitly defers 23.3. Surfaced by blind-hunter + intent-alignment.
-  location: docs/dashboard/generate.py:scan_timing velocity.sub
+  location: pyforge.doctor.sources.fleet_scan:scan_timing velocity.sub
   origin: spec-deferred e334aaacbac9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
@@ -1391,7 +1391,7 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md`
   summary: Lane 1 Wagtail (steward `spec-pyforge-unifying-strategy` CAP-2) supersedes `spec-factory-console` as the estate front-door contract. Planning retirement applied 2026-08-24 via `sprint-change-proposal-2026-08-24-canopy.md`.
   evidence: Operator approved Phase 5 of `docs/dreams/pyforge-unifying-strategy.md`; steward Epics 20 + 30 own Wagtail front door and post-parity removal of `docs/dashboard/` generator / pixi tasks / `data.js`.
-  location: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md`; `docs/dashboard/` (code — **not deleted this pass**)
+  location: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console/SPEC.md`; `docs/dashboard/` (generator/`data.js` deleted steward 30.2; Kedro-Viz kept)
   origin: bmad-correct-course — marshal station, headless-express batch (2026-08-24)
   severity: medium
   promoted: 2026-08-24

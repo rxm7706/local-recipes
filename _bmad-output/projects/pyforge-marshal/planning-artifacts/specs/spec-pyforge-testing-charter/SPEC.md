@@ -4,7 +4,7 @@ status: ready
 owner-dream: docs/dreams/pyforge-testing-charter.md
 surface:
   - _bmad/scripts/bmad_tea_playwright.py
-  - docs/dashboard/generate.py
+  - pyforge.doctor.sources.fleet_scan
   - src/shared/packages/pyforge-testing-kit/**    # net-new, not yet created
 companions:
   - station-tea-status.md

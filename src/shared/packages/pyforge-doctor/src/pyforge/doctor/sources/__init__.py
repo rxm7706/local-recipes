@@ -230,12 +230,11 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 6.5 -- ported from scripts/chain_completeness_check.py
     SourceRegistration(
         source=Source.DASHBOARD_DRIFT,
-        scope="runtime",
+        scope="repo",
         subject_station="marshal",
         owning_station="doctor",
-    ),  # Story 6.5 -- ported from scripts/dashboard_drift_check.py; the first
-    # "runtime" member -- it reads the gitignored Tier-3 sprint feeds this
-    # module's own docstring describes, invisible to CI.
+    ),  # Story 6.5 originally runtime (Tier-3 feeds). Steward 30.2 / FR-7:
+    # reintroduction gate over tracked files only — scope is repo so CI sees it.
     SourceRegistration(
         source=Source.CHECK_LAYOUT,
         scope="repo",
@@ -400,7 +399,7 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         owning_station="doctor",
     ),  # Story 17.3 (Epic 17 / FR-150 residual, FR-152) + Story 21.1 (CAP-3) --
     # board.gather_chain_layers_audit. CAP-3 pass/fail per checkpoint for one
-    # named project, seeded from docs/dashboard/generate.py + dream-chain.
+    # named project, seeded from pyforge.doctor.sources.fleet_scan + dream-chain.
     # Not a DISPATCH name: invoked as `chain-completeness --layers --project <slug>`.
 )
 

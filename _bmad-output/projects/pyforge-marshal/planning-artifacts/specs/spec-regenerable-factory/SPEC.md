@@ -57,7 +57,7 @@ with other loops (e.g. Warden 6.3).
 
 - **CAP-4 — regeneration drill.**
   Intent: prove regenerability — delete a governed module (pilot:
-  `docs/dashboard/generate.py`), rebuild it from its spec alone, pass the
+  `pyforge.doctor.sources.fleet_scan`), rebuild it from its spec alone, pass the
   same verification the original passed.
   Success: one documented drill with a green outcome; the drill procedure
   recorded so it can be repeated on any governed surface.

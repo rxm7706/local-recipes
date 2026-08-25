@@ -547,8 +547,9 @@ be seen whole. A hall that cannot say who is accountable for a row does not put 
 on the wall.
 
 This closed a real inversion. Until the amendment the console **failed on a rendering
-error but not on an ownership hole** — `check_render.js` exited non-zero when the page's
-JavaScript threw, while `generate.py` printed `· UNOWNED: …` and exited clean. A cosmetic
+error but not on an ownership hole** — the retired `check_render.js` exited
+non-zero when the page's JavaScript threw, while the retired `generate.py`
+printed `· UNOWNED: …` and exited clean. A cosmetic
 fault blocked publication; a governance fault shipped. The `[owner]` line had already
 computed the answer and was throwing it away.
 
@@ -705,7 +706,7 @@ herald broadcast slack,email --channel engineering-updates
   `spec-pyforge-charter` as CAP-5..CAP-8. Retired artifacts are archived, never deleted:
   `archive/docs/dreams/pyforge-genesis.md` and
   `archive/docs/governance/spec-pyforge-genesis/`. `GUILD_DREAMS` drops to one entry in
-  **both** mirrors (`scripts/bmad_drift_check.py`, `docs/dashboard/generate.py`) in this
+  **both** mirrors (`scripts/bmad_drift_check.py`, `pyforge.doctor.sources.fleet_scan`) in this
   same commit, per the standing duplicated-constant constraint. **What did not change:**
   the constitutive tier still exists and is still owned by no Smith — the circularity
   argument that kept the Charter out of a station's tree in the first place is
@@ -747,7 +748,8 @@ herald broadcast slack,email --channel engineering-updates
   the publish. Rationale: *visibility without consequence is decoration*, and the hall is
   the only place the whole Dream→Code chain is assembled in one view — so it is the only
   place a break in that chain can be seen whole. This corrected an inversion in which
-  `check_render.js` exited non-zero on a JavaScript `TypeError` while `generate.py` printed
+  `check_render.js` exited non-zero on a JavaScript `TypeError` while the retired
+  `generate.py` printed
   `· UNOWNED: …` and exited clean — a cosmetic fault blocked publication while a governance
   fault shipped silently. Gating **hard from day one**, not against a baseline: the model's
   critical path is the ownership chain, and a grace period on the critical path is how drift

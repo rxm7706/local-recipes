@@ -228,10 +228,10 @@ def test_seed_hook_and_config_ready() -> None:
     apps.get_app_config("front_door").ready()
 
 
-def test_generator_and_kedro_viz_untouched() -> None:
+def test_generator_gone_kedro_viz_kept() -> None:
     dashboard = REPO_ROOT / "docs" / "dashboard"
-    assert (dashboard / "generate.py").is_file()
-    assert (dashboard / "data.js").is_file()
+    assert not (dashboard / "generate.py").is_file()
+    assert not (dashboard / "data.js").is_file()
     assert (dashboard / "kedro-viz").is_dir()
     pixi = (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8")
     for task in (
@@ -240,7 +240,13 @@ def test_generator_and_kedro_viz_untouched() -> None:
         "dashboard-check",
         "dashboard-drift-check",
     ):
-        assert task in pixi
+        assert f"[feature.local-recipes.tasks.{task}]" not in pixi
+    assert (REPO_ROOT / ".github" / "workflows" / "kedro-viz-publish.yml").is_file()
+    dash_wf = (REPO_ROOT / ".github" / "workflows" / "dashboard.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "schedule:" not in dash_wf
+    assert "generate.py" not in dash_wf
 
 
 def _portal_home(station: str) -> str:

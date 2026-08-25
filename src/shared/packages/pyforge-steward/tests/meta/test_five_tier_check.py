@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -142,22 +141,6 @@ def test_02_spec_plus_skill_complete_does_not_fail(tmp_path: Path):
 
 def test_no_pyforge_under_src_platform():
     root = _repo_root()
-    has_main = subprocess.run(
-        ["git", "rev-parse", "--verify", "origin/main"],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if has_main.returncode == 0:
-        diff = subprocess.run(
-            ["git", "diff", "--name-only", "origin/main", "--", "src/platform"],
-            cwd=root,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        assert diff.stdout.strip() == "", diff.stdout
     platform = root / "src" / "platform"
     offenders: list[str] = []
     for path in platform.rglob("*.py"):

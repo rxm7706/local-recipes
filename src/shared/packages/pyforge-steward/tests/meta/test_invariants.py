@@ -170,7 +170,7 @@ def test_deploy_has_no_story_status_derivation():
     """Story 5.2 / AD-71 / AD-1: `deploy.py` may check whether its tracked
     ledger EXISTS and is SHAPED like one, but must never re-derive an
     individual story's status itself -- that computation stays inside the
-    wrapped `dashboard-gen` subprocess (`docs/dashboard/generate.py`'s own
+    wrapped `dashboard-gen` subprocess (`pyforge.doctor.sources.fleet_scan`'s own
     `parse_sprint_status`), never reimplemented here.
 
     AST-based, same rationale as `test_no_rotation_scheduler_exists`/
@@ -714,3 +714,30 @@ def test_dashboard_extra_pins_match_pixi_feature_pins():
             f"{pkg_name} pin drift: pyproject `[dashboard]` extra says {extra_pin!r}, "
             f"pixi.toml `[feature.pyforge-steward.dependencies]` says {feature_pin!r}"
         )
+
+
+def test_guildhall_generator_stays_deleted():
+    """Steward 30.2 / FR-7: generator, data.js, four pixi tasks, cron are gone."""
+    repo = Path(__file__).resolve()
+    while repo != repo.parent:
+        if (repo / "pixi.toml").is_file() and (repo / "docs" / "dashboard").is_dir():
+            break
+        repo = repo.parent
+    else:
+        raise AssertionError("could not locate repo root")
+    dashboard = repo / "docs" / "dashboard"
+    assert not (dashboard / "generate.py").is_file()
+    assert not (dashboard / "data.js").is_file()
+    assert (dashboard / "kedro-viz").is_dir()
+    pixi = (repo / "pixi.toml").read_text(encoding="utf-8")
+    for task in (
+        "dashboard-gen",
+        "dashboard-watch",
+        "dashboard-check",
+        "dashboard-drift-check",
+    ):
+        assert f"[feature.local-recipes.tasks.{task}]" not in pixi
+    assert (repo / ".github" / "workflows" / "kedro-viz-publish.yml").is_file()
+    dash_wf = (repo / ".github" / "workflows" / "dashboard.yml").read_text(encoding="utf-8")
+    assert "schedule:" not in dash_wf
+    assert "generate.py" not in dash_wf

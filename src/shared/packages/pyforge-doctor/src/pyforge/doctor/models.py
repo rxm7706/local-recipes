@@ -218,7 +218,7 @@ class Source(StrEnum):
     DREAMS_HYGIENE = "dreams-hygiene"
     # Story 17.3 (Epic 17 / FR-150 residual + FR-152): read-only chain-layer
     # presence report for ONE named project, seeded from
-    # docs/dashboard/generate.py's FLEET_STAGES/_stage_globs/_resolve.
+    # pyforge.doctor.sources.fleet_scan's FLEET_STAGES/_stage_globs/_resolve.
     # Distinct from CHAIN_COMPLETENESS INV-A..D and from DREAMS_HYGIENE.
     # Invoked as `chain-completeness --layers --project <slug>`. Warn-only.
     CHAIN_LAYERS_AUDIT = "chain-layers-audit"

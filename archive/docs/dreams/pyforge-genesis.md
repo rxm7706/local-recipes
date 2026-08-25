@@ -64,7 +64,7 @@ And **the seed**: the bootstrapper that installs the operating model anywhere â€
   commit) around its two load-bearing Spec kernels (Charter, Lexicon). Those moved to
   `docs/governance/spec-pyforge-charter/` and `docs/governance/spec-pyforge-genesis/` â€”
   no Smith absorbed them (a Smith owning the Charter that constitutes the Smiths would be
-  circular); `docs/dashboard/generate.py` and `scripts/dream_chain_check.py` both
+  circular); `pyforge.doctor.sources.fleet_scan` and `scripts/dream_chain_check.py` both
   special-case this location for `owner: guild` chains. The rest of the project is archived
   at `archive/_bmad-output/projects/pyforge-genesis/`, never deleted. See
   `_bmad-output/EXEMPLAR-STANDARD.md`'s 2026-08-02 amendment for the full reasoning.

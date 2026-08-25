@@ -20,7 +20,7 @@ name: Herald live demo
 # THREE JOBS, each a real, unattended proof of one trigger:
 #   on-ship         -- push to main, derives station+story from the real
 #                       commit subject using this repo's OWN existing
-#                       attribution convention (docs/dashboard/generate.py's
+#                       attribution convention (pyforge.doctor.sources.fleet_scan's
 #                       `_LOOP_DONE`/`_QUALIFIED_STORY` patterns -- never an
 #                       invented parsing rule), POSTs a real signed request.
 #   on-pr-close     -- a real PR close event, derives merged/gates_passed
@@ -79,7 +79,7 @@ jobs:
 
       # Derives station+story from the real triggering commit's subject,
       # using this repo's OWN already-established attribution convention --
-      # a literal port of docs/dashboard/generate.py's `_LOOP_DONE`/
+      # a literal port of pyforge.doctor.sources.fleet_scan's `_LOOP_DONE`/
       # `_LOOP_TARGET_SLUG`/`_QUALIFIED_STORY` regexes, never a new,
       # invented parsing rule (Boundaries & Constraints). A commit matching
       # neither pattern is not a ship: `matched=false` makes every step
@@ -100,7 +100,7 @@ jobs:
           import re
           import subprocess
 
-          # Mirrors docs/dashboard/generate.py's own regexes verbatim.
+          # Mirrors pyforge.doctor.sources.fleet_scan's own regexes verbatim.
           _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
           _LOOP_TARGET_SLUG = re.compile(r"pyforge-([a-z0-9]+)")
           _QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.IGNORECASE)

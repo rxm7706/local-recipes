@@ -98,7 +98,7 @@ category:
   detection, but SaaS-hosted and schema-first.
 
 Where Marshal + Herald sit: the factory already has a working IDP *shape*
-with zero servers — `docs/dashboard/generate.py` derives catalog rows from
+with zero servers — `pyforge.doctor.sources.fleet_scan` derives catalog rows from
 tracked ledgers and Dream frontmatter, GitHub Pages hosts it, `marshal
 status`/`marshal check` are the CLI front door. What Backstage/Port have that
 the factory lacks: **write actions from the UI** (self-service "run this"),

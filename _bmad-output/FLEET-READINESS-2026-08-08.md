@@ -40,7 +40,7 @@ Regenerate with:
 ```bash
 pixi run -e local-recipes chain-completeness-check     # the invariants
 pixi run -e local-recipes forward-dependency-check     # can a story actually start
-pixi run -e local-recipes dashboard-gen                # the board
+retired-console-check                # the board
 ```
 
 ## Where the fleet stands

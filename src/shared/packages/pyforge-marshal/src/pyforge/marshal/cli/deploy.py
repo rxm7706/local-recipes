@@ -3515,7 +3515,7 @@ def _load_promote_sprint_status() -> object:
     """Story 5.9's own install-free reuse of ``scripts/promote_sprint_
     status.py``'s repair-feed logic (never re-derived, this story's own
     Boundaries). That module lives at the repo root, outside every
-    installed package -- a dev script, like ``docs/dashboard/generate.py``
+    installed package -- a dev script, like ``pyforge.doctor.sources.fleet_scan``
     it itself dynamically loads -- so it is reached the SAME way it
     reaches THAT module: ``importlib.util.spec_from_file_location``
     against this checkout's own on-disk path, never a subprocess (this

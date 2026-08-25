@@ -296,7 +296,7 @@ Per the SPEC expansion on 2026-07-29:
   data (sprint-status, Warden ComplianceReport, Atlas run summaries, gate reports), never
   hand-written. May subsume or relate to the `herald updates compile` roadmap item below; open
   whether this owns compiled-artifact schema, cross-project scope, and relationship to
-  `docs/dashboard/generate.py`.
+  `pyforge.doctor.sources.fleet_scan`.
 - **HER-3 — The visual identity is one system** — Decks, infographics, and the Guildhall share
   the Modernist identity vocabulary (fonts, color tokens, motion language). Open: whether
   Modernist coverage is complete for all Herald surfaces, how identity drift is detected, and
@@ -313,7 +313,7 @@ numbered FRs — they require their own `bmad-spec` pass before any epic/story d
 - **`herald updates compile`** — compiles pyforge's own structured telemetry (sprint-status,
   Warden `ComplianceReport`, Atlas run summaries, gate reports) into weekly notables. Open:
   compiled-artifact schema, single-project vs. cross-project (Marshal-mediated) scope,
-  relationship to `docs/dashboard/generate.py`'s existing sync, relationship to HER-2 above.
+  relationship to `pyforge.doctor.sources.fleet_scan`'s existing sync, relationship to HER-2 above.
 - **`herald broadcast`** — fans a compiled artifact out to channel adapters (Slack/email/wiki),
   each reporting explicit success/failure. Open: channel-adapter credential ownership (likely
   Steward-adjacent, not Herald's to own outright).
