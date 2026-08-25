@@ -63,7 +63,7 @@ development_status:
   18-2-the-switcher-shows-only-what-the-user-may-reach: done
   18-3-two-clients-one-rs256-assertion: done
   19-1-warden-moves-and-is-renamed: done
-  19-2-seven-more-portal-shells-under-the-prefix: backlog
+  19-2-seven-more-portal-shells-under-the-prefix: done
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
