@@ -76,7 +76,7 @@ development_status:
   21-4-the-other-seven-mcp-faces: done
   21-5-front-door-queries-the-supervisor: done
   22-1-pyforge-dispatches-without-reimplementing: done
-  23-1-same-url-different-rows: backlog
+  23-1-same-url-different-rows: done
   24-1-cloudevents-on-redis-broker: backlog
   24-2-cascades-halt-adapters-validate: backlog
   25-1-circuits-trip-on-async-too: backlog

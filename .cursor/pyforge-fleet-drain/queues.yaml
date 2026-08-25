@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 27
-    next: 23-1-same-url-different-rows
+    remaining_count: 26
+    next: 24-1-cloudevents-on-redis-broker
     queue:
-    - 23-1-same-url-different-rows
     - 24-1-cloudevents-on-redis-broker
     - 24-2-cascades-halt-adapters-validate
     - 25-1-circuits-trip-on-async-too
