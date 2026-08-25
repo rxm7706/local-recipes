@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 16
-    next: 29-1-skf-domain-skills-from-station-packages
+    remaining_count: 15
+    next: 29-2-personas-act-only-through-grammar-and-mcp
     queue:
-    - 29-1-skf-domain-skills-from-station-packages
     - 29-2-personas-act-only-through-grammar-and-mcp
     - 29-3-five-tier-check
     - 30-1-remaining-console-surfaces-have-a-home

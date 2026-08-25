@@ -93,7 +93,7 @@ development_status:
   27-4-test-databases-still-migrate: backlog
   28-1-postgresql-driver-behind-the-existing-port: done
   28-2-semantic-recall: done
-  29-1-skf-domain-skills-from-station-packages: backlog
+  29-1-skf-domain-skills-from-station-packages: done
   29-2-personas-act-only-through-grammar-and-mcp: backlog
   29-3-five-tier-check: backlog
   3-1-any-named-pixi-environment-materializes-with-one-command: done
