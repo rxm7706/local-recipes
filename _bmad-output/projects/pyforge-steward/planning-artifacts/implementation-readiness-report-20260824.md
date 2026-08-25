@@ -106,23 +106,24 @@ for implementability, not a second architecture hunt.
 | Adversarial (delta only) | Dream README still described a `services/` FastAPI tier as residual — corrected this pass. Grounding prose in the Dream remains historical; SPEC + spine win where they disagree. |
 | Structure / prose | Companion list on SPEC includes the spine. Bare `AD-n` remains review-blocking (canopy vs parent). |
 
-No MUST-FIX that would keep the Spec at `draft`. Open question stays listed.
+No MUST-FIX that would keep the Spec at `draft`. The remaining open question is
+`lane1-serves-dw-h3` only.
 
 ## Phase 5 station check (8/8)
 
 | Station | Last local epic | Load-bearing |
 |---|---|---|
-| steward | 30 | Epic 11 stays done; Epic 27 supersedes DDL producer only. OM: deploy-profile plugins. Last local epic still 30 (31 is suite-install, not Canopy). |
-| warden | 8 | Rename is S-19.1; `/compliance/` redirect. OM: owns PR-gate hook specs. |
-| marshal | 25 | `spec-factory-console` superseded → CAP-2; generator until S-30.2. OM: loop pass ≠ PR gate. |
-| atlas | 17 | `lane1-serves-dw-h3` **not answered**; Vizro CLI off-host. OM: already-Kedro pipeline hooks (reference shape, not PR-gate); DRF only on data-models. |
-| mason | 9 | No MinIO; `conda-forge-expert` stays hand-authored. OM: build-engine plugins ≠ Warden. |
-| scribe | 3 | No Epic 4; graph → steward Epic 28; `FlatFileGraphStore` only. OM: store/recall plugins. |
-| doctor | 16 | No Epic 17+. OM: remedy hooks are advisory / Warden inputs. |
-| herald | 15 | No Epic 16+. OM: export-format plugins. |
+| steward | 32 | Epic 11 stays done; Epic 27 supersedes DDL producer only. Epic 31 = suite-install. **Epic 32** = CAP-18 shared contract (S-32.1) + deploy-profile plugins (S-32.2). |
+| warden | 9 | Rename is S-19.1; `/compliance/` redirect. **Epic 9** = PR-gate hook specs; scanners optional plugins (FR-44). |
+| marshal | 26 | `spec-factory-console` superseded → CAP-2; generator until S-30.2. **Epic 26** = loop/runner hook (S-26.1). A passed loop is not a PR gate. |
+| atlas | 18 | `lane1-serves-dw-h3` **not answered**; Vizro CLI off-host. **Epic 18** = Kedro hook audit vs S-32.1 (do not rebuild; no pipeline PR-gate). DRF only on data-models. |
+| mason | 10 | No MinIO; `conda-forge-expert` stays hand-authored. **Epic 10** = build-engine hook (S-10.1). |
+| scribe | 4 | CAP-14 PG driver stays steward Epic 28. **Epic 4** = GraphStore plugin registration (S-4.1); `FlatFileGraphStore` is the default plugin. |
+| doctor | 17 | **Epic 17** = gather/prescribe plugins (S-17.1). Findings are advisory / Warden inputs. |
+| herald | 16 | **Epic 16** = exporter plugins (S-16.1). Export success is not a Warden verdict. |
 
 ## Next
 
-Story 18.1 (`django-pyforge` chrome) is the first dispatchable story. S-18.1 now
-also carries owner / `work_class` / promotion date on the registration seam.
-S-26.3 and S-27.1 wait on the operator. Scorecard draft is not a Canopy story.
+Story 18.1 (`django-pyforge` chrome) is the first dispatchable story. S-32.1 may
+run in parallel. S-26.3 and S-27.1 wait on the operator. Scorecard draft is not
+a Canopy story. CAP-18 keys are in each station's `sprint-status-ledger.yaml`.

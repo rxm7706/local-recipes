@@ -15,7 +15,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 21 of 57 stories journal-measured on this axis; 36 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 21 of 58 stories journal-measured on this axis; 36 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -114,12 +114,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "57/57",
+            "57/58",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -177,8 +177,8 @@ window.DASHBOARD_DATA = {
         "total": 1502
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "18.1"
       },
       "roadmap": {
         "sub": "Complete: all of Waves 0–H are shipped (per merged PRs #69–#102) — the Kedro port, MCP surface, parity harness, Universal SBOM intake, orchestration, the BSL + Vizro + Vizro-AI dashboards, A2A + OpenLineage/OTel, the full DuckDB singularity (cold-start gate, Pandera contracts, vss RAG, F4’s hygiene node importing Warden’s ComplianceReport), Wave G’s WASM read surface + static-host Parquet emitter + Dagster sensors, and Wave H’s AI software factory (Karpathy wiki + 5 factory personas, agno crews, La Suite sync, Dagster orchestration). The migration was closed out by the CFE Rule-2 retro #103 (v8.79.0) — 32/32. Wave I is NOT part of the migration: it is post-audit remediation, opened 2026-07-27 after an independent Round-3 spec-to-code audit raised 49 findings (PR #131, branch abandoned — the incorporation record is the only surviving account). Six stories close the verified atlas subset at source and all six landed (merged as PR #132, 6/6, kedro-test 803 -> 901 passed); it is ordered by the tested gate rather than by wave, because kedro-test was red on main until I3 landed.",
@@ -616,6 +616,17 @@ window.DASHBOARD_DATA = {
               "Handoffs are execution-ready"
             ]
           ]
+        },
+        {
+          "badge": "E18",
+          "title": "Kedro hooks on the shared contract",
+          "stories": [
+            [
+              "18.1",
+              "pending",
+              "Map existing Kedro hooks to CAP-18"
+            ]
+          ]
         }
       ],
       "owner": "atlas",
@@ -635,7 +646,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 29 of 61 stories journal-measured on this axis; 12 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 17 spec-without-revision-fields deliberately absent; 3 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 29 of 62 stories journal-measured on this axis; 12 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 17 spec-without-revision-fields deliberately absent; 3 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -766,12 +777,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "61/61",
+            "61/62",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -883,8 +894,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "17.1"
       },
       "epics": [
         {
@@ -1287,6 +1298,17 @@ window.DASHBOARD_DATA = {
               "The shared-title diff is an ambient finding"
             ]
           ]
+        },
+        {
+          "badge": "E17",
+          "title": "Gather/prescribe hook spec",
+          "stories": [
+            [
+              "17.1",
+              "pending",
+              "Extract gather/prescribe source plugins"
+            ]
+          ]
         }
       ],
       "owner": "doctor",
@@ -1306,7 +1328,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 58 stories journal-measured on this axis; 44 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 59 stories journal-measured on this axis; 44 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1377,12 +1399,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "58/58",
+            "58/59",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -1433,8 +1455,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "16.1"
       },
       "epics": [
         {
@@ -1816,6 +1838,17 @@ window.DASHBOARD_DATA = {
               "Dense content renders as shapes that fit"
             ]
           ]
+        },
+        {
+          "badge": "E16",
+          "title": "Exporter hook spec",
+          "stories": [
+            [
+              "16.1",
+              "pending",
+              "Extract deck/export format plugins"
+            ]
+          ]
         }
       ],
       "owner": "herald",
@@ -1837,7 +1870,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 162 stories journal-measured on this axis; 12 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 80 spec-without-revision-fields deliberately absent; 12 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 58 of 163 stories journal-measured on this axis; 12 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 80 spec-without-revision-fields deliberately absent; 12 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -2084,12 +2117,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "162/162",
+            "162/163",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -2268,8 +2301,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "26.1"
       },
       "epics": [
         {
@@ -3231,6 +3264,17 @@ window.DASHBOARD_DATA = {
               "The factory's living docs are re-grounded, with a named owner"
             ]
           ]
+        },
+        {
+          "badge": "E26",
+          "title": "Loop/runner hook spec",
+          "stories": [
+            [
+              "26.1",
+              "pending",
+              "Extract the loop/runner hook"
+            ]
+          ]
         }
       ],
       "owner": "marshal",
@@ -3251,7 +3295,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 37 of 47 stories journal-measured on this axis; 3 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 6 spec-without-revision-fields deliberately absent; 1 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 37 of 48 stories journal-measured on this axis; 3 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 6 spec-without-revision-fields deliberately absent; 1 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -3414,12 +3458,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "47/47",
+            "47/48",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -3527,8 +3571,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "10.1"
       },
       "epics": [
         {
@@ -3819,6 +3863,17 @@ window.DASHBOARD_DATA = {
               "The air-gap distribution contract has a socket"
             ]
           ]
+        },
+        {
+          "badge": "E10",
+          "title": "Build-engine hook spec",
+          "stories": [
+            [
+              "10.1",
+              "pending",
+              "Extract the build-engine hook"
+            ]
+          ]
         }
       ],
       "owner": "mason",
@@ -3838,7 +3893,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 11 stories journal-measured on this axis; 7 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 12 stories journal-measured on this axis; 7 spec-without-revision-fields deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -3869,12 +3924,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "11/11",
+            "11/12",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "1",
             "remaining",
             ""
           ]
@@ -3903,8 +3958,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "4.1"
       },
       "epics": [
         {
@@ -3979,6 +4034,17 @@ window.DASHBOARD_DATA = {
               "Transcripts join the compile sources"
             ]
           ]
+        },
+        {
+          "badge": "E4",
+          "title": "GraphStore on the shared plugin contract",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Register GraphStore as CAP-18 plugins"
+            ]
+          ]
         }
       ],
       "owner": "scribe",
@@ -3998,7 +4064,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 109 stories journal-measured on this axis; 13 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 40 spec-without-revision-fields deliberately absent; 2 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 111 stories journal-measured on this axis; 13 wall-clock-derived on the timing strip only (a different metric — see the timing strip); 40 spec-without-revision-fields deliberately absent; 2 no-spec-at-all deliberately absent — not plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "8.1",
@@ -4089,12 +4155,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "74/109",
+            "74/111",
             "stories complete",
             "var(--done)"
           ],
           [
-            "35",
+            "37",
             "remaining",
             ""
           ]
@@ -4181,7 +4247,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "18.1"
+        "at": "19.1"
       },
       "epics": [
         {
@@ -4657,27 +4723,6 @@ window.DASHBOARD_DATA = {
           ]
         },
         {
-          "badge": "E18",
-          "title": "Chrome and the trusted client",
-          "stories": [
-            [
-              "18.1",
-              "pending",
-              "django-pyforge is the only chrome"
-            ],
-            [
-              "18.2",
-              "pending",
-              "The switcher shows only what the user may reach"
-            ],
-            [
-              "18.3",
-              "pending",
-              "Two clients, one RS256 assertion"
-            ]
-          ]
-        },
-        {
           "badge": "E19",
           "title": "Eight portals, one prefix",
           "stories": [
@@ -4874,7 +4919,7 @@ window.DASHBOARD_DATA = {
         },
         {
           "badge": "E29",
-          "title": "Every station is five tiers",
+          "title": "Every 03 station is five tiers",
           "stories": [
             [
               "29.1",
@@ -4906,6 +4951,43 @@ window.DASHBOARD_DATA = {
               "30.2",
               "pending",
               "Delete the generator and its inbound refs"
+            ]
+          ]
+        },
+        {
+          "badge": "E31",
+          "title": "Non-module suite pieces install by class",
+          "stories": [
+            [
+              "31.1",
+              "pending",
+              "Class-keyed playbook is the operator path"
+            ],
+            [
+              "31.2",
+              "pending",
+              "wired-or-not is class-correct"
+            ],
+            [
+              "31.3",
+              "pending",
+              "Fresh clone class-path is proven"
+            ]
+          ]
+        },
+        {
+          "badge": "E32",
+          "title": "One plugin API for eight stations",
+          "stories": [
+            [
+              "32.1",
+              "pending",
+              "Shared hook-spec and plugin registration in pyforge-core"
+            ],
+            [
+              "32.2",
+              "pending",
+              "Steward deploy-profile adapters are plugins"
             ]
           ]
         }
@@ -5099,8 +5181,8 @@ window.DASHBOARD_DATA = {
         "total": 2264
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "9.1"
       },
       "epics": [
         {
@@ -5330,6 +5412,27 @@ window.DASHBOARD_DATA = {
               "Results render with derived progress"
             ]
           ]
+        },
+        {
+          "badge": "E9",
+          "title": "PR-gate hook specs; scanners are plugins",
+          "stories": [
+            [
+              "9.1",
+              "pending",
+              "Warden publishes the PR-gate hook book"
+            ],
+            [
+              "9.2",
+              "pending",
+              "Current scanners become optional plugins"
+            ],
+            [
+              "9.3",
+              "pending",
+              "Default Warden stays green without Checkmarx"
+            ]
+          ]
         }
       ],
       "owner": "warden",
@@ -5553,7 +5656,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-24 16:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-25 02:00 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5762,10 +5865,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "bmad-suite-install-class-wiring",
       "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
-      "status": "dreamt",
+      "status": "specified   # 2026-08-24 — spec-bmad-suite-install-class-wiring (CAP-1..3 + install-class-playbook.md); decomposed as steward Epic 31 (3 stories). --module skf refused.",
       "owner": "steward",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring"
+      }
     },
     {
       "slug": "bmad-switch-scope-enforcement",
@@ -6234,10 +6339,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "ocp-as-a-portability-profile",
       "title": "OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster",
-      "status": "specified   # 2026-08-23 — spec-12-9-ocp-as-a-portability-profile (Story 12.9)",
+      "status": "specified   # 2026-08-24 — spec-ocp-as-a-portability-profile (CAP-1..3); decomposed as steward Story 12.9 (backlog — no ocp-portability-smoke job yet)",
       "owner": "steward",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-ocp-as-a-portability-profile"
+      }
     },
     {
       "slug": "one-front-door",
@@ -7173,7 +7280,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-08-22",
+      "updated": "2026-08-24",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -7618,6 +7725,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product"
     },
     {
+      "slug": "bmad-suite-install-class-wiring",
+      "project": "pyforge-steward",
+      "title": "Non-module bmad-suite pieces are provisioned by install class",
+      "caps": 3,
+      "companions": 2,
+      "updated": "2026-08-24",
+      "dream": "bmad-suite-install-class-wiring",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring"
+    },
+    {
       "slug": "db-gpt-django-plugin",
       "project": "pyforge-steward",
       "title": "DB-GPT joins Django as a pluggable app (ABSORBED)",
@@ -7698,6 +7815,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-multi-repo-workspaces"
     },
     {
+      "slug": "ocp-as-a-portability-profile",
+      "project": "pyforge-steward",
+      "title": "OpenShift runs as a CI portability profile",
+      "caps": 3,
+      "companions": 2,
+      "updated": "2026-08-24",
+      "dream": "ocp-as-a-portability-profile",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-ocp-as-a-portability-profile"
+    },
+    {
       "slug": "platform-fifteen-factors",
       "project": "pyforge-steward",
       "title": "The platform host earns its 15 factors",
@@ -7731,7 +7858,7 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-unifying-strategy",
       "project": "pyforge-steward",
       "title": "pyforge-unifying-strategy — the Canopy mounts the eight stations",
-      "caps": 17,
+      "caps": 18,
       "companions": 10,
       "updated": "2026-08-24",
       "dream": "pyforge-unifying-strategy",
@@ -8515,10 +8642,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-herald",
           "pkey": "herald",
           "stories": 17,
-          "state": "done",
+          "state": "in-progress",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
           "done": 58,
-          "total": 58,
+          "total": 59,
           "epics_path": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8526,10 +8653,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "in-progress",
           "note": "line 2 — consolidative wrap",
           "done": 61,
-          "total": 61,
+          "total": 62,
           "epics_path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8537,10 +8664,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-scribe",
           "pkey": "scribe",
           "stories": 9,
-          "state": "done",
+          "state": "in-progress",
           "note": "line 3 — team memory + graph",
           "done": 11,
-          "total": 11,
+          "total": 12,
           "epics_path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8551,7 +8678,7 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "next free slot",
           "done": 79,
-          "total": 115,
+          "total": 120,
           "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8559,10 +8686,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-mason",
           "pkey": null,
           "stories": 38,
-          "state": "done",
+          "state": "in-progress",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
           "done": 47,
-          "total": 47,
+          "total": 48,
           "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8581,10 +8708,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-marshal",
           "pkey": null,
           "stories": 86,
-          "state": "done",
+          "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 162,
-          "total": 162,
+          "total": 163,
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
           "redirect": null
         },
@@ -8654,7 +8781,7 @@ window.DASHBOARD_DATA = {
     "sound": 0,
     "live": 84,
     "reached": 8,
-    "gaps": 85,
+    "gaps": 83,
     "findings": 25,
     "rows": [
       {
@@ -8783,7 +8910,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "57/57",
+        "progress": "57/58",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -8959,7 +9086,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "61/61",
+        "progress": "61/62",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -9043,7 +9170,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-24",
-          "epics": "2026-08-22",
+          "epics": "2026-08-24",
           "sprint": "2026-08-22",
           "tea": "2026-08-22",
           "gates": "2026-08-10",
@@ -9135,7 +9262,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "58/58",
+        "progress": "58/59",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -9219,7 +9346,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-10",
           "context": "2026-08-24",
-          "epics": "2026-08-23",
+          "epics": "2026-08-24",
           "sprint": "2026-08-23",
           "tea": "2026-08-23",
           "gates": "2026-08-10",
@@ -9310,7 +9437,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "162/162",
+        "progress": "162/163",
         "complete": 13,
         "of": 13,
         "chainAudit": {
@@ -9490,7 +9617,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "47/47",
+        "progress": "47/48",
         "complete": 13,
         "of": 13,
         "chainAudit": {
@@ -9667,11 +9794,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "11/11",
+        "progress": "11/12",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -9756,9 +9883,9 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-24",
           "epics": "2026-08-24",
-          "sprint": "2026-08-23",
+          "sprint": "2026-08-24",
           "tea": "2026-08-23",
-          "gates": "2026-08-10",
+          "gates": "2026-08-24",
           "code": "2026-08-23",
           "verify": "2026-08-23",
           "retro": "2026-08-08"
@@ -9847,7 +9974,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "74/109",
+        "progress": "74/111",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -9891,10 +10018,8 @@ window.DASHBOARD_DATA = {
               ]
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -10021,11 +10146,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/36",
+        "progress": "36/39",
         "complete": 14,
         "of": 14,
         "chainAudit": {
@@ -16036,9 +16161,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-09",
+          "dream": "2026-08-24",
           "deck": "",
-          "spec": "2026-08-22T05:39",
+          "spec": "2026-08-24",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -20899,8 +21024,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21031,8 +21156,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21163,8 +21288,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21295,8 +21420,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -21455,10 +21580,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -21589,10 +21712,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -21723,10 +21844,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -21857,10 +21976,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -21874,7 +21991,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-23",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-24",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -21890,9 +22007,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-23",
+          "dream": "2026-08-24",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-24T11:31",
           "research": "2026-08-24",
           "brief": "",
           "prd": "",
@@ -21941,25 +22058,24 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "dreamStatus": "specified",
+        "ownerDream": "bmad-suite-install-class-wiring",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -21970,15 +22086,14 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4,
+        "of": 3,
         "chainAudit": {
           "verdict": "fail",
           "checkpoints": {
             "layers": {
               "pass": false,
               "gaps": [
-                "deck",
-                "spec"
+                "deck"
               ],
               "partial": []
             },
@@ -21993,10 +22108,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22127,10 +22240,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22261,10 +22372,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22395,10 +22504,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22529,10 +22636,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22670,10 +22775,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22804,10 +22907,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -22938,10 +23039,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23072,10 +23171,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23089,7 +23186,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-23",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-24",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -23105,9 +23202,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-23",
+          "dream": "2026-08-24",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-24T11:31",
           "research": "2026-08-24",
           "brief": "",
           "prd": "",
@@ -23157,24 +23254,23 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "specified",
-        "ownerDream": "",
+        "ownerDream": "ocp-as-a-portability-profile",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 1,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -23185,15 +23281,14 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4,
+        "of": 3,
         "chainAudit": {
           "verdict": "fail",
           "checkpoints": {
             "layers": {
               "pass": false,
               "gaps": [
-                "deck",
-                "spec"
+                "deck"
               ],
               "partial": []
             },
@@ -23208,10 +23303,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23342,10 +23435,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23476,10 +23567,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23511,7 +23600,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-24",
           "deck": "",
-          "spec": "2026-08-24T06:19",
+          "spec": "2026-08-24T20:53",
           "research": "2026-08-24",
           "brief": "2026-08-24",
           "prd": "2026-08-24",
@@ -23613,10 +23702,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23747,10 +23834,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -23881,10 +23966,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -24022,10 +24105,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -24163,10 +24244,8 @@ window.DASHBOARD_DATA = {
               "staleBy": []
             },
             "orphans": {
-              "pass": false,
-              "kinds": [
-                "dream-without-spec"
-              ]
+              "pass": true,
+              "kinds": []
             }
           }
         }
@@ -24269,8 +24348,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -24401,8 +24480,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -24533,8 +24612,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-23",
-        "age": 1,
+        "updated": "2026-08-24",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -24845,7 +24924,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "7 complete (atlas, doctor, herald, marshal, mason, scribe, warden); 1 building (steward)",
+        "gate": "8 building (atlas, doctor, herald, marshal, mason, scribe, steward, warden)",
         "stations": [
           {
             "name": "Herald",
@@ -24982,14 +25061,6 @@ window.DASHBOARD_DATA = {
   "backlog": {
     "rows": [
       {
-        "slug": "bmad-suite-install-class-wiring",
-        "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
-        "status": "dreamt",
-        "owner": "steward",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
         "slug": "deferred-work-audit-completeness",
         "title": "deferred-work-audit-completeness",
         "status": "specified",
@@ -25050,9 +25121,9 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 0,
     "byOwner": {
-      "steward": 3,
       "doctor": 1,
       "marshal": 2,
+      "steward": 2,
       "atlas": 1
     },
     "practices": [
@@ -25137,7 +25208,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 16.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25203,7 +25274,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "complete",
+        "line": "paused 26.1",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -25507,7 +25578,7 @@ window.DASHBOARD_DATA = {
           "archived": 5,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 18.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -25608,7 +25679,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 9.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25653,7 +25724,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "complete",
+        "line": "paused 10.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25761,7 +25832,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 17.1",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -25841,7 +25912,7 @@ window.DASHBOARD_DATA = {
           "archived": 3,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused 4.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -25886,15 +25957,15 @@ window.DASHBOARD_DATA = {
         "station": "steward",
         "total": 22,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 5,
           "realized": 3,
           "archived": 1,
           "practice": 2
         },
-        "line": "paused 18.1",
-        "load": 3,
+        "line": "paused 19.1",
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -25929,13 +26000,6 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "bmad-suite-install-class-wiring",
-            "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
-            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -26045,9 +26109,16 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "bmad-suite-install-class-wiring",
+            "title": "Non-module bmad-suite pieces are provisioned by install class — not forced through --module",
+            "status": "specified   # 2026-08-24 — spec-bmad-suite-install-class-wiring (CAP-1..3 + install-class-playbook.md); decomposed as steward Epic 31 (3 stories). --module skf refused.",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "ocp-as-a-portability-profile",
             "title": "OpenShift runs as a CI portability profile — the OCP overlay proven on a real cluster",
-            "status": "specified   # 2026-08-23 — spec-12-9-ocp-as-a-portability-profile (Story 12.9)",
+            "status": "specified   # 2026-08-24 — spec-ocp-as-a-portability-profile (CAP-1..3); decomposed as steward Story 12.9 (backlog — no ocp-portability-smoke job yet)",
             "type": "dream",
             "blockedOn": ""
           }
@@ -26063,7 +26134,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 546,
+    "open": 554,
     "done": 30,
     "triaged": 148,
     "bySeverity": {
@@ -26071,13 +26142,13 @@ window.DASHBOARD_DATA = {
       "high": 2,
       "medium": 45,
       "low": 100,
-      "unspecified": 399
+      "unspecified": 407
     },
     "projects": [
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 129,
+        "open": 130,
         "done": 13,
         "triaged": 25,
         "entries": [
@@ -27074,13 +27145,20 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "medium",
             "triaged": false
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-atlas",
         "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
-        "open": 127,
+        "open": 128,
         "done": 4,
         "triaged": 54,
         "entries": [
@@ -28000,13 +28078,20 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": true
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-steward",
         "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
-        "open": 97,
+        "open": 98,
         "done": 2,
         "triaged": 2,
         "entries": [
@@ -28698,17 +28783,24 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-CANOPY-2026-08-24",
-            "title": "source_spec: `planning-artifacts/sprint-change-proposal-2026-08-24-canopy.md`",
+            "title": "source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`",
             "status": "open",
             "severity": "medium",
             "triaged": true
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-mason",
         "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 58,
+        "open": 59,
         "done": 1,
         "triaged": 0,
         "entries": [
@@ -29124,13 +29216,20 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "medium",
             "triaged": false
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-warden",
         "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
-        "open": 45,
+        "open": 46,
         "done": 2,
         "triaged": 41,
         "entries": [
@@ -29462,13 +29561,20 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-herald",
         "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
-        "open": 43,
+        "open": 44,
         "done": 5,
         "triaged": 21,
         "entries": [
@@ -29807,13 +29913,20 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 35,
+        "open": 36,
         "done": 3,
         "triaged": 5,
         "entries": [
@@ -30078,17 +30191,24 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-CANOPY-2026-08-24",
-            "title": "source_spec: `planning-artifacts/sprint-change-proposal-2026-08-24-canopy.md`",
+            "title": "source_spec: `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`",
             "status": "open",
             "severity": "medium",
             "triaged": true
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-scribe",
         "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md",
-        "open": 12,
+        "open": 13,
         "done": 0,
         "triaged": 0,
         "entries": [
@@ -30171,7 +30291,14 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-CANOPY-2026-08-24",
-            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-change-proposal-2026-08-24-canopy.md`",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/change-history/sprint-change-proposal-2026-08-24-c",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-OM-2026-08-24",
+            "title": "Operating-model obligations (all eight stations)",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
@@ -30191,8 +30318,8 @@ window.DASHBOARD_DATA = {
       "subject": "docs(marshal): UNSUPERVISED engine-liveness double-check (Story 24.3)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-24 16:11 UTC",
-    "generatedEpoch": 1787587908
+    "generatedAt": "2026-08-25 02:00 UTC",
+    "generatedEpoch": 1787623216
   },
   "storySpecs": [
     {
@@ -30264,6 +30391,11 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/SPEC.md"
           },
           {
+            "slug": "spec-bmad-suite-install-class-wiring",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/SPEC.md"
+          },
+          {
             "slug": "spec-developer-machine-bootstrap",
             "status": "ready",
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-developer-machine-bootstrap/SPEC.md"
@@ -30282,6 +30414,11 @@ window.DASHBOARD_DATA = {
             "slug": "spec-multi-repo-workspaces",
             "status": "ready",
             "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-multi-repo-workspaces/SPEC.md"
+          },
+          {
+            "slug": "spec-ocp-as-a-portability-profile",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-ocp-as-a-portability-profile/SPEC.md"
           },
           {
             "slug": "spec-platform-fifteen-factors",
@@ -30310,9 +30447,9 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 79,
-        "backlog": 36,
+        "backlog": 41,
         "blocked": 0,
-        "total": 115,
+        "total": 120,
         "next": "12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster",
         "blockedKeys": [],
         "backlogKeys": [
@@ -30324,6 +30461,37 @@ window.DASHBOARD_DATA = {
           "19-2-seven-more-portal-shells-under-the-prefix",
           "20-1-wagtail-publishes-without-a-deploy",
           "20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "warden",
+        "project": "pyforge-warden",
+        "epicsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-compliance-factory-web-face",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face/SPEC.md"
+          },
+          {
+            "slug": "spec-package-inventory-eligibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md"
+          }
+        ],
+        "done": 36,
+        "backlog": 3,
+        "blocked": 0,
+        "total": 39,
+        "next": "9-1-warden-publishes-the-pr-gate-hook-book",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "9-1-warden-publishes-the-pr-gate-hook-book",
+          "9-2-current-scanners-become-optional-plugins",
+          "9-3-default-warden-stays-green-without-checkmarx"
         ],
         "state": "ready"
       },
@@ -30356,13 +30524,15 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 57,
-        "backlog": 0,
+        "backlog": 1,
         "blocked": 0,
-        "total": 57,
-        "next": "",
+        "total": 58,
+        "next": "18-1-map-existing-kedro-hooks-to-cap-18",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "backlogKeys": [
+          "18-1-map-existing-kedro-hooks-to-cap-18"
+        ],
+        "state": "ready"
       },
       {
         "station": "doctor",
@@ -30383,13 +30553,15 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 61,
-        "backlog": 0,
+        "backlog": 1,
         "blocked": 0,
-        "total": 61,
-        "next": "",
+        "total": 62,
+        "next": "17-1-extract-gather-prescribe-source-plugins",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "backlogKeys": [
+          "17-1-extract-gather-prescribe-source-plugins"
+        ],
+        "state": "ready"
       },
       {
         "station": "herald",
@@ -30420,13 +30592,15 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 58,
-        "backlog": 0,
+        "backlog": 1,
         "blocked": 0,
-        "total": 58,
-        "next": "",
+        "total": 59,
+        "next": "16-1-extract-deck-export-format-plugins",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "backlogKeys": [
+          "16-1-extract-deck-export-format-plugins"
+        ],
+        "state": "ready"
       },
       {
         "station": "marshal",
@@ -30522,13 +30696,15 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 162,
-        "backlog": 0,
+        "backlog": 1,
         "blocked": 0,
-        "total": 162,
-        "next": "",
+        "total": 163,
+        "next": "26-1-extract-the-loop-runner-hook",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "backlogKeys": [
+          "26-1-extract-the-loop-runner-hook"
+        ],
+        "state": "ready"
       },
       {
         "station": "mason",
@@ -30559,13 +30735,15 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 47,
-        "backlog": 0,
+        "backlog": 1,
         "blocked": 0,
-        "total": 47,
-        "next": "",
+        "total": 48,
+        "next": "10-1-extract-the-build-engine-hook",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "backlogKeys": [
+          "10-1-extract-the-build-engine-hook"
+        ],
+        "state": "ready"
       },
       {
         "station": "scribe",
@@ -30581,123 +30759,98 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 11,
-        "backlog": 0,
+        "backlog": 1,
         "blocked": 0,
-        "total": 11,
-        "next": "",
+        "total": 12,
+        "next": "4-1-register-graphstore-as-cap-18-plugins",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
-      },
-      {
-        "station": "warden",
-        "project": "pyforge-warden",
-        "epicsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-compliance-factory-web-face",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-compliance-factory-web-face/SPEC.md"
-          },
-          {
-            "slug": "spec-package-inventory-eligibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-package-inventory-eligibility/SPEC.md"
-          }
+        "backlogKeys": [
+          "4-1-register-graphstore-as-cap-18-plugins"
         ],
-        "done": 36,
-        "backlog": 0,
-        "blocked": 0,
-        "total": 36,
-        "next": "",
-        "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "state": "ready"
       }
     ],
     "totals": {
       "done": 511,
-      "backlog": 36,
+      "backlog": 50,
       "blocked": 0,
-      "total": 547
+      "total": 561
     }
   },
   "fleetProgress": {
     "rows": [
       {
         "key": "atlas",
-        "stories": 57,
+        "stories": 58,
         "done": 57,
         "blocked": 0,
-        "epics": 16,
+        "epics": 17,
         "epicsDone": 16,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 57
       },
       {
         "key": "doctor",
-        "stories": 61,
+        "stories": 62,
         "done": 61,
         "blocked": 0,
-        "epics": 16,
+        "epics": 17,
         "epicsDone": 16,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 61
       },
       {
         "key": "herald",
-        "stories": 58,
+        "stories": 59,
         "done": 58,
         "blocked": 0,
-        "epics": 15,
+        "epics": 16,
         "epicsDone": 15,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 58
       },
       {
         "key": "marshal",
-        "stories": 162,
+        "stories": 163,
         "done": 162,
         "blocked": 0,
-        "epics": 25,
+        "epics": 26,
         "epicsDone": 25,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 162
       },
       {
         "key": "mason",
-        "stories": 47,
+        "stories": 48,
         "done": 47,
         "blocked": 0,
-        "epics": 9,
+        "epics": 10,
         "epicsDone": 9,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 47
       },
       {
         "key": "scribe",
-        "stories": 11,
+        "stories": 12,
         "done": 11,
         "blocked": 0,
-        "epics": 3,
+        "epics": 4,
         "epicsDone": 3,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 11
       },
       {
         "key": "steward",
-        "stories": 115,
+        "stories": 120,
         "done": 79,
         "blocked": 0,
-        "epics": 30,
+        "epics": 32,
         "epicsDone": 16,
         "complete": false,
         "running": false,
@@ -30705,21 +30858,21 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "warden",
-        "stories": 36,
+        "stories": 39,
         "done": 36,
         "blocked": 0,
-        "epics": 8,
+        "epics": 9,
         "epicsDone": 8,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 36
       }
     ],
     "total": {
-      "stories": 547,
+      "stories": 561,
       "done": 511,
       "blocked": 0,
-      "epics": 122,
+      "epics": 131,
       "epicsDone": 108
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",

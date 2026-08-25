@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 52
+# stories: 57
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -50,6 +50,9 @@ development_status:
   7-3-cyclonedx-out-the-corpus-in: done
   8-1-upload-runs-the-real-engines-async: done
   8-2-results-render-with-derived-progress: done
+  9-1-warden-publishes-the-pr-gate-hook-book: backlog
+  9-2-current-scanners-become-optional-plugins: backlog
+  9-3-default-warden-stays-green-without-checkmarx: backlog
   epic-1: done
   epic-1-retrospective: done
   epic-2: done
@@ -66,3 +69,5 @@ development_status:
   epic-7-retrospective: optional
   epic-8: backlog
   epic-8-retrospective: optional
+  epic-9: backlog
+  epic-9-retrospective: optional

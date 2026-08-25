@@ -1144,19 +1144,22 @@ control they cannot.
 
 **Still open:**
 
-1. **Do the service faces stay on FastMCP or move onto the official `mcp` SDK?** **No published
-   pairing satisfies both** — every conda-forge `fastmcp` 3.x build excludes `mcp` 2.0, and the one
-   pair the solver currently picks is broken at runtime. Staying on FastMCP means dropping below
-   `mcp` 2.0 and forgoing the modern revision that FR-11 requires; moving onto `mcp` delivers the
-   range for free but relocates five modules. **New, and urgent — it is also a live outage.**
-2. **Can Lane 1 serve atlas's waiting consumer?** Atlas's shipped client froze a REST contract that
-   is *not* the CMS's own API, so this is a real compatibility question. Jointly owned with atlas.
-3. **One tracking schema or one per application?** `liquibaseSchemaName` decides where the
-   changelog and lock tables live. Shared means a **global** migration lock; per-schema means a
-   per-application one — which determines whether two applications can migrate concurrently.
-   **New, surfaced by the Liquibase research; decide in the architecture pass.**
+1. **Can Lane 1 serve atlas's waiting consumer?** (`lane1-serves-dw-h3`) Atlas's shipped client
+   froze a REST contract that is *not* the CMS's own API, so this is a real compatibility
+   question. Jointly owned with atlas. Epic 20 (Lane 1 exists) can proceed; this chain does not
+   absorb `spec-wagtail-corporate-brain`.
 
 **Answered 2026-08-24:**
+
+-3. ~~**MCP runtime base (FastMCP vs official `mcp` SDK)**~~ — **hybrid, canopy AD-5.** Service
+   faces on the host are the official `mcp` SDK (`>=2.0.0`) on the one ASGI process. Stopgap in
+   `local-recipes` only: `fastmcp >=3.4.7,<4` + `mcp >=1.24,<2.0` until those faces land; lift the
+   `mcp` ceiling in the FR-11 story. The pairing outage is contained, not reopened.
+-4. ~~**One Liquibase tracking schema or one per application?**~~ — **one tracking schema**,
+   canopy AD-9: `liquibaseSchemaName=liquibase`. Four PostgreSQL schemas in this instance
+   (`public`, `langflow_schema`, `dbgpt_schema`, `liquibase`). A fifth schema is a review-blocking
+   finding. Concurrent migrate of two applications shares that global changelog lock; that is
+   the bound cost.
 
 -2. ~~**MCP client revision**~~ — **accept `2025-03-26` through `2026-07-28`**, which `mcp` 2.0.0
    already serves dual-era with no configuration. The fleet is split (Copilot and Zed at
