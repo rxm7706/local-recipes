@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Console homes</title>
+  </head>
+  <body data-console="directory">
+    <h1>Named Canopy homes</h1>
+    <ul>
+      {% for surface, home in rows %}
+        <li data-surface="{{ surface.surface_id }}" data-home-kind="{{ home.kind }}" data-home-path="{{ home.path }}">
+          <a href="{{ home.path }}">{{ surface.title }}</a>
+          <span>{{ home.label }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>

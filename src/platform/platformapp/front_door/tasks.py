@@ -8,6 +8,8 @@ from celery import shared_task
 from django.utils.module_loading import import_string
 from django_tasks import task as django_task
 
+from platformapp.front_door.detector_jobs import refresh_verdicts
+
 
 def echo_payload(value: str) -> str:
     """Module-level callable used by tests and by run_django_task."""
@@ -18,6 +20,11 @@ def echo_payload(value: str) -> str:
 def tagged_echo(value: str) -> str:
     """django_tasks Task wrapper so run_django_task exercises Task.call()."""
     return f"tagged:{value}"
+
+
+@shared_task(name="platformapp.front_door.refresh_detector_verdicts")
+def refresh_detector_verdicts() -> int:
+    return len(refresh_verdicts())
 
 
 @shared_task(name="platformapp.front_door.run_django_task")

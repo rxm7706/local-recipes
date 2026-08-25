@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sync and Health</title>
+  </head>
+  <body data-health="{{ health }}" data-age="{{ age }}">
+    <h1>Detector cache</h1>
+    <p class="age">age {{ age }}</p>
+    {% if health == "empty" %}
+      <p class="never">never</p>
+    {% endif %}
+    <ul>
+      {% for row in rows %}
+        <li data-detector="{{ row.detector }}" data-state="{{ row.state }}">
+          {{ row.detector }} {{ row.state }} {{ row.verdict }}
+        </li>
+      {% empty %}
+        <li class="empty">no cached verdicts</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
