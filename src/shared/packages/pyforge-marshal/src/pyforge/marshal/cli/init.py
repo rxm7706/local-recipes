@@ -222,12 +222,12 @@ import tomllib
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
     HARNESS_VERSION_RANGE_TEXT,
-    BmadLoopHarness,
     HarnessError,
     harness_version_in_range,
     harness_version_is_major_mismatch,
     harness_version_tuple,
     render_policy_toml,
+    resolve_loop_runner,
 )
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, status
@@ -1380,7 +1380,7 @@ def run_preflight(
 ) -> int:
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
 
     slug = args.slug
     findings: list[Finding] = []

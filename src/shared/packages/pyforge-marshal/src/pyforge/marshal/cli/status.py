@@ -120,7 +120,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy as policy_core
 from ..core import promotion
@@ -1172,7 +1172,7 @@ def run_status(
 
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
 
