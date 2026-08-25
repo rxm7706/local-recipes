@@ -190,4 +190,6 @@ Each line is evidence-confirmed absent, not assumed.
     mason's and proves the shape; the other seven stations have none, and no station package
     carries a `skills/` directory. **Agent personas: zero of eight** — the five `bmad-agent-*`
     skills are BMAD roles (analyst, architect, dev, pm, ux-designer), not station personas. Bound
-    as CAP-15 and CAP-16.
+    as CAP-15 and CAP-16. **Operating-model Q2 (2026-08-24):** this residual is the **03 shape of
+    the eight stations**, not a mandate to mint skill+persona+portal for 01/02 work. Completeness
+    is "an 03 capability missing a tier", not "any task missing a tier."

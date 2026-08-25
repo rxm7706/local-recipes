@@ -2280,3 +2280,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
   verified: 2026-08-24 — obligations applied to atlas Tier-2 planning artifacts; `lane1-serves-dw-h3`
     explicitly **not** resolved; no answer invented for whether Lane 1 serves DW-H3.
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 done; atlas S-18.1 done (Kedro hooks mapped to shared contract; no pipeline PR-gate); no competing CI verdict

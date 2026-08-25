@@ -389,3 +389,12 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: Phase 5 bmad-correct-course, pyforge-doctor, 2026-08-24
   severity: medium
   status: open
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 done; doctor S-17.1 done (gather/prescribe plugins; findings not a second PR gate); no competing CI verdict

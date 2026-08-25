@@ -61,7 +61,7 @@ verdict: PASS-WITH-FLAGS
 | AD-11 | OpenFeature FILE in-process | **yes** | FILE resolver still exists; WASM/`wasmtime` still absent |
 | AD-12 | supervisor → PostgreSQL | design | no new library |
 | AD-13 | django-storages, django-redis renditions, PG FTS, `WAGTAILADMIN_LOGIN_URL` | **yes** | versions current; setting documented since 6.0 / 7.1 in research |
-| AD-14 | five tiers | process | n/a |
+| AD-14 | five tiers (**03** stations only; Q2) | process | n/a |
 | AD-15 | PyBreaker + asyncio wrapper | **yes** | 1.4.1 still latest; async still missing upstream |
 | AD-16 | packaging gate; Django 5.2.17 is maintenance | **yes vs currency research** | **contradicts `stack.md`**, which still says 5.2.16/5.2.17 security “was not audited” |
 | AD-17 | SKF content skills | **yes** | [armelhbobdad/bmad-module-skill-forge](https://github.com/armelhbobdad/bmad-module-skill-forge/) exists (v2.1.0 2026-08-07); `_bmad/skf/` in-repo |

@@ -11,9 +11,35 @@ The PRD states capabilities. This states mechanisms — the technical-how it del
 plus the rationale behind decisions already made so the architecture pass **confirms** them rather
 than reopening them.
 
+**Operating-model bind (2026-08-24, after this addendum's first ready).** Dream Grounding Q1–Q8
+and canopy AD-21 do not reopen the mechanism choices below (MCP `start`/`get`, Liquibase Job,
+FILE flags, PyBreaker wrapper, `django-pyforge` chrome). They **scope** five-tier completeness
+to 03, bind hooks/plugins as replaceable layers, and adapterize WFT tool names. See § Operating
+model, added the same day.
+
 Three of these were not choices between good options. They were forced by research that
 invalidated what the Dream assumed, and the reasoning is recorded because a future reader who only
 sees the outcome would reasonably wonder why the obvious thing was not done.
+
+## Operating model (bound 2026-08-24)
+
+These are estate rules, not a second mechanism hunt. Full text: Dream Grounding; canopy AD-14
+(03-only five tiers), AD-21 (hooks/plugins).
+
+| Bind | Consequence for this chain |
+|---|---|
+| Q1 Golden Path; WFT tools as adapters | Same Pixi task contract. Harness / Splunk / Jira / Tachyon / named scanners are **plugins**, not core stack. |
+| Q2 five-tier = 03 only | FR-37/38/39 and SM-5 denominator stay 8×5 for the eight stations. 01/02 must not fail that check. |
+| Q3 owner vs SLA | Registration carries owner, backup, `work_class`, promotion date. SLA body stays in the 03 spec. |
+| Q4 generic traceability | CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional. Never fail for a missing key. |
+| Q5 measurement | Scorecard / Build League rules live in the Dream; board is a sibling Dream; **no CAP-18**. Measures unpublished (human + agent + team). |
+| Q6 Path B ≠ Tachyon | Path B = Agent Canopy + CAP-16 persona. Tachyon = production LLM provider adapter. |
+| Q7 Lane 2 is HTMX | FastAPI = station compute. DRF JSON:API on Atlas / `enterprise-data-models-and-apis` only. |
+| AD-21 hooks/plugins | Process owns hook specs; plugin replaces a layer without a fork. Kedro *names* the split. |
+| Q8 Warden sole PR verdict | Warden **owns** PR-gate hook specs; scanner plugins implement them. Missing named scanner ≠ failed run. |
+
+Lane 2 URL scheme is **no longer open**: uniform `/stations/<name>/`, permanent `/compliance/`
+redirect (FR-9a). The corrections table below is updated.
 
 ## Mechanism decisions already made
 
@@ -146,12 +172,15 @@ a pass reading the Dream directly would re-derive them in good faith.
 |---|---|
 | Greenfield platform | `src/platform/` is live; four steward epics `done` |
 | `pyforge_host` / `pyforge-agent-platform` are artifacts | Role names; the artifact is `src/platform/` |
-| Lane 2 at `/stations/{station}/` | Existing portal is at `/compliance/`; the scheme is undecided (OQ-4) |
+| Lane 2 at `/stations/{station}/` (pre-audit, as if already live) | One portal was at `/compliance/`. **Closed:** uniform `/stations/<name>/` + permanent `/compliance/` redirect (FR-9a). OQ-4 is not open. |
 | Eight services on ports `:8001–:8008` | No port assignment exists anywhere in `src/platform/` |
 | Scribe has a SQLite/PostgreSQL dual driver | One flat JSON file; FR-35 builds the *first* durable driver |
 | Wagtail CRX carries Lane 1 | CodeRed dropped; Wagtail alone |
 | No Wagtail anywhere in the estate | Atlas ships a client and a syncer against a **La Suite Docs** REST contract — which is not the CMS's own API, hence OQ-5 |
 | Zero runtime ORM DDL | Unimplementable; enforcement moved to the database role |
+| Five-tier completeness for any work / any station | **03 only** (Q2). 01/02 stay spec+script or spec+skill. canopy AD-14. |
+| Warden re-templated as a Kedro project so scanners can plug in | Kedro *names* the spec-vs-plugin split (AD-21). Warden owns PR-gate hook **specs**; plugins implement. Atlas already *is* Kedro. |
+| Tachyon is Path B / the Agent Canopy | Tachyon is a production LLM adapter (Q6). |
 
 ## Adjacent, deliberately not absorbed
 

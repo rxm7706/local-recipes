@@ -1399,3 +1399,12 @@ status: open
   carve-outs: `docs/dashboard/kedro-viz/**` is atlas-owned publish — not in deletion scope; marshal Epic 16 generator plumbing is not Lane 1 CMS; supervisor bmad-loop ingest deferred to steward Epic 21 (marshal hooks later)
   successor: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md` CAP-2; steward Stories 20.x (front door), 30.2 (code removal)
   resolution_gate: steward Story 30.2 after console-parity inventory (Epic 20 + 21.5)
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 done; marshal S-26.1 done (loop/runner hook spec; today's runner is default plugin); no competing CI verdict

@@ -35,8 +35,8 @@ graph TB
         CLIENT["pyforge.core.client<br/>CAP-6"]
         SD["secure-dashboard pattern<br/>CAP-7"]
         EV["Redis Streams backbone<br/>CAP-8"]
-        SK["8 domain skills<br/>CAP-15 — 1 of 8 today"]
-        PER["8 station personas<br/>CAP-16 — 0 of 8 today"]
+        SK["8 domain skills<br/>CAP-15 — 03 stations; 1 of 8 today"]
+        PER["8 station personas<br/>CAP-16 — 03 stations; 0 of 8 today"]
         SUP["Run-state supervisor<br/>CAP-17 — added 2026-08-24"]
     end
 
@@ -102,6 +102,7 @@ sequenceDiagram
     end
     C-->>P: typed result
     P-->>U: HTMX partial
+    Note over P: Lane 2 is HTMX (Q7).<br/>No DRF JSON:API on the portal.
 ```
 
 ## DDL governance (CAP-9, revised RFC-5)
@@ -146,7 +147,7 @@ graph LR
     DLQ["pyforge:events:dlq"]
     Sub["Consuming station"]
 
-    Pub -->|"CloudEvents envelope<br/>schema_version 2.x<br/>X-PyForge-Loop-Depth ≤ 5"| Stream
+    Pub -->|"CloudEvents envelope<br/>schema_version 2.x<br/>spec_id + git sha + SBOM purl<br/>optional work-item id<br/>X-PyForge-Loop-Depth ≤ 5"| Stream
     Stream --> CG --> Sub
     CG -.->|unacked| PEL
     PEL --> Claim

@@ -650,3 +650,67 @@ stack — all Canopy/steward concerns.
 **Pointers:** `sprint-change-proposal-2026-08-24-canopy.md`; steward
 `_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md` Epic 19; deferred
 `DW-CANOPY-2026-08-24`.
+
+## Operating-model obligations (2026-08-24)
+
+Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
+and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
+**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+the process owns hook specifications; a plugin implements or replaces a layer without
+a fork. Kedro
+[architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+*names* the split; it does not require this station to be a Kedro project. Warden owns
+PR-gate hook specs (Q8). This station owns its process hooks.
+
+**Always / Never (every station):**
+- Five-tier completeness is the **03** shape. 01/02 stay spec+script or spec+skill.
+- Guildhall / switcher must not tile `work_class` 01 or 02 as a station.
+- Golden Path: humans, CI, and agents invoke the same Pixi task names.
+- CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
+- Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
+- Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
+- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
+- Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
+
+**Warden-local:** This station **owns the PR-gate hook specifications** (Stories **9.1–9.3**). Scanner plugins (Sonar, Checkmarx, Black Duck, GHAS, profile-local, and today's OSV/deptry/license/currency engines) implement those hooks. A missing named scanner is not a failed Warden run.
+
+**Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
+`change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
+steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+
+## Epic 9: PR-gate hook specs; scanners are plugins
+
+First concrete CAP-18 retrofit. **Depends on steward S-32.1** (`pyforge-core` registration).
+Does not reopen Epics 1–8 engines as a rewrite — wrap them as default plugins. **FR-44.**
+
+### Story 9.1: Warden publishes the PR-gate hook book
+
+As a scanner author,
+I want named PR-gate hook points on the shared registration API,
+So that I implement a plugin instead of forking Warden.
+
+**Type:** feature • **Effort:** L • **Deps:** steward S-32.1 • **FR/AD:** FR-44 • canopy AD-21
+**Given** the FR-43 contract **When** this story completes **Then** Warden documents hook specs for scan / aggregate / verdict (or equivalent named points)
+**And** plugins register through `pyforge-core`, not a Warden-only second loader
+**And** the Warden verdict remains the only PR quality-gate pass/fail
+
+### Story 9.2: Current scanners become optional plugins
+
+As an operator,
+I want today's engines and commercial scanners as plugins,
+So that enabling Checkmarx is a profile choice, not a fork.
+
+**Type:** feature • **Effort:** L • **Deps:** S-9.1 • **FR/AD:** FR-44
+**Given** shipped Warden scanners **When** they are extracted **Then** each registers as a plugin; today's set is the default plugin bundle
+**And** Checkmarx, Sonar, Black Duck, GHAS (and profile-local tools) are optional plugins, not required for a Warden run
+
+### Story 9.3: Default Warden stays green without Checkmarx
+
+As CI,
+I want a default Warden invocation to pass when no named commercial scanner is installed,
+So that a missing Checkmarx plugin is not a failed gate.
+
+**Type:** chore • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** FR-44 • Q8
+**Given** a fixture with no Checkmarx (or other named commercial) plugin **When** default Warden runs **Then** the process is green unless Warden's own engines fail
+**And** a test **fails** if absence of a named optional plugin is treated as a Warden failure

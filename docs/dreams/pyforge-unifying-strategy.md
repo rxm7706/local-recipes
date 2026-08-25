@@ -40,6 +40,116 @@ the `services/` FastAPI+MCP tier, Vizro Lane 3 proxying, `pyforge.core.client`, 
 `pyforge <station> <noun> <verb>` CLI, the Redis Streams event fabric, Keycloak RBAC, Vault,
 OpenFeature canary delivery, RFC-1..5 and BS-1..8.
 
+**Operating model is estate-wide (2026-08-24, Q1).**
+The operating model first written as
+`docs/dreams/pyforge-operation.md` on
+OpenTeams-WFT-CDO/mgmt-wf-python-modernization is **PyForge practice**, not a
+customer-instance overlay. This Dream binds those rules here and **adapterizes**
+Wells Fargo (WFT) tool names. No local `docs/dreams/pyforge-operation.md` is
+minted in this pass. The 10-layer topology is not rewritten to look like that
+repo's pipeline table.
+
+- **Every deliverable** is an Outcome plus at least a BMAD spec (why, capabilities
+  with testable success, constraints, non-goals, success signals).
+- **Promotion (01 → 02 → 03).** 01 one-off: spec + script/analysis. 02 short-term
+  (expected to repeat): spec + skill. 03 long-term (supported, productionized):
+  spec + capability (Path A deterministic code **or** Path B agentic) + owner + SLA.
+  Operating principle: build only what value and ownership justify. Promotion rule:
+  advance only when repeatability, risk, adoption, integration, and ownership
+  justify the investment. Measurement rule: contribution is tracked; every change
+  is gated by automated validation.
+- **Golden Path (Never:).** Developers, CI runners, and coding agents invoke the
+  **same Pixi task contract**. The artifact that passed Warden is the artifact
+  Steward deploys. Mode A / B / C are topologies of that image, not rebuilds per
+  environment.
+- **WFT tools are adapters, not core stack.** EPLX GitHub Actions, Harness, Splunk /
+  Splunk Observability Cloud, NetApp StorageGRID, SonarQube, Checkmarx, Black Duck,
+  GitHub Advanced Security, and “Windows + VS Code + Copilot / Devin only” are a
+  **steward deployment profile**. Product contracts stay: Pixi tasks, conda-forge
+  for the Python/pixi graph, Helm / OCP (and the already-ruled image boundary),
+  OpenTelemetry + structlog, MinIO / Artifactory-class object store, Warden as
+  the sole PR gate (Q8) with those scanners as hook-plugins. Same pattern as
+  Keycloak vs Entra / Okta / PingFederate.
+- **5-tier symmetry is the 03 shape (2026-08-24, Q2).** The eight stations, as
+  long-term platform capabilities, still owe CLI + portal + service + domain
+  skill + persona (CAP-15/16). **New work does not.** 01 may stay spec +
+  script/analysis. 02 may stay spec + skill. Only a promotion to 03 owes the
+  full five tiers (and owner + SLA). Guildhall must not tile 01/02 work as a
+  first-class station surface. **Correct-course note for CAP-15/16:** the
+  SPEC's `Never: a station is declared complete on fewer than five tiers` is
+  restated as `Never: an 03 capability is declared complete on fewer than five
+  tiers`. CAP-15/16 remain in scope for the eight stations; they do not mint
+  a skill+persona+portal for every 01/02 task.
+- **Owner vs SLA split (2026-08-24, Q3).** Steward discovery (`django-pyforge` /
+  `AppConfig`, declared by the owning station) holds **who owns it**: owner
+  station slug, backup, `work_class`, promotion date. The **SLA body**
+  (targets, accountability, recourse) lives in the 03 BMAD spec until Doctor
+  or Guildhall must evaluate it. **Never:** a new Steward SLA microservice in
+  this chain; **Never:** Marshal holds the SLA book (Marshal measures runs;
+  Doctor later publishes SLO burn). Stations author the declaration; they are
+  not eight hidden ledgers.
+- **Traceability is a generic contract (2026-08-24, Q4).** The spine is
+  `spec_id` + git sha + SBOM purl, plus an optional work-item id. Jira is a
+  **steward-profile adapter** (existing jira-sync satellite), not a required
+  field on CloudEvents or the Golden Path. **Never:** reject a change for lack
+  of a Jira key.
+- **Measurement is part of the operating model (2026-08-24, Q5).** Build League
+  and the Balanced Product Scorecard are **estate practice**, not a WFT extra
+  and not an optional later kinship. We optimize to **published** measures; an
+  unpublished metric must not steer work. WFT's `pyforge-operation.md` names
+  both faces and defines neither — the rules are ours to write.
+  - **Rules live in this Dream** (and, once drafted, in the 03 spec). They
+    must be consistent with Q1–Q4: spec coverage, promotion class, Golden Path
+    (same artifact), Warden-gated change, owner on 03. **Never:** score 01/02
+    work against 5-tier completeness. **Never:** treat a Jira key as a quality
+    signal.
+  - **The board is not a new CAP in this chain.** Herald (narrative) + Atlas
+    (metrics) + Marshal (velocity) + Doctor (SLO burn) consume the rules later
+    under a sibling Dream. Steward discovery already has owner / `work_class`
+    for the denominator. Do not mint CAP-18 for a scorecard UI in this pass.
+  - **Measure set is deferred (2026-08-24).** The operator will draft Build
+    League and the Balanced Product Scorecard later. The published rules must
+    cover **human, agent, and team** dimensions — not human-only delivery
+    velocity. Until that draft lands, do not invent metrics or optimize to
+    unpublished ones (Q5 Never: still holds).
+- **Path B is the Agent Canopy, not Tachyon (2026-08-24, Q6).** 03 Path A is
+  deterministic code (Django / FastAPI / Celery). Path B is agentic work through
+  CAP-16 station personas and the Agent Canopy (Langflow / DB-GPT mounts).
+  **Tachyon is a steward-profile LLM provider** for production — an internal
+  OpenAI-compatible endpoint — the same adapter pattern as Entra vs Keycloak.
+  **Never:** rename the Agent Canopy or Path B to Tachyon. **Never:** require
+  Tachyon locally or in CI; local/dev may use any configured provider.
+- **Lane 2 is HTMX, not DRF (2026-08-24, Q7).** Station portals stay zero-model
+  HTMX clients. Station compute APIs stay FastAPI (`pyforge.core.client`).
+  Django REST Framework JSON:API stays on the Atlas /
+  `[[enterprise-data-models-and-apis]]` kinship (Django models / curated data
+  products). **Never:** a first-class DRF JSON:API on Guildhall or station
+  portals (that is a BFF rewrite of CAP-3/4/6, not this bind). **Never:**
+  reintroduce domain models on a portal to feed DRF.
+- **Hooks and plugins are an architecture principle (2026-08-24).** As far as
+  possible, every layer is replaceable. A process owns **hook specifications**
+  (named points you attach to — before / after / around a step). A **plugin**
+  implements or replaces a layer without forking the process. Profile settings
+  choose which plugins load. [Kedro's architecture](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+  is the *named reference* for this spec-vs-plugin split — **not** a requirement
+  that every package be a Kedro project. Atlas already instantiates it as a
+  Kedro project (pipeline hooks). Other stations apply the same design
+  (deploy-profile, build-engine, runner, store, export, LLM provider, scanner).
+  **Contracts are not plugin surfaces:** Pixi task names, Golden Path artifact
+  identity, parent infra kinds (PostgreSQL + Redis + Kubernetes), the host
+  import boundary, and Warden as the sole PR-gate *verdict*. **Never:** fork a
+  process to swap a vendor. **Never:** a plugin publishes a second verdict for
+  a process another owner specified.
+- **Warden is the only PR quality gate (2026-08-24, Q8).** That gate is one
+  process under the principle above. SonarQube, Checkmarx, Black Duck, GitHub
+  Advanced Security, and profile-local scanners are **optional Warden plugins**
+  implementing **Warden-owned** hook specifications, not a second governance
+  plane. One Warden verdict is the Golden Path / scorecard signal. Profile
+  `settings` register which plugins load (WFT vs local). **Never:** a plugin
+  publishes a competing pass/fail that bypasses Warden. **Never:** require a
+  named scanner in the core gate — absence of Checkmarx is not a failed Warden
+  run. **Never:** re-template Warden as a Kedro project in order to honor this.
+
 ## The Dream
 
 We move from a disparate collection of local tools to a **Hub-and-Spoke Enterprise Architecture**. We are not building disconnected apps; we are building **one enterprise Platform Canopy (`src/platform/` — the host and agent platform) that mounts the 8 canonical capability stations**, powered by **Pixi** as the unified package and environment manager.
@@ -1071,7 +1181,7 @@ graph TD
 
 ## The Canopy & 8-Station 5-Tier Symmetry Matrix
 
-PyForge is architecturally structured as **The Central Platform Canopy (Platform Web Host + AI Agent Platform)** governing the **8 Canonical Spoke Stations**, where every station possesses complete **5-Tier Symmetry**:
+PyForge is architecturally structured as **The Central Platform Canopy (Platform Web Host + AI Agent Platform)** governing the **8 Canonical Spoke Stations**. Each station, as a **03** platform capability, possesses complete **5-Tier Symmetry**. Grounding Q2 is authoritative: 01/02 work does not owe this matrix.
 
 ```mermaid
 graph TD
@@ -1133,7 +1243,7 @@ graph TD
 
 ## Kinships
 
-[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine) · [[pyforge-steward]] (deploy & secure hosting) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine) · [[db-gpt-django-plugin]] (DB knowledge base)
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine) · [[pyforge-steward]] (deploy & secure hosting) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine) · [[db-gpt-django-plugin]] (DB knowledge base) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (Warden gate extension: hook specs + plugins, not a second PR plane)
 
 ---
 
@@ -1214,3 +1324,19 @@ graph TD
 - **2026-08-24** — Phase 4d–4e: architecture spine `status: final` (modular monolith; parent AD-n vs canopy AD-n); Epics **18–30** (13 epics, 35 stories) appended to steward `epics.md`. `mcp-runtime-base` answered **hybrid**. Packaging stories 26.3 and 27.1 are blocked-on-operator. `lane1-serves-dw-h3` left open.
 - **2026-08-24** — Phase 5: eight-station `bmad-correct-course` (physical paths). `spec-factory-console` superseded by CAP-2. No station copied steward 18–30 as local epics. Atlas did **not** answer `lane1-serves-dw-h3`.
 - **2026-08-24** — Phase 6: readiness **CONCERNS — proceed** (`implementation-readiness-report-20260824.md`). Spec `draft` → `ready`; this Dream `dreamt` → `specified`. Live MCP stopgap: `fastmcp >=3.4.7,<4` and `mcp >=1.24,<2.0` in `local-recipes` (doctor/herald keep `mcp >=2.0.0`).
+- **2026-08-24** — Operating-model Q1 answered (operator): `pyforge-operation.md` is **estate-wide PyForge practice**, not a WFT-only overlay. Bound in § Grounding: promotion 01→02→03, minimum BMAD spec, Golden Path (same Pixi task + immutable Warden-passed artifact), WFT toolchain adapterized as a steward deployment profile. Q2 (does 5-tier symmetry apply only at 03?) left open on purpose so this bind does not silently rewrite CAP-15/16. SPEC/PRD/epics not correct-coursed in this pass.
+- **2026-08-24** — Operating-model Q2 answered (operator): **5-tier symmetry applies only to 03 capabilities.** 01/02 may stay spec+script or spec+skill. The eight stations remain 03 and still owe all five tiers; new work does not mint a portal/MCP/persona until promoted. CAP-15/16 correct-course note landed in `spec-pyforge-unifying-strategy/SPEC.md` (Never: restated from "station" to "03 capability"). Full `bmad-correct-course` of PRD/epics not run in this pass.
+- **2026-08-24** — Operating-model Q3 accepted (operator): Steward discovery holds owner / `work_class` / promotion date; SLA body stays in the 03 BMAD spec until a consumer exists; no Steward SLA service; Marshal never owns the book. CAP-1 note in SPEC.md.
+- **2026-08-24** — Operating-model Q4 accepted (operator): traceability contract is `spec_id` + git sha + SBOM purl (+ optional work-item id). Jira is a steward adapter. Never: require a Jira key. CAP-8 note in SPEC.md.
+- **2026-08-24** — Operating-model Q5 (operator): Build League and Balanced Product Scorecard are **in the operating model** — we must know the rules and optimize to what is measured. Bound: rules authored here; WFT source names the faces and defines no metrics; scorecard *board* is a sibling Dream (no CAP-18). Residual: write the actual measure set.
+- **2026-08-24** — Operating-model Q6 (operator): Tachyon is an **internal OpenAI/LLM provider for production**, not a product and not Path B. Path B = Agent Canopy + CAP-16. Tachyon adapterized like other WFT tools.
+- **2026-08-24** — Operating-model Q7 (operator): HTMX = portal contract; FastAPI = station compute API; DRF JSON:API stays on Atlas / enterprise-data-models / Django models. No Lane 2 BFF.
+- **2026-08-24** — Operating-model Q8 (operator): Warden is the only PR quality gate; scanners are optional plugins. Extension shape = Kedro hooks + plugins (`kedro.framework.hooks` / extensions), one verdict for the scorecard. Not a Kedro-project re-template of Warden. Q1–Q8 now closed. Residual: write the published measure set (Q5).
+- **2026-08-24** — Q5 residual scoped (operator): scorecard draft is **later**; it will be based on **many human, agent, and team metrics**. No first-cut measure set in this pass. Unpublished metrics must not steer work.
+- **2026-08-24** — Operating-model propagation step 1: SPEC companions aligned (convergence residual 20, architecture-diagrams, stack.md Q7). Steward `sprint-change-proposal-2026-08-24-operating-model.md` proposed (batch). PRD/epics not edited pending approval. Recommended follow-on station run: **warden only**, not all eight.
+- **2026-08-24** — Operating-model SCP **approved**. PRD glossary + FR-1/2/17/37–39 + SM-5; `epics.md` Stories 18.1, 19.2, 24.1, 29.3 and Epic 29 title; architecture spine note. Correct Course workflow complete for steward. Next optional: Warden-only station correct-course.
+- **2026-08-24** — Operator **revisit:** station operating-model correct-course is **all eight**, not Warden-only. Estate-wide: OM Nevers + spec-vs-plugin *shape* (Kedro extension model). **Warden owns** PR-gate hook specs; plugins implement them. Atlas already *is* Kedro (pipeline hooks ≠ PR gate). Not a Kedro re-template of every station. Landed: per-station `change-history/sprint-change-proposal-2026-08-24-operating-model.md`, `epics.md` Operating-model obligations, `DW-OM-2026-08-24`.
+- **2026-08-24** — Readiness re-stamp of `implementation-readiness-report-20260824.md`: still **CONCERNS — proceed**. OM pass recorded (Q1–Q8 + eight `DW-OM-2026-08-24`). No new blocking concern. First dispatch remains S-18.1.
+- **2026-08-24** — Operator: hooks and plugins are an **architecture principle** (replaceable layers; hook into processes), not only a Warden/Kedro-project rule. Bound as canopy **AD-21** + Dream Grounding + SPEC Always. Q8 remains the PR-gate instance.
+- **2026-08-24** — canopy AD-14 scoped to **03** (title + rule). Matches Epic 29 / FR-39. 01/02 outside this AD.
+- **2026-08-24** — `bmad-product-brief` **Update** on `briefs/brief-pyforge-unifying-strategy-2026-08-24/` (not Create). OM table in brief addendum; first-ready five-tier and packaging lines reversed in memlog.

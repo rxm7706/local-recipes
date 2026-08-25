@@ -100,6 +100,11 @@ service catalogue rather than our navigation. **No documented La Suite reusable-
 Consequence: **CAP-1's `django-pyforge` is ours to build.** `django-lasuite` is adopted for OIDC
 only.
 
+**Lane 2 is not a DRF surface (operating-model Q7).** `django-lasuite`'s DRF throttling is not a
+reason to put JSON:API on Guildhall or station portals. HTMX is the portal contract; FastAPI is
+the station compute API; DRF JSON:API stays on the Atlas / enterprise-data-models kinship. Do not
+add `djangorestframework` as a Canopy/Lane-2 feedstock item in this chain.
+
 ## Deployment constraints CAP-2 inherits
 
 Documented Wagtail requirements for multi-replica operation, all solvable, none optional:

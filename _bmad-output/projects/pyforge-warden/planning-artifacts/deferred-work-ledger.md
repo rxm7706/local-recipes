@@ -541,3 +541,12 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   close_when: S-19.1 merges — no `compliance_face` identifier under `src/`, redirect live, app-label migration preserves job rows and migration history
   status: open
   recorded: 2026-08-24
+
+## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
+
+- source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
+  summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
+  owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
+  status: open
+  recorded: 2026-08-24
+  close_when: steward S-32.1 done; Warden Stories 9.1–9.3 done (PR-gate hook specs; scanners optional plugins; default run green without Checkmarx); no competing CI verdict

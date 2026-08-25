@@ -1698,3 +1698,46 @@ not copy steward stories.
    **21** (hosted MCP face), and **29** (SKF domain skill + station persona) complete the
    remaining tiers. Atlas must **not** grow a second chrome layer, duplicate `django-pyforge`
    registration, or expose an extra public port for Canopy symmetry.
+
+## Operating-model obligations (2026-08-24)
+
+Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
+and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
+**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+the process owns hook specifications; a plugin implements or replaces a layer without
+a fork. Kedro
+[architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+*names* the split; it does not require this station to be a Kedro project. Warden owns
+PR-gate hook specs (Q8). This station owns its process hooks.
+
+**Always / Never (every station):**
+- Five-tier completeness is the **03** shape. 01/02 stay spec+script or spec+skill.
+- Guildhall / switcher must not tile `work_class` 01 or 02 as a station.
+- Golden Path: humans, CI, and agents invoke the same Pixi task names.
+- CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
+- Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
+- Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
+- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
+- Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
+
+**Atlas-local:** Atlas already *is* a Kedro project. Pipeline/project hooks are the **reference** for the spec-vs-plugin split. Story **18.1** audits them against steward S-32.1. They are not Warden's PR-gate hook book and must not publish a competing PR pass/fail. DRF JSON:API stays on the enterprise-data-models kinship only. Vizro stays Lane 3 / outside host as already bound.
+
+**Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
+`change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
+steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+
+## Epic 18: Kedro hooks on the shared contract
+
+Audit, do not rebuild. Atlas is already Kedro. **FR-45.** Deps: steward S-32.1.
+
+### Story 18.1: Map existing Kedro hooks to CAP-18
+
+As an atlas maintainer,
+I want existing pipeline/project hooks to implement the shared registration shape,
+So that atlas does not grow a second plugin API or a pipeline PR-gate.
+
+**Type:** chore • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Given** the live Kedro hook surfaces **When** the audit completes **Then** each named point is mapped to the FR-43 contract (or an explicit N/A with reason)
+**And** today's backends remain the default plugins
+**And** no atlas job publishes a PR pass/fail beside Warden

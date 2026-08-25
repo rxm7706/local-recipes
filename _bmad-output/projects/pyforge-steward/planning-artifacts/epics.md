@@ -1322,12 +1322,15 @@ FR-33: OpenFeature + cachebox 5.x on the channel. **CAP-13. Operator packaging.*
 FR-34: One flag flips Django, MCP, and CLI with no egress and no redeploy. **CAP-13.**
 FR-35: Scribe graph operations pass on durable PG and local drivers. **CAP-14.**
 FR-36: Semantic recall returns a result lexical overlap misses. **CAP-14.**
-FR-37: Each station has a SKF domain skill; proven on a station that has none today. **CAP-15.**
-FR-38: Each station persona acts only through FR-13 and FR-11. **CAP-16.**
-FR-39: Five-tier completeness is a failing check. **CAP-15, CAP-16.**
+FR-37: Each **03** station has a SKF domain skill; proven on a station that has none today. **CAP-15.**
+FR-38: Each **03** station persona acts only through FR-13 and FR-11. **CAP-16.**
+FR-39: Five-tier completeness of an **03** station is a failing check. 01/02 work is out of denominator. **CAP-15, CAP-16.**
 FR-40: Front door queries run state from a supervisor, never an operator home directory. **CAP-17.**
 FR-41: Completed-run timing is ingested at completion into durable storage. **CAP-17.**
 FR-42: Unreachable supervisor is explicit unavailable plus age, within FR-26 budget. **CAP-17, CAP-10.**
+FR-43: Shared hook-spec + plugin registration in `pyforge-core`. **CAP-18.**
+FR-44: Warden owns PR-gate hook specs; scanners optional plugins; missing named scanner ≠ fail. **CAP-18.**
+FR-45: Each 03 station extracts one process hook spec; today's backend is the default plugin. **CAP-18.**
 
 ### NonFunctional Requirements
 
@@ -1352,6 +1355,7 @@ NFR-C7: Search is PostgreSQL FTS; Wagtail work is Celery, not django-tasks DB/RQ
 - Portal models are projections; factory package is the writer (canopy AD-18).
 - CAP-15 skills are SKF content skills; CAP-16 are BMAD launcher skills; `conda-forge-expert` stays hand-authored (canopy AD-17).
 - FR-9b before any CAP-9 story that revokes app-role DDL.
+- One hook-spec + plugin registration in `pyforge-core` (canopy AD-21, CAP-18). Epics 18–30 must not invent a station-local plugin API.
 
 ### UX Design Requirements
 
@@ -1404,6 +1408,9 @@ FR-39: Epic 29 — five-tier check
 FR-40: Epic 21 — supervisor query
 FR-41: Epic 21 — timing ingest
 FR-42: Epic 21 — supervisor degrade
+FR-43: Epic 32 — shared hook-spec contract (`pyforge-core`)
+FR-44: Warden Epic 9 — PR-gate plugins (not a steward story)
+FR-45: Epic 32.2 + peer station process-hook epics
 
 ## Epic List (Canopy)
 
@@ -1451,15 +1458,23 @@ Production DDL is Liquibase under a migration role; the app cannot ALTER; tests 
 The graph port runs on PostgreSQL/pgvector and still has a local path; recall is semantic.
 **FRs covered:** FR-35, FR-36
 
-### Epic 29: Every station is five tiers
-CLI, portal, service, SKF skill, and persona exist, and a check fails when any is missing.
+### Epic 29: Every 03 station is five tiers
+CLI, portal, service, SKF skill, and persona exist for each **03** station, and a check fails when any of those is missing. 01/02 work is not in the check.
 **FRs covered:** FR-37, FR-38, FR-39
 
 ### Epic 30: The old console is gone
 After parity (including supervisor-backed run state), the generator and its inbound refs are deleted.
 **FRs covered:** FR-6 (precondition), FR-7
 
-## Epic 18: Chrome and the trusted client
+### Epic 31: Non-module suite pieces install by class
+Non-module suite pieces follow a class-keyed playbook; `wired-or-not` is class-correct.
+**FRs covered:** spec-bmad-suite-install-class-wiring CAP-1..3 (not Canopy FRs)
+
+### Epic 32: One plugin API for eight stations
+`pyforge-core` ships the shared hook-spec + registration shape; steward deploy-profile adapters become plugins. Warden Epic 9 and peer station process stories consume this contract.
+**FRs covered:** FR-43, FR-45 (FR-44 is Warden Epic 9)
+
+### Epic 18: Chrome and the trusted client
 
 An operator installs one package and every portal looks like the estate. Services independently verify who called them. Lands in `django-pyforge` (canopy AD-1, AD-3, AD-7). No `pyforge.*` import under `src/platform/` (parent AD-2).
 
@@ -1474,6 +1489,7 @@ So that adding a station does not edit the host URLconf or ship a second switche
 **And** a test that enumerates portal template/static dirs **fails** if either ships a base layout, switcher, or theme copy
 **And** discovery is `apps.get_app_configs()`; host URLconf has no station roster except the later `/compliance/` redirect
 **And** a portal registering outside `/stations/<name>/` fails the check
+**And** AppConfig / discovery carries owner slug, backup, `work_class`, and promotion date; SLA body is not a chrome field
 **And** removing `django-pyforge` from `INSTALLED_APPS` breaks both portals identically
 
 ### Story 18.2: The switcher shows only what the user may reach
@@ -1529,6 +1545,7 @@ So that I do not re-authenticate to change tools.
 **And** each remaining station has `django-<station>/` with the naming triple; existing models do not move between apps
 **And** portals reach stations only through `django-pyforge`'s client; no portal imports station internals or builds raw HTTP to a service
 **And** portal Django models are projections, not a second write path
+**And** the switcher does not tile a `work_class` 01 or 02 registration as a first-class station
 
 ## Epic 20: The published front door
 
@@ -1666,6 +1683,7 @@ So that a poison payload cannot stall the group.
 **And** a malformed event lands in `pyforge.events.dlq` via `XAUTOCLAIM` and does not block the group
 **And** an operator can enumerate quarantined messages
 **And** producers never write to redis-cache; `dataschema` is required
+**And** the envelope carries `spec_id`, git sha, and SBOM purl, plus an optional work-item id; a missing Jira key is not a fail
 
 ### Story 24.2: Cascades halt; adapters validate
 
@@ -1842,7 +1860,7 @@ So that I find nodes lexical overlap misses.
 **Given** a target with no lexical overlap **When** semantic recall runs **Then** it returns that target
 **And** the lexical path does not
 
-## Epic 29: Every station is five tiers
+## Epic 29: Every 03 station is five tiers
 
 ### Story 29.1: SKF domain skills from station packages
 
@@ -1872,8 +1890,9 @@ I want completeness to fail CI when a tier is missing,
 So that "done" cannot mean CLI-only.
 
 **Type:** chore • **Effort:** S • **Deps:** S-29.2 • **FR/AD:** FR-39 • canopy AD-14
-**Given** all eight stations **When** the check runs **Then** it reports each of CLI, portal, service, skill, persona
-**And** declaring a station complete with fewer than five fails the check
+**Given** all eight **03** stations **When** the check runs **Then** it reports each of CLI, portal, service, skill, persona
+**And** declaring an **03** station complete with fewer than five fails the check
+**And** 01/02 fixtures (spec+script or spec+skill only) do not fail the check
 
 ## Epic 30: The old console is gone
 
@@ -1960,3 +1979,62 @@ dashboard install task is runnable, and template is N/A unless scaffolding — z
 improvised npm Installer driving from a chat transcript.
 
 **Epic 31 clears to dispatch on 31.1; 31.2 after 15.1 (already done); 31.3 after 31.1.**
+
+## Epic 32: One plugin API for eight stations
+
+Canopy Epics 18–30 do not implement CAP-18. This epic is the shared contract (FR-43) plus
+steward's own process retrofit (FR-45). Warden Epic 9 implements FR-44. Peer stations
+mint their own process-hook stories that **depend on S-32.1**. Lands in existing
+`pyforge-core` (marshal Epic 14 floor); steward owns the Canopy FR. **Not a scorecard.**
+
+### Story 32.1: Shared hook-spec and plugin registration in pyforge-core
+
+As a station author,
+I want one registration API and one hook-spec documentation shape,
+So that eight stations do not invent eight plugin APIs.
+
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** FR-43 • canopy AD-21 • CAP-18
+**Surface:** `pyforge-core` (shared floor; do not add a ninth package)
+**Given** a dummy plugin declared against the published API **When** the loader runs **Then** the plugin is invoked at a named before/after/around (or equivalent documented) point
+**And** a conformance check **fails** if a station package ships a parallel registration mechanism for the same class of extension
+**And** the contract documents that a plugin must not publish a second verdict for a process another owner specified
+**And** Pixi task names, Golden Path artifact identity, parent infra kinds, host import boundary, and the Warden verdict itself are listed as **not** plugin surfaces
+
+### Story 32.2: Steward deploy-profile adapters are plugins
+
+As a platform operator,
+I want Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, and Jira as deploy-profile plugins,
+So that swapping a vendor does not fork the Golden Path.
+
+**Type:** feature • **Effort:** M • **Deps:** S-32.1 • **FR/AD:** FR-45 • canopy AD-21
+**Given** today's deploy/profile backends **When** they are extracted **Then** each registers as a default plugin on the FR-43 contract
+**And** disabling an optional vendor plugin does not fail the Golden Path Pixi task
+**And** Tachyon remains a production LLM **adapter** plugin — local/CI must not require it
+**And** none of these plugins publishes a PR quality-gate verdict
+
+## Operating-model obligations (2026-08-24)
+
+Estate-wide bind from Unifying Strategy Grounding (hooks/plugins principle + Q1–Q8)
+and steward `sprint-change-proposal-2026-08-24-operating-model.md` (**§6 revisited**).
+**Hooks and plugins (canopy AD-21):** as far as possible every layer is replaceable —
+the process owns hook specifications; a plugin implements or replaces a layer without
+a fork. Kedro
+[architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/)
+*names* the split; it does not require this station to be a Kedro project. Warden owns
+PR-gate hook specs (Q8). This station owns its process hooks.
+
+**Always / Never (every station):**
+- Five-tier completeness is the **03** shape. 01/02 stay spec+script or spec+skill.
+- Guildhall / switcher must not tile `work_class` 01 or 02 as a station.
+- Golden Path: humans, CI, and agents invoke the same Pixi task names.
+- CloudEvents: `spec_id` + git sha + SBOM purl; Jira optional; never fail for a missing key.
+- Path B = Agent Canopy + this station's persona. Tachyon = production LLM provider adapter.
+- Lane 2 = HTMX; station compute = FastAPI. No station-local DRF JSON:API on the portal.
+- Design station processes as hook specs + plugins (AD-21). Do not fork a process to swap a vendor.
+- **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
+- Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
+
+**Steward-local:** Deploy-profile adapters (Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, Jira) are **steward hook plugins** on the Golden Path (Stories **32.1–32.2**), not core stack and not a second PR gate. Canopy Epics 18–30 stay chrome/portals/MCP/DDL and must not violate CAP-18.
+
+**Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
+`sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
