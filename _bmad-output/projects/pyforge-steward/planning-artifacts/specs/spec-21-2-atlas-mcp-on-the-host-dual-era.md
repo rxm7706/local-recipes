@@ -2,7 +2,7 @@
 title: Atlas MCP on the host, dual-era
 type: feature
 created: '2026-08-25'
-status: in-review
+status: done
 updated: '2026-08-25'
 baseline_revision: 844a4ff461376678408bba63fbed19dfeb29f91c
 review_loop_iteration: 0
