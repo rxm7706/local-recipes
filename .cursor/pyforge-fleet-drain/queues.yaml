@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 14
-    next: 29-3-five-tier-check
+    remaining_count: 13
+    next: 30-1-remaining-console-surfaces-have-a-home
     queue:
-    - 29-3-five-tier-check
     - 30-1-remaining-console-surfaces-have-a-home
     - 30-2-delete-the-generator-and-its-inbound-refs
     - 31-1-class-keyed-playbook-is-the-operator-path
