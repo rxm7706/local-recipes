@@ -616,19 +616,27 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/dj-control-room-base.iml" filepath="$PROJECT_DIR$/.idea/dj-control-room-base.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-ai-boost.iml" filepath="$PROJECT_DIR$/.idea/django-ai-boost.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-allauth.iml" filepath="$PROJECT_DIR$/.idea/django-allauth.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-atlas.iml" filepath="$PROJECT_DIR$/.idea/django-atlas.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-bootstrap5.iml" filepath="$PROJECT_DIR$/.idea/django-bootstrap5.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-cors-headers.iml" filepath="$PROJECT_DIR$/.idea/django-cors-headers.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-crispy-forms.iml" filepath="$PROJECT_DIR$/.idea/django-crispy-forms.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-crispy-forms@1.iml" filepath="$PROJECT_DIR$/.idea/django-crispy-forms@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-debug-toolbar.iml" filepath="$PROJECT_DIR$/.idea/django-debug-toolbar.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-doctor.iml" filepath="$PROJECT_DIR$/.idea/django-doctor.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-extensions.iml" filepath="$PROJECT_DIR$/.idea/django-extensions.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-filter.iml" filepath="$PROJECT_DIR$/.idea/django-filter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-herald.iml" filepath="$PROJECT_DIR$/.idea/django-herald.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-import-export.iml" filepath="$PROJECT_DIR$/.idea/django-import-export.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-marshal.iml" filepath="$PROJECT_DIR$/.idea/django-marshal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-mason.iml" filepath="$PROJECT_DIR$/.idea/django-mason.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-oauth-toolkit.iml" filepath="$PROJECT_DIR$/.idea/django-oauth-toolkit.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-pyforge.iml" filepath="$PROJECT_DIR$/.idea/django-pyforge.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-redis.iml" filepath="$PROJECT_DIR$/.idea/django-redis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-scribe.iml" filepath="$PROJECT_DIR$/.idea/django-scribe.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-select2.iml" filepath="$PROJECT_DIR$/.idea/django-select2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-simple-history.iml" filepath="$PROJECT_DIR$/.idea/django-simple-history.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-simple-history@1.iml" filepath="$PROJECT_DIR$/.idea/django-simple-history@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-steward.iml" filepath="$PROJECT_DIR$/.idea/django-steward.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-storages.iml" filepath="$PROJECT_DIR$/.idea/django-storages.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-stubs.iml" filepath="$PROJECT_DIR$/.idea/django-stubs.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-stubs@1.iml" filepath="$PROJECT_DIR$/.idea/django-stubs@1.iml" />
@@ -636,6 +644,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/django-stubs@3.iml" filepath="$PROJECT_DIR$/.idea/django-stubs@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-stubs@4.iml" filepath="$PROJECT_DIR$/.idea/django-stubs@4.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django-tables2.iml" filepath="$PROJECT_DIR$/.idea/django-tables2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/django-warden.iml" filepath="$PROJECT_DIR$/.idea/django-warden.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django_coverage_plugin.iml" filepath="$PROJECT_DIR$/.idea/django_coverage_plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/django_coverage_plugin@1.iml" filepath="$PROJECT_DIR$/.idea/django_coverage_plugin@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/djangorestframework.iml" filepath="$PROJECT_DIR$/.idea/djangorestframework.iml" />
@@ -785,6 +794,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/gspread@1.iml" filepath="$PROJECT_DIR$/.idea/gspread@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/h2.iml" filepath="$PROJECT_DIR$/.idea/h2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/h5netcdf.iml" filepath="$PROJECT_DIR$/.idea/h5netcdf.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/hatch-protobuf.iml" filepath="$PROJECT_DIR$/.idea/hatch-protobuf.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/hatch-vcs.iml" filepath="$PROJECT_DIR$/.idea/hatch-vcs.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/hatch-vcs@1.iml" filepath="$PROJECT_DIR$/.idea/hatch-vcs@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/hatchling.iml" filepath="$PROJECT_DIR$/.idea/hatchling.iml" />
@@ -1189,6 +1199,12 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/objsize.iml" filepath="$PROJECT_DIR$/.idea/objsize.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/office365-rest-python-client.iml" filepath="$PROJECT_DIR$/.idea/office365-rest-python-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/openai.iml" filepath="$PROJECT_DIR$/.idea/openai.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/openfeature-flagd-api.iml" filepath="$PROJECT_DIR$/.idea/openfeature-flagd-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/openfeature-flagd-core.iml" filepath="$PROJECT_DIR$/.idea/openfeature-flagd-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/openfeature-provider-flagd.iml" filepath="$PROJECT_DIR$/.idea/openfeature-provider-flagd.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/openfeature-provider-flagd@1.iml" filepath="$PROJECT_DIR$/.idea/openfeature-provider-flagd@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/openfeature-provider-flagd@2.iml" filepath="$PROJECT_DIR$/.idea/openfeature-provider-flagd@2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/openfeature-sdk.iml" filepath="$PROJECT_DIR$/.idea/openfeature-sdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/openinference-instrumentation.iml" filepath="$PROJECT_DIR$/.idea/openinference-instrumentation.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/openinference-instrumentation-langchain.iml" filepath="$PROJECT_DIR$/.idea/openinference-instrumentation-langchain.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/openinference-instrumentation-openai.iml" filepath="$PROJECT_DIR$/.idea/openinference-instrumentation-openai.iml" />

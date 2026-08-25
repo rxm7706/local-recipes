@@ -6,6 +6,8 @@
 
 **Marshal home (Tier 2):** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-single-story-dispatch/` — `SPEC.md` (CAP-1..CAP-7) + `fleet-drain-playbook.md`. This folder is the **interim runner** until Epic 22 Stories 22.1–22.6 land as `marshal factory dispatch` / `marshal drain` verbs.
 
+**This campaign's station order:** [SEQUENCING.md](./SEQUENCING.md) (Canopy: 18-1 → 32-1 unlock → eight-station Wave 2 → steward serial).
+
 **Merge policy (fleet-wide, since 2026-08-23):** dispatch agents **merge their own PR** when CI is green, then **finalize** (ledger sync, spec promotion, queue regen). The coordinating session preflights and monitors; it only intervenes on blocked/failed runs. Supersedes the 2026-08-22 "never merge" split documented in the pause handoff.
 
 ---
