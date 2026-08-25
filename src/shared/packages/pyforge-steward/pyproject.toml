@@ -52,6 +52,16 @@ dashboard = [
 [project.scripts]
 steward = "pyforge.steward.cli:main"
 
+# Story 32.2: today's deploy-profile backends are default plugins on the
+# shared S-32.1 group. Do not add a parallel pyforge.steward.hooks group.
+[project.entry-points."pyforge.core.hooks"]
+harness = "pyforge.steward.deploy_profiles:HarnessDeployPlugin"
+splunk = "pyforge.steward.deploy_profiles:SplunkDeployPlugin"
+storagegrid = "pyforge.steward.deploy_profiles:StoragegridDeployPlugin"
+eplx-gha = "pyforge.steward.deploy_profiles:EplxGhaDeployPlugin"
+tachyon = "pyforge.steward.deploy_profiles:TachyonDeployPlugin"
+jira = "pyforge.steward.deploy_profiles:JiraDeployPlugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
