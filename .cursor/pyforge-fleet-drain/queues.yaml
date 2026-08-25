@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 10
-    next: 31-2-wired-or-not-is-class-correct
+    remaining_count: 9
+    next: 31-3-fresh-clone-class-path-is-proven
     queue:
-    - 31-2-wired-or-not-is-class-correct
     - 31-3-fresh-clone-class-path-is-proven
     - 32-2-steward-deploy-profile-adapters-are-plugins
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
