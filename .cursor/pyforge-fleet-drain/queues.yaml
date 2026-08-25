@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 9
-    next: 31-3-fresh-clone-class-path-is-proven
+    remaining_count: 8
+    next: 32-2-steward-deploy-profile-adapters-are-plugins
     queue:
-    - 31-3-fresh-clone-class-path-is-proven
     - 32-2-steward-deploy-profile-adapters-are-plugins
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     - 26-3-openfeature-packages-on-the-channel-operator-gate

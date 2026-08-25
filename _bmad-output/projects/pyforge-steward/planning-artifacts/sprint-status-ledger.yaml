@@ -104,7 +104,7 @@ development_status:
   30-2-delete-the-generator-and-its-inbound-refs: done
   31-1-class-keyed-playbook-is-the-operator-path: done
   31-2-wired-or-not-is-class-correct: done
-  31-3-fresh-clone-class-path-is-proven: backlog
+  31-3-fresh-clone-class-path-is-proven: done
   32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core: done
   32-2-steward-deploy-profile-adapters-are-plugins: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
