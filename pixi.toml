@@ -349,6 +349,13 @@ opentelemetry-instrumentation-psycopg = "==0.65b0"
 opentelemetry-instrumentation-redis = "==0.65b0"
 # steward 20.1 / canopy AD-13: Lane 1 CMS (pytest must import wagtail)
 wagtail = "==7.4.3"
+# steward 21.2 / canopy AD-5: official MCP SDK 2.x (dual-era). This env has no
+# fastmcp, so unlike [feature.local-recipes] it can take mcp 2.0.0.
+mcp = "==2.0.0"
+mcp-types = "==2.0.0"
+httpx2 = "==2.12.0"
+sse-starlette = "==3.0.2"
+python-multipart = "==0.0.20"
 
 
 [feature.platform-image-pip]
@@ -399,6 +406,12 @@ text-unidecode = "==1.3"
 fido2 = "==2.2.1"
 qrcode = "==8.2"
 uvicorn-worker = "==0.4.0"
+# steward 21.2 — official MCP SDK on the image pip layer (platform-ci-test parity)
+mcp = "==2.0.0"
+mcp-types = "==2.0.0"
+httpx2 = "==2.12.0"
+sse-starlette = "==3.0.2"
+python-multipart = "==0.0.20"
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
@@ -1611,7 +1624,7 @@ langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 #langflow = ">=1.10.3"             # LangChain visual workflow builder,   name: bcrypt > "5.0.0", #setuptools = ">=81.0.0", #rich = ">=14.3.4"
 lumen-ai-anthropic = ">=1.3.0"    # Lumen AI's Anthropic backend integration
-mcp = ">=1.24,<2.0"              # Official Model Context Protocol Python SDK. TEMPORARY ceiling, added 2026-08-24 -- see the `fastmcp` note above. Every conda-forge `fastmcp` 3.x build declares `mcp >=1.24.0,<2.0`, so no published pair satisfies both this env's FastMCP servers and `mcp` 2.0.0; the ceiling is what makes the env solvable at all. It costs the modern `2026-07-28` protocol revision, which only `mcp` 2.x serves. LIFT IT when CAP-4 (spec-pyforge-unifying-strategy, FR-11) moves the service faces off FastMCP onto the `mcp` SDK directly -- that is the decided end state; this pin only stops the bleeding until then. The isolated `pyforge-doctor` / `pyforge-herald` features keep `mcp >=2.0.0` and are unaffected: they carry no fastmcp, and their station servers import it lazily inside `build_server()`.
+mcp = ">=1.24,<2.0"              # Official Model Context Protocol Python SDK. Ceiling kept 2026-08-25 (steward 21.2): every conda-forge `fastmcp` 3.x build still declares `mcp >=1.24.0,<2.0`, so this env cannot take `mcp` 2.0.0 while factory FastMCP servers remain. CAP-4 host faces use `mcp==2.0.0` on `[feature.platform-ci-test]` / `[feature.pyforge-atlas]` (no fastmcp). Lift this ceiling when FastMCP 4 is on conda-forge or factory servers leave FastMCP. Doctor/herald features already pin `mcp >=2.0.0`.
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=2.33.0"          # Pydantic-AI agent framework
 "llama.cpp" = ">=10380"           # llama.cpp local LLM inference engine
@@ -1929,6 +1942,7 @@ playwright-python = ">=1.62.0"     # the `import playwright` bindings
 # the no-inline-IO scan root, so package code still imports no HTTP client — AC-2). Named here
 # so pruning the starlette test never takes this declaration with it and breaks the bring-up.
 httpx = ">=0.28.1"
+mcp = ">=2.0.0"                  # steward 21.2: official SDK for atlas MCP host face (no fastmcp in this env)
 
 [feature.pyforge-atlas.pypi-dependencies]
 # AUD-ATLAS-010 (2026-07-27): `semantic/models.py` imports boring_semantic_layer at

@@ -43,10 +43,14 @@ django_application = get_asgi_application()
 # (Story 11.2) never gets an ASGI mount at all -- AD-14/AD-17 moved it to
 # Pattern B (its own sidecar container, reached over Celery/REST) before this
 # module would have needed one; see the registry-consult touchpoint below.
+from django_pyforge.mcp_http import dispatch_station_mcp  # noqa: E402
+from django_pyforge.mcp_http import loaded_station_mcp_apps  # noqa: E402
+
 from config.engine_patterns import ENGINE_PATTERNS  # noqa: E402
 from config.fastapi_app import fastapi_application  # noqa: E402
 from config.websocket import websocket_application  # noqa: E402
 
+# Station MCP faces (canopy AD-5) are discovered via django_pyforge.mcp_http.
 # Story 11.1 (spec-python-agent-platform CAP-2, AD-14 Pattern A): Langflow's
 # own FastAPI app, built once at import time. Imported only after Django's
 # settings have executed (via django_application above), which is what
@@ -123,6 +127,8 @@ def _is_api_path(path: str) -> bool:
 
 async def _dispatch_http(scope, receive, send) -> None:
     path = scope["path"]
+    if await dispatch_station_mcp(scope, receive, send):
+        return
     if _is_langflow_api_v1_path(path) or _is_langflow_bare_health_path(path):
         await langflow_application(scope, receive, send)
     elif _is_langflow_prefixed_path(path):
@@ -167,6 +173,8 @@ async def _dispatch_lifespan(receive, send) -> None:
         async with contextlib.AsyncExitStack() as stack:
             await stack.enter_async_context(_LifespanManager(fastapi_application))
             await stack.enter_async_context(_LifespanManager(langflow_application))
+            for mcp_app in list(loaded_station_mcp_apps().values()):
+                await stack.enter_async_context(_LifespanManager(mcp_app))
             started = True
             await send({"type": "lifespan.startup.complete"})
 
