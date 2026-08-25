@@ -23,12 +23,20 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 _CHROME_SRC = BASE_DIR.parent / "shared" / "packages" / "django-pyforge" / "src"
 if _CHROME_SRC.is_dir() and importlib.util.find_spec("django_pyforge") is None:
     sys.path.insert(0, str(_CHROME_SRC))
-_WARDEN_PORTAL_SRC = BASE_DIR.parent / "shared" / "packages" / "django-warden" / "src"
-if (
-    _WARDEN_PORTAL_SRC.is_dir()
-    and importlib.util.find_spec("django_warden_fabric") is None
-):
-    sys.path.insert(0, str(_WARDEN_PORTAL_SRC))
+_STATION_PORTAL_PACKAGES = (
+    ("django-warden", "django_warden_fabric"),
+    ("django-atlas", "django_atlas_portal"),
+    ("django-doctor", "django_doctor_portal"),
+    ("django-herald", "django_herald_portal"),
+    ("django-marshal", "django_marshal_portal"),
+    ("django-mason", "django_mason_portal"),
+    ("django-scribe", "django_scribe_portal"),
+    ("django-steward", "django_steward_portal"),
+)
+for _dist, _module in _STATION_PORTAL_PACKAGES:
+    _portal_src = BASE_DIR.parent / "shared" / "packages" / _dist / "src"
+    if _portal_src.is_dir() and importlib.util.find_spec(_module) is None:
+        sys.path.insert(0, str(_portal_src))
 # platformapp/
 APPS_DIR = BASE_DIR / "platformapp"
 env = environ.Env()
@@ -141,8 +149,8 @@ LOCAL_APPS = [
     # migrate` creates the schema; DB-GPT is Pattern B (its own sidecar
     # container, never an ASGI mount) -- see that app's own docstring.
     "dbgpt_integration",
-    # Steward 19.1: warden portal reusable app (was the host-local face).
-    "django_warden_fabric",
+    # Steward 19.1 / 19.2: station portal reusable apps (warden fabric + shells).
+    *[module for _, module in _STATION_PORTAL_PACKAGES],
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
