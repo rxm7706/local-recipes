@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import secrets
+from dataclasses import dataclass
+from datetime import datetime
 from datetime import timedelta
 from typing import Any
 
+from django.core.cache import cache
+from django.db import connection
 from django.db import transaction
+from django.db.utils import DatabaseError
 from django.utils import timezone
 
 from django_pyforge.assertion.crypto import verify_assertion
@@ -20,6 +25,8 @@ HANDLE_ENTROPY_BYTES = 32
 HANDLE_TTL = timedelta(hours=24)
 ATLAS_STATION = "atlas"
 RUN_PIPELINE_TOOL = "run_pipeline"
+QUERY_BUDGET_SECONDS = 0.5
+LAST_OK_CACHE_KEY = "django_pyforge:supervisor:last_ok"
 
 _runners: dict[tuple[str, str], Any] = {}
 
@@ -34,6 +41,22 @@ class HandleExpiredError(Exception):
 
 class HandleNotFoundError(Exception):
     """No mcp_handles row for this token."""
+
+
+class SupervisorUnavailableError(Exception):
+    """Supervisor query failed or exceeded the FR-26 budget."""
+
+    def __init__(self, last_ok_at: datetime | None = None) -> None:
+        super().__init__("supervisor unavailable")
+        self.last_ok_at = last_ok_at
+
+
+@dataclass(frozen=True)
+class BoardSnapshot:
+    queried_at: datetime
+    last_ok_at: datetime | None
+    live: tuple[dict[str, Any], ...]
+    timing: tuple[dict[str, Any], ...]
 
 
 def register_runner(station: str, tool: str, fn: Any) -> None:
@@ -70,12 +93,18 @@ def publish_start(
     if len(token) < HANDLE_ENTROPY_BYTES:
         msg = "handle entropy below contract"
         raise RuntimeError(msg)
+    started = timezone.now()
     with transaction.atomic():
-        run = RunState.objects.create(status=RunState.Status.RUNNING)
+        run = RunState.objects.create(
+            status=RunState.Status.RUNNING,
+            station=station,
+            started_at=started,
+            heartbeat_at=started,
+        )
         McpHandle.objects.create(
             handle=token,
             run=run,
-            expires_at=timezone.now() + HANDLE_TTL,
+            expires_at=started + HANDLE_TTL,
             subject=subject,
         )
         run_id = str(run.id)
@@ -86,7 +115,17 @@ def publish_start(
 
 
 def complete_run(run_id: str, *, status: str, result: Any) -> None:
-    RunState.objects.filter(pk=run_id).update(status=status, result=result)
+    now = timezone.now()
+    run = RunState.objects.filter(pk=run_id).first()
+    started = run.started_at if run is not None and run.started_at is not None else now
+    duration_ms = max(0, int((now - started).total_seconds() * 1000))
+    RunState.objects.filter(pk=run_id).update(
+        status=status,
+        result=result,
+        completed_at=now,
+        heartbeat_at=now,
+        duration_ms=duration_ms,
+    )
 
 
 def get_run(*, station: str, handle: str, assertion: str) -> dict[str, Any]:
@@ -111,3 +150,79 @@ def get_run(*, station: str, handle: str, assertion: str) -> dict[str, Any]:
         "result": run.result,
         "run_id": str(run.id),
     }
+
+
+def _iso(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat()
+
+
+def _coerce_dt(value: object) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value)
+        except ValueError:
+            return None
+        if timezone.is_naive(parsed):
+            return timezone.make_aware(parsed, timezone.get_current_timezone())
+        return parsed
+    return None
+
+
+def _row_payload(row: RunState) -> dict[str, Any]:
+    return {
+        "run_id": str(row.id),
+        "station": row.station,
+        "status": row.status,
+        "started_at": _iso(row.started_at),
+        "heartbeat_at": _iso(row.heartbeat_at),
+        "completed_at": _iso(row.completed_at),
+        "duration_ms": row.duration_ms,
+    }
+
+
+def load_board_rows() -> tuple[tuple[dict[str, Any], ...], tuple[dict[str, Any], ...]]:
+    live_statuses = (RunState.Status.PENDING, RunState.Status.RUNNING)
+    done_statuses = (RunState.Status.SUCCEEDED, RunState.Status.FAILED)
+    live = tuple(
+        _row_payload(row)
+        for row in RunState.objects.filter(status__in=live_statuses).order_by(
+            "started_at",
+        )
+    )
+    timing = tuple(
+        _row_payload(row)
+        for row in RunState.objects.filter(status__in=done_statuses).order_by(
+            "-completed_at",
+        )
+    )
+    return live, timing
+
+
+def query_board() -> BoardSnapshot:
+    """Read live runs and completed timing. Never a filesystem scrape."""
+    queried_at = timezone.now()
+    last_ok_at = _coerce_dt(cache.get(LAST_OK_CACHE_KEY))
+    try:
+        with transaction.atomic():
+            if connection.vendor == "postgresql":
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SET LOCAL statement_timeout = %s",
+                        [f"{int(QUERY_BUDGET_SECONDS * 1000)}ms"],
+                    )
+            live, timing = load_board_rows()
+    except (TimeoutError, DatabaseError) as exc:
+        raise SupervisorUnavailableError(last_ok_at=last_ok_at) from exc
+    cache.set(LAST_OK_CACHE_KEY, queried_at, timeout=None)
+    return BoardSnapshot(
+        queried_at=queried_at,
+        last_ok_at=queried_at,
+        live=live,
+        timing=timing,
+    )

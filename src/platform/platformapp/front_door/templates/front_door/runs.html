@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Run board</title>
+  </head>
+  <body data-board="{{ board }}" data-age="{{ age }}">
+    {% if board == "unavailable" %}
+      <p class="unavailable">unavailable (age {{ age }})</p>
+    {% else %}
+      <p class="age">age {{ age }}</p>
+      <section class="live">
+        <h1>Live runs</h1>
+        <ul>
+          {% for run in live %}
+            <li data-run-id="{{ run.run_id }}">{{ run.station }} {{ run.status }}</li>
+          {% empty %}
+            <li class="empty">none</li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="timing">
+        <h1>Completed timing</h1>
+        <ul>
+          {% for run in timing %}
+            <li data-run-id="{{ run.run_id }}" data-duration-ms="{{ run.duration_ms }}">
+              {{ run.station }} {{ run.duration_ms }}ms
+            </li>
+          {% empty %}
+            <li class="empty">none</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+  </body>
+</html>

@@ -22,12 +22,17 @@ class RunState(models.Model):
         FAILED = "failed", "failed"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    station = models.CharField(max_length=64, default="")
     status = models.CharField(
         max_length=16,
         choices=Status.choices,
         default=Status.PENDING,
     )
     result = models.JSONField(null=True, blank=True)
+    started_at = models.DateTimeField(blank=True, null=True)
+    heartbeat_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+    duration_ms = models.PositiveIntegerField(blank=True, null=True)
 
     class Meta:
         db_table = "run_state"
