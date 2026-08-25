@@ -1,0 +1,21 @@
+<form
+  id="pyforge-originating-form"
+  method="post"
+  hx-post="{{ request.path }}"
+  hx-swap="outerHTML"
+  hx-target="#pyforge-originating-form"
+>
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <label for="{{ form.version.id_for_label }}">version</label>
+  <input
+    type="text"
+    name="{{ form.version.html_name }}"
+    id="{{ form.version.id_for_label }}"
+    value="{{ form.version.value|default:'' }}"
+    class="{% if form.version.errors %}error{% endif %}"
+    {% if form.version.errors %}aria-invalid="true"{% endif %}
+  />
+  {{ form.version.errors }}
+  <button type="submit">Submit</button>
+</form>
