@@ -7350,6 +7350,11 @@ environments:
       channel-priority: flexible
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-api-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-sdk-0.10.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/panzi-json-logic-1.0.1-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/slowapi-0.1.10-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.1-hfc2019e_1.conda
@@ -7361,6 +7366,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.2.0-py312he9c40d5_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.8-hebe6cf0_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/cachebox-5.2.3-py312h868fb18_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/caio-0.12.2-py312he259645_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cairo-1.18.4-he90730b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cffi-2.1.1-py312h703531f_2.conda
@@ -7821,6 +7827,11 @@ environments:
       - conda_source: pyforge-core[a76fb117] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[00e1765d] @ src/shared/packages/pyforge-steward
       p1:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-api-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-sdk-0.10.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/panzi-json-logic-1.0.1-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/slowapi-0.1.10-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.2-pyhcf101f3_0.conda
@@ -8134,6 +8145,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/brotli-python-1.2.0-py312ha52686f_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.8-h74c22ad_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cachebox-5.2.3-py312hb9d4441_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/caio-0.12.2-py312h2c919a9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cairo-1.18.4-he0f2337_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cffi-2.1.1-py312hc892d8b_2.conda
@@ -14393,6 +14405,11 @@ environments:
       channel-priority: flexible
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-api-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-sdk-0.10.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/panzi-json-logic-1.0.1-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/slowapi-0.1.10-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.1-hfc2019e_1.conda
@@ -14404,6 +14421,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.2.0-py312he9c40d5_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.8-hebe6cf0_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/cachebox-5.2.3-py312h868fb18_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/caio-0.12.2-py312he259645_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cairo-1.18.4-he90730b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cffi-2.1.1-py312h703531f_2.conda
@@ -14856,6 +14874,11 @@ environments:
       - conda_source: pyforge-core[a76fb117] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[00e1765d] @ src/shared/packages/pyforge-steward
       p1:
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-api-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-sdk-0.10.0-pyh59285b8_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/panzi-json-logic-1.0.1-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/slowapi-0.1.10-pyhcba1bba_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.2-pyhcf101f3_0.conda
@@ -15169,6 +15192,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/brotli-python-1.2.0-py312ha52686f_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/bzip2-1.0.8-h4e30115_10.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.8-h74c22ad_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cachebox-5.2.3-py312hb9d4441_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/caio-0.12.2-py312h2c919a9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cairo-1.18.4-he0f2337_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cffi-2.1.1-py312hc892d8b_2.conda
@@ -16318,6 +16342,63 @@ packages:
   license: MIT
   size: 53878
   timestamp: 1783874311940
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-api-1.0.0-pyh59285b8_0.conda
+  sha256: 76aad9e079f31e91da2060cb0fde7f0aef42bd06fa473ce86217712b83a48b16
+  md5: c2218172ad2c3add33072ead2420ac9c
+  depends:
+  - python >=3.10
+  - openfeature-sdk >=0.8.2
+  - python
+  license: Apache-2.0
+  size: 18166
+  timestamp: 1787647902068
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
+  sha256: 7f643116f8ea28656a0b2abef9b616e5f5cec8e783df9fd6ef683d5306d67679
+  md5: e271b449855eb9c9550917e186673fdb
+  depends:
+  - python >=3.10
+  - openfeature-flagd-api <2,>=1.0.0
+  - openfeature-sdk >=0.8.2
+  - mmh3 <6.0.0,>=5.0.0
+  - panzi-json-logic ==1.0.1
+  - semver <4,>=3
+  - python
+  license: Apache-2.0
+  size: 23032
+  timestamp: 1787647908982
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.0-pyh76f217f_0.conda
+  sha256: 55f0ff11353d389b68e29477877725fcecc1a0ea526392c9dd4e7596b996c6a3
+  md5: a922c49a011b549dc9bbc19afe06cb6c
+  depends:
+  - python >=3.10
+  - cachebox <6.0.0,>=5.1.0
+  - grpcio >=1.81.0
+  - openfeature-flagd-core <2,>=1.0.0
+  - openfeature-sdk >=0.8.2
+  - protobuf <7.0.0,>=6.30.0
+  - pyyaml >=6.0.1
+  - python
+  license: Apache-2.0
+  size: 49130
+  timestamp: 1787659884655
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-sdk-0.10.0-pyh59285b8_0.conda
+  sha256: ce7eab479562d888079d6c9b92d06997248c496456d1334d1053bf075db6b949
+  md5: 02c92fe94006e2136988906343043883
+  depends:
+  - python >=3.10
+  - python
+  license: Apache-2.0
+  size: 39188
+  timestamp: 1787647882589
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/panzi-json-logic-1.0.1-pyh59285b8_0.conda
+  sha256: 44e795d8d85c0cc103adb499c54b65e3bc85024375dd7c3f324a783a52b5703b
+  md5: 392a7182722e08cb558f0037f1b5217f
+  depends:
+  - python >=3.10
+  - python
+  license: MIT
+  size: 20304
+  timestamp: 1787647897494
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
   sha256: 60e0727bf2d938068813c3873ef6667d917b2335090d7d864a76ae35547b0ac5
   md5: b974ae4735ded924136dd44589418b9b
@@ -17109,6 +17190,21 @@ packages:
     - c-ares >=1.34.8,<2.0a0
   size: 228700
   timestamp: 1787169971173
+- conda: https://conda.anaconda.org/conda-forge/linux-64/cachebox-5.2.3-py312h868fb18_1.conda
+  sha256: 7eeb416a03e2c40d771b26c29a5fca86cf561ab55c4b10866f2b9ee378bdab50
+  md5: eff7b8ff9f05aa6333f2b5791d477191
+  depends:
+  - python
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - python_abi 3.12.* *_cp312
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 362003
+  timestamp: 1778933996938
 - conda: https://conda.anaconda.org/conda-forge/linux-64/caio-0.12.2-py312he259645_0.conda
   sha256: e72c69137549934c2b0e059c436a01843a88606e077b60ce6fdddb171635212c
   md5: 1cd74741093e165ea7c4ea51cb21730c
@@ -42514,6 +42610,21 @@ packages:
     - c-ares >=1.34.8,<2.0a0
   size: 197819
   timestamp: 1787169996553
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/cachebox-5.2.3-py312hb9d4441_1.conda
+  sha256: a1fe56dc1be0438b7d02cbc24c9ff74d5689da019014751e886b1cc0d8209d71
+  md5: ce1eceafd00983b97cbda8ffe5e0398d
+  depends:
+  - python
+  - __osx >=11.0
+  - python 3.12.* *_cpython
+  - python_abi 3.12.* *_cp312
+  constrains:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 330122
+  timestamp: 1778949736131
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/caio-0.12.2-py312h2c919a9_0.conda
   sha256: 08912509b8b77728220c318d952381807e687a09a1ef7bf531b07c20fb167179
   md5: 61581f82fef42116c41edb34506511c9
