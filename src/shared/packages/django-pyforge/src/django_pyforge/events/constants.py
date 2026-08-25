@@ -13,6 +13,15 @@ EXT_SPEC_ID = "specid"
 EXT_GIT_SHA = "gitsha"
 EXT_SBOM_PURL = "sbompurl"
 EXT_WORK_ITEM_ID = "workitemid"
+EXT_LOOP_DEPTH = "pyforgeloopdepth"
+LOOP_DEPTH_CEILING = 8
+
+# Chrome registry: adding a type is a django-pyforge change, not a story-local string.
+EVENT_TYPES = frozenset(
+    {
+        "recipe.audit.failed",
+    },
+)
 
 STATION_TOKENS = frozenset(
     {

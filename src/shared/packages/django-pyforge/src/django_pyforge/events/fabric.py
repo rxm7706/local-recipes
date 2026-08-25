@@ -10,10 +10,13 @@ from uuid import uuid4
 from django_pyforge.events.constants import APPLIED_PREFIX
 from django_pyforge.events.constants import DLQ
 from django_pyforge.events.constants import EVENT_FIELD
+from django_pyforge.events.constants import EVENT_TYPES
 from django_pyforge.events.constants import EXT_GIT_SHA
+from django_pyforge.events.constants import EXT_LOOP_DEPTH
 from django_pyforge.events.constants import EXT_SBOM_PURL
 from django_pyforge.events.constants import EXT_SPEC_ID
 from django_pyforge.events.constants import EXT_WORK_ITEM_ID
+from django_pyforge.events.constants import LOOP_DEPTH_CEILING
 from django_pyforge.events.constants import SPECVERSION
 from django_pyforge.events.constants import STATION_TOKENS
 from django_pyforge.events.constants import STREAM
@@ -33,6 +36,21 @@ class EventBrokerConfigError(ValueError):
 
 class DataschemaRequiredError(ValueError):
     """CloudEvents dataschema is required (canopy AD-8)."""
+
+
+class UnregisteredEventTypeError(ValueError):
+    """Event type must be a dotted verb registered in django-pyforge."""
+
+
+class LoopDepthExceededError(ValueError):
+    """Publish halted at the pyforgeloopdepth ceiling (canopy AD-8)."""
+
+    def __init__(self, depth: int, event_type: str = "") -> None:
+        self.depth = depth
+        self.event_type = event_type
+        super().__init__(
+            f"pyforgeloopdepth {depth} reached ceiling {LOOP_DEPTH_CEILING}; publish halted",
+        )
 
 
 def applied_key(event_id: str) -> str:
@@ -110,16 +128,25 @@ class EventFabric:
         if not dataschema:
             msg = "dataschema is required on every CloudEvent (canopy AD-8)"
             raise DataschemaRequiredError(msg)
+        event_type = event["type"]
+        if event_type not in EVENT_TYPES:
+            msg = f"event type {event_type!r} is not registered in django-pyforge"
+            raise UnregisteredEventTypeError(msg)
+        raw_depth = event.get(EXT_LOOP_DEPTH, 0)
+        depth = int(raw_depth)
+        if depth >= LOOP_DEPTH_CEILING:
+            raise LoopDepthExceededError(depth=depth, event_type=str(event_type))
         event_id = event.get("id") or str(uuid4())
         body: dict[str, Any] = {
             "specversion": SPECVERSION,
             "id": event_id,
             "source": event["source"],
-            "type": event["type"],
+            "type": event_type,
             "dataschema": dataschema,
             EXT_SPEC_ID: event[EXT_SPEC_ID],
             EXT_GIT_SHA: event[EXT_GIT_SHA],
             EXT_SBOM_PURL: event[EXT_SBOM_PURL],
+            EXT_LOOP_DEPTH: depth,
         }
         workitemid = event.get(EXT_WORK_ITEM_ID)
         if workitemid:
