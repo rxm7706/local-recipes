@@ -4,11 +4,13 @@ REQUIRED PRE-CREATED SECRET (this chart never renders one -- AD-12):
   name: {{ .Values.existingSecret }}
   keys:
     DJANGO_SECRET_KEY  Django's SECRET_KEY.
-    DATABASE_URL       The WHOLE database URL. With this release's own
-                       PostgreSQL and default auth values:
+    DATABASE_URL       App-role DML URL. With this release's postgres:
+                       postgres://{{ .Values.postgres.auth.appUsername }}:<password>@{{ include "platform.postgres.fullname" . }}:5432/{{ .Values.postgres.auth.database }}
+    MIGRATION_DATABASE_URL  Migration-role DDL URL for the Liquibase Job:
                        postgres://{{ .Values.postgres.auth.username }}:<password>@{{ include "platform.postgres.fullname" . }}:5432/{{ .Values.postgres.auth.database }}
+                       (direct postgres Service DNS -- never a pooling proxy)
     POSTGRES_PASSWORD  The same <password>, consumed by the postgres
-                       container itself.
+                       container itself (POSTGRES_USER={{ .Values.postgres.auth.username }}).
     REDIS_PASSWORD     Redis AUTH password (Story 12.6); wired into
                        REDIS_BROKER_URL / REDIS_CACHE_URL / REDIS_URL
                        (broker alias) and --requirepass on both Redis pods.
@@ -33,11 +35,13 @@ Exposure flows:
   then: helm install {{ .Release.Name }}-ocp src/platform/deploy/overlays/ocp/chart \
       --set route.service.name={{ include "platform.fullname" . }}
 
-Migrations run in the {{ include "platform.migrate.fullname" . }} hook Job
-(post-install,pre-upgrade) -- never in the web/worker pods. On a FRESH
-install the web pods go Ready before that Job finishes (the /ht/ Database
-check is connectivity-only), so ORM-touching pages 500 transiently until
-the migration completes; upgrades are covered by the pre-upgrade ordering.
+Migrations: {{ include "platform.liquibase.fullname" . }} (hook-weight -1,
+liquibase update on the platform image) then {{ include "platform.migrate.fullname" . }}
+(hook-weight 0, migrate --fake). Never an initContainer on web/worker. On a
+FRESH install the web pods go Ready before those Jobs finish (the /ht/
+Database check is connectivity-only), so ORM-touching pages 500 transiently
+until Liquibase + fake-migrate complete; upgrades are covered by pre-upgrade
+ordering.
 
 Flags (Story 26.4 / AD-11): ConfigMap {{ include "platform.fullname" . }}-flags
 is the in-cluster copy of src/platform/config/flags.json. Install with

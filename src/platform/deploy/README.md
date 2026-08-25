@@ -21,7 +21,8 @@ Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
   | key | value |
   |---|---|
   | `DJANGO_SECRET_KEY` | Django's `SECRET_KEY` |
-  | `DATABASE_URL` | the whole URL, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` |
+  | `DATABASE_URL` | app-role DML URL, e.g. `postgres://platform_app:<password>@<release>-postgres:5432/platform` |
+  | `MIGRATION_DATABASE_URL` | migration-role DDL URL for the Liquibase Job, e.g. `postgres://platform:<password>@<release>-postgres:5432/platform` (postgres Service DNS, not a pooler) |
   | `POSTGRES_PASSWORD` | the same `<password>`, consumed by the postgres container |
   | `REDIS_PASSWORD` | Redis AUTH password (Story 12.6); consumed by redis and wired into platform pods' `REDIS_URL` |
 
@@ -34,7 +35,8 @@ Invariants are enforced by `src/platform/tests/test_chart_invariants.py`.
 ```sh
 kubectl create secret generic platform-secrets \
     --from-literal=DJANGO_SECRET_KEY=... \
-    --from-literal=DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
+    --from-literal=DATABASE_URL=postgres://platform_app:...@platform-postgres:5432/platform \
+    --from-literal=MIGRATION_DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
     --from-literal=POSTGRES_PASSWORD=... \
     --from-literal=REDIS_PASSWORD=...
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \

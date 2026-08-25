@@ -1,11 +1,10 @@
-# Migrate hook Job -- the ONLY place `manage.py migrate` runs (the image
-# CMD never migrates; on K8s that step belongs here, not in every pod's
-# startup, because concurrent replicas would race the same migration --
-# Containerfile + compose.yml contract). post-install,pre-upgrade with
-# before-hook-creation so each helm operation gets a fresh run under the
-# same name. OnFailure restart + backoffLimit absorb the postgres-boot
-# race compose documents (pg_isready answers from initdb's temporary
-# server, then postgres restarts).
+# Migrate hook Job -- records Django migration history after Liquibase
+# (weight -1) has applied DDL. `migrate --fake` still emits post_migrate
+# (content types / permissions / sites; FR-24). The image CMD never
+# migrates; concurrent replicas must not race schema change.
+# post-install,pre-upgrade with before-hook-creation so each helm
+# operation gets a fresh run under the same name. OnFailure restart +
+# backoffLimit absorb the postgres-boot race compose documents.
 #
 # Deliberately a hook, NOT an initContainer readiness gate: with
 # `helm install --wait`, post-install hooks fire only AFTER resources are
@@ -48,8 +47,8 @@ spec:
           securityContext:
             {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
           # args (not command): runs through the image ENTRYPOINT so the
-          # pixi shell-hook puts python on PATH.
-          args: ["python", "manage.py", "migrate", "--noinput"]
+          # pixi shell-hook puts python on PATH. --fake: Liquibase owns DDL.
+          args: ["python", "manage.py", "migrate", "--fake", "--noinput"]
           env:
             {{- include "platform.djangoEnv" . | nindent 12 }}
           {{- with .Values.migrate.resources }}

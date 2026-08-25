@@ -954,6 +954,7 @@ jobs:
             --namespace platform-smoke \
             --from-literal=DJANGO_SECRET_KEY=ci-gke-smoke-placeholder-not-a-real-secret \
             --from-literal=DATABASE_URL=postgres://platform:ci-gke-smoke-not-a-real-secret@platform-postgres:5432/platform \
+            --from-literal=MIGRATION_DATABASE_URL=postgres://platform:ci-gke-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=POSTGRES_PASSWORD=ci-gke-smoke-not-a-real-secret
 
       # ONLY scalar --set value overrides -- never a second chart/overlay/
@@ -1165,6 +1166,7 @@ jobs:
             --namespace platform-smoke \
             --from-literal=DJANGO_SECRET_KEY=ci-ocp-smoke-placeholder-not-a-real-secret \
             --from-literal=DATABASE_URL=postgres://platform:ci-ocp-smoke-not-a-real-secret@platform-postgres:5432/platform \
+            --from-literal=MIGRATION_DATABASE_URL=postgres://platform:ci-ocp-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=POSTGRES_PASSWORD=ci-ocp-smoke-not-a-real-secret \
             --from-literal=REDIS_PASSWORD=ci-ocp-smoke-not-a-real-secret
 
@@ -1428,6 +1430,7 @@ jobs:
             --namespace platform-airgap \
             --from-literal=DJANGO_SECRET_KEY=ci-airgap-smoke-placeholder-not-a-real-secret \
             --from-literal=DATABASE_URL=postgres://platform:ci-airgap-smoke-not-a-real-secret@platform-postgres:5432/platform \
+            --from-literal=MIGRATION_DATABASE_URL=postgres://platform:ci-airgap-smoke-not-a-real-secret@platform-postgres:5432/platform \
             --from-literal=POSTGRES_PASSWORD=ci-airgap-smoke-not-a-real-secret
 
       # Builds the mirror BEFORE the egress block goes up -- network is

@@ -8,9 +8,9 @@ apiVersion: v2
 name: platform
 description: >-
   Vanilla-Kubernetes core chart for the python-agent-platform host: the
-  Story 10.3 platform image (Django+FastAPI web, Celery worker, migrate
-  hook Job) plus its exact AD-1 infrastructure (PostgreSQL StatefulSet,
-  Redis Deployment). Credentials only by reference to a pre-created
+  Story 10.3 platform image (Django+FastAPI web, Celery worker, Liquibase
+  hook Job then migrate --fake) plus its exact AD-1 infrastructure
+  (PostgreSQL StatefulSet, Redis Deployment). Credentials only by reference to a pre-created
   Secret (AD-12); platform-image pods carry the OCP restricted-v2
   contract hardcoded in templates.
 type: application

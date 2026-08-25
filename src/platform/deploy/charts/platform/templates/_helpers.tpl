@@ -66,6 +66,10 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-migrate" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.liquibase.fullname" -}}
+{{- printf "%s-liquibase" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "platform.dbgpt.fullname" -}}
 {{- printf "%s-dbgpt" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -142,7 +146,7 @@ uses the values-supplied pullPolicy unchanged.
 
 {{/*
 restricted-v2 POD security context for platform-image pods (web, worker,
-migrate). HARDCODED, not values-driven -- the story's AC makes these an
+migrate, liquibase). HARDCODED, not values-driven -- the story's AC makes these an
 invariant, and a values knob would be an invitation to regress them
 silently. Deliberately NO runAsUser/runAsGroup/fsGroup: OCP's
 restricted-v2 SCC assigns an arbitrary UID at admission, and the image's
@@ -171,7 +175,7 @@ existingSecret fails the render naming the values path instead of
 rendering secretKeyRefs against a Secret named "".
 */}}
 {{- define "platform.existingSecretName" -}}
-{{- required "existingSecret is required -- the name of the pre-created Secret holding DJANGO_SECRET_KEY/DATABASE_URL/POSTGRES_PASSWORD/REDIS_PASSWORD (AD-12)" .Values.existingSecret }}
+{{- required "existingSecret is required -- the name of the pre-created Secret holding DJANGO_SECRET_KEY/DATABASE_URL/MIGRATION_DATABASE_URL/POSTGRES_PASSWORD/REDIS_PASSWORD (AD-12)" .Values.existingSecret }}
 {{- end }}
 
 {{/*
@@ -251,6 +255,20 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
   value: "file"
 - name: FLAGD_OFFLINE_FLAG_SOURCE_PATH
   value: {{ printf "%s/%s" .Values.flags.mountPath .Values.flags.fileName | quote }}
+{{- end }}
+
+{{/*
+Liquibase Job env (canopy AD-9 / FR-21a): migration-role URL only.
+Never DATABASE_URL (app role is DML-only). Host in that URL must be the
+in-cluster postgres Service, not a pooling proxy -- enforced in
+db/liquibase_update.py, not by composing the URL here (AD-12).
+*/}}
+{{- define "platform.liquibaseEnv" -}}
+- name: MIGRATION_DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "platform.existingSecretName" . | quote }}
+      key: MIGRATION_DATABASE_URL
 {{- end }}
 
 {{/*
