@@ -23,6 +23,9 @@ dependencies = [
     "license-expression",
     "pyforge-core",
 ]
+# Story 9.1: plugin registration is pyforge.core.hooks only
+# (ENTRY_POINT_GROUP). Do not add [project.entry-points."pyforge.warden.hooks"]
+# or [project.entry-points."pyforge.warden.plugins"].
 
 [project.scripts]
 warden = "pyforge.warden.cli:main"

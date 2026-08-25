@@ -8,7 +8,9 @@ over Python / Conda / Pixi manifests, emitting one schema-validated
 
 **Status:** all 31 stories shipped (E1–E6) — the six-axis compliance gate
 (hygiene / security / license / currency + baseline & grandfathering +
-fix-PR actuator) is live. Specified in
+fix-PR actuator) is live. Epic 9 Story 9.1 publishes the PR-gate hook book
+on `pyforge.core.hooks`; plugins are **not** invoked by `warden scan` yet
+(Story 9.2). Specified in
 [`docs/specs/pyforge-warden.md`](../../../../docs/specs/pyforge-warden.md).
 
 ## Develop
@@ -71,3 +73,53 @@ policy compliance. An *absent* feed is reported as an informational
 default `fail-on-kev` gate: until the KEV feed is provisioned (or that gate
 is explicitly disabled), a default-config scan composes `indeterminate` on
 the vulnerability axis rather than a trusted verdict.
+
+## PR-gate hook book (Story 9.1)
+
+Warden publishes named hook specs on the shared FR-43 API
+(`pyforge.core.hooks`). Scanner authors attach Checkmarx/Sonar/GHAS-shaped
+plugins here; they do **not** fork Warden or mint a second loader.
+
+| Spec | Name | Owner |
+|---|---|---|
+| scan | `pyforge.warden.pr_gate.scan` | `warden` |
+| aggregate | `pyforge.warden.pr_gate.aggregate` | `warden` |
+| verdict | `pyforge.warden.pr_gate.verdict` | `warden` |
+
+**Registration group:** `pyforge.core.hooks` (`ENTRY_POINT_GROUP`) via
+`PluginRegistry.register` / `load_entry_points`. There is no
+`pyforge.warden.hooks` or `pyforge.warden.plugins` group.
+
+**Not invoked by `warden scan` yet.** Story 9.1 publishes the specs only.
+`load_entry_points` is not wired into the CLI scan loop; that is Story 9.2.
+
+**Scanner-author example.** A plugin is a `HookPlugin`: `hook_spec` (one of
+the three names above), `owner` (the scanner, e.g. `"checkmarx"` — never
+the verdict spec), and `call(point, context)` at `before` / `after` /
+`around`. Register on the canonical group, not a Warden-only one:
+
+```python
+# my_scanner/plugin.py
+class CheckmarxScanPlugin:
+    hook_spec = "pyforge.warden.pr_gate.scan"
+    owner = "checkmarx"
+
+    def call(self, point: str, context: dict) -> object:
+        # point is "before", "after", or "around"
+        return context
+```
+
+```toml
+# the scanner distribution's pyproject.toml — not Warden's
+[project.entry-points."pyforge.core.hooks"]
+checkmarx-scan = "my_scanner.plugin:CheckmarxScanPlugin"
+```
+
+**No second verdict:** only Warden publishes the PR quality-gate verdict
+(`publish_pr_gate_verdict`, owner `"warden"`). A plugin that does not own
+the verdict spec raises `SecondVerdictError`. Hooks do not project exit
+codes; `verdict.py` remains sole owner of the lattice + `exit_code_for`.
+
+**In-tree engines:** Deptry / OSV / license / currency stay listed in
+`engines.py` `register_engine` until Story 9.2. This story does not extract
+them into plugins.
