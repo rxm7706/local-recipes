@@ -20,9 +20,9 @@ Design invariants honored here:
   ``kedro_mcp`` or ``dagster`` (structurally enforced by
   ``tests/catalog/test_no_inline_io.py::test_ad1_import_direction``).
 
-``.server`` (the FastMCP registration wrapper) is deliberately NOT imported
-here — ``fastmcp`` stays a lazy, registration-time-only dependency so the
-trigger/read surface imports with neither ``fastmcp`` nor ``kedro_mcp``
+``.server`` (the official ``mcp`` SDK registration wrapper) is deliberately
+NOT imported here — the SDK stays a lazy, registration-time-only dependency
+so the trigger/read surface imports with neither ``mcp`` nor ``kedro_mcp``
 present.
 """
 
