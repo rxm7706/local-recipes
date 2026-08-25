@@ -1,0 +1,138 @@
+{
+ "provenance_version": "2.0",
+ "skill_name": "pyforge-scribe",
+ "skill_type": "single",
+ "source_repo": "src/shared/packages/pyforge-scribe",
+ "source_commit": "a5e9dad59ab7d9e1dd5b693f7797e8a76b34a423",
+ "source_ref": "local",
+ "generated_at": "2026-08-25T05:00:00Z",
+ "grounding": {
+  "date": "2026-08-25",
+  "commit_short": "a5e9dad59ab7",
+  "station": "scribe",
+  "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-1-skf-domain-skills-from-station-packages.md"
+ },
+ "entries": [
+  {
+   "export_name": "capture_cmd",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [],
+   "return_type": "None",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+   "source_line": 74,
+   "confidence": "T1-low",
+   "extraction_method": "skf-extract-public-api",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "graph_compile",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [
+    "nightly: bool"
+   ],
+   "return_type": "None",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+   "source_line": 252,
+   "confidence": "T1-low",
+   "extraction_method": "skf-extract-public-api",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "recall_cmd",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [
+    "query: str"
+   ],
+   "return_type": "None",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+   "source_line": 273,
+   "confidence": "T1-low",
+   "extraction_method": "skf-extract-public-api",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "main",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [],
+   "return_type": "None",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py",
+   "source_line": 294,
+   "confidence": "T1-low",
+   "extraction_method": "skf-extract-public-api",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "capture",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [
+    "memory_root: Path",
+    "capture_type: CaptureType",
+    "text: str"
+   ],
+   "return_type": "CaptureResult",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py",
+   "source_line": 54,
+   "confidence": "T1-low",
+   "extraction_method": "source-reading",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "compile_graph",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [
+    "memory_root: Path",
+    "repo_root: Path"
+   ],
+   "return_type": "CompileResult",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py",
+   "source_line": 99,
+   "confidence": "T1-low",
+   "extraction_method": "source-reading",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "answer",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [
+    "query: str",
+    "store: GraphStore",
+    "repo_root: Path"
+   ],
+   "return_type": "RecallAnswer",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py",
+   "source_line": 71,
+   "confidence": "T1-low",
+   "extraction_method": "source-reading",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  },
+  {
+   "export_name": "open_graph_store",
+   "export_type": "function",
+   "source_library": "pyforge-scribe",
+   "params": [
+    "store_path: Path"
+   ],
+   "return_type": "GraphStore",
+   "source_file": "src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py",
+   "source_line": 27,
+   "confidence": "T1-low",
+   "extraction_method": "source-reading",
+   "ast_node_type": null,
+   "signature_source": "T1-low"
+  }
+ ]
+}
