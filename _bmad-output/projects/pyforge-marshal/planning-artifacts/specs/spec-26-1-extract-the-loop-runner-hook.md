@@ -3,7 +3,6 @@ title: 'Extract the loop/runner hook'
 type: 'feature'
 created: '2026-08-24'
 status: 'done'
-followup_review_recommended: false
 baseline_revision: 'e96b852227b36bb28cbc62cd44dd5071057081fe'
 review_loop_iteration: 0
 followup_review_recommended: false
