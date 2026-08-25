@@ -22,5 +22,8 @@ dependencies = [
 [project.scripts]
 scribe = "pyforge.scribe.cli:main"
 
+[project.entry-points."pyforge.core.hooks"]
+scribe-graphstore-flatfile = "pyforge.scribe.graph_store:FlatFileGraphStorePlugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]

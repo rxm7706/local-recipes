@@ -125,9 +125,9 @@ def compile_graph(
         )
 
     if store is None:
-        from pyforge.scribe.graph_store import FlatFileGraphStore
+        from pyforge.scribe.graph_store_plugins import open_graph_store
 
-        store = FlatFileGraphStore(store_path or default_store_path(repo_root))
+        store = open_graph_store(store_path or default_store_path(repo_root))
 
     warnings: list[str] = []
     store.reset()
