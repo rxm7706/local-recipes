@@ -204,8 +204,7 @@ stations:
   warden:
     project: pyforge-warden
     drained: false
-    remaining_count: 2
-    next: 9-2-current-scanners-become-optional-plugins
+    remaining_count: 1
+    next: 9-3-default-warden-stays-green-without-checkmarx
     queue:
-    - 9-2-current-scanners-become-optional-plugins
     - 9-3-default-warden-stays-green-without-checkmarx

@@ -51,7 +51,7 @@ development_status:
   8-1-upload-runs-the-real-engines-async: done
   8-2-results-render-with-derived-progress: done
   9-1-warden-publishes-the-pr-gate-hook-book: done
-  9-2-current-scanners-become-optional-plugins: backlog
+  9-2-current-scanners-become-optional-plugins: done
   9-3-default-warden-stays-green-without-checkmarx: backlog
   epic-1: done
   epic-1-retrospective: done
