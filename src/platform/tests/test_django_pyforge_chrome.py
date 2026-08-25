@@ -27,6 +27,7 @@ from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.middleware import TokenRolesMiddleware
 from django_pyforge.portals import PortalConfig
 from django_pyforge.probe_portal import views as probe_views
+from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from django_warden_fabric import views as warden_views
 
@@ -297,7 +298,7 @@ def test_empty_token_roles_on_the_next_request_list_no_stations() -> None:
     assert "/stations/chrome-probe/" not in html
 
 
-def test_token_roles_middleware_copies_session_when_unset() -> None:
+def test_token_roles_middleware_does_not_grant_from_session_role_list() -> None:
     request = RequestFactory().get("/stations/warden/")
     request.session = {IDP_TOKEN_ROLES_SESSION_KEY: ["warden"]}
     seen: dict[str, object] = {}
@@ -307,16 +308,16 @@ def test_token_roles_middleware_copies_session_when_unset() -> None:
         return HttpResponse()
 
     TokenRolesMiddleware(inner)(request)
-    assert seen["roles"] == ["warden"]
+    assert seen["roles"] == []
     preset = RequestFactory().get("/")
     preset.idp_roles = ["chrome-probe"]
     preset.session = {IDP_TOKEN_ROLES_SESSION_KEY: ["warden"]}
     TokenRolesMiddleware(inner)(preset)
     assert seen["roles"] == ["chrome-probe"]
-    string_session = RequestFactory().get("/")
-    string_session.session = {IDP_TOKEN_ROLES_SESSION_KEY: "warden"}
-    TokenRolesMiddleware(inner)(string_session)
+    claims_session = RequestFactory().get("/")
+    claims_session.session = {IDP_TOKEN_CLAIMS_SESSION_KEY: {"groups": ["warden"]}}
+    TokenRolesMiddleware(inner)(claims_session)
     assert seen["roles"] == ["warden"]
-    html = _switcher_html(string_session)
+    html = _switcher_html(claims_session)
     assert "/stations/warden/" in html
     assert "/stations/chrome-probe/" not in html
