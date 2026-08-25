@@ -202,8 +202,7 @@ stations:
     - 27-4-test-databases-still-migrate
   warden:
     project: pyforge-warden
-    drained: false
-    remaining_count: 1
-    next: 9-3-default-warden-stays-green-without-checkmarx
-    queue:
-    - 9-3-default-warden-stays-green-without-checkmarx
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
