@@ -10,8 +10,9 @@ releases/tags, ``recipe.yaml`` parse, ``api.anaconda.org``, conda-meta /
 installed-version scan, ``.claude/skills`` + ``_bmad`` census) without
 importing ``pyforge.doctor`` (steward stays free of a doctor run-dependency).
 
-Verb: ``steward suite pipeline-truth``. Never implements CAP-2 autotick
-advance (Story 15.2) or later CAP stories.
+Verb: ``steward suite pipeline-truth``. Never implements Epic 15 CAP-2
+autotick advance (Story 15.2). Story 31.2 extends the wired-or-not column
+with per-class predicates for the six non-module pieces.
 """
 
 from __future__ import annotations
@@ -62,6 +63,39 @@ def repo_root() -> Path:
     )
 
 
+# Story 31.2 / install-class CAP-2 — not a boolean only --module targets satisfy.
+INSTALL_CLASS_MODULE = "module"
+INSTALL_CLASS_SKIP = "skip"
+INSTALL_CLASS_INSTALLER_TREE = "installer-tree"
+INSTALL_CLASS_RUNNER_HOME = "runner-home"
+INSTALL_CLASS_OWN_INSTALLER = "own-installer"
+INSTALL_CLASS_PLUGIN_PATH = "plugin-path"
+INSTALL_CLASS_VSCODE_EXTENSION = "vscode-extension"
+INSTALL_CLASS_SCAFFOLD_NA = "scaffold-n/a"
+
+INSTALL_CLASS_PLAYBOOK_REL = (
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
+    "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+)
+INSTALL_MATRIX_REL = (
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
+    "spec-bmad-suite-channel-product/install-matrix.md"
+)
+
+# Values that are class-correct "not unwired" — not a module census miss.
+_WIRED_SETTLED_VALUES = frozenset(
+    {
+        "wired",
+        "skip",
+        "n/a",
+        "provisionable",
+        "documented",
+        "runnable",
+        "present",
+    }
+)
+
+
 @dataclass(frozen=True)
 class SuitePackageDef:
     """One of the 13 bmad-suite packages and how to probe it."""
@@ -74,6 +108,8 @@ class SuitePackageDef:
     wire_skill_prefixes: tuple[str, ...] = ()
     wire_skill_names: tuple[str, ...] = ()
     wire_bmad_config_keys: tuple[str, ...] = ()
+    install_class: str = INSTALL_CLASS_MODULE
+    wire_pixi_task: str | None = None  # vscode-extension class: pixi task name
 
 
 # install-matrix.md + Dream grounding (2026-08-22) — package class → probes.
@@ -83,12 +119,13 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         npm_name="bmad-method",
         github_repo="bmad-code-org/BMAD-METHOD",
         wire_bmad_dirs=("core", "bmm"),
+        install_class=INSTALL_CLASS_INSTALLER_TREE,
     ),
     SuitePackageDef(
         name="bmad-loop",
         npm_name=None,  # npm-invisible
         github_repo="bmad-code-org/bmad-loop",
-        wire_skill_prefixes=("bmad-loop-",),
+        install_class=INSTALL_CLASS_RUNNER_HOME,
     ),
     SuitePackageDef(
         name="bmad-method-test-architecture-enterprise",
@@ -116,12 +153,14 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         github_repo="armelhbobdad/bmad-module-skill-forge",
         wire_bmad_dirs=("skf",),
         wire_skill_prefixes=("skf-",),
+        install_class=INSTALL_CLASS_OWN_INSTALLER,
     ),
     SuitePackageDef(
         name="bmad-method-wds-expansion",
         npm_name="bmad-wds",  # install-matrix: npm name ≠ recipe name
         github_repo="bmad-code-org/bmad-method-wds-expansion",
         wire_policy="skip",
+        install_class=INSTALL_CLASS_SKIP,
     ),
     SuitePackageDef(
         name="bmad-utility-skills",
@@ -133,18 +172,14 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         name="bmad-labs-skills",
         npm_name=None,
         github_repo="bmad-labs/skills",
-        # Distinctive share skill names — presence in .claude/skills => wired.
-        wire_skill_names=(
-            "ai-multimodal",
-            "ultrathink-protocol",
-            "architecture-viz-studio",
-        ),
+        install_class=INSTALL_CLASS_PLUGIN_PATH,
     ),
     SuitePackageDef(
         name="bmad-module-template",
         npm_name=None,
         github_repo="bmad-code-org/bmad-module-template",
         wire_policy="n/a",
+        install_class=INSTALL_CLASS_SCAFFOLD_NA,
     ),
     SuitePackageDef(
         name="bmad-manticore",
@@ -156,17 +191,15 @@ SUITE_PACKAGES: tuple[SuitePackageDef, ...] = (
         name="bmad-dashboard",
         npm_name=None,  # npm bmad-dashboard is an unrelated collision
         github_repo="bmad-code-org/bmad-method-ui",
-        # UI package — "wired" when the fleet's dashboard surface exists.
-        wire_skill_names=(),
-        wire_skill_prefixes=(),
-        wire_policy="census",
-        wire_bmad_dirs=(),
+        install_class=INSTALL_CLASS_VSCODE_EXTENSION,
+        wire_pixi_task="bmad-dashboard-install",
     ),
     SuitePackageDef(
         name="mybmad-dashboard",
         npm_name=None,
         github_repo="bmad-code-org/bmad-method-ui",
-        wire_policy="census",
+        install_class=INSTALL_CLASS_VSCODE_EXTENSION,
+        wire_pixi_task="mybmad",
     ),
 )
 
@@ -197,10 +230,12 @@ class PackageTruth:
     installed: StageProbe
     wired: StageProbe
     drifts: tuple[str, ...] = ()
+    install_class: str = INSTALL_CLASS_MODULE
 
     def to_dict(self) -> dict[str, object]:
         return {
             "name": self.name,
+            "install_class": self.install_class,
             "upstream_npm": self.upstream_npm.to_dict(),
             "upstream_github": self.upstream_github.to_dict(),
             "recipe": self.recipe.to_dict(),
@@ -416,75 +451,138 @@ def _bmad_config_keys(repo: Path) -> set[str]:
     return {str(k) for k in data}
 
 
-def _dashboard_wired(repo: Path, package: str) -> StageProbe:
-    """Dashboards are not skills-modules; treat fleet UI presence as wired."""
-    # presentations/pyforge-* decks + package recipe existence ≈ "in the fleet".
-    presentations = repo / "presentations"
+def _pixi_task_declared(repo: Path, task: str) -> bool:
+    """True when pixi.toml declares ``[*.tasks.<task>]`` (install-task runnable)."""
+    path = repo / "pixi.toml"
     try:
-        names = {p.name for p in presentations.iterdir()} if presentations.is_dir() else set()
+        text = path.read_text(encoding="utf-8")
     except OSError:
-        names = set()
-    if package == "bmad-dashboard" and (
-        "pyforge-steward" in names or "agentic-sdlc" in names or (repo / "docs" / "dashboard").is_dir()
-    ):
-        return StageProbe(value="wired", ok=True, detail="fleet dashboard surface present")
-    if package == "mybmad-dashboard" and (repo / "docs" / "dashboard").is_dir():
-        return StageProbe(value="wired", ok=True, detail="docs/dashboard present")
-    # Fall back: installed package alone does not count as wired.
-    return StageProbe(value="unwired", ok=True, detail="no fleet dashboard surface")
+        return False
+    return f"[feature.bmad-ui.tasks.{task}]" in text
+
+
+def _plugin_path_documented(repo: Path) -> bool:
+    """Labs is wired-or-not by documented plugin path, never skill census."""
+    for rel in (INSTALL_CLASS_PLAYBOOK_REL, INSTALL_MATRIX_REL):
+        path = repo / rel
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if "bmad-labs/skills" in text:
+            return True
+    return False
+
+
+def _module_census_hit(repo: Path, pkg: SuitePackageDef) -> str | None:
+    """CAP-3 ``--module`` census only. Returns a detail string on hit."""
+    if pkg.wire_bmad_dirs:
+        if all((repo / "_bmad" / d).is_dir() for d in pkg.wire_bmad_dirs):
+            return f"_bmad dirs: {', '.join(pkg.wire_bmad_dirs)}"
+    if pkg.wire_bmad_config_keys:
+        keys = _bmad_config_keys(repo)
+        if any(k in keys for k in pkg.wire_bmad_config_keys):
+            return f"_bmad/config.yaml keys: {', '.join(pkg.wire_bmad_config_keys)}"
+    skills = _skills_census(repo)
+    for name in pkg.wire_skill_names:
+        if name in skills:
+            return f".claude/skills has {name}"
+    for prefix in pkg.wire_skill_prefixes:
+        if any(s.startswith(prefix) or s == prefix.rstrip("-") for s in skills):
+            return f".claude/skills matches prefix {prefix!r}"
+    return None
 
 
 def probe_wired(repo: Path, pkg: SuitePackageDef) -> StageProbe:
-    """``.claude/skills`` + ``_bmad`` census — fail-open, never raises."""
+    """Per-class wired-or-not (Story 31.2). Fail-open, never raises."""
     try:
-        if pkg.wire_policy == "skip":
+        if (
+            pkg.install_class == INSTALL_CLASS_SKIP
+            or pkg.wire_policy == "skip"
+        ):
             return StageProbe(
                 value="skip",
                 ok=True,
                 detail="deprecated upstream; wiring deliberately skipped",
             )
-        if pkg.wire_policy == "n/a":
+        if (
+            pkg.install_class == INSTALL_CLASS_SCAFFOLD_NA
+            or pkg.name == "bmad-module-template"
+            or pkg.wire_policy == "n/a"
+        ):
             return StageProbe(
                 value="n/a",
                 ok=True,
-                detail="template/scaffold — not a wireable module",
+                detail="scaffold N/A — template is not a wireable module",
             )
-        if pkg.name in ("bmad-dashboard", "mybmad-dashboard"):
-            return _dashboard_wired(repo, pkg.name)
-
-        if pkg.wire_bmad_dirs:
-            if all((repo / "_bmad" / d).is_dir() for d in pkg.wire_bmad_dirs):
+        if pkg.install_class == INSTALL_CLASS_INSTALLER_TREE:
+            dirs = pkg.wire_bmad_dirs or ("core", "bmm")
+            if all((repo / "_bmad" / d).is_dir() for d in dirs):
                 return StageProbe(
-                    value="wired",
+                    value="present",
                     ok=True,
-                    detail=f"_bmad dirs: {', '.join(pkg.wire_bmad_dirs)}",
+                    detail=f"installer tree: _bmad/{', _bmad/'.join(dirs)}",
                 )
-
-        if pkg.wire_bmad_config_keys:
-            keys = _bmad_config_keys(repo)
-            if any(k in keys for k in pkg.wire_bmad_config_keys):
+            return StageProbe(
+                value="missing",
+                ok=True,
+                detail="installer tree: _bmad/core + _bmad/bmm not both present",
+            )
+        if pkg.install_class == INSTALL_CLASS_RUNNER_HOME:
+            locator = repo / "scripts" / "bmad-loop-worktree"
+            if locator.is_file():
                 return StageProbe(
-                    value="wired",
+                    value="provisionable",
                     ok=True,
-                    detail=f"_bmad/config.yaml keys: {', '.join(pkg.wire_bmad_config_keys)}",
+                    detail="runner home: scripts/bmad-loop-worktree present",
                 )
-
-        skills = _skills_census(repo)
-        for name in pkg.wire_skill_names:
-            if name in skills:
+            return StageProbe(
+                value="missing",
+                ok=True,
+                detail="runner home: scripts/bmad-loop-worktree absent",
+            )
+        if pkg.install_class == INSTALL_CLASS_OWN_INSTALLER:
+            hit = _module_census_hit(repo, pkg)
+            if hit:
                 return StageProbe(
-                    value="wired",
+                    value="present",
                     ok=True,
-                    detail=f".claude/skills has {name}",
+                    detail=f"own installer: {hit}",
                 )
-        for prefix in pkg.wire_skill_prefixes:
-            if any(s.startswith(prefix) or s == prefix.rstrip("-") for s in skills):
+            return StageProbe(
+                value="missing",
+                ok=True,
+                detail="own installer: skf tree/skills not present",
+            )
+        if pkg.install_class == INSTALL_CLASS_PLUGIN_PATH:
+            if _plugin_path_documented(repo):
                 return StageProbe(
-                    value="wired",
+                    value="documented",
                     ok=True,
-                    detail=f".claude/skills matches prefix {prefix!r}",
+                    detail="plugin path documented (operator consent to enable)",
                 )
-
+            return StageProbe(
+                value="missing",
+                ok=True,
+                detail="plugin path not documented in playbook/matrix",
+            )
+        if pkg.install_class == INSTALL_CLASS_VSCODE_EXTENSION:
+            task = pkg.wire_pixi_task
+            if task and _pixi_task_declared(repo, task):
+                return StageProbe(
+                    value="runnable",
+                    ok=True,
+                    detail=f"VS Code extension / web: pixi task {task} declared",
+                )
+            return StageProbe(
+                value="missing",
+                ok=True,
+                detail="VS Code extension / web: pixi install task not declared",
+            )
+        # CAP-3 five: module census boolean.
+        hit = _module_census_hit(repo, pkg)
+        if hit:
+            return StageProbe(value="wired", ok=True, detail=hit)
         return StageProbe(value="unwired", ok=True, detail="skills/_bmad census miss")
     except Exception as exc:  # noqa: BLE001 — probe fail-open
         return StageProbe(value=None, ok=False, detail=f"wired probe failed: {exc}")
@@ -541,8 +639,8 @@ def name_drifts(pkg: PackageTruth) -> tuple[str, ...]:
     if recipe_v and installed_v and _behind(installed_v, recipe_v):
         drifts.append("installed")
 
-    # Unwired OR a failed wired probe both name the wired stage.
-    if wired_v == "unwired" or not pkg.wired.ok:
+    # Unwired / missing / failed wired probe name the wired stage.
+    if not pkg.wired.ok or wired_v not in _WIRED_SETTLED_VALUES:
         drifts.append("wired")
 
     return tuple(drifts)
@@ -621,6 +719,7 @@ def build_package_truth(
         channel=channel_stage,
         installed=installed_stage,
         wired=wired_stage,
+        install_class=pkg.install_class,
     )
     return PackageTruth(
         name=partial.name,
@@ -630,6 +729,7 @@ def build_package_truth(
         channel=partial.channel,
         installed=partial.installed,
         wired=partial.wired,
+        install_class=partial.install_class,
         drifts=name_drifts(partial),
     )
 
@@ -860,7 +960,7 @@ def format_pipeline_truth(report: PipelineTruthReport, *, as_json: bool) -> str:
         lines.append(f"  recipe:           {_fmt_stage(pkg.recipe)}")
         lines.append(f"  channel:          {_fmt_stage(pkg.channel)}")
         lines.append(f"  installed:        {_fmt_stage(pkg.installed)}")
-        lines.append(f"  wired:            {_fmt_stage(pkg.wired)}")
+        lines.append(f"  wired:            {_fmt_wired(pkg)}")
         lines.append(f"  drifts:           {drift}")
         lines.append("")
 
@@ -869,6 +969,16 @@ def format_pipeline_truth(report: PipelineTruthReport, *, as_json: bool) -> str:
         for note in report.notes:
             lines.append(f"- {note}")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _fmt_wired(pkg: PackageTruth) -> str:
+    stage = _fmt_stage(pkg.wired)
+    if pkg.install_class in (
+        INSTALL_CLASS_MODULE,
+        INSTALL_CLASS_SKIP,
+    ):
+        return stage
+    return f"{pkg.install_class} | {stage}"
 
 
 def _fmt_stage(stage: StageProbe) -> str:
