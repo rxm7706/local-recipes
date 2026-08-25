@@ -1,24 +1,24 @@
-# Story 12.6: restrict Redis ingress to platform-image pods only (web,
-# worker, migrate). Sidecar and data-service pods do not need the broker.
+{{- range $role := tuple "cache" "broker" }}
+---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "platform.redis.fullname" . }}
+  name: {{ include "platform.redis.roleFullname" (dict "root" $ "role" $role) }}
   labels:
-    {{- include "platform.labels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    {{- include "platform.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: redis-{{ $role }}
 spec:
   podSelector:
     matchLabels:
-      {{- include "platform.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: redis
+      {{- include "platform.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: redis-{{ $role }}
   policyTypes:
     - Ingress
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              {{- include "platform.selectorLabels" . | nindent 14 }}
+              {{- include "platform.selectorLabels" $ | nindent 14 }}
             matchExpressions:
               - key: app.kubernetes.io/component
                 operator: In
@@ -29,3 +29,4 @@ spec:
       ports:
         - protocol: TCP
           port: 6379
+{{- end }}

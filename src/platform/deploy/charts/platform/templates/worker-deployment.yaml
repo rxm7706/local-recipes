@@ -42,7 +42,14 @@ spec:
           args: ["celery", "-A", "config", "worker", "-l", "info"]
           env:
             {{- include "platform.djangoEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: wagtail-media
+              mountPath: {{ .Values.media.mountPath | quote }}
           {{- with .Values.worker.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: wagtail-media
+          persistentVolumeClaim:
+            claimName: {{ include "platform.media.pvcName" . }}

@@ -1,12 +1,12 @@
-# DNS name behind the computed REDIS_URL
-# (redis://<fullname>-redis:6379/0 -- see platform.djangoEnv).
+{{- range $role := tuple "cache" "broker" }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "platform.redis.fullname" . }}
+  name: {{ include "platform.redis.roleFullname" (dict "root" $ "role" $role) }}
   labels:
-    {{- include "platform.labels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    {{- include "platform.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: redis-{{ $role }}
 spec:
   type: ClusterIP
   ports:
@@ -15,5 +15,6 @@ spec:
       targetPort: redis
       protocol: TCP
   selector:
-    {{- include "platform.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: redis
+    {{- include "platform.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: redis-{{ $role }}
+{{- end }}

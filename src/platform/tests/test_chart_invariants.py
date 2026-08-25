@@ -57,6 +57,7 @@ _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job"})
 _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
 # Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
 _SIDECAR_COMPONENT = "dbgpt"
+_REDIS_COMPONENTS = frozenset({"redis-cache", "redis-broker"})
 
 requires_helm = pytest.mark.skipif(
     shutil.which("helm") is None,
@@ -379,33 +380,49 @@ def _collect_workload_images(docs: list[dict[str, Any]]) -> set[str]:
     return images
 
 
-def _assert_redis_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> None:
-    """Story 12.6: Redis stays ephemeral -- Deployment volumes use emptyDir,
-    never a PVC.
-    """
-    redis_deployments = [
+def _redis_deployments(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
         doc
         for doc in docs
         if doc.get("kind") == "Deployment"
-        and (doc.get("metadata") or {}).get("labels", {}).get(
-            "app.kubernetes.io/component",
-        )
-        == "redis"
+        and str(
+            (doc.get("metadata") or {}).get("labels", {}).get(
+                "app.kubernetes.io/component",
+                "",
+            ),
+        ).startswith("redis-")
     ]
-    assert len(redis_deployments) == 1, (
-        f"expected exactly one redis Deployment, got "
-        f"{[doc['metadata']['name'] for doc in redis_deployments]}"
+
+
+def _assert_redis_persistence_is_empty_dir(docs: list[dict[str, Any]]) -> None:
+    """Story 12.6: Redis stays ephemeral -- Deployment volumes use emptyDir,
+    never a PVC. Story 20.2: both cache and broker Deployments.
+    """
+    redis_deployments = _redis_deployments(docs)
+    components = sorted(
+        (doc.get("metadata") or {}).get("labels", {}).get(
+            "app.kubernetes.io/component",
+            "",
+        )
+        for doc in redis_deployments
     )
-    volumes = redis_deployments[0]["spec"]["template"]["spec"].get("volumes") or []
-    assert volumes, "redis Deployment has no volumes -- emptyDir check vacuous"
-    for volume in volumes:
-        assert "emptyDir" in volume, (
-            f"redis volume {volume.get('name')!r} is not emptyDir: {volume!r}"
+    assert set(components) == _REDIS_COMPONENTS, (
+        f"expected redis-cache and redis-broker Deployments, got {components}"
+    )
+    for deployment in redis_deployments:
+        volumes = deployment["spec"]["template"]["spec"].get("volumes") or []
+        assert volumes, (
+            f"{deployment['metadata']['name']} has no volumes -- emptyDir "
+            f"check vacuous"
         )
-        assert "persistentVolumeClaim" not in volume, (
-            f"redis volume {volume.get('name')!r} uses a PVC -- persistence "
-            f"must stay ephemeral (Story 12.6)"
-        )
+        for volume in volumes:
+            assert "emptyDir" in volume, (
+                f"redis volume {volume.get('name')!r} is not emptyDir: {volume!r}"
+            )
+            assert "persistentVolumeClaim" not in volume, (
+                f"redis volume {volume.get('name')!r} uses a PVC -- persistence "
+                f"must stay ephemeral (Story 12.6)"
+            )
 
 
 def _assert_redis_uses_password_from_existing_secret(
@@ -413,42 +430,73 @@ def _assert_redis_uses_password_from_existing_secret(
     *,
     secret_name: str,
     password_key: str,
-    redis_service_host: str,
+    broker_host: str,
+    cache_host: str,
 ) -> None:
-    """Story 12.6: redis container and platform pods wire AUTH from
-    existingSecret into --requirepass and REDIS_URL respectively.
+    """Story 12.6 AUTH + Story 20.2: both Redis pods take password from
+    existingSecret; platform pods get distinct broker/cache URLs.
     """
     by_component = _pod_specs_by_component(docs)
-    assert "redis" in by_component, "redis workload missing from render"
-    redis_env = _collect_env_by_name(by_component["redis"])
-    redis_password = redis_env.get("REDIS_PASSWORD")
-    assert redis_password is not None, "redis pod missing REDIS_PASSWORD env"
-    assert redis_password.get("valueFrom", {}).get("secretKeyRef") == {
-        "name": secret_name,
-        "key": password_key,
-    }, f"redis REDIS_PASSWORD secretKeyRef mismatch: {redis_password!r}"
+    missing = sorted(_REDIS_COMPONENTS - by_component.keys())
+    assert not missing, f"redis workloads missing from render: {missing}"
 
-    redis_container = by_component["redis"]["containers"][0]
-    assert redis_container.get("command") == [
-        "redis-server",
-        "--requirepass",
-        "$(REDIS_PASSWORD)",
-    ], f"redis command missing --requirepass wiring: {redis_container.get('command')!r}"
+    secret_ref = {"name": secret_name, "key": password_key}
+    for component in sorted(_REDIS_COMPONENTS):
+        redis_env = _collect_env_by_name(by_component[component])
+        redis_password = redis_env.get("REDIS_PASSWORD")
+        assert redis_password is not None, f"{component} missing REDIS_PASSWORD"
+        assert redis_password.get("valueFrom", {}).get("secretKeyRef") == secret_ref, (
+            f"{component} REDIS_PASSWORD secretKeyRef mismatch: {redis_password!r}"
+        )
+        command = by_component[component]["containers"][0].get("command") or []
+        assert command[:3] == [
+            "redis-server",
+            "--requirepass",
+            "$(REDIS_PASSWORD)",
+        ], f"{component} command missing --requirepass wiring: {command!r}"
+        if component == "redis-cache":
+            assert "--maxmemory" in command, (
+                f"redis-cache missing --maxmemory: {command!r}"
+            )
+            assert "allkeys-lru" in command, (
+                f"redis-cache must evict with allkeys-lru, got {command!r}"
+            )
+        else:
+            assert "noeviction" in command, (
+                f"redis-broker must not evict, got {command!r}"
+            )
+            assert "allkeys-lru" not in command, (
+                f"redis-broker must not share the cache eviction policy: {command!r}"
+            )
 
-    expected_redis_url = f"redis://:$(REDIS_PASSWORD)@{redis_service_host}:6379/0"
+    expected_broker = f"redis://:$(REDIS_PASSWORD)@{broker_host}:6379/0"
+    expected_cache = f"redis://:$(REDIS_PASSWORD)@{cache_host}:6379/0"
+    assert expected_broker != expected_cache, (
+        "broker and cache Service DNS names must differ"
+    )
     for component in sorted(_PLATFORM_COMPONENTS):
         env = _collect_env_by_name(by_component[component])
         password_env = env.get("REDIS_PASSWORD")
         assert password_env is not None, f"{component} pod missing REDIS_PASSWORD env"
-        assert password_env.get("valueFrom", {}).get("secretKeyRef") == {
-            "name": secret_name,
-            "key": password_key,
-        }, f"{component} REDIS_PASSWORD secretKeyRef mismatch: {password_env!r}"
+        assert password_env.get("valueFrom", {}).get("secretKeyRef") == secret_ref, (
+            f"{component} REDIS_PASSWORD secretKeyRef mismatch: {password_env!r}"
+        )
+        broker_url = env.get("REDIS_BROKER_URL")
+        cache_url = env.get("REDIS_CACHE_URL")
         redis_url = env.get("REDIS_URL")
-        assert redis_url is not None, f"{component} pod missing REDIS_URL env"
-        assert redis_url.get("value") == expected_redis_url, (
-            f"{component} REDIS_URL is {redis_url.get('value')!r}, "
-            f"expected AUTH-wired {expected_redis_url!r}"
+        assert broker_url is not None, f"{component} missing REDIS_BROKER_URL"
+        assert cache_url is not None, f"{component} missing REDIS_CACHE_URL"
+        assert broker_url.get("value") == expected_broker, (
+            f"{component} REDIS_BROKER_URL is {broker_url.get('value')!r}, "
+            f"expected {expected_broker!r}"
+        )
+        assert cache_url.get("value") == expected_cache, (
+            f"{component} REDIS_CACHE_URL is {cache_url.get('value')!r}, "
+            f"expected {expected_cache!r}"
+        )
+        assert redis_url is not None, f"{component} missing REDIS_URL"
+        assert redis_url.get("value") == expected_broker, (
+            f"{component} REDIS_URL must alias the broker, got {redis_url!r}"
         )
 
 
@@ -456,8 +504,9 @@ def _assert_redis_network_policy_restricts_platform_pods(
     docs: list[dict[str, Any]],
     *,
     redis_policy_name: str,
+    redis_component: str,
 ) -> None:
-    """Story 12.6: exactly one NetworkPolicy targets redis and allows
+    """Story 12.6: a NetworkPolicy targets one redis-* component and allows
     ingress from web/worker/migrate platform pods on 6379 only.
     """
     policies = [doc for doc in docs if doc.get("kind") == "NetworkPolicy"]
@@ -470,7 +519,9 @@ def _assert_redis_network_policy_restricts_platform_pods(
     )
     policy = redis_policies[0]
     selector = policy["spec"]["podSelector"]
-    assert selector.get("matchLabels", {}).get("app.kubernetes.io/component") == "redis"
+    assert selector.get("matchLabels", {}).get("app.kubernetes.io/component") == (
+        redis_component
+    )
 
     ingress_rules = policy["spec"].get("ingress") or []
     assert len(ingress_rules) == 1, (
@@ -591,8 +642,8 @@ def test_sidecar_sqlite_pvc_and_internal_service_render():
     """AC: a dedicated SQLite PVC and internal ClusterIP Service appear."""
     docs = _render(_CORE_CHART)
     pvcs = [doc for doc in docs if doc.get("kind") == "PersistentVolumeClaim"]
-    assert len(pvcs) == 1, (
-        f"expected exactly one PVC for the sidecar sqlite store, got: "
+    assert len(pvcs) == 2, (  # noqa: PLR2004
+        f"expected sidecar sqlite PVC + media RWX PVC, got: "
         f"{[doc['metadata']['name'] for doc in pvcs]}"
     )
     dbgpt_services = [
@@ -646,18 +697,26 @@ def test_redis_uses_existing_secret_password_and_wires_redis_url():
     docs = _render(_CORE_CHART, release="platform")
     yaml = _import_yaml()
     values = yaml.safe_load((_CORE_CHART / "values.yaml").read_text())
-    redis_host = next(
+    broker_host = next(
         doc["metadata"]["name"]
         for doc in docs
         if doc.get("kind") == "Service"
         and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
-        == "redis"
+        == "redis-broker"
+    )
+    cache_host = next(
+        doc["metadata"]["name"]
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "redis-cache"
     )
     _assert_redis_uses_password_from_existing_secret(
         docs,
         secret_name=values["existingSecret"],
         password_key=values["redis"]["passwordSecretKey"],
-        redis_service_host=redis_host,
+        broker_host=broker_host,
+        cache_host=cache_host,
     )
 
 
@@ -667,19 +726,29 @@ def test_redis_network_policy_restricts_ingress_to_platform_pods():
     migrate pods on port 6379.
     """
     docs = _render(_CORE_CHART, release="platform")
-    redis_policy_name = next(
-        doc["metadata"]["name"]
+    policies = [
+        doc
         for doc in docs
         if doc.get("kind") == "NetworkPolicy"
-        and doc["spec"]["podSelector"]
-        .get("matchLabels", {})
-        .get("app.kubernetes.io/component")
-        == "redis"
-    )
-    _assert_redis_network_policy_restricts_platform_pods(
-        docs,
-        redis_policy_name=redis_policy_name,
-    )
+        and str(
+            doc["spec"]["podSelector"]
+            .get("matchLabels", {})
+            .get("app.kubernetes.io/component", ""),
+        ).startswith("redis-")
+    ]
+    components = {
+        policy["spec"]["podSelector"]["matchLabels"]["app.kubernetes.io/component"]
+        for policy in policies
+    }
+    assert components == _REDIS_COMPONENTS
+    for policy in policies:
+        labels = policy["spec"]["podSelector"]["matchLabels"]
+        component = labels["app.kubernetes.io/component"]
+        _assert_redis_network_policy_restricts_platform_pods(
+            docs,
+            redis_policy_name=policy["metadata"]["name"],
+            redis_component=component,
+        )
 
 
 @requires_helm
@@ -687,6 +756,69 @@ def test_redis_persistence_remains_empty_dir():
     """AC (Story 12.6): Redis stays ephemeral -- emptyDir only, no PVC."""
     docs = _render(_CORE_CHART)
     _assert_redis_persistence_is_empty_dir(docs)
+
+
+@requires_helm
+def test_media_pvc_is_readwritemany_and_mounted_on_web_and_worker():
+    """AC (Story 20.2): RWX media PVC; replica A/B share the mount."""
+    docs = _render(_CORE_CHART, release="platform")
+    media_pvcs = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "PersistentVolumeClaim"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "media"
+    ]
+    assert len(media_pvcs) == 1, media_pvcs
+    assert media_pvcs[0]["spec"]["accessModes"] == ["ReadWriteMany"]
+    claim = media_pvcs[0]["metadata"]["name"]
+    by_component = _pod_specs_by_component(docs)
+    for component in ("web", "worker"):
+        mounts = by_component[component]["containers"][0].get("volumeMounts") or []
+        volumes = by_component[component].get("volumes") or []
+        assert any(m.get("name") == "wagtail-media" for m in mounts), (
+            f"{component} missing wagtail-media volumeMount"
+        )
+        pvc_vol = next(v for v in volumes if v.get("name") == "wagtail-media")
+        assert pvc_vol["persistentVolumeClaim"]["claimName"] == claim
+    migrate_vols = by_component["migrate"].get("volumes") or []
+    assert not any(v.get("name") == "wagtail-media" for v in migrate_vols)
+
+
+@requires_helm
+def test_worker_is_celery_deployment_not_a_second_public_asgi():
+    """AC (Story 20.2): independent scale of work is the Celery worker."""
+    docs = _render(_CORE_CHART, release="platform")
+    by_component = _pod_specs_by_component(docs)
+    worker = by_component["worker"]["containers"][0]
+    assert worker.get("args") == ["celery", "-A", "config", "worker", "-l", "info"]
+    assert not worker.get("ports"), worker.get("ports")
+    worker_services = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == "worker"
+    ]
+    assert worker_services == []
+    ingresses = [doc for doc in docs if doc.get("kind") == "Ingress"]
+    for ingress in ingresses:
+        blob = str(ingress).lower()
+        assert "worker" not in blob or "celery" in blob
+
+
+@requires_helm
+def test_chart_templates_forbid_minio_s3_and_elasticsearch():
+    """AC: MinIO/S3/Elasticsearch are review-blocking findings."""
+    rendered = _helm("template", "platform", str(_CORE_CHART)).lower()
+    forbidden = (
+        "image: minio",
+        "elasticsearch",
+        "s3.amazonaws",
+        "storages.backends.s3",
+    )
+    for needle in forbidden:
+        assert needle not in rendered, f"forbidden infra {needle!r} in helm render"
 
 
 @requires_helm
@@ -711,7 +843,7 @@ def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
 
     _assert_no_ingress_documents(docs)
     by_component = _pod_specs_by_component(docs)
-    for component in ("postgres", "redis"):
+    for component in ("postgres", "redis-cache", "redis-broker"):
         assert component in by_component, (
             f"{component} workload missing from the OCP-overridden render -- "
             f"the UID check below would pass vacuously"
@@ -1002,8 +1134,16 @@ def test_redis_auth_check_fails_when_requirepass_is_missing():
             },
         },
         {
+            "name": "REDIS_BROKER_URL",
+            "value": "redis://:$(REDIS_PASSWORD)@platform-redis-broker:6379/0",
+        },
+        {
+            "name": "REDIS_CACHE_URL",
+            "value": "redis://:$(REDIS_PASSWORD)@platform-redis-cache:6379/0",
+        },
+        {
             "name": "REDIS_URL",
-            "value": "redis://:$(REDIS_PASSWORD)@platform-redis:6379/0",
+            "value": "redis://:$(REDIS_PASSWORD)@platform-redis-broker:6379/0",
         },
     ]
 
@@ -1036,13 +1176,13 @@ def test_redis_auth_check_fails_when_requirepass_is_missing():
         {
             "kind": "Deployment",
             "metadata": {
-                "name": "platform-redis",
-                "labels": {"app.kubernetes.io/component": "redis"},
+                "name": "platform-redis-broker",
+                "labels": {"app.kubernetes.io/component": "redis-broker"},
             },
             "spec": {
                 "template": {
                     "metadata": {
-                        "labels": {"app.kubernetes.io/component": "redis"},
+                        "labels": {"app.kubernetes.io/component": "redis-broker"},
                     },
                     "spec": {
                         "containers": [
@@ -1051,6 +1191,38 @@ def test_redis_auth_check_fails_when_requirepass_is_missing():
                                 "image": "redis:7",
                                 "env": [platform_env[0]],
                                 "command": ["redis-server"],
+                            },
+                        ],
+                    },
+                },
+            },
+        },
+        {
+            "kind": "Deployment",
+            "metadata": {
+                "name": "platform-redis-cache",
+                "labels": {"app.kubernetes.io/component": "redis-cache"},
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {"app.kubernetes.io/component": "redis-cache"},
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "redis",
+                                "image": "redis:7",
+                                "env": [platform_env[0]],
+                                "command": [
+                                    "redis-server",
+                                    "--requirepass",
+                                    "$(REDIS_PASSWORD)",
+                                    "--maxmemory",
+                                    "64mb",
+                                    "--maxmemory-policy",
+                                    "allkeys-lru",
+                                ],
                             },
                         ],
                     },
@@ -1068,7 +1240,8 @@ def test_redis_auth_check_fails_when_requirepass_is_missing():
             docs,
             secret_name=secret_ref["name"],
             password_key=secret_ref["key"],
-            redis_service_host="platform-redis",
+            broker_host="platform-redis-broker",
+            cache_host="platform-redis-cache",
         )
 
 
@@ -1080,7 +1253,7 @@ def test_redis_network_policy_check_fails_when_sidecar_is_allowed():
             "metadata": {"name": "platform-redis"},
             "spec": {
                 "podSelector": {
-                    "matchLabels": {"app.kubernetes.io/component": "redis"},
+                    "matchLabels": {"app.kubernetes.io/component": "redis-broker"},
                 },
                 "ingress": [
                     {
@@ -1113,6 +1286,7 @@ def test_redis_network_policy_check_fails_when_sidecar_is_allowed():
         _assert_redis_network_policy_restricts_platform_pods(
             contaminated_policy,
             redis_policy_name="platform-redis",
+            redis_component="redis-broker",
         )
 
 
@@ -1122,8 +1296,22 @@ def test_redis_empty_dir_check_fails_when_a_pvc_volume_is_present():
         {
             "kind": "Deployment",
             "metadata": {
-                "name": "platform-redis",
-                "labels": {"app.kubernetes.io/component": "redis"},
+                "name": "platform-redis-cache",
+                "labels": {"app.kubernetes.io/component": "redis-cache"},
+            },
+            "spec": {
+                "template": {
+                    "spec": {
+                        "volumes": [{"name": "data", "emptyDir": {}}],
+                    },
+                },
+            },
+        },
+        {
+            "kind": "Deployment",
+            "metadata": {
+                "name": "platform-redis-broker",
+                "labels": {"app.kubernetes.io/component": "redis-broker"},
             },
             "spec": {
                 "template": {

@@ -132,6 +132,7 @@ THIRD_PARTY_APPS = [
     "wagtail",
     "modelcluster",
     "taggit",
+    "django_tasks",
     # Story 10.1: K8s liveness/readiness target at /ht/ -- PostgreSQL + Redis
     # (via the configured cache backend) only. health_check.storage is
     # deliberately omitted: it checks the default file storage backend, a
@@ -272,7 +273,7 @@ STATICFILES_FINDERS = [
 # MEDIA
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-root
-MEDIA_ROOT = str(APPS_DIR / "media")
+MEDIA_ROOT = env("MEDIA_ROOT", default=str(APPS_DIR / "media"))
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "/media/"
 
@@ -367,7 +368,19 @@ configure_structlog()
 DJANGO_STRUCTLOG_CELERY_ENABLED = True
 
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
-REDIS_SSL = REDIS_URL.startswith("rediss://")
+REDIS_BROKER_URL = env("REDIS_BROKER_URL", default=REDIS_URL)
+REDIS_CACHE_URL = env("REDIS_CACHE_URL", default=REDIS_URL)
+REDIS_SSL = REDIS_BROKER_URL.startswith("rediss://")
+
+from platformapp.front_door.lane1_runtime import locmem_cache_aliases  # noqa: E402
+
+CACHES = locmem_cache_aliases()
+
+TASKS = {
+    "default": {
+        "BACKEND": "platformapp.front_door.celery_task_backend.CeleryTaskBackend",
+    },
+}
 
 # Celery
 # ------------------------------------------------------------------------------
@@ -375,11 +388,11 @@ if USE_TZ:
     # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-timezone
     CELERY_TIMEZONE = TIME_ZONE
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
-CELERY_BROKER_URL = REDIS_URL
+CELERY_BROKER_URL = REDIS_BROKER_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
-CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_BROKER_URL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
 CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended
@@ -494,18 +507,16 @@ os.environ["LANGFLOW_DB_DRIVER_CONNECTION_SETTINGS"] = json.dumps(
     {"options": "-c search_path=langflow_schema -c timezone=utc"},
 )
 
-# AD-6: statelessness -- Langflow's cache backend is Redis (the platform's own
-# `REDIS_URL`, same instance Django's own cache/Celery broker use), never its
-# in-memory default, and its config/knowledge-base paths are explicit,
-# non-default locations rather than the ambient `platformdirs.user_cache_dir()`
-# default -- both env-overridable, matching every other `env()`-sourced value
-# in this file. The defaults live under `BASE_DIR / ".langflow"` (gitignored);
-# the Containerfile's arbitrary-UID runtime MUST keep `/app/.langflow`
-# group-writable (GID 0, `g+rwX`) because `create_app()` mkdir's them at
-# import time and `/app` itself is deliberately not writable.
+# AD-6: statelessness -- Langflow's cache backend is redis-cache
+# (`REDIS_CACHE_URL`), never redis-broker (Celery/Channels). Config and
+# knowledge-base paths are explicit, env-overridable locations rather than
+# `platformdirs.user_cache_dir()`. Defaults live under `BASE_DIR / ".langflow"`
+# (gitignored). The Containerfile's arbitrary-UID runtime MUST keep
+# `/app/.langflow` group-writable (GID 0, `g+rwX`) because `create_app()`
+# mkdir's them at import time and `/app` itself is deliberately not writable.
 LANGFLOW_CACHE_TYPE = env("LANGFLOW_CACHE_TYPE", default="redis")
 os.environ["LANGFLOW_CACHE_TYPE"] = LANGFLOW_CACHE_TYPE
-os.environ["LANGFLOW_REDIS_URL"] = env("LANGFLOW_REDIS_URL", default=REDIS_URL)
+os.environ["LANGFLOW_REDIS_URL"] = env("LANGFLOW_REDIS_URL", default=REDIS_CACHE_URL)
 
 LANGFLOW_CONFIG_DIR = env(
     "LANGFLOW_CONFIG_DIR", default=str(BASE_DIR / ".langflow" / "config"),

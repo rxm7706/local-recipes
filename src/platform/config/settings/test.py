@@ -59,5 +59,8 @@ INSTALLED_APPS = [
 PYFORGE_ASSERTION_PRIVATE_KEY = GOLDEN_PRIVATE_PEM
 PYFORGE_ASSERTION_PUBLIC_KEY = GOLDEN_PUBLIC_PEM
 
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
 # Your stuff...
 # ------------------------------------------------------------------------------

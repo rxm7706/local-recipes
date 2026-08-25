@@ -37,8 +37,25 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-postgres-hl" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.redis.roleFullname" -}}
+{{- $base := include "platform.fullname" .root | trunc 50 | trimSuffix "-" }}
+{{- printf "%s-redis-%s" $base .role | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "platform.redisBroker.fullname" -}}
+{{- include "platform.redis.roleFullname" (dict "root" . "role" "broker") }}
+{{- end }}
+
+{{- define "platform.redisCache.fullname" -}}
+{{- include "platform.redis.roleFullname" (dict "root" . "role" "cache") }}
+{{- end }}
+
 {{- define "platform.redis.fullname" -}}
-{{- printf "%s-redis" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- include "platform.redisBroker.fullname" . }}
+{{- end }}
+
+{{- define "platform.media.pvcName" -}}
+{{- printf "%s-media" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "platform.worker.fullname" -}}
@@ -189,9 +206,11 @@ compose.yml's wiring exactly. Secrets arrive ONLY by secretKeyRef into the
 pre-created existingSecret (AD-12); DATABASE_URL is the operator's whole
 URL from that Secret, never composed in templates (composing
 user:pass@host here would drag the password into the render path).
-REDIS_URL is computed from the redis Service name plus REDIS_PASSWORD
-(secretKeyRef below, expanded via $(REDIS_PASSWORD) at runtime -- the
-password never enters the render path). Story 12.6.
+REDIS_BROKER_URL / REDIS_CACHE_URL are computed from the two Redis
+Service names plus REDIS_PASSWORD (secretKeyRef, expanded via
+$(REDIS_PASSWORD) at runtime -- the password never enters the render
+path). REDIS_URL stays an alias of the broker for leftover consumers.
+Story 12.6 AUTH + Story 20.2 cache≠broker.
 */}}
 {{- define "platform.djangoEnv" -}}
 {{- include "platform.validateAllowedHosts" . -}}
@@ -216,8 +235,14 @@ password never enters the render path). Story 12.6.
     secretKeyRef:
       name: {{ include "platform.existingSecretName" . | quote }}
       key: {{ required "redis.passwordSecretKey is required" .Values.redis.passwordSecretKey | quote }}
+- name: REDIS_BROKER_URL
+  value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redisBroker.fullname" .) | quote }}
+- name: REDIS_CACHE_URL
+  value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redisCache.fullname" .) | quote }}
 - name: REDIS_URL
-  value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redis.fullname" .) | quote }}
+  value: {{ printf "redis://:$(REDIS_PASSWORD)@%s:6379/0" (include "platform.redisBroker.fullname" .) | quote }}
+- name: MEDIA_ROOT
+  value: {{ .Values.media.mountPath | quote }}
 - name: DBGPT_SIDECAR_BASE_URL
   value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
 {{- end }}

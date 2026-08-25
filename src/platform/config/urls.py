@@ -9,6 +9,8 @@ from django.views.generic import TemplateView
 from health_check.views import HealthCheckView
 from wagtail import urls as wagtail_urls
 from wagtail.admin import urls as wagtailadmin_urls
+from wagtail.documents import urls as wagtaildocs_urls
+from wagtail.images import urls as wagtailimages_urls
 
 from config.legacy_compliance import redirect_to_warden
 
@@ -94,6 +96,8 @@ urlpatterns = [
     ),
     # steward 20.1: Wagtail admin at /cms/ so it does not collide with Django ADMIN_URL.
     path("cms/", include(wagtailadmin_urls)),
+    path("documents/", include(wagtaildocs_urls)),
+    path("images/", include(wagtailimages_urls)),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
 ]
