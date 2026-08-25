@@ -353,6 +353,8 @@ COPY src/platform/ /app/
 # src/platform cannot see it. Place the module next to config/ so Django
 # can import django_pyforge without a hatchling build in the pip layer.
 COPY src/shared/packages/django-pyforge/src/django_pyforge /app/django_pyforge
+# Steward 19.1: warden portal lives under src/shared; same COPY shape as chrome.
+COPY src/shared/packages/django-warden/src/django_warden_fabric /app/django_warden_fabric
 # Probe portal is a test fixture, not a production station shell.
 RUN rm -rf /app/django_pyforge/probe_portal
 

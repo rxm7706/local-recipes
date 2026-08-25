@@ -28,8 +28,7 @@ from django_pyforge.middleware import TokenRolesMiddleware
 from django_pyforge.portals import PortalConfig
 from django_pyforge.probe_portal import views as probe_views
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
-
-from compliance_face import views as warden_views
+from django_warden_fabric import views as warden_views
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -42,7 +41,16 @@ CHROME_COPY_NAMES = re.compile(
     re.IGNORECASE,
 )
 URLCONF_PATH = PLATFORM_ROOT / "config" / "urls.py"
-COMPLIANCE_TEMPLATES = PLATFORM_ROOT / "compliance_face" / "templates"
+WARDEN_TEMPLATES = (
+    REPO_ROOT
+    / "src"
+    / "shared"
+    / "packages"
+    / "django-warden"
+    / "src"
+    / "django_warden_fabric"
+    / "templates"
+)
 PROBE_TEMPLATES = (
     REPO_ROOT
     / "src"
@@ -55,7 +63,13 @@ PROBE_TEMPLATES = (
     / "templates"
 )
 PORTAL_STATIC_AND_TEMPLATES = (
-    PLATFORM_ROOT / "compliance_face",
+    REPO_ROOT
+    / "src"
+    / "shared"
+    / "packages"
+    / "django-warden"
+    / "src"
+    / "django_warden_fabric",
     REPO_ROOT
     / "src"
     / "shared"
@@ -81,7 +95,7 @@ def test_two_portals_render_byte_identical_chrome() -> None:
     assert warden_match.func.__name__ == "chrome_home"
     assert probe_match.func.__name__ == "chrome_home"
     ctx = chrome(RequestFactory().get("/stations/warden/"))
-    warden_html = render_to_string("compliance_face/chrome.html", ctx)
+    warden_html = render_to_string("warden_fabric/chrome.html", ctx)
     probe_html = render_to_string("probe_portal/home.html", ctx)
     chrome_w = CHROME_DIV.search(warden_html)
     chrome_p = CHROME_DIV.search(probe_html)
@@ -154,7 +168,7 @@ def test_outside_prefix_registration_fails() -> None:
             "backup": "pyforge-steward",
             "work_class": "03",
             "promotion_date": date(2026, 8, 22),
-            "urlconf": "compliance_face.urls",
+            "urlconf": "django_warden_fabric.urls",
         },
     )
     errors = validate_portal_config(bad)  # type: ignore[arg-type]
@@ -174,7 +188,7 @@ def test_sla_body_is_not_a_chrome_field() -> None:
             "backup": "pyforge-steward",
             "work_class": "03",
             "promotion_date": date(2026, 8, 22),
-            "urlconf": "compliance_face.urls",
+            "urlconf": "django_warden_fabric.urls",
         },
     )
     errors = validate_portal_config(sneaky)  # type: ignore[arg-type]
@@ -196,12 +210,12 @@ def test_portal_configs_carry_operating_model_fields() -> None:
 
 def test_removing_chrome_breaks_both_portals_identically() -> None:
     engine = Engine(
-        dirs=[str(COMPLIANCE_TEMPLATES), str(PROBE_TEMPLATES)],
+        dirs=[str(WARDEN_TEMPLATES), str(PROBE_TEMPLATES)],
         app_dirs=False,
         libraries={},
     )
     missing: list[object] = []
-    for name in ("compliance_face/chrome.html", "probe_portal/home.html"):
+    for name in ("warden_fabric/chrome.html", "probe_portal/home.html"):
         with pytest.raises(TemplateDoesNotExist) as caught:
             engine.get_template(name).render(Context({}))
         missing.append(caught.value.args[0])

@@ -1,4 +1,4 @@
-"""Celery tasks for compliance_face — keys-not-blobs (Story 8.1)."""
+"""Celery tasks for warden_fabric — keys-not-blobs (Story 8.1)."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def _validate_manifest_blob(path: Path, storage_key: str) -> None:
         raise ValueError(msg)
 
 
-@shared_task(bind=True, name="compliance_face.run_job")
+@shared_task(bind=True, name="warden_fabric.run_job")
 def run_compliance_job(self, job_id: str) -> str:
     """Execute a job by storage_key only — never receive manifest bytes."""
     job = ComplianceJob.objects.get(pk=job_id)

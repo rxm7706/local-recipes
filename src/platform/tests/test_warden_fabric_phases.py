@@ -1,4 +1,4 @@
-"""Unit tests for compliance_face phase guard + keys-not-blobs task args.
+"""Unit tests for warden_fabric phase guard + keys-not-blobs task args.
 
 Runs without pytest-django: phases is Protocol-typed; task contract is
 asserted from source so the Django addopts in pyproject.toml are overridden.
@@ -10,12 +10,19 @@ import ast
 from pathlib import Path
 
 import pytest
+from django_warden_fabric.phases import PHASES
+from django_warden_fabric.phases import advance
+from django_warden_fabric.phases import current_progress
 
-from compliance_face.phases import PHASES
-from compliance_face.phases import advance
-from compliance_face.phases import current_progress
-
-TASKS_PATH = Path(__file__).resolve().parents[1] / "compliance_face" / "tasks.py"
+TASKS_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "shared"
+    / "packages"
+    / "django-warden"
+    / "src"
+    / "django_warden_fabric"
+    / "tasks.py"
+)
 
 
 class _Job:
