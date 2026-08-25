@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+  python_min: "3.10"
+
+package:
+  name: openfeature-flagd-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openfeature-flagd-core/openfeature_flagd_core-${{ version }}.tar.gz
+  sha256: e843d395de54dbc83d4d46fcee6cbc276204f3dfe5e8cc24ae3ea7247479c232
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build ~=0.9.0
+  run:
+    - python >=${{ python_min }}
+    - openfeature-flagd-api <2,>=1.0.0
+    - openfeature-sdk >=0.8.2
+    - mmh3 <6.0.0,>=5.0.0
+    - panzi-json-logic ==1.0.1
+    - semver <4,>=3
+
+tests:
+  - python:
+      imports:
+        - openfeature.contrib.tools.flagd.core
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/open-feature/python-sdk-contrib
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenFeature flagd evaluator core implementation
+  description: |
+    OpenFeature flagd evaluator core implementation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openfeature-flagd-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openfeature-flagd-core
+  cfe-purls:
+    - pkg:conda/openfeature-flagd-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/openfeature-flagd-core@${{ version }}
+  cfe-upstream-repo: https://github.com/open-feature/python-sdk-contrib
+  cfe-upstream-homepage: https://github.com/open-feature/python-sdk-contrib
+  cfe-import-names: [openfeature.contrib.tools.flagd.core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-25T08:49:03Z
+  cfe-generated-by-version: 8.84.0
+  cfe-generated-at-datetime: 2026-08-25T08:49:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+####

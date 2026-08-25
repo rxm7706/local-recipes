@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "42.7.13"
+
+package:
+  name: liquibase-postgresql
+  version: ${{ version }}
+
+source:
+  url: https://repo1.maven.org/maven2/org/postgresql/postgresql/${{ version }}/postgresql-${{ version }}.jar
+  sha256: 6e0e4cc2d8cae902084f8a2b18728b073a6fd9d1f87c9d8bff8f298c18185b93
+  file_name: postgresql-${{ version }}.jar
+  target_directory: jdbc
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p ${PREFIX}/share/liquibase/lib
+        - cp ${SRC_DIR}/jdbc/postgresql-${{ version }}.jar ${PREFIX}/share/liquibase/lib/postgresql.jar
+      else:
+        - mkdir %PREFIX%\share\liquibase\lib
+        - copy %SRC_DIR%\jdbc\postgresql-${{ version }}.jar %PREFIX%\share\liquibase\lib\postgresql.jar
+
+requirements:
+  run:
+    - liquibase >=5.0.4
+    - openjdk >=17
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f ${PREFIX}/share/liquibase/lib/postgresql.jar
+        else:
+          - if not exist %PREFIX%\share\liquibase\lib\postgresql.jar exit 1
+
+about:
+  homepage: https://jdbc.postgresql.org/
+  license: BSD-2-Clause
+  summary: PostgreSQL JDBC driver vendored for Liquibase Community CLI
+  description: |
+    Places postgresql.jar on Liquibase's extra classpath (LIQUIBASE_HOME/lib)
+    so Community 5.x can connect to PostgreSQL without LPM or Maven.
+  repository: https://github.com/pgjdbc/pgjdbc
+
+extra:
+  recipe-maintainers:
+    - rxm7706
