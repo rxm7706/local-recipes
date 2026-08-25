@@ -194,6 +194,8 @@ MIDDLEWARE = [
     # Story 18.2 / canopy AD-15: copy this request's session token roles
     # onto request.idp_roles. After SessionMiddleware so the session exists.
     "django_pyforge.middleware.TokenRolesMiddleware",
+    # Story 18.3 / canopy AD-7: identity headers are not an identity path.
+    "django_pyforge.assertion.middleware.AssertionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -522,6 +524,11 @@ DBGPT_DATABASE_URL = (
 # THIS process could ever read this process's `os.environ` -- unlike
 # Langflow (Pattern A, in-process), an env-var mutation here would be inert
 # by construction. The Django setting above is the real, consumable form.
+
+# Story 18.3 / canopy AD-7: dedicated RS256 service-assertion keys.
+# Not the OIDC local-dev persona mint (config.local_dev.tokens).
+PYFORGE_ASSERTION_PRIVATE_KEY = env("PYFORGE_ASSERTION_PRIVATE_KEY", default="")
+PYFORGE_ASSERTION_PUBLIC_KEY = env("PYFORGE_ASSERTION_PUBLIC_KEY", default="")
 
 # Your stuff...
 # ------------------------------------------------------------------------------

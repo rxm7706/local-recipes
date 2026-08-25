@@ -9,7 +9,11 @@ description = "Estate chrome for PyForge station portals: layout, switcher, them
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-dependencies = ["django>=5.1,<6"]
+dependencies = [
+    "django>=5.1,<6",
+    "PyJWT>=2.10.1,<3",
+    "cryptography>=44.0.2,<45",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/django_pyforge"]

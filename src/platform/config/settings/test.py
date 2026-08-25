@@ -2,6 +2,9 @@
 With these settings, tests run faster.
 """
 
+from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
+from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
+
 from config.authorization.claims import ClaimsContract
 
 from .base import *  # noqa: F403
@@ -48,6 +51,9 @@ OIDC_ISSUER = "https://test.invalid/realms/platform"
 OIDC_AUDIENCE = "platform-web"
 # Story 18.1: second portal is a test fixture, not an Epic 19 shell.
 INSTALLED_APPS = [*INSTALLED_APPS, "django_pyforge.probe_portal"]  # noqa: F405
+# Story 18.3: dedicated assertion golden keys (not local_dev OIDC mint).
+PYFORGE_ASSERTION_PRIVATE_KEY = GOLDEN_PRIVATE_PEM
+PYFORGE_ASSERTION_PUBLIC_KEY = GOLDEN_PUBLIC_PEM
 
 # Your stuff...
 # ------------------------------------------------------------------------------
