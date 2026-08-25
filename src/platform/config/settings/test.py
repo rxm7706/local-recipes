@@ -2,12 +2,11 @@
 With these settings, tests run faster.
 """
 
+from config.authorization.claims import ClaimsContract
+
 from .base import *  # noqa: F403
-from .base import CLAIMS_CONTRACT
 from .base import TEMPLATES
 from .base import env
-
-from config.authorization.claims import ClaimsContract
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -47,5 +46,8 @@ CLAIMS_CONTRACT = ClaimsContract(
 )
 OIDC_ISSUER = "https://test.invalid/realms/platform"
 OIDC_AUDIENCE = "platform-web"
+# Story 18.1: second portal is a test fixture, not an Epic 19 shell.
+INSTALLED_APPS = [*INSTALLED_APPS, "django_pyforge.probe_portal"]  # noqa: F405
+
 # Your stuff...
 # ------------------------------------------------------------------------------

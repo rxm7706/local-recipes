@@ -7,6 +7,9 @@ minversion = "6.0"
 # github-metrics-dlt-test runs it with pytest -c /dev/null under
 # python-agent-platform (has dlt).
 addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib --ignore=ingest/github_projects/test_github_metrics_dlt.py"
+# Story 18.1: django-pyforge is a path-installable package; tests also
+# resolve it from source so local pytest matches pixi path installs.
+pythonpath = ["../shared/packages/django-pyforge/src"]
 python_files = [
     "tests.py",
     "test_*.py",

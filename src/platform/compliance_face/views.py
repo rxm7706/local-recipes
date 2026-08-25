@@ -10,6 +10,7 @@ from django.conf import settings
 from django.http import HttpRequest
 from django.http import HttpResponse
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
@@ -35,6 +36,12 @@ def _blob_root() -> Path:
     root = Path(getattr(settings, "COMPLIANCE_FACE_BLOB_ROOT", tempfile.gettempdir()))
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+@require_GET
+def chrome_home(request: HttpRequest) -> HttpResponse:
+    """HTML face that extends django-pyforge chrome (Story 18.1)."""
+    return render(request, "compliance_face/chrome.html")
 
 
 @csrf_exempt

@@ -1,0 +1,9 @@
+<nav class="pyforge-switcher" aria-label="Station switcher">
+  <ul>
+    {% for portal in pyforge_portals %}
+      <li>
+        <a href="{{ portal.mount_token }}">{{ portal.station_name }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</nav>

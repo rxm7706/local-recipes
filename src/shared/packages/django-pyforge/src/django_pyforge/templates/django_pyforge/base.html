@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      {% block title %}
+        PyForge
+      {% endblock title %}
+    </title>
+    <link rel="stylesheet" href="{% static 'django_pyforge/theme.css' %}" />
+  </head>
+  <body>
+    <div id="pyforge-chrome">
+      {% include "django_pyforge/switcher.html" %}
+    </div>
+    <main id="pyforge-portal">
+      {% block content %}
+      {% endblock content %}
+    </main>
+  </body>
+</html>

@@ -349,6 +349,12 @@ COPY --from=builder /app/shell-hook.sh /app/shell-hook.sh
 # builder stage, so this COPY (and its exclusions) is governed by the
 # repo-root `.dockerignore` alone, same as everything else in this stage.
 COPY src/platform/ /app/
+# Story 18.1: chrome package lives under src/shared; runtime COPY of
+# src/platform cannot see it. Place the module next to config/ so Django
+# can import django_pyforge without a hatchling build in the pip layer.
+COPY src/shared/packages/django-pyforge/src/django_pyforge /app/django_pyforge
+# Probe portal is a test fixture, not a production station shell.
+RUN rm -rf /app/django_pyforge/probe_portal
 
 # Same `exec -- "$@"` pattern (and the same reason) as the repo-root
 # Containerfile's entrypoint: without the `--` terminator, a leading-dash
