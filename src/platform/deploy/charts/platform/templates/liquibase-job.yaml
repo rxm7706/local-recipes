@@ -1,0 +1,46 @@
+# Liquibase pre-upgrade Job (canopy AD-9 / FR-24): hook-weight -1 on the
+# SAME platform image as web. Runs `liquibase update` before the shipped
+# migrate Job (weight 0) records Django history with `migrate --fake`.
+# Deliberately a hook Job, NOT an initContainer (N replicas would contend
+# on DATABASECHANGELOGLOCK).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "platform.liquibase.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: liquibase
+  annotations:
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-weight: "-1"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ .Values.liquibase.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: liquibase
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "platform.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: liquibase
+          image: {{ include "platform.imageRef" (dict "image" .Values.image "path" "image") }}
+          imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.image }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          # args (not command): image ENTRYPOINT puts liquibase + python on PATH.
+          args: ["python", "db/liquibase_update.py"]
+          env:
+            {{- include "platform.liquibaseEnv" . | nindent 12 }}
+          {{- with .Values.liquibase.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

@@ -40,12 +40,13 @@ resources: {}
 # appears. This names a PRE-CREATED Secret in the release namespace that
 # must hold exactly these keys:
 #   DJANGO_SECRET_KEY -- Django's SECRET_KEY
-#   DATABASE_URL      -- the whole django-environ 12-factor database URL
-#                        (settings read it with env.db()), e.g.
-#                        postgres://platform:<password>@<release>-postgres:5432/platform
-#                        (NOTES.txt prints the exact DNS name to use)
+#   DATABASE_URL      -- app-role DML URL (settings read it with env.db()),
+#                        e.g. postgres://platform_app:<password>@<release>-postgres:5432/platform
+#   MIGRATION_DATABASE_URL -- migration-role DDL URL for the Liquibase Job,
+#                        e.g. postgres://platform:<password>@<release>-postgres:5432/platform
+#                        (must be the postgres Service DNS, not a pooler)
 #   POSTGRES_PASSWORD -- the same password, consumed by the postgres
-#                        container itself
+#                        container itself (POSTGRES_USER = migration role)
 #   REDIS_PASSWORD    -- Redis AUTH password (Story 12.6); consumed by the
 #                        redis container and wired into platform pods'
 #                        REDIS_URL via secretKeyRef + env expansion
@@ -89,14 +90,19 @@ worker:
   # Same empty-default seam rationale as the top-level `resources`.
   resources: {}
 
-# Migrate hook Job (`manage.py migrate --noinput`, post-install +
-# pre-upgrade -- the image CMD never migrates; concurrent replicas must
-# not race migrations). backoffLimit absorbs the postgres-boot race the
-# compose stack documents (pg_isready answers during initdb's temporary
-# server, then postgres restarts).
+# Migrate hook Job (`manage.py migrate --fake --noinput`, hook-weight 0).
+# Liquibase (below) applies DDL first; this Job still runs so post_migrate
+# fills content types / permissions / sites (FR-24). backoffLimit absorbs
+# the postgres-boot race the compose stack documents.
 migrate:
   backoffLimit: 6
   # Same empty-default seam rationale as the top-level `resources`.
+  resources: {}
+
+# Liquibase hook Job (`python db/liquibase_update.py` → `liquibase update`,
+# hook-weight -1, same platform image). No second image, no initContainer.
+liquibase:
+  backoffLimit: 6
   resources: {}
 
 # PostgreSQL (official image, StatefulSet, 1 replica -- AD-1).
@@ -108,8 +114,11 @@ postgres:
     pullPolicy: IfNotPresent
   auth:
     # Non-secret identity; the password comes ONLY from existingSecret's
-    # POSTGRES_PASSWORD key (AD-12).
+    # POSTGRES_PASSWORD key (AD-12). username is POSTGRES_USER and the
+    # migration role (DDL). appUsername is the DML-only DATABASE_URL role
+    # (FR-22); the operator creates it (db/create_app_role.sql).
     username: platform
+    appUsername: platform_app
     database: platform
   persistence:
     size: 8Gi

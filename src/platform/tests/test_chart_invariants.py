@@ -59,6 +59,9 @@ _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job"})
 # carry the restricted-v2 contract. "migrate" doubles as proof the hook
 # Job renders (`helm template` emits hooks).
 _PLATFORM_COMPONENTS = frozenset({"web", "worker", "migrate"})
+# Restricted-v2 + same image as web. Liquibase does not speak Redis, so it
+# is not in _PLATFORM_COMPONENTS (NetworkPolicy / REDIS_* env).
+_PLATFORM_IMAGE_COMPONENTS = _PLATFORM_COMPONENTS | {"liquibase"}
 # Story 12.5: the DB-GPT sidecar carries the same restricted-v2 contract.
 _SIDECAR_COMPONENT = "dbgpt"
 _REDIS_COMPONENTS = frozenset({"redis-cache", "redis-broker"})
@@ -67,6 +70,7 @@ _SECRET_ENV_NAMES = frozenset(
     {
         "DJANGO_SECRET_KEY",
         "DATABASE_URL",
+        "MIGRATION_DATABASE_URL",
         "POSTGRES_PASSWORD",
         "REDIS_PASSWORD",
         "DBGPT_LLM_API_KEY",
@@ -762,6 +766,73 @@ def _assert_redis_network_policy_restricts_platform_pods(
     )
 
 
+def _assert_liquibase_then_fake_migrate_jobs(docs: list[dict[str, Any]]) -> None:
+    """Story 27.2 / FR-24 / canopy AD-9: two hook Jobs, weights -1 then 0,
+    same platform image as web, no initContainers, liquibase update then
+    migrate --fake.
+    """
+    jobs = [doc for doc in docs if doc.get("kind") == "Job"]
+    by_component: dict[str, dict[str, Any]] = {}
+    for job in jobs:
+        labels = (job.get("metadata") or {}).get("labels") or {}
+        component = labels.get("app.kubernetes.io/component")
+        assert component not in by_component, (
+            f"duplicate Job component {component!r}"
+        )
+        by_component[component] = job
+    missing = sorted({"liquibase", "migrate"} - by_component.keys())
+    assert not missing, f"expected liquibase and migrate Jobs, missing {missing}"
+
+    liquibase = by_component["liquibase"]
+    migrate = by_component["migrate"]
+    lb_ann = (liquibase.get("metadata") or {}).get("annotations") or {}
+    mg_ann = (migrate.get("metadata") or {}).get("annotations") or {}
+    assert lb_ann.get("helm.sh/hook-weight") == "-1", lb_ann
+    assert mg_ann.get("helm.sh/hook-weight") == "0", mg_ann
+    for job in (liquibase, migrate):
+        hook = ((job.get("metadata") or {}).get("annotations") or {}).get(
+            "helm.sh/hook",
+        )
+        assert hook == "post-install,pre-upgrade", hook
+
+    by_pod = _pod_specs_by_component(docs)
+    for component in ("liquibase", "migrate", "web"):
+        assert component in by_pod, f"{component} missing from render"
+        inits = by_pod[component].get("initContainers") or []
+        assert not inits, (
+            f"{component} must not use an initContainer (FR-24): {inits}"
+        )
+    web_image = by_pod["web"]["containers"][0]["image"]
+    assert by_pod["liquibase"]["containers"][0]["image"] == web_image
+    assert by_pod["migrate"]["containers"][0]["image"] == web_image
+
+    lb_args = by_pod["liquibase"]["containers"][0].get("args") or []
+    assert lb_args == ["python", "db/liquibase_update.py"], lb_args
+    mg_args = by_pod["migrate"]["containers"][0].get("args") or []
+    assert mg_args == [
+        "python",
+        "manage.py",
+        "migrate",
+        "--fake",
+        "--noinput",
+    ], mg_args
+
+    lb_env = _collect_env_by_name(by_pod["liquibase"])
+    mg_env = _collect_env_by_name(by_pod["migrate"])
+    assert "MIGRATION_DATABASE_URL" in lb_env
+    assert (lb_env["MIGRATION_DATABASE_URL"].get("valueFrom") or {}).get(
+        "secretKeyRef",
+        {},
+    ).get("key") == "MIGRATION_DATABASE_URL"
+    assert "DATABASE_URL" not in lb_env
+    assert "DATABASE_URL" in mg_env
+    rendered = str(docs)
+    assert "pgbouncer" not in rendered.lower()
+    assert "pgpool" not in rendered.lower()
+    assert "initContainer" not in str(liquibase.get("spec"))
+    assert "initContainer" not in str(migrate.get("spec"))
+
+
 # ---------------------------------------------------------------------------
 # Real proofs (helm-gated)
 # ---------------------------------------------------------------------------
@@ -806,12 +877,12 @@ def test_platform_image_pod_specs_satisfy_restricted_v2():
     docs = _render(_CORE_CHART)
     by_component = _pod_specs_by_component(docs)
 
-    missing = sorted(_PLATFORM_COMPONENTS - by_component.keys())
+    missing = sorted(_PLATFORM_IMAGE_COMPONENTS - by_component.keys())
     assert not missing, (
-        f"platform workloads missing from the render (the migrate hook Job "
+        f"platform workloads missing from the render (hook Jobs "
         f"must render too -- `helm template` emits hooks): {missing}"
     )
-    for component in sorted(_PLATFORM_COMPONENTS):
+    for component in sorted(_PLATFORM_IMAGE_COMPONENTS):
         _assert_restricted_v2_pod_spec(by_component[component], where=component)
 
 
@@ -1092,8 +1163,15 @@ def test_ocp_overrides_drop_the_ingress_and_the_data_service_uids():
             f"the UID check below would pass vacuously"
         )
     _assert_no_fixed_uid_keys(docs)
-    for component in sorted(_PLATFORM_COMPONENTS):
+    for component in sorted(_PLATFORM_IMAGE_COMPONENTS):
         _assert_restricted_v2_pod_spec(by_component[component], where=component)
+
+
+@requires_helm
+def test_liquibase_job_then_fake_migrate():
+    """AC (Story 27.2): Liquibase Job weight -1 then migrate --fake."""
+    docs = _render(_CORE_CHART, release="platform")
+    _assert_liquibase_then_fake_migrate_jobs(docs)
 
 
 @requires_helm
@@ -1705,3 +1783,108 @@ def test_secrets_http_api_check_fails_on_hvac_import(tmp_path: Path):
 
 def test_app_does_not_call_secrets_http_api():
     _assert_app_does_not_call_secrets_http_api(_PLATFORM_DIR)
+
+
+def _synthetic_hook_job(
+    component: str,
+    *,
+    weight: str,
+    args: list[str],
+    env: list[dict[str, Any]] | None = None,
+    init_containers: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
+        "kind": "Job",
+        "metadata": {
+            "name": f"platform-{component}",
+            "labels": {"app.kubernetes.io/component": component},
+            "annotations": {
+                "helm.sh/hook": "post-install,pre-upgrade",
+                "helm.sh/hook-weight": weight,
+            },
+        },
+        "spec": {
+            "template": {
+                "metadata": {
+                    "labels": {"app.kubernetes.io/component": component},
+                },
+                "spec": {
+                    "initContainers": init_containers or [],
+                    "containers": [
+                        {
+                            "name": component,
+                            "image": "platform:latest",
+                            "args": args,
+                            "env": env or [],
+                        },
+                    ],
+                },
+            },
+        },
+    }
+
+
+def _governed_ddl_docs() -> list[dict[str, Any]]:
+    return [
+        _synthetic_workload("web"),
+        _synthetic_hook_job(
+            "liquibase",
+            weight="-1",
+            args=["python", "db/liquibase_update.py"],
+            env=[
+                {
+                    "name": "MIGRATION_DATABASE_URL",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": "platform-secrets",
+                            "key": "MIGRATION_DATABASE_URL",
+                        },
+                    },
+                },
+            ],
+        ),
+        _synthetic_hook_job(
+            "migrate",
+            weight="0",
+            args=["python", "manage.py", "migrate", "--fake", "--noinput"],
+            env=[
+                {
+                    "name": "DATABASE_URL",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": "platform-secrets",
+                            "key": "DATABASE_URL",
+                        },
+                    },
+                },
+            ],
+        ),
+    ]
+
+
+def test_liquibase_job_check_fails_when_weight_is_not_minus_one():
+    docs = _governed_ddl_docs()
+    docs[1]["metadata"]["annotations"]["helm.sh/hook-weight"] = "0"
+    with pytest.raises(AssertionError, match="helm.sh/hook-weight"):
+        _assert_liquibase_then_fake_migrate_jobs(docs)
+
+
+def test_liquibase_job_check_fails_when_migrate_drops_fake():
+    docs = _governed_ddl_docs()
+    docs[2]["spec"]["template"]["spec"]["containers"][0]["args"] = [
+        "python",
+        "manage.py",
+        "migrate",
+        "--noinput",
+    ]
+    with pytest.raises(AssertionError, match="--fake"):
+        _assert_liquibase_then_fake_migrate_jobs(docs)
+
+
+def test_liquibase_job_check_fails_on_init_container():
+    docs = _governed_ddl_docs()
+    docs[1]["spec"]["template"]["spec"]["initContainers"] = [
+        {"name": "wait", "image": "platform:latest"},
+    ]
+    with pytest.raises(AssertionError, match="initContainer"):
+        _assert_liquibase_then_fake_migrate_jobs(docs)
