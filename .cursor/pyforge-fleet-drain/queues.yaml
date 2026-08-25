@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 21
-    next: 25-4-restarts-reconcile
+    remaining_count: 20
+    next: 26-1-revoke-takes-effect-on-the-next-request
     queue:
-    - 25-4-restarts-reconcile
     - 26-1-revoke-takes-effect-on-the-next-request
     - 26-2-manifests-carry-secret-references-only
     - 28-1-postgresql-driver-behind-the-existing-port
