@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 29
-    next: 21-5-front-door-queries-the-supervisor
+    remaining_count: 28
+    next: 22-1-pyforge-dispatches-without-reimplementing
     queue:
-    - 21-5-front-door-queries-the-supervisor
     - 22-1-pyforge-dispatches-without-reimplementing
     - 23-1-same-url-different-rows
     - 24-1-cloudevents-on-redis-broker
