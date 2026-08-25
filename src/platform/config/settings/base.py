@@ -194,6 +194,11 @@ OIDC_PROVIDER_ID = env.str("COMPONENT_OIDC_PROVIDER_ID", default="oidc")
 # Unauthenticated requests redirect to the IdP, not a local password form.
 LOGIN_URL = reverse_lazy("openid_connect_login", kwargs={"provider_id": OIDC_PROVIDER_ID})
 CLAIMS_CONTRACT = load_claims_contract(env)
+# Story 26.1 / FR-31: re-read IdP roles from token claims on each request.
+DJANGO_PYFORGE_GROUP_CLAIM = CLAIMS_CONTRACT.group_claim or "groups"
+DJANGO_PYFORGE_IDP_CLAIMS_GETTER = "config.authorization.current_claims.fetch_current_idp_claims"
+IDP_CLAIMS_SNAPSHOT = None
+IDP_USERINFO = None
 # steward 20.1 / canopy AD-13: Wagtail admin is IdP-only (not a URLconf override).
 WAGTAILADMIN_LOGIN_URL = LOGIN_URL
 WAGTAILUSERS_PASSWORD_ENABLED = False
@@ -235,8 +240,8 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    # Story 18.2 / canopy AD-15: copy this request's session token roles
-    # onto request.idp_roles. After SessionMiddleware so the session exists.
+    # Story 26.1 / canopy AD-15: IdP roles from this request's token claims.
+    # After SessionMiddleware so a claims document in the session can be read.
     "django_pyforge.middleware.TokenRolesMiddleware",
     # Story 18.3 / canopy AD-7: identity headers are not an identity path.
     "django_pyforge.assertion.middleware.AssertionMiddleware",

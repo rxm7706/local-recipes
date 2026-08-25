@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
 from django.http import HttpRequest
+from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 
 from config.authorization.adapters import OIDCSocialAccountAdapter
@@ -102,6 +103,11 @@ def test_adapter_pre_social_login_establishes_session() -> None:
     assert sociallogin.user.idp_subject == persona.subject
     assert sociallogin.user.is_staff is True
     assert request.session[IDP_TOKEN_ROLES_SESSION_KEY] == read_group_claim(
+        claims,
+        "groups",
+    )
+    assert request.session[IDP_TOKEN_CLAIMS_SESSION_KEY]["sub"] == persona.subject
+    assert request.session[IDP_TOKEN_CLAIMS_SESSION_KEY]["groups"] == read_group_claim(
         claims,
         "groups",
     )
