@@ -117,10 +117,16 @@ def test_default_pr_gate_registry_empty_invoke_returns_empty_list():
 def test_core_dummy_does_not_run_on_the_pr_gate():
     registry = PluginRegistry()
     registry.load_entry_points()
-    assert any(isinstance(p, DummyPlugin) for p in registry.plugins), (
+    dummy = next(
+        (p for p in registry.plugins if isinstance(p, DummyPlugin)),
+        None,
+    )
+    assert dummy is not None, (
         "core dummy must actually load so [] is not a vacuous empty registry"
     )
-    assert invoke_pr_gate(PR_GATE_SCAN, "before", {}, registry=registry) == []
+    before = list(dummy.calls)
+    invoke_pr_gate(PR_GATE_SCAN, "before", {}, registry=registry)
+    assert dummy.calls == before
 
 
 def test_publish_pr_gate_verdict_allows_owner_matched_warden():

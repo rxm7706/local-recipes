@@ -309,8 +309,15 @@ from .engines import (
     DeptryEngine,
     LicenseEngine,
     OsvEngine,
-    engine_factories,
     run_doctor_checks,
+)
+from .hooks import (
+    PR_GATE_AGGREGATE,
+    PR_GATE_SCAN,
+    PluginError,
+    PluginRegistry,
+    invoke_pr_gate,
+    publish_pr_gate_verdict,
 )
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
@@ -338,6 +345,13 @@ from .report import (
 )
 from .routing import DefaultRouter
 from .sbom import render_cyclonedx
+from .scanner_plugins import (
+    default_engine_factories,
+    enabled_optional_from_environ,
+    findings_from_plugin_context,
+    merge_plugin_findings,
+    select_scanner_plugins,
+)
 from .verdict import EXIT_SIGINT, exit_code_for
 from .waiver import (
     BaselineEntry,
@@ -1307,6 +1321,32 @@ def _run_scan(args: argparse.Namespace) -> int:
     hygiene_applicable = (
         has_adjacent_python_source(target) if manifests_parsed > 0 else True
     )
+    # Story 9.2: default factories come from in-tree scanner plugins (same
+    # objects ``register_engine`` listed). Do not load the shared
+    # ``pyforge.core.hooks`` entry-point group here — other stations'
+    # plugins would load. Optional scanners via ``WARDEN_OPTIONAL_SCANNERS``.
+    try:
+        enabled_optional = enabled_optional_from_environ()
+        selected_plugins = select_scanner_plugins(enabled_optional=enabled_optional)
+    except PluginError as exc:
+        _record_error(
+            errors,
+            rungs,
+            kind=ErrorKind.CONFIG_VALIDATION,
+            owner="scanner-plugins",
+            subject=args.path,
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
+        enabled_optional = ()
+        selected_plugins = select_scanner_plugins()
+    plugin_registry = PluginRegistry()
+    for plugin in selected_plugins:
+        plugin_registry.register(plugin)
+    plugin_context: dict[str, object] = {
+        "plugin_findings": [],
+        "enabled_optional": enabled_optional,
+    }
     # The engine seam runs only when a manifest actually parsed: with nothing
     # extractable (empty dir, or a manifest that failed to parse) there is no
     # project for a subprocess engine (deptry) to assess, and running it on an
@@ -1314,7 +1354,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     engines_to_run = (
         tuple(
             factory
-            for factory in engine_factories()
+            for factory in default_engine_factories(selected_plugins)
             if hygiene_applicable or factory is not DeptryEngine
         )
         if manifests_parsed > 0
@@ -1357,6 +1397,9 @@ def _run_scan(args: argparse.Namespace) -> int:
                     # helper's own docstring: exactly one of the two return
                     # slots is populated
                     _record_error(errors, rungs, **error_args)
+    invoke_pr_gate(
+        PR_GATE_SCAN, "around", plugin_context, registry=plugin_registry
+    )
     for result in engine_results:
         errors.extend(result.errors)
     findings, policy_rungs = DefaultPolicy(config).evaluate(inventory, engine_results)
@@ -1414,6 +1457,10 @@ def _run_scan(args: argparse.Namespace) -> int:
                 ),
             )
         )
+
+    invoke_pr_gate(
+        PR_GATE_AGGREGATE, "around", plugin_context, registry=plugin_registry
+    )
 
     # Story 3.2 (FR24-FR26): a missing waiver file is normal (empty tuple,
     # no error) -- mirrors config.py's own missing-file handling. A
@@ -1650,6 +1697,9 @@ def _run_scan(args: argparse.Namespace) -> int:
     for result in engine_results:
         for finding_id, fixed_version in result.fixed_versions.items():
             fixed_versions.setdefault(finding_id, fixed_version)
+    findings = merge_plugin_findings(
+        findings, findings_from_plugin_context(plugin_context)
+    )
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -1673,6 +1723,9 @@ def _run_scan(args: argparse.Namespace) -> int:
         warn_as_error=config.warn_as_error,
         actuation=actuation_payload,
     )
+    # Story 9.2: only Warden publishes the PR-gate verdict. Plugins may
+    # grow ``plugin_findings``; they must not set the exit code.
+    publish_pr_gate_verdict(report.status)
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and
         # writing are separate try blocks (own module docstring) so
