@@ -106,7 +106,7 @@ development_status:
   31-2-wired-or-not-is-class-correct: done
   31-3-fresh-clone-class-path-is-proven: done
   32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core: done
-  32-2-steward-deploy-profile-adapters-are-plugins: backlog
+  32-2-steward-deploy-profile-adapters-are-plugins: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done

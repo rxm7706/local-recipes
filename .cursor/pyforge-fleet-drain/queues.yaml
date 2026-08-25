@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 8
-    next: 32-2-steward-deploy-profile-adapters-are-plugins
+    remaining_count: 7
+    next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     queue:
-    - 32-2-steward-deploy-profile-adapters-are-plugins
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
     - 26-3-openfeature-packages-on-the-channel-operator-gate
     - 26-4-one-flag-flips-three-surfaces-without-a-redeploy
