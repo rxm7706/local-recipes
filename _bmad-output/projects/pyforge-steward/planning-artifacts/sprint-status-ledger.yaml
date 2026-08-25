@@ -75,7 +75,7 @@ development_status:
   21-3-start-get-survives-disconnect: done
   21-4-the-other-seven-mcp-faces: done
   21-5-front-door-queries-the-supervisor: done
-  22-1-pyforge-dispatches-without-reimplementing: backlog
+  22-1-pyforge-dispatches-without-reimplementing: done
   23-1-same-url-different-rows: backlog
   24-1-cloudevents-on-redis-broker: backlog
   24-2-cascades-halt-adapters-validate: backlog
