@@ -1,9 +1,11 @@
 # ruff: noqa: ERA001, E501
 """Base settings to build other settings files upon."""
 
+import importlib.util
 import json
 import os
 import ssl
+import sys
 from pathlib import Path
 from urllib.parse import quote
 
@@ -15,6 +17,12 @@ from config.observability.logging import build_logging_config
 from config.observability.logging import configure_structlog
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
+# Story 18.1: when django-pyforge is not installed into site-packages, load it
+# from the monorepo source tree (pytest, local manage.py). The container copies
+# the module onto BASE_DIR instead, so this directory is absent there.
+_CHROME_SRC = BASE_DIR.parent / "shared" / "packages" / "django-pyforge" / "src"
+if _CHROME_SRC.is_dir() and importlib.util.find_spec("django_pyforge") is None:
+    sys.path.insert(0, str(_CHROME_SRC))
 # platformapp/
 APPS_DIR = BASE_DIR / "platformapp"
 env = environ.Env()
@@ -115,6 +123,9 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
+    # Story 18.1 / CAP-1: shared chrome. Not a station; portals register
+    # themselves via AppConfig (canopy AD-1).
+    "django_pyforge",
     "platformapp.users",
     # Story 11.1: migration-only app provisioning `langflow_schema` (AD-5).
     # No models -- see langflow_integration/apps.py.
@@ -236,6 +247,7 @@ TEMPLATES = [
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
                 "platformapp.users.context_processors.allauth_settings",
+                "django_pyforge.context_processors.chrome",
             ],
         },
     },

@@ -1,0 +1,35 @@
+/* PyForge modernist chrome theme (canopy AD-3). Portals must not copy this. */
+:root {
+  --pyforge-bg: #f4f1ea;
+  --pyforge-ink: #1a1a1a;
+  --pyforge-accent: #2f5d50;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+}
+
+body {
+  margin: 0;
+  background: var(--pyforge-bg);
+  color: var(--pyforge-ink);
+}
+
+#pyforge-chrome {
+  border-bottom: 1px solid var(--pyforge-accent);
+  padding: 0.75rem 1.25rem;
+}
+
+.pyforge-switcher ul {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pyforge-switcher a {
+  color: var(--pyforge-accent);
+  text-decoration: none;
+}
+
+#pyforge-portal {
+  padding: 1.25rem;
+}

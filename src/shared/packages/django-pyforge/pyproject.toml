@@ -1,0 +1,15 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "django-pyforge"
+version = "0.1.0"
+description = "Estate chrome for PyForge station portals: layout, switcher, theme, AppConfig registration."
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+dependencies = ["django>=5.1,<6"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/django_pyforge"]
