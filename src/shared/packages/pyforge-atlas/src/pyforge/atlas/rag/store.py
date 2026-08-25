@@ -21,6 +21,9 @@ attended :func:`provision_vss` (DW-F3-2), which the consumer path never calls.
 
 The DuckDB connection is injectable (default a fresh in-memory connection) so the RAG surface
 can ride the SAME consolidated F1 store (AD-4 single engine) rather than a second engine.
+File-backed ``atlas.duckdb`` must use :func:`pyforge.atlas.duckdb_writer.connect_writer`
+(or :func:`pyforge.atlas.duckdb_writer.connect_reader`) — do not call bare ``duckdb.connect``
+on that file.
 """
 
 from __future__ import annotations
