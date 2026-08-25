@@ -206,9 +206,8 @@ stations:
   warden:
     project: pyforge-warden
     drained: false
-    remaining_count: 3
-    next: 9-1-warden-publishes-the-pr-gate-hook-book
+    remaining_count: 2
+    next: 9-2-current-scanners-become-optional-plugins
     queue:
-    - 9-1-warden-publishes-the-pr-gate-hook-book
     - 9-2-current-scanners-become-optional-plugins
     - 9-3-default-warden-stays-green-without-checkmarx
