@@ -131,8 +131,10 @@ if settings.DEBUG:
             *urlpatterns,
         ]
 
-# Lane 1 catch-all MUST be last so /ht/, /cms/, stations, and DEBUG previews win.
+# Lane 1 catch-all MUST be last so /ht/, /cms/, stations, /runs/, and DEBUG
+# previews win. Front-door live board is a Django view (not a Wagtail field).
 urlpatterns += [
+    path("", include("platformapp.front_door.urls")),
     path("", include(wagtail_urls)),
 ]
 
