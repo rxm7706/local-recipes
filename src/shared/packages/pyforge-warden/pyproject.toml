@@ -23,12 +23,24 @@ dependencies = [
     "license-expression",
     "pyforge-core",
 ]
-# Story 9.1: plugin registration is pyforge.core.hooks only
+# Story 9.1/9.2: plugin registration is pyforge.core.hooks only
 # (ENTRY_POINT_GROUP). Do not add [project.entry-points."pyforge.warden.hooks"]
 # or [project.entry-points."pyforge.warden.plugins"].
 
 [project.scripts]
 warden = "pyforge.warden.cli:main"
+
+[project.entry-points."pyforge.core.hooks"]
+warden-null = "pyforge.warden.scanner_plugins:NullScanPlugin"
+warden-deptry = "pyforge.warden.scanner_plugins:DeptryScanPlugin"
+warden-osv = "pyforge.warden.scanner_plugins:OsvScanPlugin"
+warden-license = "pyforge.warden.scanner_plugins:LicenseScanPlugin"
+warden-currency = "pyforge.warden.scanner_plugins:CurrencyScanPlugin"
+warden-checkmarx = "pyforge.warden.scanner_plugins:CheckmarxScanPlugin"
+warden-sonar = "pyforge.warden.scanner_plugins:SonarScanPlugin"
+warden-blackduck = "pyforge.warden.scanner_plugins:BlackduckScanPlugin"
+warden-ghas = "pyforge.warden.scanner_plugins:GhasScanPlugin"
+warden-profile-local = "pyforge.warden.scanner_plugins:ProfileLocalScanPlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]

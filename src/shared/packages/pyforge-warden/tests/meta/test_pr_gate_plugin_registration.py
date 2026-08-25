@@ -107,10 +107,16 @@ def test_entry_point_group_is_the_core_canonical_string():
 
 def test_pyproject_has_no_parallel_warden_plugin_group():
     assert PYPROJECT.is_file(), f"missing {PYPROJECT}"
-    hits = parallel_loader_violations(PYPROJECT.read_text(encoding="utf-8"))
+    text = PYPROJECT.read_text(encoding="utf-8")
+    hits = parallel_loader_violations(text)
     assert not hits, (
         "pyforge-warden pyproject.toml declared a parallel plugin group "
         f"(only {CORE_ENTRY_POINT_GROUP!r} is allowed): {hits}"
+    )
+    groups = entry_point_groups_from_toml(text)
+    canonical = groups.get(CORE_ENTRY_POINT_GROUP, {})
+    assert canonical, (
+        f"pyforge-warden must declare plugins on {CORE_ENTRY_POINT_GROUP!r}"
     )
 
 
