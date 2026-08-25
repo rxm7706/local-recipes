@@ -1,0 +1,36 @@
+name: pyforge-scribe
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-scribe
+source_authority: internal
+language: python
+description: >
+  Direct-capture CLI for checked-in team memory. Agents use the scribe CLI
+  (capture, graph compile, recall) rather than importing pyforge.scribe internals.
+forge_tier: Quick
+created: '2026-08-25'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/scribe/cli.py
+    - src/pyforge/scribe/__init__.py
+    - src/pyforge/scribe/capture.py
+    - src/pyforge/scribe/compile.py
+    - src/pyforge/scribe/recall.py
+    - src/pyforge/scribe/graph_store_plugins.py
+    - README.md
+  exclude:
+    - tests/**
+    - '**/__pycache__/**'
+  notes: >
+    CAP-15 proof compile for a station with no skill on origin/main.
+    Public contract is the scribe CLI (AD-7). Portal django-scribe is out of scope.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Package __init__ exports only __version__; CLI is the authoring surface.
+    recorded: '2026-08-25'
