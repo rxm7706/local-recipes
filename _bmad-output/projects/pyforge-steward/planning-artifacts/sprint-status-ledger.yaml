@@ -72,7 +72,7 @@ development_status:
   20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue: done
   21-1-supervisor-tables-in-public: done
   21-2-atlas-mcp-on-the-host-dual-era: done
-  21-3-start-get-survives-disconnect: backlog
+  21-3-start-get-survives-disconnect: done
   21-4-the-other-seven-mcp-faces: backlog
   21-5-front-door-queries-the-supervisor: backlog
   22-1-pyforge-dispatches-without-reimplementing: backlog
