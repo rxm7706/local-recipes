@@ -59,7 +59,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness
+from ..adapters.harness_bmadloop import resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy
 from ..core import promotion as promotion_core
@@ -245,7 +245,7 @@ def run_retire(
 
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
 
     findings: list[Finding] = []
     data: dict[str, object] = {

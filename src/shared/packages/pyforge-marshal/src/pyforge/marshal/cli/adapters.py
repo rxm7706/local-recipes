@@ -78,9 +78,9 @@ from pyforge.core.errors import PyforgeError
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
-    BmadLoopHarness,
     HarnessError,
     HarnessPolicyWriteError,
+    resolve_loop_runner,
     write_policy_toml,
 )
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -672,7 +672,7 @@ def run_adapters_sync(
     # factory spin/land, not via --project.
     del context
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
 
     slug = args.slug
     findings: list[Finding] = []
@@ -1175,7 +1175,7 @@ def run_adapters_conform(
 ) -> int:
     del context
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
 
     slug = args.slug
     findings: list[Finding] = []
@@ -1295,7 +1295,7 @@ def run_adapters_probe(
     real caller yet; this is its first."""
     del context
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     record = record if record is not None else LocalFs()
 
     slug = args.slug
@@ -1591,7 +1591,7 @@ def run_adapters_smoke(
     independent of any one project."""
     del context
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     vcs = vcs if vcs is not None else GitVcs()
     record = record if record is not None else LocalFs()
 

@@ -337,7 +337,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -681,7 +681,7 @@ def run_supervisor(
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
     observer = observer if observer is not None else MultiplexerObserver()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     notify = notify if notify is not None else FileDesktopNotifier()
     vcs = vcs if vcs is not None else GitVcs()
 

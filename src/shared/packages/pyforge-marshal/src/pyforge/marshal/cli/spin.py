@@ -262,10 +262,10 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
     ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
-    BmadLoopHarness,
     HarnessError,
     HarnessPolicyWriteError,
     render_policy_toml,
+    resolve_loop_runner,
     write_policy_document,
     write_policy_toml,
 )
@@ -1223,7 +1223,7 @@ def run_spin(
     # names the exact three already-shipped commands this applies to).
     del context
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     process = process if process is not None else PosixProcess()
 
     slug = args.slug
@@ -1927,7 +1927,7 @@ def run_resume(
     process: ProcessPort | None = None,
 ) -> int:
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     process = process if process is not None else PosixProcess()
 
     slug = args.slug
@@ -2468,7 +2468,7 @@ def run_attach(
     envelope; there being no envelope changes only the RENDERING, not which
     lattice rung each precondition failure occupies."""
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
 
     slug = args.slug
 

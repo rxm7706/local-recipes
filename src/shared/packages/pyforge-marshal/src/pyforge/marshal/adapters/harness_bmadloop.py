@@ -202,11 +202,14 @@ import re
 import shutil
 import subprocess
 import time
+from collections.abc import MutableMapping
 from pathlib import Path
+from typing import Any
 
 import tomlkit
 from pyforge.core.atomic_write import atomic_write_bytes
 from pyforge.core.errors import PyforgeError
+from pyforge.core.hooks import HookSpec, PluginRegistry
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..core import policy
@@ -215,12 +218,16 @@ from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
     EngineLiveness,
+    HarnessPort,
     RunStatusSnapshot,
     SmokeRunResult,
     SpinResult,
     TaskPhaseSnapshot,
     UsageSnapshot,
 )
+
+LOOP_RUNNER_HOOK_SPEC = HookSpec(name="pyforge.marshal.loop_runner", owner="marshal")
+DEFAULT_LOOP_RUNNER_PLUGIN_ID = "bmad-loop"
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
@@ -849,7 +856,25 @@ def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessRe
 
 
 class BmadLoopHarness:
-    """``ports.HarnessPort``'s sole implementation."""
+    """``ports.HarnessPort``'s sole in-tree implementation and the default
+    loop/runner plugin on ``pyforge.core.hooks`` (Story 26.1)."""
+
+    hook_spec: str = LOOP_RUNNER_HOOK_SPEC.name
+    owner: str = LOOP_RUNNER_HOOK_SPEC.owner
+    plugin_id: str = DEFAULT_LOOP_RUNNER_PLUGIN_ID
+
+    def call(self, point: str, context: MutableMapping[str, Any]) -> Any:
+        """Named ``before`` / ``after`` / ``around`` point. ``around`` may
+        run ``context["next"]``. A passed loop is not a Warden PR-gate
+        verdict. Point names are recorded on ``self.calls`` (DummyPlugin
+        shape) so invoke coverage is not vacuous."""
+        self.calls = getattr(self, "calls", [])
+        self.calls.append(point)
+        if point == "around":
+            nxt = context.get("next")
+            if callable(nxt):
+                return nxt(context)
+        return context
 
     def binary_present(self, binary: str) -> bool:
         return shutil.which(binary) is not None
@@ -1748,3 +1773,29 @@ class BmadLoopHarness:
         except (OSError, UnicodeDecodeError) as exc:
             raise HarnessError(f"cannot read ledger: {exc}") from exc
         return tuple((story.key, story.status) for story in feed.stories)
+
+
+def resolve_loop_runner(
+    plugin_id: str = DEFAULT_LOOP_RUNNER_PLUGIN_ID,
+    *,
+    registry: PluginRegistry | None = None,
+) -> HarnessPort:
+    """Production default factory for an injected ``HarnessPort``.
+
+    Selects a plugin registered on ``LOOP_RUNNER_HOOK_SPEC`` by
+    ``plugin_id`` (``PluginRegistry`` does not store entry-point names).
+    When ``registry`` is omitted, loads ``pyforge.core.hooks`` entry
+    points and in-tree-registers ``BmadLoopHarness()`` (idempotent) so
+    unit tests still resolve when the wheel's entry point is not visible.
+    A missing id falls back to a new ``BmadLoopHarness()``.
+    """
+    if registry is None:
+        registry = PluginRegistry()
+        registry.load_entry_points()
+        registry.register(BmadLoopHarness())
+    for plugin in registry.plugins:
+        if getattr(plugin, "hook_spec", None) != LOOP_RUNNER_HOOK_SPEC.name:
+            continue
+        if getattr(plugin, "plugin_id", None) == plugin_id:
+            return plugin  # type: ignore[return-value]
+    return BmadLoopHarness()

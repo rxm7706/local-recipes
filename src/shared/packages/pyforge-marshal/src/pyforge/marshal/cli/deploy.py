@@ -239,7 +239,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
 from ..core.egress import Redacted, to_redacted
@@ -3311,7 +3311,7 @@ def run_refresh_feed(
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
     process = process if process is not None else PosixProcess()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
     data, findings = reconcile_feed(args, vcs=vcs, fs=fs, process=process, harness=harness)
     return _emit(args, "deploy refresh-feed", data, findings, _render_text_refresh_feed)
 
@@ -3631,7 +3631,7 @@ def run_reconcile_completions(
 ) -> int:
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
-    harness = harness if harness is not None else BmadLoopHarness()
+    harness = harness if harness is not None else resolve_loop_runner()
 
     # Same is-not-None precedence as `run_promote`/`cli/gate.py::
     # run_evaluate` -- an explicit `--project ""` must win over
