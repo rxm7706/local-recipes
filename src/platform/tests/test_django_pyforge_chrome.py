@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import re
 from datetime import date
+from http import HTTPStatus
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,6 +13,8 @@ import pytest
 from django.apps import apps
 from django.conf import settings
 from django.core.checks import run_checks
+from django.http import HttpRequest
+from django.http import HttpResponse
 from django.template import Context
 from django.template import Engine
 from django.template import TemplateDoesNotExist
@@ -21,7 +24,12 @@ from django.urls import resolve
 from django_pyforge.checks import validate_portal_config
 from django_pyforge.context_processors import chrome
 from django_pyforge.discovery import iter_portal_configs
+from django_pyforge.middleware import TokenRolesMiddleware
 from django_pyforge.portals import PortalConfig
+from django_pyforge.probe_portal import views as probe_views
+from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
+
+from compliance_face import views as warden_views
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -199,3 +207,90 @@ def test_removing_chrome_breaks_both_portals_identically() -> None:
         missing.append(caught.value.args[0])
     assert missing[0] == missing[1]
     assert "django_pyforge/base.html" in str(missing[0])
+
+
+def _switcher_html(request: HttpRequest) -> str:
+    return render_to_string("django_pyforge/switcher.html", chrome(request))
+
+
+def test_missing_station_role_omits_that_station_from_the_switcher() -> None:
+    request = RequestFactory().get("/stations/warden/")
+    request.idp_roles = ["warden"]
+    html = _switcher_html(request)
+    assert "/stations/warden/" in html
+    assert "/stations/chrome-probe/" not in html
+    assert {cfg.station_name for cfg in iter_portal_configs()} == EXPECTED_PORTALS
+
+
+def test_direct_url_is_refused_by_the_station_not_the_switcher() -> None:
+    hidden_req = RequestFactory().get("/stations/chrome-probe/")
+    hidden_req.idp_roles = ["warden"]
+    hidden = probe_views.chrome_home(hidden_req)
+    assert hidden.status_code == HTTPStatus.FORBIDDEN
+    visible_req = RequestFactory().get("/stations/warden/")
+    visible_req.idp_roles = ["warden"]
+    visible = warden_views.chrome_home(visible_req)
+    assert visible.status_code == HTTPStatus.OK
+    body = visible.content.decode()
+    assert "/stations/chrome-probe/" not in body
+    assert "/stations/warden/" in body
+
+
+def test_switcher_uses_token_roles_not_django_groups() -> None:
+    class BoomGroups:
+        def __contains__(self, item: object) -> bool:
+            raise AssertionError
+
+        def __iter__(self):
+            raise AssertionError
+
+        def all(self) -> list[object]:
+            raise AssertionError
+
+        def values_list(self, *args: object, **kwargs: object) -> list[object]:
+            raise AssertionError
+
+    request = RequestFactory().get("/stations/warden/")
+    request.user = SimpleNamespace(groups=BoomGroups())
+    request.idp_roles = []
+    html = _switcher_html(request)
+    assert "/stations/warden/" not in html
+    assert "/stations/chrome-probe/" not in html
+
+
+def test_empty_token_roles_on_the_next_request_list_no_stations() -> None:
+    first = RequestFactory().get("/stations/warden/")
+    first.idp_roles = ["warden", "chrome-probe"]
+    first_names = {portal.station_name for portal in chrome(first)["pyforge_portals"]}
+    assert first_names == EXPECTED_PORTALS
+    second = RequestFactory().get("/stations/warden/")
+    second.idp_roles = []
+    assert list(chrome(second)["pyforge_portals"]) == []
+    html = _switcher_html(second)
+    assert "/stations/warden/" not in html
+    assert "/stations/chrome-probe/" not in html
+
+
+def test_token_roles_middleware_copies_session_when_unset() -> None:
+    request = RequestFactory().get("/stations/warden/")
+    request.session = {IDP_TOKEN_ROLES_SESSION_KEY: ["warden"]}
+    seen: dict[str, object] = {}
+
+    def inner(req: HttpRequest) -> HttpResponse:
+        seen["roles"] = req.idp_roles
+        return HttpResponse()
+
+    TokenRolesMiddleware(inner)(request)
+    assert seen["roles"] == ["warden"]
+    preset = RequestFactory().get("/")
+    preset.idp_roles = ["chrome-probe"]
+    preset.session = {IDP_TOKEN_ROLES_SESSION_KEY: ["warden"]}
+    TokenRolesMiddleware(inner)(preset)
+    assert seen["roles"] == ["chrome-probe"]
+    string_session = RequestFactory().get("/")
+    string_session.session = {IDP_TOKEN_ROLES_SESSION_KEY: "warden"}
+    TokenRolesMiddleware(inner)(string_session)
+    assert seen["roles"] == ["warden"]
+    html = _switcher_html(string_session)
+    assert "/stations/warden/" in html
+    assert "/stations/chrome-probe/" not in html
