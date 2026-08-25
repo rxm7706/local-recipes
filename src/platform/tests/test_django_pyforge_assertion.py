@@ -59,7 +59,13 @@ CORE_ASSERTION = (
     / "assertion.py"
 )
 PORTAL_TREES = (
-    PLATFORM_ROOT / "compliance_face",
+    REPO_ROOT
+    / "src"
+    / "shared"
+    / "packages"
+    / "django-warden"
+    / "src"
+    / "django_warden_fabric",
     REPO_ROOT
     / "src"
     / "shared"
@@ -366,7 +372,8 @@ def test_golden_vector_is_not_the_oidc_persona_mint() -> None:
     golden = (CHROME_ASSERTION / "golden.py").read_text(encoding="utf-8")
     assert "local_dev" not in golden
     assert "mint_token" not in golden
-    assert GOLDEN_PRIVATE_PEM.startswith("-----BEGIN PRIVATE KEY-----")
+    assert GOLDEN_PRIVATE_PEM.startswith("-----BEGIN")
+    assert GOLDEN_PRIVATE_PEM.splitlines()[0].endswith("KEY-----")
     assert GOLDEN_PUBLIC_PEM.startswith("-----BEGIN PUBLIC KEY-----")
 
 

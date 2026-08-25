@@ -23,6 +23,12 @@ BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 _CHROME_SRC = BASE_DIR.parent / "shared" / "packages" / "django-pyforge" / "src"
 if _CHROME_SRC.is_dir() and importlib.util.find_spec("django_pyforge") is None:
     sys.path.insert(0, str(_CHROME_SRC))
+_WARDEN_PORTAL_SRC = BASE_DIR.parent / "shared" / "packages" / "django-warden" / "src"
+if (
+    _WARDEN_PORTAL_SRC.is_dir()
+    and importlib.util.find_spec("django_warden_fabric") is None
+):
+    sys.path.insert(0, str(_WARDEN_PORTAL_SRC))
 # platformapp/
 APPS_DIR = BASE_DIR / "platformapp"
 env = environ.Env()
@@ -135,9 +141,8 @@ LOCAL_APPS = [
     # migrate` creates the schema; DB-GPT is Pattern B (its own sidecar
     # container, never an ASGI mount) -- see that app's own docstring.
     "dbgpt_integration",
-    # Warden Stories 8.1/8.2: compliance factory web face (upload → Celery
-    # → existing warden engines). Host decision 2026-08-22: platform-app.
-    "compliance_face",
+    # Steward 19.1: warden portal reusable app (was the host-local face).
+    "django_warden_fabric",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

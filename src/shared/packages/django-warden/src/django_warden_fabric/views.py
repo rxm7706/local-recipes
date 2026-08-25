@@ -43,7 +43,7 @@ def _blob_root() -> Path:
 @require_station_role("warden")
 def chrome_home(request: HttpRequest) -> HttpResponse:
     """HTML face that extends django-pyforge chrome (Story 18.1)."""
-    return render(request, "compliance_face/chrome.html")
+    return render(request, "warden_fabric/chrome.html")
 
 
 @csrf_exempt
