@@ -31,6 +31,17 @@ MCP_PROTOCOL_VERSION_HEADER = b"mcp-protocol-version"
 _mcp_apps: dict[str, Any] = {}
 
 
+def _install_flags_mcp() -> None:
+    """Host MCP face for FILE flag eval (steward 26.4). Lazy to avoid a
+    ready()-time registration that would skip portal discovery.
+    """
+    if "flags" in _mcp_apps:
+        return
+    from django_pyforge.flags import flags_asgi_app
+
+    _mcp_apps["flags"] = flags_asgi_app()
+
+
 def register_station_mcp_app(station: str, app: Any) -> None:
     """Bind a Streamable HTTP app for ``/stations/<station>/mcp``."""
     _mcp_apps[station] = app
@@ -40,6 +51,7 @@ def station_mcp_app(station: str) -> Any | None:
     if station in _mcp_apps:
         return _mcp_apps[station]
     _mcp_apps.update(dict(iter_station_mcp_apps()))
+    _install_flags_mcp()
     return _mcp_apps.get(station)
 
 
@@ -47,6 +59,7 @@ def loaded_station_mcp_apps() -> dict[str, Any]:
     """Ensure discovery has run; return the bound MCP ASGI apps."""
     if not _mcp_apps:
         _mcp_apps.update(dict(iter_station_mcp_apps()))
+    _install_flags_mcp()
     return _mcp_apps
 
 

@@ -1,0 +1,13 @@
+# One JSON tree (AD-11 / FR-34). Built from src/platform/config/flags.json
+# via `helm --set-file flags.tree=src/platform/config/flags.json`. Never
+# duplicate that document in values.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform.fullname" . }}-flags
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flags
+data:
+  flags.json: |
+{{ required "pass --set-file flags.tree=src/platform/config/flags.json (the only flag tree; canopy AD-11)" .Values.flags.tree | nindent 4 }}

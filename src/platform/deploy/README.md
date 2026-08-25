@@ -37,7 +37,8 @@ kubectl create secret generic platform-secrets \
     --from-literal=DATABASE_URL=postgres://platform:...@platform-postgres:5432/platform \
     --from-literal=POSTGRES_PASSWORD=... \
     --from-literal=REDIS_PASSWORD=...
-pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform
+pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
+    --set-file flags.tree=src/platform/config/flags.json
 ```
 
 Renders: web Deployment (gunicorn, probes `/api/health` liveness + `/ht/`
@@ -64,7 +65,8 @@ internal registry (see `overlays/ocp/README.md` for detail):
 
 ```sh
 pixi run -e platform-dev helm install platform src/platform/deploy/charts/platform \
-    -f src/platform/deploy/overlays/ocp/core-overrides.yaml
+    -f src/platform/deploy/overlays/ocp/core-overrides.yaml \
+    --set-file flags.tree=src/platform/config/flags.json
 pixi run -e platform-dev helm install platform-ocp src/platform/deploy/overlays/ocp/chart
 ```
 

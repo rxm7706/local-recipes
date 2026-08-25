@@ -245,4 +245,26 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
   value: {{ .Values.media.mountPath | quote }}
 - name: DBGPT_SIDECAR_BASE_URL
   value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
+- name: PYFORGE_FLAGS_PATH
+  value: {{ printf "%s/%s" .Values.flags.mountPath .Values.flags.fileName | quote }}
+- name: FLAGD_RESOLVER
+  value: "file"
+- name: FLAGD_OFFLINE_FLAG_SOURCE_PATH
+  value: {{ printf "%s/%s" .Values.flags.mountPath .Values.flags.fileName | quote }}
+{{- end }}
+
+{{/*
+Story 26.4: directory mount (not subPath) so ConfigMap updates are visible
+to the FILE provider poll without a new process.
+*/}}
+{{- define "platform.flagsVolumeMount" -}}
+- name: flags
+  mountPath: {{ .Values.flags.mountPath | quote }}
+  readOnly: true
+{{- end }}
+
+{{- define "platform.flagsVolume" -}}
+- name: flags
+  configMap:
+    name: {{ include "platform.fullname" . }}-flags
 {{- end }}

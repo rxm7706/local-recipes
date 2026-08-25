@@ -6,6 +6,8 @@ from django.urls import include
 from django.urls import path
 from django.views import defaults as default_views
 from django.views.generic import TemplateView
+from django_pyforge.flags import eval_view
+from django_pyforge.flags import tree_view
 from health_check.views import HealthCheckView
 from wagtail import urls as wagtail_urls
 from wagtail.admin import urls as wagtailadmin_urls
@@ -30,6 +32,8 @@ urlpatterns = [
     path("compliance/", redirect_to_warden),
     # Story 18.3: chrome mint path, not a station roster.
     path("assertion/", include("django_pyforge.assertion.urls")),
+    path("flags.json", tree_view, name="flags-tree"),
+    path("flags/<str:key>/", eval_view, name="flags-eval"),
     # Story 18.1: pattern include, not a station roster. Portals mount
     # themselves from AppConfig discovery inside django_pyforge.urls.
     path("stations/", include("django_pyforge.urls")),
