@@ -79,7 +79,7 @@ development_status:
   23-1-same-url-different-rows: done
   24-1-cloudevents-on-redis-broker: done
   24-2-cascades-halt-adapters-validate: done
-  25-1-circuits-trip-on-async-too: backlog
+  25-1-circuits-trip-on-async-too: done
   25-2-one-duckdb-writer: backlog
   25-3-validation-errors-render-inline: backlog
   25-4-restarts-reconcile: backlog

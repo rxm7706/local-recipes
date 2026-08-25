@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 24
-    next: 25-1-circuits-trip-on-async-too
+    remaining_count: 23
+    next: 25-2-one-duckdb-writer
     queue:
-    - 25-1-circuits-trip-on-async-too
     - 25-2-one-duckdb-writer
     - 25-3-validation-errors-render-inline
     - 25-4-restarts-reconcile
