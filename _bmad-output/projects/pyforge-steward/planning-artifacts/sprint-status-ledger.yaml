@@ -81,7 +81,7 @@ development_status:
   24-2-cascades-halt-adapters-validate: done
   25-1-circuits-trip-on-async-too: done
   25-2-one-duckdb-writer: done
-  25-3-validation-errors-render-inline: backlog
+  25-3-validation-errors-render-inline: done
   25-4-restarts-reconcile: backlog
   26-1-revoke-takes-effect-on-the-next-request: backlog
   26-2-manifests-carry-secret-references-only: backlog

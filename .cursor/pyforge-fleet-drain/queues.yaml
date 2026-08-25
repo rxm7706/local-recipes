@@ -161,10 +161,9 @@ stations:
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 22
-    next: 25-3-validation-errors-render-inline
+    remaining_count: 21
+    next: 25-4-restarts-reconcile
     queue:
-    - 25-3-validation-errors-render-inline
     - 25-4-restarts-reconcile
     - 26-1-revoke-takes-effect-on-the-next-request
     - 26-2-manifests-carry-secret-references-only
