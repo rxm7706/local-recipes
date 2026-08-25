@@ -59,7 +59,7 @@ development_status:
   16-5-identity-is-oidc-delegated-no-local-passwords: done
   17-1-steward-init-shell-init-detect-and-prepare-the-machine: done
   17-2-steward-setup-initrepo-take-the-machine-to-green: done
-  18-1-django-pyforge-is-the-only-chrome: backlog
+  18-1-django-pyforge-is-the-only-chrome: done
   18-2-the-switcher-shows-only-what-the-user-may-reach: backlog
   18-3-two-clients-one-rs256-assertion: backlog
   19-1-warden-moves-and-is-renamed: backlog

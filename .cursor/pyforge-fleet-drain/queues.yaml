@@ -3,13 +3,38 @@
 
 campaign:
   mode: drain_to_zero
-  updated: '2026-08-23'
+  updated: '2026-08-24'
   coordinator: cursor-hand-driven
+  sequencing: SEQUENCING.md
 skip_policies:
 - station: steward
   story: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
   action: skip_on_blocked
-  reason: Requires live OCP cluster; dispatch 12-8 next and report skip to operator.
+  reason: Live OCP/CRC.
+- station: steward
+  story: 26-3-openfeature-packages-on-the-channel-operator-gate
+  action: skip_on_blocked
+  reason: Operator OpenFeature + cachebox 5.x feedstocks.
+- station: steward
+  story: 26-4-one-flag-flips-three-surfaces-without-a-redeploy
+  action: skip_on_blocked
+  reason: Deps 26-3.
+- station: steward
+  story: 27-1-liquibase-on-the-channel-operator-gate
+  action: skip_on_blocked
+  reason: Operator Liquibase >=5.0.4 feedstock.
+- station: steward
+  story: 27-2-pre-upgrade-job-and-dml-only-app-role
+  action: skip_on_blocked
+  reason: Deps 27-1.
+- station: steward
+  story: 27-3-stale-extraction-fails-ci
+  action: skip_on_blocked
+  reason: Deps 27-2 / 27-1.
+- station: steward
+  story: 27-4-test-databases-still-migrate
+  action: skip_on_blocked
+  reason: Deps 27-2 / 27-1.
 order_overrides:
   marshal:
   - 11-5-referenced-dependency-verification-and-doctor-delegation
@@ -62,80 +87,136 @@ order_overrides:
   - 25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided
   - 25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner
   steward:
-  - 12-3-air-gap-parity-is-a-failing-check
-  - 12-4-the-cluster-bring-up-is-documented-reproducible-and-key-disciplined
-  - 12-5-the-db-gpt-sidecar-joins-the-chart
-  - 12-6-redis-is-hardened-still-ephemeral
-  - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
-  - 12-8-github-projects-v2-lands-in-github-metrics-via-dlt
-  - 12-9-ocp-as-a-portability-profile
-  - 13-1-workspace-verbs-over-git-worktree
-  - 13-2-status-and-the-feed-mirror-decision
-  - 13-3-a-repo-set-opens-as-one-workspace
-  - 13-4-the-set-reports-and-tears-down-safely
-  - 14-1-the-pre-flight-diff-retrodicts-a-real-upgrade
-  - 14-2-apply-is-deliberate-branched-and-never-clobbers-custom
-  - 14-3-clobbered-custom-surfaces-are-caught-and-re-applied
-  - 14-4-the-pin-fan-out-is-enumerated-not-discovered-by-red-tests
-  - 14-5-one-command-proves-the-upgrade-landed
-  - 15-1-one-command-reports-the-whole-pipelines-truth
-  - 15-2-one-command-advances-a-stale-package-end-to-end
-  - 15-3-five-modules-wire-through-the-provisioning-verb
-  - 15-4-the-upgrade-gate-spot-checks-one-native-path-per-class
-  - 16-1-dependencies-are-pixi-sourced-single-authority
-  - 16-2-startup-refuses-misconfiguration-two-stage-and-named
-  - 16-3-every-process-speaks-structlog-otel
-  - 16-4-policy-is-a-test-suite
-  - 16-5-identity-is-oidc-delegated-no-local-passwords
-  - 17-1-steward-init-shell-init-detect-and-prepare-the-machine
-  - 17-2-steward-setup-initrepo-take-the-machine-to-green
+  - 18-1-django-pyforge-is-the-only-chrome
+  - 32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core
+  - 18-2-the-switcher-shows-only-what-the-user-may-reach
+  - 18-3-two-clients-one-rs256-assertion
+  - 19-1-warden-moves-and-is-renamed
+  - 19-2-seven-more-portal-shells-under-the-prefix
+  - 20-1-wagtail-publishes-without-a-deploy
+  - 20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue
+  - 21-1-supervisor-tables-in-public
+  - 21-2-atlas-mcp-on-the-host-dual-era
+  - 21-3-start-get-survives-disconnect
+  - 21-4-the-other-seven-mcp-faces
+  - 21-5-front-door-queries-the-supervisor
+  - 22-1-pyforge-dispatches-without-reimplementing
+  - 23-1-same-url-different-rows
+  - 24-1-cloudevents-on-redis-broker
+  - 24-2-cascades-halt-adapters-validate
+  - 25-1-circuits-trip-on-async-too
+  - 25-2-one-duckdb-writer
+  - 25-3-validation-errors-render-inline
+  - 25-4-restarts-reconcile
+  - 26-1-revoke-takes-effect-on-the-next-request
+  - 26-2-manifests-carry-secret-references-only
+  - 28-1-postgresql-driver-behind-the-existing-port
+  - 28-2-semantic-recall
+  - 29-1-skf-domain-skills-from-station-packages
+  - 29-2-personas-act-only-through-grammar-and-mcp
+  - 29-3-five-tier-check
+  - 30-1-remaining-console-surfaces-have-a-home
+  - 30-2-delete-the-generator-and-its-inbound-refs
+  - 31-1-class-keyed-playbook-is-the-operator-path
+  - 31-2-wired-or-not-is-class-correct
+  - 31-3-fresh-clone-class-path-is-proven
+  - 32-2-steward-deploy-profile-adapters-are-plugins
 stations:
   atlas:
     project: pyforge-atlas
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 18-1-map-existing-kedro-hooks-to-cap-18
+    queue:
+    - 18-1-map-existing-kedro-hooks-to-cap-18
   doctor:
     project: pyforge-doctor
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 17-1-extract-gather-prescribe-source-plugins
+    queue:
+    - 17-1-extract-gather-prescribe-source-plugins
   herald:
     project: pyforge-herald
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 16-1-extract-deck-export-format-plugins
+    queue:
+    - 16-1-extract-deck-export-format-plugins
   marshal:
     project: pyforge-marshal
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 26-1-extract-the-loop-runner-hook
+    queue:
+    - 26-1-extract-the-loop-runner-hook
   mason:
     project: pyforge-mason
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 10-1-extract-the-build-engine-hook
+    queue:
+    - 10-1-extract-the-build-engine-hook
   scribe:
     project: pyforge-scribe
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 4-1-register-graphstore-as-cap-18-plugins
+    queue:
+    - 4-1-register-graphstore-as-cap-18-plugins
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 1
-    next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
+    remaining_count: 41
+    next: 18-1-django-pyforge-is-the-only-chrome
     queue:
+    - 18-1-django-pyforge-is-the-only-chrome
+    - 32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core
+    - 18-2-the-switcher-shows-only-what-the-user-may-reach
+    - 18-3-two-clients-one-rs256-assertion
+    - 19-1-warden-moves-and-is-renamed
+    - 19-2-seven-more-portal-shells-under-the-prefix
+    - 20-1-wagtail-publishes-without-a-deploy
+    - 20-2-media-renditions-and-a-cache-that-cannot-eat-the-queue
+    - 21-1-supervisor-tables-in-public
+    - 21-2-atlas-mcp-on-the-host-dual-era
+    - 21-3-start-get-survives-disconnect
+    - 21-4-the-other-seven-mcp-faces
+    - 21-5-front-door-queries-the-supervisor
+    - 22-1-pyforge-dispatches-without-reimplementing
+    - 23-1-same-url-different-rows
+    - 24-1-cloudevents-on-redis-broker
+    - 24-2-cascades-halt-adapters-validate
+    - 25-1-circuits-trip-on-async-too
+    - 25-2-one-duckdb-writer
+    - 25-3-validation-errors-render-inline
+    - 25-4-restarts-reconcile
+    - 26-1-revoke-takes-effect-on-the-next-request
+    - 26-2-manifests-carry-secret-references-only
+    - 28-1-postgresql-driver-behind-the-existing-port
+    - 28-2-semantic-recall
+    - 29-1-skf-domain-skills-from-station-packages
+    - 29-2-personas-act-only-through-grammar-and-mcp
+    - 29-3-five-tier-check
+    - 30-1-remaining-console-surfaces-have-a-home
+    - 30-2-delete-the-generator-and-its-inbound-refs
+    - 31-1-class-keyed-playbook-is-the-operator-path
+    - 31-2-wired-or-not-is-class-correct
+    - 31-3-fresh-clone-class-path-is-proven
+    - 32-2-steward-deploy-profile-adapters-are-plugins
     - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
+    - 26-3-openfeature-packages-on-the-channel-operator-gate
+    - 26-4-one-flag-flips-three-surfaces-without-a-redeploy
+    - 27-1-liquibase-on-the-channel-operator-gate
+    - 27-2-pre-upgrade-job-and-dml-only-app-role
+    - 27-3-stale-extraction-fails-ci
+    - 27-4-test-databases-still-migrate
   warden:
     project: pyforge-warden
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 3
+    next: 9-1-warden-publishes-the-pr-gate-hook-book
+    queue:
+    - 9-1-warden-publishes-the-pr-gate-hook-book
+    - 9-2-current-scanners-become-optional-plugins
+    - 9-3-default-warden-stays-green-without-checkmarx
