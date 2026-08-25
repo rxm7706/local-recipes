@@ -357,6 +357,9 @@ COPY src/shared/packages/django-pyforge/src/django_pyforge /app/django_pyforge
 COPY src/shared/packages/django-warden/src/django_warden_fabric /app/django_warden_fabric
 # Steward 19.2: remaining station shells (projection-only chrome).
 COPY src/shared/packages/django-atlas/src/django_atlas_portal /app/django_atlas_portal
+# Story 23.1: atlas board imports pyforge.steward.dashboard; platform COPY
+# of src/platform cannot see the factory package, same shape as chrome.
+COPY src/shared/packages/pyforge-steward/src/pyforge /app/pyforge
 COPY src/shared/packages/django-doctor/src/django_doctor_portal /app/django_doctor_portal
 COPY src/shared/packages/django-herald/src/django_herald_portal /app/django_herald_portal
 COPY src/shared/packages/django-marshal/src/django_marshal_portal /app/django_marshal_portal
