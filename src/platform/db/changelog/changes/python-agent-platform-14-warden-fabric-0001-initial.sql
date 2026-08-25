@@ -1,0 +1,11 @@
+--liquibase formatted sql
+--changeset python-agent-platform:14
+--comment sqlmigrate warden_fabric.0001_initial
+--
+-- Create model ComplianceJob
+--
+CREATE TABLE "warden_fabric_compliancejob" ("id" uuid NOT NULL PRIMARY KEY, "storage_key" varchar(512) NOT NULL, "original_name" varchar(255) NOT NULL, "status" varchar(16) NOT NULL, "phase_index" smallint NOT NULL CHECK ("phase_index" >= 0), "error" text NOT NULL, "report_json" text NOT NULL, "sbom_json" text NOT NULL, "created_at" timestamp with time zone NOT NULL, "updated_at" timestamp with time zone NOT NULL);
+--
+-- Raw Python operation
+--
+-- THIS OPERATION CANNOT BE WRITTEN AS SQL

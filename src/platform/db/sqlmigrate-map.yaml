@@ -1,0 +1,19 @@
+# First-party Django migration → Liquibase changeset seq (canopy AD-9 / FR-23).
+# Ids are distribution:seq → python-agent-platform:N (Story 27.2).
+# Seq 1 is the shared engine-schema changeset; seq 2 is DML grants (no migration).
+distribution: python-agent-platform
+migrations:
+  langflow_integration.0001_create_langflow_schema: 1
+  dbgpt_integration.0001_create_dbgpt_schema: 1
+  django_pyforge.0001_supervisor_tables: 3
+  django_pyforge.0002_run_result_and_handle_subject: 4
+  django_pyforge.0003_run_state_timing: 5
+  users.0001_initial: 6
+  users.0002_user_idp_subject: 7
+  front_door.0001_homepage: 8
+  front_door.0002_console_parity: 9
+  sites.0001_initial: 10
+  sites.0002_alter_domain_unique: 11
+  sites.0003_set_site_domain_and_name: 12
+  sites.0004_alter_options_ordering_domain: 13
+  warden_fabric.0001_initial: 14

@@ -223,6 +223,12 @@ jobs:
       - name: Policy suite
         run: python -m pytest tests/policy -v
 
+      # Steward 27.3 / FR-23 / canopy AD-9: sqlmigrate extraction — a
+      # first-party production migration without a matching Liquibase
+      # changeset fails CI and names the missing distribution:seq id.
+      - name: sqlmigrate extraction
+        run: python -m db.sqlmigrate_extraction
+
       - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v
 
