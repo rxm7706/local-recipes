@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.4"
+
+package:
+  name: liquibase
+  version: ${{ version }}
+
+source:
+  url: https://github.com/liquibase/liquibase/releases/download/v${{ version }}/liquibase-${{ version }}.tar.gz
+  sha256: bb08638d70dddd6af8cca6e033148576f8214b5996831b1f8864eb3528f4cfce
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p ${PREFIX}/share/liquibase ${PREFIX}/bin
+        - cp -a ${SRC_DIR}/. ${PREFIX}/share/liquibase/
+        - chmod +x ${PREFIX}/share/liquibase/liquibase
+        - install -m 0755 ${RECIPE_DIR}/liquibase.sh ${PREFIX}/bin/liquibase
+      else:
+        - mkdir %PREFIX%\share\liquibase
+        - mkdir %PREFIX%\Scripts
+        - xcopy /E /I /Y %SRC_DIR% %PREFIX%\share\liquibase
+        - copy %RECIPE_DIR%\liquibase.bat %PREFIX%\Scripts\liquibase.bat
+
+requirements:
+  run:
+    - openjdk >=17
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -x ${PREFIX}/bin/liquibase
+          - test -f ${PREFIX}/share/liquibase/internal/lib/liquibase-core.jar
+          - liquibase --version
+        else:
+          - if not exist %PREFIX%\share\liquibase\internal\lib\liquibase-core.jar exit 1
+
+about:
+  homepage: https://www.liquibase.org/
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Database schema change management CLI (Community)
+  description: |
+    Liquibase Community 5.x CLI distribution. PostgreSQL JDBC is not bundled
+    (Community 5.0 stopped shipping JDBC drivers). Install liquibase-postgresql
+    to vendor org.postgresql:postgresql into LIQUIBASE_HOME/lib.
+  repository: https://github.com/liquibase/liquibase
+  documentation: https://docs.liquibase.com/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
