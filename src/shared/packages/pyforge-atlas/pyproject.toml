@@ -87,6 +87,15 @@ gate = ["pyforge-warden"]
 [project.scripts]
 pyforge-atlas = "pyforge.atlas.__main__:main"
 
+# CAP-18 / story 18.1: register today's Kedro backends as default plugins on
+# the canonical FR-43 group only. Never add pyforge.atlas.hooks / .plugins.
+[project.entry-points."pyforge.core.hooks"]
+atlas-catalog-ttl = "pyforge.atlas.cap18:CatalogTtlPlugin"
+atlas-pipeline-observability = "pyforge.atlas.cap18:PipelineObservabilityPlugin"
+atlas-node-observability = "pyforge.atlas.cap18:NodeObservabilityPlugin"
+atlas-node-validation = "pyforge.atlas.cap18:NodeValidationPlugin"
+atlas-pipeline-admission = "pyforge.atlas.cap18:PipelineAdmissionPlugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
