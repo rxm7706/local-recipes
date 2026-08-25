@@ -61,7 +61,7 @@ development_status:
   17-2-steward-setup-initrepo-take-the-machine-to-green: done
   18-1-django-pyforge-is-the-only-chrome: done
   18-2-the-switcher-shows-only-what-the-user-may-reach: done
-  18-3-two-clients-one-rs256-assertion: backlog
+  18-3-two-clients-one-rs256-assertion: done
   19-1-warden-moves-and-is-renamed: backlog
   19-2-seven-more-portal-shells-under-the-prefix: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
