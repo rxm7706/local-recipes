@@ -19,6 +19,8 @@ SECRET_KEY = env(
     default="UJU9GwsVBHxTGOpZqFdxZfnbUirlV3D2XilSEaOyDTYiPpzUx7nYy3SVMFGbekdE",
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
+# FR-25 / canopy AD-9: ephemeral test DBs keep Django's default migrate on
+# create. Do not reuse the Helm Job argv here.
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
 
 # PASSWORDS
