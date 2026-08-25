@@ -185,3 +185,10 @@ sidecar:
     apiBase: ""
     apiKeySecretKey: ""
   resources: {}
+
+# Story 26.4 / canopy AD-11: FILE flags. The JSON tree is NOT stored here —
+# pass --set-file flags.tree=src/platform/config/flags.json (the only tree).
+flags:
+  mountPath: /etc/pyforge
+  fileName: flags.json
+  tree: ""

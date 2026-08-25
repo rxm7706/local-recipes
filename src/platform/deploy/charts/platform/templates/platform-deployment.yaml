@@ -43,6 +43,7 @@ spec:
           volumeMounts:
             - name: wagtail-media
               mountPath: {{ .Values.media.mountPath | quote }}
+            {{- include "platform.flagsVolumeMount" . | nindent 12 }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -96,3 +97,4 @@ spec:
         - name: wagtail-media
           persistentVolumeClaim:
             claimName: {{ include "platform.media.pvcName" . }}
+        {{- include "platform.flagsVolume" . | nindent 8 }}

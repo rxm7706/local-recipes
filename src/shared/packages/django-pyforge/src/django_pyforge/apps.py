@@ -18,3 +18,8 @@ class DjangoPyforgeConfig(AppConfig):
         from django_pyforge import checks as _checks  # noqa: PLC0415
 
         _ = _checks
+        try:
+            from django_pyforge.flags import configure_from_env  # noqa: PLC0415
+        except ImportError:
+            return
+        configure_from_env()

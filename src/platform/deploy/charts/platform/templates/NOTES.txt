@@ -38,3 +38,9 @@ Migrations run in the {{ include "platform.migrate.fullname" . }} hook Job
 install the web pods go Ready before that Job finishes (the /ht/ Database
 check is connectivity-only), so ORM-touching pages 500 transiently until
 the migration completes; upgrades are covered by the pre-upgrade ordering.
+
+Flags (Story 26.4 / AD-11): ConfigMap {{ include "platform.fullname" . }}-flags
+is the in-cluster copy of src/platform/config/flags.json. Install with
+  --set-file flags.tree=src/platform/config/flags.json
+The FILE provider polls /etc/pyforge/flags.json in-process — do not add a
+Reloader or flagd sidecar.

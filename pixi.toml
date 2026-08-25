@@ -367,6 +367,13 @@ mcp-types = "==2.0.0"
 httpx2 = "==2.12.0"
 sse-starlette = "==3.0.2"
 python-multipart = "==0.0.20"
+# steward 26.4 / FR-34 — FILE provider for Platform CI pytest (image gets
+# these from python-agent-platform conda; do not loosen the 0.5.0 pin).
+openfeature-sdk = ">=0.10.0"
+openfeature-flagd-api = ">=1.0.0"
+openfeature-flagd-core = ">=1.0.0"
+openfeature-provider-flagd = "==0.5.0"
+cachebox = ">=5.1,<6"
 
 
 [feature.platform-image-pip]

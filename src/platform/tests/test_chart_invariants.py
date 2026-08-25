@@ -51,6 +51,7 @@ _VANILLA_KINDS = frozenset(
         "ServiceAccount",
         "PersistentVolumeClaim",
         "NetworkPolicy",
+        "ConfigMap",
     },
 )
 _WORKLOAD_KINDS = frozenset({"Deployment", "StatefulSet", "Job"})
@@ -123,8 +124,23 @@ def _import_yaml() -> Any:
 
 
 def _helm(*args: str) -> str:
+    argv = ["helm", *args]
+    touches_core = False
+    for item in args[1:]:
+        if item.startswith("-"):
+            continue
+        try:
+            if Path(item).resolve() == _CORE_CHART.resolve():
+                touches_core = True
+                break
+        except OSError:
+            continue
+    if touches_core and "--set-file" not in args:
+        argv.extend(
+            ["--set-file", f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}"],
+        )
     result = subprocess.run(  # noqa: S603 -- fixed argv, no shell, no untrusted input
-        ["helm", *args],  # noqa: S607
+        argv,
         check=False,
         capture_output=True,
         text=True,
