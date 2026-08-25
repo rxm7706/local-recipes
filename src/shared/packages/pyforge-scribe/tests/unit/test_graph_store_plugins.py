@@ -1,8 +1,9 @@
 """Unit tests for GraphStore CAP-18 plugins (Story 4.1).
 
 Covers every I/O matrix row in
-spec-4-1-register-graphstore-as-cap-18-plugins.md. The steward-owner
-second plugin is a test double -- no PostgreSQL / pgvector / SQLite.
+spec-4-1-register-graphstore-as-cap-18-plugins.md. An in-process
+steward-owner double still proves compile/recall stay protocol-only;
+the real PostgreSQL plugin is covered in test_graph_store_pg.py.
 """
 
 from __future__ import annotations
@@ -382,8 +383,9 @@ def test_pyproject_declares_flatfile_on_canonical_core_hooks_group_only() -> Non
     assert "pyforge.scribe.plugins" not in groups
     for key in groups:
         assert not key.startswith("pyforge.scribe."), key
-    # No PG entry point -- the class does not exist.
-    assert "scribe-graphstore-pg" not in groups[ENTRY_POINT_GROUP]
+    assert groups[ENTRY_POINT_GROUP]["scribe-graphstore-pg"] == (
+        "pyforge.scribe.graph_store_pg:PostgresGraphStorePlugin"
+    )
 
 
 def test_hook_constants_reserve_steward_owner() -> None:

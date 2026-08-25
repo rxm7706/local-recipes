@@ -19,11 +19,15 @@ dependencies = [
     "pyforge-core",
 ]
 
+[project.optional-dependencies]
+postgres = ["psycopg>=3.3.4"]
+
 [project.scripts]
 scribe = "pyforge.scribe.cli:main"
 
 [project.entry-points."pyforge.core.hooks"]
 scribe-graphstore-flatfile = "pyforge.scribe.graph_store:FlatFileGraphStorePlugin"
+scribe-graphstore-pg = "pyforge.scribe.graph_store_pg:PostgresGraphStorePlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
