@@ -130,11 +130,10 @@ stations:
     queue: []
   doctor:
     project: pyforge-doctor
-    drained: false
-    remaining_count: 1
-    next: 17-1-extract-gather-prescribe-source-plugins
-    queue:
-    - 17-1-extract-gather-prescribe-source-plugins
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   herald:
     project: pyforge-herald
     drained: true
