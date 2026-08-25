@@ -5,3 +5,39 @@ databaseChangeLog:
   - include:
       file: changes/python-agent-platform-2-app-role-grants.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-3-django-pyforge-0001-supervisor-tables.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-4-django-pyforge-0002-run-result.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-5-django-pyforge-0003-run-state-timing.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-6-users-0001-initial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-7-users-0002-idp-subject.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-8-front-door-0001-homepage.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-9-front-door-0002-console-parity.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-10-sites-0001-initial.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-11-sites-0002-alter-domain-unique.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-12-sites-0003-set-site-domain.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-13-sites-0004-ordering.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-14-warden-fabric-0001-initial.sql
+      relativeToChangelogFile: true
