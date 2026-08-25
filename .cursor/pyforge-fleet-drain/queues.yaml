@@ -143,11 +143,10 @@ stations:
     queue: []
   marshal:
     project: pyforge-marshal
-    drained: false
-    remaining_count: 1
-    next: 26-1-extract-the-loop-runner-hook
-    queue:
-    - 26-1-extract-the-loop-runner-hook
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   mason:
     project: pyforge-mason
     drained: true
