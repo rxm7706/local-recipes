@@ -8,11 +8,11 @@
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 215
+# stories: 219
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -113,7 +113,7 @@ development_status:
   25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided: done
   25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner: done
   26-1-extract-the-loop-runner-hook: done
-  27-1-skf-skill-and-persona-for-marshal: backlog
+  27-1-skf-skill-and-persona-for-marshal: done
   27-2-first-portal-slice-loop-homes: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
