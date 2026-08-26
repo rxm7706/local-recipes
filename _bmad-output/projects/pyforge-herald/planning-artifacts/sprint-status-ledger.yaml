@@ -47,7 +47,7 @@ development_status:
   15-2-dense-content-renders-as-shapes-that-fit: done
   16-1-extract-deck-export-format-plugins: done
   17-1-skf-skill-and-persona-for-herald: done
-  17-2-first-portal-slice-deck-status: backlog
+  17-2-first-portal-slice-deck-status: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
