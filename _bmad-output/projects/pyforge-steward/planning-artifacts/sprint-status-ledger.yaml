@@ -113,7 +113,7 @@ development_status:
   34-2-kedro-writes-the-parquet-cache: done
   34-3-vectors-persist-on-the-plane: done
   34-4-agents-cannot-reach-oltp: done
-  34-5-scribe-semantic-recall-uses-the-plane: backlog
+  34-5-scribe-semantic-recall-uses-the-plane: done
   35-1-cluster-requires-mcp-host: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
@@ -196,7 +196,7 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
-  epic-34: in-progress
+  epic-34: done
   epic-34-retrospective: optional
   epic-35: done
   epic-35-retrospective: optional

@@ -28,6 +28,7 @@ scribe = "pyforge.scribe.cli:main"
 [project.entry-points."pyforge.core.hooks"]
 scribe-graphstore-flatfile = "pyforge.scribe.graph_store:FlatFileGraphStorePlugin"
 scribe-graphstore-pg = "pyforge.scribe.graph_store_pg:PostgresGraphStorePlugin"
+scribe-graphstore-plane = "pyforge.scribe.graph_store_plane:PlaneGraphStorePlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
