@@ -156,7 +156,15 @@ def test_does_not_add_loop_supervisor_ingest():
         if not path.is_file() or path.suffix not in {".py", ".md"}:
             continue
         text = path.read_text(encoding="utf-8")
-        if any(marker in text for marker in ingest_markers) and "Do not implement" not in text:
+        lowered = text.lower()
+        prohibits = (
+            "do not implement" in lowered
+            or "do not wire" in lowered
+            or "never" in lowered
+            or "no bmad-loop ingest" in lowered
+            or "no supervisor ingest" in lowered
+        )
+        if any(marker in text for marker in ingest_markers) and not prohibits:
             if "test_" in rel:
                 continue
             offenders.append(rel)

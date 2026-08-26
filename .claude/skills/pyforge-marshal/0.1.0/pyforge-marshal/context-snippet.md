@@ -3,4 +3,4 @@
 |quick-start:{SKILL.md#quick-start}
 |api: main(), run_status(), run_homes(), run_check()
 |key-types:{SKILL.md#key-types} — MarshalContext (--project front door), frozen exit domain
-|gotchas: run from repo root; persona grammar is pyforge marshal …; do not import internals; no bmad-loop ingest in this skill
+|gotchas: run from repo root; persona grammar is pyforge marshal …; do not import internals; Do not implement bmad-loop ingest in this skill

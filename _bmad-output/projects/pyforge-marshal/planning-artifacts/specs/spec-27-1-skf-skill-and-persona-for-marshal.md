@@ -2,9 +2,11 @@
 title: SKF domain skill and BMAD persona for marshal
 type: feature
 created: '2026-08-25'
-status: in-review
-updated: '2026-08-25'
+status: done
+updated: '2026-08-26'
 baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
@@ -60,6 +62,32 @@ Bind to epics.md Story 27.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 - 2026-08-25: drafted from epics.md for fleet drain preflight
 
 ## Review Triage Log
+
+### 2026-08-26 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 2: (high 0, medium 0, low 2)
+- defer: 0
+- reject: 8
+- addressed_findings:
+  - `[low]` `[patch]` ingest-guard treated prohibition language as a wire; context-snippet now says Do not implement, test accepts forbid phrasing
+  - `[low]` `[patch]` CLAUDE.md / AGENTS.md / CFE now asserted unchanged vs origin/main
+
+## Auto Run Result
+
+Status: done
+
+Summary: SKF content skill `pyforge-marshal` compiled from `src/shared/packages/pyforge-marshal/` with provenance. BMAD launcher `bmad-agent-marshal` consults that skill and may only emit `pyforge marshal …` and `POST /stations/marshal/mcp`. Golden status transcript plus contract tests fail on filesystem or ad-hoc HTTP freelance. No bmad-loop ingest. CFE / CLAUDE.md / AGENTS.md unchanged. No `pyforge.*` under `src/platform/`.
+
+Files:
+- `.claude/skills/pyforge-marshal/` — SKF brief, versioned package, `active` pointer
+- `.claude/skills/bmad-agent-marshal/` — launcher SKILL.md, customize.toml, golden transcript
+- `tests/meta/test_skf_domain_skill.py` + `test_station_persona.py` — station AC gates
+- `planning-artifacts/specs/spec-27-1-….md` — tracked story spec
+
+Review: 2 low patches applied; follow-up score 2 → false.
+
+Verification: 19 passed (`test_skf_domain_skill` + `test_station_persona`).
 
 ## Verification
 
