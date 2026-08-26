@@ -1319,4 +1319,6 @@ sibling Dream — CAP-18 is **not** that board.
 **2026-08-26 ready-to-implement:** SPEC `ready`. CAP-19 / Epic 34 is the live
 residual. Do not re-dispatch 18–32. First dispatch **S-34.1**
 (`specs/spec-34-1-read-only-live-attach.md`). `django-lasuite` is not a Canopy
-FR. OQs have defaults; do not block 34.1 on them.
+FR. OQs have defaults; do not block 34.1 on them. **After 34.1:** steward
+Epic 35 (`spec-35-1-cluster-requires-mcp-host.md`) on
+`spec-mcp-era-isolation` CAP-4 — cluster mcp-host fail-loud, not CAP-19.

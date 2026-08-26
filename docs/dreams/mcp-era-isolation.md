@@ -50,10 +50,13 @@ and not on conda-forge. SEP-2663 Tasks is not in mcp 2.0.0.
    input). Own spec. Does not claim to fix CRC.
 3. **Slice 3 (later)** — retire the ImportError skip when FastMCP 4 is on
    conda-forge **or** Langflow drops `mcp<2`. Until then the skip is a safety
-   net only when the sidecar is down (loud log).
+   net only when the sidecar URL is **unset**. CAP-4 does not retire it.
+4. **CAP-4 (cluster required, 2026-08-26)** — Helm + production check fail-loud
+   if mcp-host / `MCP_HOST_SIDECAR_BASE_URL` is omitted **on the cluster**.
+   Steward Epic 35 / `spec-35-1-cluster-requires-mcp-host.md`. Not Epic 34.
 
 Invert (sidecar Langflow, lift mcp 2.x on the web image) only if the hop
-fails CAP-4 identity or latency.
+fails CAP-1 identity or latency.
 
 ## Constraints
 
@@ -79,3 +82,5 @@ fails CAP-4 identity or latency.
   host proxy via `MCP_HOST_SIDECAR_BASE_URL`, CRC proofs in spec memlog.
   Slice 2 implementation started 2026-08-26 (`scripts/mcp_factory_stdio_translator.py`).
   Slice 3 criteria in `retire-skip.md` (ImportError skip kept).
+- **2026-08-26** — CAP-4 planned: cluster overlay cannot omit mcp-host
+  (`cluster-required.md`). Epic 35.1 ready-for-dev. Dispatch after 34.1.

@@ -1,8 +1,11 @@
 # Slice 3 — retire the ImportError skip
 
-**Not slice 1.** `iter_station_mcp_apps` / `_install_flags_mcp` still catch
-`ImportError` when `MCP_HOST_SIDECAR_BASE_URL` is **unset** (laptop /
-`platform-ci-test` with mcp 2.x loads faces in-process).
+**Not slice 1. Not CAP-4.** `iter_station_mcp_apps` / `_install_flags_mcp`
+still catch `ImportError` when `MCP_HOST_SIDECAR_BASE_URL` is **unset**
+(laptop / `platform-ci-test` with mcp 2.x loads faces in-process).
+
+CAP-4 (Epic 35) fail-louds the **cluster** chart and production check. It does
+**not** delete this skip.
 
 ## Retire when (any)
 
