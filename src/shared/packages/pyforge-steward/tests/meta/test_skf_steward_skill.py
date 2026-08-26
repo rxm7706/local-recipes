@@ -161,21 +161,14 @@ def test_story_does_not_add_pyforge_under_src_platform():
     assert not offenders, f"src/platform pyforge imports in this diff: {changed} {offenders}"
 
 
-def test_does_not_implement_wave_b_portal_slice():
+def test_wave_b_portal_slice_is_owned_by_33_2():
+    """33.1 must not own the portal slice; 33.2's suite gates django-steward."""
     root = _repo_root()
-    named = subprocess.check_output(
-        ["git", "diff", "--name-only", "origin/main"],
-        cwd=root,
-        text=True,
+    views = (
+        root
+        / "src/shared/packages/django-steward/src/django_steward_portal/views.py"
     )
-    untracked = subprocess.check_output(
-        ["git", "ls-files", "--others", "--exclude-standard"],
-        cwd=root,
-        text=True,
-    )
-    forbidden = [
-        line
-        for line in (named + untracked).splitlines()
-        if "django-steward" in line or "provision-inventory" in line
-    ]
-    assert not forbidden, f"Wave B / 33.2 files in this story: {forbidden}"
+    assert views.is_file()
+    text = views.read_text(encoding="utf-8")
+    assert "PortalClient" in text
+    assert "provision_list" in text

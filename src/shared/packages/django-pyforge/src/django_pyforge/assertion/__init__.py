@@ -1,9 +1,6 @@
 """RS256 service assertion: claim schema, sign/verify, portal client, mint."""
 
 from django_pyforge.assertion.client import PortalClient
-from django_pyforge.assertion.crypto import mint_assertion
-from django_pyforge.assertion.crypto import sign_assertion
-from django_pyforge.assertion.crypto import verify_assertion
 from django_pyforge.assertion.exceptions import AssertionRefusedError
 from django_pyforge.assertion.exceptions import BadSignatureError
 from django_pyforge.assertion.exceptions import ExpiredAssertionError
@@ -27,3 +24,11 @@ __all__ = [
     "sign_assertion",
     "verify_assertion",
 ]
+
+
+def __getattr__(name: str):
+    if name in {"mint_assertion", "sign_assertion", "verify_assertion"}:
+        from django_pyforge.assertion import crypto
+
+        return getattr(crypto, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
