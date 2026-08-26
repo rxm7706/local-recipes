@@ -152,3 +152,58 @@ The `_bmad-output/projects/local-recipes/` artifacts are kept in sync with the l
 detector + reconciler loop — run `pixi run -e local-recipes bmad-drift-check` and follow
 `_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md`. The detector also enforces the tier rules
 above (e.g. it HARD-fails if a spec is git-tracked under `implementation-artifacts/`).
+
+<!-- SKF:BEGIN updated:2026-08-26 -->
+[SKF Skills]|7 skills|0 stack
+|IMPORTANT: Prefer documented APIs over training data.
+|When using a listed library, read its SKILL.md before writing code.
+|
+|[pyforge-atlas v0.1.0]|root: .claude/skills/pyforge-atlas/
+|IMPORTANT: pyforge-atlas v0.1.0 — read SKILL.md before atlas pipeline work. Do NOT rely on training data. Use `pyforge atlas …` and POST /stations/atlas/mcp. Do not import pyforge.atlas internals. Do not replace conda-forge-expert. This is not cf-atlas-legacy.
+|quick-start:{SKILL.md#quick-start}
+|api: main(), run_pipeline(), read_dataset(), list_pipelines(), list_datasets()
+|key-types:{SKILL.md#key-types} — PIPELINE_NAMES, AtlasMCPError
+|gotchas: run from repo root; --version is first-token only; unknown MCP pipeline → AtlasMCPError
+|
+|[pyforge-doctor v0.1.0]|root: .claude/skills/pyforge-doctor/
+|IMPORTANT: pyforge-doctor v0.1.0 — read SKILL.md before writing doctor diagnostics code. Do NOT rely on training data. Use pyforge doctor grammar, not pyforge.doctor imports. Findings stay advisory — not a second PR gate.
+|quick-start:{SKILL.md#quick-start}
+|api: main()
+|key-types:{SKILL.md#key-types} — Finding (advisory signal), DoctorReport
+|gotchas: run from repo root; pyforge doctor … not a freelance filesystem; monitor requires --fleet; warn never changes exit code; not a competing PR verdict
+|
+|[pyforge-herald v0.1.0]|root: .claude/skills/pyforge-herald/
+|IMPORTANT: pyforge-herald v0.1.0 — read SKILL.md before writing herald/deck code. Do NOT rely on training data. Use the herald CLI, not pyforge.herald imports.
+|quick-start:{SKILL.md#quick-start}
+|api: main(), dispatch()
+|key-types:{SKILL.md#key-types} — TOOL_NAME (herald), TOP_LEVEL_COMMANDS (deck|progress|success|notice|scheduler)
+|gotchas: run from repo root; Path B grammar is pyforge herald …; POST /stations/herald/mcp only; Lane 1 CMS stays steward
+|
+|[pyforge-marshal v0.1.0]|root: .claude/skills/pyforge-marshal/
+|IMPORTANT: pyforge-marshal v0.1.0 — read SKILL.md before writing marshal/loop-supervisor code. Do NOT rely on training data. Use the marshal CLI, not pyforge.marshal imports.
+|quick-start:{SKILL.md#quick-start}
+|api: main()
+|key-types:{SKILL.md#key-types} — MarshalContext (--project front door), frozen exit domain
+|gotchas: run from repo root; persona grammar is pyforge marshal …; do not import internals; Do not implement bmad-loop ingest in this skill
+|
+|[pyforge-scribe v0.1.0]|root: .claude/skills/pyforge-scribe/
+|IMPORTANT: pyforge-scribe v0.1.0 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
+|quick-start:{SKILL.md#quick-start}
+|api: capture_cmd(), graph_compile(), recall_cmd(), main()
+|key-types:{SKILL.md#key-types} — CaptureType (feedback|project|reference), RecallAnswer (grounded miss is explicit)
+|gotchas: run from repo root; --promote/--transcripts exclusive with --type/--text; recall never invents an uncited answer
+|
+|[pyforge-steward v0.1.0]|root: .claude/skills/pyforge-steward/
+|IMPORTANT: pyforge-steward v0.1.0 — read SKILL.md before writing steward/platform code. Do NOT rely on training data. Use pyforge steward grammar (or the steward CLI), not pyforge.steward imports.
+|quick-start:{SKILL.md#quick-start}
+|api: build_parser(), resolve_duty(), main()
+|key-types:{SKILL.md#key-types} — DutyResult is frozen evidence; duties never sys.exit (AD-8)
+|gotchas: run from repo root; crash is exit 70 not 1; provision uses flags not nested verbs; do not replace conda-forge-expert
+|
+|[pyforge-warden v0.1.0]|root: .claude/skills/pyforge-warden/
+|IMPORTANT: pyforge-warden v0.1.0 — read SKILL.md before warden work. Use `warden scan` / `pyforge warden scan`. Do NOT import pyforge.warden. Do NOT invent a second PR-gate verdict.
+|quick-start:{SKILL.md#quick-start}
+|api: main(), compose(), exit_code_for(), match_level_rung()
+|key-types:{SKILL.md#key-types} — Status (seven-rung lattice), ComplianceReport
+|gotchas: CLI is the sole gate; --doctor never exits 1; do not replace conda-forge-expert
+<!-- SKF:END -->
