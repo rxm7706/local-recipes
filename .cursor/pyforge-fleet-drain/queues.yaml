@@ -125,10 +125,9 @@ stations:
   atlas:
     project: pyforge-atlas
     drained: false
-    remaining_count: 2
-    next: 19-1-skf-skill-and-persona-for-atlas
+    remaining_count: 1
+    next: 19-2-first-portal-slice-inventory-row
     queue:
-    - 19-1-skf-skill-and-persona-for-atlas
     - 19-2-first-portal-slice-inventory-row
   doctor:
     project: pyforge-doctor
@@ -140,10 +139,9 @@ stations:
   herald:
     project: pyforge-herald
     drained: false
-    remaining_count: 2
-    next: 17-1-skf-skill-and-persona-for-herald
+    remaining_count: 1
+    next: 17-2-first-portal-slice-deck-status
     queue:
-    - 17-1-skf-skill-and-persona-for-herald
     - 17-2-first-portal-slice-deck-status
   marshal:
     project: pyforge-marshal
@@ -156,10 +154,9 @@ stations:
   mason:
     project: pyforge-mason
     drained: false
-    remaining_count: 2
-    next: 11-1-persona-consults-conda-forge-expert
+    remaining_count: 1
+    next: 11-2-first-portal-slice-recipe-diagnose
     queue:
-    - 11-1-persona-consults-conda-forge-expert
     - 11-2-first-portal-slice-recipe-diagnose
   scribe:
     project: pyforge-scribe

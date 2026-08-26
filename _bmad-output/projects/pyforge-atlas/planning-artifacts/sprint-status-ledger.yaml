@@ -8,11 +8,11 @@
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 92
+# stories: 96
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -41,7 +41,7 @@ development_status:
   17-1-the-from-scratch-run-is-a-chartered-capability: done
   17-2-handoffs-are-execution-ready: done
   18-1-map-existing-kedro-hooks-to-cap-18: done
-  19-1-skf-skill-and-persona-for-atlas: backlog
+  19-1-skf-skill-and-persona-for-atlas: done
   19-2-first-portal-slice-inventory-row: backlog
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done
