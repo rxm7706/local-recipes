@@ -5,7 +5,7 @@ requires = ["hatchling"]
 [project]
 name = "django-marshal"
 version = "0.1.0"
-description = "Marshal station portal (reusable Django app): chrome shell."
+description = "Marshal station portal (reusable Django app): list provisioned loop homes."
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
