@@ -4,4 +4,24 @@
 {% endblock title %}
 {% block content %}
   <p id="scribe-body">scribe portal</p>
+  <form
+    id="scribe-recall-form"
+    method="post"
+    hx-post="{{ request.path }}"
+    hx-target="#scribe-recall-results"
+    hx-swap="innerHTML"
+  >
+    {% csrf_token %}
+    <label for="scribe-recall-query">query</label>
+    <input
+      id="scribe-recall-query"
+      type="text"
+      name="query"
+      value="{{ query }}"
+    />
+    <button type="submit">Recall</button>
+  </form>
+  <div id="scribe-recall-results">
+    {% include "scribe_portal/results.html" %}
+  </div>
 {% endblock content %}

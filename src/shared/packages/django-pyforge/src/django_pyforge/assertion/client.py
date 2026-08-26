@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -11,6 +13,7 @@ from django_pyforge.assertion.crypto import sign_assertion, verify_assertion
 from django_pyforge.assertion.schema import audience_for
 
 InvokeRunner = Callable[..., dict[str, Any]]
+StationJob = Callable[..., dict[str, Any]]
 
 LAST_DIAGNOSE_TOOL = "last_diagnose"
 
@@ -33,8 +36,67 @@ def lookup_portal_job(station: str, tool: str) -> Callable[..., dict[str, Any]]:
         raise KeyError(msg) from exc
 
 
+def parse_recall_cli(stdout: str) -> dict[str, Any]:
+    """Turn ``scribe recall`` stdout into cited portal results."""
+    citation: str | None = None
+    body: list[str] = []
+    for line in stdout.splitlines():
+        if line.startswith("[source: ") and line.endswith("]"):
+            citation = line[len("[source: ") : -1]
+        else:
+            body.append(line)
+    text = "\n".join(body).strip() or "no grounded answer found"
+    grounded = citation is not None and text != "no grounded answer found"
+    if text == "no grounded answer found":
+        return {"grounded": False, "text": text, "citation": None}
+    return {"grounded": grounded, "text": text, "citation": citation}
+
+
+def _grammar_recall(payload: dict[str, Any]) -> dict[str, Any]:
+    query = str(payload.get("query", ""))
+    pyforge = shutil.which("pyforge")
+    argv = [pyforge, "scribe", "recall", query] if pyforge else ["scribe", "recall", query]
+    completed = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return parse_recall_cli(completed.stdout)
+
+
+def _scribe_recall_job(
+    *,
+    assertion: str,
+    payload: dict[str, Any] | None = None,
+    **_: Any,
+) -> dict[str, Any]:
+    del assertion
+    return _grammar_recall(payload or {})
+
+
+register_portal_job("scribe", "recall", _scribe_recall_job)
+
+
+def _default_station_job(
+    *,
+    station: str,
+    job: str,
+    payload: dict[str, Any],
+    assertion: str,
+) -> dict[str, Any]:
+    verify_assertion(assertion, audience=audience_for(station))
+    registered = lookup_portal_job(station, job)
+    return registered(assertion=assertion, payload=payload)
+
+
 class PortalClient:
-    """In-process portal client. Sign assertions; list provisioned loop homes."""
+    """In-process portal client. Sign assertions; list provisioned loop homes.
+
+    ``call`` is the station-compute path for a named job: emit, verify,
+    then the registered in-process job (or an injectable runner). Portals
+    must not open HTTP to services.
+    """
 
     def emit(
         self,
@@ -137,3 +199,28 @@ class PortalClient:
             "last_pull": None,
             "stale_mirror": False,
         }
+
+    def call(
+        self,
+        station: str,
+        job: str,
+        payload: dict[str, Any],
+        *,
+        sub: str,
+        roles: list[str],
+        private_pem: str | None = None,
+        runner: StationJob | None = None,
+    ) -> dict[str, Any]:
+        assertion = self.emit(
+            sub,
+            roles,
+            station,
+            private_pem=private_pem,
+        )
+        run = runner or _default_station_job
+        return run(
+            station=station,
+            job=job,
+            payload=payload,
+            assertion=assertion,
+        )
