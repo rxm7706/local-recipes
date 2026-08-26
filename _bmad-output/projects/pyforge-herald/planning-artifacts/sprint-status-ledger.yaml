@@ -46,6 +46,8 @@ development_status:
   15-1-template-parse-then-fill-produces-a-genuinely-editable-deck: done
   15-2-dense-content-renders-as-shapes-that-fit: done
   16-1-extract-deck-export-format-plugins: done
+  17-1-skf-skill-and-persona-for-herald: backlog
+  17-2-first-portal-slice-deck-status: backlog
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
@@ -89,6 +91,8 @@ development_status:
   epic-15-retrospective: optional
   epic-16: backlog
   epic-16-retrospective: optional
+  epic-17: backlog
+  epic-17-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

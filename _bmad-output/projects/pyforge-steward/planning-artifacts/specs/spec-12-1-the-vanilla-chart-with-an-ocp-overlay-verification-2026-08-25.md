@@ -45,6 +45,7 @@ The CRC proofs in the table stand. Findings **5, 7, 8, 11** are dated as of that
 - **Finding 7 / 11 (pip layer vs conda `mcp`).** Follow-up is `spec-platform-image-one-pixi-env`: extras on `[feature.python-agent-platform]` conda deps; Containerfile has no `pip install --no-deps`; `[feature.platform-image-pip]` retired. `mcp-types` / `httpx2` were not folded (mcp 2.0 still a later story).
 - **Image proof (2026-08-25, not CRC).** `podman build -f src/platform/Containerfile -t localhost/platform:one-pixi-env .` → `localhost/platform:one-pixi-env` id `8cbee8e8f879`. Runtime `python -c` imports `django_structlog` and `rjsmin`. Do not treat this as a 12-7 Route/SCC re-prove.
 - **Next cluster upgrade (Liquibase only).** Apply changelog `:17` and `:18` on the next `liquibase update` / Helm hook. Not a 12-7 re-prove. Isolated `mfa` sqlmigrate and later Wagtailcore remain fake.
+- **Attempted 2026-08-25 evening:** CRC VM **Stopped**; `oc` / `helm` not on PATH. `:17`/`:18` **not applied**. Optionals (DB-GPT sidecar image, `platform_app` DML role / 27-2, OpenFeature ×4 / cachebox / Liquibase / Django 5.2.17 feedstocks) **not started**. Re-run after `crc start` and a platform-image push that contains those changesets.
 
 ## Contingency ladder (postgres/redis)
 
