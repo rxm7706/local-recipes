@@ -124,50 +124,64 @@ order_overrides:
 stations:
   atlas:
     project: pyforge-atlas
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 2
+    next: 19-1-skf-skill-and-persona-for-atlas
+    queue:
+    - 19-1-skf-skill-and-persona-for-atlas
+    - 19-2-first-portal-slice-inventory-row
   doctor:
     project: pyforge-doctor
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 1
+    next: 18-2-first-portal-slice-fleet-pulse
+    queue:
+    - 18-2-first-portal-slice-fleet-pulse
   herald:
     project: pyforge-herald
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 2
+    next: 17-1-skf-skill-and-persona-for-herald
+    queue:
+    - 17-1-skf-skill-and-persona-for-herald
+    - 17-2-first-portal-slice-deck-status
   marshal:
     project: pyforge-marshal
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 2
+    next: 27-1-skf-skill-and-persona-for-marshal
+    queue:
+    - 27-1-skf-skill-and-persona-for-marshal
+    - 27-2-first-portal-slice-loop-homes
   mason:
     project: pyforge-mason
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 2
+    next: 11-1-persona-consults-conda-forge-expert
+    queue:
+    - 11-1-persona-consults-conda-forge-expert
+    - 11-2-first-portal-slice-recipe-diagnose
   scribe:
     project: pyforge-scribe
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 2
+    next: 5-1-skf-skill-and-persona-for-scribe
+    queue:
+    - 5-1-skf-skill-and-persona-for-scribe
+    - 5-2-first-portal-slice-recall-query
   steward:
     project: pyforge-steward
     drained: false
-    remaining_count: 1
-    next: 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
+    remaining_count: 2
+    next: 33-1-skf-skill-and-persona-for-steward
     queue:
-    - 12-7-the-12-1-tier-3-items-are-verified-on-the-live-cluster
+    - 33-1-skf-skill-and-persona-for-steward
+    - 33-2-first-portal-slice-provision-list
   warden:
     project: pyforge-warden
-    drained: true
-    remaining_count: 0
-    next: null
-    queue: []
+    drained: false
+    remaining_count: 2
+    next: 10-1-skf-skill-and-persona-for-warden
+    queue:
+    - 10-1-skf-skill-and-persona-for-warden
+    - 10-2-first-portal-slice-audit-start-get

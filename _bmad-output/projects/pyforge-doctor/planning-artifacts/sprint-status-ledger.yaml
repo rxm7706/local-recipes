@@ -8,11 +8,11 @@
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 96
+# stories: 100
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
@@ -40,7 +40,7 @@ development_status:
   15-2-channel-and-recipe-staleness-are-ambient-findings: done
   16-1-the-shared-title-diff-is-an-ambient-finding: done
   17-1-extract-gather-prescribe-source-plugins: done
-  18-1-skf-skill-and-persona-for-doctor: backlog
+  18-1-skf-skill-and-persona-for-doctor: done
   18-2-first-portal-slice-fleet-pulse: backlog
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
