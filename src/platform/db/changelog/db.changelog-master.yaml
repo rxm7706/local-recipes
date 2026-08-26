@@ -33,6 +33,9 @@ databaseChangeLog:
       file: changes/python-agent-platform-18-third-party-0001.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/python-agent-platform-19-wagtail-7-4-catchup.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/python-agent-platform-8-front-door-0001-homepage.sql
       relativeToChangelogFile: true
   - include:
