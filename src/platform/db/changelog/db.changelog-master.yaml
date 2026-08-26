@@ -27,6 +27,12 @@ databaseChangeLog:
       file: changes/python-agent-platform-16-wagtail-taggit.sql
       relativeToChangelogFile: true
   - include:
+      file: changes/python-agent-platform-17-django-celery-beat.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/python-agent-platform-18-third-party-0001.sql
+      relativeToChangelogFile: true
+  - include:
       file: changes/python-agent-platform-8-front-door-0001-homepage.sql
       relativeToChangelogFile: true
   - include:

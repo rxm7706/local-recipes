@@ -667,6 +667,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/docutils@2.iml" filepath="$PROJECT_DIR$/.idea/docutils@2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/docutils@3.iml" filepath="$PROJECT_DIR$/.idea/docutils@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/docutils@4.iml" filepath="$PROJECT_DIR$/.idea/docutils@4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/draftjs_exporter.iml" filepath="$PROJECT_DIR$/.idea/draftjs_exporter.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/drf-spectacular.iml" filepath="$PROJECT_DIR$/.idea/drf-spectacular.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/drf-yasg.iml" filepath="$PROJECT_DIR$/.idea/drf-yasg.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/drf-yasg@1.iml" filepath="$PROJECT_DIR$/.idea/drf-yasg@1.iml" />
@@ -949,6 +950,8 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/kaggle@1.iml" filepath="$PROJECT_DIR$/.idea/kaggle@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/kagglehub.iml" filepath="$PROJECT_DIR$/.idea/kagglehub.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/kagglesdk.iml" filepath="$PROJECT_DIR$/.idea/kagglesdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/kedro_0_19_9_project.iml" filepath="$PROJECT_DIR$/.idea/kedro_0_19_9_project.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/kedro_1_0_0_project.iml" filepath="$PROJECT_DIR$/.idea/kedro_1_0_0_project.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/keras.iml" filepath="$PROJECT_DIR$/.idea/keras.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/keybert.iml" filepath="$PROJECT_DIR$/.idea/keybert.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/keyring.iml" filepath="$PROJECT_DIR$/.idea/keyring.iml" />
@@ -1784,6 +1787,12 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/vcrpy@1.iml" filepath="$PROJECT_DIR$/.idea/vcrpy@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/virtualenv.iml" filepath="$PROJECT_DIR$/.idea/virtualenv.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/visions.iml" filepath="$PROJECT_DIR$/.idea/visions.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vizro.iml" filepath="$PROJECT_DIR$/.idea/vizro.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vizro-dash-components.iml" filepath="$PROJECT_DIR$/.idea/vizro-dash-components.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vizro-e2e-flow.iml" filepath="$PROJECT_DIR$/.idea/vizro-e2e-flow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vizro-mcp.iml" filepath="$PROJECT_DIR$/.idea/vizro-mcp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vizro@1.iml" filepath="$PROJECT_DIR$/.idea/vizro@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vizro_ai.iml" filepath="$PROJECT_DIR$/.idea/vizro_ai.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/vuln-critical-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-critical-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/vuln-high-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-high-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/vuln-kev-fail-on-kev-false-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-kev-fail-on-kev-false-fixture.iml" />

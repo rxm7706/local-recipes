@@ -82,7 +82,7 @@ def seed_detector_schedule(**_kwargs: object) -> None:
             },
         )
     except ProgrammingError:
-        # Liquibase ships first-party + contrib/wagtailcore only; celery-beat
-        # tables are not in the changelog. migrate --fake still emits
-        # post_migrate (CRC 12.7).
+        # Changelog :17 creates django_celery_beat tables. Keep this catch for
+        # databases that have not applied Liquibase yet (migrate --fake still
+        # emits post_migrate). Tests patch this path.
         return

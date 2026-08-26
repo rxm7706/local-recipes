@@ -10,6 +10,9 @@ warnings: []
 baseline_revision: 4d9c58ae85
 ---
 
+> **2026-08-25:** `[feature.platform-image-pip]` as an *installer* is superseded by
+> `spec-platform-image-one-pixi-env`. Acceptance criteria below are historical (this story shipped).
+
 <intent-contract>
 
 ## Intent

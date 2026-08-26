@@ -37,6 +37,10 @@ deferred:
     severity: low
 ---
 
+> **2026-08-25:** `[feature.platform-image-pip]` as an *installer* is superseded by
+> `spec-platform-image-one-pixi-env`. Acceptance criteria and deferred items above are historical
+> (this story shipped).
+
 <intent-contract>
 
 ## Intent

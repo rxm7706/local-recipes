@@ -1,6 +1,6 @@
 ---
 spec: platform-image-one-pixi-env
-status: ready
+status: shipped
 created: "2026-08-25"
 updated: "2026-08-25"
 owner-dream: docs/dreams/platform-image-one-pixi-env.md
@@ -10,15 +10,14 @@ surface:
   - pixi.lock
   - scripts/platform_image_pip_layer.py
   - [feature.python-agent-platform]
-  - [feature.platform-image-pip]
+  - "[feature.python-agent-platform.dependencies] (host extras; retired pypi table)"
 companions:
   - pixitainer-eval.md
 sources:
   - ../../../../../../docs/dreams/platform-image-one-pixi-env.md
   - ../../../../../../.cursor/pyforge-fleet-drain/NEXT-AFTER-12-7.md
   - spec-10-3-one-image-both-engines.md
-open_questions:
-  - extras-on-python-agent-platform-vs-composed-env
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC and `companions:` are what to build. Steward 12-7 is
@@ -66,7 +65,7 @@ can retry without a pip seam.
 
 - Runtime stage copies the materialized env; **no pixi binary** in the final image (10.3).
 - UBI9-minimal, GID 0 `g+rwX` on the three writable paths, `restricted-v2` (10.3).
-- `platform-ci-test` remains a separate PyPI solve (psycopg3 vs image psycopg2).
+- `platform-ci-test` remains a separate conda solve (psycopg3 vs image psycopg2).
 - Folding extras does **not** lift `python-agent-platform` to `mcp` 2.0 while FastMCP 3.x
   on that env declares `mcp >=1.24,<2`. Host MCP faces on CRC may stay ImportError-skipped
   until a later mcp/FastMCP story.
@@ -91,15 +90,15 @@ rejected again with the same 10.3 reasons plus any new Docker-backend evidence.
 
 ## Assumptions
 
-- Django-host extras that conda-forge does not ship can be expressed as pixi
-  `pypi-dependencies` on `python-agent-platform` (or a feature composed into that env)
-  without forcing `platform-ci-test`'s solver.
+- Django-host extras ship from conda-forge on `[feature.python-agent-platform.dependencies]`
+  (whitenoise `>=6.11`; cookiecutter `6.9.0` is not on conda-forge). `platform-ci-test`
+  stays a separate conda solve.
 - Conda 503 during image build is an infra flake; CAP-1 does not require a second installer
   as a workaround.
 
 ## Open Questions
 
-- **extras-on-python-agent-platform-vs-composed-env** — put the extras directly on
-  `[feature.python-agent-platform]` vs a composed feature that `python-agent-platform` the
-  *environment* includes, still one `pixi install -e`. Either is one env; pick at
-  implementation so the lock graph stays solvable with Langflow.
+- ~~**extras-on-python-agent-platform-vs-composed-env**~~ — **answered 2026-08-25: extras
+  on the feature.** Pins live in `[feature.python-agent-platform.dependencies]` (conda-forge)
+  so `platform-dev` inherits them. Not a composed extra feature. `mcp-types` / `httpx2` were
+  **not** folded (would pull mcp 2.x; FastMCP 3.x still `mcp<2`).

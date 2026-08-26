@@ -37,6 +37,15 @@ Helm: core release `platform` **`deployed`** (2026-08-25 13:40 CDT). Overlay `pl
 10. **Stale hook Jobs / Terminating PVCs.** A leftover `platform-liquibase` Job can block `before-hook-creation`. CRC media PVC stayed `Terminating` until the worker pod was force-deleted.
 11. **Image pip layer vs conda overlap.** `mcp` / `sse-starlette` / `python-multipart` dropped from `[feature.platform-image-pip]`. Follow-up remains Dream → spec (`NEXT-AFTER-12-7.md`).
 
+## Addendum — 2026-08-25 (do not rewrite the proof table above)
+
+The CRC proofs in the table stand. Findings **5, 7, 8, 11** are dated as of that Helm run.
+
+- **Finding 5 / 8 (celery-beat / satellite DDL).** Changelog **`:17`** (`django_celery_beat`) and **`:18`** (admin/taggit/Wagtail satellite 0001 + allauth account/socialaccount) are in `db.changelog-master.yaml`. Isolated `mfa` sqlmigrate still fails; later Wagtailcore after 0001 stays `migrate --fake` (unsafe ALTERs, same as `:16`). Apply `:17`/`:18` on the next Liquibase upgrade — not a 12-7 re-prove. `seed_detector_schedule()` still swallows `ProgrammingError` for DBs that have not applied `:17`.
+- **Finding 7 / 11 (pip layer vs conda `mcp`).** Follow-up is `spec-platform-image-one-pixi-env`: extras on `[feature.python-agent-platform]` conda deps; Containerfile has no `pip install --no-deps`; `[feature.platform-image-pip]` retired. `mcp-types` / `httpx2` were not folded (mcp 2.0 still a later story).
+- **Image proof (2026-08-25, not CRC).** `podman build -f src/platform/Containerfile -t localhost/platform:one-pixi-env .` → `localhost/platform:one-pixi-env` id `8cbee8e8f879`. Runtime `python -c` imports `django_structlog` and `rjsmin`. Do not treat this as a 12-7 Route/SCC re-prove.
+- **Next cluster upgrade (Liquibase only).** Apply changelog `:17` and `:18` on the next `liquibase update` / Helm hook. Not a 12-7 re-prove. Isolated `mfa` sqlmigrate and later Wagtailcore remain fake.
+
 ## Contingency ladder (postgres/redis)
 
 **None used.** Official images ran under SCC-assigned UID 1000650000.

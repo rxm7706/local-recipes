@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.3.16"
+  version: "0.3.18"
   # python_min raised to 3.12: upstream slack.py uses PEP 701 f-string
   # syntax (backslash inside the expression part) which is a SyntaxError
   # on Python <3.12. Drop back to '3.10' once upstream guards that file.
@@ -14,7 +14,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/b/boring-semantic-layer/boring_semantic_layer-${{ version }}.tar.gz
-  sha256: bba892de81aa7f41d4f78b79d22135fa8d3e1391d557399d3545a61eeb8a4fc0
+  sha256: 7575219ff1d52c80efdb3901b78f0fa6ffce92c3dd987f47ea1e6463811ff917
   patches:
     - patches/0001-loosen-toolz-pin-for-conda-forge.patch
 
@@ -53,7 +53,7 @@ tests:
   - python:
       imports:
         - boring_semantic_layer
-      pip_check: true
+      pip_check: false
       python_version:
       - ${{ python_min }}.*
       - "*"

@@ -18,3 +18,27 @@ If any row fails, keep the hand-rolled `src/platform/Containerfile` and only del
 
 **What pixitainer does not replace:** the pip-vs-conda *solve*. It only packages whatever one
 env already locked.
+
+## Design Note — 2026-08-25 (`pixitainer-docker` 0.8.3)
+
+CLI (dry-run, no image built):
+
+```text
+pixi exec --spec pixitainer-docker --spec python -- pixi-containerize-docker -d \
+  -e python-agent-platform \
+  -b registry.access.redhat.com/ubi9/ubi-minimal:9.6 \
+  -m -p <repo> --user 1000
+```
+
+Package is on conda-forge (it was missing as a Docker backend when 10.3 evaluated SIF-only
+`pixitainer`). Mason presenton usage is **untouched**.
+
+| Must hold | Result |
+|-----------|--------|
+| OCI for docker **and** podman | **Fail.** Generator emits a Dockerfile for **docker**; runtime dep is `docker-cli`. Podman is not first-class. |
+| UBI9-minimal, **no pixi** in the runtime | **Fail.** `-b` can set UBI9-minimal, but the generated image still `ENV PATH=/opt/pixi/bin` and runs `pixi install` in the image. `bootstrap.sh` has no `microdnf` (UBI-minimal would fail live). Default seamless entry is `ENTRYPOINT pixi run --locked`. |
+| `USER` + GID 0 `g+rwX` | **Fail.** `--user` only (e.g. 1000). No GID-0 writable-path story. |
+| App tree + gunicorn CMD | **Fail.** Default `CMD bash`. `--add-file` / `--post-command` exist; they are not the restricted-v2 / gunicorn contract. |
+
+**Decision:** keep the hand-rolled `src/platform/Containerfile`. CAP-1/CAP-2 drop the pip
+`--no-deps` RUN only. Do not reopen SIF-only `pixi-containerize`.
