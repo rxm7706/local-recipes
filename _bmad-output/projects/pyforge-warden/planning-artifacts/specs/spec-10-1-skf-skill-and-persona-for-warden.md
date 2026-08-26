@@ -2,8 +2,8 @@
 title: SKF domain skill and BMAD persona for warden
 type: feature
 created: '2026-08-25'
-status: in-progress
-updated: '2026-08-25'
+status: done
+updated: '2026-08-26'
 baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/epics.md
@@ -60,8 +60,14 @@ Bind to epics.md Story 10.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 
 ## Review Triage Log
 
+## Auto Run Result
+
+Status: done
+
+Summary: SKF `pyforge-warden` compiled from `src/shared/packages/pyforge-warden/` with provenance. `bmad-agent-warden` consults CAP-15 and may only emit `pyforge warden …` and `POST /stations/warden/mcp`. Persona does not publish a second PR-gate verdict. CFE and CLAUDE.md/AGENTS.md unchanged. No `pyforge.*` under `src/platform/`. Story 10.2 not started.
+
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-warden` — expected: new tests pass
+- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py -q` — expected: all pass
 - `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
