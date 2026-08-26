@@ -11,7 +11,8 @@ Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
 
 Page set (honest core; the full 28-page inventory is CIS-two-spine-deferred, DW-D2):
-  * GROUNDED data pages — feedstock-health, my-feedstocks (BSL query over a migrated dataset).
+  * GROUNDED data pages — feedstock-health, my-feedstocks, estate-cache
+    (BSL over a migrated dataset or the CAP-19 estate Parquet).
   * BSL-WIRED SHELL pages — staleness-report, query-atlas, detail-cf-atlas (wired to
     build_packages_model; render empty until the composed packages store lands, DW-D2).
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
@@ -62,6 +63,7 @@ class PageDef:
 PAGE_INVENTORY: tuple[PageDef, ...] = (
     PageDef("feedstock-health", "Feedstock Health", "feedstock-health", "grounded-data"),
     PageDef("my-feedstocks", "My Feedstocks", "my-feedstocks", "grounded-data"),
+    PageDef("estate-cache", "Estate Cache", "estate-cache", "grounded-data"),
     PageDef(
         "staleness-report",
         "Staleness Report",
@@ -242,6 +244,7 @@ def build_dashboard(
     # no backing file at all — a hardcoded "unavailable", never a fabricated stamp.
     feedstock_health_provenance = _provenance.resolve_for_file(root / _data.FEEDSTOCK_HEALTH_PARQUET)
     my_feedstocks_provenance = _provenance.resolve_for_file(root / _data.PACKAGE_MAINTAINERS_PARQUET)
+    estate_cache_provenance = _provenance.resolve_for_file(root / _data.ESTATE_CACHE_PARQUET)
     packages_provenance = _provenance.resolve_for_file(root / _data.PACKAGES_PARQUET)
     no_bsl_model_provenance = ProvenanceInfo(
         kind="unavailable",
@@ -262,6 +265,12 @@ def build_dashboard(
             lambda: _data.load_my_feedstocks(root / _data.PACKAGE_MAINTAINERS_PARQUET),
             grounded=True,
             provenance=my_feedstocks_provenance,
+        ),
+        _data_page(
+            by_id["estate-cache"],
+            lambda: _data.load_estate_cache(root / _data.ESTATE_CACHE_PARQUET),
+            grounded=True,
+            provenance=estate_cache_provenance,
         ),
         _data_page(
             by_id["staleness-report"],
