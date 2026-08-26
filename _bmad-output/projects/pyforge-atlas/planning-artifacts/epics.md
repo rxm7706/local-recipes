@@ -1693,11 +1693,11 @@ not copy steward stories.
    Steward Story **25.2** (*One DuckDB writer*) implements the **absence-test** gate on the estate.
    Atlas records cooperation with that gate; it does **not** add a duplicate steward story.
 
-5. **Five-tier symmetry — steward completes portal, MCP mount, skill, persona.** Atlas already
-   satisfies **Tier 1 (CLI)**. Steward Epics **19** (portal shell at `/stations/atlas/`),
-   **21** (hosted MCP face), and **29** (SKF domain skill + station persona) complete the
-   remaining tiers. Atlas must **not** grow a second chrome layer, duplicate `django-pyforge`
-   registration, or expose an extra public port for Canopy symmetry.
+5. **Five-tier symmetry.** Atlas already satisfies **Tier 1 (CLI)**. Steward Epics **19**
+   (empty portal shell) and **21** (hosted MCP face) stay steward. **Skill, persona, and the
+   first real portal job are atlas Epic 19** (2026-08-25) — not steward 29 and not a copy of
+   Canopy 18–30. Atlas must **not** grow a second chrome layer, duplicate `django-pyforge`
+   registration, or expose an extra public port. DW-H3 / La Suite REST is **not** this epic.
 
 ## Operating-model obligations (2026-08-24)
 
@@ -1725,7 +1725,8 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 
 **Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
 `change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
-steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`;
+`change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md`.
 
 ## Epic 18: Kedro hooks on the shared contract
 
@@ -1741,3 +1742,28 @@ So that atlas does not grow a second plugin API or a pipeline PR-gate.
 **Given** the live Kedro hook surfaces **When** the audit completes **Then** each named point is mapped to the FR-43 contract (or an explicit N/A with reason)
 **And** today's backends remain the default plugins
 **And** no atlas job publishes a PR pass/fail beside Warden
+
+## Epic 19: Atlas owns its skill, persona, and one portal job
+
+Steward 19/21 shipped the empty `/stations/atlas/` shell and host MCP. Steward 29 proved SKF+persona *shape*. This epic does **not** copy Canopy 18–30. Not DW-H3. Not Vizro on the host.
+
+### Story 19.1: SKF domain skill and BMAD persona for atlas
+
+As an autonomous agent,
+I want an atlas SKF skill from `pyforge-atlas/` and a `bmad-agent-atlas` persona,
+So that Path B uses CAP-5 grammar and CAP-4 MCP only.
+
+**Type:** feature • **Effort:** L • **Deps:** S-18.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Given** steward 29.1 compiled the shape on another station **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-atlas/` if missing
+**And** the persona uses only `pyforge atlas …` and `POST /stations/atlas/mcp`
+**And** `conda-forge-expert` is not replaced
+
+### Story 19.2: First portal slice — one inventory/run row
+
+As an atlas operator,
+I want HTMX on `/stations/atlas/` to show one factory inventory or run-state row,
+So that Lane 2 does a real job without Vizro or La Suite.
+
+**Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Given** an authenticated atlas-role session **When** the operator opens `/stations/atlas/` **Then** one row renders via PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no DW-H3 REST
