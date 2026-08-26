@@ -2,8 +2,8 @@
 title: "Convergence — pyforge-unifying-strategy"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-25"
-status: "in-progress"
+updated: "2026-08-26"
+status: "shipped"
 ---
 
 # Convergence — what is already covered, and by what
@@ -144,8 +144,10 @@ there rather than left to inherit:
 
 Each line was evidence-confirmed absent on **2026-08-24**. The **2026-08-25 canopy drain** landed
 the code for items 1–20 except as noted. Do not re-mint them. Steward **12-7** closed 2026-08-25
-(`/ht/` 200). Residual CRC findings (sidecar, `platform_app`, mcp dual-era on the image) are
-recorded on the 12.7 verification file, not as a drain-queue story.
+(`/ht/` 200). CRC follow-through **closed 2026-08-26** — sidecar Ready, `platform_app`
+DML-only, MCP host sidecar, published `/` **200**. Isolated `mfa` sqlmigrate is the only
+RFC-5 leftover. Recorded on the 12.7 verification addendum and
+`sprint-change-proposal-2026-08-26-canopy-closeout.md`.
 
 1. **Wagtail Lane 1** — **landed** (Epic 20). CodeRed stayed dropped. `lane1-serves-dw-h3`
    **answered no** (2026-08-25): La Suite Docs REST ≠ host Wagtail `/cms/`.
@@ -161,7 +163,8 @@ recorded on the 12.7 verification file, not as a drain-queue story.
    host; atlas adopting Vizro as its own board remains atlas's story.
 8. **Redis Streams / CloudEvents** — **landed** (Epic 24) on redis-broker.
 9–18. **RFC-1..5 / BS-1..8 path** — **landed** as steward 21/25/27/28 (RFC-1 remains Celery, not
-   two HTTP processes). **RFC-5 live Job** is not green on CRC.
+   two HTTP processes). **RFC-5 live Job** path is in the chart; CRC applied `:17`–`:19`
+   via host `liquibase update`. Isolated **`mfa` sqlmigrate** stays fake.
 19. **Revoke + secret references + FILE flags** — **landed** (Epic 26). Full Keycloak Token
     Exchange / Vault agent remain caveats on BS-3, not a reason to re-build chrome.
 20. **CAP-15/16/29 five-tier check** — **landed** for the 03 stations (skills + personas + gate).

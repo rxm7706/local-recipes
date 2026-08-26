@@ -1,8 +1,8 @@
 ---
 title: "PRD: the Canopy mounts the eight stations"
-status: "in-progress"
+status: "shipped"
 created: "2026-08-24"
-updated: "2026-08-25"
+updated: "2026-08-26"
 chain: "pyforge-unifying-strategy"
 owner: "steward"
 extends: "spec-python-agent-platform"
@@ -43,8 +43,9 @@ mid-build. A station's action becomes an event another station acts on. All of i
 egress-blocked namespace where the application cannot alter its own schema.
 
 The Canopy already proved this is reachable. **The 2026-08-25 drain landed the eight portals,
-chrome, host MCP faces, dispatch, events, and the governed-DDL path in code.** Remaining: steward
-**12-7** live `/ht/` after Liquibase, and the RFC-5 holes CRC showed — not a `services/` rewrite.
+chrome, host MCP faces, dispatch, events, and the governed-DDL path in code.** Closeout
+**2026-08-26:** Lane 1 `/` **200**, CAP-9 `platform_app` DML-only proven, Liquibase
+`:17`–`:19` executed. Isolated `mfa` sqlmigrate stays fake. Not a `services/` rewrite.
 
 ## 2. Target User
 

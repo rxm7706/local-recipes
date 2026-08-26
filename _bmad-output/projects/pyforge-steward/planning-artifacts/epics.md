@@ -1417,8 +1417,9 @@ FR-45: Epic 32.2 + peer station process-hook epics
 ## Epic List (Canopy)
 
 **2026-08-25 drain:** stories 18.1–32.2 are ledger-`done`. Epic *rollup* keys may still read
-`backlog` (pre-existing). Do not re-dispatch. Live leftover is steward **12-7** plus CAP-9 CRC
-holes. Peers implement CAP-18 as one process-hook story; they do not copy this list.
+`backlog` (pre-existing). Do not re-dispatch. Closeout **2026-08-26:** 12-7 `/ht/` and CAP-9
+`platform_app` proven; published `/` **200**. Leftover is isolated `mfa` sqlmigrate (fake)
+plus optional 12.9 CI. Peers implement CAP-18 as one process-hook story; they do not copy this list.
 
 ### Epic 18: Chrome and the trusted client
 An operator sees one estate chrome, and every portal-to-service call carries a verifiable user.

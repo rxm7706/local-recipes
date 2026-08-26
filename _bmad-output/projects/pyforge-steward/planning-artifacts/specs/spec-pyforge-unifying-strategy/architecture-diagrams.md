@@ -2,14 +2,15 @@
 title: "Architecture diagrams"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-25"
+updated: "2026-08-26"
 ---
 
 # Architecture diagrams
 
 Companion to `SPEC.md` — Spec Law rule 2 keeps diagrams out of the kernel. These render the
 contract: **solid** boxes are shipped (`spec-python-agent-platform` **or** this chain's drain,
-2026-08-25). **Dashed** leftover is live proof only (12-7 `/ht/`, RFC-5 CRC holes).
+2026-08-25; closeout 2026-08-26). **Dashed** leftover is honesty-only (isolated `mfa`
+sqlmigrate fake; optional 12.9 `ocp-portability-smoke` when Actions minutes return).
 
 ## The Canopy as it stands and as it extends
 
@@ -37,8 +38,8 @@ graph TB
         SUP["supervisor CAP-17"]
     end
 
-    subgraph Residual["Live leftover after drain (2026-08-25)"]
-        LIVE["12-7 /ht/ after Liquibase<br/>CAP-9 CRC holes"]
+    subgraph Residual["Honesty leftover after closeout (2026-08-26)"]
+        LIVE["mfa sqlmigrate fake only<br/>optional 12.9 CI job"]
     end
 
     User --> Host
