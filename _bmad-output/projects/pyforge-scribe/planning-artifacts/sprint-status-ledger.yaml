@@ -8,11 +8,11 @@
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: scribe
-# stories: 20
+# stories: 24
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
   1-2-claude-md-wiring-team-memory-loads-automatically: done
@@ -26,7 +26,7 @@ development_status:
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   4-1-register-graphstore-as-cap-18-plugins: done
-  5-1-skf-skill-and-persona-for-scribe: backlog
+  5-1-skf-skill-and-persona-for-scribe: done
   5-2-first-portal-slice-recall-query: backlog
   epic-1: done
   epic-1-retrospective: optional
@@ -36,5 +36,5 @@ development_status:
   epic-3-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
-  epic-5: backlog
+  epic-5: in-progress
   epic-5-retrospective: optional
