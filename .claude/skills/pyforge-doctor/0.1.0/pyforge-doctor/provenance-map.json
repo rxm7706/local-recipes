@@ -1,0 +1,47 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-doctor",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-doctor",
+  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_ref": "local",
+  "generated_at": "2026-08-25T05:00:00Z",
+  "grounding": {
+    "date": "2026-08-25",
+    "commit_short": "865b95dc951c",
+    "station": "doctor",
+    "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-18-1-skf-skill-and-persona-for-doctor.md"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "argv: list[str] | None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py",
+      "source_line": 502,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "exit_code_for",
+      "export_type": "function",
+      "source_library": "pyforge-doctor",
+      "params": [
+        "findings: Iterable[Finding] | DoctorReport"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-doctor/src/pyforge/doctor/verdict.py",
+      "source_line": 45,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    }
+  ]
+}
