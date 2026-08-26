@@ -4,4 +4,17 @@
 {% endblock title %}
 {% block content %}
   <p id="warden-body">warden portal</p>
+  <form
+    id="warden-audit-start"
+    method="post"
+    hx-post="/stations/warden/audits/start/"
+    hx-target="#warden-audit-panel"
+    hx-swap="innerHTML"
+  >
+    {% csrf_token %}
+    <label for="warden-audit-target">target</label>
+    <input id="warden-audit-target" type="text" name="target" value="." />
+    <button type="submit">Start audit</button>
+  </form>
+  <div id="warden-audit-panel"></div>
 {% endblock content %}
