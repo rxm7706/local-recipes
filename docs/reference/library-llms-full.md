@@ -36,7 +36,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
   add doesn't support 3.14, it won't resolve here. The sole exception is
   `python-agent-platform` (CAP-5, Story 10.2), env-scoped to `python = "3.12.*"`
   only — no other feature/env in `pixi.toml` changes its python floor off 3.14.
-- Node.js 24 (LTS) is present, so npm-ecosystem CLIs (pnpm, yarn, marp, pptxgenjs, yo)
+- Node.js 24 (LTS) is present, so npm-ecosystem CLIs (pnpm, yarn, marp, pptxgenjs, pptxgenjs-plus, yo)
   work inside the env too.
 - The repo also exposes conda-forge recipe tooling as pixi tasks and as the
   `conda_forge_server` MCP server — see `CLAUDE.md` and
@@ -421,6 +421,9 @@ Office formats:
   (linux-64 / osx-arm64 / win-64), so it is an unconditional `local-recipes` dep.
 - **pptxgenjs** (>=4.0.1) — JavaScript (Node) library for *generating* .pptx decks
   programmatically; used by the deck workflows (`docs/specs/presentation-deck.md`).
+- **pptxgenjs-plus** (>=4.2.1) — maintained fork of PptxGenJS (`require('pptxgenjs-plus')`).
+  SelfExplainML `noarch`; needs `nodejs >=24`. Set `NODE_PATH=$CONDA_PREFIX/lib/node_modules`.
+  Does not include the separate `pptxgenjs-plus-jsx` package.
 
 OCR & images:
 - **tesseract** (>=5.5.3) — Google's OCR engine binary.
@@ -891,7 +894,7 @@ depending on them without adding them first:
 - Validate data → **pandera** (schemas) or **great-expectations** (contracts)
 - Any document → Markdown for an LLM → **markitdown**; docx→md → **mammoth**; universal convert → **pandoc**
 - Extract PDF text fast → **pymupdf**; PDF tables → **pdfplumber**; PDF→images → **pdf2image**; OCR → **pytesseract**
-- Make slides → **marp-cli** (md→deck) or **pptxgenjs**/**python-pptx** (programmatic)
+- Make slides → **marp-cli** (md→deck) or **pptxgenjs**/**pptxgenjs-plus**/**python-pptx** (programmatic)
 - Diagrams as code → **d2** or **mermaid-py**
 - Charts → **plotly**/**matplotlib**/**bokeh**; dashboard app → **panel** or **vizro**
 - Call Claude → **anthropic**; Gemini → **google-genai**; local LLM → **ollama**/**llama.cpp**/**mlx-lm**

@@ -1474,6 +1474,7 @@ bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich
 #codegraph = ">=1.4.1"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local.
 #ppt-master = ">=3.1.0"            # Claude skill for creating professional PowerPoint presentations using SVG-based templates
 pptxgenjs = ">=4.0.1"             # JavaScript library for creating PowerPoint presentations (used by ppt-master)
+pptxgenjs-plus = ">=4.2.1"        # Fork of pptxgenjs (SelfExplainML; engines.node >=24). NODE_PATH=$CONDA_PREFIX/lib/node_modules
 # Category 4: Data Processing & Transformation + Category 5: Workflow Orchestration
 # See: docs/reference/package-taxonomy.md#4-data-processing--transformation
 # See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines

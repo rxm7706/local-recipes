@@ -3575,6 +3575,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/vizro-e2e-flow-0.1.7-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-7_kmp_llvm.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/age-1.3.1-hfc2019e_1.conda
@@ -4718,6 +4719,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/vizro-e2e-flow-0.1.7-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.2-pyhcf101f3_0.conda
@@ -5777,6 +5779,7 @@ environments:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-mcp-0.1.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-4.0.1-h5e06de4_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/vizro-e2e-flow-0.1.7-h59285b8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/a2a-sdk-1.1.2-pyhcf101f3_0.conda
@@ -16583,6 +16586,14 @@ packages:
   license: MIT
   size: 919907
   timestamp: 1783874730283
+- conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
+  sha256: b5e35bbc6ee89a841d0d6b35a788fda02e8b08cc7fd1d8e5a3879fb0d51ab6b1
+  md5: 1767de120cf9cfbbe65e7898119abe47
+  depends:
+  - nodejs >=24
+  license: MIT
+  size: 1098704
+  timestamp: 1787703247326
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/slowapi-0.1.10-pyhcba1bba_1.conda
   sha256: e854c466222ce7535f816a018c16385e7f0e5882ad56d251a95dd3dab754ced6
   md5: 1a9ec05fc45a3959575149d95e1b4345
