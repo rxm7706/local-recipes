@@ -566,11 +566,10 @@ os.environ["LANGFLOW_KNOWLEDGE_BASES_DIR"] = LANGFLOW_KNOWLEDGE_BASES_DIR
 # should read rather than re-deriving them -- e.g. a future upstream fix
 # that makes DB-GPT's metadata store PostgreSQL-capable, or a different
 # Pattern-B engine that doesn't share this limitation. Today, the actual
-# Celery-driven round trip (`dbgpt_integration/tasks.py`) reads
-# `DATABASES["default"]` directly instead (it registers `public`, the
-# database Django's own tables live in, as a DB-GPT DATASOURCE to query --
-# an entirely different connection than the sidecar's own metadata store,
-# and unaffected by the limitation above).
+# Celery-driven estate read (`dbgpt_integration/tasks.py`) uses
+# `QUERY_PLANE_ESTATE_DSN` (CAP-19 / FR-49) — not `DATABASES["default"]`.
+# `DBGPT_DATABASE_URL` remains the metadata-schema credential for a future
+# sidecar store, not Text-to-SQL.
 _dbgpt_db = DATABASES["default"]
 _dbgpt_db_auth = ""
 if _dbgpt_db.get("USER"):
@@ -589,6 +588,11 @@ DBGPT_DATABASE_URL = (
 # THIS process could ever read this process's `os.environ` -- unlike
 # Langflow (Pattern A, in-process), an env-var mutation here would be inert
 # by construction. The Django setting above is the real, consumable form.
+
+# CAP-19 / FR-49: agent estate reads (Text-to-SQL, Langflow RAG) hit the
+# query plane, never OLTP / langflow_schema. Host does not import pyforge.*.
+QUERY_PLANE_ESTATE_DSN = env("QUERY_PLANE_ESTATE_DSN", default="duckdb:atlas.duckdb")
+os.environ["LANGFLOW_ESTATE_READ_DSN"] = QUERY_PLANE_ESTATE_DSN
 
 # Story 18.3 / canopy AD-7: dedicated RS256 service-assertion keys.
 # Not the OIDC local-dev persona mint (config.local_dev.tokens).

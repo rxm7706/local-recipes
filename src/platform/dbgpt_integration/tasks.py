@@ -43,6 +43,7 @@ from celery import shared_task
 from django.conf import settings
 
 from config.engine_patterns import get_sidecar_base_url
+from config.estate_dsn import estate_datasource_payload
 
 logger = logging.getLogger(__name__)
 
@@ -90,24 +91,15 @@ def _json_or_raise(text: str, *, context: str) -> Any:
 
 
 def _register_datasource(client: httpx.Client, db_name: str) -> None:
-    """Register `db_name` (a real database in Django's OWN PostgreSQL,
-    `DATABASES["default"]`) as a DB-GPT datasource. Idempotent -- see this
-    module's docstring.
+    """Register ``db_name`` as a DB-GPT datasource on the query plane (FR-49).
+
+    Idempotent -- see this module's docstring. OLTP / ``langflow_schema``
+    DSNs are refused before the sidecar is contacted.
     """
-    db = settings.DATABASES["default"]
-    payload = {
-        "db_name": db_name,
-        "db_type": "postgresql",
-        "db_host": db.get("HOST") or "localhost",
-        "db_port": int(db.get("PORT") or 5432),
-        "db_user": db.get("USER", ""),
-        "db_pwd": db.get("PASSWORD", ""),
-        "file_path": "",
-        "comment": (
-            "Story 11.2 (AD-17 Pattern B) -- Django's own PostgreSQL, "
-            "registered for the text-to-SQL round trip."
-        ),
-    }
+    payload = estate_datasource_payload(
+        db_name,
+        getattr(settings, "QUERY_PLANE_ESTATE_DSN", ""),
+    )
     try:
         response = client.post("/api/v1/chat/db/add", json=payload)
     except httpx.TransportError as exc:
