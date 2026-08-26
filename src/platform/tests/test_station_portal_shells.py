@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from config.settings.base import LOCAL_APPS
 from django.apps import apps
 from django.template.loader import render_to_string
 from django.test import Client
@@ -18,10 +19,9 @@ from django_atlas_portal import views as atlas_views
 from django_pyforge.context_processors import chrome
 from django_pyforge.context_processors import is_switcher_tile
 from django_pyforge.discovery import iter_portal_configs
+from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from django_pyforge.workclass_probe import views as infra_views
-
-from config.settings.base import LOCAL_APPS
 
 PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLATFORM_ROOT.parents[1]
@@ -138,6 +138,10 @@ def test_one_session_eight_station_gets() -> None:
     client = Client()
     session = client.session
     session[IDP_TOKEN_ROLES_SESSION_KEY] = list(EIGHT_STATIONS)
+    session[IDP_TOKEN_CLAIMS_SESSION_KEY] = {
+        "sub": "operator",
+        "groups": list(EIGHT_STATIONS),
+    }
     session.save()
 
     for station in EIGHT_STATIONS:
@@ -232,6 +236,7 @@ def test_work_class_01_is_omitted_from_switcher_but_url_resolves() -> None:
     assert "infra-probe" in {portal.station_name for portal in iter_portal_configs()}
 
 
+@pytest.mark.django_db
 def test_new_shell_without_role_is_forbidden() -> None:
     denied = RequestFactory().get("/stations/atlas/")
     denied.idp_roles = ["warden"]
