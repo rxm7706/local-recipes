@@ -2188,4 +2188,21 @@ So that the BSL loader is actually on a board.
 **And** a planted cache query matches an independent BSL model
 **And** Django does not import Vizro
 
+## Epic 37: Five-tier roster drain
+
+The eight 03 stations are complete. Mason's skill cell is `conda-forge-expert`
+(Epic 11: CFE stays). Declaring the roster complete makes a missing cell fail CI.
+
+### Story 37.1: Declare eight stations five-tier complete
+
+As a platform operator,
+I want the five-tier check to treat the roster as complete,
+So that a missing CLI, portal, service, skill, or persona fails CI.
+
+**Type:** chore • **Effort:** S • **Deps:** S-29.3 • **FR/AD:** FR-39 • canopy AD-14
+**Given** the eight roster stations **When** the check runs **Then** every cell is present
+**And** mason's skill cell is `conda-forge-expert` (no `pyforge-mason/` skill)
+**And** `DECLARED_COMPLETE` is the full roster
+
+
 
