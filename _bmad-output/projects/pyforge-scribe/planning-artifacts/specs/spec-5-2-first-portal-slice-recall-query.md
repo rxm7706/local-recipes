@@ -2,8 +2,11 @@
 title: First portal slice — one recall query
 type: feature
 created: '2026-08-25'
-status: ready
-updated: '2026-08-25'
+status: done
+updated: '2026-08-26'
+baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
+baseline_commit: c3f75232a15bb3c28730c546e8f955cda59054df
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
@@ -42,7 +45,8 @@ warnings: []
 
 ## Tasks & Acceptance
 
-**Execution:** Implement the Approach. Add station-owned tests that fail if ACs are violated. Land this spec in `planning-artifacts/specs/`.
+**Execution:**
+- [x] Implement the Approach. Add station-owned tests that fail if ACs are violated. Land this spec in `planning-artifacts/specs/`.
 
 **Acceptance Criteria:** Same as Intent Contract.
 
@@ -53,10 +57,43 @@ Bind to epics.md Story 5.2 and the 2026-08-25 station-skill-portal SCP. Follow s
 ## Spec Change Log
 
 - 2026-08-25: drafted from epics.md for fleet drain preflight
+- 2026-08-26: implemented first recall POST via PortalClient; station tests landed
 
 ## Review Triage Log
 
+### 2026-08-26 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 3: (high 1, medium 2, low 0)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `[high]` `[patch]` Operator submit path was only AST-scanned; added `submit_recall` plus a running fake-client test that asserts cited `text`/`citation` land in the results fragment.
+  - `[medium]` `[patch]` `parse_recall_cli` never executed; added cited and empty stdout cases.
+  - `[medium]` `[patch]` PortalClient call contract untested; the fake client now records station/job/payload/sub/roles.
+
 ## Verification
+
+**Commands:**
+- station test suite for `pyforge-scribe` — expected: new tests pass
+- `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+
+## Auto Run Result
+
+- Summary: `/stations/scribe/` POST submits one recall query through PortalClient only and renders cited `text` + `citation`. Host `src/platform/` is unchanged.
+- Files changed:
+  - `src/shared/packages/django-scribe/src/django_scribe_portal/views.py` — POST via `submit_recall(PortalClient(), …)`
+  - `src/shared/packages/django-scribe/src/django_scribe_portal/recall_submit.py` — django-free PortalClient.call wrapper
+  - `src/shared/packages/django-scribe/src/django_scribe_portal/templates/scribe_portal/home.html` — query form
+  - `src/shared/packages/django-scribe/src/django_scribe_portal/templates/scribe_portal/results.html` — cited result fragment
+  - `src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py` — `PortalClient.call` + `parse_recall_cli`
+  - `src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py` — station AC tests
+  - this spec — status, triage, verification notes
+- Review findings: 3 patches applied; 0 deferred; remaining hunter notes rejected (CLI timeout, empty-query guard, MCP transport, HTMX JS, 500 wrapping)
+- Follow-up review recommendation: `true` (patched high 1, medium 2, low 0; score `3×2 + 1×0 = 6`)
+- Verification: `pixi run -e pyforge-scribe pytest src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py -q` → 5 passed; `git diff origin/main -- src/platform` → no `import pyforge` / `from pyforge`
+- Residual risks: default runner shells public grammar in process cwd; assertion PEMs required; chrome `base.html` has no HTMX JS (plain POST still works)
+
 
 **Commands:**
 - station test suite for `pyforge-scribe` — expected: new tests pass
