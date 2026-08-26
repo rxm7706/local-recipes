@@ -900,3 +900,21 @@ artifactory_downloads_joined:
   filepath: data/derived/artifactory_downloads_joined/artifactory_downloads_joined.parquet
   metadata:
     layer: derived
+
+# =============================================================================
+# query_plane_cache — CAP-19 / FR-47 estate Parquet (steward Story 34.2)
+# =============================================================================
+
+query_plane_estate_source:
+  type: pandas.ParquetDataset
+  filepath: data/raw/query_plane_estate_source/query_plane_estate_source.parquet
+  metadata:
+    layer: raw
+
+query_plane_estate:
+  type: pandas.ParquetDataset
+  filepath: data/primary/query_plane_estate/query_plane_estate.parquet
+  save_args:
+    compression: zstd
+  metadata:
+    layer: primary
