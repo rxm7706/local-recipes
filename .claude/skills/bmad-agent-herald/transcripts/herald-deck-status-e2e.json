@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "consult_content_skill",
+    "skill": "pyforge-herald",
+    "path": ".claude/skills/pyforge-herald/active/pyforge-herald/SKILL.md"
+  },
+  {
+    "kind": "grammar",
+    "argv": ["pyforge", "herald", "deck", "status", "pyforge-warden"]
+  },
+  {
+    "kind": "mcp",
+    "method": "POST",
+    "path": "/stations/herald/mcp"
+  }
+]
