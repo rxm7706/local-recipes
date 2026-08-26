@@ -140,10 +140,9 @@ stations:
   herald:
     project: pyforge-herald
     drained: false
-    remaining_count: 2
-    next: 17-1-skf-skill-and-persona-for-herald
+    remaining_count: 1
+    next: 17-2-first-portal-slice-deck-status
     queue:
-    - 17-1-skf-skill-and-persona-for-herald
     - 17-2-first-portal-slice-deck-status
   marshal:
     project: pyforge-marshal
