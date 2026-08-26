@@ -7,9 +7,6 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from django_pyforge.assertion.crypto import sign_assertion, verify_assertion
-from django_pyforge.assertion.schema import audience_for
-
 InvokeRunner = Callable[..., dict[str, Any]]
 
 LAST_DIAGNOSE_TOOL = "last_diagnose"
@@ -49,6 +46,8 @@ class PortalClient:
         *,
         private_pem: str | None = None,
     ) -> str:
+        from django_pyforge.assertion.crypto import sign_assertion
+
         return sign_assertion(
             sub=sub,
             roles=roles,
@@ -105,6 +104,9 @@ class PortalClient:
         private_pem: str | None = None,
     ) -> dict[str, Any]:
         """Return one last diagnose (or equivalent) via in-process emit + job."""
+        from django_pyforge.assertion.crypto import verify_assertion
+        from django_pyforge.assertion.schema import audience_for
+
         assertion = self.emit(sub, roles, station, private_pem=private_pem)
         verify_assertion(assertion, audience=audience_for(station))
         job = lookup_portal_job(station, LAST_DIAGNOSE_TOOL)
@@ -121,6 +123,9 @@ class PortalClient:
         runner: InvokeRunner | None = None,
     ) -> dict[str, Any]:
         """Emit, verify in-process, then project station argv (no HTTP)."""
+        from django_pyforge.assertion.crypto import verify_assertion
+        from django_pyforge.assertion.schema import audience_for
+
         token = self.emit(sub, roles, station, private_pem=private_pem)
         verify_assertion(token, audience=audience_for(station))
         if runner is not None:
