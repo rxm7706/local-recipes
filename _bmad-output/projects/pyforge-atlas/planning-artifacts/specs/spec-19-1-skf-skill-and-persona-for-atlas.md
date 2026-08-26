@@ -2,8 +2,11 @@
 title: SKF domain skill and BMAD persona for atlas
 type: feature
 created: '2026-08-25'
-status: ready
+status: done
 updated: '2026-08-25'
+review_loop_iteration: 0
+followup_review_recommended: false
+baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
@@ -61,8 +64,21 @@ Bind to epics.md Story 19.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 
 ## Review Triage Log
 
+## Auto Run Result
+
+Status: done
+
+Summary: SKF content skill `.claude/skills/pyforge-atlas/` compiled from `src/shared/packages/pyforge-atlas/` (version-nested, `active` pointer, provenance). BMAD launcher `bmad-agent-atlas` consults that skill and may only emit `pyforge atlas …` and `POST /stations/atlas/mcp`. CFE, CLAUDE.md, and AGENTS.md untouched. No `pyforge.*` under `src/platform/`. Story 19.2 not started. Ledger key `19-1-skf-skill-and-persona-for-atlas`.
+
+Files:
+- `.claude/skills/pyforge-atlas/` — SKF package + brief
+- `.claude/skills/bmad-agent-atlas/` — launcher SKILL.md, customize.toml, golden transcript
+- `src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py` — AC contract
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-19-1-skf-skill-and-persona-for-atlas.md` — tracked story spec
+
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-atlas` — expected: new tests pass
+- `pixi run --frozen -e pyforge-atlas pytest src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py -q` — expected: all pass
 - `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `git diff origin/main -- CLAUDE.md AGENTS.md .claude/skills/conda-forge-expert` — expected: empty

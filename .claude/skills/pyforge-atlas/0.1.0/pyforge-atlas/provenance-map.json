@@ -1,0 +1,125 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-atlas",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-atlas",
+  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_ref": "local",
+  "generated_at": "2026-08-25T00:00:00Z",
+  "grounding": {
+    "date": "2026-08-25",
+    "commit_short": "865b95dc951c",
+    "station": "atlas",
+    "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-19-1-skf-skill-and-persona-for-atlas.md"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "Any",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py",
+      "source_line": 10,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_pipeline",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 57,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "read_dataset",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 81,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_pipelines",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 182,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_datasets",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "list[str]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 193,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "query_vizro_ai",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [
+        "query: str"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 143,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "query_trending_candidates",
+      "export_type": "function",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "dict[str, Any]",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/tools.py",
+      "source_line": 156,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "__version__",
+      "export_type": "constant",
+      "source_library": "pyforge-atlas",
+      "params": [],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py",
+      "source_line": 34,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    }
+  ]
+}
