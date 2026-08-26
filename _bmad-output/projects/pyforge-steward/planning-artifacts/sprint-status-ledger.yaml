@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 201
+# stories: 202
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -116,6 +116,7 @@ development_status:
   34-5-scribe-semantic-recall-uses-the-plane: done
   35-1-cluster-requires-mcp-host: done
   36-1-lane-3-bsl-reads-the-estate-cache: done
+  36-2-estate-cache-vizro-page: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done

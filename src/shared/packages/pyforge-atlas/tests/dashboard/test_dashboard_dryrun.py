@@ -115,6 +115,31 @@ def test_feedstock_health_page_is_bsl_driven(feedstock_health_parquet):
     assert red == {"alpha": True, "beta": False, "gamma": True}
 
 
+def test_estate_cache_page_is_bsl_driven(write_parquet):
+    """Lane 3 / 36.2 — estate-cache loader equals an independent BSL query."""
+    path = write_parquet(
+        pd.DataFrame({"sku": ["widget-a", "widget-b"], "units": [12, 7]}),
+        "query_plane_estate",
+    )
+    got = dash_data.load_estate_cache(path)
+    table = models.duckdb_table_from_parquet(path)
+    expected = (
+        models.build_estate_cache_model(table)
+        .query(dimensions=["sku"], measures=["units_total"])
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("sku").reset_index(drop=True),
+        expected.sort_values("sku").reset_index(drop=True),
+    )
+
+
+def test_estate_cache_page_is_in_inventory(dashboard):
+    page = next(p for p in dashboard.pages if p.id == "estate-cache")
+    assert page.title == "Estate Cache"
+    assert _dm_get("data::estate-cache") is not None
+
+
 def test_my_feedstocks_page_is_bsl_driven(package_maintainers_parquet):
     got = dash_data.load_my_feedstocks(package_maintainers_parquet)
     table = models.duckdb_table_from_parquet(package_maintainers_parquet)
@@ -175,6 +200,8 @@ def test_data_loaders_offline_return_empty_typed_frames_not_fabricated():
     assert st.empty and list(st.columns) == ["conda_name", "staleness_age_days", "adoption_stage"]
     mf = dash_data.load_my_feedstocks("/nope.parquet")
     assert mf.empty and list(mf.columns) == ["maintainer", "conda_name"]
+    ec = dash_data.load_estate_cache("/nope.parquet")
+    assert ec.empty and list(ec.columns) == ["sku", "units_total"]
 
 
 def test_present_but_untyped_parquet_degrades_not_crash(write_parquet):

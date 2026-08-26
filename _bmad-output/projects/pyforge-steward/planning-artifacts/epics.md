@@ -2177,4 +2177,15 @@ So that Lane 3 dashboards do not hit OLTP.
 **Given** the 34.2 Parquet cache **When** the BSL model queries it **Then** planted rows return
 **And** the loader does not use an OLTP writer role
 
+### Story 36.2: Estate cache Vizro page
+
+As an operator,
+I want a Lane 3 page for the estate Parquet cache,
+So that the BSL loader is actually on a board.
+
+**Type:** feature • **Effort:** S • **Deps:** S-36.1 • **FR/AD:** FR-47 • canopy AD-22
+**Given** `build_dashboard` **When** it runs **Then** page `estate-cache` exists with a stable id and title
+**And** a planted cache query matches an independent BSL model
+**And** Django does not import Vizro
+
 
