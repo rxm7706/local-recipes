@@ -24,7 +24,7 @@ development_status:
   1-8-human-machine-report-renderers: done
   1-9-manifest-discovery-deterministic-selection-the-resolved-scan-set: done
   10-1-skf-skill-and-persona-for-warden: done
-  10-2-first-portal-slice-audit-start-get: backlog
+  10-2-first-portal-slice-audit-start-get: done
   2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
   2-2-non-rendering-extraction-differential-oracle: done
   2-3-the-full-supported-construct-matrix: done
@@ -57,7 +57,7 @@ development_status:
   9-3-default-warden-stays-green-without-checkmarx: done
   epic-1: done
   epic-1-retrospective: done
-  epic-10: backlog
+  epic-10: done
   epic-10-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
