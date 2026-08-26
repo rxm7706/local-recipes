@@ -124,61 +124,50 @@ order_overrides:
 stations:
   atlas:
     project: pyforge-atlas
-    drained: false
-    remaining_count: 1
-    next: 19-2-first-portal-slice-inventory-row
-    queue:
-    - 19-2-first-portal-slice-inventory-row
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   doctor:
     project: pyforge-doctor
-    drained: false
-    remaining_count: 1
-    next: 18-2-first-portal-slice-fleet-pulse
-    queue:
-    - 18-2-first-portal-slice-fleet-pulse
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   herald:
     project: pyforge-herald
-    drained: false
-    remaining_count: 1
-    next: 17-2-first-portal-slice-deck-status
-    queue:
-    - 17-2-first-portal-slice-deck-status
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   marshal:
     project: pyforge-marshal
-    drained: false
-    remaining_count: 2
-    next: 27-1-skf-skill-and-persona-for-marshal
-    queue:
-    - 27-1-skf-skill-and-persona-for-marshal
-    - 27-2-first-portal-slice-loop-homes
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   mason:
     project: pyforge-mason
-    drained: false
-    remaining_count: 1
-    next: 11-2-first-portal-slice-recipe-diagnose
-    queue:
-    - 11-2-first-portal-slice-recipe-diagnose
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   scribe:
     project: pyforge-scribe
-    drained: false
-    remaining_count: 2
-    next: 5-1-skf-skill-and-persona-for-scribe
-    queue:
-    - 5-1-skf-skill-and-persona-for-scribe
-    - 5-2-first-portal-slice-recall-query
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   steward:
     project: pyforge-steward
-    drained: false
-    remaining_count: 2
-    next: 33-1-skf-skill-and-persona-for-steward
-    queue:
-    - 33-1-skf-skill-and-persona-for-steward
-    - 33-2-first-portal-slice-provision-list
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []
   warden:
     project: pyforge-warden
     drained: false
-    remaining_count: 2
-    next: 10-1-skf-skill-and-persona-for-warden
+    remaining_count: 1
+    next: 10-2-first-portal-slice-audit-start-get
     queue:
-    - 10-1-skf-skill-and-persona-for-warden
     - 10-2-first-portal-slice-audit-start-get
