@@ -2,7 +2,7 @@
 title: PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise Architecture
 type: dream
 owner: steward
-status: specified
+status: realized
 ---
 
 # PyForge Unifying Strategy
@@ -22,8 +22,10 @@ isolated PostgreSQL schemas, warden's `compliance_face` portal mounted, a Helm c
 OCP overlay, a Containerfile, and the 15-factor baseline. Steward epics 10, 11, 12 and 16 are
 `done` end to end, including **`12-7`**, which **closed 2026-08-25** on attended CRC: Route / SCC /
 official postgres:17 + redis:7 under assigned UID / PVCs Bound / Liquibase + `migrate --fake` /
-`/ht/` **200** (dated record in the 12.1 spec orbit). Residual CRC findings (sidecar image,
-`platform_app`, mcp 1.x vs 2.0 on the image) stay on that record.
+`/ht/` **200** (dated record in the 12.1 spec orbit). CRC follow-through **closed
+2026-08-26** — sidecar Ready, `platform_app` DML-only, MCP host sidecar, published `/`
+**200**. Isolated `mfa` sqlmigrate stays fake. Optional: Story 12.9 CI when Actions
+minutes return. Record: `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
 
 **Naming follows reality.** `pyforge_host` and `pyforge-agent-platform` are role names in the
 prose below; the shipped artifact is **`src/platform/`** (settings in `config/`, shared app in
@@ -41,18 +43,28 @@ plus eight peer process-hook stories) shipped most of it. Architecture mermaid s
 describes a greenfield `services/` FastAPI farm; **Grounding + the architecture spine win.**
 
 **Still open after the drain (do not re-mint shipped CAPs):**
-- Steward **`12-7`**: **closed 2026-08-25** (`/ht/` 200). Residual findings on the dated 12.1 verification record (sidecar image, `platform_app`, mcp dual-era on CRC).
-- RFC-5 **holes CRC showed** — contrib + `liquibase` schema + wagtailcore 0001 are in the changelog; **:17** `django_celery_beat` + **:18** third-party/allauth 0001 (and allauth account/socialaccount chains) land CREATE/widen SQL. Isolated `mfa` sqlmigrate fails; later Wagtailcore migrations stay `migrate --fake` (unsafe ALTERs, same as :16).
+- Steward **`12-7`**: **closed 2026-08-25** (`/ht/` 200). CRC follow-through **closed
+  2026-08-26** — sidecar Ready, `platform_app` + CAP-9 DML-only proof, Liquibase
+  `:17`/`:18`/`:19`, MCP host sidecar, published Lane 1 `/` **200**. Record:
+  `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
+- RFC-5 — contrib + `liquibase` schema + `:17`/`:18`/`:19` are in the changelog and
+  **EXECUTED** on CRC. Isolated **`mfa` sqlmigrate** is the only remaining fake.
 - **Q5 measure set** — **parked**, not a Canopy SPEC OQ. Unpublished; do not invent metrics.
   Sibling: `docs/dreams/build-league-scorecard.md` + `spec-build-league-scorecard` (draft).
 - ~~**`lane1-serves-dw-h3`**~~ — **answered 2026-08-25: no.** Host Wagtail `/cms/` is not
   `LaSuiteClient` Docs REST. DW-H3 stays atlas attended bring-up.
-- Pip-layer fold: `docs/dreams/platform-image-one-pixi-env.md` → `spec-platform-image-one-pixi-env`
-  (`shipped` 2026-08-25). Host extras on `[feature.python-agent-platform.dependencies]`; image
-  `localhost/platform:one-pixi-env`. Next cluster Liquibase `:17`/`:18` (not a 12-7 re-prove).
+- Pip-layer fold: `spec-platform-image-one-pixi-env` **shipped**. MCP pin isolation is
+  `spec-mcp-era-isolation` slice 1 (sidecar). Slice 3 stays parked.
 - **Do not build `services/` as nine public FastAPI processes.** MCP and portal compute
   mount on the host ASGI (`POST /stations/<name>/mcp`). That is the modular-monolith
   ruling, not a deferred microservice program.
+- **The query plane is this Dream, not a sibling.** Analytics, vectors, and agent SQL
+  are a canopy contract (one engine, one writer, stations as clients). Do not mint
+  `pyforge-htap` or a second Dream chain. `docs/dreams/htap-query-plane.md` is the
+  absorbed capture. SPEC/PRD/epics do **not** yet carry a CAP — that is a
+  correct-course, not a silent SPEC edit. **Not required to realize this Dream.**
+- Story **12.9** (`ocp-portability-smoke`) is an AD-11 honesty gap (ledger `done`
+  without the job). Optional; Actions minutes. Not a Canopy stamp gate.
 
 **Operating model is estate-wide (2026-08-24, Q1).**
 The operating model first written as
@@ -288,10 +300,60 @@ graph TD
 
     subgraph AsyncAndData["Data, Task & Governance Foundation"]
         Microservices --> Workers["Task Queue & Workers (Celery + Redis noeviction)"]
-        Microservices --> DataLayer["Multi-Model Data Layer (Postgres + pgvector / DuckDB / Scribe SQLite)"]
+        Microservices --> DataLayer["Query plane (DuckDB HTAP) + Postgres OLTP (app schemas)"]
         Microservices --> Governance["Governance & Diagnostics (Warden Gates + Doctor Health + OTel)"]
     end
 ```
+
+### The query plane
+
+The Canopy already unified chrome, identity, CLI grammar, and the event bus.
+It did **not** unify where a question goes. Atlas ranks vectors in an
+in-memory DuckDB. Scribe recalls from PostgreSQL with pgvector. Langflow
+carries Chroma. DB-GPT speaks SQL at whatever DSN it was given. Vizro is
+supposed to go through BSL. Each choice was locally correct. Together they
+are five answers, and an agent that hallucinates a join can still land on
+OLTP.
+
+**One hybrid transactional / analytical query plane** is the missing spoke
+contract. Kedro is the only writer of derived layers. DuckDB is the only
+analytical engine (live read-only `ATTACH` of Postgres, Parquet cache,
+`vss` / HNSW). Stations and agents are clients. Domain logic stays with the
+station; storage, scan, and nearest-neighbor do not. Rearchitecture is in
+scope: a station may throw away a private store and reimplement recall, RAG,
+or a loader to sit on the plane. Uniformity is the product.
+
+**Tri-mode, one engine.** Live (A): read-only federation for declared
+operational views a human asked for. Cache (B): Kedro extracts heavy tables
+to Parquet; dashboards and autonomous SQL hit the cache. Vector (C):
+embeddings the enterprise DB will store without `pgvector` (`REAL[]` or
+equivalent) are cast and indexed on the plane. Agents cannot use the OLTP
+DSN. Mode A is not for DB-GPT exploring production schemas.
+
+**Held.** Not a ninth station. Single writer (FR-27 *intent*; the Spec may
+generalize the `atlas.duckdb` filename to “the plane,” not a second
+writable file). Consumer path `LOAD`s extensions, never `INSTALL`s on boot
+(AD-13). BSL remains the dashboard contract. Pixi authority — Mosaic
+`duckdb-server` is an optional query *face*, already reciped, not a `uv`
+runtime. Kedro + the existing Dagster spine refresh the cache; no Airflow.
+Federation does not pull OLTP through pandas. Vector width is a parameter.
+`pyforge.*` stays out of `src/platform/`. Platform Postgres remains OLTP
+for Django / Langflow / DB-GPT *app* state. Scribe `GraphStore` remains
+the port; its durable retrieval becomes a plane client (cutover is a Spec
+decision). Atlas catalog stays prefix-owned pipelines, not a silent
+`01_raw` tree.
+
+**Not this plane:** a lakehouse product; Unity / Wasm satellite revival;
+JSON:API ([[enterprise-data-models-and-apis]]); installing extensions on a
+customer DB that forbids them; CDC as the first cut.
+
+**What the Spec must decide** (when this is correct-coursed onto
+`spec-pyforge-unifying-strategy`): in-process DuckDB vs Mosaic
+`duckdb-server` vs both; store identity; named Atlas pipeline vs reopen
+the closed set; Scribe dual-write vs retire `scribe_schema` pgvector once
+FR-36 holds on the plane; embedder port; first station that *must* delete
+its private store; bind to [[secure-live-dashboards]] so Mode A cannot
+launder another tenant’s row; one invalidation mechanism.
 
 ---
 
@@ -1347,12 +1409,15 @@ graph TD
 - **Zero Model Coupling in Portal Apps:** Station portal apps (`pyforge_<station>_portal`) declare zero domain database models. They are pure UI clients communicating via `client.py` (`httpx`) with their paired FastAPI/MCP services.
 - **Full 9-Station Symmetry:** We explicitly reject the legacy constraint of leaving stations CLI-only; every station earns its pluggable portal, paired FastAPI + MCP microservice, analytics board, presentation stage, and CLI command group.
 - **The Guildhall is the Central Front Door:** The Guildhall is realized as the central Lane 1 platform portal at `/` (powered by Wagtail CRX + `django-pyforge` App Switcher) orchestrating navigation and corporate memory across all 9 stations.
+- **One analytical engine:** stations do not open a private DuckDB, Chroma, or
+  the OLTP DSN for estate knowledge or Text-to-SQL. The query plane is the
+  read path; platform Postgres stays the app-state write path.
 
 ---
 
 ## Kinships
 
-[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine) · [[pyforge-steward]] (deploy & secure hosting) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine) · [[db-gpt-django-plugin]] (DB knowledge base) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (Warden gate extension: hook specs + plugins, not a second PR plane)
+[[factory-console]] (Guildhall — Lane 1, realized/absorbed into marshal narrative) · [[secure-live-dashboards]] (Lane 3 security kit — steward) · [[atlas-query-dashboards]] / atlas Vizro board (Lane 3 prototype) · [[htap-query-plane]] (absorbed here — the query-plane section; not a sibling chain) · [[pyforge-atlas]] (engine, Kedro, BSL, vss) · [[pyforge-scribe]] (GraphStore port; first reimplementation that hurts if the driver is wrong) · [[compliance-factory-web-face]] (Lane 2 prototype — warden) · [[pyforge-herald]] (stage / proclamation / deck engine) · [[pyforge-steward]] (deploy & secure hosting) · [[pyforge-charter]] (estate governance) · [[pyforge-core]] (unified CLI spine) · [[presentation-deck]] (deck standards) · [[django-accelerator-framework]] (Lane 2 portal scaffolding) · [[wagtail-corporate-brain]] (CMS & doc synchronization) · [[enterprise-data-models-and-apis]] (normalized data & DRF JSON:API layer — not the query plane) · [[platform-fifteen-factors]] (15-factor enterprise baseline) · [[local-ocp-hybrid-environment]] (hybrid deployment profile) · [[langflow-django-plugin]] (AI workflow engine) · [[db-gpt-django-plugin]] (DB knowledge base) · [[pyforge-operation]] (estate-wide operating model — promotion 01/02/03 + Golden Path; WFT tool names are steward-profile adapters, not this Dream's core stack) · [[pyforge-scorecard]] (sibling — Build League + Balanced Product Scorecard *board*; *rules* are authored in this Dream's Grounding) · Kedro [architecture overview](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) (Warden gate extension: hook specs + plugins, not a second PR plane)
 
 ---
 
@@ -1453,3 +1518,14 @@ graph TD
 - **2026-08-25** — **Fleet drain takeaways folded into Grounding** (not a second Dream). Canopy Epics 18–32 + eight peer CAP-18 hook stories landed; 08-24 “genuinely unbuilt” list is historical. Confirmed: modular monolith (no `services/` process farm); CAP-18 = hooks not scorecard; parallel-agent switch mutex; tracked story specs; `--merge` never squash; peer stations drain on one obligation, they do not clone steward 18–30. Campaign engine was worktree `bmad-build-auto` under a singleton coordinator; marshal Epic 22 verbs exist as product.
 - **2026-08-25** — Pip-layer fold specified: `docs/dreams/platform-image-one-pixi-env.md` + `spec-platform-image-one-pixi-env` (`ready`). Q5 measures parked on `docs/dreams/build-league-scorecard.md` (unpublished; do not invent). `lane1-serves-dw-h3` **answered no** (Wagtail `/cms/` ≠ La Suite Docs REST).
 - **2026-08-25** — Pip-layer SPEC **shipped**. Image `localhost/platform:one-pixi-env`. Changelog `:17`/`:18` wait for the next Liquibase/Helm upgrade (not a 12-7 re-prove). `lane1-serves-dw-h3` stays **no**.
+- **2026-08-26** — Query plane folded into this Dream (operator: not a sibling).
+  Capture file `docs/dreams/htap-query-plane.md` marked absorbed. One HTAP
+  engine (live attach + Parquet + `vss`); stations reimplement onto it;
+  OLTP shield for agents. SPEC/PRD/epics **not** correct-coursed in this
+  pass — no silent CAP-19. Next: `bmad-correct-course` on
+  `spec-pyforge-unifying-strategy` when ready to bind the CAP and open
+  questions.
+- **2026-08-26** — **Dream realized / SPEC shipped.** CRC: `GET /` **200**,
+  `/cms/` **302** to OIDC, CAP-9 `platform_app` DML-only. Bind:
+  `sprint-change-proposal-2026-08-26-canopy-closeout.md`. Isolated `mfa`
+  sqlmigrate stays fake. Story 12.9 CI optional when Actions minutes return.

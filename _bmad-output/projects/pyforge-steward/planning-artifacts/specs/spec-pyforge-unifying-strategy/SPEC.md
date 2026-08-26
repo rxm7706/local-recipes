@@ -1,9 +1,9 @@
 ---
 spec: pyforge-unifying-strategy
-status: in-progress
+status: shipped
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
-updated: "2026-08-25"
+updated: "2026-08-26"
 companions:
   - convergence.md
   - resilience-invariants.md
@@ -38,8 +38,10 @@ open_questions: []
 > preservation-validated contract for what to build, test, and validate. The Dream in `sources:`
 > carries the decision trail — ten operator rulings dated 2026-08-24, the RFC/blind-spot
 > derivations, the pre-audit architecture prose this contract deliberately compresses, and
-> Grounding dated 2026-08-25 (fleet drain + attended CRC). Correct-course:
-> `sprint-change-proposal-2026-08-25-drain-bind.md`.
+> Grounding dated 2026-08-25 (fleet drain + attended CRC) and closeout 2026-08-26
+> (`/` 200, CAP-9 proven). Correct-course:
+> `sprint-change-proposal-2026-08-25-drain-bind.md` then
+> `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
 
 > **This SPEC extends `spec-python-agent-platform`, it does not replace it.** That Spec's CAP-1..6
 > are shipped and binding; nothing here re-mints them. `convergence.md` is the authority on which
@@ -56,9 +58,9 @@ shared identity, no shared vocabulary, and no way for one station to tell anothe
 happened. The Canopy — `src/platform/` — proved the shape works. **The 2026-08-24–25 canopy drain
 landed the extension in code** (chrome, eight portals, host MCP faces, CLI dispatch, events,
 flags, governed-DDL *path*, five-tier check, CAP-18 hooks). Steward **12-7 `/ht/` 200** is
-dated. What remains outside this chain: pip-layer fold (`spec-platform-image-one-pixi-env`),
-Q5 measures (`docs/dreams/build-league-scorecard.md`, unpublished), RFC-5 residual DDL not
-yet in Liquibase. Not a `services/` rewrite.
+dated. Closeout 2026-08-26: Lane 1 `/` **200** on CRC, CAP-9 `platform_app` DML-only
+proven, Liquibase `:17`–`:19` executed. Outside this chain: parked Q5 scorecard,
+query-plane CAP (not minted), MCP slice 3, optional 12.9 CI job. Not a `services/` rewrite.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema
 change to be auditable rather than incidental, identity to be revocable rather than cached, and
@@ -86,6 +88,10 @@ they are why this is not merely a UI project.
     CMS admin is redirected to the IdP rather than to a local login form; and every view the retired
     console offered is reachable from the new front door, with the old build path removed rather
     than merely unlinked.
+    **Live proof (CRC 2026-08-26):** default Site + published `HomePage`; `GET /` **200**
+    (`PyForge Lane 1 — published from PostgreSQL.`); unauthenticated `GET /cms/` **302**
+    to `/accounts/oidc/oidc/login/?next=/cms/`. Seed:
+    `platformapp.front_door.lane1_seed.seed_lane1_homepage` on `post_migrate`.
 
 - **CAP-3 — Eight portals, one session.**
   - **intent:** Every station is reachable as a Lane 2 application under the one host, so an
@@ -145,11 +151,11 @@ they are why this is not merely a UI project.
   - **success:** The application's database role provably cannot execute `CREATE`, `ALTER` or
     `DROP`, and a schema change authored without a corresponding governed changeset fails the
     build. *(Reopens shipped work — see Constraints and `convergence.md`.)*
-    **Live residual (CRC 2026-08-25, not a new CAP):** schema `liquibase` must exist before
-    tracking tables; Django contrib (`contenttypes`, `auth`, `sessions`) belongs **in** the
-    changelog (27.3 maps first-party apps only; `users.0001` FKs `auth_group`); Agent Canopy
-    mounts must not `CREATE TABLE` on import. `/ht/` 200 is steward **12-7**, not a substitute
-    for those holes.
+    **Live proof (CRC 2026-08-26, not a new CAP):** `platform_app` exists; `:2` EXECUTED;
+    `/api/health` **200** as that role; `CREATE` on `public` refused. Schema `liquibase` and
+    contrib/auth/Wagtail `:15`–`:19` are in the changelog. Isolated `mfa` sqlmigrate stays
+    fake. `/ht/` 200 is steward **12-7**. See
+    `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
 
 - **CAP-10 — Failure is contained.**
   - **intent:** A failing dependency degrades its caller instead of cascading, concurrent writers
@@ -292,7 +298,7 @@ they are why this is not merely a UI project.
 - **Always:** **six conda-forge builds were the packaging open of this chain.** Stories 26.3 and
   27.1 are ledger-`done` as operator-gate work. That does **not** claim CRC `/ht/` 200 or that
   every OpenFeature/Liquibase package is on conda-forge `main` for every consumer. Do not
-  re-open Epics 26/27 as “start with packaging.” CAP-9 live holes are listed on CAP-9 success.
+  re-open Epics 26/27 as “start with packaging.” CAP-9 live proof is listed on CAP-9 success.
 - **Always:** CAP-9 adds a Helm hook Job beside the shipped `migrate-job.yaml`, at a lower
   hook-weight, on the same platform image. It does not introduce a chart pattern, a second image,
   or an init container. The Job **creates schema `liquibase`** before Liquibase opens
@@ -447,9 +453,9 @@ database role is provably incapable of altering its own schema.
   Doctor consume later.
 - ~~**12-7 live `/ht/`**~~ — **answered 2026-08-25:** attended CRC, Helm `platform` **deployed**,
   Liquibase + `migrate --fake` Complete, `https://platform.apps-crc.testing/ht/` **200**. Record:
-  `spec-12-1-the-vanilla-chart-with-an-ocp-overlay-verification-2026-08-25.md`. Residual findings
-  (sidecar image, `platform_app`, mcp 1.x vs 2.0, CRC PVC sizes) stay in that record; they do not
-  reopen this question.
+  `spec-12-1-the-vanilla-chart-with-an-ocp-overlay-verification-2026-08-25.md`. CRC follow-through
+  **closed 2026-08-26** (sidecar Ready, `platform_app`, MCP host sidecar, `/` **200**). PVC
+  sizes stay hostpath-odd; isolated `mfa` stays fake. They do not reopen this question.
 - ~~**console-parity-inventory**~~ — **answered 2026-08-24** by `console-parity-inventory.md`.
   Twenty-three surfaces: 14 runtime-reproducible, 7 build-time-only, 3 mixed. The seven reduce to
   **four decisions** — live run state (three surfaces, one decision), detector verdicts, curated

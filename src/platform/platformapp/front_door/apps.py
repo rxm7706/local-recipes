@@ -17,6 +17,12 @@ def _seed_detector_schedule(sender: AppConfig, **kwargs: object) -> None:
     seed_detector_schedule()
 
 
+def _seed_lane1_homepage(sender: AppConfig, **kwargs: object) -> None:
+    from platformapp.front_door.lane1_seed import seed_lane1_homepage  # noqa: PLC0415
+
+    seed_lane1_homepage()
+
+
 class FrontDoorConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "platformapp.front_door"
@@ -33,4 +39,9 @@ class FrontDoorConfig(AppConfig):
             _seed_detector_schedule,
             sender=self,
             dispatch_uid="front_door.seed_detector_schedule",
+        )
+        post_migrate.connect(
+            _seed_lane1_homepage,
+            sender=self,
+            dispatch_uid="front_door.seed_lane1_homepage",
         )

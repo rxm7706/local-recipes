@@ -19,6 +19,8 @@ from wagtail.models import Site
 from platformapp.front_door.middleware import WagtailAdminGroupRequiredMiddleware
 from platformapp.front_door.middleware import is_cms_login_path
 from platformapp.front_door.middleware import must_refuse_admin
+from platformapp.front_door.lane1_seed import LANE1_SLUG
+from platformapp.front_door.lane1_seed import seed_lane1_homepage
 from platformapp.front_door.models import HomePage
 from platformapp.users.provisioning import provision_designated_groups
 from platformapp.users.tests.factories import UserFactory
@@ -44,6 +46,21 @@ def _publish_home(body: str) -> HomePage:
     site.root_page = home
     site.save()
     return home
+
+
+def test_seed_lane1_homepage_is_idempotent_and_serves_root(client: Client) -> None:
+    first = seed_lane1_homepage()
+    second = seed_lane1_homepage()
+    assert first is not None
+    assert second is not None
+    assert first.pk == second.pk
+    assert HomePage.objects.filter(slug=LANE1_SLUG).count() == 1
+    site = Site.objects.get(is_default_site=True)
+    assert site.root_page.specific.pk == first.pk
+    response = client.get("/")
+    assert response.status_code == HTTPStatus.OK
+    assert "Lane 1" in response.content.decode()
+    assert LANE1_SLUG in {page.slug for page in HomePage.objects.all()}
 
 
 def test_publish_homepage_body_comes_from_orm(client: Client) -> None:
