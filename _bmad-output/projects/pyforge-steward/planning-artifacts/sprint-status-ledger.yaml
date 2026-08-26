@@ -112,7 +112,7 @@ development_status:
   34-1-read-only-live-attach: done
   34-2-kedro-writes-the-parquet-cache: done
   34-3-vectors-persist-on-the-plane: done
-  34-4-agents-cannot-reach-oltp: backlog
+  34-4-agents-cannot-reach-oltp: done
   34-5-scribe-semantic-recall-uses-the-plane: backlog
   35-1-cluster-requires-mcp-host: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
