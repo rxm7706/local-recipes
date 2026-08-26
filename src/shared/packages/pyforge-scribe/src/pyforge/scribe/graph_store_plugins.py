@@ -22,6 +22,7 @@ from pyforge.scribe.graph_store import (
 
 _OWNER_ENV = "PYFORGE_GRAPHSTORE_OWNER"
 _DSN_ENV = "SCRIBE_GRAPH_DSN"
+_PLANE_PATH_ENV = "QUERY_PLANE_DUCKDB"
 
 
 def open_graph_store(
@@ -48,6 +49,13 @@ def open_graph_store(
         for plugin in registry.plugins
     ):
         registry.register(FlatFileGraphStorePlugin())
+    if owner == "atlas" and not any(
+        plugin.hook_spec == GRAPHSTORE_HOOK_SPEC.name and plugin.owner == owner
+        for plugin in registry.plugins
+    ):
+        from pyforge.scribe.graph_store_plane import PlaneGraphStorePlugin
+
+        registry.register(PlaneGraphStorePlugin())
 
     selected = None
     for plugin in registry.plugins:
@@ -64,6 +72,9 @@ def open_graph_store(
     dsn = os.environ.get(_DSN_ENV) or os.environ.get("DATABASE_URL")
     if dsn:
         context["dsn"] = dsn.split("?", 1)[0]
+    plane = os.environ.get(_PLANE_PATH_ENV)
+    if plane:
+        context["plane_path"] = plane
     selected.call("around", context)
     store = context.get("store")
     if store is None:
