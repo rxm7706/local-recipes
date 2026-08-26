@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "consult_content_skill",
+    "skill": "pyforge-warden",
+    "path": ".claude/skills/pyforge-warden/active/pyforge-warden/SKILL.md"
+  },
+  {
+    "kind": "grammar",
+    "argv": ["pyforge", "warden", "scan", ".", "--warn-only"]
+  },
+  {
+    "kind": "mcp",
+    "method": "POST",
+    "path": "/stations/warden/mcp"
+  }
+]
