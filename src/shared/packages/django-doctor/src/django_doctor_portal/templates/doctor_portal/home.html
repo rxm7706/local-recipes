@@ -4,6 +4,18 @@
 {% endblock title %}
 {% block content %}
   <p id="doctor-body">doctor portal</p>
+  <section id="doctor-fleet-pulse" data-advisory="true">
+    <h2>Last fleet pulse</h2>
+    {% if pulse.empty or not pulse.summary %}
+      <p>No last <code>doctor monitor --fleet</code> summary yet.</p>
+    {% else %}
+      <p>
+        ok {{ pulse.summary.ok|default:0 }} · warn {{ pulse.summary.warn|default:0 }} · fail
+        {{ pulse.summary.fail|default:0 }} · total {{ pulse.summary.total|default:0 }}
+      </p>
+    {% endif %}
+    <p>Findings stay advisory — not a second PR gate.</p>
+  </section>
   <section data-console-home="fleet_table"></section>
   <section data-console-home="fleet_progress_tracked"></section>
   <section data-console-home="fleet_chain_audit_badge"></section>
