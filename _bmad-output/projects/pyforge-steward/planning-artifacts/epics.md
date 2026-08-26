@@ -688,8 +688,8 @@ there is no boundary to amend, and no architecture change was needed for either 
 **Given** a status/assignee/link change on either board **Then** it reaches the other with
 no human action on the receiving side, demonstrated against a live pair.
 **Status:** done — *per its frozen spec's deliberately narrowed slice: status-field-only,
-fake-transport-tested. The AC's assignee/link propagation is NOT delivered and has no owning
-story (audit AF-5); the live-pair demonstration is an open coverage-debt row.*
+fake-transport-tested. Assignee and identity-link propagation shipped as Story 8.7
+(closes audit AF-5). The live-pair demonstration remains an open coverage-debt row.*
 
 ### Story 8.2: Zero-loop guarantee
 **FR/AD:** FR-28 • **Effort:** M • **Deps:** S-8.1
@@ -752,7 +752,9 @@ fake-transport-tested) and its own audit note (AF-5) named as undelivered with n
 story until this one. Uses the same reconcile/baseline machinery Story 8.1 already
 established (AD-5's value-comparison guard, AD-10's baseline contract) — never a second
 propagation path.
-**Status:** backlog
+**Status:** done — *code on main via PR #544 (`b0072f42d3`); ledger key
+`8-7-assignee-and-identity-link-propagation` already `done` (PR #548). This inline
+line was the leftover that invited a duplicate story (DW-FU-8-7-7).*
 
 ## Epic 9: Secure live dashboards
 
