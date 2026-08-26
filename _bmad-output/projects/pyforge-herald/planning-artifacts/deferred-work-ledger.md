@@ -262,6 +262,8 @@ severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260730-192235-062b; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-4-2 — `state.py`'s `write()` does an unlocked read-modify-write of the whole slug-keyed document (read…
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
@@ -279,12 +281,16 @@ status: open
   evidence: Found by this story's own Edge Case Hunter review pass. Lower priority than the JSON-corruption and malformed-entry cases already patched in this story (those are plausible from an interrupted write or hand-edit; this requires something to have created a plain file at exactly `.herald` or one of its ancestors, which nothing in this repo does today). Fix candidate: wrap the `mkdir` call and re-raise as `errors.HeraldError` naming the offending path.
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-1: Follow-up review still recommended for 1-4-bridge-core-skeleton-state-errors-determinism-boundary after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260730-192235-062b; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-5-1 — `registry.read()` raises "malformed" (`expected exactly two body lines, found 5`) against every …
 
@@ -302,6 +308,8 @@ status: open
   evidence: By construction — `seed`'s `create_project`/`create_support_js`/`copy_files`/`write_files` calls all use fresh-etag (`"0"`) preconditions per FR-24 and trust whatever the transport returns without inspecting the payload shape for a conflict marker. Consistent with the story's own documented judgment call (module docstring, judgment call 1) and DW-1-2-5's own "recorded so Story 1.4 [does not / a future story does not] assume a conflicted write raises" framing.
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2: Follow-up review still recommended for 13-1-the-state-layer-survives-a-second-writer after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-13-1-the-state-layer-survives-a-second-writer.md`
@@ -312,6 +320,7 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, herald 13-1)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3: Follow-up review still recommended for 13-3-db-backed-storage-behind-the-existing-seam-with-migrations after the damping cap was spent
 origin: review-budget-followup
@@ -321,6 +330,8 @@ reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was s
 status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-3-1: One corrupt legacy JSON file blocks all three Moments' stores, where before Story 13.3 it blocked only its own
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
@@ -329,6 +340,8 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-3-2: A read-only `.herald/` directory now fails every herald command, where before Story 13.3 reads still worked
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
@@ -336,6 +349,8 @@ status: open
   evidence: Reproduced on this branch. With a populated store made read-only (`chmod 444` on `.herald/herald.db`, `chmod 555` on `.herald/`), `progress.read_all` raises `HeraldError: ... could not be opened: attempt to write a readonly database`; every read command and all three exporter scripts fail the same way. Pre-Story-13.3 the equivalent read of a read-only `.herald/progress.json` returned its records normally. The cause is WAL itself, not a coding error: verified that even a bare `PRAGMA journal_mode` -- a pure read of the setting -- raises the same error on such a store, because a WAL database opened read-write needs to create/write the `-shm` sidecar. Story 13.3's spec mandates WAL under `## Boundaries & Constraints` -> Always, so re-deriving under the same spec reproduces this exactly; `_set_wal_mode`'s own docstring already records the fast-fail as intentional. Resolving it is a design decision rather than a fix: opening `file:...?mode=ro` when the store is not writable would restore read behavior but needs a rule for when to choose it, and WAL readers still need a writable directory for `-shm`, so the alternative may be to document the requirement instead. Neither the operator guide nor the troubleshooting doc mentions that `.herald/` must be writable even to read.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-3-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-4-1: The webhook's HMAC scheme signs only the body, so one captured signed request stays a valid, reusable forgery token forever
 
@@ -364,6 +379,8 @@ entry is narrowed, not fully closed.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-4-2: The webhook's claim idempotency guard reads and creates in two separate transactions, so two concurrent deliveries of one event can both create a claim sharing one id
 
 **STILL UNREACHED as of Story 13.6** -- reasoning updated, not closed. The
@@ -382,6 +399,8 @@ producer retries a delivery in parallel with itself, or a second producer
 is added that can double-send.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-4-3: A single webhook request can occupy a thread-pool worker for well over a minute, and neither the handler nor the caller bounds it
 
@@ -406,6 +425,8 @@ request) but becomes live risk under any future persistent, multi-request
 deployment.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-4-4: `herald success create --shipped-date` accepts any string, and one malformed value then breaks `herald success list --date-range` for every operator afterwards
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md`
@@ -437,6 +458,8 @@ deployment.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-4` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-5-1: Evidence revalidation runs unbatched sequential HTTP checks, now reachable unattended via cron instead of only under an operator's eye
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-5-the-scheduler-enforces-what-was-displayed.md`
@@ -462,6 +485,8 @@ deployment.
   overlapping, but does not bound any single run's own duration.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-5` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-6-1: Steward's `deploy perimeter` cannot target an arbitrary ASGI application, only a hardcoded Django placeholder -- so Herald's webhook has no path to a persistent, Steward-perimeter-hosted deployment
 
@@ -497,6 +522,8 @@ deployment.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-6-1` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-6-2: `webhook_host.py`'s bounded timeout stops the client from waiting, but does not free the OS thread a genuinely-hung handler still occupies
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md`
@@ -528,6 +555,8 @@ deployment.
   than trying to reclaim the slot at all.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-6-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-1-1: A gate returning a non-JSON-serializable field value crashes `herald deck qa` with an unhandled `TypeError` instead of a controlled `HeraldError`
 
@@ -562,6 +591,8 @@ deployment.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-1` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-14-1-2: `deck_qa.run()` calls each gate synchronously with no timeout, so a hanging gate blocks the whole `herald deck qa` invocation indefinitely
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-1-gate-report-interface.md`
@@ -586,6 +617,8 @@ deployment.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-1-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-14-2-1: No CI workflow runs `pyforge-herald`'s pytest suite, so the render gate's Chromium dependency is unprovisioned in CI
 
 - source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-2-headless-render-gate.md`
@@ -603,6 +636,8 @@ deployment.
   code to depend on a real Chromium binary at all.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-3-1: `image_slot_gate` has no duplicate-manifest-id disambiguation, unlike `render_gate`'s own `seen_ids` guard in the same file
 
@@ -633,6 +668,8 @@ deployment.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-15-1: No GitHub Actions workflow runs the pyforge-herald pytest suite at all.
 
 - source_spec: `planning-artifacts/specs/spec-15-1-template-parse-then-fill-produces-a-genuinely-editable-deck.md`
@@ -643,6 +680,8 @@ deployment.
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-15-1-2: _resolve_layout silently resolves a name-based layout reference to the first match when a template has two layouts sharing the same name.
 
@@ -656,6 +695,8 @@ deployment.
   status: open
 
 ---
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-CANOPY-2026-08-24 — Canopy five-tier integration deferred to steward (Phase 5)
 
@@ -672,6 +713,8 @@ deployment.
   related: DW-13-6-1 (persistent webhook/perimeter hosting), `mcp-runtime-base`
   promoted: 2026-08-24 — Phase 5 correct-course for pyforge-herald
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -680,3 +723,5 @@ deployment.
   status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; herald S-16.1 done (exporter plugins); no competing CI verdict
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open

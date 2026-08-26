@@ -278,6 +278,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   verified: Story 1.9 moved the range constants into `adapters/harness_bmadloop.py`, the FR-52 seam that declares the supported range, and added `tests/meta/test_manifest_sync.py::test_harness_range_constants_match_pyproject_dependency_pin`; the existing manifest cross-check covers `pixi.toml` transitively.
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ## DW-1-8-1 — Preflight lacks init and teardown's Git-ref-shape slug guard
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-teardown-that-refuses-to-destroy-work.md`
@@ -296,6 +298,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-8-3 — Teardown has a branch-deletion TOCTOU window
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-teardown-that-refuses-to-destroy-work.md`
@@ -303,6 +307,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.8's adversarial review pass. The window is narrow (the worktree itself is removed before `delete_branch` runs, and git worktrees are exclusive to one branch, so only an out-of-band `git update-ref`/push from a separate process could land new commits in it) and no architecture doc in this repo describes protecting against concurrent multi-process mutation of the same loop-home branch — AD-11's isolation model assumes one operator, one loop home. Real but requires a broader concurrency-control design (e.g. re-verifying `is_branch_merged` immediately before `delete_branch`, or locking) that is out of scope for an Effort:S story.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-8-4 — Teardown cannot see valuable gitignored content
 
@@ -312,6 +318,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-8-5 — Teardown can destroy nested registered worktrees
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-teardown-that-refuses-to-destroy-work.md`
@@ -320,6 +328,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-8-6 — Teardown has no active-run liveness guard
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-8-teardown-that-refuses-to-destroy-work.md`
@@ -327,6 +337,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found by Story 1.8's follow-up adversarial review. The 8-home fleet at `~/.bmad-loops/` runs unattended, and a live run's worktrees/logs/state are all inside gitignored paths (see the companion gitignored-blindness entry), so both refusal probes pass while a story is mid-implementation; the check-then-remove sequence is also unsynchronized with any concurrent writer (same class as the already-deferred delete-branch TOCTOU entry). No liveness mechanism exists anywhere in Marshal's architecture yet to consult -- introducing one (probe choice, staleness thresholds, lock protocol) is a design decision interacting with the same Epic 4 refusal-extension seam, not a patch.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-9-1 — Marshal's README still describes a Story 1.1 skeleton
 
@@ -346,6 +358,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-AUD-2026-07-31-1 — Stories 1.7-1.9 shipped without canonical memlog reconciliation
 
 - source: `scripts/spec_surface_check.py`, Story 1.7-1.9 implementation specs, and PR #175
@@ -356,6 +370,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   verified: The staged memlog now records each story's shipped behavior, verification, and durable residual-risk disposition. `spec-surface-check` is rerun as part of this audit's verification.
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ## DW-AUD-2026-07-31-2 — Four Marshal-owned Dreams still have no Tier-2 Spec
 
 - source: `scripts/dream_chain_check.py`
@@ -363,6 +379,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: The detector reported `INV-1 — 4 finding(s)` on 2026-07-31, with `owner=marshal`. Related discussion exists in Marshal and Genesis memlogs, but no complete four-Spec chain exists under `_bmad-output/projects/`.
   action: For each Dream, either run `bmad-spec` and place the resulting Spec under the owning project, or record an explicit retirement/absorption decision in the Dream and its owning project memlog so the chain checker has a durable disposition.
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-AUD-2026-07-31-3 — Deferred-work detector ignores anonymous Tier-3 entries
 
@@ -374,6 +392,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
 > **Promotion pass 2026-07-31 (Stories 1.4-1.6 audit)** — entries from the gitignored Tier-3 ledger that were missed previously.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-4-1 — `cli/init.py`'s project-existence check (`MRS-INIT-002`) reads `_bmad-output/pro…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-4-provision-a-loop-home.md`
@@ -381,6 +401,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.4's adversarial review. Confirmed by code inspection: `fs.is_dir(planning_dir)` calls `Path.is_dir()` on the live filesystem, with no `git show main:...`/branch check anywhere in the path. Low real-world risk given this exact story's own AD-11 invariant (main is never checked out into a second worktree, so the primary checkout has no code path that moves it off main) — but that is an operating discipline, not an enforced guarantee, so a manual `git checkout <other-branch>` in the primary checkout during unrelated work would open the window. Needs a product decision (accept the AD-11-backed low-probability risk, or add a ref-based existence check) before treating it as a mechanical patch.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-4-2 — The `MRS-INIT-003` marker/symlink desync guard has two blind spots: (1) `_slug_f…
 
@@ -393,6 +415,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   closed_by: Story 20.7 (spec-20-7-both-guards-hard-fail-on-drift)
   closed_note: Both guards now consume the sole `verify_scope` primitive; `bmad-switch --current` hard-fails on drift; `marshal init` refuses homes whose marker/planning agree on a different project than requested (DW-1-4-2 blind spots (1) and (2)).
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ## DW-1-4-3 — `adapters/fs_local.py`'s two atomic-write helpers disagree on stale-temp-file ha…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-4-provision-a-loop-home.md`
@@ -400,6 +424,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.4's adversarial review. Confirmed by code inspection: both docstrings cite the same "pid+thread-id collision-safety" rationale, but implement opposite policies. Low-impact given the pid+thread-id-suffixed temp names already make a real collision extremely unlikely, but the inconsistency itself is a maintainability/correctness smell worth a follow-up cleanup pass to pick one policy.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-4-4 — `marshal init <slug>` has no protection against two concurrent invocations for t…
 
@@ -411,6 +437,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   scope note (2026-07-31): this entry is the concrete, in-code instance of a wider question — nothing serializes concurrent writes to the SHARED Tier-2 artifacts (`epics.md`, this ledger, `sprint-status-ledger.yaml`) that every loop line writes. That question was raised against the Spec and PRD rather than this ledger, and was RESOLVED the same day by decomposition (PRD Q-10 / the Spec memlog decision): merge append-only inputs and re-derive regenerated outputs on main after landing; advisory append lock on the shared canonical Tier-3 store; the journal's two-writer case stays with F-6. Fixing this entry does not answer that question, and its resolution does not close this entry — the init TOCTOU remains its own open deferral.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-4-5 — `cli/init.py::_loop_home_root()`'s real default fallback (`Path.home() / ".bmad-…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-4-provision-a-loop-home.md`
@@ -418,6 +446,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.4's adversarial review. Confirmed by grep: `BMAD_LOOP_HOME_ROOT` is set in every test file that imports `run_init`/`main`. The code itself is a one-line `Path` join with low risk, but the coverage gap is real and mechanically closeable (a single test with `monkeypatch.delenv`) — recorded rather than patched now to keep this pass's diff scoped to the findings that change behavior, not just coverage.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-4-6 — `tests/unit/test_vcs_git.py` and `tests/integration/test_init_worktree.py` each …
 
@@ -427,6 +457,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-4-7 — `cli/init.py`'s printed `launch_line` (`cd <home> && export BMAD_ACTIVE_PROJECT=…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-4-provision-a-loop-home.md`
@@ -434,6 +466,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.4's edge-case review. Confirmed by code inspection of `run_init`'s `data["launch_line"] = f"cd {home} && export BMAD_ACTIVE_PROJECT={slug}"` — no `shlex.quote()` anywhere in the f-string. Low real-world likelihood (the loop-home root is normally under `~/.bmad-loops`, which has no spaces) but a real robustness gap for a deliberately overridable path.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-4-8 — `marshal init` has no guard against the total loop-home path length, despite thi…
 
@@ -443,6 +477,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-4-9 — `cli/main.py::main` catches only `SystemExit` and `KeyboardInterrupt` — it has n…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-4-provision-a-loop-home.md`
@@ -450,6 +486,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.4's follow-up review (both reviewers flagged escape paths; the specific known escapes — `Path.cwd()` OSError, `Path.home()` RuntimeError, `UnicodeDecodeError` from marker reads and git output, pathlib `PermissionError` on the 3.12 floor — were all patched at their sources in that pass). The residual clamp is a pre-existing Story 1.1/1.3 design decision on the CLI spine (silently converting unknown bugs to `EXIT_USAGE` trades a loud traceback for domain purity), not a mechanical patch; it spans every current and future subcommand, so it deserves its own deliberate change rather than a review-pass side edit.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-4-10 — `tests/integration/test_init_worktree.py` — the only end-to-end proof of both wo…
 
@@ -459,6 +497,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
 
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-1-5-11 — `cli/init.py`'s `tier3_backlink` step gives a real, non-empty DIRECTORY at the l…
 
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-5-single-sourced-tier-3-store-via-backlink.md`
@@ -466,6 +506,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found independently by both reviewers in Story 1.5's review pass. Confirmed by code inspection: `fs.is_dir(local)` is False for a plain file, so the `remove_empty_dir`/`MRS-INIT-005` branch is never reached; `repoint_symlink_atomic`/`ensure_dir` still safely refuse (no data is destroyed), just under the less-specific code. Low real-world likelihood (why would a plain file occupy exactly this path?) and current behavior is already safe, so not patched now — a dedicated check would need a general `exists()`-style `FsPort` primitive this story's narrow surface doesn't otherwise need.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-1-5-13 — `tier3_backlink`'s convergence check compares the raw (unresolved) symlink target…
 
@@ -494,6 +536,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: Found during Story 1.5's follow-up adversarial review. Confirmed by inspection of `_bmad/bmm/config.yaml:8` (top-level path hard-coded), `scripts/bmad-switch::_ARTIFACT_LINKS`/`desync_warning` (requires BOTH top-level links to agree with the marker), and the epics: no later story creates the link — Story 1.6 only VERIFIES Tier-3 realpaths, Story 1.7 seeds adapter configs. The spec deliberately scoped the top-level compatibility link out of Story 1.5 (its Never section + Design Notes: it belongs to `bmad-switch::repoint_links`, shared with `planning-artifacts`), and today's operational mitigation is running `bmad-switch` inside the home (auto-memory `feedback_bmad_loop_worktree_needs_switch_and_backlink.md`). Needs a product decision: either a later Marshal story ports `repoint_links`' implementation-artifacts half (e.g. into 1.6/1.7's surface), or the FR-3 claim "every consumer sees the same path" is formally narrowed to nested-path consumers.
 
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-4-2-1 — `marshal teardown` reports every landed story as an unreachable promotion for …
 
@@ -659,6 +703,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-2-6: Follow-up review still recommended for 2-6-gate-evidence-record-with-redaction-at-egress after the damping cap was spent
 
 - source_spec: `spec-2-6-gate-evidence-record-with-redaction-at-egress.md`
@@ -667,6 +713,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-4` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-4`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-3-3: Follow-up review still recommended for 3-3-detached-launch-with-scoped-story-selection after the damping cap was spent
 
@@ -677,6 +725,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-3-4: Follow-up review still recommended for 3-4-supervisor-process-lifecycle after the damping cap was spent
 
 - source_spec: `spec-3-4-supervisor-process-lifecycle.md`
@@ -685,6 +735,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-6` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-6`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-3-5: Follow-up review still recommended for 3-5-idle-strand-detection after the damping cap was spent
 
@@ -695,6 +747,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-4-14
 
 - source_spec: `spec-4-14-the-failed-story-safety-net-is-reported.md`
@@ -702,6 +756,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 tw
   evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260809-231524-abb9`. 4-14 also cleared on its LAST review cycle (rev 3 of 3), which is the profile where an independent pass earns its cost.
   promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there) under this ledger's own `DW-FU-<story>` convention (`DW-FU-2-6`, `DW-FU-3-3`, `DW-FU-3-4`, `DW-FU-3-5`). A generic `DW-8` would collide with the next damped story.
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-9: Follow-up review still recommended for 7-4-manifest-schema-loader-and-model-version-ranges after the damping cap was spent
 origin: review-budget-followup
@@ -713,7 +769,7 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, mason 2-2 / marshal 7-4)
 
-
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-2-1: `pyforge-deps-test` fails on `pyforge-mason`'s five conda-only run-dependencies, reddening a verify command every story in this loop must pass
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-2-state-schema-and-the-atomic-store.md`
@@ -723,12 +779,16 @@ status: open
   status: resolved
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ### DW-10-3-1: Writing `plan.json` to its canonical path flips the fingerprint's dirty flag, so the first apply of every freshly built plan refuses itself as stale
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `default_plan_path` is `<repo_root>/.marshal/plan.json`, which is only gitignored by the `model-ignores` region of the target's `.gitignore` -- a region a not-yet-seeded repo has not received. So `write_plan(plan, default_plan_path(repo))` on a clean repo makes `git status --porcelain --untracked-files=normal` report `?? .marshal/`, `fingerprint_drift` reports a `dirty` divergence, and `run_apply` refuses with a stale-plan `PreconditionFailure` -- blocking the plan-then-apply flow that is Genesis's entire purpose, and naming `dirty` rather than the plan file, so an operator has no way to diagnose it.
   evidence: Raised independently by BOTH of this story's review passes (Blind Hunter and Edge Case Hunter, no shared context) and reproduced by execution: on a clean git repo, `build_plan` records `dirty=False`; after `write_plan(plan, default_plan_path(d))`, `fingerprint_drift` returns `('dirty: the plan was built with dirty=False, the repo is now dirty=True',)` and `run_apply` raises. This corroborates the already-filed `DW-FU-9-6-2`, which predicted exactly this once a later story started trusting the fingerprint for a refuse decision; recorded separately per this workflow's instruction not to consolidate defer findings against existing ledger entries. Not fixed here: the remedy is a write-ORDER guarantee (materialize the `.gitignore` region before writing the plan file, or write the plan outside the target tree) owned by whichever story sequences those writes -- Story 10.6 (`adopt`) -- or a dirty-probe that excludes `.marshal/`, which is `plan/build.py`'s `_repo_is_dirty` and changes what every plan records, not just what apply checks. Both are outside this story's Surface and inside its Never list (no `plan.json` read or write, no verb sequencing).
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-3-10: A failed rollback wraps an interrupt in a catchable `InternalError`, so a CLI's `except SeedError` swallows the operator's Ctrl-C
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
@@ -737,12 +797,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-10` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-3-2: Rollback restores a file's bytes but not its mode, so a failed apply leaves every executable managed artifact non-executable
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `run_apply`'s snapshot is `target.read_bytes()`, and the restore is `fs.write` -> `atomic_write_bytes(path, data)` with no mode argument, which chmods the temp file to `0o666 & ~umask` before `os.replace`. A target that was `0o755` therefore comes back `0o664`. The packaged manifest ships `scripts/bmad-switch` and `scripts/bmad-loop-worktree` as `copied-managed` executable model machinery, so a rolled-back apply silently breaks them while the runner claims to have left the repo exactly as it found it.
   evidence: Raised by this story's Blind Hunter review and independently by the Edge Case Hunter, and reproduced by execution: a `hook.sh` at `0o755`, committed by action 1, with action 2 failing, comes back with correct content at mode `0o664`. Not fixed here: `fs.write(path, data, *, repo_root, never_write)` exposes no `mode=` passthrough to the `atomic_write_bytes(path, data, mode=...)` parameter that already exists one layer down, so the fix edits `seed/fs.py` -- the never-write guard module, explicitly listed as consumed-unmodified in this story's Code Map and outside its Surface. The runner's own docstring now states the bound rather than implying it away.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-3-3: A directory target snapshots as `None` and is never removed, so a rolled-back apply leaves the whole tree it created
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
@@ -751,12 +815,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-3-4: A symlinked target is snapshotted through the link but restored over it, leaving neither the link nor its referent as they were
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `run_apply`'s snapshot predicate is `target.is_file()`, which FOLLOWS symlinks, so a symlinked artifact captures its referent's bytes; but `fs.write` -> `atomic_write_bytes` -> `os.replace` replaces the link itself (POSIX `rename(2)` never follows a symlink at its destination -- `seed/fs.py`'s own docstring records this, confirmed by direct execution). Rollback therefore turns the symlink into a regular file holding the referent's old bytes, while the referent keeps whatever `commit` wrote through it: a state that matches neither before nor after.
   evidence: Raised by both of this story's review passes and reproduced by execution: `CLAUDE.md -> real.md` containing `"REAL\n"`, a commit writing `"mat\n"` through the link, then a later failure, leaves `CLAUDE.md` a regular file containing `"REAL\n"` and `real.md` containing `"mat\n"`. Not fixed here: a correct fix snapshots link-ness (`os.readlink`) and restores through a symlink-aware primitive `seed/fs.py` does not offer, or refuses symlinked targets outright -- a precondition, which is Story 10.4's surface. `fs.py` itself already accepts this identical bound on the stated grounds that no real V1 target artifact is expected to be a symlink; the runner now states the same bound explicitly instead of inheriting it silently.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-4` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-3-5: An interrupt raised during rollback discards the list of paths rollback already knew it could not restore
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
@@ -765,12 +833,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-5` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-3-6: The never-write guard is applied to rollback restores, so a target `commit` wrote into a never-write path can never be put back
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `run_apply` passes the caller's `never_write` to its `fs.write`/`fs.remove` restore calls. `commit` is not obligated to honor the guard (the runner's own docstring says its violations merely propagate), so a `commit` that writes a never-write target leaves bytes the runner is then structurally forbidden to restore -- even though restoring ORIGINAL content is not a new write at all. The run ends in `InternalError` (exit 10, "restore by hand"), i.e. a guaranteed partial state, where an upfront check of every `action.target_path` against `never_write` could have refused with a zero-write `NeverWriteViolation` (exit 4) before the first `commit` ran.
   evidence: Raised by this story's Blind Hunter review; the behavior is pinned by this story's own test asserting that a never-write target is left holding the committed content with an `InternalError` naming it. Verified against `seed/fs.py`: `_guard` runs before any I/O in all three primitives, with no bypass parameter, so the restore genuinely cannot proceed. Not fixed here: the proposed remedy is a PRECONDITION evaluated before the first commit, and preconditions are explicitly Story 10.4's surface -- whose own epics `Surface:` line names this same `seed/apply/run.py` file, so it lands in exactly the right place one story later. This story's Never list scopes out every precondition but the fingerprint.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-6` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-3-7: A plan's fingerprint records no repo identity, so a plan built against one non-git directory applies cleanly to a different one
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
@@ -779,12 +851,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-7` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-3-8: `fingerprint_drift` performs an unguarded arbitrary-path read; containment lives only in its caller, and Story 10.4 owns that same file next
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `fingerprint_drift(plan, repo_root)` reads and hashes `repo_root / action.target_path` with no containment check of its own, and `Path(repo) / "/abs/path"` discards `repo` entirely -- so a hand-edited `plan.json` handed straight to the verifier reads any host file the process can open and reports its absolute path back in a drift string. `run_apply` happens to pre-screen every target before calling it, but that guard is the CALLER's, so any second caller inherits an unguarded read.
   evidence: Raised by this story's second review pass (Blind Hunter) and verified by execution: `fingerprint_drift` called directly with `target_path="/tmp/.../secret.txt"` read that file and returned a drift tuple naming the absolute path. Not fixed here: the story's Design Notes explicitly ACCEPT this direction as fail-closed for `run_apply`'s own use ("an entry whose path escapes `repo_root` ... may find a real file there and report drift ... refuses rather than proceeds"), and the containment check was deliberately placed in `run_apply` where a `PreconditionFailure` can be raised and surfaced. The residual risk is a FUTURE second caller, and Story 10.4's own `Surface:` line names `seed/apply/run.py` while also owning the precondition ladder -- so the natural fix (hoist containment into `fingerprint_drift`, or expose a shared `_resolve_within_repo`-style helper from `detect/inventory.py` that both call) lands with the story that adds the second caller, not before it.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-8` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-3-9: `build_plan` emits Actions whose `target_path` escapes `repo_root`, so one bad manifest entry makes `run_apply` refuse the entire plan with no reachable remedy
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
@@ -793,12 +869,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-3-9` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-4-1: A symlinked ancestor directory defeats the never-write guard, because the pattern is matched against the resolved destination path rather than the repo-relative one the operator wrote
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-4-preconditions-refusals-and-skips.md`
   summary: A symlinked ancestor directory defeats the never-write guard, because the pattern is matched against the resolved destination path rather than the repo-relative one the operator wrote.
   evidence: Raised by this story's Blind Hunter review and reproduced by execution: in a repo where `docs -> real/`, with `never_write=("docs/dreams/*.md",)`, an action targeting `docs/dreams/x.md` clears all six precondition rungs, because `_relative_within` resolves parent symlinks and the matched string becomes `real/dreams/x.md`. Not fixed here: the resolution semantics are inherited deliberately from `seed/fs.py::_guard`, which resolves both `path` and `repo_root` before matching and documents the consequence as an accepted trade -- so the gap is genuinely `fs.py`'s, and `fs.py` is on this story's Never list (narrowing the precondition alone would also make the gate and the write primitive disagree, which is worse than either behavior). The scope is wider than one rung: any repo that keeps `docs/` or `_bmad-output/` on another volume via a symlink silently loses Tier-0/Tier-2 never-write protection at BOTH the precondition and the write primitive. Whoever owns `fs.py` next should decide between lexical matching before resolution, matching both strings, or refusing a symlinked ancestor outright. This story softened its own refusal text so it no longer claims a protection stronger than the one `fs.py` actually provides.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-4-2: The new never-imported packaging ratchet cannot see `python-build`, the one exempted name its own docstring says the gate exists to cover
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-4-preconditions-refusals-and-skips.md`
@@ -807,12 +887,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-4-3: `ManagedRecord`'s region-bearing shape has no source in the state model Story 10.2 actually landed, so rung 6 cannot be wired for hybrid artifacts
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-4-preconditions-refusals-and-skips.md`
   summary: `ManagedRecord`'s region-bearing shape has no source in the state model Story 10.2 actually landed, so rung 6 cannot be wired for hybrid artifacts.
   evidence: Raised by this story's second Blind Hunter pass and verified against `main` after Stories 10.2 and 10.3 landed (both were unmerged siblings when this story was planned, so its contract could only treat `ManagedRecord` as an abstract input). `seed/state/store.py::ManagedArtifact` on `main` carries exactly `id`, `path`, `artifact_class`, `body_sha: str` and `inserted_region_span: RegionSpanRecord | None`, and `RegionSpanRecord` is `name` plus UTF-8 byte offsets -- it holds NO per-region sha and NO region format. This story's `ManagedRecord` requires `region_shas: Mapping[str, str]` and a `region_format` whenever `region_shas` is non-empty. There is therefore no total function from the landed state model to a region-bearing `ManagedRecord`: a caller loading real state for a `hybrid-managed-region` artifact can only build a whole-file record, which sends the single `body_sha` into `check_managed_file` against the hash of the WHOLE file, refusing on any human edit outside the managed region -- the edits the hybrid class exists to permit. The consequence is that `_region_divergences` and `check_managed_region` are unreachable from real state, so the region half of SC-04 is unmitigated at runtime even though it is fully implemented and tested here. Not fixable inside this story: its frozen contract states that `ManagedRecord` is an INPUT supplied by whoever loads state and puts every state-store concern on Story 10.2's surface, and both modules involved landed after this story's baseline `64e717d`. Belongs to the verb-wiring story (10.5/10.6/10.7) that first calls `check_preconditions` with real state, which must decide whether state grows a per-region sha and a region format, or whether the adapter recomputes region shas at load time from the recorded span.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-4-4: `managed_after_skips` cannot protect the artifact class rung 6 actually guards, because a hand-edited managed file never carries a plan action to be skipped
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-4-preconditions-refusals-and-skips.md`
@@ -821,12 +905,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-4` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-4-5: An action whose target is an existing DIRECTORY clears all six precondition rungs and fails later as an untyped `IsADirectoryError` instead of a refusal with a remedy
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-4-preconditions-refusals-and-skips.md`
   summary: An action whose target is an existing DIRECTORY clears all six precondition rungs and fails later as an untyped `IsADirectoryError` instead of a refusal with a remedy.
   evidence: Raised by this story's second Blind Hunter pass. With `docs/` an existing directory and an action whose `target_path` is `docs`, rung 3 yields the repo-relative string `docs` (not the `.`/`""` the repo-root guard catches), rung 4 matches no never-write glob, rung 5's `lstat` finds a directory rather than a symlink, and rung 6 is unrelated -- so `check_preconditions` returns `None` and the apply runner reaches `os.replace(tmp, docs)`, which raises `IsADirectoryError`. That is an untyped crash escaping the `SeedError` taxonomy, where every other refusal in this ladder is a `PreconditionFailure` with exit code 3 and a non-blank remedy. This story added a repo-root check inside rung 3 for the `.`/`""` case, which is one instance of the directory-target class while declining the class itself -- deliberately, because the six-rung ladder and its fixed evaluation order are frozen inside this story's `<intent-contract>`, so adding a seventh structural check is a contract amendment rather than an implementation choice. Belongs with whoever next amends the ladder, or with the apply runner's own owner if the cheaper answer is for the writer to raise a typed error. Latent rather than live today: nothing calls `check_preconditions` in `src/` yet, and a manifest that declares a bare directory as an artifact target is itself unusual.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-10-4-5` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-1-1: `pyforge-core/.gitignore`'s `/dist/` and `/dist-conda/` lines carry inline comments gitignore cannot parse, so both patterns are dead and those directories are not actually ignored
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-14-1-the-leaf-exists-and-is-provably-a-leaf.md`
@@ -835,12 +923,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-1` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-14-2-1: story deferred at the dev verify-gate — substantive work committed locally but never merged, blocked on cross-spec spec-surface reconciliation
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-14-2-atomic-write-has-one-implementation.md`
   summary: Run `20260811-190409-5c73`'s dev-2 attempt for 14-2 completed real work — committed locally in the story's own worktree (`1d60da0193 Story 14.2: consolidate atomic-write into pyforge-core (CAP-2, CAP-7)`, 20 hand-written atomic-write copies across 6 stations retired into one `pyforge-core` primitive, all test suites green per the session's own summary) — but its verify command `python scripts/spec_surface_reconcile.py` exited rc=1 with 28 findings: governed files changed under BOTH `pyforge-marshal/spec-pyforge-marshal` (`cli/config.py`, `adapters/harness_bmadloop.py`, `tests/meta/test_manifest_sync.py`, `tests/unit/test_fs_local.py`) and `pyforge-steward/spec-pyforge-steward` (`budget.py`, `keys.py`, `pixi.toml`, `pyproject.toml`) without either spec's `.memlog.md` naming the changes first. With `max_dev_attempts: 2` exhausted, the orchestrator deferred the story (`kind: story-deferred`, `action: defer`) and the run's already-pending `--graceful` stop then took effect immediately after. The commit itself was NEVER merged into `loop/pyforge-marshal` — it exists only in the story's own worktree at `~/.bmad-loops/pyforge-marshal/.bmad-loop/runs/20260811-190409-5c73/worktrees/14-2-atomic-write-has-one-implementation` (kept, per `journal.jsonl`'s `worktree-kept` entry) plus a safety-net backup at `~/.bmad-loops/pyforge-marshal/.bmad-loop/runs/20260811-190409-5c73/failed/14-2-atomic-write-has-one-implementation/changes.patch`.
   evidence: Diagnosed live 2026-08-12/13 by reading `state.json`, `journal.jsonl`, the dev-2 session log, and the story worktree's own `git log`/`git status` directly (`journal.jsonl` line: `{"kind": "dev-decision", ..., "reason": "verify command failed (rc=1): python scripts/spec_surface_reconcile.py\n... FINDINGS (28): ..."}` followed by `{"kind": "story-deferred", ...}`, `{"kind": "unit-closed", ..., "kept": true, "patch": ".../changes.patch"}`, `{"kind": "run-stop", "graceful": true, "remaining": 43}`). Not fixed here: reconciling spec-surface drift across two specs and deciding whether/how to hand-finish landing the preserved commit is a real intervention (edit both specs' `.memlog.md`, scoped-stamp both, then either resume the run or manually complete the landing pipeline) that the operator explicitly deferred pending their own decision — see the auto-memory session-close entry for the standing options.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-3-1: Doctor and Steward still carry un-reparented exception roots outside Story 14.3's CAP-5 scope
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-14-3-one-lattice-one-envelope-one-exception-root.md`
@@ -849,12 +941,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-14-4-1: Herald, Mason, and Scribe carry real, un-migrated subprocess implementations outside Story 14.4's CAP-6 scope
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated.md`
   summary: Herald's `transport/agent_sdk_transport.py` + `deck_pipeline.py`, Mason's `cfe.py` + `engines/__init__.py`, and Scribe's `compile.py` each call `subprocess` directly with no local sole-ownership guard, discovered by this story's new fleet-wide `pyforge-core` subprocess guard and excluded from it rather than migrated.
   evidence: Confirmed live while authoring `pyforge-core/tests/meta/test_process_sole_ownership.py`'s fleet-wide scan (Story 14.4): before excluding these three stations the detector fired on real, non-synthetic `subprocess.run`/`Popen` call sites in each. Unlike Doctor (its own already-working `test_cli_bridge_sole_subprocess.py`) and Warden/Steward (named in this story's own Boundaries), none of the three had a local guard filling the gap, and Mason's `test_adapter_sole_caller.py` polices CFE-path references specifically, not general subprocess ownership. Not fixed here: CAP-6's success text names only Marshal for mandatory migration; a future story extending CAP-6 to any of the three should either migrate it to `pyforge.core.process` or add a local sole-site guard, removing its entry from `_OUT_OF_SCOPE_STATIONS` in the same change.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-4` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-4-2: AD-4's import-linter contract has a verification blind spot for pyforge-core's own internal os/subprocess imports
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated.md`
@@ -863,12 +959,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-4-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2-8-1: epics.md's Story 2.8 entry omits the **Surface:** line every sibling Epic-2 story carries
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-2-8-a-low-risk-storys-review-runs-lighter-never-absent-2.md`
   summary: `_bmad-output/planning-artifacts/epics.md`'s "Story 2.8: A low-risk story's review runs lighter, never absent" section has no `**Surface:**` line, even though every sibling Epic-2 story (2.1-2.7) carries one and the governing `SPEC.md` (`_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth/SPEC.md`) already unambiguously scopes `surface: [core/gate.py]`. That line is the one signal that would let a reader tell "CLI/envelope wiring is a deliberate follow-on story" from "wiring was simply forgotten" without cross-referencing the SPEC by hand. Pre-existing in `epics.md`, outside this story's own Code Map (`core/gate.py`, its two test files, `deferred-work.md`) -- not fixed here.
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff (independent, no shared context with the Edge Case Hunter). Confirmed live: `grep -n "Surface:" _bmad-output/planning-artifacts/epics.md` shows a `**Surface:**` line for Stories 2.1 through 2.7's sections but none for Story 2.8's own section between its "Why now" paragraph and its Acceptance Criteria.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-2-8` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-12-1: A resumed run's retry-escalation ceilings are read from whatever policy.toml is on disk now, not the policy that governed while a story accumulated its attempt/review_cycle count
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-12-a-struggling-retry-runs-under-a-stronger-model.md`
@@ -877,12 +977,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-12-2: A newly-struggling story is never named in the escalation journal once a resumed run's model is already floor-raised
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-12-a-struggling-retry-runs-under-a-stronger-model.md`
   summary: `cli/spin.py::_apply_retry_escalation`'s `from_model == to_model` idempotence short-circuit (the mechanism's own "bounded, never re-fires" guarantee) returns `False, [], None, None` immediately once the on-disk `[adapter].model` already equals `[adapter.review].model`, WITHOUT recomputing which deferred stories are currently crossing their ceiling. If a DIFFERENT story newly crosses its own ceiling on a resume where the model is already escalated (from an earlier trigger), that new crossing is never named in `escalated_stories`/the journal for that resume -- the correct model is already running, but the record of WHO justified it stays incomplete after the first write.
   evidence: Confirmed via direct code reading during Story 3.12's review pass (Edge Case Hunter). The mechanism's functional guarantee (a struggling story's next attempt runs under a floor-raised model) still holds -- this is a completeness gap in the journal's own "naming the trigger" AC, not a correctness defect in the escalation itself. Not fixed here: recomputing and always returning `escalated_stories` regardless of whether a NEW write occurred would change the established return-contract shape ("populate detail fields only when `escalated: true`", mirroring `story_key`/`resolution_reference`'s own precedent elsewhere in `run_resume`) -- a deliberate design call for a follow-up story rather than a rushed patch to this one.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-12-3: A model-tiering policy.toml write can land on disk before its own launch/resume intent is journaled, in both run_spin and run_resume
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-12-a-struggling-retry-runs-under-a-stronger-model.md`
@@ -891,12 +995,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-12-4: A TOML serialization failure ahead of the atomic policy.toml write is never wrapped in HarnessPolicyWriteError, in both write_policy_toml and its new sibling write_policy_document
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-12-a-struggling-retry-runs-under-a-stronger-model.md`
   summary: `adapters/harness_bmadloop.py::write_policy_document`'s `tomlkit.dumps(doc)` call runs OUTSIDE `_atomic_write_policy_text`'s own try/except, so a serialization failure there would propagate as a raw exception rather than the `HarnessPolicyWriteError` `cli/spin.py::_apply_retry_escalation` explicitly catches to degrade to `MRS-SPIN-016` (WARN). This mirrors a PRE-EXISTING shape: `write_policy_toml`'s own `render_policy_toml(...)` call (which itself calls `tomlkit.dumps` internally) is equally unwrapped, and predates this story.
   evidence: Confirmed via direct code reading during Story 3.12's review pass (Edge Case Hunter). `write_policy_document`'s body is `text = tomlkit.dumps(doc); return _atomic_write_policy_text(text, loop_home)` -- the `dumps` call is not inside the try. `write_policy_toml`'s own body has the identical shape (`text = render_policy_toml(...)` before the same `_atomic_write_policy_text` call), confirmed unchanged by this story's diff. Practical risk is low: `tomlkit.dumps` over a document already successfully round-tripped through `tomlkit.parse` plus one scalar-string key assignment is not a realistic failure mode in normal operation. Not fixed here: widening the try/except (or moving the dumps call inside it) is a shared fix across both functions, out of this story's own narrower Surface, and belongs with DW-FU-3-12-3's write-ordering fix as one coordinated hardening pass over `_atomic_write_policy_text`'s two callers.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-12-4` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-13-1: Policy-vocabulary key-count literals in cli/config.py's comments and two test names were already stale before this story added an 11th seed key adjacent to them, and are not self-correcting
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-13-the-parallel-fan-out-clamp-is-surfaced-not-silent.md`
@@ -905,12 +1013,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-13` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-10-1: A malformed `merge_subject_template` (missing or duplicate `{key}` placeholder) crashes `marshal land`'s full-merge path with an uncaught `ValueError`, now reachable through a higher-traffic, automated command
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-10-marshal-land-renders-a-detectable-merge-subject.md`
   summary: `cli/land.py::run_land`'s new call `identity.render_merge_subject(wave_keys[0], template)` is not wrapped in any try/except, matching `deploy.py::run_land_story`'s existing identical, unguarded call by deliberate design (this story's own Boundaries: "mirror that precedent exactly rather than giving `land` new handling `land-story` lacks"). `core/policy.py::_valid_merge_subject_template` only validates a non-empty `str` -- it never checks for the required single `{key}` placeholder -- so a project's `merge_subject_template` policy value missing (or duplicating) `{key}` passes policy composition cleanly and then raises a bare `ValueError` out of `render_merge_subject`'s `_split_template` helper, crashing the whole command with a raw traceback instead of a reported `Finding`.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying root cause, reported from two angles). Confirmed live: `identity.render_merge_subject(StoryKey(4, 4), "Merge into main")` (a template with no `{key}` placeholder) raises `ValueError: template must contain exactly one '{key}' placeholder...`. Pre-existing gap in `core/policy.py::_valid_merge_subject_template` (out of this story's own Surface, which is `cli/land.py`/`ports/forge.py`/`adapters/forge_gh.py` only) -- `deploy.py::run_land_story` already carries the identical unguarded call site and crash risk today; this story adds a SECOND call site through `marshal land`'s own batch/automated path (higher traffic than the single-story `land-story` command), widening the blast radius of an already-latent gap rather than introducing a new one. Not fixed here: closing it means either validating the placeholder shape in `core/policy.py::_valid_merge_subject_template` (a `core/` change outside this story's Surface) or wrapping both call sites in a new caught-and-reported error path (a behavior change to `deploy.py::run_land_story` this story's own Never bullet explicitly forbids) -- either fix is a cross-cutting change touching code this story is bounded not to touch.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-10` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-5-10-2: A multi-key `marshal land` wave under `landing_merge_strategy: squash` or `rebase` renders its subject from the wave's primary key only, leaving the wave's other keys exactly as undetectable as before this story
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-10-marshal-land-renders-a-detectable-merge-subject.md`
@@ -919,12 +1031,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-10-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-10-3: `gh pr merge --subject`'s `commitHeadline` has no merge commit to title under `landing_merge_strategy: rebase`, so a rebase-strategy landing's rendered subject is silently inert rather than actually applied anywhere
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-10-marshal-land-renders-a-detectable-merge-subject.md`
   summary: `run_land` passes the rendered `subject` to `forge.merge_pr` unconditionally, for every `landing_merge_strategy` value, per this story's own Boundaries ("`gh pr merge -t/--subject` applies uniformly across `--merge`/`--squash`/`--rebase`" -- a claim inherited from epics.md's own Story 5.10 text, "Confirmed low-risk: `gh pr merge` already supports `-t/--subject` for every strategy"). Verified live against GitHub's own GraphQL schema (`gh api graphql` introspection of `MergePullRequestInput`) that `commitHeadline`'s own description reads "Commit headline to use for **the merge commit**; if omitted, a default message will be used" -- and a `REBASE` merge, by definition, creates NO new merge commit at all (each original commit is replayed onto the base branch with its own preserved subject). `gh`'s own CLI source (`pkg/cmd/pr/merge/merge.go`/`http.go`) confirms `commitSubject` is sent unconditionally in the mutation input for all three merge methods, with no method-conditional guard -- so the flag is accepted without error for `rebase`, but has nothing to apply to: the API accepts it and silently does nothing with it. `data["subject"]` in `run_land`'s own envelope therefore reports a subject for a rebase-strategy landing that was never actually written to any real commit -- though the wave's original commits (already carrying their own preserved subjects, e.g. bmad-loop-native form) remain independently detectable via the pre-existing pattern-3 match in `marshal_native_merged_keys`, unaffected by this gap, so the story's actual detectability GOAL is still met for `rebase` by a different, already-existing mechanism; only the new `subject` parameter itself is a harmless no-op for that one strategy.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying concern, reported from two angles: one flagging the docstring's unverified cross-strategy claim, the other flagging the unconditional pass-through with no method gate). Confirmed via live `gh api graphql` schema introspection (`MergePullRequestInput.commitHeadline`'s own description) and `gh`'s own public source (`cli/cli` `pkg/cmd/pr/merge/merge.go`'s `allowEditMsg := payload.method != PullRequestMergeMethodRebase` in the interactive path, `http.go`'s unconditional `input.CommitHeadline` assignment in the non-interactive path) during this review pass -- not a speculative concern. Not fixed here: `ports/forge.py`'s docstring wording was corrected in this same pass (a doc-only, non-behavioral patch) to describe the rebase case accurately instead of claiming uniform effect; deciding whether `land` should SKIP passing `subject` for `rebase` (to avoid a misleading `data["subject"]` value in that one case) is a small but real behavior change this bounded review pass declined to make unilaterally, since `landing_merge_strategy: rebase` is a non-default, apparently unused-in-practice value across this fleet's own projects and the actual detectability outcome is unaffected either way.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-10-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-5-8-1: `is_run_live`, which gates `marshal land`'s branch retirement off the same `FleetHomeFacts` this story extends, never consults the new `engine_alive` signal
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine.md`
@@ -933,12 +1049,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-8` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-8-2: `ProcessPort.is_alive`'s bare pid-existence probe has no identity/start-time corroboration and admits a degenerate `pid: 0` journal entry as "alive", now consulted for a second, verdict-flipping signal
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine.md`
   summary: `adapters/process_posix.py::ProcessPort.is_alive` is a bare pid-existence check (`os.kill(pid, 0)`-equivalent) with no process start-time or identity cross-check, so OS pid reuse can make a genuinely-dead process read as alive; a malformed/degenerate journaled `"pid": 0` entry passes the existing `isinstance(candidate, int) and not isinstance(candidate, bool)` validation and `is_alive(0)` reads `True` (signals the caller's own process group) rather than "unprobed". This risk pre-dates this story for `supervisor_alive`, but this story extends the same unguarded probe to `engine_alive` and gives it new leverage: a false-alive reading can now flip `derive_home_state`'s verdict from `"unsupervised"` to a healthy state outright, in tension with this story's own "narrows a false positive, never softens a real one" constraint.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying concern, reported from two different angles: pid reuse and the pid-0 degenerate case). Confirmed via direct code reading: `adapters/process_posix.py::is_alive` performs no start-time comparison; `cli/status.py::_gather_run_journal_facts`'s payload validation for both `launch_pid` and `supervisor_pid` is identical (`isinstance(candidate, int) and not isinstance(candidate, bool)`), which lets `0` through for either. Not fixed here: hardening `is_alive` (e.g. via `/proc/<pid>/stat` start-time comparison against the journaled timestamp, or rejecting non-positive pids before probing) is a shared, cross-cutting change to a primitive already used identically for `supervisor_alive` since Story 3.4/5.1 -- out of this story's own `derive_home_state`/`FleetHomeFacts`-focused surface, and belongs to a dedicated hardening story for `ProcessPort.is_alive` itself rather than a narrow patch to this one's engine-liveness consumer.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-8-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-5-8-3: `tests/packaging/test_dependency_completeness.py`'s `BASELINE_UNDECLARED_IMPORTS` ratchet is a shared, repo-wide file with no cross-worktree land convention, unlike its `pixi.toml`/`environment.yaml` sibling
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine.md`
@@ -947,12 +1067,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-8-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-9-1: Two distinct raw sprint-status-ledger.yaml keys that both normalize to the identical StoryKey silently collapse in reconcile-completions's raw-key index, under-rewriting the ledger while over-reporting the advance
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger.md`
   summary: `cli/deploy.py::run_reconcile_completions` builds `raw_key_by_dot: dict[str, str]` by iterating the tracked ledger's raw `(raw_key, raw_status)` pairs and keying on each raw key's normalized dot-form `StoryKey`. If the ledger ever carries two DIFFERENT raw keys that both normalize to the SAME `StoryKey` (a malformed/duplicate-keyed ledger), the dict collapses to last-write-wins: `render_ledger_advancements` rewrites only one of the two matching lines, while `data["advanced"]`/`data["advanced_count"]` still report the key as fully advanced -- an over-reporting mismatch between what the envelope claims and what the file actually reflects.
   evidence: Surfaced by the Edge Case Hunter adversarial review pass over this story's diff (independent, no shared context with the Blind Hunter reviewer). Confirmed via direct code reading: `raw_key_by_dot[dot_key] = raw_key` inside the single `for raw_key, raw_status in raw_statuses` loop has no duplicate-key detection, and `render_ledger_advancements` is handed only the SET of raw keys to advance (`raw_keys_to_advance`), which cannot distinguish "the one true raw key for this story" from "one of several colliding raw keys" once the dict has already collapsed. Not fixed here: this requires a genuinely malformed/hand-corrupted ledger to trigger (this repo's own generators -- `promote_sprint_status.py`, `bmad-quick-dev`'s `sync-sprint-status.md` -- never produce two raw keys for the same story) and reproducing it needs either a duplicate-key detection pass over `raw_statuses` (reporting a new finding) or a design decision about which of the colliding raw keys is authoritative, out of this story's own bounded patch-pass scope.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-5-9-2: `cli/deploy.py::run_promote` reports a story key in `data["promoted"]` even when the `commit_paths` that would make the promotion durable failed, so the envelope claims a durable promotion that exists only as an uncommitted working-tree copy
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger.md`
@@ -961,12 +1085,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-9-3: `promote_sprint_status.py::repair_feed` matches the tracked ledger's raw key spelling against the Tier-3 feed's raw key spelling by exact string equality, so a spelling divergence inserts a duplicate row instead of reconciling
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger.md`
   summary: `cli/deploy.py::_repair_tier3_feed` calls `promote_sprint_status.repair_feed(feed_path, incoming, twin_values)` with `twin_values` keyed by the tracked ledger's own raw key spelling for each just-advanced key. `repair_feed` folds a `twin_values` key into the merged feed map only when it is absent from `incoming` (`missing = [k for k in twin_values if k not in incoming]`), an exact string-equality test. If the Tier-3 feed's own raw key for the same story is spelled differently than the ledger's (e.g. divergent hyphenation/casing introduced by a change to bmad-loop's own key-writing convention after the twin was originally promoted), the check finds no match, so the ledger's spelling is inserted as a NEW row while the feed's own differently-spelled, non-terminal row is left untouched -- two rows for one story instead of a true reconciliation.
   evidence: Surfaced by the Edge Case Hunter adversarial review pass over this story's diff (independent, no shared context with the Blind Hunter reviewer). Confirmed via direct code reading of `repair_feed`'s `missing`/merge logic (`scripts/promote_sprint_status.py`) -- the matching logic is REUSED VERBATIM from `main()`'s own pre-existing `--repair-feed` inline block (only extracted into a function by this story, never behaviorally changed), so this is a pre-existing limitation of that logic, not something Story 5.9 introduced. Not fixed here: in this story's own call path the ledger's raw keys are historically sourced FROM the feed's own spelling via a prior `promote_sprint_status.py` promotion, so the two are expected to already agree in the common case; reproducing a genuine divergence requires an out-of-band change to a DIFFERENT subsystem (bmad-loop's own key-writing convention), out of this story's own bounded scope.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-5-9-4: A failed ledger `commit_paths` after a successful `git add` leaves the git INDEX staged with pre-rollback content, even though `run_reconcile_completions`'s new rollback correctly reverts the working tree
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger.md`
@@ -975,12 +1103,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-4` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-9-5: A literal duplicate raw key appearing twice as separate lines in the tracked ledger's own text has only its FIRST occurrence rewritten by `render_ledger_advancements`, leaving a stale duplicate line behind
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-9-a-story-finished-by-hand-isnt-invisible-to-the-ledger.md`
   summary: `core/status.py::render_ledger_advancements` tracks which raw keys still need rewriting in a `remaining: set[str]`, discarding a key the moment its FIRST matching line is rewritten (`remaining.discard(key_part)`). If the ledger text contains the SAME raw key spelled identically on two separate lines (a malformed/hand-duplicated "do not hand-edit" file), only the first occurrence is rewritten to `done`; the second stays at its old status, silently. `matched_raw_keys` still reports the key as matched (once), so the caller's `data["advanced"]` reports success even though one of the two lines is stale.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this story's diff (same underlying finding, reported from two different angles). Confirmed via direct code reading of the `for i in range(0, len(parts), 2)` loop and its `remaining`/`matched` set bookkeeping -- there is no detection of a SECOND line matching an already-discarded key. Distinct from the already-recorded `DW-FU-5-9` (which is about two DIFFERENT raw keys colliding on the same normalized `StoryKey` inside `raw_key_by_dot`): this is the narrower case of the exact SAME raw key spelling appearing twice in the file's own text. Not fixed here: `render()` (`scripts/promote_sprint_status.py`) can never itself produce a duplicate key (it renders from a Python `dict`, which cannot hold two entries for the same key), so reproducing this requires a hand-edited "do not hand-edit, GENERATED" file; because the parsed READ side (`generate.py::parse_sprint_status`) already collapses a duplicate key to one value before this function ever runs, the practical consequence is a cosmetic stale duplicate LINE in the tracked file rather than a wrong STATUS being read back by any consumer -- out of this patch pass's bounded scope.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-5-9-5` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-8-1-1: the region-name forward-reference entry S-7.4's own ledger opened for S-8.1 is now closed in fact but still reads `status: open`
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-8-1-marker-grammar-and-the-per-format-registry.md`
@@ -989,12 +1121,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-8-1` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-9-1-1: `spec_surface_check.py --write-baseline --spec` stamps every file the named spec governs, not just the paths a reconciliation entry actually names, with no lock against concurrent writers
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-1-findings-model-severity-types-remedies.md`
   summary: This story's own deterministic-verification repair pass (reconciling `spec-pyforge-marshal`'s memlog for the two files story 9.1 added) exposed two pre-existing gaps in `scripts/spec_surface_check.py`'s `--write-baseline --spec NAME` mutation path: (1) it merges `current[name]` -- EVERY file the named spec's surface glob currently matches (~165 for this one spec's broad `src/shared/packages/pyforge-marshal/**` glob) -- into the baseline, not just the paths the accompanying memlog entry actually names, so an unrelated, un-narrated drifted file under the same broad surface would be silently absorbed as "reconciled" with no trace, not even a non-gating `drift-presumed` WARN; (2) the read-modify-write of `scripts/.spec-surface-baseline.json` carries no advisory lock, so two loop homes stamping different specs' baselines concurrently could each merge from a stale read and drop the other's just-written entry.
   evidence: Surfaced independently by both the Blind Hunter and Edge Case Hunter review passes over this repair diff (Edge Case Hunter's finding CONFIRMED after direct code reading of `spec_surface_check.py`'s `merged[name] = current[name]` line and live verification against this run's own stamp -- no unrelated file actually drifted at stamp time here, so no masking occurred in this instance, but the mechanism itself has no guard). Not fixed here: both gaps are in `scripts/spec_surface_check.py` and `pyforge.doctor.sources.chain`, entirely outside `pyforge.marshal.seed.detect.findings` (this story's own Surface) and outside the intent-contract this repair pass is bound not to touch; narrowing the stamp to named paths and/or adding a file lock (the architecture doc's own advisory-lock pattern for shared Tier-3 appends, per this project's memlog) is a `spec-surface-drift-reconciliation`-scoped fix for a future story.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-1` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-9-3-1: `check_managed_file`/`check_managed_region` never distinguish a shape-invalid `recorded_sha` from a genuine hand-edit
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-3-content-hashing-for-managed-files-and-regions.md`
@@ -1003,12 +1139,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-9-4-1: Epic 9.4's AC prose names a glob (`docs/specs/*.md`) for the canonical legacy worked example that this module's presence check cannot honor
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-4-legacy-convention-detection.md`
   summary: `epics.md`'s Story 9.4 AC says "the canonical case is covered by test: `docs/specs/*.md` present ⇒ preserved, recorded" -- but `_classify_entry`'s presence check is a literal `Path.exists()` against `entry.path`, which never glob-expands, so an artifact entry whose `path` was literally set to a glob like `docs/specs/*.md` would report `absent` on every real repo (no file is named `*.md`). Both the shipped `templates/manifest.yaml` (`specs-dir-legacy`, `path: "docs/specs/"`) and this story's own spec/test correctly use the bare directory instead, sidestepping the AC's wording, but the AC prose itself was never reconciled to match.
   evidence: Surfaced by this story's second (fresh, post-`done`) review pass, Blind Hunter. Verified directly by reading `epics.md` line 2153 (the literal glob text) against `seed/templates/manifest.yaml`'s real `specs-dir-legacy` entry (bare directory path, no `legacy_of` set) and this story's own intent-contract (also bare directory) -- the implementation is correct and consistent with the module's pre-existing, non-globbing presence-check semantics (unchanged since S-9.2); only the epics AC's illustrative wording is imprecise. Not fixed here: this story's Surface is `inventory.py`/`findings.py`, not `epics.md`, and the AC's glob phrasing was already pre-existing before this story's dev work began -- a future editorial pass over Epic 9's AC prose (or whichever story next reads it closely) should reword this bullet to name the bare directory, so a future manifest author does not take the glob literally and hit a silent `absent` misclassification.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-4` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-9-5-1: Manifest coverage check can never actually fire against any manifest built through normal construction
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-5-manifest-coverage-check.md`
@@ -1017,12 +1157,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-5` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-9-5-2: A second, independent review pass re-confirms manifest coverage is structurally redundant with `ManifestEntry.__post_init__`
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-5-manifest-coverage-check.md`
   summary: This story's fresh, post-`done` review pass (run after the story's implementation was recovered from a preserved branch following an unrelated worktree reset) independently re-derived the same structural observation already filed as `DW-FU-9-5`: `coverage_findings()`/`coverage_counts()` re-verify `entry.artifact_class`/`entry.rationale`, but `ManifestEntry.__post_init__` (S-7.4/7.5, `model/manifest.py`) already coerces `artifact_class` through `ArtifactClass(...)` and requires a non-blank `rationale` unconditionally on every entry -- and the sole production construction path (`_build_entry`, `model/manifest.py`) coerces the class a second time before `ManifestEntry` even exists. So a bug that broke `__post_init__`'s coercion would also have to survive `_build_entry`'s own separate, earlier coercion of the identical value to be exploitable through this gate at all -- the "second, decoupled gate" the module docstring claims is less independent than the prose suggests, since both layers share the same `ArtifactClass(...)` call.
   evidence: Raised independently by this pass's Blind Hunter review (no shared context with the review pass that filed `DW-FU-9-5`), reading the exact same `_build_entry`/`ManifestEntry.__post_init__` code as before, corroborating rather than superseding it. Recorded per this workflow's own instruction not to consolidate or dedupe defer findings against existing ledger entries. Not fixed here -- unchanged from `DW-FU-9-5`'s own disposition: faithful to epics.md Story 9.5's literal, planning-approved AC; a future architecture-level look (see `DW-FU-9-5`) is the right venue, not this diff.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-5-2` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-9-5-3: Manifest coverage only sees version-filtered entries, so a staged or retired entry's corrupted class/rationale produces no signal
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-5-manifest-coverage-check.md`
@@ -1031,12 +1175,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-5-3` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-9-6-1: `build_plan`'s git fingerprint can misreport an ancestor repository's HEAD/dirty state for a nested target
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder.md`
   summary: `_git_head`/`_repo_is_dirty` run `git rev-parse HEAD`/`git status --porcelain` with `cwd=inventory.repo_root` and no `--show-toplevel`-style boundary check; if `repo_root` is a subdirectory of an ENCLOSING git checkout rather than a repo root of its own, both calls succeed and report the ANCESTOR repository's HEAD/dirty state instead of degrading to `git_head=None` the way a genuinely non-git target does -- silently mislabeling `RepoFingerprint` for a target that is not actually version-controlled on its own terms.
   evidence: Raised by this story's review pass (Blind Hunter). Verified by reading `build.py::_git_head`/`_repo_is_dirty`: both simply pass `cwd=repo_root` to `git`, and `git` itself walks upward to the nearest enclosing `.git` when the given directory is not itself a repo root -- there is no code here (or anywhere else in `seed/`) that calls `git rev-parse --show-toplevel` or otherwise confirms `repo_root` IS the repository root before trusting its answer. `errors.py`'s own `PreconditionFailure` docstring already earmarks "a target that is not a git repo" as a check a later `seed/verbs/` story performs before running any verb -- the nested-repo variant of that same boundary question belongs there (where a `PreconditionFailure` can actually be raised and surfaced to the operator), not in this story's `plan/build.py` (a later `apply` story, Epic 10, is the one that would actually trust `repo_fingerprint` for a refuse decision, per this story's own Never list). Not fixed here: this story's Boundaries/Never list explicitly excludes both CLI-level precondition checking and any fingerprint-based refusal logic. A future `seed/verbs/` (or the `apply` story itself) should add a `--show-toplevel` (or equivalent) boundary check before computing or trusting a `RepoFingerprint`.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-6` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-9-6-2: Writing `plan.json` before the target's `.gitignore` region is materialized can make the plan file itself flip a subsequent fingerprint's `dirty` flag
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder.md`
@@ -1045,6 +1193,7 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-6-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-14-1: Follow-up review still recommended for 4-14-the-failed-story-safety-net-is-reported after the damping cap was spent
   origin: review-budget-followup
@@ -1055,6 +1204,8 @@ status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-8-5: Follow-up review still recommended for 8-5-marker-deletion-as-a-sanctioned-opt-out after the damping cap was spent
 
 - source_spec: `spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md`
@@ -1064,6 +1215,8 @@ status: open
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-BL011-1: loop-stall-check labels a bmad-loop 0.11 `awaiting-operator` parked run "stalled" — attention arrives, mislabeled
   origin: bmad-loop-0.11-compat-audit (2026-08-21, the BMAD 6.11.0 upgrade session)
   source_spec: `spec-bmad-loop-governance` (the detector's contract)
@@ -1071,6 +1224,8 @@ status: open
   reason: bmad-loop 0.11.0 adds an `awaiting-operator` phase (operator-parked stories, completed via `bmad-loop confirm`; park records in-commit at `.bmad-loop/operator/<key>.json`). `scripts/loop_stall_check.py`'s liveness test exempts only `finished`/`stopped`/`paused_reason`, so a parked run sitting deliberately still reads as a 15-minute stall. Benign in effect — a parked run WANTS operator attention — but the "stalled" label misdirects triage toward a wedged-session diagnosis. Fix shape: recognize the parked state in `_is_live` and report it as `awaiting-operator (run bmad-loop confirm)` instead of a stall. No live runs existed at audit time; first reproduction requires a 0.11 run that parks.
   resolved: 2026-08-22 — marshal Story 25.5 (spec-bmad-611-era-alignment CAP-5). `scripts/loop_stall_check.py` now classifies a live run's tasks off the same state.json read: a parked-only run (≥1 `awaiting-operator` task, nothing non-terminal) is reported distinctly as `awaiting-operator (run bmad-loop confirm)` with its parked story keys and exits 0; a quiet run carrying parked AND still-active tasks stays a stall with the parked keys named. The same run state is now first-class across marshal (`derive_home_state`'s sixth fleet state, terminal-set fix, `preserve_ref`/`sweeps_refused` surfacing) and `scripts/fleet_picture.py` (state column + tracked-ledger ATTENTION line); pinned against the installed package by `tests/unit/test_bmad_loop_status_vocabulary.py` and the two CFE meta tests (`test_loop_stall_check_awaiting_operator.py`, `test_fleet_picture_awaiting_operator.py`).
   status: resolved
+
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
 
 ### DW-BL011-2: the deferred-work pipeline's intake shape changes on the FIRST bmad-loop 0.11 run — Tier-3 `deferred-work.md` is no longer written; deferred findings live in spec frontmatter `deferred:` lists
   origin: bmad-loop-0.11-compat-audit (2026-08-21, the BMAD 6.11.0 upgrade session)
@@ -1081,6 +1236,8 @@ status: open
   resolved: 2026-08-23 — marshal Story 25.6 (CAP-6). Doctor `chain.py` discovers spec-frontmatter `deferred:` via `spec-frontmatter-only-deferral` findings; `scripts/deferred_work_intake.py --fix` promotes into tracked ledgers; `scripts/deferred_work_check.py` restored as a thin shim over `python -m pyforge.doctor.sources deferred-work`. Loop-run bridge unchanged (bmad-loop `_harvest_spec_deferrals`). Fixture-proven (DW-14-1-1 canary shape).
   status: resolved
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ### DW-25-4-1: `repo_defaults` compose parameter is accepted but never folded — `policy-defaults.toml` is functionally inert for all 28 keys
   origin: story-25-4 review (deferred, MATERIAL — carried in the story spec's 6.11-era frontmatter `deferred:` list; relayed here because the DW pipeline cannot yet read frontmatter, DW-BL011-2/Story 25.6)
   source_spec: `spec-bmad-611-era-alignment` (CAP-4's story)
@@ -1088,12 +1245,16 @@ status: open
   reason: The AD-16 chain is documented as defaults -> policy-defaults.toml (repo layer) -> marshal-policy.toml (project) -> flags, and team memory teaches "repo-wide in policy-defaults.toml" — but the compose path accepts the repo_defaults parameter and never folds it, so the repo layer is a no-op for every one of the 28 keys. Harmless TODAY only because policy-defaults.toml carries zero divergences from DEFAULT_POLICY (verified during 25.4); the first operator who edits it gets silently ignored. Fix shape: fold repo_defaults between DEFAULT_POLICY and the project layer with precedence tests; alternatively retire the file + correct the docs/memory — either way, deliberately.
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-25-5-1: Story 25.5's review round landed AFTER the merge — two layers' findings dispositioned here, unapplied
   origin: review-layer orphaning (the 25.5 orchestrator died at a spend limit after committing but before triage; Blind Hunter + Edge Case Hunter delivered to the parent session post-merge, 2026-08-22)
   source_spec: `spec-bmad-611-era-alignment` (CAP-5's story; followup_review_recommended stands)
   severity: medium
   reason: PR #612 merged verified-green (marshal 5223 passed) but without its review round applied. Finalize omissions were completed post-merge same day (ledger flip, owed memlog events for spec-bmad-611 + spec-bmad-loop-governance, story-spec promotion, pixi.toml stall-check description, meta-test baseline classification). The MATERIAL unapplied findings, distilled: (1) ports/harness.py RunStatusSnapshot is a frozen dataclass now carrying a MUTABLE DICT field (sweeps_refused) — hash()/set-membership raises TypeError; tuple-of-pairs or eq=False is the fix; (2) loop_stall_check.parked_tasks assumes state.json "tasks" is a dict — a list/string crashes the whole watchdog before other homes are checked; (3) a run that flips finished/stopped while still carrying awaiting-operator tasks drops its owed confirms from the watchdog (parked-outranks-finished precedence not honored at the liveness gate); (4) fleet_picture's ATTENTION chain emits BOTH "idle — needs a spin" AND the parked-confirm line for a parked station with backlog (the state column pins confirm-not-respin; ATTENTION lacks the exclusion); (5) derive_home_state precedence cell parked+escalated+dead-supervisor flips unsupervised→paused-on-escalation, hiding the dead supervisor; (6) preserve_ref values + sweeps_refused keys print verbatim (no redaction/shape-check) into terminal + dashboard JSON; (7) the installed-package drift pins degrade to silent SKIPS via importorskip when bmad_loop is absent — nothing asserts the env carries it; (8) `sweeps_refused: None` renders as a raw Python literal conflating absent-key with unreadable-state; (9) the parked state cell drops the "N left" backlog count; (10) ledger-count plumbing (counts[awaiting-operator] + the ATTENTION needs line) is untested and the feed-token spelling is unpinned; (11) doctor's marshal.py false-green source: a feed-done story whose harness phase is awaiting-operator confirms "landed" via park commit_sha though acceptance was never confirmed; (12) minor: dead preserve_ref fixture param, F541 f-string, summary-line accounting, mid-phrase wraps. Fix shape: one remediation story (or the Epic 25 retro) applies 1-6 with tests, decides 7's env-assertion posture, and polishes 8-12; nothing here invalidates the landed behavior, which is fixture-verified for the primary paths.
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-11-4: `_wholesale_regenerate_actions` never cross-checks `state.opted_out`/`state.skips` before regenerating, so it could silently override a previously opted-out hybrid region or a previously skipped whole-file artifact.
 
@@ -1106,6 +1267,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-11-4-2: The `--include-seeded` "offered now, applicable later" story is untested across separate `update` invocations.
 
 - source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
@@ -1116,6 +1279,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-11-4-3: `--force` combined with a hand-edited hybrid-managed-region (as opposed to a hand-edited whole-file artifact) is untested.
 
@@ -1128,6 +1293,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-11-4-4: The `projects-table` repo-computed region-body dispatch (Story 11.2) is never exercised through `update`'s own commit path — only through `adopt`'s.
 
 - source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
@@ -1139,6 +1306,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-12-1: llms-full-check reports 82 pre-existing catalog drift findings on main (floor-drift + undocumented deps unrelated to copier); exit 1 before and after this story.
 
 - source_spec: `planning-artifacts/specs/spec-12-1-full-pixi-wiring-distribution-and-repo-gate-compliance.md`
@@ -1149,6 +1318,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-12-2: K-02: local-recipes is not genesis-aligned — adopt dry-run yields 21 filtered actions (managed regions absent, no seed-state, first-claim pending). Slow oracle fails until bootstrap adopt lands.
 
 - source_spec: `planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle.md`
@@ -1158,6 +1329,8 @@ status: open
   severity: high
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-18-2: Coverage detection is filesystem path presence only; an empty stub mcp/tools.py or server.py counts as covered without proving registered tools.
 
@@ -1170,6 +1343,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-18-2-2: discover_cli_verbs walks private argparse _actions / _build_parser internals.
 
 - source_spec: `planning-artifacts/specs/spec-18-2-parity-and-coverage-are-gated-numbers.md`
@@ -1180,6 +1355,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-18-2-3: resolve_repo_root has no MARSHAL_REPO_ROOT override when the package is installed outside the monorepo layout.
 
@@ -1192,6 +1369,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-19-2: Seeded mock edge-case hardening (recreate-after-delete, negative clock advance, journal reload from disk) remains identical to archive seeds.
 
 - source_spec: `planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md`
@@ -1202,6 +1381,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-19-2-2: docs/reference/library-llms-full.md still reports broad pin/undocumented-dep drift beyond the new pyforge-testing-kit env row.
 
@@ -1214,6 +1395,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-19-3: Expand coverage-gates CI beyond the marshal home env (matrix / per-station pixi env) so non-marshal package touches are gated in the same workflow.
 
 - source_spec: `planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md`
@@ -1224,6 +1407,8 @@ status: open
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-19-3-2: Add parallel pixi `pyforge-*-test-coverage` tasks for non-marshal stations.
 
@@ -1236,6 +1421,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-19-3-3: Upload coverage JSON / term-missing artifacts on gate failure for operators.
 
 - source_spec: `planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md`
@@ -1246,6 +1433,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-19-4: Wire `tea-playwright-check` into a CI / detectors job so the CAP-5 gate runs without an operator opt-in (intent allowed CI or CLI; this story shipped the CLI).
 
@@ -1258,6 +1447,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-19-4-2: Atlas-style epic headers `### Story A1 (2.1): …` are not parsed by `_STORY_HEADER`, so lettered stories never enter the --check expected set.
 
 - source_spec: `planning-artifacts/specs/spec-19-4-test-architecture-stays-current-as-stories-land.md`
@@ -1269,6 +1460,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-20-3: Parent Spec CAP-3 memlog/SPEC success oracle still describes the draft as unfiled; sync on a later docs pass if needed.
 
 - source_spec: `planning-artifacts/specs/spec-20-3-the-gated-upstream-filing.md`
@@ -1278,6 +1471,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-20-3-2: If #701 closes only one half of the coordinated report, split or re-note the register entry so FR-189 is not silently retired.
 
 - source_spec: `planning-artifacts/specs/spec-20-3-the-gated-upstream-filing.md`
@@ -1286,6 +1481,8 @@ status: open
   origin: spec-deferred e50b56676a5b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-20-6: Until 20.7, cli/init.py and scripts/bmad-switch still ship divergent slug-parse / desync bodies alongside pyforge.marshal.scope.
 
@@ -1298,6 +1495,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-20-6-2: MRS-INIT-003 today inspects only planning-artifacts; verify_scope requires both artifact symlinks — 20.7 must absorb the widening.
 
 - source_spec: `planning-artifacts/specs/spec-20-6-the-verify-scope-primitive.md`
@@ -1308,6 +1507,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-21-2: Soft code-linkage verify reports missing cites in detail but always completes; tightening to fail/block is a product choice beyond CAP-1.
 
@@ -1320,6 +1521,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-21-2-2: Dual CLI: marshal chain regenerate (17.4) coexists with marshal planning chain-regenerate (21.2) without deprecation cross-link.
 
 - source_spec: `planning-artifacts/specs/spec-21-2-orchestrated-chain-regeneration.md`
@@ -1330,6 +1533,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-21-5: CAP-5 help prose hard-codes defaults instead of deriving text from `cap5_defaults()`, inviting future doc/code drift.
 
@@ -1342,6 +1547,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-23-1: timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says they are different classes.
 
 - source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
@@ -1352,6 +1559,8 @@ status: open
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-23-1-2: Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.
 
@@ -1364,6 +1573,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-23-2: Velocity panel `sub` still lumps unmeasured stories under "predate loop instrumentation"; full absence-class partitioning is Story 23.3 (CAP-3).
 
 - source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
@@ -1375,6 +1586,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-23-2-2: No runtime render fixture asserts emitted chip class HTML against mixed DASHBOARD_DATA; coverage is generator unit tests + static HTML needles.
 
 - source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
@@ -1385,6 +1598,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-CANOPY-2026-08-24: Static Guildhall console planning retired; code deletion gated on steward parity
 
@@ -1400,6 +1615,8 @@ status: open
   successor: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md` CAP-2; steward Stories 20.x (front door), 30.2 (code removal)
   resolution_gate: steward Story 30.2 after console-parity inventory (Epic 20 + 21.5)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -1408,3 +1625,5 @@ status: open
   status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; marshal S-26.1 done (loop/runner hook spec; today's runner is default plugin); no competing CI verdict
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open

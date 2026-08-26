@@ -33,12 +33,16 @@ sibling ledgers and the detector both use.
   evidence: Confirmed by direct inspection — none of `main()`'s three stderr-write call sites (old or new) wrap the write itself in a try/except; this is a pre-existing pattern across the whole file (the `except Exception` handler's `traceback.print_exc()` and the bare-noun branch's `parser.print_help(file=sys.stderr)` both predate this story unchanged), not something newly introduced by Story 1.3's `MasonError` handler alone. A proper fix belongs to a single pass across all of `cli.py`'s stderr call sites together (most naturally once Story 1.4's `render.py` becomes the sole output writer), not a one-off guard added around just the new call site in isolation.
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-1-3-2
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`
   summary: `tests/meta/test_exit_code_ownership.py`'s `_find_rogue_exit_code_owners` calls `path.resolve()` (to compare against the owner path) before entering the `try`/`except OSError` block that protects `read_text`, so a path that raises `OSError` on `resolve()` itself (e.g. a symlink loop, `ELOOP`) would escape as a raw traceback instead of the file's own documented clean-`AssertionError` contract.
   evidence: Confirmed by direct inspection of the new file's `_find_rogue_exit_code_owners`, and this is not a new defect introduced by Story 1.3 — the file's own docstring states it "mirrors `test_dependency_direction.py`'s approach," and that pre-existing file's `_find_subprocess_importers` has the identical `path.resolve() in allowed` check ahead of its own `try` block (confirmed by reading that file). Fixing only the new file would be inconsistent with the sibling it deliberately mirrors; a proper fix belongs to both meta-test files together in one pass, not a unilateral deviation introduced here.
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-1-4-1
 
@@ -47,12 +51,16 @@ sibling ledgers and the detector both use.
   evidence: Confirmed by direct inspection — `write()`'s two-line body has no try/except around the stream I/O. This joins the exact same family already logged above from Story 1.3 (`cli.py`'s stderr writes are unguarded the same way) rather than duplicating it: that entry already recommends "a single pass across all of `cli.py`'s stderr call sites together, most naturally once Story 1.4's `render.py` becomes the sole output writer" — but Story 1.3's `MasonError`-handler call site doesn't exist in this branch yet (developing in an unmerged sibling worktree), so a unified pass covering every stdout+stderr write call site together isn't possible until that merges. Fixing only `render.py`'s new call site now would repeat the same piecemeal-fix problem the existing entry warns against.
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-1-4-2
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`
   summary: `render_json`/`render_text` have no defensive handling for a `data`/`errors` value `json.dumps` can't serialize (e.g. a `Path` or `datetime`) — `render_json` would raise an unhandled `TypeError` instead of a clean, actionable failure.
   evidence: Confirmed by direct inspection — no `default=` fallback or type-normalization exists before the `json.dumps` call. Not triggered by any current caller (`doctor`'s stub only ever passes a plain string `message`), so it is not a defect in this story's own delivered scope; it will matter once `recipe.py`/`package.py`/`environment.py` land in later epics and start returning richer data shapes (paths, versions, timestamps) through `render.write`.
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-1-10-1
 
@@ -61,6 +69,8 @@ sibling ledgers and the detector both use.
   evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260809-231234-a3cb`. 1-10 also ran to both ceilings — dev attempt 2/2 and review cycle 3/3 — and cleared on its LAST cycle rather than escalating, which is exactly the profile where an independent pass is worth spending.
   promoted: 2026-08-10 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there) under THIS ledger's own `DW-<story>-<n>` convention (`DW-1-3-1`, `DW-1-4-1`, `DW-1-4-2`), which differs from doctor's and atlas's `DW-FU-<story>`; the station's own precedent wins. A generic `DW-1` would collide with the next damped story, and Tier-3 is gitignored so the entry would not survive a clone. Marshal Story 4.13 — landed earlier today in PR #381 — exists to make this promotion an obligation of the story rather than archaeology someone performs later.
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2: Follow-up review still recommended for 2-2-the-seam-guard after the damping cap was spent
 origin: review-budget-followup
@@ -72,6 +82,7 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, mason 2-2 / marshal 7-4)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-3-1
 
@@ -80,6 +91,8 @@ status: open
   evidence: the follow-up-review damping cap (`limits.max_followup_reviews = 2`) was spent with the story finalized (status `done`, verify green) while the review pass still recommended an independent follow-up. Committed by bmad-loop run `20260810-193147-b96d`. The story ran to 3 review cycles, each closing real bypasses (env aliasing, indirect mutation methods, non-assignment binding targets, explicit-environment spawn functions), which is the profile where an independent pass is worth spending.
   promoted: 2026-08-11 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there) under this ledger's own `DW-<epic>-<story>-<n>` convention, renamed to avoid colliding with the next damped story (bmad-loop always emits a generic id).
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-5
 
@@ -90,6 +103,8 @@ status: open
   status: open
   promoted: 2026-08-15 — the story 4.4 review pass that found this escalated CRITICAL on an unrelated intent gap before any of its findings could be applied ("no patches were applied and no ledger entries were written -- the intent gap makes every lower finding moot"); recovered from the run's own raw session log (`.bmad-loop/runs/20260814-202334-1831/logs/4-4-mason-environment-check-review-2.log`) during `/bmad-loop-resolve` so it is not lost when the run directory is eventually cleaned up.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-4-6
 
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
@@ -98,6 +113,8 @@ status: open
   severity: low
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-7
 
@@ -108,6 +125,8 @@ status: open
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-4-8
 
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
@@ -116,6 +135,8 @@ status: open
   severity: low
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-9
 
@@ -126,6 +147,8 @@ status: open
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-4-10
 
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
@@ -134,6 +157,8 @@ status: open
   severity: low
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-11
 
@@ -144,6 +169,8 @@ status: open
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-4-12
 
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
@@ -152,6 +179,8 @@ status: open
   severity: low
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-13
 
@@ -162,6 +191,7 @@ status: open
   status: open
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-10-1: `recipe update`'s default (non-`--dry-run`) apply has no VCS safety net and shows a thinner plan than `--dry-run`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-10-mason-recipe-update.md`
@@ -169,6 +199,8 @@ status: open
   evidence: Confirmed by reading `recipe_updater.py`/`github_updater.py` directly -- the real-write JSON body (`{"success": true, "updated": true, "new_version": ..., "message": ...}`) genuinely omits the `actions` list the dry-run body carries. Raised by adversarial review (Blind Hunter) against the Story 2.10 diff, 2026-08-12; the out-of-git scenario is not reachable via Mason today (Story 2.4, `mason recipe new --output`, is still `backlog` -- no Mason verb can place a recipe outside `recipes/` yet) but is reachable via any hand-placed `recipe.yaml`, so the risk is real even if the specific repro cited isn't yet Mason-native. Reviewed against the spec's own citations and judged not to overturn a deliberate, evidenced decision inside the same pass that made it -- logged for a future dedicated look (e.g. an explicit confirming flag mirroring `submit`'s `--yes`, or a git-tracked-path check) rather than reversed here. Not this story's defect so much as its stated tradeoff's open follow-up.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-10-2: CFE's `recipe_updater.py` hardcodes the bare command `"python"` for its internal `recipe_editor.py` subprocess call, unlike its sibling `github_updater.py`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-10-mason-recipe-update.md`
@@ -179,12 +211,16 @@ status: open
   guarded by: `.claude/skills/conda-forge-expert/tests/unit/test_recipe_updater_interpreter.py` — one behavioral test that drives the real (non-dry-run) write path end-to-end and asserts the captured `subprocess.run` argv[0] is the resolved interpreter, never the literal string `"python"`; one test asserting `recipe_updater.py` and `github_updater.py` share the identical resolution line.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ### DW-2-5-1: `mason recipe validate`'s `EXIT_FAILED` conflates "the recipe failed validation" with "an anticipated Mason-side error occurred"
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-5-mason-recipe-validate.md`
   summary: `recipe validate` is the one verb whose dispatch branch projects the wrapped tool's own pass/fail outcome onto the process exit code (`EXIT_OK`/`EXIT_FAILED`, FR-8) rather than always reporting `EXIT_OK`. But `EXIT_FAILED=1` is the same code every other `MasonError`/unanticipated-exception path already uses, so a CI pipeline gating on this verb's exit code cannot distinguish "the recipe has real lint findings" from "Mason/CFE integration itself broke" (e.g. a `CfeTimeoutError`) -- both land on the identical `1`, even though the module already carves out a dedicated code for a different CFE-related outcome (`EXIT_CFE_UNAVAILABLE=3`).
   evidence: Confirmed by reading `exit_codes.py`'s closed five-code taxonomy (AD-7: "`exit_codes.py` is the sole producer of every exit code... no other module computes or hardcodes one") and `cli.py`'s `recipe`/`validate` branch, which returns `EXIT_FAILED` both for a `CfeTimeoutError`/`MasonError` (via `main()`'s generic handlers) and for a clean subprocess run that simply reported `passed: false`. Raised by adversarial review (Blind Hunter) against the Story 2.5 diff, 2026-08-13. Not this story's defect to fix alone: AD-7's exit-code set is a closed architecture decision, and the spec's own Boundaries & Constraints already considered and accepted this (`Block If: N/A -- FR-8 plus the diagnose()/scan() precedents fully determine the scope`) rather than inventing a new code unilaterally. A proper fix -- a dedicated exit code for "the wrapped tool reported a domain-level failure," distinct from `EXIT_FAILED`'s "Mason itself failed" -- would be an AD-7 amendment affecting the whole exit-code taxonomy, not a single-verb change, so it belongs to a future architecture-level pass, not this story.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-5-2: The hand-maintained verb-registration ordinal comments in `cli.py` (e.g. "the second verb registered", "the third verb registered") have no mechanical guard and will drift as more verbs land out of story-number order
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-5-mason-recipe-validate.md`
@@ -193,12 +229,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2-5-3: No test structurally proves every OTHER `recipe` verb's `cli.py` branch stays `EXIT_OK` regardless of its wrapped tool's own outcome -- the invariant `recipe validate`'s docstrings lean on ("the one exception among every recipe verb") is asserted only in prose
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-5-mason-recipe-validate.md`
   summary: `recipe.py`/`cli.py`'s module docstrings and `validate()`'s own docstring repeatedly claim `recipe validate` is "the one CLI-level exception" to a module-wide rule ("every other verb's branch always returns `EXIT_OK`"), but no test sweeps all six sibling verb branches (`build`/`diagnose`/`optimize`/`scan`/`submit`/`update`) to confirm none of them also project a non-zero wrapped-tool outcome onto the exit code. Only `build` has a positive regression test for this (`test_recipe_build_failed_child_still_renders_ok`); `diagnose`/`optimize`/`scan`/`submit`/`update` have no equivalent, so the claim could silently become false for one of them (today, by inspection, or in a future edit) with nothing to catch it.
   evidence: Confirmed by searching `test_cli.py` for `_still_renders_ok`/`failed_child`-style test names -- only the one `build` test exists. Raised by adversarial review (Blind Hunter) against the Story 2.5 diff, 2026-08-13. A module-wide test-completeness gap predating this story (the five other verbs' `EXIT_OK`-regardless-of-outcome behavior was never pinned by a dedicated test when each landed), only surfaced now because this story's own docstrings are the first to assert the invariant explicitly in prose; a proper fix would add one `..._failed_child_still_renders_ok`-style test per sibling verb, mirroring `build`'s existing one.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-5-4: `cfe.validate_recipe(["--json", recipe_path], ...)` has no `--` separator, so a `recipe_path` beginning with `-` could be misparsed as a flag by the wrapped validator's own `argparse`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-5-mason-recipe-validate.md`
@@ -207,12 +247,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2-6-1: `doctor.py`'s per-noun `unavailable_verbs` granularity is now inaccurate for `recipe build`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-6-mason-recipe-build.md`
   summary: `doctor.build_report` marks the whole `"recipe"` noun unavailable whenever the CFE import floor has any gap, but `recipe build` (both `build_native` and `build_docker`) needs no import floor at all, so `mason doctor` can now report `recipe` unavailable while `mason recipe build` actually works fine.
   evidence: Confirmed by reading `doctor.py`'s own docstring/logic (`unavailable_verbs = ("recipe",)` set from `resolved_root.step == STEP_NOT_FOUND or floor_result.missing`, with no per-verb distinction) against `recipe.py`'s Story 2.6 module docstring, which states plainly that neither wrapped build script depends on CFE's Python import floor. Pre-existing, coarse per-noun-not-per-verb granularity from Story 1.8, written before any `recipe` verb existed; fixing it properly is a doctor.py design question (whether/how to go per-verb) out of proportion for this story to redesign unilaterally. Raised independently by both review passes (Blind Hunter adversarial review) against the Story 2.6 diff, 2026-08-12.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-7-1: A malformed `MASON_CFE_TIMEOUT` environment value is silently ignored with no warning
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-7-mason-recipe-diagnose.md`
@@ -221,12 +265,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2-7-2: `mason package`/`mason environment` still print the literal `{}` token for an invalid verb
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-7-mason-recipe-diagnose.md`
   summary: Story 2.7's own review pass fixed `recipe`'s verb-subparsers action so its `metavar` is derived from `.choices` after `diagnose` is registered (`mason recipe <bad-verb>` now shows `{diagnose}`), but `package`/`environment` still have zero registered verbs and their captured `_noun_verbs["package"]`/`["environment"]` actions keep the original literal `metavar="{}"` set in `build_parser()`'s per-noun loop, so `mason package <any-verb>`/`mason environment <any-verb>` still print the bare `{}` token instead of an accurate choice set.
   evidence: Reproduced live: `mason package bogus-verb` prints `mason package: error: argument {}: invalid choice: 'bogus-verb' (choose from )` -- the identical cosmetic defect class Story 2.7's review pass named and fixed for `recipe`, left unfixed for the two sibling nouns because this story's scope only registers a `recipe` verb. Pre-existing since Story 1.2 (`build_parser()`'s original per-noun loop hardcoded `metavar="{}"` before any verb existed anywhere), not introduced by this diff; surfaced incidentally by adversarial review against the Story 2.7 diff, 2026-08-12. A proper fix applies the same `.choices`-derived metavar to every noun's captured verb-subparsers action, not just `recipe`'s -- natural to land in whichever future story (2.8+) first registers a verb under `package` or `environment`.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-8-1: `render_text`'s one-line-per-key format double-prints `scan`'s findings, now the largest payload it renders
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-8-mason-recipe-optimize-and-mason-recipe-scan.md`
@@ -235,12 +283,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2-8-2: `_OPTIMIZE_RELEVANT_FLOOR`/`_SCAN_RELEVANT_FLOOR` are hand-declared, never derived from or cross-checked against the real wrapped scripts
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-8-mason-recipe-optimize-and-mason-recipe-scan.md`
   summary: `recipe.py`'s `_OPTIMIZE_RELEVANT_FLOOR = ("ruamel.yaml",)` and `_SCAN_RELEVANT_FLOOR = ("pyyaml", "requests")` are literal tuples whose docstrings say "confirmed by reading it," but nothing in the test suite parses the real `recipe_optimizer.py`/`vulnerability_scanner.py` `try/except ImportError` blocks to keep these tuples in sync -- if a future CFE skill change adds (or drops) a third-party import in either script, Mason's per-operation floor gate has no way to notice, and would either wrongly reject a now-satisfiable call or wrongly admit a now-doomed one straight into a subprocess spawn.
   evidence: Confirmed by reading both real scripts directly (`.claude/skills/conda-forge-expert/scripts/recipe_optimizer.py`, `vulnerability_scanner.py`) -- their import sets match the two tuples today, but the match is asserted only in a docstring comment, not enforced by any AST scan or fixture-derived check. Raised by adversarial review against the Story 2.8 diff, 2026-08-12; not this story's own defect (the two-tuple-per-operation design itself is spec'd and correct), but a drift vector affecting whichever future story next touches either wrapped script's import list. A fix would mirror `test_adapter_sole_caller.py`'s existing AST-based style: parse each real script's `try: import X / except ImportError` block and assert the relevant tuple matches exactly.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-2-9-1: The unparseable-body PENDING fallback in `_ship_target_result_from_cfe_result` carries no reference or message
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-9-mason-recipe-submit.md`
@@ -249,12 +301,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-1-1: `CfeImportFloorError` lacks a `__reduce__` override, so `deepcopy`/`pickle` corrupt its `.args`/`repr()` on round-trip -- the same bug class `CfeUnresolvedError`/`CfeTimeoutError` were already fixed for
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-1-engine-protocol-and-provisioning.md`
   summary: `errors.py`'s `CfeImportFloorError(missing, interpreter)` has no `__reduce__` override, unlike its siblings `CfeUnresolvedError`/`CfeTimeoutError`, both of which carry one specifically because `MasonError.__init__` sets `self.args = (identifier, message)`, which does not match either subclass's own constructor signature. `CfeImportFloorError`'s two-positional-argument shape has the identical mismatch, so `copy.deepcopy`/`pickle.loads(pickle.dumps(...))` reconstruct it via `cls(*self.args)` = `CfeImportFloorError("cfe:import-floor-missing", <built message>)`, binding `missing` to a tuple of characters of the identifier string and `interpreter` to the full message string.
   evidence: Verified directly: `copy.deepcopy(CfeImportFloorError(missing=("pyyaml",), interpreter="/opt/py"))` reconstructs via the corrupted call above, then `__dict__` state-restore (the second half of `Exception.__reduce__`'s default 3-tuple) overwrites `.missing`/`.interpreter`/`.message` back to their correct original values -- so `str()`, `.missing`, and `.interpreter` all survive intact, but `.args` itself, and therefore `repr(exc)`, stays permanently garbled with no override. Surfaced incidentally by Story 3.1's adversarial review (Blind Hunter, 2026-08-13), which found and this pass fixed the identical gap in the new `EngineAbsentError` class; `CfeImportFloorError`'s own version of the bug is pre-existing since Story 1.6 and out of this story's scope (`errors.py` predates Story 3.1; only `EngineAbsentError` is this story's own code). A proper fix mirrors `CfeTimeoutError.__reduce__` exactly: return `(self.__class__, (self.missing, self.interpreter))`, plus a `test_cfe_import_floor_error_survives_deepcopy`/`..._survives_pickle_round_trip` pair in `test_errors.py` matching the existing `CfeTimeoutError`/`CfeUnresolvedError` coverage.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-4-1: `ship_pypi` unconditionally builds the `.conda` package too, coupling a PyPI-only ship to conda-side build/version-mismatch failures
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-4-the-pypi-ship-target.md`
@@ -263,12 +319,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-5-1: `engines.pixi.upload()`'s argv has no `--` separator, so a `channel_name` (or `conda_path`) starting with `-`/`--` is misparsed by pixi's own clap CLI instead of reaching `--channel`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-5-the-channel-name-ship-target.md`
   summary: `upload()` builds `argv = ["pixi", "upload", "prefix", "--channel", channel, conda_path]` with `channel`/`conda_path` as bare values -- nothing stops a `channel_name` beginning with `-` from being parsed by pixi's clap-based CLI as another flag rather than `--channel`'s value. `parse_ship_targets()` (Story 3.3, unchanged here) only requires the channel-name suffix be non-empty after stripping; it does not reject a leading `-`/`--`.
   evidence: Live-verified against the installed `pixi 0.76.2` binary during the 2026-08-13 review pass: `pixi upload prefix --channel -evil fake.conda` fails with clap's own `error: unexpected argument '-e' found` -- a `--ship "channel:-myorg"` invocation would surface as a baffling clap parse error inside a `FAILED` `ShipTargetResult.message`, instead of a clean, named Mason error. Raised independently by both Blind Hunter and Edge Case Hunter across two review passes (2026-08-13) against the Story 3.5 diff. Not blocking: the vocabulary parser already guards non-emptiness, and no CLI wiring exists yet (Story 3.9's scope) to reach this path at all in v1. A proper fix inserts a `--` separator before the trailing positional (`[..., "--channel", channel, "--", conda_path]`, if pixi's clap parser honors it for the final positional) or validates `channel_name`/`conda_path` don't start with `-` before building argv -- belongs to whichever story first wires a real caller (Story 3.9), since no live-verified fix shape was confirmed during this pass.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-5-2: `engines.pixi.upload()` sets no `stdin=subprocess.DEVNULL`, unlike `twine.py`'s documented interactivity defense -- an unverified risk that `pixi upload prefix` could block on a stdin prompt for the full timeout window
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-5-the-channel-name-ship-target.md`
@@ -277,12 +337,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-6-1: `ship_conda_forge`'s `try/except (OSError, ValueError)` around `Path.expanduser().resolve()` does not catch `RuntimeError`, which `expanduser()` raises when `~` cannot be resolved
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-6-the-conda-forge-ship-target.md`
   summary: `package.py::ship_conda_forge` resolves `recipe_path`, the CFE root, and the expected recipe directory inside one `try: ... except (OSError, ValueError) as exc: return ShipTargetResult(state=FAILED, message=str(exc))` block, matching its own docstring's promise that a pathological path resolves to `FAILED` data rather than crashing. `Path.expanduser()` raises `RuntimeError` (not `OSError`/`ValueError`) when a `~`-prefixed path cannot be resolved -- most commonly when `HOME` is unset in the process environment -- so that specific failure mode is not caught and would propagate as a raw, un-typed exception instead of the documented `FAILED` result.
   evidence: Raised by Edge Case Hunter against the Story 3.6 diff, 2026-08-13 review pass. Confirmed by reading `pathlib.Path.expanduser`'s documented behavior and the exact `except (OSError, ValueError)` clause in `ship_conda_forge` (`package.py`). Not patched in this pass: `recipe.py::submit()` (Story 2.9) has the identical, already-shipped gap in its own `recipe_dir = Path(recipe_path).expanduser().resolve()` try/except -- `ship_conda_forge`'s own spec explicitly instructed mirroring that established precedent for this exact resolve-failure mode, so patching only the new copy would diverge from the function it was designed to match, leaving two inconsistent implementations of the same pattern. A proper fix adds `RuntimeError` to both functions' except clauses in the same pass, verifying the resulting message text still reads sensibly for a `HOME`-unset failure (untested territory for either function today).
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-6-2: `resolve_cfe_root` returns flag/environment roots un-expanded and `cfe.py` never expands them, so a `~`-prefixed CFE root reaches every child-process invocation as a literal path that cannot exist
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-6-the-conda-forge-ship-target.md`
@@ -291,12 +355,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-6-3: `resolve_cfe_root`'s unguarded `start_directory.resolve()` sits outside every caller's `try`, so a deleted process cwd makes both `doctor.build_report` and `package.ship_conda_forge` raise `FileNotFoundError`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-6-the-conda-forge-ship-target.md`
   summary: `resolve.py::resolve_cfe_root`'s cwd-walk step opens with a bare `candidate = start_directory.resolve()` (no `try`). Both of its Story 3.6-relevant callers guard everything *after* that call but nothing *around* it: `doctor.py::build_report` calls it as its first statement, above all of pass 1's and pass 2's `except (OSError, ValueError, RuntimeError)` hardening, and `package.py::ship_conda_forge` calls it before entering its own `try`. When `start_directory` is relative (the production shape -- `cli.py` passes `Path.cwd()`) and the process's working directory has been deleted, `.resolve()` raises `FileNotFoundError`, which escapes both functions -- breaking `build_report`'s documented "Never raises" invariant and `ship_conda_forge`'s docstring promise that a resolve failure returns `ShipTargetResult(FAILED)` rather than raising. Only reachable when the flag and environment steps do not short-circuit first (no `--cfe-root`, no `MASON_CFE_ROOT`).
   evidence: Reproduced during the 2026-08-13 follow-up review pass (raised by Blind Hunter, confirmed independently): with the process cwd removed via `os.chdir(d); os.rmdir(d)`, both `doctor.build_report(None, None, {}, Path("."))` and `package.ship_conda_forge("recipes/foo", environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None, start_directory=Path("."))` raised `FileNotFoundError: [Errno 2] No such file or directory`. PRE-EXISTING, not introduced by this story: `git diff` over the Story 3.6 range shows `resolve.py` is untouched (0 lines changed), and `build_report` already called `resolve_cfe_root` as its first statement before this story -- the spec's own Code Map describes the new fields as "computed from the `resolved_root` `build_report` already has". Story 3.6 only makes the exposure easier to notice, because two review passes hardened the code immediately below this call while the call itself stayed bare. Not patched in this pass: the fix belongs in `resolve.py` (guarding the walk's own `.resolve()` and deciding what a resolution-failed walk returns -- most likely `STEP_NOT_FOUND`, which is a behavior decision affecting every `resolve.py` consumer and every `resolve.py` test), not in a third independent per-caller `try` that would leave the other CFE-backed verbs still exposed. Adjacent to but distinct from `DW-3-6-2`: that entry concerns the CFE ROOT being returned un-expanded, this one concerns the START DIRECTORY resolution raising; both point at `resolve_cfe_root` normalization and would sensibly be fixed in one pass.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-7-1: A concurrent ship of the same PyPI/channel name+version between `version_exists`/`pixi.search` returning `False` and the actual `upload()` call reports `FAILED`, not `TERMINAL`, for the loser of the race
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-7-asymmetric-receipts-partial-failure-and-idempotence.md`
@@ -305,12 +373,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-7-2: `pypi_index.version_exists` always queries the public `pypi.org` index, even when the caller's own environment points `twine` at a different repository via `TWINE_REPOSITORY_URL`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-7-asymmetric-receipts-partial-failure-and-idempotence.md`
   summary: `ship_pypi`'s new interrogation step calls `pypi_index.version_exists()`, which is hardcoded to `GET https://pypi.org/pypi/<name>/<version>/json` (spec Always boundary). `engines.twine.upload()` passes no `env=` override to `subprocess.run` (AD-14: the child inherits the caller's full environment unchanged), so `twine` itself will honor a `TWINE_REPOSITORY_URL`/`TWINE_REPOSITORY` value from that inherited environment if the user has one set -- meaning the interrogation and the actual upload target can silently diverge for any user shipping to a private index (e.g. an internal Artifactory/devpi mirror) rather than public PyPI.
   evidence: Raised by Edge Case Hunter against the Story 3.7 diff, 2026-08-14 review pass. Confirmed by reading `pypi_index.py` (the URL template is a fixed, non-configurable module constant) and `engines/twine.py::upload()` (no `env=` kwarg is ever passed, so `TWINE_REPOSITORY_URL` reaches the child exactly as `twine` itself would honor it outside Mason entirely). Not addressed by this story: no repository-selection knob exists anywhere in this branch's `ship_pypi`/`twine.upload` yet either (Story 3.9's `repository_url` parameter, added in a sibling not-yet-merged worktree, is the first place any such knob lands, and even that is a hardcoded TestPyPI constant, not a `TWINE_REPOSITORY_URL`-aware read) -- `pypi_index.py`'s own scope (module docstring, spec Intent) is explicitly "PyPI's own public JSON index," matching FR-20's framing that Mason relies on "the standard environment variables the chosen uploader honours" rather than modeling repository selection itself. The consequence is bounded, not silent corruption: a false "already shipped" skip is possible only if the exact name+version coincidentally already exists on public PyPI while absent from the private index; a false "not yet shipped" proceed-to-upload is also bounded, since the private index's own duplicate-rejection (if any) still applies. A proper fix would need `pypi_index.version_exists` to accept (or independently derive) the same repository URL `twine` will actually use, which does not exist as a readable/derivable value anywhere in this package today -- belongs to whichever future story first makes repository selection a first-class Mason concern.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-7-3: `ship_pypi`'s idempotence check derives package identity from the wheel filename only, never cross-validated against the sdist filename, so a mismatched wheel/sdist pair in a dirty `dist/` could have its skip-or-upload decision made against the wrong project's PyPI listing
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-7-asymmetric-receipts-partial-failure-and-idempotence.md`
@@ -319,12 +391,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-3-8-1: the `pyforge-mason-test-slow` pixi task's own description text is stale, understating the slow suite it actually runs
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-8-mason-ships-mason.md`
   summary: root `pixi.toml`'s `[feature.pyforge-mason.tasks.pyforge-mason-test-slow]` description reads "collects zero tests until Story 5.3 lands FR-46's delegation-fidelity test" -- already false once Story 3.2 landed `tests/integration/test_package_build.py` (the first real `@pytest.mark.slow` test), and now doubly inaccurate with this story's own second slow test (`tests/integration/test_package_ship.py`) added alongside it.
   evidence: Raised by Blind Hunter against the Story 3.8 diff, 2026-08-14 review pass. Confirmed by reading `pixi.toml`'s task description text directly against `pixi run -e pyforge-mason pyforge-mason-test-slow`'s actual output (`2 passed, 1385 deselected`, both real, non-mocked self-hosting tests). Not this story's defect to fix alone: the description first went stale when Story 3.2 landed the first slow test, predating this story entirely -- Story 3.8 only makes the drift worse by adding a second slow test on top of an already-inaccurate description. A proper fix is a one-line `pixi.toml` description edit (e.g. naming the actual self-hosting build+ship proof tests it runs) -- mechanical, but out of this story's own disclosed scope (its Never boundary explicitly excludes any change outside the one new test file), and belongs with whichever future pass next touches this task block.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-3-9-1: the FR-24/FR-50 TestPyPI rehearsal gate validates an artifact that is not provably the same bytes later uploaded to `pypi`, since the rehearsal and the real upload each call `build()` independently
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-3-9-the-ship-verb-and-testpypi-rehearsal.md`
@@ -333,12 +409,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-1-1: The `__reduce__`-plus-explanatory-comment boilerplate for deepcopy/pickle round-trip safety is now hand-duplicated across roughly a dozen `MasonError` subclasses, with `EnvironmentLockTimeoutError` simply the newest instance
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-1-lock-engine-adapter-and-provenance.md`
   summary: Every `MasonError` subclass whose constructor takes different arguments than `(identifier, message)` needs its own `__reduce__` override (since `Exception.__reduce__` reconstructs via `cls(*self.args)`, and `MasonError.__init__` always sets `self.args = (identifier, message)` -- the wrong values for a subclass's own constructor). `errors.py` currently hand-writes this override, plus the same multi-line explanatory comment, separately in `CfeImportFloorError`, `CfeUnresolvedError`, `CfeTimeoutError`, `EngineAbsentError`, `PackageVersionMismatchError`, `PackageBuildTimeoutError`, `PackageProjectPathError`, `InvalidShipTargetError`, `ShipCredentialMissingError`, `ShipUploadTimeoutError`, `ShipChannelCredentialMissingError`, `ShipChannelUploadTimeoutError`, and now `EnvironmentLockTimeoutError` -- one more copy of an already many-times-repeated pattern.
   evidence: Raised by Blind Hunter against the Story 4.1 diff, 2026-08-14 review pass. Confirmed by reading every `MasonError` subclass in `errors.py`: each one's `__reduce__` body differs only in which stored attributes it returns as the reconstruction tuple, and each carries a near-identical comment explaining why the override exists. Not this story's defect to fix alone: the duplication predates this story by many stories (the first several subclasses already established the copy-paste pattern), and `EnvironmentLockTimeoutError` was deliberately written to mirror `ShipUploadTimeoutError`'s exact shape per this story's own spec instruction, matching established convention rather than introducing a new one. A proper fix (e.g. a small mixin or a `MasonError.__reduce__` default that introspects `__init__`'s own signature against stored attributes of the same name) would touch all ~12 existing classes at once -- a repo-wide `errors.py` refactor outside any single story's surgical scope, and risks subtly changing pickling behavior for already-shipped, already-tested exception classes if the introspection doesn't exactly match each one's existing stored-attribute-to-constructor-argument mapping.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-3-1: `mason environment lock --help` still advertises `--cfe-root`/`--cfe-python`/`--cfe-timeout`, three flags that are silently meaningless for a command whose own help text declares it "CFE-independent"
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-3-mason-environment-lock.md`
@@ -347,12 +427,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-4-1: `mason environment check` should default to the lockfile's own `metadata.platforms` when `--platform` is omitted, because conda-lock's own default is four platforms and checking a narrower lockfile without repeating its subset reports a false `stale=True` after an unrequested network solve
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
   summary: `mason environment check` should default to the lockfile's own `metadata.platforms` when `--platform` is omitted, because conda-lock's own default is four platforms and checking a narrower lockfile without repeating its subset reports a false `stale=True` after an unrequested network solve.
   evidence: Raised independently by Blind Hunter and Edge Case Hunter against the Story 4.4 diff, 2026-08-15 second review pass, then verified live against the installed `conda-lock` 4.0.2 in this workspace's own pyforge-mason pixi env. Two confirmed facts compose into it: (1) `src_parser/__init__.py:90-95` resolves `platforms` to `list(platform_overrides) if platform_overrides else _parse_platforms_from_srcs(src_files)` and falls back to `DEFAULT_PLATFORMS` (`src_parser/__init__.py:22` -- `["linux-64", "osx-arm64", "osx-64", "win-64"]`, FOUR platforms, not the single "default platform" the spec's I/O matrix assumes) whenever neither `-p` nor the manifests name any; (2) `conda_lock.py:404-415` appends every platform satisfying `platform not in platforms_already_locked` to `platforms_to_lock` REGARDLESS of `--check-input-hash`, and `conda_lock.py:429-470` then runs a real `create_lockfile_from_spec` solve and merge for them. So `mason environment lock env.yml -o lock.yml --platform linux-64` followed by `mason environment check env.yml -l lock.yml` (the subset omitted) solves three uncovered platforms over the network and returns `stale=True` for manifests that never changed. NOT patched in this pass because the fix is a contract change, not an implementation fix: the spec's `<intent-contract>` Always boundary mandates the current behavior verbatim ("`--platform` ... omitted -> `()` -> conda-lock's own default platform applies (never invented by Mason)"), and its I/O matrix carries a matching row asserting "No error expected" -- both inside the frozen intent contract this workflow may not amend. Story 4.3's own 2026-08-14 review pass separately accepted the no-enforced-relationship-with-`lock` posture for `environment lock`, so changing it for `check` alone is a deliberate product decision about whether a staleness gate may read platform scope out of the artifact it is verifying. What WAS patched: `condalock.check()`'s docstring, `_ENVIRONMENT_CHECK_HELP`, the `--platform` flag help, and the spec's Design Notes now state the real four-platform default and instruct the caller to pass the same platforms the lockfile was locked with, so the footgun is documented rather than silent.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-2: every `engines.condalock.check()` test mocks `subprocess.run` against a fixture that real conda-lock would reject, so the suite proves only the tautology "if the temp copy's parsed hash changes, `stale` is True" and never that conda-lock actually rewrites it
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
@@ -361,12 +445,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-4-4-3: `mason environment check --format json` reports `status: "ok"` with an empty `errors` array even when the conda-lock subprocess itself failed, and `stderr` is inherited rather than captured, so the failure's own diagnostic never enters the JSON document
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
   summary: `mason environment check --format json` reports `status: "ok"` with an empty `errors` array even when the conda-lock subprocess itself failed, and `stderr` is inherited rather than captured, so the failure's own diagnostic never enters the JSON document.
   evidence: Raised independently by Blind Hunter and Edge Case Hunter against the Story 4.4 diff, 2026-08-15 second review pass. Confirmed by reading `cli.py`'s dispatch branch: `render.write(fmt, sys.stdout, "environment check", "ok", dataclasses.asdict(result), [])` hardcodes both the `"ok"` status and the empty error list, while `condalock.check()` passes `stderr=None` to `subprocess.run`, so conda-lock's own diagnostics go to the inherited terminal and are absent from `CheckResult.stdout`. A `--format json` CI consumer parsing a failed run sees `status: "ok"`, `errors: []`, `stale: false`, `stdout: ""` and a non-zero `returncode`. The exit code IS correct (the prior review pass added the `result.returncode == 0` conjunct, so a failed check exits non-zero), and `returncode` IS present in `data`, so the information needed to distinguish "regenerate your lockfile" from "the solver had no network" is technically machine-readable -- which is why this is a deferral rather than a bug. NOT patched in this pass because both halves are spec-constrained: the `"ok"` status is what the spec's I/O matrix mandates for the stale row and what the codebase's every other dispatch branch does for a Mason-successful invocation (AD-9's "the exit code carries the delegated verdict, not this field"), and the `stderr=None` kwarg is mandated verbatim by the spec's own task list ("`subprocess.run` mirrors `lock()`'s exact kwargs"). Resolving it well means deciding, at the render layer rather than in this one verb, how a wrapped tool's own failure should surface in the JSON envelope -- and would apply equally to `recipe validate` and `package build`, which have the same characteristic today.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-4-4-4: Story 4.4's spec (`spec-4-4-mason-environment-check.md`) has not been promoted from gitignored `implementation-artifacts/` into the tracked `planning-artifacts/specs/` directory, matching a gap already present for Stories 4.1-4.3
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`
@@ -375,6 +463,7 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-1-10-2: Follow-up review still recommended for 1-10-configuration-surface-logging-and-child-output-streaming after the damping cap was spent
   origin: review-budget-followup
@@ -385,6 +474,8 @@ status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-2-3-2: Follow-up review still recommended for 2-3-credential-isolation after the damping cap was spent
   origin: review-budget-followup
   source_spec: `spec-2-3-credential-isolation.md`
@@ -394,10 +485,14 @@ status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-5-1: The ~26 correct-but-duplicated `_get_data_dir()`/`REPO_ROOT` copies Story 5.5 deliberately left un-migrated to the new shared `scripts/_paths.py` helper have no tracked follow-up or drift guard
 - source_spec: `_bmad-output/implementation-artifacts/spec-5-5-rule-2-conda-forge-expert-retrospective.md`
   summary: Story 5.5's own spec explicitly scoped the `_paths.py` migration to the four confirmed-wrong call sites only ("Never: mass-migrate the ~26 other correct-but-duplicated copies... disproportionate blast radius for a closing-retro commit"), and `SKILL.md`'s new constraint says to "migrate them opportunistically when you're already touching that file" — but nothing enforces that opportunistic migration ever actually happens; no lint/grep guard flags a still-hand-rolled parent-walk, and this deferral itself was untracked until this entry.
   evidence: Raised by adversarial review (Blind Hunter) against the Story 5.5 diff, 2026-08-20 — noted the precedent this codebase already has for exactly this shape of consolidation, `_path_guard.py` (AUD-CFE-001/002/006's remediation), which DID get a dedicated meta-test (`test_skill_files_tracked.py`-style enforcement) rather than relying on "migrate opportunistically" alone. Not this story's fix to make (the spec's own Never boundary forbids mass-migrating in this pass, for good reason — the ~26 copies are correct, not broken, and touching all of them would be disproportionate churn for a closing retrospective); a proper fix is a lightweight meta-test asserting no `scripts/*.py` NEW file hand-rolls a `Path(__file__).resolve().parents[N] / "data" / "conda-forge-expert"`-shaped expression instead of importing `_paths`, mirroring how `test_skill_files_tracked.py` enforces a different repo-hygiene rule by walking the filesystem rather than trusting convention.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-5-5: Follow-up review still recommended for 5-5-rule-2-conda-forge-expert-retrospective after the damping cap was spent
 
@@ -408,6 +503,8 @@ status: open
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-5-4-1: SM-4 (free inheritance) recorded provisionally against v8.82.0 — re-confirm at the next organic CFE MINOR
 
 - source_spec: `epics.md` § Story 5.4 (SM-4 satisfaction record, 2026-08-21)
@@ -415,6 +512,8 @@ status: open
   evidence: Recorded 2026-08-21 under the operator-chosen hybrid close (record now, re-verify later). Re-confirm when the next CFE MINOR lands from an effort outside Mason's own chain (cadence: v8.79 Jul 18 → v8.80/8.81 Jul 29 → v8.82 Aug 20; the in-flight langflow closure's Rule-2 retro is the likely producer) OR when conda-forge bumps python_min past 3.10, whichever first — re-run `mason recipe optimize` and append the observed verb-level delta to the SM-4 record in epics.md, then close this entry.
   severity: low
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-7-1-1: symptom_signature tokens are not all meaningfully diagnostic: some rows carry a single generic word (e.g. "fails", "work") or a full sentence pulled verbatim as their entire signature, and common tokens (e.g. "noarch: python", "pip check") repeat across dozens of unrelated rows.
 
@@ -427,6 +526,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-7-1-2: The fenced-code-block inclusion heuristic in _symptom_paragraph only fires when the Symptom paragraph's prose ends in a literal colon.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
@@ -437,6 +538,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-7-1-3: _ENFORCED_BY_RE's exact-phrase match ("The optimizer's **CODE** check") has no fallback signal distinguishing "no check exists yet" from "the phrasing drifted."
 
@@ -449,6 +552,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-7-1-4: failure-catalog.yaml has no schema_version/format_version field.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
@@ -459,6 +564,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-7-2-1: _code_present()'s narrow `code="X"`/`code='X'` literal-substring match could miss a check code defined a different way (spaced `code = "X"`, a dict-literal `"code": "X"`, ...), producing a false unresolved-pointer.
 
@@ -471,6 +578,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-7-2-2: check_drift() decides ordinary drift vs. generator-broke by testing for the literal string "DRIFT DETECTED" in the generator's stderr -- a real but self-detecting coupling to Story 7.1's exact wording.
 
 - source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
@@ -481,6 +590,8 @@ status: open
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-7-2-3: Nothing in this repo currently makes a detector finding (this one included) or a tests/scripts/ failure literally block a PR -- .github/workflows/detectors.yml is advisory-only by a pre-existing 2026-07-31 operator decision, and tests/scripts/ (including this story's new test file) is not invoked by any GitHub Actions workflow at all.
 
@@ -493,6 +604,8 @@ status: open
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-CANOPY-2026-08-24: Canopy five-tier surfaces and event backbone (steward-owned)
 
 - source_spec: `docs/dreams/pyforge-unifying-strategy.md` Phase 5; `planning-artifacts/change-history/sprint-change-proposal-2026-08-24-canopy.md`
@@ -504,6 +617,8 @@ status: open
   promoted: 2026-08-24
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -512,3 +627,5 @@ status: open
   status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; mason S-10.1 done (build-engine hook spec; today's engine is default plugin); no competing CI verdict
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
