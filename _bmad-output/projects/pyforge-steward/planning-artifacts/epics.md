@@ -2162,4 +2162,19 @@ So that host MCP cannot silently degrade to the ImportError skip on CRC.
 **And** laptop URL-unset + ImportError skip still boots
 **And** sidecar down is 502 on `/stations/<name>/mcp`, not a web CrashLoop
 
+## Epic 36: Lane 3 Vizro over the estate cache
+
+Canopy residual after CAP-19. Vizro stays isolated (CAP-7). BSL is the
+metric contract. Do not import Vizro into Django. Not vizro-ai.
+
+### Story 36.1: Lane 3 BSL reads the estate cache
+
+As an operator,
+I want BSL to query the named estate Parquet cache,
+So that Lane 3 dashboards do not hit OLTP.
+
+**Type:** feature • **Effort:** S • **Deps:** S-34.2 • **FR/AD:** FR-47 • canopy AD-22
+**Given** the 34.2 Parquet cache **When** the BSL model queries it **Then** planted rows return
+**And** the loader does not use an OLTP writer role
+
 
