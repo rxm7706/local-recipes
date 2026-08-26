@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 188
+# stories: 195
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -109,6 +109,11 @@ development_status:
   32-2-steward-deploy-profile-adapters-are-plugins: done
   33-1-skf-skill-and-persona-for-steward: done
   33-2-first-portal-slice-provision-list: done
+  34-1-read-only-live-attach: ready-for-dev
+  34-2-kedro-writes-the-parquet-cache: backlog
+  34-3-vectors-persist-on-the-plane: backlog
+  34-4-agents-cannot-reach-oltp: backlog
+  34-5-scribe-semantic-recall-uses-the-plane: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
@@ -190,6 +195,8 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
+  epic-34: backlog
+  epic-34-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

@@ -1,6 +1,6 @@
 ---
 spec: pyforge-unifying-strategy
-status: shipped
+status: ready
 chain: pyforge-unifying-strategy
 created: "2026-08-24"
 updated: "2026-08-26"
@@ -23,6 +23,7 @@ surface:
   - src/shared/packages/django-*/**
   - src/shared/packages/pyforge-core/**
   - src/shared/packages/pyforge-scribe/**
+  - src/shared/packages/pyforge-atlas/**
   - .claude/skills/pyforge-*/**
   - recipes/openfeature-*/**
   - recipes/cachebox/**
@@ -31,7 +32,10 @@ surface:
   - environment.yaml
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
-open_questions: []
+open_questions:
+  - query-plane-face
+  - query-plane-catalog
+  - query-plane-scribe-cutover
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -41,11 +45,17 @@ open_questions: []
 > Grounding dated 2026-08-25 (fleet drain + attended CRC) and closeout 2026-08-26
 > (`/` 200, CAP-9 proven). Correct-course:
 > `sprint-change-proposal-2026-08-25-drain-bind.md` then
-> `sprint-change-proposal-2026-08-26-canopy-closeout.md`.
+> `sprint-change-proposal-2026-08-26-canopy-closeout.md`. Evergreen reopen:
+> `sprint-change-proposal-2026-08-26-query-plane.md` (CAP-19) then
+> `sprint-change-proposal-2026-08-26-evergreen-ready.md`. This Dream/SPEC
+> pair is living; CAP-1..18 closeout is a dated slice, not the end of the contract.
+> **Ready to implement:** first dispatch S-34.1.
 
 > **This SPEC extends `spec-python-agent-platform`, it does not replace it.** That Spec's CAP-1..6
 > are shipped and binding; nothing here re-mints them. `convergence.md` is the authority on which
-> side of the line any surface falls, and CAP-9 is the one place this SPEC reopens shipped work.
+> side of the line any surface falls. CAP-9 reopened shipped DDL stories; CAP-19
+reopens shipped analytical stores (Atlas RAG writer, Scribe 28.x, agent DSNs)
+by operator ruling 2026-08-26.
 
 # pyforge-unifying-strategy — the Canopy mounts the eight stations
 
@@ -59,8 +69,9 @@ happened. The Canopy — `src/platform/` — proved the shape works. **The 2026-
 landed the extension in code** (chrome, eight portals, host MCP faces, CLI dispatch, events,
 flags, governed-DDL *path*, five-tier check, CAP-18 hooks). Steward **12-7 `/ht/` 200** is
 dated. Closeout 2026-08-26: Lane 1 `/` **200** on CRC, CAP-9 `platform_app` DML-only
-proven, Liquibase `:17`–`:19` executed. Outside this chain: parked Q5 scorecard,
-query-plane CAP (not minted), MCP slice 3, optional 12.9 CI job. Not a `services/` rewrite.
+proven, Liquibase `:17`–`:19` executed. Parked outside this CAP set: Q5 scorecard (sibling Dream), MCP slice 3,
+optional 12.9 CI. **CAP-19 (query plane) is in this chain** — minted 2026-08-26;
+CAP-1..18 closeout stands. Not a `services/` rewrite.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema
 change to be auditable rather than incidental, identity to be revocable rather than cached, and
@@ -237,6 +248,26 @@ they are why this is not merely a UI project.
     they must not violate this capability. Drain: Epic 32 + peer hook stories **landed**;
     do not re-mint a second plugin API.)*
 
+- **CAP-19 — One HTAP query plane; stations are clients.**
+  - **intent:** Analytics, vectors, and agent SQL share one DuckDB engine: live
+    read-only Postgres attach, Kedro-written Parquet cache, `vss` / HNSW.
+    Domain ports stay (Scribe store port, Atlas catalog prefixes, BSL
+    metrics). Private stores (in-memory RAG, Chroma for estate knowledge,
+    autonomous SQL on OLTP) are rebuilt onto the plane. FR-27's *writer*
+    intent applies to the plane; the filename `atlas.duckdb` may be
+    generalized. Rebuild of shipped 25.2 / 28.x / agent DSN wiring is in
+    scope.
+  - **success:** A fixture multi-schema Postgres with no `pgvector` is attached
+    read-only; Kedro writes a Parquet cache on a *named* pipeline; HNSW
+    ranking runs on the plane; DB-GPT / Langflow estate reads use the plane
+    DSN or HTTP face, not the OLTP DSN; Scribe semantic recall hits the plane
+    (or a store-port driver that is the plane) and still satisfies FR-36.
+    Tests fail if a second writable analytical engine or an agent OLTP DSN
+    is reintroduced.
+  - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
+    in-progress; rebuild is allowed. Not a ninth station. Atlas owns the
+    engine; steward owns the through-line.)*
+
 ## Constraints
 
 - **Always:** `spec-python-agent-platform` CAP-1..6 are shipped and binding. This SPEC extends
@@ -257,7 +288,26 @@ they are why this is not merely a UI project.
   images (`postgres:17`, `redis:7`) under the internal-registry rule. Neither boundary is optional
   and neither substitutes for the other.
 - **Always:** infrastructure is exactly PostgreSQL + Redis + Kubernetes. A component demanding a
-  fourth backing service has failed its design review.
+  fourth backing service has failed its design review. DuckDB is a **library / query face**
+  (in-process or an optional `duckdb-server` process on the platform image), not a fourth
+  Helm backing store.
+- **Always:** CAP-19 is one analytical engine and one writer (FR-27 intent). `ATTACH` joins
+  sources; it does not mint a second writable `.duckdb`. Consumer paths `LOAD` `postgres`
+  and `vss`; they never `INSTALL` on boot (AD-13). Autonomous SQL is cache-and-view only.
+  Mode A is declared operational views for humans, not DB-GPT exploring OLTP.
+- **Always:** CAP-19 extract/transform is Kedro on a **named** Atlas pipeline (or an
+  explicit reopen of the closed set). Not a silent `01_raw` tree. Not Airflow.
+  Federation does not pull OLTP through pandas. Kedro is **optional** for new
+  extracts; Atlas is the one Kedro *home* (AD-21). Not eight Kedro projects.
+- **Always:** Lane 3 is Vizro over BSL over the plane (after 34.2). `vizro-ai`
+  is deprecated. Do not import Kedro or Vizro into Django views.
+- **Never:** a station or agent opens a private DuckDB, Chroma, or the OLTP DSN for
+  estate knowledge or Text-to-SQL after CAP-19 lands. Platform Postgres remains the
+  OLTP / app-state store. Scribe's **store port** remains (no `GraphStore` class
+  exists in `pyforge-scribe` today).
+- **Never:** `django-lasuite` on the host (`INSTALLED_APPS` or OIDC). Identity is
+  `django-allauth`. Chrome is `django-pyforge`. Feedstock / `suite-*` recipes are
+  packaging only.
 - **Always:** `src/platform/` consumes the factory's published conda packages and never imports
   `pyforge.*` source. The factory/platform boundary is an import rule.
 - **Always:** statelessness holds — replicas are capacity, any pod is disposable. This rules out
@@ -391,6 +441,10 @@ they are why this is not merely a UI project.
   boards, not a tenancy layer for the estate.
 - **Not** atlas's adoption of the secure-dashboard pattern. CAP-7 consumes that pattern; making
   atlas's own board adopt it is atlas's story.
+- **Not** a sibling `spec-htap-query-plane` or a ninth station. CAP-19 lives on this SPEC.
+- **Not** installing extensions on a customer enterprise database that forbids them.
+- **Not** JSON:API / DRF over the plane (`enterprise-data-models-and-apis`).
+- **Not** a lakehouse product or Unity / Wasm satellite revival.
 
 ## Success signal
 
@@ -400,7 +454,9 @@ without re-authenticating or leaving the origin. An agent drives the same statio
 survives a proxy disconnect mid-build, and still collects its result. One station's action shows
 up as an event another station consumes. And the whole thing deploys into an egress-blocked
 namespace carrying only PostgreSQL, Redis and the platform images, where the application's
-database role is provably incapable of altering its own schema.
+database role is provably incapable of altering its own schema. Dashboards and agents read
+the query plane (live attach, Parquet cache, vectors) — not five private stores and not
+OLTP.
 
 ## Assumptions
 
@@ -468,3 +524,14 @@ database role is provably incapable of altering its own schema.
   conda channels govern the Python/pixi graph, `spec-python-agent-platform` CAP-6 governs
   deployment images and already admits non-conda third-party images. See
   `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
+- **query-plane-face** — in-process DuckDB only for Epic 34.1–34.3, Mosaic
+  `duckdb-server` as HTTP/Arrow face, or both with one boot script? Default
+  until answered: in-process first; server is optional and pixi-sourced.
+- **query-plane-catalog** — new named Atlas pipeline vs reopen the closed
+  seven? Default until answered: **named new pipeline**; do not silently
+  add `01_raw`.
+- **query-plane-scribe-cutover** — store-port driver on the plane, dual-write,
+  or retire `scribe_schema` pgvector once FR-36 holds on the plane?
+  Default until answered: **driver on the plane**; lexical recall may stay
+  local; pgvector on *our* DB may remain until 34.5 proves FR-36.
+  There is no `GraphStore` class in `pyforge-scribe` today.

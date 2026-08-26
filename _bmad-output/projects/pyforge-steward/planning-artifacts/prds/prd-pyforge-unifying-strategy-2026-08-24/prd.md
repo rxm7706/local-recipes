@@ -1,6 +1,6 @@
 ---
 title: "PRD: the Canopy mounts the eight stations"
-status: "shipped"
+status: "in-progress"
 created: "2026-08-24"
 updated: "2026-08-26"
 chain: "pyforge-unifying-strategy"
@@ -46,12 +46,15 @@ The Canopy already proved this is reachable. **The 2026-08-25 drain landed the e
 chrome, host MCP faces, dispatch, events, and the governed-DDL path in code.** Closeout
 **2026-08-26:** Lane 1 `/` **200**, CAP-9 `platform_app` DML-only proven, Liquibase
 `:17`–`:19` executed. Isolated `mfa` sqlmigrate stays fake. Not a `services/` rewrite.
+**2026-08-26 evergreen:** CAP-19 (query plane) reopens this PRD. CAP-1..18 stay shipped
+slices. Rebuild of private analytical stores is in scope.
 
 ## 2. Target User
 
-Four users, and the fourth is not a person. That is load-bearing rather than cute: five of the
-eighteen capabilities exist mainly to make the estate legible to something that is not a human, and
-a requirement written only for the human reader will under-specify them.
+Four users, and the fourth is not a person. That is load-bearing rather than cute: several of the
+nineteen capabilities exist mainly to make the estate legible to something that is not a human, and
+a requirement written only for the human reader will under-specify them. CAP-19 adds the
+**query** as a shared job — dashboards and agents must share one plane.
 
 ### 2.1 Jobs To Be Done
 
@@ -61,6 +64,7 @@ a requirement written only for the human reader will under-specify them.
 | **Compliance auditor** | Move from a finding to the package, build and fleet context around it | Warden's portal exists and shows compliance; nothing else has a portal |
 | **Packaging / platform engineer** | Drive any station without learning eight tools | Eight CLIs, eight verb vocabularies, eight output shapes |
 | **Autonomous agent** | Perform a station's work programmatically and reliably | One station of eight has a service face; long operations die with the connection |
+| **Dashboard / agent query** | Ask the estate a question (metric, SQL, neighbor) | Five private stores; Text-to-SQL can still hit OLTP |
 
 ### 2.2 Non-Users
 
@@ -96,6 +100,12 @@ attributable to a reviewed changeset, not to whatever an ORM decided to emit.
 **UJ-5 — The flag flip.** An operator changes one flag value. Web, service and CLI surfaces all
 observe the new behaviour, with no redeploy and no outbound network call.
 
+**UJ-6 — The query that misses OLTP.** A Vizro board and a DB-GPT Text-to-SQL ask the same
+estate question. Both read the query plane (live attach for a declared view, Parquet for a
+scan, `vss` for a neighbor). Neither opens a private DuckDB or Chroma, and neither is
+given the OLTP DSN. A guessed `SELECT` against the system of record is a refused
+configuration, not a hot table.
+
 ## 3. Glossary
 
 Defined once. The rest of the document uses these exactly, and no synonyms.
@@ -128,12 +138,15 @@ Defined once. The rest of the document uses these exactly, and no synonyms.
   Kedro names the split; it does not require a Kedro project. **CAP-18** is the
   shared contract (not a scorecard). Q8 is the PR-gate instance (Warden owns
   those specs; scanners are plugins).
+- **Query plane** — the one DuckDB analytical engine (live read-only Postgres
+  attach, Kedro Parquet cache, `vss` vectors). Stations and agents are clients.
+  Platform Postgres stays OLTP / app state. **CAP-19**, canopy AD-22.
 
 ## 4. Features
 
-Fifteen features over eighteen capabilities (CAP-1..18). Grouped by delivery seam, which is also
+Sixteen features over nineteen capabilities (CAP-1..19). Grouped by delivery seam, which is also
 how the epic pass groups them. Canopy Epics 18–30 do **not** implement CAP-18; that is Epic 32
-plus Warden Epic 9 plus per-station process-hook stories.
+plus Warden Epic 9 plus per-station process-hook stories. **CAP-19 is Epic 34.**
 
 ---
 
@@ -715,6 +728,8 @@ exact count.
 #### FR-27: Concurrent writers cannot corrupt shared analytical state
 
 A single-writer boundary is enforced for the columnar analytical store. **CAP-10.**
+CAP-19 names that store as the **query plane** (FR-27 *intent* survives if the
+file is no longer literally `atlas.duckdb`).
 
 **Consequences (testable):**
 - A second concurrent writer is refused or serialized; no corruption occurs.
@@ -977,6 +992,67 @@ Epics 18–30 must not violate CAP-18; they are not its implementation.
 
 ---
 
+### 4.16 The query plane (CAP-19)
+
+Stations stop inventing stores. One DuckDB engine federates live Postgres (read-only),
+serves Kedro Parquet, and ranks vectors. Agents do not get the OLTP DSN. Rebuild of
+Atlas RAG defaults, Scribe semantic recall, and Langflow/DB-GPT estate reads is
+authorized. Realizes UJ-6.
+
+#### FR-46: Live federation is read-only attach
+
+DuckDB attaches a multi-schema Postgres as `READ_ONLY`. No `pgvector` is required on
+that database. **CAP-19.**
+
+**Consequences (testable):**
+- A fixture with two schemas answers a federated `SELECT` through the plane.
+- A write against the attach is refused.
+- The test fails if the path goes through pandas SQL or a writable attach.
+
+#### FR-47: Analytical scans hit the Parquet cache
+
+Kedro writes compressed Parquet on a named catalog pipeline. Dashboards and
+autonomous SQL read the cache, not OLTP. **CAP-19.**
+
+**Consequences (testable):**
+- After `kedro run` of the named pipeline, the cache file exists and a query
+  against it does not open the OLTP writer role.
+- The test fails if Airflow or an `01_raw` tree is the refresh mechanism.
+
+#### FR-48: Vectors live on the plane
+
+`REAL[]` (or equivalent) casts to `FLOAT[N]` and HNSW / `vss` ranking runs in
+DuckDB SQL. Dimension is a parameter. Consumer `LOAD`s `vss`. **CAP-19.**
+
+**Consequences (testable):**
+- Nearest-neighbor returns the planted row without lexical overlap.
+- The consumer path does not `INSTALL` on the network.
+- The test fails if a second writable `.duckdb` file is the index home.
+
+#### FR-49: Agents cannot use the OLTP DSN
+
+DB-GPT Text-to-SQL and Langflow estate RAG are configured at the plane (cache,
+declared views, or the HTTP/Arrow face). **CAP-19.**
+
+**Consequences (testable):**
+- Config/tests show the estate read DSN is the plane, not `langflow_schema` /
+  enterprise OLTP.
+- A mis-aimed OLTP DSN for Text-to-SQL fails the gate.
+
+#### FR-50: Stations reimplement onto the plane
+
+Scribe semantic recall uses `GraphStore.query_similar` backed by the plane (or a
+driver that is the plane). Atlas RAG persist uses the plane writer. BSL remains
+the dashboard contract. **CAP-19.** Rebuild of 28.2 / in-memory RAG is in scope.
+
+**Consequences (testable):**
+- FR-36 still holds after the Scribe path moves.
+- Callers do not `isinstance` the driver.
+- The test fails if semantic recall is aliased back to lexical or to a private
+  Chroma / in-memory DuckDB.
+
+---
+
 ## 5. Non-Goals (Explicit)
 
 - **Not a rewrite of the host.** `src/platform/` stands. No rename, no relocation of `config/` or
@@ -1081,7 +1157,8 @@ external constraint, not a goal we chose.
   a gate, not a warning. Container images are governed separately by the platform Spec's
   internal-registry rule. Both boundaries bind; neither substitutes for the other.
 - **Backing services.** Exactly PostgreSQL, Redis and Kubernetes. A component demanding a fourth
-  has failed design review.
+  has failed design review. DuckDB is a library / optional query face on the platform image,
+  not a fourth Helm kind (CAP-19).
 - **Statelessness.** Replicas are capacity; any pod is disposable. This rules out pod-local media
   (FR-8) and per-process caches.
 - **Runtime floor.** Django `>=5.2.15,<6` and Python `3.12.*`. Zero headroom — conda-forge ships
@@ -1196,6 +1273,11 @@ control they cannot.
    front door**, which means building the supervisor that makes them deployable. That is
    **CAP-17 / §4.14**, new scope taken deliberately.
 
+8. **Query plane face / catalog / Scribe cutover** — open on the SPEC as
+   `query-plane-face`, `query-plane-catalog`, `query-plane-scribe-cutover`.
+   Defaults: in-process first; named new Atlas pipeline; GraphStore driver on
+   the plane. Epic 34 may proceed on those defaults.
+
 ## 12. Traceability
 
 Every capability has at least one FR; every FR names a capability.
@@ -1211,6 +1293,7 @@ Every capability has at least one FR; every FR names a capability.
 | CAP-7 | FR-16 | CAP-16 | FR-38, FR-39 |
 | CAP-8 | FR-17..FR-20, FR-29 | CAP-17 | FR-40, FR-41, FR-42 |
 | CAP-9 | FR-21, FR-21a, FR-22..FR-25 | CAP-18 | FR-43, FR-44, FR-45 |
+| CAP-19 | FR-46, FR-47, FR-48, FR-49, FR-50 | | |
 
 ## 13. Assumptions Index
 
@@ -1232,3 +1315,8 @@ Architecture spine and Canopy Epics **18–30** already exist. First Canopy disp
 then each station's process-hook story. Do not regenerate the whole steward sprint feed
 (slug truncation). Packaging stays operator-owned (S-26.3, S-27.1). Scorecard remains a
 sibling Dream — CAP-18 is **not** that board.
+
+**2026-08-26 ready-to-implement:** SPEC `ready`. CAP-19 / Epic 34 is the live
+residual. Do not re-dispatch 18–32. First dispatch **S-34.1**
+(`specs/spec-34-1-read-only-live-attach.md`). `django-lasuite` is not a Canopy
+FR. OQs have defaults; do not block 34.1 on them.

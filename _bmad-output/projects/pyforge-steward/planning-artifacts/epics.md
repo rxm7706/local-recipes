@@ -1413,6 +1413,11 @@ FR-42: Epic 21 — supervisor degrade
 FR-43: Epic 32 — shared hook-spec contract (`pyforge-core`)
 FR-44: Warden Epic 9 — PR-gate plugins (not a steward story)
 FR-45: Epic 32.2 + peer station process-hook epics
+FR-46: Epic 34 — live read-only attach
+FR-47: Epic 34 — Parquet cache
+FR-48: Epic 34 — vectors on the plane
+FR-49: Epic 34 — agent OLTP shield
+FR-50: Epic 34 — station reimplementation
 
 ## Epic List (Canopy)
 
@@ -1420,6 +1425,7 @@ FR-45: Epic 32.2 + peer station process-hook epics
 `backlog` (pre-existing). Do not re-dispatch. Closeout **2026-08-26:** 12-7 `/ht/` and CAP-9
 `platform_app` proven; published `/` **200**. Leftover is isolated `mfa` sqlmigrate (fake)
 plus optional 12.9 CI. Peers implement CAP-18 as one process-hook story; they do not copy this list.
+**2026-08-26 evergreen:** CAP-19 / Epic 34 is the live residual. Do not re-dispatch 18–32.
 
 ### Epic 18: Chrome and the trusted client
 An operator sees one estate chrome, and every portal-to-service call carries a verifiable user.
@@ -2073,4 +2079,67 @@ So that one operator job works in HTMX without leaving the host session.
 **Type:** feature • **Effort:** M • **Deps:** S-33.1, S-19.2 • **FR/AD:** FR-10 • canopy AD-7
 **Given** an authenticated steward-role session **When** the operator opens `/stations/steward/` **Then** HTMX renders the environment inventory from the station via `django-pyforge`'s PortalClient only
 **And** no raw HTTP, no `pyforge.*` import under `src/platform/`, no chrome copy in `django-steward`
+
+## Epic 34: One query plane (CAP-19)
+
+Canopy residual after CAP-1..18 closeout. Atlas owns the engine; stations rebuild onto it.
+Do not re-dispatch 18–32. Defaults: in-process DuckDB; named new Atlas pipeline; Scribe
+store-port driver on the plane (34.5). Story spec for 34.1 is tracked.
+
+### Story 34.1: Read-only live attach
+
+As an operator,
+I want DuckDB to attach a fixture multi-schema Postgres read-only,
+So that Mode A answers without writing OLTP or installing `pgvector`.
+
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-46 • canopy AD-22
+**Given** a fixture Postgres with two schemas and no `pgvector` **When** the plane attaches **Then** a federated read succeeds and a write is refused
+**And** the path is not pandas `SQLQueryDataSet`
+**And** consumer boot does not `INSTALL` extensions
+
+### Story 34.2: Kedro writes the Parquet cache
+
+As an operator,
+I want a named Kedro pipeline to extract heavy tables to compressed Parquet,
+So that dashboards and autonomous SQL hit the cache.
+
+**Type:** feature • **Effort:** M • **Deps:** S-34.1 • **FR/AD:** FR-47 • canopy AD-22
+**Given** the named pipeline **When** `kedro run` completes **Then** the Parquet cache exists
+**And** a scan of it does not use the OLTP writer role
+**And** refresh is not Airflow and not an `01_raw` folder tree
+
+### Story 34.3: Vectors persist on the plane
+
+As an agent,
+I want HNSW ranking on the plane writer,
+So that RAG does not use a second `.duckdb` or an in-memory default.
+
+**Type:** feature • **Effort:** L • **Deps:** S-34.2 • **FR/AD:** FR-48, FR-27 • canopy AD-22
+**Given** `REAL[]` (or equivalent) rows **When** the extract runs **Then** `FLOAT[N]` + `vss` nearest-neighbor returns the planted row
+**And** the writer is the CAP-19 plane (FR-27)
+**And** the consumer only `LOAD`s `vss`
+**And** Atlas in-memory RAG default is replaced or injected through that writer
+
+### Story 34.4: Agents cannot reach OLTP
+
+As a platform operator,
+I want DB-GPT and Langflow estate reads pointed at the plane,
+So that hallucinated SQL cannot hit the system of record.
+
+**Type:** feature • **Effort:** M • **Deps:** S-34.2 • **FR/AD:** FR-49 • canopy AD-22
+**Given** platform Langflow / DB-GPT config **When** the gate runs **Then** the estate read DSN is the plane (cache / views / optional HTTP face)
+**And** an OLTP DSN for Text-to-SQL fails the test
+
+### Story 34.5: Scribe semantic recall uses the plane
+
+As a teammate,
+I want `scribe recall --semantic` to rank on the plane behind the store port,
+So that FR-36 survives the rebuild.
+
+**Type:** feature • **Effort:** L • **Deps:** S-34.3 • **FR/AD:** FR-50, FR-36 • canopy AD-22
+**Given** the durable driver **When** semantic recall runs **Then** a no-overlap query still hits
+**And** callers do not `isinstance` the driver
+**And** lexical recall is unchanged
+**And** a private Chroma / in-memory DuckDB path fails the test
+
 
