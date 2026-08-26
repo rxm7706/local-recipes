@@ -108,7 +108,7 @@ development_status:
   32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core: done
   32-2-steward-deploy-profile-adapters-are-plugins: done
   33-1-skf-skill-and-persona-for-steward: done
-  33-2-first-portal-slice-provision-list: backlog
+  33-2-first-portal-slice-provision-list: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done

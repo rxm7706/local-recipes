@@ -34,7 +34,12 @@ def lookup_portal_job(station: str, tool: str) -> Callable[..., dict[str, Any]]:
 
 
 class PortalClient:
-    """In-process portal client. Sign assertions; list provisioned loop homes."""
+    """In-process portal client. Sign assertions; list provisioned loop homes.
+
+    Station jobs that are not an MCP hop (read-only inventory) also go
+    through this client — never raw HTTP and never a portal import of
+    ``pyforge.*`` in ``src/platform/``.
+    """
 
     def emit(
         self,
@@ -137,3 +142,14 @@ class PortalClient:
             "last_pull": None,
             "stale_mirror": False,
         }
+
+    def provision_list(
+        self,
+        *,
+        cwd: str | Path | None = None,
+    ) -> dict[str, tuple[str, ...]]:
+        """Named pixi environments as ``steward provision --list`` (in-process)."""
+        from pyforge.steward.provision import load_pixi_environments
+        from pyforge.steward.provision import repo_root
+
+        return load_pixi_environments(cwd=cwd if cwd is not None else repo_root())
