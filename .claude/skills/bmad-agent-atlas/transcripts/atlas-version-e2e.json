@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "consult_content_skill",
+    "skill": "pyforge-atlas",
+    "path": ".claude/skills/pyforge-atlas/active/pyforge-atlas/SKILL.md"
+  },
+  {
+    "kind": "grammar",
+    "argv": ["pyforge", "atlas", "--version"]
+  },
+  {
+    "kind": "mcp",
+    "method": "POST",
+    "path": "/stations/atlas/mcp"
+  }
+]

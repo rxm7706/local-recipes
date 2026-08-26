@@ -1,0 +1,36 @@
+name: pyforge-atlas
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-atlas
+source_authority: internal
+language: python
+description: >
+  Kedro/Dagster/DuckDB factory intelligence station. Agents use the
+  pyforge atlas grammar (Kedro CLI via unified dispatch) and station MCP,
+  rather than importing pyforge.atlas internals or replacing conda-forge-expert.
+forge_tier: Quick
+created: '2026-08-25'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/atlas/__main__.py
+    - src/pyforge/atlas/__init__.py
+    - src/pyforge/atlas/mcp/__init__.py
+    - src/pyforge/atlas/mcp/tools.py
+    - pyproject.toml
+    - README.md
+  exclude:
+    - tests/**
+    - '**/__pycache__/**'
+  notes: >
+    CAP-15 compile for atlas. cf-atlas-legacy remains a separate legacy-orchestrator
+    skill and is not this package. Portal django-atlas is out of this story.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Console script pyforge-atlas = pyforge.atlas.__main__:main; Kedro is the runtime.
+    recorded: '2026-08-25'
