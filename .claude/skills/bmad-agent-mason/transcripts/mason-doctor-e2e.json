@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "consult_content_skill",
+    "skill": "conda-forge-expert",
+    "path": ".claude/skills/conda-forge-expert/SKILL.md"
+  },
+  {
+    "kind": "grammar",
+    "argv": ["pyforge", "mason", "doctor"]
+  },
+  {
+    "kind": "mcp",
+    "method": "POST",
+    "path": "/stations/mason/mcp"
+  }
+]

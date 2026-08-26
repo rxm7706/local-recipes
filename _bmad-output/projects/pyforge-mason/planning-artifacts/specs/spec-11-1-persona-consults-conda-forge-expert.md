@@ -2,14 +2,18 @@
 title: BMAD persona consults conda-forge-expert
 type: feature
 created: '2026-08-25'
-status: ready
+status: done
 updated: '2026-08-25'
+baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-1-skf-domain-skills-from-station-packages.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-2-personas-act-only-through-grammar-and-mcp.md
 warnings: []
+deferred: []
 ---
 
 <intent-contract>
@@ -40,9 +44,9 @@ warnings: []
 
 ## Code Map
 
-- `.claude/skills/bmad-agent-mason/`
-- `.claude/skills/conda-forge-expert/` — consult only, read-only
-- `src/shared/packages/pyforge-mason/`
+- `.claude/skills/bmad-agent-mason/` — BMAD launcher (SKILL.md + customize.toml + golden transcript)
+- `.claude/skills/conda-forge-expert/` — consult only, read-only; not SKF-regenerated
+- `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` — station-owned AC gates
 
 ## Tasks & Acceptance
 
@@ -60,8 +64,37 @@ Bind to epics.md Story 11.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 
 ## Review Triage Log
 
+### 2026-08-25 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 0, medium 0, low 4)
+- defer: 0
+- reject: 8
+- addressed_findings:
+  - `[low]` `[patch]` consult path is exact `.claude/skills/conda-forge-expert/SKILL.md`, not a substring
+  - `[low]` `[patch]` porcelain dirty check catches untracked CFE / SKF-replacement files
+  - `[low]` `[patch]` Verification names the mason pytest command
+  - `[low]` `[patch]` transcript events must be objects; grammar argv must be a list
+
+## Auto Run Result
+
+Status: done
+
+Summary: BMAD launcher `bmad-agent-mason` consults hand-authored `conda-forge-expert` and may only emit `pyforge mason …` and `POST /stations/mason/mcp`. Golden doctor transcript plus mason-owned contract tests fail on filesystem/HTTP freelance, SKF consult of pyforge-mason, CFE replacement, CLAUDE/AGENTS edits, and `pyforge.*` under `src/platform/`. CFE was not SKF-compiled. Story 11.2 was not started.
+
+Files:
+- `.claude/skills/bmad-agent-mason/` — launcher SKILL.md, customize.toml, golden transcript
+- `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` — station AC gates
+- `planning-artifacts/specs/spec-11-1-….md` — tracked story spec
+
+Review: 4 low patches applied; follow-up score 4 → false.
+
+Verification: 15 passed (`test_persona_consults_cfe.py`); `git diff origin/main -- src/platform` empty.
+
+Residual risks: the golden transcript is a checked event log, not a live LLM run.
+
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-mason` — expected: new tests pass
+- `pixi run -e pyforge-mason pytest src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py -q` — expected: all pass
 - `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
