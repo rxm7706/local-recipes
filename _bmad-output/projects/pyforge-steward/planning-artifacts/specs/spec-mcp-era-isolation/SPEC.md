@@ -8,11 +8,13 @@ surface:
   - docs/dreams/mcp-era-isolation.md
   - src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
   - src/platform/config/asgi.py
+  - src/platform/deploy/charts/platform/
   - pixi.toml
   - "[feature.mcp-host]"
 companions:
   - architecture-diagrams.md
   - retire-skip.md
+  - cluster-required.md
 sources:
   - ../../../../../../docs/dreams/mcp-era-isolation.md
   - spec-21-2-atlas-mcp-on-the-host-dual-era.md
@@ -20,9 +22,11 @@ sources:
 open_questions: []
 ---
 
-> **Canonical contract.** Slice 1 only: isolate the mcp 1.x / 2.x **pin** so
-> host station faces can load. Dual-era wire is already in `mcp_http.py`.
-> Factory stdio translator is **not** this SPEC.
+> **Canonical contract.** Slice 1 isolates the mcp 1.x / 2.x **pin**.
+> CAP-4 (2026-08-26) fail-louds the **cluster** overlay so mcp-host cannot
+> be omitted. Dual-era wire is already in `mcp_http.py`. Factory stdio
+> (slice 2) and retiring the ImportError skip (slice 3) are **not** this
+> increment.
 
 # SPEC — MCP era isolation (slice 1)
 
@@ -60,6 +64,20 @@ operator cannot reach it on the live image without a second interpreter.
     the web interpreter. When the sidecar is unreachable, the host logs at
     error and returns HTTP 502 — not a silent skip.
 
+- **CAP-4 — cluster overlay cannot omit mcp-host**
+  - **intent:** A Helm install / `helm template` of the platform chart (vanilla
+    or OCP overlay) always emits mcp-host and always sets
+    `MCP_HOST_SIDECAR_BASE_URL` on web and worker. An operator cannot
+    forget the sidecar and still get a green chart. Laptop /
+    `platform-ci-test` may leave the URL unset and load faces in-process
+    (mcp 2.x) or skip (mcp 1.x).
+  - **success:** `helm template` fails if `mcpHost.image.repository` is empty.
+    There is no `mcpHost.enabled` knob. Chart tests still require exactly one
+    mcp-host Deployment + ClusterIP and the internal Service URL on web/worker.
+    Production/cluster Django check fails if the URL is unset. Sidecar not
+    Ready is 502 on `/stations/<name>/mcp`, not a web CrashLoop. ImportError
+    skip is **not** deleted (`retire-skip.md`).
+
 ## Constraints
 
 - Do not fold `mcp-types` / `httpx2` into `python-agent-platform`.
@@ -68,7 +86,7 @@ operator cannot reach it on the live image without a second interpreter.
 - Write under `_bmad-output/projects/pyforge-steward/` literally.
   `BMAD_ACTIVE_PROJECT=pyforge-steward`. No `bmad-switch` from a parallel agent.
 - Same-process JSON translator is forbidden (cannot load both SDKs).
-- Invert (sidecar Langflow) only if this hop fails CAP-4 identity or latency.
+- Invert (sidecar Langflow) only if this hop fails CAP-1 identity or latency.
 
 ## Non-goals
 
@@ -78,12 +96,14 @@ operator cannot reach it on the live image without a second interpreter.
 - One lockfile for mcp 2.0 and Langflow.
 - Retiring the ImportError skip while the sidecar is the isolation mechanism
   (see `retire-skip.md`).
+- Epic 34 / CAP-19 (query plane). This SPEC does not ATTACH Postgres.
 
 ## Success signal
 
 On CRC, `/ht/` 200 and `POST /stations/atlas/mcp` dual-era proofs pass, while
 `python -c "import langflow"` still works in the **web** image and the
-mcp-host env has no FastMCP 3.
+mcp-host env has no FastMCP 3. A chart that omits mcp-host or blanks the
+proxy URL does not template.
 
 ## Assumptions
 

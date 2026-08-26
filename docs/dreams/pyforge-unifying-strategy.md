@@ -54,7 +54,9 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
 - ~~**`lane1-serves-dw-h3`**~~ — **answered 2026-08-25: no.** Host Wagtail `/cms/` is not
   `LaSuiteClient` Docs REST. DW-H3 stays atlas attended bring-up.
 - Pip-layer fold: `spec-platform-image-one-pixi-env` **shipped**. MCP pin isolation is
-  `spec-mcp-era-isolation` slice 1 (sidecar). Slice 3 stays parked.
+  `spec-mcp-era-isolation` slice 1 (sidecar). **CAP-4 / Epic 35** fail-louds the
+  cluster overlay (`spec-35-1-cluster-requires-mcp-host.md`) — not this Dream's
+  CAP-19. Slice 3 (retire ImportError skip) stays parked.
 - **Do not build `services/` as nine public FastAPI processes.** MCP and portal compute
   mount on the host ASGI (`POST /stations/<name>/mcp`). That is the modular-monolith
   ruling, not a deferred microservice program.

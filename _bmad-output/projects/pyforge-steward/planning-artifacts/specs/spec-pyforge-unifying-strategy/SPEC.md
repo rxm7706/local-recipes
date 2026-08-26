@@ -70,7 +70,8 @@ landed the extension in code** (chrome, eight portals, host MCP faces, CLI dispa
 flags, governed-DDL *path*, five-tier check, CAP-18 hooks). Steward **12-7 `/ht/` 200** is
 dated. Closeout 2026-08-26: Lane 1 `/` **200** on CRC, CAP-9 `platform_app` DML-only
 proven, Liquibase `:17`–`:19` executed. Parked outside this CAP set: Q5 scorecard (sibling Dream), MCP slice 3,
-optional 12.9 CI. **CAP-19 (query plane) is in this chain** — minted 2026-08-26;
+optional 12.9 CI. MCP cluster fail-loud is **sibling** `spec-mcp-era-isolation`
+CAP-4 / steward Epic 35 — not a unifying CAP. **CAP-19 (query plane) is in this chain** — minted 2026-08-26;
 CAP-1..18 closeout stands. Not a `services/` rewrite.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema

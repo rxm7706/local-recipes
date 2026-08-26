@@ -1425,7 +1425,8 @@ FR-50: Epic 34 — station reimplementation
 `backlog` (pre-existing). Do not re-dispatch. Closeout **2026-08-26:** 12-7 `/ht/` and CAP-9
 `platform_app` proven; published `/` **200**. Leftover is isolated `mfa` sqlmigrate (fake)
 plus optional 12.9 CI. Peers implement CAP-18 as one process-hook story; they do not copy this list.
-**2026-08-26 evergreen:** CAP-19 / Epic 34 is the live residual. Do not re-dispatch 18–32.
+**2026-08-26 evergreen:** CAP-19 / Epic 34 is the live **query-plane** residual. Do not re-dispatch 18–32.
+**2026-08-26 MCP CAP-4:** Epic 35 is the live **cluster mcp-host** residual on `spec-mcp-era-isolation` (not a unifying CAP). Slice 3 stays parked.
 
 ### Epic 18: Chrome and the trusted client
 An operator sees one estate chrome, and every portal-to-service call carries a verifiable user.
@@ -2141,5 +2142,24 @@ So that FR-36 survives the rebuild.
 **And** callers do not `isinstance` the driver
 **And** lexical recall is unchanged
 **And** a private Chroma / in-memory DuckDB path fails the test
+
+## Epic 35: Cluster requires mcp-host (spec-mcp-era-isolation CAP-4)
+
+Slice 1 shipped the bridge. This epic fail-louds the **cluster** overlay so
+mcp-host cannot be omitted. Not CAP-19. Not slice 3. First query-plane dispatch
+stays 34.1; this story is serial after that session (no code dep).
+
+### Story 35.1: Cluster requires mcp-host
+
+As a platform operator,
+I want the Helm chart and production check to refuse a cluster without mcp-host,
+So that host MCP cannot silently degrade to the ImportError skip on CRC.
+
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** spec-mcp-era-isolation CAP-4
+**Given** `helm template` with an empty `mcpHost.image.repository` **When** it runs **Then** it fails
+**And** there is no `mcpHost.enabled` knob
+**And** production/cluster `manage.py check` errors if `MCP_HOST_SIDECAR_BASE_URL` is unset
+**And** laptop URL-unset + ImportError skip still boots
+**And** sidecar down is 502 on `/stations/<name>/mcp`, not a web CrashLoop
 
 

@@ -42,3 +42,7 @@ Architecture: canopy **AD-22**. No UX artifact required (no new Lane 2 chrome).
 `BMAD_ACTIVE_PROJECT=pyforge-steward`. Physical paths only.
 
 Do not re-dispatch steward 18–33.
+
+**Queued after that session (no code dep):** Epic 35 /
+`spec-35-1-cluster-requires-mcp-host.md` (`spec-mcp-era-isolation` CAP-4).
+See `implementation-readiness-report-2026-08-26-mcp-host-cluster.md`.

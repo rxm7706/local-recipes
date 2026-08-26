@@ -13,3 +13,7 @@ flowchart LR
 
 Host keeps path identity. Sidecar speaks official `MCPServer` + dual-era gate.
 Web never imports `mcp.server.mcpserver` when the sidecar URL is set.
+
+**CAP-4:** the cluster chart always emits the sidecar box and always sets the
+URL on Host. Laptop may omit the URL (in-process or ImportError skip). Slice 3
+is not this diagram.
