@@ -4,6 +4,18 @@
 {% endblock title %}
 {% block content %}
   <p id="steward-body">steward portal</p>
+  <section id="steward-provision-list" hx-target="this" hx-swap="innerHTML">
+    <h2>Named environments</h2>
+    <ul>
+      {% for env in environments %}
+        <li data-environment="{{ env.name }}">
+          {{ env.name }}{% if env.features %} — {{ env.features|join:", " }}{% endif %}
+        </li>
+      {% empty %}
+        <li>no environments found in pixi.toml</li>
+      {% endfor %}
+    </ul>
+  </section>
   <section data-console-home="command_center"></section>
   <section data-console-home="launch_readiness"></section>
 {% endblock content %}
