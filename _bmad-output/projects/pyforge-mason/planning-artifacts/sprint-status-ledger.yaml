@@ -26,7 +26,7 @@ development_status:
   1-9-fake-cfe-root-fixture-and-test-harness: done
   10-1-extract-the-build-engine-hook: done
   11-1-persona-consults-conda-forge-expert: done
-  11-2-first-portal-slice-recipe-diagnose: backlog
+  11-2-first-portal-slice-recipe-diagnose: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done

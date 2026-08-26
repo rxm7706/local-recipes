@@ -4,4 +4,9 @@
 {% endblock title %}
 {% block content %}
   <p id="mason-body">mason portal</p>
+  <article id="mason-last-diagnose">
+    <h2>Last diagnose</h2>
+    <p id="mason-diagnose-summary">{{ diagnosis.summary }}</p>
+    <p id="mason-diagnose-command">{{ diagnosis.command }}</p>
+  </article>
 {% endblock content %}
