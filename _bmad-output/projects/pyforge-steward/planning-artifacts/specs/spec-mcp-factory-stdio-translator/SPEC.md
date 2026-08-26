@@ -1,6 +1,6 @@
 ---
 spec: mcp-factory-stdio-translator
-status: draft
+status: in-progress
 created: "2026-08-26"
 updated: "2026-08-26"
 owner-dream: docs/dreams/mcp-era-isolation.md
