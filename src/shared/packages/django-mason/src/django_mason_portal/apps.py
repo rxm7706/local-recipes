@@ -20,6 +20,13 @@ class MasonPortalConfig(PortalConfig):
     promotion_date = date(2026, 8, 24)
     urlconf = "django_mason_portal.urls"
 
+    def ready(self) -> None:
+        from django_mason_portal.diagnose import last_diagnose
+        from django_pyforge.assertion.client import LAST_DIAGNOSE_TOOL
+        from django_pyforge.assertion.client import register_portal_job
+
+        register_portal_job(self.station_name, LAST_DIAGNOSE_TOOL, last_diagnose)
+
     def mcp_asgi_app(self):
         from django_pyforge.mcp_http import asgi_for_station  # noqa: PLC0415
 
