@@ -165,6 +165,22 @@ def test_mcp_get_is_not_the_service_face():
     raise AssertionError("GET MCP was accepted as FR-11")
 
 
+def test_consult_of_non_skill_file_is_not_cap15():
+    events = [
+        {
+            "kind": "consult_content_skill",
+            "skill": CONTENT_SKILL,
+            "path": "src/shared/packages/pyforge-doctor/README.md",
+        },
+        {"kind": "grammar", "argv": ["pyforge", "doctor", "monitor", "--fleet"]},
+    ]
+    try:
+        validate_transcript(events)
+    except PersonaContractError:
+        return
+    raise AssertionError("consult of README.md was accepted as CAP-15")
+
+
 def test_mcp_other_station_is_not_doctor_face():
     events = [
         {

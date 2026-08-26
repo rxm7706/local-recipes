@@ -2,15 +2,18 @@
 title: SKF domain skill and BMAD persona for doctor
 type: feature
 created: '2026-08-25'
-status: in-progress
-updated: '2026-08-25'
+status: done
+updated: '2026-08-26'
 baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-1-skf-domain-skills-from-station-packages.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-2-personas-act-only-through-grammar-and-mcp.md
 warnings: []
+deferred: []
 ---
 
 <intent-contract>
@@ -60,6 +63,32 @@ Bind to epics.md Story 18.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 - 2026-08-25: drafted from epics.md for fleet drain preflight
 
 ## Review Triage Log
+
+### 2026-08-26 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 0, low 1)
+- defer: 0
+- reject: 8
+- addressed_findings:
+  - `[low]` `[patch]` checker now rejects CAP-15 consult of a non-skill file (README.md)
+
+## Auto Run Result
+
+Status: done
+
+Summary: SKF content skill `.claude/skills/pyforge-doctor/` compiles from `src/shared/packages/pyforge-doctor/` with provenance. BMAD launcher `bmad-agent-doctor` consults that skill and may only emit FR-13 `pyforge doctor …` and FR-11 `POST /stations/doctor/mcp`. Findings stay advisory — not a second PR gate. Persona is not SKF-compiled. CFE, CLAUDE.md, and AGENTS.md unchanged. No `pyforge.*` under `src/platform/`.
+
+Files:
+- `.claude/skills/pyforge-doctor/` — SKF brief, version-nested package, `active` pointer
+- `.claude/skills/bmad-agent-doctor/` — launcher SKILL.md, customize.toml, golden monitor transcript
+- `src/shared/packages/pyforge-doctor/tests/meta/test_skf_domain_skill.py` — FR-37 / provenance / advisory / CFE / host-import gates
+- `src/shared/packages/pyforge-doctor/tests/meta/test_station_persona.py` — FR-38 contract
+- `planning-artifacts/specs/spec-18-1-….md` — tracked story spec
+
+Review: 1 low patch applied; follow-up score 1 → false.
+
+Verification: 19 passed on the new meta files; full doctor suite 1279 passed + 1 skipped after a cold-start flake on the existing 5s `doctor check` budget test (passed on retry). `git diff origin/main -- src/platform` empty of `pyforge` imports.
 
 ## Verification
 
