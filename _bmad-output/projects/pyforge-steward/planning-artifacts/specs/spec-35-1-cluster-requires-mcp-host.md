@@ -2,8 +2,9 @@
 title: Cluster requires mcp-host
 type: feature
 created: '2026-08-26'
-status: ready
+status: done
 updated: '2026-08-26'
+baseline_commit: 27c4cc64b118f300b4fe0d7bea71cef780d3d693
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-mcp-era-isolation/SPEC.md
@@ -63,11 +64,11 @@ station. Remint unifying-strategy architecture.
 
 ## Tasks
 
-- [ ] Helm `required` / `fail` on empty `mcpHost.image.repository`.
-- [ ] Test: no `mcpHost.enabled`; existing mcp-host chart ACs still green.
-- [ ] Django system check for production/cluster only.
-- [ ] `cluster-bringup.md` (and overlay comment) names mcp-host as required.
-- [ ] Ledger `35-1-cluster-requires-mcp-host` → `review` then `done` via
+- [x] Helm `required` / `fail` on empty `mcpHost.image.repository`.
+- [x] Test: no `mcpHost.enabled`; existing mcp-host chart ACs still green.
+- [x] Django system check for production/cluster only.
+- [x] `cluster-bringup.md` (and overlay comment) names mcp-host as required.
+- [x] Ledger `35-1-cluster-requires-mcp-host` → `review` then `done` via
       `sprint-ledger-sync`.
 
 ## Design notes
@@ -79,5 +80,21 @@ station. Remint unifying-strategy architecture.
 
 ## Verification
 
-`pixi run -e local-recipes` / platform-ci-test on the new chart + check tests.
-Host import-linter still green. Do not require a 12.7 Route/SCC re-prove.
+`pixi run -e python-agent-platform -- python -m pytest -o addopts= src/platform/tests/test_startup_required_settings.py` (cwd `src/platform`). Helm proofs: `pixi run -e platform-dev -- python -m pytest -o addopts=` the four `test_chart_invariants` mcp-host cases. Host import-linter still green. Do not require a 12.7 Route/SCC re-prove.
+
+## Suggested Review Order
+
+**Helm fail-loud**
+
+- Empty repository refuses the render
+  [`mcp-host-deployment.yaml:3`](../../../../../../src/platform/deploy/charts/platform/templates/mcp-host-deployment.yaml#L3)
+
+**Deployed boot**
+
+- Production requires the proxy URL; laptop `COMPONENT_RUNTIME=local` skips
+  [`stage_one.py:65`](../../../../../../src/platform/config/startup/stage_one.py#L65)
+
+**Docs**
+
+- Overlay inherits mcp-host; bring-up names the Deployment
+  [`core-overrides.yaml:12`](../../../../../../src/platform/deploy/overlays/ocp/core-overrides.yaml#L12)

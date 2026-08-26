@@ -1,4 +1,6 @@
-# MCP-host sidecar (spec-mcp-era-isolation slice 1). restricted-v2.
+# MCP-host sidecar (spec-mcp-era-isolation slice 1 / CAP-4). restricted-v2.
+# Empty repository fails the render — the cluster cannot omit mcp-host.
+{{- $_ := required "mcpHost.image.repository is required — cluster overlay cannot omit mcp-host (spec-mcp-era-isolation CAP-4)" .Values.mcpHost.image.repository }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

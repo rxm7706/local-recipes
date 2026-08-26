@@ -8,6 +8,10 @@
 # unable to pass the kubelet's runAsNonRoot verification (the official
 # postgres/redis images declare a root USER, so vanilla needs the numeric
 # UIDs the core values default to).
+#
+# mcp-host is required (spec-mcp-era-isolation CAP-4). This overlay does
+# not set mcpHost — it inherits the core chart image and the web/worker
+# MCP_HOST_SIDECAR_BASE_URL. Do not add mcpHost.enabled.
 
 # The OCP edge is a Route (overlay chart), never an Ingress.
 ingress:

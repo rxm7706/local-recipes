@@ -62,6 +62,14 @@ REQUIRED_SETTINGS: Final[tuple[RequiredSetting, ...]] = (
             "default."
         ),
     ),
+    RequiredSetting(
+        name="MCP_HOST_SIDECAR_BASE_URL",
+        remedy=(
+            "Set MCP_HOST_SIDECAR_BASE_URL to the in-cluster mcp-host Service "
+            "(the chart wires http://<release>-mcp-host:8090). Laptop and "
+            "platform-ci-test leave it unset (COMPONENT_RUNTIME=local)."
+        ),
+    ),
 )
 
 _INVALID_ADMIN_URLS: Final[frozenset[str]] = frozenset(

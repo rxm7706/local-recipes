@@ -114,7 +114,7 @@ development_status:
   34-3-vectors-persist-on-the-plane: backlog
   34-4-agents-cannot-reach-oltp: backlog
   34-5-scribe-semantic-recall-uses-the-plane: backlog
-  35-1-cluster-requires-mcp-host: ready-for-dev
+  35-1-cluster-requires-mcp-host: done
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
@@ -198,7 +198,7 @@ development_status:
   epic-33-retrospective: optional
   epic-34: in-progress
   epic-34-retrospective: optional
-  epic-35: backlog
+  epic-35: done
   epic-35-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
