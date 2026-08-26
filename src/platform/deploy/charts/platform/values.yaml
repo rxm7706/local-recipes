@@ -195,8 +195,9 @@ sidecar:
     apiKeySecretKey: ""
   resources: {}
 
-# MCP-host sidecar (spec-mcp-era-isolation slice 1). mcp 2.x official
-# SDK faces. Web/worker proxy POST /stations/<name>/mcp here.
+# MCP-host sidecar (spec-mcp-era-isolation slice 1 / CAP-4). mcp 2.x
+# official SDK faces. Web/worker proxy POST /stations/<name>/mcp here.
+# No `enabled` knob — empty repository fails helm template.
 mcpHost:
   image:
     registry: ""

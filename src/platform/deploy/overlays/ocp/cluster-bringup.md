@@ -237,12 +237,18 @@ crc status | grep -i running
 oc whoami
 oc get imagestream -n platform platform   # or your project/image name
 oc get pods -n platform
+oc get deploy -n platform -l app.kubernetes.io/component=mcp-host
 oc get route -n platform
 ```
 
 **Success signal (CAP-1):** cluster Running, `oc` authenticated, platform
 ImageStream present, web pods pull the internal-registry image without
 `ImagePullBackOff`.
+
+**mcp-host (spec-mcp-era-isolation CAP-4):** a `mcp-host` Deployment and
+ClusterIP must be Ready. Web/worker must have `MCP_HOST_SIDECAR_BASE_URL`
+pointing at that Service. Helm refuses an empty `mcpHost.image.repository`.
+Sidecar not Ready is HTTP 502 on `/stations/<name>/mcp`, not a web CrashLoop.
 
 Attended proof of Route admission, SCC enforcement, PVC binding, and
 postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
@@ -252,6 +258,8 @@ postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
 ## 11. What this doc deliberately excludes
 
 - DB-GPT sidecar chart work → Story 12.5
+- mcp-host is **required** on this overlay (Epic 35 / CAP-4), not optional
+  chart work — do not omit the Deployment or blank the image repository
 - Redis AUTH + NetworkPolicy → Story 12.6
 - Live Tier-3 verification record → Story 12.7
 - GKE/kind CI profiles → Stories 12.2 / 12.3 (unchanged)

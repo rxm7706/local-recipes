@@ -38,6 +38,7 @@ def required_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "unit-test-secret-key-not-for-production-use",
     )
     monkeypatch.setenv("DJANGO_ADMIN_URL", "secret-admin/")
+    monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://platform-mcp-host:8090")
 
 
 def _refusal_message() -> str:
@@ -119,7 +120,11 @@ def test_stage_one_skips_when_locality_is_local(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(RUNTIME_ENV_VAR, LOCAL)
-    for name in ("DJANGO_SECRET_KEY", "DJANGO_ADMIN_URL"):
+    for name in (
+        "DJANGO_SECRET_KEY",
+        "DJANGO_ADMIN_URL",
+        "MCP_HOST_SIDECAR_BASE_URL",
+    ):
         monkeypatch.delenv(name, raising=False)
 
     refuse_required_settings()
@@ -128,7 +133,11 @@ def test_stage_one_skips_when_locality_is_local(
 
 def test_required_settings_registry_covers_production_keys() -> None:
     names = {s.name for s in REQUIRED_SETTINGS}
-    assert names >= {"DJANGO_SECRET_KEY", "DJANGO_ADMIN_URL"}
+    assert names >= {
+        "DJANGO_SECRET_KEY",
+        "DJANGO_ADMIN_URL",
+        "MCP_HOST_SIDECAR_BASE_URL",
+    }
 
 
 def test_production_leaf_source_wires_stage_one() -> None:

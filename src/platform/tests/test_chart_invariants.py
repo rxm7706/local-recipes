@@ -1025,6 +1025,42 @@ def test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service():
 
 
 @requires_helm
+def test_helm_template_fails_when_mcp_host_repository_empty() -> None:
+    """CAP-4: empty mcpHost.image.repository fails the render, not :tag."""
+    result = subprocess.run(  # noqa: S603
+        [
+            "helm",
+            "template",
+            "test-release",
+            str(_CORE_CHART),
+            "--set-file",
+            f"flags.tree={_PLATFORM_DIR / 'config' / 'flags.json'}",
+            "--set",
+            "mcpHost.image.repository=",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode != 0, result.stdout
+    combined = result.stderr + result.stdout
+    assert "mcpHost.image.repository is required" in combined
+    assert ":<nil>" not in combined
+    assert ":latest" not in combined or "platform-mcp-host:" not in combined
+
+
+def test_mcp_host_values_have_no_enabled_knob() -> None:
+    """CAP-4: do not grow mcpHost.enabled — the sidecar is not optional."""
+    values_text = (_CORE_CHART / "values.yaml").read_text(encoding="utf-8")
+    mcp_block = values_text.split("mcpHost:\n", 1)[1].split("\n\n", 1)[0]
+    assert "enabled" not in mcp_block
+    for name in ("mcp-host-deployment.yaml", "mcp-host-service.yaml"):
+        text = (_CORE_CHART / "templates" / name).read_text(encoding="utf-8")
+        assert "mcpHost.enabled" not in text
+
+
+@requires_helm
 def test_redis_uses_existing_secret_password_and_wires_redis_url():
     """AC (Story 12.6): redis Deployment and platform pods consume
     REDIS_PASSWORD from existingSecret; REDIS_URL embeds it via env
