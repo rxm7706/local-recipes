@@ -4,4 +4,16 @@
 {% endblock title %}
 {% block content %}
   <p id="atlas-body">atlas portal</p>
+  <article
+    id="atlas-inventory-row"
+    hx-get="{% url 'atlas-home' %}"
+    hx-trigger="every 60s"
+    hx-select="#atlas-inventory-row"
+    hx-swap="outerHTML"
+  >
+    <span data-station="{{ inventory_row.station }}">{{ inventory_row.status }}</span>
+    {% if inventory_row.run_id %}
+      <span data-run-id="{{ inventory_row.run_id }}">{{ inventory_row.run_id }}</span>
+    {% endif %}
+  </article>
 {% endblock content %}
