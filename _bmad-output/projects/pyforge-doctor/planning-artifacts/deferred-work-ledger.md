@@ -75,6 +75,8 @@ Durability first; curation is owned follow-up work.
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-6-5: Follow-up review still recommended for 6-5-the-board-verdicts-come-home after the damping cap was spent
 
 - source_spec: `spec-6-5-the-board-verdicts-come-home.md`
@@ -83,6 +85,8 @@ Durability first; curation is owned follow-up work.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-2` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-2`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-6-6: Follow-up review still recommended for 6-6-the-chain-verdicts-come-home after the damping cap was spent
 
@@ -95,6 +99,8 @@ Durability first; curation is owned follow-up work.
     archaeology someone performs later.
   severity: low
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad-drift-comes-home-without-breaking-the-board after the damping cap was spent
 
@@ -117,6 +123,8 @@ Durability first; curation is owned follow-up work.
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-7-1: The Review Triage Log's `addressed_findings` never itemizes `defer` entries by the id they were just minted
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
   summary: The Review Triage Log's `addressed_findings` never itemizes `defer` entries by the id they were just minted, unlike `patch`/`bad_spec`, so a review pass and the DW id(s) it produced aren't linked anywhere in the spec file itself.
@@ -125,6 +133,7 @@ Durability first; curation is owned follow-up work.
   status: open
   promoted: 2026-08-11 (landing pass for doctor 7-1)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-7-1-2: The `DW-FU-{story}` shape this story mints for non-mason stations already has an established, different meaning
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
@@ -134,6 +143,8 @@ Durability first; curation is owned follow-up work.
   status: open
   promoted: 2026-08-11 (landing pass for doctor 7-1)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-7-1-3: `bmad-loop-sweep`'s canonical deferred-work format mandates a different id scheme and a dedupe check for the very file this emitter now mints station-convention ids into
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
   summary: `.claude/skills/bmad-loop-sweep/deferred-work-format.md` declares itself the "Canonical entry format for `{implementation_artifacts}/deferred-work.md`" and mandates two rules the `step-04-review.md` defer bullet now contradicts: ids "numbered sequentially (`DW-1`, `DW-2`, …) by scanning the file for the highest existing number", and a mandatory "Before appending: dedupe check" that adds a `seen-again:` line to an existing entry rather than appending a duplicate. The defer bullet mints `DW-FU-<story>` / `DW-<story>-<n>` instead, and explicitly instructs the opposite on dedup ("Do not modify existing entries or look for duplicate content"). The two mechanisms need reconciling at planning level.
@@ -142,6 +153,7 @@ Durability first; curation is owned follow-up work.
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-7-1-4: Three stations fall into the emitter's "every other station" default whose tracked ledgers use mason's shape exclusively, and atlas uses neither shape
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
@@ -151,6 +163,7 @@ Durability first; curation is owned follow-up work.
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-7-1-5: Minting an id converts every new Tier-3 defer into a hard `tier3-only-deferral` FAIL of the always-on deferred-work gate, and no automatic promoter recognizes the minted shape
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
@@ -160,6 +173,7 @@ Durability first; curation is owned follow-up work.
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-7-1-6: The minted entry carries no `status:`, and giving it an id heading makes it look already-canonical to the one mechanism that would have supplied one
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
@@ -168,6 +182,8 @@ Durability first; curation is owned follow-up work.
   severity: medium
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-5: Follow-up review still recommended for 7-1-the-emitter-mints-identity-at-defer-time after the damping cap was spent
 origin: review-budget-followup
@@ -179,6 +195,7 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-7-1-7: marshal's promoter cannot suffix around an id collision, so a minted id that reuses a promoted-follow-up id silently cancels a real promotion
 - source_spec: `{project-root}/_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
@@ -188,6 +205,7 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-7-2: Whether the backlog's growth from 470 to 506 predates or postdates Story 7.1's merge is unverified, so this baseline neither confirms nor refutes whether 7.1 stopped new anonymous entries
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-2-grandfather-the-470-at-a-dated-cut-off.md`
@@ -197,6 +215,8 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-2)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-7-2-2: A project whose Tier-3 file is deleted can never have its baseline entry lowered or zeroed via `--project`
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-2-grandfather-the-470-at-a-dated-cut-off.md`
   summary: A project whose Tier-3 file is deleted can never have its baseline entry lowered or zeroed via `--project`, because the unknown-project validation only consults currently-discoverable projects, not the union of the committed baseline and the currently-discoverable set.
@@ -205,6 +225,7 @@ status: open
   status: open
   promoted: 2026-08-11 (landing pass, doctor 7-2)
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-6-11-1: No test in test_sources_factory.py asserts classify()'s literal return string for any rule, including the new spike-report one
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-6-11-the-classifier-recognizes-a-spike-report.md`
@@ -213,12 +234,16 @@ status: open
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-6-11` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-7-3-1: The committed anonymous-Tier-3 baseline has no automated freshness check, only this landing's one-off manual verification
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-7-3-the-detector-sees-anonymous-tier-3-entries.md`
   summary: The committed anonymous-Tier-3 baseline has no automated freshness check, only this landing's one-off manual verification that live counts still match the stamped counts.
   evidence: Found by Blind Hunter (review pass 1). This story's detector compares each project's live anonymous-Tier-3 entries against the count stamped in `scripts/.deferred-work-baseline.json` (Story 7.2), and CAP-3's "green on an unchanged repo" claim is confirmed in this landing only by a manual, one-time `pixi run -e pyforge-doctor python -m pyforge.doctor.sources deferred-work` inspection recorded in this Spec's `.memlog.md` -- not by any repeatable test or CI gate. If the fleet's live counts drift ahead of the stamped baseline over time (new anonymous entries accumulating faster than anyone re-runs `--write-baseline`), the first symptom is a bare `tier3-entry-unidentified` FAIL with no pointer back to this landing's context, and no automated signal warns that the baseline itself has gone stale. Related to `DW-FU-7-2-2` (a baseline count can never be LOWERED once a project's Tier-3 file disappears) but causally distinct: that entry is about the baseline being too CONSERVATIVE for a shrinking project; this one is about the baseline having no mechanism to detect it has fallen BEHIND a growing one. Not patched in this pass: this story's Never clause forbids triaging or wiring the backlog, and adding a staleness-detection mechanism for the baseline itself is a distinct capability outside CAP-2/CAP-3's stated scope -- worth a dedicated follow-up.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-7-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-CHAIN-COMPLETENESS-1: INV-A's spec-not-decomposed test is a bare substring match, so a Spec can grow capabilities with no stories and still read as fully decomposed
 - source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md`
@@ -228,6 +253,8 @@ status: open
   raised: 2026-08-15 — raised directly (not promoted from Tier-3) while answering that Spec's Q5, and deliberately NOT folded into it as CAP-11: it is a different detector (`sources/board.py`'s chain-completeness, not `sources/chain.py`'s deferred-work), and reopening a Spec at the moment its decomposition lands would defeat the purpose of decomposing it. Owner: doctor (owns `board.py`). A real fix needs INV-A to compare the Spec's declared `CAP-` ids against the CAP ids cited in the project's epics/stories prose, and to report the uncovered ones by id rather than answering a yes/no per Spec.
   closed: 2026-08-21 — Story 12.3 landed (Round 4 re-derive, after three bad_spec loopbacks on rounds 1-3), and closes the ORIGINAL defect this entry was raised for: `board.py` now parses each open Spec's declared `CAP-N` ids from its `## Capabilities` section and every `CAP-` citation actually present in the project's PRD/epics prose (bare `CAP-N`, inclusive range `CAP-N..M`, prefixed range `CAP-N..CAP-M`, slash-grouped `CAP-N/M/O`), scoped per-Spec via an any-slug-occurrence citation window (ended by the next Spec's own anchor or capped at the second `## ` heading past the anchor, whichever is nearer) — never pooled flat across a project, which would let two same-numbered Specs falsely cover each other (the Round 2 defect class). The uncovered ids are reported by name (e.g. `CAP-4..10`), not a single yes/no per Spec. A Spec with zero declared CAP ids keeps the original bare-substring fallback, byte-identical. Round 4's own contribution: each source file's own preamble (everything before THAT FILE'S first `## ` heading) is stripped at prose-build time, before concatenation — replacing Round 3's whole-blob, first-file-only exclusion, which only protected whichever file happened to sort first and left every later file's own preamble (e.g. an epics.md's own frontmatter `currency_review` field) still exploitable. Verified against both real live reproductions Round 3/4 review found (`pyforge-marshal/prd.md`'s changelog-block `CAP-9` mention and `pyforge-doctor/epics.md`'s own `currency_review` field, both before their file's first `## ` heading) — neither leaks after the fix, confirmed live and via a targeted redaction repro. `pixi run -e local-recipes python -m pyforge.doctor.sources chain-completeness` reports the same 7 genuine findings as before the fix (pyforge-marshal x6, pyforge-steward x1) — both repro fixes only removed latent/inert leaks, not real findings. **Marked "partially closed", not "closed"**: Round 4's own post-landing adversarial review (Blind Hunter) live-reproduced two further leaks in the SAME preamble-stripping heuristic — see `DW-CHAIN-COMPLETENESS-4` and `DW-CHAIN-COMPLETENESS-5`, minted the same day rather than triggering a fifth bad_spec loopback on a heuristic that has now needed narrowing four times running.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-CHAIN-COMPLETENESS-2: Story 12.3's newly-precise INV-A surfaces 7 real CAP-coverage gaps in pyforge-marshal and pyforge-steward that the old bare-substring check could never have caught
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
   summary: Now that `chain-completeness`'s INV-A compares a Spec's declared `CAP-N` ids against the ids actually cited for that Spec in its own project's PRD/epics prose (Story 12.3, closing `DW-CHAIN-COMPLETENESS-1`), a live run against this repo's real `_bmad-output/projects/` tree surfaces 7 genuine, previously-invisible capability-coverage gaps — none owned by `pyforge-doctor`, so none are this story's own to fix. `pyforge-marshal`: `spec-agent-tool-surface` (CAP-1..4), `spec-dashboard-project-path-derivation` (CAP-1..4), `spec-loop-home-fleet-refresh` (CAP-1..3), `spec-sprint-status-auto-promote` (CAP-1..4), `spec-pyforge-core` (CAP-1..7, ALL of it), and `spec-surface-drift-reconciliation` (CAP-7 only, a partial gap). `pyforge-steward`: `spec-jira-github-projects-sync` (CAP-2..5).
@@ -235,6 +262,8 @@ status: open
   status: open
   severity: medium
   raised: 2026-08-21 — raised while running Story 12.3's own required live-sanity-check gate (its spec's Acceptance Criteria: inspect every new finding before closing `DW-CHAIN-COMPLETENESS-1`); first drafted during Round 2's review pass, then re-minted (identically) after Rounds 2 and 3's own code was separately reverted by later bad_spec loopbacks, landing here once Round 4's fix shipped with the same 7 findings unchanged throughout. Owner: pyforge-marshal (6 of 7 findings) and pyforge-steward (1 of 7) — decomposing these Specs' own remaining capabilities into their own epics/stories is planning work for those stations, not a `board.py` code change, and out of `board.py`'s own Never clause ("do not touch INV-B/C/D... same signature, same call site").
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-CHAIN-COMPLETENESS-3: `_parse_declared_cap_ids`'s `## Capabilities` heading match is exact-string, case-sensitive, no trailing text, so a SPEC.md using a different heading convention silently falls back to the (weaker) bare-substring check
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
@@ -244,6 +273,8 @@ status: open
   severity: low
   raised: 2026-08-21 — raised during Story 12.3's review pass 1, deferred rather than folded in to keep that story's diff bounded to its one scoped bug; minted here as promised in that pass's own triage log, once the story actually landed. Owner: doctor (owns `board.py`'s INV-A parsing) — a real fix widens `_CAP_SECTION_HEADING_RE` to tolerate case/trailing-text variance, or standardizes every SPEC.md onto one heading spelling (a `bmad-spec` template question, not purely a `board.py` one).
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-CHAIN-COMPLETENESS-4: Round 4's per-file preamble stripping only strips text BEFORE a file's own first `## ` heading — irrelevant content AFTER that heading (e.g. a `## Changelog` section) can still open a false citation window
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
   summary: `board.py`'s Round 4 fix slices each source file to start at its own first `## ` heading, discarding everything before it. It does not distinguish a decomposition-relevant heading from an irrelevant one — if the file's FIRST heading happens to be something like `## Changelog` and that section incidentally mentions a Spec's slug near an unrelated CAP id, that text is never stripped (it comes after the first heading) and can still open a false citation window, crediting a CAP id the Spec's own epics/stories never actually cite.
@@ -251,6 +282,8 @@ status: open
   status: open
   severity: medium
   raised: 2026-08-21 — raised during Story 12.3's Round 4 review pass, landed as a documented residual rather than triggering a fifth bad_spec loopback. Owner: doctor (owns `board.py`'s INV-A parsing). A real fix likely needs to allowlist decomposition-relevant heading shapes (e.g. `## Epic N`, `### Story N.M`) rather than treating "any `## ` heading" as the boundary of relevant content — a larger redesign of the windowing model, not a narrow patch, given the heuristic's track record.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-CHAIN-COMPLETENESS-5: a source file with NO `## ` heading anywhere is kept whole, unstripped — its entire text (including anything preamble-shaped) remains searchable for false citations
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
@@ -260,6 +293,8 @@ status: open
   severity: low
   raised: 2026-08-21 — raised during Story 12.3's Review pass 3, minted as a proper ledger entry at landing time per that pass's own commitment. Owner: doctor (owns `board.py`'s INV-A parsing). No live occurrence today; revisit if a real headerless `prd.md`/`epics*.md` ever surfaces fleet-wide, or fold into `DW-CHAIN-COMPLETENESS-4`'s redesign if that work happens first.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-11-8-1: CAP-8 (backlog-intake check) split out of Epic 11 — RESOLVED, follow-on Spec + Epic 13 now exist
 - source_spec: `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-backlog-intake-check/SPEC.md`
   summary: former Story 11.8 ("backlog-intake surfaces deferred entries during story drafting," CAP-8) removed from Epic 11 2026-08-21. Its own Spec's Open Question — same story wave as CAP-1..7, or its own follow-on Spec, since it is write-adjacent to story-drafting rather than the read-only sweep the rest of the Spec is — resolved to "own follow-on Spec": Epic 11 shipped cleanly as Stories 11.1–11.7, a self-contained read-only pipeline, and bundling a write-adjacent capability into it after the fact would have muddied that result. `spec-deferred-work-resolution-sweep`'s own CAP-8 entry marked split-out (now covers CAP-1..7 only); the capability re-emerged the same day as its own Spec (`spec-backlog-intake-check`, CAP-1, via `bmad-spec`) and Epic 13 / Story 13.1 in `epics.md`, cleared to dispatch.
@@ -267,6 +302,8 @@ status: open
   status: closed — Story 13.1 landed 2026-08-21: `pyforge.doctor.sources.backlog_intake` (`Source.BACKLOG_INTAKE`) + the `doctor backlog-intake <identifier>` CLI verb ship the fleet-wide, precisely-id-matched deferred-work surfacing this entry called for.
   raised: 2026-08-21 — raised directly while resolving Epic 11's own closeout; resolved same day once the operator directed the follow-on Spec be written.
   closed: 2026-08-21 — Story 13.1 (`spec-13-1-a-drafting-session-surfaces-matching-deferred-work-entries-for-an-epic.md`) landed.
+
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
 
 ## DW-FU-12-4 — A glob-less, trailing-slash spec-surface entry that can never match (foreign defect, surfaced by Story 12.4's review)
 
@@ -279,6 +316,8 @@ deferred rather than fixed cross-station. Remedy: fix the entry in the owning sp
 glob or the file list), then re-stamp that spec's surface baseline. Severity: low. Status:
 open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-08-21.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-FU-12-5 — Corrupt committed baseline dies with a raw JSONDecodeError on scoped stamps
 
 Pre-existing in `scripts/spec_surface_check.py`: a corrupt `scripts/.spec-surface-baseline.json`
@@ -287,12 +326,16 @@ the file and the re-stamp recovery path — never an `except -> {}` fallback (re
 12.5's review as reintroducing the drop-every-other-spec hazard). Severity: low. Status: open.
 Relayed from the story worktree's ephemeral Tier-3 at landing, 2026-08-21.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-FU-12-5-2 — Zero-discoverable-specs full stamp silently wipes the baseline to `{}` at exit 0
 
 Pre-existing accept-everything semantics of the `--spec`-less full stamp, degenerate case: with
 spec discovery returning nothing it replaces the whole baseline with `{}`, exit 0. Remedy:
 refuse (or gate behind a flag) when the live snapshot is empty and the existing baseline is
 not. Severity: low. Status: open. Relayed 2026-08-21.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-1-1: GitHub-releases fallback for the 6 npm-invisible bmad-suite packages — RESOLVED
   origin: story-14-1 review (deferred, medium — carried in the story spec's 6.11-era frontmatter `deferred:` list)
@@ -302,12 +345,16 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   status: closed — Story 15.1 landed 2026-08-22: `_gather_suite_findings` (`sources/bmad_method.py`) now falls back to GitHub releases/tags, keyed by each package's own tracked `recipes/<name>/recipe.yaml` github mapping, whenever the npm fetch misses — the DW-14-1-1 fixture (bmad-loop named from GitHub) passes. `bmad-labs-skills`/`bmad-module-template`/`bmad-utility-skills` still go unchecked (neither Releases nor tags exist upstream today) — a real, documented limit of the source data, not this fallback.
   closed: 2026-08-22 — Story 15.1 (`spec-15-1-github-releases-unblind-the-npm-invisible-packages.md`) landed.
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ### DW-12-5-3: The spec-surface baseline write race RECURRED cross-process — scoped stamps from two live processes drop each other's entries
   origin: live recurrence 2026-08-22 (parent session + the Story 25.5 agent stamping concurrently)
   source_spec: `spec-12-5-*` orbit (Story 12.5 closed "the spec-surface baseline write race"; this is the cross-process shape)
   severity: medium
   reason: While the 25.5 agent ran scoped `--write-baseline --spec` stamps, the parent session's own scoped stamps interleaved — each full-file read-modify-write rewrote scripts/.spec-surface-baseline.json from its own read, and last-writer-wins dropped the other's entries (observed twice: 4 entries lost, re-stamped, then a DIFFERENT 8 lost — mason x2, scribe, steward x3, warden x2). Story 12.5's fix evidently does not cover two independent processes (or one path bypasses its lock). Remedy shape: file-lock (fcntl) around the read-modify-write, or merge-on-write keyed per spec (the file is per-spec keyed — a targeted upsert of only the stamped spec's entries would be race-immune by construction). Workaround until fixed: never stamp while another stamping process is live; do one consolidated pass on a quiet tree (this session's recovery).
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-14-1: GitHub-releases fallback for the npm-invisible suite packages: 6 of the 10 live bmad-* pins (bmad-loop, bmad-labs-skills, bmad-manticore, bmad-method-wds-expansion, bmad-module-template, bmad-utility-skills) are GitHub-only local conda recipes that 404 on registry.npmjs.org, so the live CAP-4 path is structurally blind to them — including bmad-loop, the package whose 0.9.0-vs-0.11.0 lag motivated CAP-4.
 
@@ -320,6 +367,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-14-1-2: Suite pin-floor-vs-installed (offline CAP-1 analog for the suite) is not covered by any capability: an installed suite package behind its own pixi.toml floor (the fixture's literal shape — bmad-loop 0.9.0 installed vs >=0.11.0 pinned) is provable with zero network but produces no signal; pins are used only as the watched-set roster.
 
 - source_spec: `planning-artifacts/specs/spec-14-1-the-bmad-suite-is-compared-against-upstream-derived-not-declared.md`
@@ -330,6 +379,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-15-1: _fetch_latest_github_release's /tags fallback only reads GitHub's first response page, never following pagination.
 
@@ -342,6 +393,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-15-1-2: No test in test_sources_bmad_method.py reads a real, live recipes/<name>/recipe.yaml directly to prove the GitHub fallback resolves the 6 actually-named npm-invisible packages.
 
 - source_spec: `planning-artifacts/specs/spec-15-1-github-releases-unblind-the-npm-invisible-packages.md`
@@ -353,6 +406,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-15-2: Story 15.2's two new checks fire only for suite packages already present in `.pixi/envs` (inherited from `_gather_suite_findings`'s pre-existing install-state gate), so on a fresh clone/CI with no local suite installs, neither new check fires for any suite package -- only the CORE (`bmad-method`) axis is unaffected, since it reads the tracked `manifest.yaml` instead.
 
 - source_spec: `planning-artifacts/specs/spec-15-2-channel-and-recipe-staleness-are-ambient-findings.md`
@@ -363,6 +418,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-15-2-2: No dedicated fleet-picture-layer meta-test names `bmad-channel-drift` or `bmad-recipe-upstream-drift` specifically -- coverage of that named Surface is structural/generic only.
 
@@ -377,6 +434,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 
 ---
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## Canopy course correction (2026-08-24)
 
 ### DW-CANOPY-2026-08-24
@@ -390,6 +449,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: medium
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -398,3 +459,5 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; doctor S-17.1 done (gather/prescribe plugins; findings not a second PR gate); no competing CI verdict
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open

@@ -1016,6 +1016,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     covers the store. Gate: `kedro-test` **911 passed / 19 skipped** (was 903/19 — +8, exactly
     the new cases); `kedro-catalog-check` 47; `dagster-dryrun` 58.
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ## 24. Sprint status
 
 > **Tier:** Tier 3 · **Source:** `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`
@@ -1588,6 +1590,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-2-1: get_widget() and get_view() both raise a bare, unwrapped KeyError with a confusing repr-quoted message on lookup failure
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-2-pluggable-widget-registry.md`
@@ -1596,12 +1599,16 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-14-3-1: tests/dashboard/test_dashboard_e2e.py's Playwright navigation races the Dash dev server's startup, reliably failing with net::ERR_CONNECTION_REFUSED
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
   summary: `test_dashboard_e2e_navigation_and_rendering`'s `page.goto(dashboard_server)` fires before the Dash dev server thread has finished binding its port, so the test reliably fails with `playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED` — pre-existing in `tests/dashboard/` (Story D2's Vizro/Dash module), surfaced incidentally while verifying this story's `kedro-test` acceptance criterion, and explicitly out of this story's scope to fix (Story 14.3's Boundaries & Constraints forbid touching `dashboard/`).
   evidence: Reproduced consistently across 5+ consecutive runs, including with every one of this story's changes fully `git stash`-ed out (i.e. against the exact commit Story 14.3's implementation subagent finished on, before any review-pass patch) — the failure is identical with or without this story's diff. The captured teardown output shows `"Dash is running on http://127.0.0.1:<port>/"` logged AFTER the navigation attempt already failed, confirming a startup-order race, not a port/config mismatch. Confirmed unrelated to this story's dependency changes: the `pixi.lock` diff this story produces touches only `pyforge-atlas`'s own `conda_source` metadata (host-package platform-variant list reordering caused by the new `tornado`/`starlette` run-deps) — zero version changes to `dash`/`flask`/`werkzeug`/`playwright` anywhere in the lock diff. Likely fix: the test needs to poll for server readiness (e.g. retry-connect or hit a health endpoint) before calling `page.goto`, rather than assuming the server thread is already accepting connections immediately after being started — a `dashboard/`-scoped fix, not a `views/` one.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3` there) during the pre-shutdown deferred-work audit.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-14-3-2: Bokeh 3.9.2's `patch_curdoc()` context manager has no exception safety — a callback that raises corrupts `curdoc()` for the rest of the pytest process
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/spec-14-3-bokeh-websocket-interactivity.md`
@@ -1610,6 +1617,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3-2` there) during the pre-shutdown deferred-work audit.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-A1-6: The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lo
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
@@ -1620,6 +1628,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-A1-7: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas 
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
   summary: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas loop story's worktree (first: A3) would reproduce the documented missing-artifacts-dir crash until the seed adds `_bmad-output/projects/pyforge-atlas/implementation-artifacts`.
@@ -1628,6 +1638,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-A1-8: `[verify].commands` is a flat list — every loop story in either package now materializes BOTH the pyforge-warden and pyf
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
@@ -1638,6 +1650,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-A1-9: kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `
 - source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
   summary: kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `bootstrap_project()` injects the source tree; if a frozen run ever serves a stale built package for a changed source tree, the gate could go green on old code. Verify pixi-build path-dep rebuild semantics under `--frozen` when the lean env first materializes (A3).
@@ -1646,6 +1660,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-A2-1: Dynamic per-host JFrog credential attachment does NOT exist — credential references are static per-entry catalog config,
 - source_spec: `a2-define-the-data-catalog-for-all-sources-outputs.md` (review-pass P4, 2026-07-17)
@@ -1656,6 +1672,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-A3-1: No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a fut
 - source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass P10, 2026-07-17)
   summary: No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a future producer ever wrote ms-epoch timestamps, `stale_mask` (`fetched_at < now - ttl_seconds`, both in seconds) would silently treat every ms row as far-future-fresh. Deferred as SPECULATIVE — no ms producer exists today; the B1 node contract owns the `fetched_at` unit (Spine timestamp convention = epoch SECONDS). Revisit iff a node is authored that could emit ms.
@@ -1664,6 +1682,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-A3-2: `IncrementalParquetDataset` reaches into the composed dataset's PRIVATE internals — `self._inner._describe()` and `self
 - source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass P11, 2026-07-17)
@@ -1674,6 +1694,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-A3-3: One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `ag
 - source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass, TTL-parity, 2026-07-17)
   summary: One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `age >= ttl` (stale at EXACTLY ttl); the new `stale_mask` uses `fetched_at < now - ttl_seconds`, i.e. a row stamped exactly `now - ttl` is FRESH (the current unit test pins boundary=fresh). Whether the off-by-one-tick difference matters is a B1 verification item — B1 (first phase-port that writes these datasets) should confirm the intended edge against legacy parity evidence and adjust the comparison (`<=` vs `<`) if parity requires it.
@@ -1682,6 +1704,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-4-1: A future pandera `Column(str)` contract registered in `DEFAULT_CONTRACTS` (`validation.py`) will spuriously halt on a le
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
@@ -1692,6 +1716,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-4-2: `pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
   summary: `pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package — any OTHER package sharing the same Python process (e.g. a future shared Dagster/MCP deployment importing multiple `pyforge-*` packages together) inherits the pin the moment `pyforge.atlas` is imported first, with no opt-out; conversely, if some OTHER package's own DataFrame construction runs before `pyforge.atlas` is ever imported in that process, it is NOT covered by the pin.
@@ -1700,6 +1726,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-4-3: `ci_red`'s business logic is duplicated as raw SQL outside the declared-once `semantic/metrics.py` definition — `wasm/in
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
@@ -1710,6 +1738,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-5-1: The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a 
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a lazily-registered `data_manager` loader re-invoked per render — in a long-running server, the Card's stated provenance can drift out of sync with the (independently, live-reloaded) grid data it describes.
@@ -1718,6 +1748,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-5-2: `provenance.py`'s `resolve_for_catalog_dataset` reaches into kedro's underscore-prefixed `_describe()` (`"filepath"`, `"
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1728,6 +1760,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-5-3: `resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()["filepath"]` unconditionally, which fo
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: `resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()["filepath"]` unconditionally, which for a Kedro-versioned dataset (`versioned: true`) is the un-versioned base path, not the actually-loaded version's file — the reported mtime could describe the wrong file. No current `catalog.yml` entry sets `versioned: true` on a `pandas.ParquetDataset`, so this is latent.
@@ -1736,6 +1770,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-5-4: The dashboard's `_provenance_line` never renders `ProvenanceInfo.build_stamp_newest`, so a future dashboard page wired t
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1746,6 +1782,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-5-5: `resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSON
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: `resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSONDataset` + 1 `yaml.YAMLDataset`) expose a `filepath` + `protocol` pair in `_describe()` that is byte-identical in shape to what the existing `ParquetDataset` branch already consumes, so genuine file-mtime provenance is available for them and is reported as `unavailable` instead.
@@ -1754,6 +1792,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-5-6: Three catalog entries (`AnacondaDownloadsDataset`, `GitHubRequestDataset`, `PyPIJsonRequestDataset`) perform a real live
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1764,6 +1804,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-5-7: The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mech
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
   summary: The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mechanisms — the dashboard via `dashboard/data.py`'s hand-maintained relpath constants anchored on `default_data_root()` (which walks up to `.git`), the MCP surface via the catalog's bare relative `filepath:` (resolved against the process CWD) — so the two surfaces can stamp different files, or one can report a real mtime while the other reports "backing file not found".
@@ -1772,6 +1814,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-5-8: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-mag
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
@@ -1782,6 +1826,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-6-1: `AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `c
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
   summary: `AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `cls.__new__`, so a future `__init__` field silently vanishes from the Dagster-plane clone and surfaces as an `AttributeError` at run time rather than at build time.
@@ -1790,6 +1836,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-6-2: Run admission is writer-writer exclusion only, and the concurrency it deliberately PERMITS is reader-writer unsafe: `pan
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
@@ -1800,6 +1848,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-6-3: `observability.py` states, in three places, that "C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_da
 - source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
   summary: `observability.py` states, in three places, that "C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_dagster()` build time" — and the installed kedro-dagster does not. The lazy-`TracerProvider` design at `observability.py:188-195` exists specifically to make the instance deepcopy-able for that build, so its stated justification is unfounded (the design is harmless, but it is carried as a measured constraint when it is not one).
@@ -1808,6 +1858,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-12-1-1: Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-sco
 - source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
@@ -1818,6 +1870,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-12-1-2: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer director
 - source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
   summary: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer directory table) have no tracked follow-up forcing a human to actually decide whether to file them against `kedro-org/kedro-skills` — they exist only as prose inside the report and could go unnoticed once nobody is actively reading it.
@@ -1826,6 +1880,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-12-1-3: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
 - source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
@@ -1836,6 +1892,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-12-2-1: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, 
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, matching the upstream epic-level Spec's literal wording) won't catch a real DAG-shape change made via `pipeline_registry.py`, `settings.py`, or `conf/base/catalog.yml`/`parameters.yml` — none of which live under `pipelines/`, so a change to any of them lands on `main` without triggering a republish.
@@ -1844,6 +1902,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-12-2-2: `kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is eve
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
@@ -1854,6 +1914,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-12-2-3: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quic
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quick succession, the second (queued, `cancel-in-progress: false`) run's `actions/checkout` pins the SHA from its own (now-stale) trigger, so its later `git push` could be rejected as non-fast-forward against a `main` the first run already advanced.
@@ -1862,6 +1924,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-12-2-4: No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underl
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
@@ -1872,6 +1936,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-12-2-5: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare 
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare `except UnicodeDecodeError: continue`) in BOTH the strip pass and the verifying re-scan — a future kedro-viz version that embeds the checkout-anchored path inside a non-UTF-8 file (e.g. a binary source-map or compiled asset) would be invisible to this script's "zero anchor occurrences remain" guarantee.
@@ -1880,6 +1946,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-12-2-6: `normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a f
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
@@ -1890,6 +1958,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-12-2-7: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
 - source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
   summary: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for Epic 5's stories, even though PR #322 (2026-08-08) renamed the corresponding `development_status` keys to the current `5-1-`/`5-2-` Epic.Story convention — so any future code resolving `depends_on` entries against `development_status` keys would silently fail to match.
@@ -1898,6 +1968,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-1-1: The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent "trending" at 
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -1908,6 +1980,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-1-2: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot — no historical retention. If Story 13.2's tier classification ever wants a multi-day trend signal (streak length, day-over-day delta), that signal has already been discarded at the raw layer by CAP-1 as built.
@@ -1916,6 +1990,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-1-3: `parse_trending_html`'s `article.find("h2")`/`article.find("p")` grab the FIRST matching tag anywhere in a repo card's s
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -1926,6 +2002,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-1-4: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any su
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any such column to `float64` the moment one `None` appears in a batch, so the persisted Parquet schema for these count columns can flip between `int64` and `float64` day to day depending on whether every row happened to parse cleanly that run — a downstream consumer (Story 13.2's classifier) reading this column across multiple days could hit an unexpected dtype.
@@ -1934,6 +2012,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-1-5: `parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a r
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -1944,6 +2024,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-1-6: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerabi
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerability/nodes.py::_coerce_cadence`, both accept a config-authored `0` or negative cadence without validation — a `ttls.trending_candidates: 0` typo in `parameters.yml` would make every `save()` call treat a refresh as always-due, defeating the daily-cadence contract, silently.
@@ -1952,6 +2034,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-1-7: `_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(" ", strip=True)`), not a scoped stars-
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -1962,6 +2046,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-1-8: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k s
 - source_spec: `spec-13-1-trending-ingest.md`
   summary: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k stars" (if GitHub's markup ever renders one on the trending page, as it does elsewhere in its UI) would parse as `1` instead of `1200`, silently truncating rather than failing.
@@ -1970,6 +2056,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-1-9: `TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they
 - source_spec: `spec-13-1-trending-ingest.md`
@@ -1980,6 +2068,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-2-1: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inli
 - source_spec: `spec-13-2-tier-classification.md`
   summary: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inlines the same normalize-and-lookup logic against a pre-built index for performance; a future refactor that naively swapped the inline logic for a per-row call to `_resolve_pypi_name` would silently reintroduce an O(rows × universe) index rebuild on every call, since `_resolve_pypi_name` rebuilds the full `pypi_universe` index from scratch each invocation.
@@ -1988,6 +2078,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-2-2: `trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_
 - source_spec: `spec-13-2-tier-classification.md`
@@ -1998,6 +2090,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-2-3: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — 
 - source_spec: `spec-13-2-tier-classification.md`
   summary: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — a NULL/unmapped `license_spdx`, and a valid OSI license expressed in a form the 24-entry exact-match allowlist cannot represent (PEP 639 expressions like `MIT OR Apache-2.0`, `Apache-2.0 WITH LLVM-exception`, or OSI IDs outside the curated set such as `Python-2.0`, `Artistic-2.0`, `EUPL-1.2`). Genuinely OSI-licensed candidates are therefore dropped with a factually wrong reason and never escalated to a human.
@@ -2006,6 +2100,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-2-4: The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides
 - source_spec: `spec-13-2-tier-classification.md`
@@ -2016,6 +2112,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-2-5: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages 
 - source_spec: `spec-13-2-tier-classification.md`
   summary: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages — exactly CAP-2's input population — so in production the tier-1/tier-2 branches will rarely fire and most resolved rows will degrade to `unclassified-needs-human`. Nothing records the unmatched names as an enrichment backlog, so the gap never closes on its own.
@@ -2024,6 +2122,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-2-6: A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` p
 - source_spec: `spec-13-2-tier-classification.md`
@@ -2035,6 +2135,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-3-1: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NO
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
   summary: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NOT guarded against a session-bootstrap-time failure (e.g. a missing/incomplete `conf/local/credentials.yml` — `KeyError` from `CatalogConfigResolver` eagerly resolving every catalog entry's credentials at bootstrap) — only the subsequent `load_with_provenance` call is guarded, against `DatasetError`. A bootstrap failure crashes uncaught: the CLI's broadened `except Exception` (added this same story, patch) turns it into a clean stderr message + exit 1 instead of a raw traceback, but the MCP tool still propagates it raw, and neither degrades to the documented `count: 0` "missing dataset" shape.
@@ -2043,6 +2145,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-3-2: CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is "JSON output validates against a documented schem
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2054,6 +2158,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-3-3: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it 
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
   summary: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it only on the `row-fetched-at` code path and `trending_candidates_classified` is a plain `ParquetDataset` (which resolves to `file-mtime`) — so the AD-17 staleness envelope this surface advertises is half-populated by construction, not by circumstance.
@@ -2062,6 +2168,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-3-4: The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassi
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2073,6 +2181,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-3-5: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) in
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
   summary: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) inherits kedro's rich logging handler, which sits on the ROOT logger and writes to STDOUT — the same channel FastMCP's default stdio transport uses for JSON-RPC, so a stdio-launched server would interleave kedro log lines into the protocol stream.
@@ -2081,6 +2191,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-3-6: `mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient="re
 - source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2091,6 +2203,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-4-1: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (
 - source_spec: `spec-13-4-fixed-source-audit-track.md`
   summary: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (a pure Rust/Go CLI, or a C++ library with no Python bindings) can never reach the Tier-2 outcome `tier-taxonomy.md`'s own definition allows for ("Rust/Go CLI, native/compiled" is listed as Tier-2-eligible with no PyPI-published precondition, unlike Tier-1's explicit "PyPI-published AND" requirement) — it permanently classifies as `no-pypi-artifact`/`unclassified-needs-human` instead.
@@ -2099,6 +2213,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-4-2: The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted 
 - source_spec: `spec-13-4-fixed-source-audit-track.md`
@@ -2109,6 +2225,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-5-1: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failu
 - source_spec: `spec-13-5-downstream-handoff-to-mason.md`
   summary: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failure classes — `__main__.py` (Story 13.3, untouched by this diff) maps EVERY failure (a bad filter, `BrokenPipeError`, any other exception) to exit 1 with no distinct "unexpected error" code and no explicit 130 for `KeyboardInterrupt`, while `handoff_main.py` (this story) introduces the NFR-6 0/1/2/130 scheme and specifically maps `BrokenPipeError` to 2 where `__main__.py` maps the identical condition to 1.
@@ -2117,6 +2235,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-13-5-2: `scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete 
 - source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
@@ -2127,6 +2247,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-5-3: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.j
 - source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
   summary: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.json` — two concurrent invocations for different `--spec` targets (plausible under this repo's own documented parallel-BMAD-agent pattern) can race, and the second writer's read (based on the pre-first-writer file) silently drops the first writer's just-stamped entry.
@@ -2135,6 +2257,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-10-5-9: Follow-up review still recommended for 10-5-stamp-advisory-data-with-its-build-provenance after the damping cap was spent
   origin: review-budget-followup
@@ -2145,6 +2269,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-10-6-4: Follow-up review still recommended for 10-6-make-run-admission-real-or-stop-claiming-it after the damping cap was spent
   origin: review-budget-followup
   source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
@@ -2154,6 +2280,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-2` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-13-3-7: Follow-up review still recommended for 13-3-trending-candidates-operator-surface after the damping cap was spent
   origin: review-budget-followup
   source_spec: `spec-13-3-trending-candidates-operator-surface.md`
@@ -2162,6 +2290,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
 
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-17-1: CAP-1's "a clean run reproduces the inventory" success bar is not freshly re-verified by this story — no quartet runtime code was executed end to end during this change.
 
@@ -2174,6 +2304,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-17-2: No rate-limiting/backoff for bulk gh issue create / gh project item-add calls when --create-issues runs live against many missing names.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2184,6 +2316,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-17-2-2: CANVAS_DIR is a hardcoded absolute path under the operator's home directory, so the canvas writers only work on this machine/account.
 
@@ -2196,6 +2330,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-17-2-3: write_ops_canvas: records whose P/Work falls back to the "?" sentinel are counted in the total but invisible in every per-bucket breakdown table; build_by_type silently drops recipe types outside the fixed RECIPE_TYPE_ORDER list.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2206,6 +2342,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-17-2-4: write_workbook_canvas: a pep503-name dict collision keeps only the last matching record, and jfrog_by.setdefault drops duplicate JFrog rows without counting them toward the skip total.
 
@@ -2218,6 +2356,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-17-2-5: write_workbook_canvas's "Needs a staged-recipes PR" bucket excludes JFrog names with no identity match at all, inconsistent with the neither_rows bucket in the same function which does include them.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2228,6 +2368,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ### DW-FU-17-2-6: No try/finally around the second load_workbook() call in write_workbook_canvas -- a mid-loop exception skips wb.close() and leaks the file handle.
 
@@ -2240,6 +2382,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-17-2-7: _CANVAS_PREFIX is duplicated as a separate string literal in openteams_identity_dashboards.py instead of being imported from priority.py, where the original copy lives.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-handoffs-are-execution-ready.md`
@@ -2250,6 +2394,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-CANOPY-2026-08-24 — Phase 5 Canopy obligations recorded (atlas station); `lane1-serves-dw-h3` answered no (2026-08-25)
 
@@ -2291,3 +2437,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; atlas S-18.1 done (Kedro hooks mapped to shared contract; no pipeline PR-gate); no competing CI verdict
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open

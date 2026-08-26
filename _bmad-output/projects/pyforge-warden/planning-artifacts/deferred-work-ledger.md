@@ -508,6 +508,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-7-1-2: CycloneDXSourceAdapter.validate() never checks the document's specVersion, so an incompatible/very old CycloneDX schema version would be accepted and processed identically to 1.6.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md`
@@ -519,6 +521,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
 ### DW-FU-7-2: "Reproducible from provenance alone" (SPEC.md CAP-2 / epics.md AC) does not universally hold: the required_authority_sources policy that actually determines status is never recorded on EligibilityResult or ProvenanceEntry.
 
 - source_spec: `planning-artifacts/specs/spec-7-2-the-eligibility-union-carries-its-provenance.md`
@@ -529,6 +533,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
 ## DW-CANOPY-2026-08-24 — Portal rename and URL relocation (Canopy FR-9a/9b)
 
@@ -544,6 +550,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   closed_by: steward Story 19.1 (`django-warden` / `django_warden_fabric` / `warden_fabric`; `/compliance/` → `/stations/warden/` 308)
   recorded: 2026-08-24
 
+  verified: 2026-08-26 — resolved — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to resolved
+
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
@@ -552,3 +560,5 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; Warden Stories 9.1–9.3 done (PR-gate hook specs; scanners optional plugins; default run green without Checkmarx); no competing CI verdict
+
+  verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
