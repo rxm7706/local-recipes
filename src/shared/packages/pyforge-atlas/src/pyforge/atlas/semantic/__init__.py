@@ -23,6 +23,7 @@ from .metrics import (
     staleness_age_days,
 )
 from .models import (
+    build_estate_cache_model,
     build_feedstock_health_model,
     build_maintainers_model,
     build_package_maintainers_model,
@@ -35,6 +36,7 @@ __all__ = [
     "DEFERRED_FEEDSTOCK_HEALTH_FILTERS",
     "METRIC_PROVENANCE",
     "adoption_stage",
+    "build_estate_cache_model",
     "build_feedstock_health_model",
     "build_maintainers_model",
     "build_package_maintainers_model",

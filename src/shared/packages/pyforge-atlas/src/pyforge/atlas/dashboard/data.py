@@ -45,6 +45,7 @@ PACKAGE_MAINTAINERS_PARQUET = (
 # queries ``build_packages_model`` when a composed frame is supplied (proven by the gate's
 # fixture), else returns an empty result. Recorded in DW-D2.
 PACKAGES_PARQUET = "primary/semantic_packages/semantic_packages.parquet"
+ESTATE_CACHE_PARQUET = "primary/query_plane_estate/query_plane_estate.parquet"
 
 
 def default_data_root() -> Path:
@@ -150,6 +151,19 @@ def load_query_atlas(
         ["conda_name", "is_actionable", "adoption_stage"],
         ["downloads_total"],
         model_kwargs={"now_unix": now},
+    )
+
+
+def load_estate_cache(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
+    """Lane 3 / FR-47 — BSL over the named estate Parquet cache."""
+    path = parquet
+    if path is None:
+        path = default_data_root() / ESTATE_CACHE_PARQUET
+    return _bsl_query_or_empty(
+        path,
+        models.build_estate_cache_model,
+        ["sku"],
+        ["units_total"],
     )
 
 

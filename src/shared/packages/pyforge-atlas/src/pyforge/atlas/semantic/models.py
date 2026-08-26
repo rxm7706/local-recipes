@@ -162,6 +162,21 @@ def build_maintainers_model(table: Any) -> SemanticModel:
     )
 
 
+def build_estate_cache_model(table: Any) -> SemanticModel:
+    """CAP-19 estate cache (``query_plane_estate``) — Lane 3 over FR-47 Parquet."""
+    return SemanticModel(
+        table=table,
+        name="estate_cache",
+        dimensions={
+            "sku": Dimension(expr=lambda t: t.sku, is_entity=True),
+        },
+        measures={
+            "units_total": Measure(expr=lambda t: t.units.sum()),
+            "sku_count": Measure(expr=lambda t: t.sku.count()),
+        },
+    )
+
+
 def join_packages_by_maintainer(
     packages: SemanticModel, package_maintainers: SemanticModel
 ) -> Any:
