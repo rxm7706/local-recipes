@@ -641,8 +641,8 @@ This pass records the obligation only — **no rename in warden package code her
 | CLI | `pyforge-warden` | Shipped (Epics 1–7) |
 | Web Portal | Epic 8 web face → `django_warden_fabric` | Shipped; move/rename = steward S-19.1 |
 | MCP service | Host ASGI MCP face | Steward Epic 21 |
-| Domain skill | Station SKF skill | Steward Epic 29 |
-| Agent persona | Station persona | Steward Epic 29 |
+| Domain skill | Station SKF skill | **Warden Epic 10** (steward 29 = shape + reporter only) |
+| Agent persona | Station persona | **Warden Epic 10** |
 
 **Out of scope for warden:** chrome (`django-pyforge`), FastAPI service ports, second dashboard
 stack — all Canopy/steward concerns.
@@ -677,7 +677,8 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 
 **Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
 `change-history/sprint-change-proposal-2026-08-24-hook-specs.md`;
-steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+steward `sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`;
+`change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md`.
 
 ## Epic 9: PR-gate hook specs; scanners are plugins
 
@@ -714,3 +715,29 @@ So that a missing Checkmarx plugin is not a failed gate.
 **Type:** chore • **Effort:** S • **Deps:** S-9.2 • **FR/AD:** FR-44 • Q8
 **Given** a fixture with no Checkmarx (or other named commercial) plugin **When** default Warden runs **Then** the process is green unless Warden's own engines fail
 **And** a test **fails** if absence of a named optional plugin is treated as a Warden failure
+
+## Epic 10: Warden owns its skill, persona, and one portal job
+
+Existing HTMX lists on local models stay. This epic adds station-owned SKF+persona and **one MCP-backed action** through PortalClient. Does **not** copy Canopy 18–30.
+
+### Story 10.1: SKF domain skill and BMAD persona for warden
+
+As an autonomous agent,
+I want a warden SKF skill from `pyforge-warden/` and a `bmad-agent-warden` persona,
+So that Path B uses CAP-5 grammar and CAP-4 MCP only.
+
+**Type:** feature • **Effort:** L • **Deps:** S-9.3 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-warden/` if missing
+**And** the persona uses only `pyforge warden …` and `POST /stations/warden/mcp`
+**And** `conda-forge-expert` is not replaced
+**And** the persona does not publish a second PR-gate verdict
+
+### Story 10.2: First portal slice — start/get one audit
+
+As a compliance operator,
+I want `/stations/warden/` to start one audit and retrieve it after disconnect,
+So that the portal uses the host MCP face instead of only local ORM lists.
+
+**Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-10, FR-12 • canopy AD-7
+**Given** an authenticated warden-role session **When** the operator starts an audit from HTMX **Then** `start`/`get` go through PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy

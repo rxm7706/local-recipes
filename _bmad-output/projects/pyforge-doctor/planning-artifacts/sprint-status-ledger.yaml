@@ -40,6 +40,8 @@ development_status:
   15-2-channel-and-recipe-staleness-are-ambient-findings: done
   16-1-the-shared-title-diff-is-an-ambient-finding: done
   17-1-extract-gather-prescribe-source-plugins: done
+  18-1-skf-skill-and-persona-for-doctor: backlog
+  18-2-first-portal-slice-fleet-pulse: backlog
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
@@ -94,6 +96,8 @@ development_status:
   epic-16-retrospective: optional
   epic-17: backlog
   epic-17-retrospective: optional
+  epic-18: backlog
+  epic-18-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

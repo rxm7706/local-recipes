@@ -333,3 +333,27 @@ So that swapping a recall store does not fork scribe.
 **Given** the existing `GraphStore` port **When** this story completes **Then** today's flat-file backend is the default plugin
 **And** the durable PG driver (steward S-28.1) registers as a second plugin, not a fork
 **And** recall completeness is not published as a PR quality-gate verdict
+
+## Epic 5: Scribe owns remaining skill/persona and one portal job
+
+Steward 29.1 compiled the SKF *shape* from scribe. This epic **owns** any remaining skill/persona gaps and the first portal job. Does **not** copy Canopy 18–30. CAP-14 PG driver stays steward Epic 28.
+
+### Story 5.1: SKF skill ownership and BMAD persona for scribe
+
+As an autonomous agent,
+I want scribe's domain skill and a `bmad-agent-scribe` persona owned in this station,
+So that Path B is not steward-only leftover from Epic 29.
+
+**Type:** feature • **Effort:** M • **Deps:** S-4.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Given** steward 29.1 may already have compiled `pyforge-scribe` **When** this story completes **Then** the skill exists under `.claude/skills/` with scribe provenance (skip recompile if identical)
+**And** the persona uses only `pyforge scribe …` and `POST /stations/scribe/mcp`
+
+### Story 5.2: First portal slice — one recall query
+
+As a scribe operator,
+I want `/stations/scribe/` to submit one recall query and show cited results,
+So that Lane 2 does a real job in HTMX.
+
+**Type:** feature • **Effort:** M • **Deps:** S-5.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Given** an authenticated scribe-role session **When** the operator submits a query **Then** results render via PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
