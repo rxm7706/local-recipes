@@ -1,0 +1,9 @@
+<output id="warden-audit-handle">{{ handle }}</output>
+<button
+  type="button"
+  hx-get="/stations/warden/audits/?handle={{ handle }}"
+  hx-target="#warden-audit-panel"
+  hx-swap="innerHTML"
+>
+  Retrieve
+</button>

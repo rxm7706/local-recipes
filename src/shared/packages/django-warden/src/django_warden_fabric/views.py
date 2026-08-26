@@ -9,13 +9,24 @@ from pathlib import Path
 from django.conf import settings
 from django.http import HttpRequest
 from django.http import HttpResponse
+from django.http import HttpResponseForbidden
+from django.http import HttpResponseNotFound
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 from django_pyforge.access import require_station_role
+from django_pyforge.assertion.client import PortalClient
+from django_pyforge.assertion.schema import CLAIM_SUB
+from django_pyforge.roles import claims_from_request
+from django_pyforge.roles import roles_from_request
+from django_pyforge.supervisor import HandleExpiredError
+from django_pyforge.supervisor import HandleNotFoundError
+from django_pyforge.supervisor import HandleRefusedError
 
+from .mcp_asgi import RUN_AUDIT_TOOL
+from .mcp_asgi import WARDEN_STATION
 from .models import ComplianceJob
 from .phases import current_progress
 from .tasks import SUPPORTED_SUFFIXES
@@ -39,11 +50,71 @@ def _blob_root() -> Path:
     return root
 
 
+def _portal_identity(request: HttpRequest) -> tuple[str, list[str]] | None:
+    claims = claims_from_request(request) or {}
+    sub = claims.get(CLAIM_SUB)
+    if not isinstance(sub, str) or not sub:
+        return None
+    return sub, list(roles_from_request(request))
+
+
 @require_GET
 @require_station_role("warden")
 def chrome_home(request: HttpRequest) -> HttpResponse:
     """HTML face that extends django-pyforge chrome (Story 18.1)."""
     return render(request, "warden_fabric/chrome.html")
+
+
+@require_POST
+@require_station_role("warden")
+def start_audit(request: HttpRequest) -> HttpResponse:
+    """HTMX start: PortalClient only — never a raw HTTP MCP call."""
+    identity = _portal_identity(request)
+    if identity is None:
+        return HttpResponseForbidden()
+    sub, roles = identity
+    target = request.POST.get("target", ".")
+    if not isinstance(target, str) or not target.strip():
+        target = "."
+    else:
+        target = target.strip()
+    handle = PortalClient().start(
+        station=WARDEN_STATION,
+        sub=sub,
+        roles=roles,
+        tool=RUN_AUDIT_TOOL,
+        payload={"target": target},
+    )
+    return render(request, "warden_fabric/audit_started.html", {"handle": handle})
+
+
+@require_GET
+@require_station_role("warden")
+def get_audit(request: HttpRequest) -> HttpResponse:
+    """HTMX get after disconnect: same run, new assertion, no recompute."""
+    identity = _portal_identity(request)
+    if identity is None:
+        return HttpResponseForbidden()
+    sub, roles = identity
+    handle = request.GET.get("handle", "")
+    try:
+        run = PortalClient().get(
+            station=WARDEN_STATION,
+            handle=handle,
+            sub=sub,
+            roles=roles,
+        )
+    except HandleRefusedError:
+        return HttpResponseForbidden()
+    except HandleNotFoundError:
+        return HttpResponseNotFound()
+    except HandleExpiredError:
+        return HttpResponse(status=410)
+    return render(
+        request,
+        "warden_fabric/audit_status.html",
+        {"handle": handle, "run": run},
+    )
 
 
 @csrf_exempt
