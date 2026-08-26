@@ -144,12 +144,15 @@ services:
       COMPONENT_OIDC_CLIENT_SECRET: local-compose-keycloak-secret-not-real
       COMPONENT_OIDC_AUDIENCE: platform-web
       COMPONENT_OIDC_PROVIDER_NAME: Platform Keycloak
+      MCP_HOST_SIDECAR_BASE_URL: http://mcp-host:8090
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+      mcp-host:
         condition: service_healthy
 
   # CAP-1 / steward 16.5: Keycloak realm-as-code local substrate (devinfra pattern).
@@ -334,6 +337,26 @@ services:
       # cold, uncached CI runner rather than a value tuned to an observed
       # failure.
       start_period: 90s
+
+  # spec-mcp-era-isolation slice 1: mcp 2.x official-SDK faces. Isolated
+  # from Langflow / FastMCP 3 on the platform image (Pattern B sidecar).
+  mcp-host:
+    build:
+      context: ../../..
+      dockerfile: src/platform/compose/mcp-host/Containerfile
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test:
+        - "CMD"
+        - "/app/entrypoint.sh"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=5).status == 200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
 # Named volume for the `dbgpt` service's sqlite durability (permanent, not
 # interim -- see that service's own `volumes:` comment above). `postgres`/

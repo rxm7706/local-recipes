@@ -78,6 +78,10 @@ Headless governing Service for the postgres StatefulSet (clusterIP: None)
 {{- printf "%s-dbgpt-sqlite" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "platform.mcpHost.fullname" -}}
+{{- printf "%s-mcp-host" (include "platform.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{/*
 The data services' own ServiceAccount name -- see serviceaccount.yaml for
 why postgres/redis get a second SA. Same truncation rule.
@@ -249,6 +253,8 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
   value: {{ .Values.media.mountPath | quote }}
 - name: DBGPT_SIDECAR_BASE_URL
   value: {{ printf "http://%s:5670" (include "platform.dbgpt.fullname" .) | quote }}
+- name: MCP_HOST_SIDECAR_BASE_URL
+  value: {{ printf "http://%s:8090" (include "platform.mcpHost.fullname" .) | quote }}
 - name: PYFORGE_FLAGS_PATH
   value: {{ printf "%s/%s" .Values.flags.mountPath .Values.flags.fileName | quote }}
 - name: FLAGD_RESOLVER

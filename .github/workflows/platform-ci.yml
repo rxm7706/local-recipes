@@ -147,6 +147,7 @@ env:
   # The chart renders the DB-GPT sidecar unconditionally, so the shared build
   # produces it too -- see build-platform-image's own step for why.
   PLATFORM_CI_SIDECAR_REF: platform-dbgpt-sidecar:ci-${{ github.sha }}
+  PLATFORM_CI_MCP_HOST_REF: platform-mcp-host:ci-${{ github.sha }}
 
 concurrency:
   group: platform-ci-${{ github.ref }}
@@ -269,8 +270,11 @@ jobs:
       - name: Build DB-GPT sidecar image (chart renders it unconditionally)
         run: docker build -f src/platform/compose/dbgpt/Containerfile -t "${{ env.PLATFORM_CI_SIDECAR_REF }}" .
 
+      - name: Build mcp-host sidecar image (chart renders it unconditionally)
+        run: docker build -f src/platform/compose/mcp-host/Containerfile -t "${{ env.PLATFORM_CI_MCP_HOST_REF }}" .
+
       - name: Export platform + sidecar images for downstream jobs
-        run: docker save "${{ env.PLATFORM_CI_IMAGE_REF }}" "${{ env.PLATFORM_CI_SIDECAR_REF }}" | gzip -1 > platform-ci-image.tar.gz
+        run: docker save "${{ env.PLATFORM_CI_IMAGE_REF }}" "${{ env.PLATFORM_CI_SIDECAR_REF }}" "${{ env.PLATFORM_CI_MCP_HOST_REF }}" | gzip -1 > platform-ci-image.tar.gz
 
       - uses: actions/upload-artifact@v7
         with:
@@ -1397,6 +1401,7 @@ jobs:
           gunzip -c platform-ci-image.tar.gz | docker load
           docker tag "${{ env.PLATFORM_CI_IMAGE_REF }}" platform:air-gap-smoke
           docker tag "${{ env.PLATFORM_CI_SIDECAR_REF }}" platform-dbgpt-sidecar:air-gap-smoke
+          docker tag "${{ env.PLATFORM_CI_MCP_HOST_REF }}" platform-mcp-host:air-gap-smoke
 
       # No registry push -- same as `gke-portability-smoke`'s own step.
       # The sidecar goes in for the same reason postgres/redis do below: the
@@ -1404,7 +1409,7 @@ jobs:
       # pod in this release reaches for a registry, and this job's whole
       # premise is that nothing does.
       - name: kind load the built images (no registry push)
-        run: kind load docker-image platform:air-gap-smoke platform-dbgpt-sidecar:air-gap-smoke --name air-gap-smoke
+        run: kind load docker-image platform:air-gap-smoke platform-dbgpt-sidecar:air-gap-smoke platform-mcp-host:air-gap-smoke --name air-gap-smoke
 
       # The chart's own postgres/redis StatefulSet/Deployment default to
       # plain upstream images (values.yaml: postgres.image
@@ -1635,6 +1640,7 @@ jobs:
             --namespace platform-airgap \
             --set image.tag=air-gap-smoke \
             --set sidecar.image.tag=air-gap-smoke \
+            --set mcpHost.image.tag=air-gap-smoke \
             --set django.secureSslRedirect=False \
             --timeout 5m || {
             echo "::error::helm install failed"

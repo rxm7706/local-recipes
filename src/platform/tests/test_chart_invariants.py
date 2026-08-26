@@ -183,7 +183,7 @@ def _strip_image_tag(image: str) -> str:
 
 
 def _default_image_references() -> frozenset[str]:
-    """The four expected tag-stripped image references, DERIVED from the
+    """The five expected tag-stripped image references, DERIVED from the
     core chart's own default values (registry + repository composed by the
     same rule as the chart's imageRef helper) rather than re-declared here.
     """
@@ -195,6 +195,7 @@ def _default_image_references() -> frozenset[str]:
         values["postgres"]["image"],
         values["redis"]["image"],
         values["sidecar"]["image"],
+        values["mcpHost"]["image"],
     ):
         registry = image.get("registry")
         repository = image["repository"]
@@ -965,6 +966,64 @@ def test_platform_pods_wire_dbgpt_sidecar_base_url_to_internal_service():
         assert "localhost" not in dbgpt_env.get("value", "")
 
 
+_MCP_HOST_COMPONENT = "mcp-host"
+
+
+@requires_helm
+def test_mcp_host_deployment_and_service_restricted_v2():
+    """AC (spec-mcp-era-isolation): mcp-host Deployment + ClusterIP Service
+    satisfy restricted-v2.
+    """
+    docs = _render(_CORE_CHART)
+    deployments = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Deployment"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _MCP_HOST_COMPONENT
+    ]
+    assert len(deployments) == 1, (
+        f"expected exactly one mcp-host Deployment, got: "
+        f"{[doc['metadata']['name'] for doc in deployments]}"
+    )
+    by_component = _pod_specs_by_component(docs)
+    assert _MCP_HOST_COMPONENT in by_component
+    _assert_restricted_v2_pod_spec(
+        by_component[_MCP_HOST_COMPONENT],
+        where=_MCP_HOST_COMPONENT,
+    )
+    services = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _MCP_HOST_COMPONENT
+    ]
+    assert len(services) == 1
+    assert services[0]["spec"].get("type") == "ClusterIP"
+
+
+@requires_helm
+def test_platform_pods_wire_mcp_host_sidecar_base_url_to_internal_service():
+    """AC: web/worker resolve MCP_HOST_SIDECAR_BASE_URL to the mcp-host Service."""
+    docs = _render(_CORE_CHART, release="platform")
+    service_name = next(
+        doc["metadata"]["name"]
+        for doc in docs
+        if doc.get("kind") == "Service"
+        and doc["metadata"].get("labels", {}).get("app.kubernetes.io/component")
+        == _MCP_HOST_COMPONENT
+    )
+    expected_url = f"http://{service_name}:8090"
+    by_component = _pod_specs_by_component(docs)
+    for component in ("web", "worker"):
+        env = _collect_env_by_name(by_component[component])
+        mcp_env = env.get("MCP_HOST_SIDECAR_BASE_URL")
+        assert mcp_env is not None, f"{component} missing MCP_HOST_SIDECAR_BASE_URL"
+        assert mcp_env.get("value") == expected_url
+        assert "localhost" not in mcp_env.get("value", "")
+
+
 @requires_helm
 def test_redis_uses_existing_secret_password_and_wires_redis_url():
     """AC (Story 12.6): redis Deployment and platform pods consume
@@ -1138,7 +1197,7 @@ def test_chart_templates_forbid_minio_s3_and_elasticsearch():
 @requires_helm
 def test_namespace_inventory_includes_postgres_redis_platform_and_sidecar():
     """AC (AD-1): across ALL rendered workload pod specs, the image set
-    reduces to exactly four -- postgres, redis, platform, and sidecar.
+    reduces to exactly five -- postgres, redis, platform, sidecar, and mcp-host.
     """
     docs = _render(_CORE_CHART)
     images = _collect_workload_images(docs)

@@ -1,0 +1,31 @@
+# spec-mcp-era-isolation slice 1: mcp-host sidecar (mcp 2.x, no Langflow, no FastMCP 3).
+# BUILD CONTEXT IS THE REPO ROOT.
+#   podman build -f src/platform/compose/mcp-host/Containerfile -t localhost/platform-mcp-host:local .
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.77.0 AS builder
+
+WORKDIR /app
+COPY . /app
+RUN pixi install --frozen -e mcp-host
+RUN pixi shell-hook -e mcp-host -s bash > /app/shell-hook.sh
+
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime
+
+WORKDIR /app
+COPY --from=builder /app/.pixi/envs/mcp-host /app/.pixi/envs/mcp-host
+COPY --from=builder /app/shell-hook.sh /app/shell-hook.sh
+COPY src/platform/mcp_host /app/mcp_host
+COPY src/shared/packages/django-pyforge/src/django_pyforge /app/django_pyforge
+
+RUN printf '#!/bin/bash\nset -e\nsource /app/shell-hook.sh\nexport PYTHONPATH=/app\nexec -- "$@"\n' \
+    > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
+
+RUN mkdir -p /app/.home
+ENV HOME=/app/.home
+ENV PYTHONPATH=/app
+RUN chgrp -R 0 /app/.home && chmod -R g+rwX /app/.home
+
+USER 1001:0
+EXPOSE 8090
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["uvicorn", "mcp_host.app:app", "--host", "0.0.0.0", "--port", "8090"]

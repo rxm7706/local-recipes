@@ -195,6 +195,16 @@ sidecar:
     apiKeySecretKey: ""
   resources: {}
 
+# MCP-host sidecar (spec-mcp-era-isolation slice 1). mcp 2.x official
+# SDK faces. Web/worker proxy POST /stations/<name>/mcp here.
+mcpHost:
+  image:
+    registry: ""
+    repository: platform-mcp-host
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources: {}
+
 # Story 26.4 / canopy AD-11: FILE flags. The JSON tree is NOT stored here —
 # pass --set-file flags.tree=src/platform/config/flags.json (the only tree).
 flags:
