@@ -4,5 +4,18 @@
 {% endblock title %}
 {% block content %}
   <p id="herald-body">herald portal</p>
+  <section id="herald-deck-status" data-slug="{{ deck_status.slug }}">
+    <h2>herald deck status</h2>
+    <dl>
+      <dt>slug</dt>
+      <dd id="herald-deck-slug">{{ deck_status.slug }}</dd>
+      <dt>linked</dt>
+      <dd>{{ deck_status.linked }}</dd>
+      <dt>sync</dt>
+      <dd>{{ deck_status.sync }}</dd>
+      <dt>stale_mirror</dt>
+      <dd id="herald-stale-mirror">{{ deck_status.stale_mirror }}</dd>
+    </dl>
+  </section>
   <section data-console-home="pitch"></section>
 {% endblock content %}
