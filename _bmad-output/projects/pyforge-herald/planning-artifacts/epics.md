@@ -525,3 +525,27 @@ So that adding an export format does not fork herald.
 **Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
 **Given** today's exporters **When** the hook spec lands **Then** they are the default plugins
 **And** export success is not published as a PR quality-gate verdict
+
+## Epic 17: Herald owns its skill, persona, and one portal job
+
+Does **not** copy Canopy 18–30. Lane 1 CMS remains steward.
+
+### Story 17.1: SKF domain skill and BMAD persona for herald
+
+As an autonomous agent,
+I want a herald SKF skill from `pyforge-herald/` and a `bmad-agent-herald` persona,
+So that Path B uses CAP-5 grammar and CAP-4 MCP only.
+
+**Type:** feature • **Effort:** L • **Deps:** S-16.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-herald/` if missing
+**And** the persona uses only `pyforge herald …` and `POST /stations/herald/mcp`
+
+### Story 17.2: First portal slice — deck status for one slug
+
+As a herald operator,
+I want `/stations/herald/` to show `herald deck status` for one slug,
+So that stale-mirror state is visible in HTMX without leaving the host.
+
+**Type:** feature • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Given** an authenticated herald-role session **When** the operator opens `/stations/herald/` **Then** one slug's status renders via PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy

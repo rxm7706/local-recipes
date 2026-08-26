@@ -2039,7 +2039,35 @@ PR-gate hook specs (Q8). This station owns its process hooks.
 - **Never** a competing PR quality-gate verdict. Quality scanners register as **Warden plugins**.
 - Scorecard measures are unpublished (human + agent + team; draft later). Do not optimize to invented metrics.
 
-**Steward-local:** Deploy-profile adapters (Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, Jira) are **steward hook plugins** on the Golden Path (Stories **32.1–32.2**), not core stack and not a second PR gate. Canopy Epics 18–30 stay chrome/portals/MCP/DDL and must not violate CAP-18.
+**Steward-local:** Deploy-profile adapters (Harness, Splunk, StorageGRID, EPLX GHA, Tachyon, Jira) are **steward hook plugins** on the Golden Path (Stories **32.1–32.2**), not core stack and not a second PR gate. Canopy Epics 18–30 stay chrome/portals/MCP/DDL and must not violate CAP-18. **Epic 33** is station-owned skill/persona + first portal job — not a Canopy remint.
 
 **Pointers:** `change-history/sprint-change-proposal-2026-08-24-operating-model.md`;
-`sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`.
+`sprint-change-proposal-2026-08-24-hook-specs.md`; `DW-OM-2026-08-24`;
+`change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md`.
+
+## Epic 33: Steward owns its skill, persona, and one portal job
+
+Steward Epic 29 proved the SKF+persona *shape* and the five-tier reporter. Epic 19 shipped an empty `/stations/steward/` shell. This epic does **not** copy Canopy 18–30 and is **not** appended to that list.
+
+### Story 33.1: SKF domain skill and BMAD persona for steward
+
+As an autonomous agent,
+I want a steward SKF skill compiled from `pyforge-steward/` and a `bmad-agent-steward` persona,
+So that Path B uses this station's grammar and MCP instead of freelancing the filesystem.
+
+**Type:** feature • **Effort:** L • **Deps:** S-32.1, S-29.3 • **FR/AD:** FR-37, FR-38 • canopy AD-17
+**Given** steward 29.1/29.2 proved the shape on one station **When** this story completes **Then** `.claude/skills/pyforge-steward/` exists (SKF from `src/shared/packages/pyforge-steward/`) with provenance
+**And** a BMAD persona consults that skill and uses only CAP-5 `pyforge steward …` and CAP-4 `POST /stations/steward/mcp`
+**And** `conda-forge-expert` is not replaced
+**And** `skf-export-skill` is the only write into `CLAUDE.md` / `AGENTS.md`
+
+### Story 33.2: First portal slice — provision inventory
+
+As a platform operator,
+I want `GET /stations/steward/` to show the named pixi environments (`provision --list`),
+So that one operator job works in HTMX without leaving the host session.
+
+**Type:** feature • **Effort:** M • **Deps:** S-33.1, S-19.2 • **FR/AD:** FR-10 • canopy AD-7
+**Given** an authenticated steward-role session **When** the operator opens `/stations/steward/` **Then** HTMX renders the environment inventory from the station via `django-pyforge`'s PortalClient only
+**And** no raw HTTP, no `pyforge.*` import under `src/platform/`, no chrome copy in `django-steward`
+

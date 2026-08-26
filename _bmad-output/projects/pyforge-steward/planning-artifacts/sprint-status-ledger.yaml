@@ -107,6 +107,8 @@ development_status:
   31-3-fresh-clone-class-path-is-proven: done
   32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core: done
   32-2-steward-deploy-profile-adapters-are-plugins: done
+  33-1-skf-skill-and-persona-for-steward: backlog
+  33-2-first-portal-slice-provision-list: backlog
   4-1-a-ceiling-can-be-declared-machine-readably: done
   4-2-the-declared-ceiling-is-one-command-away: done
   4-3-asking-am-i-under-budget-never-lies: done
@@ -186,6 +188,8 @@ development_status:
   epic-31-retrospective: optional
   epic-32: backlog
   epic-32-retrospective: optional
+  epic-33: backlog
+  epic-33-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done

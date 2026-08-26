@@ -1275,10 +1275,7 @@ fixture reproduces the 2026-08-22 demonstrated drift; offline yields nothing.
 **Owner:** `pyforge-steward` owns the Canopy (`src/platform/` host). Doctor is spoke #5; the
 Canopy is not a ninth station.
 
-**Build surface:** Doctor's implementation chain ends at **Epic 16** (`spec-pyforge-doctor`,
-Epics 1–16). **No Epics 17+ are minted here** — portal, host MCP, unified CLI dispatch,
-events, SKF skill, and persona tiers are steward Epics 18–30 (`spec-pyforge-unifying-strategy`),
-not duplicated as doctor stories.
+**Build surface:** Doctor's CLI chain ends at **Epic 16**. **Epic 17** is the CAP-18 gather/prescribe hook (not a Canopy remint). **Epic 18** (2026-08-25) is station-owned SKF skill, persona, and first portal job. Host MCP mounts and empty portal *shells* remain steward 19/21. Do **not** copy steward Epics 18–30.
 
 **Five-tier symmetry (current → obligation):**
 
@@ -1287,8 +1284,8 @@ not duplicated as doctor stories.
 | CLI | `doctor` console script (Epics 1–16) | Remains `doctor`; also reachable as `pyforge doctor …` | 22 |
 | Web portal | absent | `/stations/doctor/`; triple `django-doctor` / `django_doctor_<app>` / `doctor_<app>` | 19 |
 | Service/MCP | in-process MCP **client** (AD-6) | `POST /stations/doctor/mcp` on host ASGI; official `mcp` SDK; dual-era | 21 |
-| Domain skill | absent | SKF skill from `pyforge-doctor/`; `conda-forge-expert` is mason, not doctor | 29 |
-| Agent persona | absent | BMAD persona consults doctor domain skill | 29 |
+| Domain skill | absent | SKF skill from `pyforge-doctor/` — **doctor Epic 18** | 18 (not steward 29) |
+| Agent persona | absent | BMAD persona consults doctor domain skill — **doctor Epic 18** | 18 |
 
 **Constraints (binding on doctor participation):**
 
@@ -1305,10 +1302,8 @@ contract. Canopy tiers do not reopen CLI gather/prescribe semantics (AD-1..AD-6,
 Pre-audit Dream prose (`doctor_portal`, `:8008`, `services/pyforge-doctor/`) is superseded by
 Grounding (2026-08-24).
 
-**Phase 5 scope:** This block records doctor's Canopy obligations and defers implementation to
-steward. Cite **parent AD-n** (`architecture-pyforge-doctor-2026-07-25`) vs **canopy AD-n**
-(`architecture-pyforge-unifying-strategy-2026-08-24`); bare `AD-n` in Canopy-facing reviews is
-review-blocking.
+**Phase 5 scope:** This block records doctor's Canopy *shell* obligations (chrome, MCP mount).
+Skill, persona, and the first portal job are **Epic 18**. Cite **parent AD-n** vs **canopy AD-n**.
 
 ## Operating-model obligations (2026-08-24)
 
@@ -1351,3 +1346,28 @@ So that swapping a linter or gather source does not fork doctor.
 **Type:** feature • **Effort:** M • **Deps:** steward S-32.1 • **FR/AD:** FR-45 • canopy AD-21
 **Given** today's gather/prescribe backends **When** the hook spec lands **Then** they are the default plugins
 **And** findings remain advisory or Warden *inputs*, never a competing PR verdict
+
+## Epic 18: Doctor owns its skill, persona, and one portal job
+
+Does **not** copy Canopy 18–30. Empty `/stations/doctor/` shell stays steward 19.
+
+### Story 18.1: SKF domain skill and BMAD persona for doctor
+
+As an autonomous agent,
+I want a doctor SKF skill from `pyforge-doctor/` and a `bmad-agent-doctor` persona,
+So that Path B uses CAP-5 grammar and CAP-4 MCP only.
+
+**Type:** feature • **Effort:** L • **Deps:** S-17.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-doctor/` if missing
+**And** the persona uses only `pyforge doctor …` and `POST /stations/doctor/mcp`
+**And** findings stay advisory — not a second PR gate
+
+### Story 18.2: First portal slice — last fleet pulse
+
+As a doctor operator,
+I want `/stations/doctor/` to show the last `doctor monitor --fleet` summary,
+So that one operator job works in HTMX on the host.
+
+**Type:** feature • **Effort:** M • **Deps:** S-18.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Given** an authenticated doctor-role session **When** the operator opens `/stations/doctor/` **Then** the pulse summary renders via PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy

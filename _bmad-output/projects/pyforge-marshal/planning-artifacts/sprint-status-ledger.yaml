@@ -113,6 +113,8 @@ development_status:
   25-6-a-hand-driven-runs-deferrals-reach-the-ledger-unaided: done
   25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner: done
   26-1-extract-the-loop-runner-hook: done
+  27-1-skf-skill-and-persona-for-marshal: backlog
+  27-2-first-portal-slice-loop-homes: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
@@ -215,6 +217,8 @@ development_status:
   epic-25-retrospective: optional
   epic-26: backlog
   epic-26-retrospective: optional
+  epic-27: backlog
+  epic-27-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done
