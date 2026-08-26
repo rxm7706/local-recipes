@@ -2,6 +2,8 @@
 
 Atlas still defaults RAG/BSL to in-memory DuckDB. File-backed ``atlas.duckdb``
 must go through this opener: one exclusive writer; readers pass ``read_only=True``.
+Live Postgres is ``ATTACH … READ_ONLY`` on this same handle
+(:func:`pyforge.atlas.live_attach.attach_postgres_readonly`).
 """
 
 from __future__ import annotations

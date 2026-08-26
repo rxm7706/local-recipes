@@ -109,7 +109,7 @@ development_status:
   32-2-steward-deploy-profile-adapters-are-plugins: done
   33-1-skf-skill-and-persona-for-steward: done
   33-2-first-portal-slice-provision-list: done
-  34-1-read-only-live-attach: ready-for-dev
+  34-1-read-only-live-attach: done
   34-2-kedro-writes-the-parquet-cache: backlog
   34-3-vectors-persist-on-the-plane: backlog
   34-4-agents-cannot-reach-oltp: backlog
@@ -196,7 +196,7 @@ development_status:
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional
-  epic-34: backlog
+  epic-34: in-progress
   epic-34-retrospective: optional
   epic-35: backlog
   epic-35-retrospective: optional
