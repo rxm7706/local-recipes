@@ -95,8 +95,8 @@ CREDENTIAL_DENYLIST: tuple[str, ...] = (
 MIN_EXPECTED_FROM_LINES = 6
 
 # `src/platform/Containerfile` (HOME, DJANGO_SETTINGS_MODULE) +
-# `src/platform/compose/dbgpt/Containerfile` (HOME) = 3 ENV directives, one
-# key each, today. The root `Containerfile` has none. This floor exists so
+# `src/platform/compose/dbgpt/Containerfile` (HOME, NOTE_BOOK_ENABLE) = 4 ENV
+# directives today. The root `Containerfile` has none. This floor exists so
 # a regex that stopped matching ENV lines entirely would fail loudly here
 # rather than letting `test_no_env_key_is_credential_shaped` pass having
 # checked nothing.

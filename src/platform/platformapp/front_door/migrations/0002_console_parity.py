@@ -1,6 +1,7 @@
 import django.db.models.deletion
 from django.db import migrations
 from django.db import models
+from django.utils import timezone
 
 import wagtail.fields
 
@@ -53,7 +54,7 @@ class Migration(migrations.Migration):
                 ("verdict", models.TextField(blank=True)),
                 (
                     "captured_at",
-                    models.DateTimeField(),
+                    models.DateTimeField(default=timezone.now),
                 ),
             ],
             options={

@@ -2,7 +2,7 @@
 title: 'Story 12.7 live-cluster verification (orbit of spec-12-1)'
 type: 'verification'
 created: '2026-08-25'
-updated: '2026-08-25'
+updated: '2026-08-26'
 status: 'done'
 cluster: 'CRC 2.63.0 / OpenShift 4.22.7 (apps-crc.testing)'
 ---
@@ -45,7 +45,9 @@ The CRC proofs in the table stand. Findings **5, 7, 8, 11** are dated as of that
 - **Finding 7 / 11 (pip layer vs conda `mcp`).** Follow-up is `spec-platform-image-one-pixi-env`: extras on `[feature.python-agent-platform]` conda deps; Containerfile has no `pip install --no-deps`; `[feature.platform-image-pip]` retired. `mcp-types` / `httpx2` were not folded (mcp 2.0 still a later story).
 - **Image proof (2026-08-25, not CRC).** `podman build -f src/platform/Containerfile -t localhost/platform:one-pixi-env .` → `localhost/platform:one-pixi-env` id `8cbee8e8f879`. Runtime `python -c` imports `django_structlog` and `rjsmin`. Do not treat this as a 12-7 Route/SCC re-prove.
 - **Next cluster upgrade (Liquibase only).** Apply changelog `:17` and `:18` on the next `liquibase update` / Helm hook. Not a 12-7 re-prove. Isolated `mfa` sqlmigrate and later Wagtailcore remain fake.
-- **Attempted 2026-08-25 evening:** CRC VM **Stopped**; `oc` / `helm` not on PATH. `:17`/`:18` **not applied**. Optionals (DB-GPT sidecar image, `platform_app` DML role / 27-2, OpenFeature ×4 / cachebox / Liquibase / Django 5.2.17 feedstocks) **not started**. Re-run after `crc start` and a platform-image push that contains those changesets.
+- **Attempted 2026-08-25 evening:** CRC VM **Stopped**; `oc` / `helm` not on PATH. `:17`/`:18` **not applied** then.
+- **Applied 2026-08-26 (Liquibase only; not a 12-7 re-prove).** CRC VM Running / OpenShift Running (v4.22.7). Running image still predates `:17`/`:18` files, so host `pixi run -e python-agent-platform python db/liquibase_update.py` against `oc port-forward svc/platform-postgres 15432:5432` (URL rewritten to `127.0.0.1:15432`; secret never printed). Changesets **`:17`** and **`:18`** `EXECUTED`. `:2` still skipped (`platform_app` missing — finding 9). `manage.py migrate --fake --noinput` via `/app/.pixi/envs/python-agent-platform/bin/python` on `deploy/platform` web: **No migrations to apply** (Django history already recorded; tables now exist). Not claimed: Route/SCC re-prove, Helm hook rebuild, 27-2, real DB-GPT sidecar.
+- **Follow-through 2026-08-26 (still not a 12-7 re-prove).** `account.W001` fixed (`ACCOUNT_LOGIN_METHODS={"email"}`, `ACCOUNT_SIGNUP_FIELDS=["email*"]`; registration still off). `front_door` 0002 `captured_at` default aligned with the model (no `:19`). Operator created `platform_app`, grants including `ON ALL TABLES` in `public`/`langflow_schema`/`dbgpt_schema` (`oc exec -i` required), Liquibase **`:2` EXECUTED**, `DATABASE_URL` rotated; web `/api/health` **200** as `platform_app`; `CREATE` on `public` refused. Overlay-commit of `localhost/platform:one-pixi-env` (`8cbee8e8f879`) + those two files → ImageStream `platform/platform:crc-20260826`; in-pod `manage.py check` reported no issues.
 
 ## Contingency ladder (postgres/redis)
 
@@ -60,8 +62,8 @@ The CRC proofs in the table stand. Findings **5, 7, 8, 11** are dated as of that
 ## What is not claimed
 
 - Real DB-GPT sidecar image in the registry (sidecar CrashLoop).
-- `platform_app` DML role / 27-2 closeout.
-- Full Wagtail/taggit/celery-beat DDL in Liquibase.
+- `platform_app` DML role on a *fresh* cluster (CRC 2026-08-26 did create the role, apply `:2`, and rotate `DATABASE_URL`; not a 12-7 re-prove).
+- Full Wagtail history after `wagtailcore` 0001, or isolated `mfa` sqlmigrate (those stay `migrate --fake`). `:17`/`:18` **are** in Liquibase and were applied 2026-08-26.
 - Host MCP Streamable HTTP faces on the CRC image (mcp 1.x vs 2.0).
 - Story 12.9 CI smoke as a substitute for this record.
 - Public registry push.

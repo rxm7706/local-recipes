@@ -42,6 +42,10 @@ spec:
               containerPort: 5670
               protocol: TCP
           env:
+            # Same default as the sidecar image: skip Popen(["libro"]).
+            # Libro is not in the sidecar env; leave NOTE_BOOK_ENABLE false.
+            - name: NOTE_BOOK_ENABLE
+              value: "false"
             {{- with .Values.sidecar.llm.modelName }}
             - name: DBGPT_LLM_MODEL_NAME
               value: {{ . | quote }}

@@ -458,6 +458,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/backports.asyncio.runner@3.iml" filepath="$PROJECT_DIR$/.idea/backports.asyncio.runner@3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/backports.asyncio.runner@4.iml" filepath="$PROJECT_DIR$/.idea/backports.asyncio.runner@4.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/backports.tarfile.iml" filepath="$PROJECT_DIR$/.idea/backports.tarfile.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/batchcorder.iml" filepath="$PROJECT_DIR$/.idea/batchcorder.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/beartype.iml" filepath="$PROJECT_DIR$/.idea/beartype.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/beautifulsoup4.iml" filepath="$PROJECT_DIR$/.idea/beautifulsoup4.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/behave.iml" filepath="$PROJECT_DIR$/.idea/behave.iml" />
@@ -476,6 +477,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/bmad-dashboard.iml" filepath="$PROJECT_DIR$/.idea/bmad-dashboard.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/bmad-loop.iml" filepath="$PROJECT_DIR$/.idea/bmad-loop.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/bmad-loop@1.iml" filepath="$PROJECT_DIR$/.idea/bmad-loop@1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/boring-semantic-layer.iml" filepath="$PROJECT_DIR$/.idea/boring-semantic-layer.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/brotli.iml" filepath="$PROJECT_DIR$/.idea/brotli.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/brotli@1.iml" filepath="$PROJECT_DIR$/.idea/brotli@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/build.iml" filepath="$PROJECT_DIR$/.idea/build.iml" />
@@ -950,6 +952,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/kaggle@1.iml" filepath="$PROJECT_DIR$/.idea/kaggle@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/kagglehub.iml" filepath="$PROJECT_DIR$/.idea/kagglehub.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/kagglesdk.iml" filepath="$PROJECT_DIR$/.idea/kagglesdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/kedro-mcp.iml" filepath="$PROJECT_DIR$/.idea/kedro-mcp.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/kedro_0_19_9_project.iml" filepath="$PROJECT_DIR$/.idea/kedro_0_19_9_project.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/kedro_1_0_0_project.iml" filepath="$PROJECT_DIR$/.idea/kedro_1_0_0_project.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/keras.iml" filepath="$PROJECT_DIR$/.idea/keras.iml" />

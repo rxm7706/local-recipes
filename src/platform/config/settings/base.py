@@ -431,8 +431,10 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 # ------------------------------------------------------------------------------
 # OIDC-only: no local registration or password login (CAP-1).
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=False)
-ACCOUNT_LOGIN_METHODS = set()
-ACCOUNT_SIGNUP_FIELDS = []
+# OIDC-only: no password login. allauth W001 requires every login method
+# to appear as a required signup field — empty LOGIN_METHODS always fails.
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_ADAPTER = "platformapp.users.adapters.AccountAdapter"
 ACCOUNT_FORMS = {"signup": "platformapp.users.forms.UserSignupForm"}

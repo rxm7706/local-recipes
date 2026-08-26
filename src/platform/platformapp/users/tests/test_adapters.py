@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.models import SocialLogin
+from django.core.checks import run_checks
 from django.test import RequestFactory
 from django.test import override_settings
 
 from platformapp.users.adapters import AccountAdapter
 from platformapp.users.adapters import SocialAccountAdapter
 from platformapp.users.models import User
+
+
+def test_oidc_only_allauth_settings_do_not_raise_w001() -> None:
+    assert not any(message.id == "account.W001" for message in run_checks())
 
 
 def test_account_adapter_honours_registration_flag() -> None:
