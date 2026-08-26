@@ -1420,13 +1420,13 @@ deptry = ">=0.25.1"               # A command line utility to check for unused, 
 osv-scanner = ">=2.5.1"           # Vulnerability scanner written in Go which uses the data provided by https://osv.dev
 pip-audit = ">=2.10.1"            # Audit Python environments for known vulnerabilities
 bandit = ">=1.9.4"                # Security linter for Python code
-pip = ">=26.2.1"                    # Python package installer
+pip = ">=26.2.1"                  # Python package installer
 setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
 setuptools-scm = ">=10.2.1"       # Version metadata from VCS tags
 hatchling = ">=1.32.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=7.0.0"                 # PyPI artifact uploader
-uv = ">=0.12.5"                  # Fast Rust-based Python package installer / resolver
+uv = ">=0.12.5"                   # Fast Rust-based Python package installer / resolver
 wheel = ">=0.48.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
 pnpm = ">=11.24.0"                # Fast disk-efficient Node package manager
@@ -1633,13 +1633,13 @@ claude-agent-acp = ">=0.70.0"     # bridges the Claude Agent SDK to the Agent Cl
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
-fastmcp = ">=2.14.3"             # FastMCP framework for building MCP servers. Floor raised from 2.14.3 on 2026-08-24: 2.14.x declares `mcp >=1.24` with NO upper bound, so the solver happily paired it with `mcp` 2.0.0 -- which renamed `McpError`->`MCPError`, making `import fastmcp` raise ImportError and every server here unstartable. That missing bound is a feedstock defect (2.14.3 predates the rename and should carry `<2.0` like every 3.x build does); it is why this surfaced at runtime instead of as a solve failure. `<4` is deliberate: FastMCP 4 is the modern-protocol line but ships only as 4.0.0b3, which conda-forge cannot accept.
-github-copilot-sdk =">=1.0.11"     # GitHub Copilot Python SDK
+fastmcp = ">=2.14.3"              # FastMCP framework for building MCP servers. Floor raised from 2.14.3 on 2026-08-24: 2.14.x declares `mcp >=1.24` with NO upper bound, so the solver happily paired it with `mcp` 2.0.0 -- which renamed `McpError`->`MCPError`, making `import fastmcp` raise ImportError and every server here unstartable. That missing bound is a feedstock defect (2.14.3 predates the rename and should carry `<2.0` like every 3.x build does); it is why this surfaced at runtime instead of as a solve failure. `<4` is deliberate: FastMCP 4 is the modern-protocol line but ships only as 4.0.0b3, which conda-forge cannot accept.
+github-copilot-sdk =">=1.0.11"    # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
 langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 #langflow = ">=1.10.3"             # LangChain visual workflow builder,   name: bcrypt > "5.0.0", #setuptools = ">=81.0.0", #rich = ">=14.3.4"
 lumen-ai-anthropic = ">=1.3.0"    # Lumen AI's Anthropic backend integration
-mcp = ">=2.1.0"              # Official Model Context Protocol Python SDK. Ceiling kept 2026-08-25 (steward 21.2): every conda-forge `fastmcp` 3.x build still declares `mcp >=1.24.0,<2.0`, so this env cannot take `mcp` 2.0.0 while factory FastMCP servers remain. CAP-4 host faces use `mcp==2.0.0` on `[feature.platform-ci-test]` / `[feature.pyforge-atlas]` (no fastmcp). Lift this ceiling when FastMCP 4 is on conda-forge or factory servers leave FastMCP. Doctor/herald features already pin `mcp >=2.0.0`.
+mcp = ">=2.1.0"                   # Official Model Context Protocol Python SDK. Ceiling kept 2026-08-25 (steward 21.2): every conda-forge `fastmcp` 3.x build still declares `mcp >=1.24.0,<2.0`, so this env cannot take `mcp` 2.0.0 while factory FastMCP servers remain. CAP-4 host faces use `mcp==2.0.0` on `[feature.platform-ci-test]` / `[feature.pyforge-atlas]` (no fastmcp). Lift this ceiling when FastMCP 4 is on conda-forge or factory servers leave FastMCP. Doctor/herald features already pin `mcp >=2.0.0`.
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
 pydantic-ai = ">=2.34.0"          # Pydantic-AI agent framework
 "llama.cpp" = ">=10588"           # llama.cpp local LLM inference engine
@@ -1709,7 +1709,7 @@ bmad-module-skill-forge = ">=2.1.0"  # Skill Forge npx-wrapper CLI (the skf modu
 ocrmypdf = ">=17.10.0"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
-pixitainer = ">=0.8.3"             # Containerize your Pixi workspace with a single command. linux-64 only here:
+pixitainer = ">=0.8.3"            # Containerize your Pixi workspace with a single command. linux-64 only here:
                                   # its own recipe is `build.skip: "not linux"` -- placing it in the cross-platform
                                   # [feature.local-recipes.dependencies] table (its former, stale ">=0.7.1" home)
                                   # breaks win-64/osx-arm64-min solves (Story 10.2, Story 10.3's pixitainer eval).
