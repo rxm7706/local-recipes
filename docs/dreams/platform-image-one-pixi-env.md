@@ -39,7 +39,7 @@ SIF). Mason presenton still uses pixitainer for other images. This Dream re-eval
 
 ## Constraints
 
-- `platform-ci-test` stays a separate PyPI solve (psycopg3 vs image psycopg2).
+- `platform-ci-test` stays a separate conda solve (psycopg3 vs image psycopg2).
 - Runtime stage still copies the materialized env — **no pixi binary** in the final image.
 - `python-agent-platform` may keep `mcp <2` for Langflow/FastMCP; host MCP 2.0 faces are not
   solved by folding the pip layer alone.

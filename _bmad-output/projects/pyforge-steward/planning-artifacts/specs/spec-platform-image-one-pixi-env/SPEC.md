@@ -65,7 +65,7 @@ can retry without a pip seam.
 
 - Runtime stage copies the materialized env; **no pixi binary** in the final image (10.3).
 - UBI9-minimal, GID 0 `g+rwX` on the three writable paths, `restricted-v2` (10.3).
-- `platform-ci-test` remains a separate PyPI solve (psycopg3 vs image psycopg2).
+- `platform-ci-test` remains a separate conda solve (psycopg3 vs image psycopg2).
 - Folding extras does **not** lift `python-agent-platform` to `mcp` 2.0 while FastMCP 3.x
   on that env declares `mcp >=1.24,<2`. Host MCP faces on CRC may stay ImportError-skipped
   until a later mcp/FastMCP story.
@@ -92,7 +92,7 @@ rejected again with the same 10.3 reasons plus any new Docker-backend evidence.
 
 - Django-host extras ship from conda-forge on `[feature.python-agent-platform.dependencies]`
   (whitenoise `>=6.11`; cookiecutter `6.9.0` is not on conda-forge). `platform-ci-test`
-  stays a separate PyPI solve.
+  stays a separate conda solve.
 - Conda 503 during image build is an infra flake; CAP-1 does not require a second installer
   as a workaround.
 

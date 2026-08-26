@@ -16,6 +16,9 @@ build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - kedro-mcp = kedro_mcp.server:main_stdio
 
 requirements:
   host:
@@ -38,46 +41,13 @@ tests:
 
 about:
   homepage: https://github.com/kedro-org/kedro-mcp
-  license: REPLACE_LICENSE
-  license_file: LICENSE
+  license: Apache-2.0
+  license_file: LICENSE.txt
   summary: MCP server with Kedro prompts and tools (local stdio, zero-install via uvx).
   description: |
     MCP server with Kedro prompts and tools (local stdio, zero-install via uvx).
+  repository: https://github.com/kedro-org/kedro-mcp
 
 extra:
   recipe-maintainers:
     - rxm7706
-
-#### CFE metadata AND comments
-# CFE metadata
-  cfe-conda-name: kedro-mcp
-  cfe-upstream-registry: pypi
-  cfe-upstream-name: kedro-mcp
-  cfe-purls:
-    - pkg:conda/kedro-mcp@${{ version }}?channel=conda-forge
-    - pkg:pypi/kedro-mcp@${{ version }}
-  cfe-upstream-repo: none
-  cfe-upstream-homepage: https://github.com/kedro-org/kedro-mcp
-  cfe-import-names: [kedro_mcp]
-  cfe-source-kind: pypi-sdist
-  cfe-noarch: python
-  cfe-pip-check: "true"
-  cfe-on-conda-forge-status: pending-submission-to-conda-forge
-  cfe-on-conda-forge-feedstock: none
-  cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - license-unresolved:REPLACE_LICENSE
-
-  cfe-last-checked: 2026-08-17T05:19:21Z
-  cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T05:19:21Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T05:19:21Z
-  cfe-local-build-platform: linux-64
-  cfe-local-build-tool: rattler-build
-####
-# CFE comments
-# Header:
-#    # license:REPLACE_LICENSE
-#    # blocker: license-unresolved:REPLACE_LICENSE
-####

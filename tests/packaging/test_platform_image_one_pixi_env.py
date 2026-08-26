@@ -26,6 +26,14 @@ def test_pixi_has_no_platform_image_pip_feature() -> None:
     assert "mcp-types" not in conda
     assert conda["whitenoise"].startswith(">=")
 
+    ci = data["feature"]["platform-ci-test"]
+    assert "pypi-dependencies" not in ci
+    ci_deps = ci["dependencies"]
+    assert "redis-py" in ci_deps
+    assert "redis" not in ci_deps
+    assert "mcp-types" in ci_deps
+    assert "factory_boy" in ci_deps
+
 
 def test_pip_layer_emitter_is_tombstone() -> None:
     import subprocess

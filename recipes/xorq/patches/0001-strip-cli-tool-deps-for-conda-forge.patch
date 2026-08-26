@@ -14,7 +14,7 @@ it to the optional `annex` extra), so it no longer needs stripping here.
 pyarrow 25, and the global pyarrow pin already constrains the ABI, so the
 recipe's `run:` block deliberately carries no upper bound. Without this hunk
 the wheel METADATA keeps the <22 cap and `pip check` fails with
-"xorq 0.3.36 has requirement pyarrow<22,>=18.0.0, but you have pyarrow 25.0.0"
+"xorq 0.3.39 has requirement pyarrow<22,>=18.0.0, but you have pyarrow 25.0.0"
 (SKILL.md G26 — loosening a conda dep does not loosen the baked wheel
 metadata). This mirrors the same patch carried by
 conda-forge/xorq-datafusion-feedstock.
@@ -38,7 +38,7 @@ xorq_datafusion backend tests still finds a conftest.
  
  # .gitignore contains `.env.*` which hatchling treats as an exclusion pattern
 @@ -28,7 +29,7 @@
- version = "0.3.36"
+ version = "0.3.39"
  dependencies = [
      "attrs>=24.1.0; python_version >= '3.10' and python_version < '4.0'",
 -    "pyarrow>=18.0.0,<22; python_version >= '3.10' and python_version < '4.0'",

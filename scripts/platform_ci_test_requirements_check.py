@@ -2,8 +2,8 @@
 """platform-ci-test-requirements-check — pixi is the sole platform dep authority.
 
 Steward Story 16.1 (CAP-5) retired ``src/platform/requirements/{base,local,production}.txt``
-as an install source. ``[feature.platform-ci-test.pypi-dependencies]`` in the
-repo-root ``pixi.toml`` is the CI/test authority. The platform image uses
+as an install source. ``[feature.platform-ci-test.dependencies]`` in the
+repo-root ``pixi.toml`` is the CI/test authority (conda-only). The platform image uses
 ``[feature.python-agent-platform.dependencies]`` (no pip layer).
 
 This detector fails if the retired requirement files are resurrected (so they
@@ -78,7 +78,7 @@ def main() -> int:
     if args.fix:
         msg = (
             "platform-ci-test-requirements-check: --fix was removed in steward Story 16.1; "
-            "edit [feature.platform-ci-test.pypi-dependencies] in pixi.toml directly, "
+            "edit [feature.platform-ci-test.dependencies] in pixi.toml directly, "
             "then run `pixi lock`."
         )
         if args.json:

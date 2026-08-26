@@ -111,11 +111,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T05:23:03Z
-  cfe-generated-by-version: 8.81.0
+  cfe-last-checked: 2026-08-25T23:54:00Z
+  cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: 2026-08-17T05:23:03Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-17T05:23:03Z
+  cfe-local-build-status: build-clean
+  cfe-local-build-datetime: 2026-08-25T23:54:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

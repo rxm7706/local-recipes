@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: kedro-skills
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kedro-skills/kedro_skills-${{ version }}.tar.gz
+  sha256: 6fec0983b2da78988bf644ff11e9c69250f61a7c41a7c58fac782ce13f1b1c74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0
+    - kedro >=1.0
+    - pyyaml >=6.0
+
+tests:
+  - python:
+      imports:
+        - kedro_skills
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/kedro-org/kedro-skills
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Distribute AI coding skills to Kedro projects.
+  description: |
+    Distribute AI coding skills to Kedro projects.
+  repository: https://github.com/kedro-org/kedro-skills
+  documentation: https://github.com/kedro-org/kedro-skills
+
+extra:
+  recipe-maintainers:
+    - rxm7706
