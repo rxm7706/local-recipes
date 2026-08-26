@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.11.0"
+  version: "0.11.1"
   python_min: "3.11"
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-loop/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 6ff2a606fb3e21308342ac1f8867d910c5750557daa165cf8da790084ef8d40d
+  sha256: 7aca4c5899b4409679cdbe44dc729f59aaf2a6071282b1521a43b51662ba88d8
 
 build:
   noarch: python
@@ -85,11 +85,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-21T00:00:00Z"
+  cfe-last-checked: "2026-08-26T00:00:00Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-21T00:00:00Z"
+  cfe-local-build-datetime: "2026-08-26T00:00:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -104,6 +104,8 @@ extra:
 #    # regex >=2024.11.6 became a CORE upstream dep in 0.10.x/0.11.0 (the
 #    # #194 env-fault classifier needs the regex module's per-call timeout=;
 #    # stdlib re has none). On conda-forge as `regex` (compiled, all subdirs).
+#    # 0.11.1 declares git >=2.34 as a host-tool floor (validate/run refuse
+#    # below it). That is not a conda run dep — git is the operator's VCS.
 #    # 0.11.0 adds an optional [opencode] extra (httpx >=0.28) for the
 #    # opencode-http adapter — NOT flattened into run (this repo does not
 #    # consume it; Simplicity First). psmux >=3.3.8 is an optional backend
