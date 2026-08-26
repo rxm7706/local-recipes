@@ -77,6 +77,9 @@ SITES: tuple[Site, ...] = (
     _site("src/platform/compose/dbgpt/Containerfile builder stage",
           "src/platform/compose/dbgpt/Containerfile",
           r"ghcr\.io/prefix-dev/pixi:" + _PIXI_VERSION + r" AS builder", kind="exact"),
+    _site("src/platform/compose/mcp-host/Containerfile builder stage",
+          "src/platform/compose/mcp-host/Containerfile",
+          r"ghcr\.io/prefix-dev/pixi:" + _PIXI_VERSION + r" AS builder", kind="exact"),
 )
 
 

@@ -321,6 +321,20 @@ dbgpt-app = ">=0.8.1"  # the FastAPI server app (webserver CLI + AgenticData tex
 # postgresql+psycopg2 URL ModuleNotFoundErrors on psycopg2 without this.
 psycopg2 = ">=2.9.10"  # matches python-agent-platform (PostgreSQL 17 / psycopg2 2.9.10+)
 
+[feature.mcp-host]
+# --- mcp-host (spec-mcp-era-isolation slice 1) ---
+# Isolated env for the MCP-face sidecar. mcp 2.x + official MCPServer.
+# NEVER compose onto python-agent-platform (Langflow + FastMCP 3 pin mcp<2).
+# No FastMCP. No Langflow. Container-only, same platforms posture as dbgpt-sidecar.
+platforms = ["linux-64"]
+
+[feature.mcp-host.dependencies]
+python = "3.12.*"
+mcp = ">=2.1.0"
+mcp-types = ">=2.1.0"
+uvicorn = ">=0.52.4"
+starlette = ">=0.46.0"
+
 [feature.platform-ci-test]
 # --- platform-ci-test (Platform CI `test` job, conda-only) ---
 # SOLE authority for Platform CI `test` job Python deps (steward Story 16.1 /
@@ -753,6 +767,7 @@ platform-dev = { features = ["python-agent-platform", "platform-dev"], no-defaul
 # fastapi ranges). Materialized exclusively inside the sidecar Containerfile's
 # builder stage; not part of any developer's local dev baseline.
 dbgpt-sidecar = { features = ["dbgpt-sidecar"], no-default-feature = true }
+mcp-host = { features = ["mcp-host"], no-default-feature = true }
 # platform-ci-test: slim conda env for Platform CI's `test` job only --
 # mirrors the retired requirements/{base,production,local}.txt pin set.
 # (Story 16.1: legacy pip backend removed — pixi platform-ci-test only.)

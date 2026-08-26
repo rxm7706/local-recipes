@@ -1,40 +1,61 @@
 """Host MCP Streamable HTTP helpers (canopy AD-5 / FR-11).
 
-Mount pattern is ``POST /stations/<name>/mcp``. Dual-era revisions are
-``2025-03-26`` through ``2026-07-28``. Handshake ``initialize`` must echo the
-client's requested revision; unsupported revisions return JSON-RPC ``-32022``
-with the supported list. GET is 405 — deprecated dual-endpoint SSE is not served.
+Mount pattern is ``POST /stations/<name>/mcp``. Dual-era logic lives in
+``mcp_dual_era`` (Django-free). This module discovers in-process faces or
+proxies to the mcp-host sidecar when ``MCP_HOST_SIDECAR_BASE_URL`` is set.
 """
 
 from __future__ import annotations
 
-import json
-from collections import deque
+import logging
+import os
 from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
 from django_pyforge.discovery import iter_portal_configs
-
-SUPPORTED_MCP_REVISIONS: tuple[str, ...] = (
-    "2025-03-26",
-    "2025-06-18",
-    "2025-11-25",
-    "2026-07-28",
+from django_pyforge.mcp_dual_era import (  # noqa: F401
+    HANDSHAKE_MCP_REVISIONS,
+    MCP_PROTOCOL_VERSION_HEADER,
+    MODERN_MCP_REVISION,
+    SUPPORTED_MCP_REVISIONS,
+    UNSUPPORTED_PROTOCOL_VERSION,
+    DualEraPostOnlyASGI,
+    asgi_for_server,
+    asgi_for_station,
+    match_station_mcp,
+    mcp_child_scope,
+    read_body,
+    send_http,
 )
-HANDSHAKE_MCP_REVISIONS: tuple[str, ...] = SUPPORTED_MCP_REVISIONS[:-1]
-MODERN_MCP_REVISION = "2026-07-28"
-UNSUPPORTED_PROTOCOL_VERSION = -32022
-MCP_PROTOCOL_VERSION_HEADER = b"mcp-protocol-version"
 
+logger = logging.getLogger(__name__)
+
+MCP_HOST_SIDECAR_URL_ENV = "MCP_HOST_SIDECAR_BASE_URL"
 
 _mcp_apps: dict[str, Any] = {}
+_import_skip_logged = False
+
+
+def sidecar_base_url() -> str | None:
+    raw = os.environ.get(MCP_HOST_SIDECAR_URL_ENV, "").strip()
+    return raw.rstrip("/") or None
+
+
+def _log_import_skip(where: str) -> None:
+    global _import_skip_logged
+    if _import_skip_logged:
+        return
+    _import_skip_logged = True
+    logger.warning(
+        "MCP face skipped (%s): mcp 2.x MCPServer unavailable in this interpreter; "
+        "set %s to reach the mcp-host sidecar (spec-mcp-era-isolation retire-skip.md)",
+        where,
+        MCP_HOST_SIDECAR_URL_ENV,
+    )
 
 
 def _install_flags_mcp() -> None:
-    """Host MCP face for FILE flag eval (steward 26.4). Lazy to avoid a
-    ready()-time registration that would skip portal discovery.
-    """
     if "flags" in _mcp_apps:
         return
     from django_pyforge.flags import flags_asgi_app
@@ -42,8 +63,7 @@ def _install_flags_mcp() -> None:
     try:
         _mcp_apps["flags"] = flags_asgi_app()
     except ImportError:
-        # python-agent-platform conda ships mcp 1.x (no mcp.server.mcpserver).
-        # Skip the flags face so ASGI still boots (CRC 12.7 /ht/).
+        _log_import_skip("flags")
         return
 
 
@@ -69,24 +89,19 @@ def loaded_station_mcp_apps() -> dict[str, Any]:
 
 
 async def dispatch_station_mcp(scope: dict[str, Any], receive: Any, send: Any) -> bool:
-    """Handle ``POST /stations/<name>/mcp`` when that station registered an MCP app."""
+    """Handle ``/stations/<name>/mcp`` via sidecar proxy or in-process app."""
     station = match_station_mcp(scope["path"])
     if station is None:
         return False
+    base = sidecar_base_url()
+    if base:
+        await proxy_station_mcp(base, station, scope, receive, send)
+        return True
     app = station_mcp_app(station)
     if app is None:
         return False
     await app(mcp_child_scope(scope, station), receive, send)
     return True
-
-
-def match_station_mcp(path: str) -> str | None:
-    """Return the station name if ``path`` is ``/stations/<name>/mcp`` (no extra segments)."""
-    stripped = path.strip("/")
-    parts = stripped.split("/")
-    if len(parts) == 3 and parts[0] == "stations" and parts[2] == "mcp" and parts[1]:
-        return parts[1]
-    return None
 
 
 def iter_station_mcp_apps() -> Iterator[tuple[str, Any]]:
@@ -98,216 +113,57 @@ def iter_station_mcp_apps() -> Iterator[tuple[str, Any]]:
         try:
             app = factory()
         except ImportError:
-            # Host MCP faces need mcp 2.0; the platform image keeps mcp 1.x
-            # for Langflow. Skip the face rather than crash gunicorn (12.7).
+            _log_import_skip(portal.station_name)
             continue
         if app is not None:
             yield portal.station_name, app
 
 
-def mcp_child_scope(scope: dict[str, Any], station: str) -> dict[str, Any]:
-    """Rewrite path so a Starlette route of ``/`` matches the MCP mount."""
-    new_scope = dict(scope)
-    prefix = f"/stations/{station}/mcp"
-    new_scope["root_path"] = scope.get("root_path", "") + prefix
-    new_scope["path"] = "/"
-    raw = scope.get("raw_path")
-    if isinstance(raw, (bytes, bytearray)):
-        new_scope["raw_path"] = b"/"
-    return new_scope
+async def proxy_station_mcp(
+    base: str,
+    station: str,
+    scope: dict[str, Any],
+    receive: Any,
+    send: Any,
+) -> None:
+    """Forward the request to the mcp-host sidecar. Unreachable → 502 + error log."""
+    import httpx
 
-
-def asgi_for_server(server: Any) -> Any:
-    """Wrap an official ``MCPServer`` as POST-only dual-era Streamable HTTP."""
-    from mcp.server.transport_security import TransportSecuritySettings
-
-    starlette_app = server.streamable_http_app(
-        streamable_http_path="/",
-        json_response=True,
-        stateless_http=True,
-        transport_security=TransportSecuritySettings(
-            enable_dns_rebinding_protection=False,
-        ),
-    )
-    return DualEraPostOnlyASGI(starlette_app)
-
-
-_station_identity_servers: dict[str, Any] = {}
-
-
-def asgi_for_station(name: str) -> Any:
-    """Cached identity MCP face (``station_face``) wrapped by ``asgi_for_server``."""
-    server = _station_identity_servers.get(name)
-    if server is None:
-        from mcp.server.mcpserver import MCPServer  # noqa: PLC0415
-
-        server = MCPServer(f"pyforge-{name}")
-
-        @server.tool()
-        def station_face() -> str:
-            return name
-
-        _station_identity_servers[name] = server
-    return asgi_for_server(server)
-
-
-class DualEraPostOnlyASGI:
-    """Reject non-POST; reject unsupported protocol revisions with ``-32022``."""
-
-    def __init__(self, app: Any) -> None:
-        self.app = app
-
-    async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-        method = scope.get("method", "")
-        if method != "POST":
-            await _send_http(
-                send,
-                HTTPStatus.METHOD_NOT_ALLOWED,
-                b"Method Not Allowed",
-                extra_headers=[(b"allow", b"POST")],
-                content_type=b"text/plain; charset=utf-8",
-            )
-            return
-
-        header_revision = _header_protocol_version(scope)
-        if header_revision is not None and header_revision not in SUPPORTED_MCP_REVISIONS:
-            await _send_jsonrpc_error(
-                send,
-                None,
-                UNSUPPORTED_PROTOCOL_VERSION,
-                "Unsupported protocol version",
-                {"supported": list(SUPPORTED_MCP_REVISIONS), "requested": header_revision},
-            )
-            return
-
-        body, replay = await _read_body(receive)
-        if _is_initialize(body):
-            requested = _initialize_revision(body)
-            if requested is None or requested not in HANDSHAKE_MCP_REVISIONS:
-                await _send_jsonrpc_error(
-                    send,
-                    _jsonrpc_id(body),
-                    UNSUPPORTED_PROTOCOL_VERSION,
-                    "Unsupported protocol version",
-                    {
-                        "supported": list(SUPPORTED_MCP_REVISIONS),
-                        "requested": requested if requested is not None else "",
-                    },
-                )
-                return
-        await self.app(scope, replay, send)
-
-
-def _header_protocol_version(scope: dict[str, Any]) -> str | None:
+    body, _replay = await read_body(receive)
+    url = f"{base}/stations/{station}/mcp"
+    headers: dict[str, str] = {}
     for key, value in scope.get("headers") or ():
-        if key == MCP_PROTOCOL_VERSION_HEADER:
-            return value.decode("latin-1")
-    return None
-
-
-def _is_initialize(body: bytes) -> bool:
+        name = key.decode("latin-1")
+        if name.lower() in {"host", "content-length", "transfer-encoding"}:
+            continue
+        headers[name] = value.decode("latin-1")
     try:
-        payload = json.loads(body.decode("utf-8") or "null")
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return False
-    if isinstance(payload, dict):
-        return payload.get("method") == "initialize"
-    if isinstance(payload, list):
-        return any(
-            isinstance(item, dict) and item.get("method") == "initialize" for item in payload
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.request(
+                scope.get("method", "POST"),
+                url,
+                content=body,
+                headers=headers,
+            )
+    except httpx.RequestError as exc:
+        logger.error("mcp-host sidecar unreachable at %s: %s", base, exc)
+        await send_http(
+            send,
+            HTTPStatus.BAD_GATEWAY,
+            b"mcp-host sidecar unreachable",
+            content_type=b"text/plain; charset=utf-8",
         )
-    return False
-
-
-def _initialize_revision(body: bytes) -> str | None:
-    try:
-        payload = json.loads(body.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    message = payload
-    if isinstance(payload, list):
-        message = next(
-            (item for item in payload if isinstance(item, dict) and item.get("method") == "initialize"),
-            None,
-        )
-    if not isinstance(message, dict):
-        return None
-    params = message.get("params") or {}
-    if not isinstance(params, dict):
-        return None
-    revision = params.get("protocolVersion")
-    return revision if isinstance(revision, str) else None
-
-
-def _jsonrpc_id(body: bytes) -> Any:
-    try:
-        payload = json.loads(body.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    if isinstance(payload, dict):
-        return payload.get("id")
-    return None
-
-
-async def _read_body(receive: Any) -> tuple[bytes, Any]:
-    chunks = bytearray()
-    trailing: deque[dict[str, Any]] = deque()
-    while True:
-        message = await receive()
-        if message["type"] != "http.request":
-            trailing.append(message)
-            break
-        chunks.extend(message.get("body", b""))
-        if not message.get("more_body", False):
-            break
-    body = bytes(chunks)
-    cached: deque[dict[str, Any]] = deque()
-    cached.append({"type": "http.request", "body": body, "more_body": False})
-    cached.extend(trailing)
-
-    async def replay() -> dict[str, Any]:
-        if cached:
-            return cached.popleft()
-        return await receive()
-
-    return body, replay
-
-
-async def _send_http(
-    send: Any,
-    status: HTTPStatus,
-    body: bytes,
-    *,
-    extra_headers: list[tuple[bytes, bytes]] | None = None,
-    content_type: bytes = b"application/json",
-) -> None:
-    headers = [
-        (b"content-type", content_type),
-        (b"content-length", str(len(body)).encode("ascii")),
-    ]
-    if extra_headers:
-        headers.extend(extra_headers)
-    await send({"type": "http.response.start", "status": int(status), "headers": headers})
-    await send({"type": "http.response.body", "body": body})
-
-
-async def _send_jsonrpc_error(
-    send: Any,
-    request_id: Any,
-    code: int,
-    message: str,
-    data: dict[str, Any],
-) -> None:
-    payload = {
-        "jsonrpc": "2.0",
-        "id": request_id,
-        "error": {"code": code, "message": message, "data": data},
-    }
-    await _send_http(
-        send,
-        HTTPStatus.BAD_REQUEST,
-        json.dumps(payload).encode("utf-8"),
+        return
+    out_headers: list[tuple[bytes, bytes]] = []
+    for key, value in response.headers.items():
+        if key.lower() in {"transfer-encoding", "connection"}:
+            continue
+        out_headers.append((key.lower().encode("latin-1"), value.encode("latin-1")))
+    await send(
+        {
+            "type": "http.response.start",
+            "status": response.status_code,
+            "headers": out_headers,
+        }
     )
+    await send({"type": "http.response.body", "body": response.content})

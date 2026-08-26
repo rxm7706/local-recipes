@@ -1,0 +1,57 @@
+# MCP-host sidecar (spec-mcp-era-isolation slice 1). restricted-v2.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform.mcpHost.fullname" . }}
+  labels:
+    {{- include "platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-host
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mcp-host
+  template:
+    metadata:
+      labels:
+        {{- include "platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mcp-host
+    spec:
+      serviceAccountName: {{ include "platform.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "platform.restrictedPodSecurityContext" . | nindent 8 }}
+      containers:
+        - name: mcp-host
+          image: {{ include "platform.imageRef" (dict "image" .Values.mcpHost.image "path" "mcpHost.image") }}
+          imagePullPolicy: {{ include "platform.imagePullPolicy" .Values.mcpHost.image }}
+          securityContext:
+            {{- include "platform.restrictedContainerSecurityContext" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          {{- with .Values.mcpHost.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
