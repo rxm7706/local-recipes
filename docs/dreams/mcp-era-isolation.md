@@ -77,5 +77,5 @@ fails CAP-4 identity or latency.
   `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-mcp-era-isolation/`.
 - **2026-08-26** — Slice 1 landed: pixi env `mcp-host`, sidecar Containerfile,
   host proxy via `MCP_HOST_SIDECAR_BASE_URL`, CRC proofs in spec memlog.
-  Slice 2 parked as `spec-mcp-factory-stdio-translator`. Slice 3 criteria in
-  `retire-skip.md` (ImportError skip kept).
+  Slice 2 implementation started 2026-08-26 (`scripts/mcp_factory_stdio_translator.py`).
+  Slice 3 criteria in `retire-skip.md` (ImportError skip kept).
