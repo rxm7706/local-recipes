@@ -2,8 +2,12 @@
 title: SKF domain skill and BMAD persona for steward
 type: feature
 created: '2026-08-25'
-status: ready
+status: done
 updated: '2026-08-25'
+baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
+review_loop_iteration: 0
+followup_review_recommended: false
+deferred: []
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
@@ -59,6 +63,31 @@ Bind to epics.md Story 33.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 - 2026-08-25: drafted from epics.md for fleet drain preflight
 
 ## Review Triage Log
+
+### 2026-08-25 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 0, low 1)
+- defer: 0
+- reject: 8
+- addressed_findings:
+  - `[low]` `[patch]` platform/Wave-B guards now include untracked files (`git ls-files --others`) so the AC holds before the first commit
+
+## Auto Run Result
+
+Status: done
+
+Summary: SKF Quick-tier content skill `pyforge-steward` compiled from `src/shared/packages/pyforge-steward/` with provenance and an `active` pointer. BMAD launcher `bmad-agent-steward` consults that skill and may only emit FR-13 `pyforge steward …` and FR-11 `POST /stations/steward/mcp`. Export skipped (CLAUDE.md/AGENTS.md unchanged). CFE untouched. No `pyforge.*` under `src/platform/`. Story 33.2 not started.
+
+Files:
+- `.claude/skills/pyforge-steward/` — brief, version-nested package, provenance, `active` symlink
+- `.claude/skills/bmad-agent-steward/` — launcher SKILL.md, customize.toml, golden provision-list transcript
+- `tests/meta/test_skf_steward_skill.py` / `test_steward_persona.py` — FR-37/FR-38 station-owned gates
+- `planning-artifacts/specs/spec-33-1-….md` — tracked story spec
+
+Review: 1 low patch applied; follow-up score 1 → false.
+
+Verification: 18 passed (`test_skf_steward_skill` + `test_steward_persona`); SKF frontmatter/output PASS; `git diff origin/main -- src/platform` empty of pyforge imports.
 
 ## Verification
 

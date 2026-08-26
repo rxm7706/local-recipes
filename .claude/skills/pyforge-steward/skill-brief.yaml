@@ -1,0 +1,34 @@
+name: pyforge-steward
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-steward
+source_authority: internal
+language: python
+description: >
+  Provisioner's CLI for credential lifecycle, deploy, provision, budget,
+  sync, workspace, upgrade, and suite. Agents use pyforge steward grammar
+  rather than importing pyforge.steward internals.
+forge_tier: Quick
+created: '2026-08-25'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/steward/cli.py
+    - src/pyforge/steward/__init__.py
+    - src/pyforge/steward/interfaces.py
+    - README.md
+  exclude:
+    - tests/**
+    - '**/__pycache__/**'
+  notes: >
+    Story 33.1 compile for the steward station. Public contract is the
+    steward CLI (AD-7/AD-8). Portal django-steward / Wave B 33.2 is out of scope.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Package __init__ exports only __version__; CLI is the authoring surface.
+    recorded: '2026-08-25'
