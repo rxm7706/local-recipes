@@ -2,8 +2,9 @@
 title: First portal slice — list loop homes
 type: feature
 created: '2026-08-25'
-status: ready
-updated: '2026-08-25'
+status: in-review
+updated: '2026-08-26'
+baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
@@ -54,8 +55,17 @@ Bind to epics.md Story 27.2 and the 2026-08-25 station-skill-portal SCP. Follow 
 ## Spec Change Log
 
 - 2026-08-25: drafted from epics.md for fleet drain preflight
+- 2026-08-26: /stations/marshal/ lists provisioned homes via PortalClient.list_loop_homes
 
 ## Review Triage Log
+
+Self-review (build-auto reviewers not spawned — parent Wave B agent): ACs hold — PortalClient-only list, no ingest, no pyforge under src/platform, chrome still extended.
+
+## Auto Run Result
+
+Status: in-review
+baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
+Verification: marshal meta 7 passed; platform portal tests 7 passed (plus empty-homes case added)
 
 ## Verification
 

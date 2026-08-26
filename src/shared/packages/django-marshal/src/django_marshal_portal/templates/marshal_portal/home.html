@@ -4,5 +4,14 @@
 {% endblock title %}
 {% block content %}
   <p id="marshal-body">marshal portal</p>
-  <section data-console-home="campaigns"></section>
+  <section data-console-home="campaigns">
+    <h2>Loop homes</h2>
+    <ul id="marshal-loop-homes">
+      {% for home in loop_homes %}
+        <li data-loop-home-slug="{{ home.slug }}">{{ home.slug }}</li>
+      {% empty %}
+        <li id="marshal-loop-homes-empty">No loop homes provisioned.</li>
+      {% endfor %}
+    </ul>
+  </section>
 {% endblock content %}
