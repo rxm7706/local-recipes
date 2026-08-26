@@ -129,6 +129,11 @@ SDKs/
 # `.claude/worktrees/.retired-worktrees-*/**/.pixi`).
 .claude/worktrees/
 .cursor/worktrees/
+# Fleet-drain / `git worktree add` under the repo root (gitignored as
+# `.worktrees/`). Same class as the two lines above: full extra checkouts
+# with their own `.pixi/` — not an image input. Missed 2026-08-26 when a
+# sidecar `COPY . /app` walked this tree and filled the build host disk.
+.worktrees/
 **/conf/local/*
 !**/conf/local/.gitkeep
 **/conf/**/*credentials*
@@ -167,6 +172,9 @@ SDKs/
 # conda/rattler-build leavings -- this is a packaging factory, so a checkout
 # that has run a local recipe build carries these (none are git-tracked).
 conda-bld/
+# rattler-build / conda local output (gitignored `output/`). Same class as
+# conda-bld/; 732M on this host and never read by platform or sidecar images.
+output/
 miniforge3/
 **/*.conda
 **/*.tar.bz2

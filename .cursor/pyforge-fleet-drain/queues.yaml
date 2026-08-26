@@ -166,8 +166,7 @@ stations:
     queue: []
   warden:
     project: pyforge-warden
-    drained: false
-    remaining_count: 1
-    next: 10-2-first-portal-slice-audit-start-get
-    queue:
-    - 10-2-first-portal-slice-audit-start-get
+    drained: true
+    remaining_count: 0
+    next: null
+    queue: []

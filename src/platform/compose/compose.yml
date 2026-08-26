@@ -256,6 +256,9 @@ services:
       - DBGPT_LLM_MODEL_PROVIDER
       - DBGPT_LLM_API_BASE
       - DBGPT_LLM_API_KEY
+      # Libro is not installed; default NOTE_BOOK_ENABLE=true would log
+      # `start libro exception！` on every boot. Same as the image ENV.
+      - NOTE_BOOK_ENABLE=false
     # No `command:` override -- the image's own ENTRYPOINT/CMD (`dbgpt start
     # webserver -y -c /app/dbgpt-sidecar-config.toml`) is already the full
     # non-interactive boot sequence; unlike `platform` above, there's no

@@ -135,6 +135,11 @@ RUN printf '#!/bin/bash\nset -e\nsource /app/shell-hook.sh\nexec -- "$@"\n' > /a
 # under `$HOME/.dbgpt/workspace` for free.
 RUN mkdir -p /app/.home
 ENV HOME=/app/.home
+# Libro stays off: `dbgpt_serve.libro.service.Service.after_start` only
+# Popen(["libro", ...]) when NOTE_BOOK_ENABLE is true (default). Without
+# the CLI the webserver still comes Ready and prints
+# `start libro exception！[Errno 2] ... 'libro'`. False skips that path.
+ENV NOTE_BOOK_ENABLE=false
 
 # RUNTIME CWD IS ALSO /app/.home, NOT /app -- a THIRD hard requirement,
 # distinct from the two the config block below documents:
