@@ -10,3 +10,12 @@ project_name: local-recipes
 communication_language: English
 document_output_language: English
 output_folder: "{project-root}/_bmad-output"
+
+# Export targets (skf-export-skill). Installer left these unset, so export
+# defaulted to AGENTS.md + .agents/skills/. Station skills live under
+# .claude/skills/; both CLAUDE.md and AGENTS.md get the managed section.
+ides:
+  - claude-code
+  - other
+skills_output_folder: .claude/skills
+snippet_skill_root_override: .claude/skills/
