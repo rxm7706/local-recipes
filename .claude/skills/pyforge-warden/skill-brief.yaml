@@ -1,0 +1,36 @@
+name: pyforge-warden
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-warden
+source_authority: internal
+language: python
+description: >
+  Unified dependency-hygiene + vulnerability scanner. Agents use the warden
+  CLI (scan / scan --doctor) and FR-13 grammar `pyforge warden …`, never
+  importing pyforge.warden internals. The CLI is the sole PR-gate publisher.
+forge_tier: Quick
+created: '2026-08-25'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/warden/cli.py
+    - src/pyforge/warden/__init__.py
+    - src/pyforge/warden/verdict.py
+    - src/pyforge/warden/report.py
+    - README.md
+  exclude:
+    - tests/**
+    - '**/__pycache__/**'
+  notes: >
+    CAP-15 compile for a station with no skill on origin/main (Story 10.1).
+    Public contract is the warden CLI (AD-7). Portal django-warden is out of
+    scope. Persona bmad-agent-warden is not SKF-compiled.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Package __init__ exports only __version__; CLI is the authoring surface.
+    recorded: '2026-08-25'
