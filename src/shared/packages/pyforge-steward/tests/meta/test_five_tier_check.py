@@ -87,13 +87,17 @@ def test_live_matrix_reports_eight_stations_times_five_tiers():
             assert isinstance(row.cells[tier], bool)
 
 
-def test_live_undeclared_stations_do_not_fail_on_missing_tiers():
+def test_live_roster_is_five_tier_complete():
+    """Drain closeout: every 03 station has all five cells. Mason's skill is CFE."""
     result = check(_repo_root())
+    assert not result.failures
+    holes = [row.station for row in result.matrix if row.missing()]
+    assert holes == []
+    mason = next(row for row in result.matrix if row.station == "mason")
+    assert mason.cells["skill"] is True
     scribe = next(row for row in result.matrix if row.station == PROOF_STATION)
     assert scribe.cells["skill"] is True
     assert scribe.cells["persona"] is True
-    missing_any = [row.station for row in result.matrix if row.missing()]
-    assert missing_any, "the report must still show holes; do not mint seven personas"
 
 
 def test_03_declared_complete_with_all_five_passes():
@@ -121,8 +125,14 @@ def test_03_declared_complete_with_missing_tier_fails():
     )
     with pytest.raises(FiveTierCompleteError, match="atlas"):
         check(_repo_root(), extra=(extra,), declared_complete=())
+    incomplete = WorkItem(
+        token="proof-hole",
+        work_class="03",
+        declared_complete=True,
+        present={tier: tier != "skill" for tier in TIERS},
+    )
     with pytest.raises(FiveTierCompleteError, match="fewer than five"):
-        check(_repo_root(), declared_complete=("atlas",))
+        check(_repo_root(), extra=(incomplete,), declared_complete=())
 
 
 def test_01_spec_plus_script_complete_does_not_fail(tmp_path: Path):
