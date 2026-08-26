@@ -1,0 +1,36 @@
+name: pyforge-marshal
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-marshal
+source_authority: internal
+language: python
+description: >
+  Deterministic BMAD-loop supervisor CLI. Agents use the marshal CLI
+  (status, homes, check, seed) rather than importing pyforge.marshal internals.
+forge_tier: Quick
+created: '2026-08-25'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/marshal/cli/main.py
+    - src/pyforge/marshal/__init__.py
+    - src/pyforge/marshal/cli/status.py
+    - src/pyforge/marshal/cli/check.py
+    - src/pyforge/marshal/cli/init.py
+    - src/pyforge/marshal/cli/seed.py
+    - README.md
+  exclude:
+    - tests/**
+    - '**/__pycache__/**'
+  notes: >
+    CAP-15 compile for marshal. Public contract is the marshal CLI (AD-7).
+    Portal django-marshal is out of scope. Do not wire bmad-loop ingest.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Package __init__ is empty; CLI main is the authoring surface.
+    recorded: '2026-08-25'

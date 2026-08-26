@@ -1,0 +1,92 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-marshal",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-marshal",
+  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_ref": "local",
+  "generated_at": "2026-08-25T19:00:00Z",
+  "grounding": {
+    "date": "2026-08-25",
+    "commit_short": "865b95dc951",
+    "station": "marshal",
+    "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-27-1-skf-skill-and-persona-for-marshal.md"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "argv: list[str] | None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py",
+      "source_line": 323,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_status",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py",
+      "source_line": 1149,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_homes",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py",
+      "source_line": 1015,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_check",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/check.py",
+      "source_line": 201,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "add_seed_subparser",
+      "export_type": "function",
+      "source_library": "pyforge-marshal",
+      "params": [
+        "subparsers: argparse._SubParsersAction"
+      ],
+      "return_type": "None",
+      "source_file": "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py",
+      "source_line": 846,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    }
+  ]
+}
