@@ -5,7 +5,7 @@ requires = ["hatchling"]
 [project]
 name = "django-herald"
 version = "0.1.0"
-description = "Herald station portal (reusable Django app): chrome shell."
+description = "Herald station portal (reusable Django app): chrome shell + one-slug deck status."
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
