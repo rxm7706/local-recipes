@@ -2,8 +2,12 @@
 title: SKF domain skill and BMAD persona for herald
 type: feature
 created: '2026-08-25'
-status: ready
+status: done
 updated: '2026-08-25'
+baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
+review_loop_iteration: 0
+followup_review_recommended: false
+deferred: []
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
@@ -59,8 +63,34 @@ Bind to epics.md Story 17.1 and the 2026-08-25 station-skill-portal SCP. Follow 
 
 ## Review Triage Log
 
+### 2026-08-25 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 1: (high 0, medium 0, low 1)
+- defer: 0
+- reject: 8
+- addressed_findings:
+  - `[low]` `[patch]` `test_context_files_not_hand_edited` now also asserts `git diff origin/main` is empty for CLAUDE.md and AGENTS.md
+
+## Auto Run Result
+
+Status: done
+
+Summary: SKF Quick skill `.claude/skills/pyforge-herald/` compiled from `src/shared/packages/pyforge-herald/` with provenance. BMAD launcher `bmad-agent-herald` consults that skill and may only emit `pyforge herald …` and `POST /stations/herald/mcp`. Golden deck-status transcript plus station-owned contract tests fail on filesystem or ad-hoc HTTP freelance. Persona is not SKF-compiled. CFE untouched. No `pyforge.*` under `src/platform/`. Lane 1 CMS stays steward. 17.2 not started.
+
+Files:
+- `.claude/skills/pyforge-herald/` — version-nested SKF content skill + brief + `active` pointer
+- `.claude/skills/bmad-agent-herald/` — launcher SKILL.md, customize.toml, golden transcript
+- `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` — station AC gates
+- `planning-artifacts/specs/spec-17-1-….md` — tracked story spec
+
+Review: 1 low patch applied; follow-up score 1 → false.
+
+Verification: 16 passed (`test_skf_skill_and_persona`); SKF frontmatter/output PASS; platform/CFE/CLAUDE/AGENTS diffs empty.
+
 ## Verification
 
 **Commands:**
-- station test suite for `pyforge-herald` — expected: new tests pass
+- `pixi run -e pyforge-herald pytest src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py -q` — expected: all pass
 - `git diff origin/main -- src/platform` — expected: no `import pyforge` / `from pyforge`
+- `git diff origin/main -- CLAUDE.md AGENTS.md .claude/skills/conda-forge-expert` — expected: empty

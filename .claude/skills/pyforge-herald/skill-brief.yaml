@@ -1,0 +1,33 @@
+name: pyforge-herald
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-herald
+source_authority: internal
+language: python
+description: >
+  Dream-to-deck bridge CLI. Agents use the herald CLI (deck seed / pull /
+  status) rather than importing pyforge.herald internals.
+forge_tier: Quick
+created: '2026-08-25'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/herald/cli.py
+    - src/pyforge/herald/__init__.py
+    - README.md
+  exclude:
+    - tests/**
+    - web/**
+    - '**/__pycache__/**'
+  notes: >
+    CAP-15 compile for the herald station. Public contract is the herald CLI
+    (AD-7). Portal django-herald and Lane 1 CMS are out of scope.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Package __init__ exports only __version__; CLI is the authoring surface.
+    recorded: '2026-08-25'

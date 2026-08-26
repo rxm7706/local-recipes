@@ -1,0 +1,93 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-herald",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-herald",
+  "source_commit": "865b95dc951c8a6de87d05bb10c8395a75da8008",
+  "source_ref": "local",
+  "generated_at": "2026-08-25T00:00:00Z",
+  "grounding": {
+    "date": "2026-08-25",
+    "commit_short": "865b95dc951",
+    "station": "herald",
+    "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-17-1-skf-skill-and-persona-for-herald.md"
+  },
+  "entries": [
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-herald",
+      "params": [
+        "argv: list[str] | None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
+      "source_line": 719,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "dispatch",
+      "export_type": "function",
+      "source_library": "pyforge-herald",
+      "params": [
+        "operation: Callable[[], None]",
+        "json_output: bool"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
+      "source_line": 1727,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_run_deck_seed",
+      "export_type": "function",
+      "source_library": "pyforge-herald",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
+      "source_line": 803,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_run_deck_pull",
+      "export_type": "function",
+      "source_library": "pyforge-herald",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
+      "source_line": 855,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_run_deck_status",
+      "export_type": "function",
+      "source_library": "pyforge-herald",
+      "params": [
+        "args: argparse.Namespace"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py",
+      "source_line": 877,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    }
+  ]
+}
