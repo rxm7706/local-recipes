@@ -1,0 +1,6 @@
+{% if results %}
+  <p id="scribe-recall-text">{{ results.text }}</p>
+  {% if results.citation %}
+    <cite id="scribe-recall-citation">{{ results.citation }}</cite>
+  {% endif %}
+{% endif %}
