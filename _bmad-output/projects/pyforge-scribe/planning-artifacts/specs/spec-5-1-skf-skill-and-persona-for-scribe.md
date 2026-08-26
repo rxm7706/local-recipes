@@ -2,8 +2,9 @@
 title: SKF skill ownership and BMAD persona for scribe
 type: feature
 created: '2026-08-25'
-status: ready
+status: in-progress
 updated: '2026-08-25'
+baseline_revision: 865b95dc951c8a6de87d05bb10c8395a75da8008
 context:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
