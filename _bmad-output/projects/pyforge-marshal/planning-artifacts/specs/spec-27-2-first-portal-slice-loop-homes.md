@@ -2,7 +2,7 @@
 title: First portal slice — list loop homes
 type: feature
 created: '2026-08-25'
-status: in-review
+status: shipped
 updated: '2026-08-26'
 baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
 context:
