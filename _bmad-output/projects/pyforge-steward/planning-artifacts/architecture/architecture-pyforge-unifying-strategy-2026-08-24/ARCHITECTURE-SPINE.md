@@ -4,12 +4,12 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: "modular monolith: Django apps as the composition unit; one ASGI process is the public edge"
-scope: "spec-pyforge-unifying-strategy — residual Canopy work over the shipped src/platform/ host (CAP-1..17, FR-1..FR-42 plus FR-9a/9b/21a)"
+scope: "spec-pyforge-unifying-strategy — residual Canopy work over the shipped src/platform/ host (CAP-1..19, FR-1..FR-50 plus FR-9a/9b/21a). CAP-1..18 closeout 2026-08-26 stands; CAP-19 / AD-22 is the live residual."
 status: final
 created: "2026-08-24"
-updated: "2026-08-24"
+updated: "2026-08-26"
 chain: pyforge-unifying-strategy
-binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9, CAP-10, CAP-11, CAP-12, CAP-13, CAP-14, CAP-15, CAP-16, CAP-17]
+binds: [CAP-1, CAP-2, CAP-3, CAP-4, CAP-5, CAP-6, CAP-7, CAP-8, CAP-9, CAP-10, CAP-11, CAP-12, CAP-13, CAP-14, CAP-15, CAP-16, CAP-17, CAP-18, CAP-19]
 sources:
   - ../../specs/spec-pyforge-unifying-strategy/SPEC.md
   - ../../prds/prd-pyforge-unifying-strategy-2026-08-24/prd.md
@@ -120,7 +120,7 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 
 - **Binds:** CAP-1, CAP-3, FR-1
 - **Prevents:** a portal shipping its own switcher, base layout, or theme copy
-- **Rule:** station portal packages contain no chrome templates or static files. A test that two portals render identical chrome from one package fails if either ships a copy. `django-lasuite` is OIDC plumbing only.
+- **Rule:** station portal packages contain no chrome templates or static files. A test that two portals render identical chrome from one package fails if either ships a copy. Host OIDC is `django-allauth`. `django-lasuite` is not a Canopy dependency.
 
 ### AD-4 — Reusable-app naming is a triple, one distribution per station `[ADOPTED]`
 
@@ -230,6 +230,12 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 - **Prevents:** forking a process to swap a vendor; baking a deployment-profile tool into core; treating the principle as “every package is a Kedro project”; treating Atlas pipeline hooks as Warden’s PR-gate book
 - **Rule:** As far as possible, every layer is replaceable. The process owns **hook specifications** (named before / after / around points). A **plugin** implements or replaces a layer without a fork. [Kedro](https://docs.kedro.org/en/stable/getting-started/architecture_overview/) names the spec-vs-plugin split; only Atlas is already a Kedro project. Warden owns PR-gate hook specs; scanners implement them (Q8). Other stations own their process hooks (build engines, runners, stores, exporters, deploy-profile / LLM adapters). **Not plugin surfaces:** Pixi task names, Golden Path artifact identity, parent AD-1 infra kinds, parent AD-2 host import boundary, the Warden verdict itself. A plugin must not publish a second verdict for a process another owner specified.
 
+### AD-22 — One query plane; stations rebuild onto it `[ADOPTED]`
+
+- **Binds:** CAP-19; FR-27 intent; FR-46..50; Atlas Kedro catalog; Scribe store port; parent AD-2 host import boundary
+- **Prevents:** a sibling HTAP spec; a ninth station; a second writable `.duckdb`; Airflow; pandas-as-federation; boot `INSTALL`; autonomous SQL on OLTP; `uv` Mosaic runtime; silent `01_raw` tree
+- **Rule:** DuckDB is the only analytical engine. Live Postgres is `ATTACH … READ_ONLY`. Kedro writes Parquet on a **named** pipeline. Vectors are `vss` on the plane writer. Mosaic `duckdb-server` is an optional pixi-sourced *face*, not a fourth infra kind. Atlas owns the engine; steward owns the through-line. Rebuild of Atlas RAG defaults, Scribe 28.2 semantic path, and agent DSNs is in scope. BSL remains the dashboard contract. CAP-7 / AD-20 still isolate rows on Mode A.
+
 ## Consistency Conventions
 
 Cite **parent AD-n** (python-agent-platform spine) vs **canopy AD-n** (this file). Bare `AD-n` in an epic or story is a review-blocking finding.
@@ -258,7 +264,7 @@ Cite **parent AD-n** (python-agent-platform spine) vs **canopy AD-n** (this file
 | OpenFeature Python SDK + flagd FILE provider | absent until operator feedstocks land |
 | `cachebox` | `5.x` (`<6`) until provider allows 6 |
 | PyBreaker | `1.4.1` + in-tree asyncio wrapper |
-| `django-lasuite` | `0.0.28` (OIDC only) |
+| `django-lasuite` | **not a Canopy dep** — feedstock / `suite-*` only |
 | `django-storages` | `1.14.6` (library present; CAP-2 backend is filesystem on RWX, not S3) |
 | `django-redis` | `7.0.0` |
 | Celery | `==5.5.3` (platform-ci-test / host pin) |
@@ -333,6 +339,8 @@ flowchart LR
 | CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/` | canopy AD-14, AD-17 |
 | CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy AD-14, AD-17 |
 | CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy AD-12, AD-6 |
+| CAP-18 hooks | `pyforge-core` + Warden / station plugins | canopy AD-21 |
+| CAP-19 query plane | Atlas DuckDB + Kedro; stations as clients | canopy AD-22 |
 | Cross-cutting | replaceable layers (hook specs + plugins) | canopy AD-21 |
 
 ## Deferred

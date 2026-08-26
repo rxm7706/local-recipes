@@ -2,7 +2,7 @@
 title: "Stack and the conda-forge gate"
 chain: "pyforge-unifying-strategy"
 created: "2026-08-24"
-updated: "2026-08-25"
+updated: "2026-08-26"
 ---
 
 # Stack — and the conda-forge gate
@@ -33,12 +33,50 @@ moving the pin to `>=5.2.17,<6` once the feedstock publishes it (scanners key on
 | `wagtail` | 7.4.3 | CAP-2 | Landed ~4h after upstream; full transitive closure present. Supports Django 5.2 + Python 3.12. No Wagtail version requires Django 6 — 5.2 is the only Django supported across the entire 7.0→8.0 range. |
 | `django` | 5.2.15 | all | See risk above. |
 | `mcp` (official SDK) | 2.0.0 | CAP-4 | `2026-07-28`-capable. The only conda-forge path to the current MCP spec. |
-| `django-lasuite` | 0.0.28 | CAP-12 | OIDC plumbing only — see below. Feedstock's sole listed maintainer is `rxm7706`, so responsiveness is self-supplied with no bus-factor cover. Extras (`celery`, `django-configurations`) are not in its run-deps; add to our own env if used. |
+| `django-lasuite` | 0.0.28 | packaging only | **Not a Canopy dep.** Host OIDC is allauth. Feedstock + `suite-*` recipes stay. Sole listed maintainer `rxm7706`. |
 | `pybreaker` | 1.4.1 | CAP-10 | Sync paths only — see `resilience-invariants.md` BS-4. |
 | `django-storages` | 1.14.6 | CAP-2 | Library present. **Backend is filesystem on a ReadWriteMany PVC** (parent AD-1 forbids MinIO/S3 as a fourth kind). Multi-replica media leaves ephemeral pod disk without a new infra kind. |
 | `django-redis` | 7.0.0 | CAP-11 | Also what PyBreaker's own Redis-storage docs use. |
 | `openjdk` | 25.0.2 | CAP-9 | Satisfies Liquibase's Java 17+ floor — but Liquibase itself is absent. |
 | `celery`, `redis-py`, `grpcio`, `protobuf`, `pyyaml`, `pydantic` | current | CAP-8, CAP-11, CAP-13 | No work. |
+| `python-duckdb` | current (pixi / atlas) | CAP-19 | Library, not a fourth infra kind. `vss` / `postgres` extensions: LOAD-only consumer (AD-13). |
+| `duckdb-server` | reciped (`recipes/duckdb-server`) | CAP-19 face | Optional HTTP/Arrow face. Not in `pixi.toml` until `query-plane-face` is answered. Not a Helm backing store. |
+| `kedro`, `kedro-datasets`, `kedro-dagster` | current (atlas env) | CAP-19, atlas | One Kedro *home* (atlas). Not eight projects (AD-21). |
+| `kedro-mcp`, `kedro-skills` | current | authoring | Skills: use on 34.2 catalog. MCP: wrapped, never load-bearing (atlas FR-7). |
+| `kedro-viz` | current | atlas 12.2 | Pipeline DAG publish. Not Lane 3. |
+| `vizro` | `>=0.1.60` | Lane 3, CAP-7 | Runtime boards over BSL + plane. Not imported into Django. |
+| `vizro-mcp`, `vizro-e2e-flow` | current | Lane 3 authoring | Replaces Vizro-AI. Story after 34.2, not 34.1. |
+| `vizro-ai` | `0.4.2` **final / deprecated** | legacy `query_vizro_ai` | No new features. |
+| `boring-semantic-layer` | `>=0.3.18` (SelfExplainML) | CAP-19 / UJ-6 | Certified metrics. Agents and Vizro do not invent raw SQL. |
+
+## Estate leverage — installed, bind now
+
+Pins already in `pixi.toml`. This is **not** a shopping list and **not** eight new stations.
+It is the 2026-08-26 schedule for using what we already lock. Kedro/Vizro rules: option
+for pipelines, Vizro for Lane 3, one Atlas Kedro home (see AD-21 / AD-22).
+
+| Pin | Station | Bind | Status |
+|---|---|---|---|
+| `kedro` + `kedro-datasets` + `kedro-dagster` | atlas (home); optional extract nodes | Named CAP-19 pipeline; Dagster refreshes cache | **34.2** |
+| `kedro-skills` / `kedro-mcp` | atlas | `catalog-config` already in atlas `AGENTS.md`; MCP inspect after 34.2 | **use now** / wrap |
+| `vizro` + BSL | atlas, steward Lane 3 | Boards over plane metrics; CAP-7 isolation | **after 34.2** |
+| `vizro-mcp` + `vizro-e2e-flow` | herald/atlas authoring | Replace Vizro-AI for new boards | **new story after 34.2** |
+| `cocoindex` + `graphifyy` | scribe | `scribe index`: AST graph + incremental index; link functions to Dream/PRD/spec_id | **bind** (not Epic 34) |
+| `openlineage-python` | marshal, steward | CloudEvents already CAP-8; emit OpenLineage on Dream→Spec→Mason→Warden→Steward | **bind** (CAP-8 face, not a fourth bus) |
+| `boring-semantic-layer` | atlas | Metrics on the plane (`package_download_velocity`, `ecosystem_cve_risk_score`, new CAP-19 relations) | **landed shape; extend 34.2+** |
+| `markitdown` | herald, scribe | docx/xlsx/pptx/pdf → markdown for Wagtail / Scribe memory | **bind** |
+| `graphviz2drawio` | herald | Kedro/Graphviz `.dot` → `.drawio` for architect review / decks | **bind** |
+| `filelock` | marshal, scribe; **atlas already** | Atlas `duckdb_writer` (FR-27). Same primitive for worktrees / scribe files | **extend** |
+| `go-sops` + `age` | steward | Offline X25519 vaulting — in-estate path | **landed / keep** |
+| HashiCorp Vault / `hvac` | steward **profile adapter** | **Not** CAP-12 in-app. canopy AD-19: pod specs carry secret *references* only; no Vault HTTP from the platform image. Cluster ESO/Vault stays outside the image. | **do not bind in-app** |
+| `pandera` | warden, mason | Schema contracts on lockfiles / CycloneDX feeds | **bind** |
+| `taplo`, `sqlfluff`, `yamllint` | doctor, warden | `pixi.toml` / `recipe.yaml` / DuckDB SQL preflight (`doctor check --syntax`) | **bind** (sqlfluff also lints CAP-19 SQL) |
+| `playwright` + `playwright-python` | herald, testing-kit | `.dc.html` + Vizro board PNG/PDF; both pins required (CLI ≠ Python module) | **extend** (herald already; Vizro thumbs after Lane 3 plane board) |
+
+**Never:** a fourth backing service (Vault-in-pod, MinIO, extra bus). OpenLineage events ride
+the existing Redis CloudEvents fabric or a documented emit from the same process — they do
+not mint a lineage server. cocoindex/graphifyy stay behind Scribe `GraphStore`; they do not
+become a second vector store beside CAP-19.
 
 ## Absent — feedstock work, blocking
 
@@ -98,8 +136,11 @@ air-gapped; only the static-JSON variant works offline, and it would surface a F
 service catalogue rather than our navigation. **No documented La Suite reusable-app pattern exists**
 — their `dev-handbook`'s `python.md` is a PEP 8 style guide.
 
-Consequence: **CAP-1's `django-pyforge` is ours to build.** `django-lasuite` is adopted for OIDC
-only.
+Consequence: **CAP-1's `django-pyforge` is ours to build.** Host OIDC is
+`django-allauth` (shipped). **`django-lasuite` is not a Canopy dependency** —
+Phase-2 “adopt for OIDC only” is retracted. Keep the conda-forge feedstock
+and `suite-*` recipes as packaging; do not add the package to host
+`INSTALLED_APPS`.
 
 **Lane 2 is not a DRF surface (operating-model Q7).** `django-lasuite`'s DRF throttling is not a
 reason to put JSON:API on Guildhall or station portals. HTMX is the portal contract; FastAPI is

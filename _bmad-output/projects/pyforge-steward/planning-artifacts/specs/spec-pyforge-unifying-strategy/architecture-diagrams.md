@@ -11,6 +11,7 @@ Companion to `SPEC.md` — Spec Law rule 2 keeps diagrams out of the kernel. The
 contract: **solid** boxes are shipped (`spec-python-agent-platform` **or** this chain's drain,
 2026-08-25; closeout 2026-08-26). **Dashed** leftover is honesty-only (isolated `mfa`
 sqlmigrate fake; optional 12.9 `ocp-portability-smoke` when Actions minutes return).
+**Dashed CAP-19** is the evergreen reopen (query plane) — not a closeout leftover.
 
 ## The Canopy as it stands and as it extends
 
@@ -36,6 +37,7 @@ graph TB
         SK["domain skills CAP-15"]
         PER["personas CAP-16"]
         SUP["supervisor CAP-17"]
+        QP["query plane CAP-19"]
     end
 
     subgraph Residual["Honesty leftover after closeout (2026-08-26)"]
@@ -63,12 +65,13 @@ graph TB
     PER -->|"and through"| SVC
     SK --> PER
     Host -->|"queries — never reads a filesystem"| SUP
+    Host -.-> QP
     Host -.-> LIVE
 
     classDef shipped fill:#1a3a52,stroke:#4a9eda,color:#fff
     classDef residual fill:#3a2a1a,stroke:#daa54a,color:#fff,stroke-dasharray: 5 3
     class Host,Auth,FastAPIseam,LF,DG,CF,DP,L1,P7,SVC,CLI,CLIENT,SD,EV,SK,PER,SUP shipped
-    class LIVE residual
+    class LIVE,QP residual
 ```
 
 ## Request path and the identity chain (CAP-6)
