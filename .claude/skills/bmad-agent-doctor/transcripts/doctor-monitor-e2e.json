@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "consult_content_skill",
+    "skill": "pyforge-doctor",
+    "path": ".claude/skills/pyforge-doctor/active/pyforge-doctor/SKILL.md"
+  },
+  {
+    "kind": "grammar",
+    "argv": ["pyforge", "doctor", "monitor", "--fleet"]
+  },
+  {
+    "kind": "mcp",
+    "method": "POST",
+    "path": "/stations/doctor/mcp"
+  }
+]
