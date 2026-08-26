@@ -1,0 +1,16 @@
+[
+  {
+    "kind": "consult_content_skill",
+    "skill": "pyforge-steward",
+    "path": ".claude/skills/pyforge-steward/active/pyforge-steward/SKILL.md"
+  },
+  {
+    "kind": "grammar",
+    "argv": ["pyforge", "steward", "provision", "--list"]
+  },
+  {
+    "kind": "mcp",
+    "method": "POST",
+    "path": "/stations/steward/mcp"
+  }
+]
