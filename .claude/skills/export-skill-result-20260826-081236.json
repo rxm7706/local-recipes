@@ -1,0 +1,47 @@
+{
+  "skill": "skf-export-skill",
+  "status": "success",
+  "timestamp": "2026-08-26T08:12:36Z",
+  "outputs": [
+    {"type": "skill", "path": ".claude/skills/pyforge-atlas/0.1.0/pyforge-atlas/context-snippet.md"},
+    {"type": "skill", "path": ".claude/skills/pyforge-doctor/0.1.0/pyforge-doctor/context-snippet.md"},
+    {"type": "skill", "path": ".claude/skills/pyforge-herald/0.1.0/pyforge-herald/context-snippet.md"},
+    {"type": "skill", "path": ".claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/context-snippet.md"},
+    {"type": "skill", "path": ".claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/context-snippet.md"},
+    {"type": "skill", "path": ".claude/skills/pyforge-steward/0.1.0/pyforge-steward/context-snippet.md"},
+    {"type": "skill", "path": ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/context-snippet.md"},
+    {"type": "config", "path": "CLAUDE.md"},
+    {"type": "config", "path": "AGENTS.md"},
+    {"type": "manifest", "path": ".claude/skills/.export-manifest.json"}
+  ],
+  "summary": {
+    "skills": [
+      "pyforge-atlas",
+      "pyforge-doctor",
+      "pyforge-herald",
+      "pyforge-marshal",
+      "pyforge-scribe",
+      "pyforge-steward",
+      "pyforge-warden"
+    ],
+    "always_on_tokens": 1018,
+    "on_trigger_tokens": 9311,
+    "managed_section_tokens": 1018,
+    "context_files": ["CLAUDE.md", "AGENTS.md"]
+  },
+  "deviations": [
+    {
+      "kind": "operator_dual_context_files",
+      "skills": [
+        {"name": "pyforge-atlas", "version": "0.1.0"},
+        {"name": "pyforge-doctor", "version": "0.1.0"},
+        {"name": "pyforge-herald", "version": "0.1.0"},
+        {"name": "pyforge-marshal", "version": "0.1.0"},
+        {"name": "pyforge-scribe", "version": "0.1.0"},
+        {"name": "pyforge-steward", "version": "0.1.0"},
+        {"name": "pyforge-warden", "version": "0.1.0"}
+      ],
+      "rationale": "_bmad/skf/config.yaml has no ides key (would default to AGENTS.md + .agents/skills/). Operator asked for CLAUDE.md and AGENTS.md after Wave A skipped export. Both files written with skill_root .claude/skills/ (real on-disk location). Manifest ides recorded as claude-code,other. Mason has no SKF skill; conda-forge-expert was not exported."
+    }
+  ]
+}
