@@ -8,11 +8,11 @@
 # subjects — the archaeology that failed when squash-merging PR #132 made Epic
 # 10's bmad-loop merge subjects unreachable from main.
 #
-# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# Same shape as the Tier-3 feed on purpose: fleet_scan.parse_sprint_status
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 68
+# stories: 72
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -25,7 +25,7 @@ development_status:
   1-8-mason-doctor: done
   1-9-fake-cfe-root-fixture-and-test-harness: done
   10-1-extract-the-build-engine-hook: done
-  11-1-persona-consults-conda-forge-expert: backlog
+  11-1-persona-consults-conda-forge-expert: done
   11-2-first-portal-slice-recipe-diagnose: backlog
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
