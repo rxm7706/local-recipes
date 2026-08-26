@@ -1548,8 +1548,8 @@ the same contract.
 ## Canopy obligations (2026-08-24)
 
 Phase 5 (`bmad-correct-course`, `docs/dreams/pyforge-unifying-strategy.md`) records how
-**pyforge-mason** mounts into the Platform Canopy. **Last mason epic remains 9** — no Epic 10+
-is minted here; steward Epics 18–30 own Canopy implementation. Cite **parent AD-n**
+**pyforge-mason** mounts into the Platform Canopy. **Epic 10** is the CAP-18 build-engine hook.
+**Epic 11** (2026-08-25) is station persona + first portal job. **`conda-forge-expert` is not replaced** (no mason SKF that supersedes CFE). Do **not** copy steward Epics 18–30. Cite **parent AD-n**
 (`architecture-pyforge-mason-2026-07-25`) vs **canopy AD-n**
 (`architecture-pyforge-unifying-strategy-2026-08-24`); bare `AD-n` is review-blocking.
 
@@ -1563,9 +1563,8 @@ is minted here; steward Epics 18–30 own Canopy implementation. Cite **parent A
 ### Domain skill (canopy AD-17)
 
 - **`conda-forge-expert` stays the hand-authored operating skill** — mason's recipe/build
-  authority for conda-forge work (Rule 1). SKF compiles **`pyforge-mason`** from
-  `src/shared/packages/pyforge-mason/` as the station *domain* skill (steward Epic 29); it does
-  **not** replace CFE.
+  authority for conda-forge work (Rule 1). Do **not** compile a `pyforge-mason` SKF that
+  replaces CFE. Persona (Epic 11) consults CFE.
 
 ### Operator-owned packaging (out of mason epic chain)
 
@@ -1579,8 +1578,8 @@ is minted here; steward Epics 18–30 own Canopy implementation. Cite **parent A
 | CLI | `mason` / `pyforge mason` — **shipped** (Epics 1–9) | Keep as primary local surface | — |
 | Portal | — | `/stations/mason/` via `django-mason` reusable app; zero domain models in portal | Epic 19 |
 | MCP | — | `POST /stations/mason/mcp` on host ASGI; dual-era handshake | Epic 21 |
-| Domain skill | `conda-forge-expert` (hand-authored) + future SKF `pyforge-mason` | CFE never replaced; SKF is additive | Epic 29 |
-| Persona | — | `Agent-Mason` — BMAD launcher consults CFE + domain skill; FR-13/FR-11 only | Epic 29 |
+| Domain skill | `conda-forge-expert` (hand-authored) | CFE never replaced | Epic 11 Never |
+| Persona | — | `bmad-agent-mason` consults CFE; FR-13/FR-11 only | **Mason Epic 11** |
 
 No second chrome, no extra public port — one modular-monolith ASGI process (canopy AD-1, AD-5,
 AD-10).
@@ -1641,3 +1640,28 @@ So that swapping a build engine does not fork the mason process.
 **Given** the replaceable build-engine layer **When** the hook spec lands **Then** today's backend is the default plugin
 **And** an alternate engine plugin can register without a process fork
 **And** a successful mason build is not published as a PR quality-gate verdict
+
+## Epic 11: Mason persona and one portal job (CFE stays)
+
+Does **not** copy Canopy 18–30. **Never** a SKF skill that replaces `conda-forge-expert`.
+
+### Story 11.1: BMAD persona consults conda-forge-expert
+
+As an autonomous agent,
+I want a `bmad-agent-mason` persona that consults `conda-forge-expert`,
+So that Path B uses CAP-5 grammar and CAP-4 MCP without a second recipe skill.
+
+**Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-38 • canopy AD-17
+**Given** CFE is the operating skill **When** this story completes **Then** the persona transcript uses only `pyforge mason …` and `POST /stations/mason/mcp`
+**And** no `skf-create-skill` output replaces CFE
+**And** 01 recipe experiments still do not mint a portal/MCP/persona (existing Never)
+
+### Story 11.2: First portal slice — last diagnose
+
+As a mason operator,
+I want `/stations/mason/` to show one `mason diagnose` (or equivalent) result,
+So that one operator job works in HTMX on the host.
+
+**Type:** feature • **Effort:** M • **Deps:** S-11.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Given** an authenticated mason-role session **When** the operator opens `/stations/mason/` **Then** one diagnosis renders via PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no MinIO

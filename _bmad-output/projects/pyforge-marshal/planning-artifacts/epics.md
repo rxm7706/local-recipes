@@ -3903,12 +3903,12 @@ recurring owner + cadence — resolving the spec's open question with a dated en
 Marshal station boundaries under the Canopy (`spec-pyforge-unifying-strategy`, steward-owned).
 Planning retirement of `spec-factory-console` is effective immediately; generator /
 pixi-task / `data.js` deletion is steward Story **30.2**. Do **not** mint marshal
-Epics 26+ that duplicate steward Epics 18–30.
+epics that duplicate steward Canopy 18–30. **Epic 26** is the CAP-18 loop/runner hook.
+**Epic 27** (2026-08-25) is station-owned SKF skill, persona, and first portal job.
 
-**Five-tier symmetry.** Marshal's CLI tier is shipped (`pyforge-marshal` / `marshal` verbs). The
-remaining tiers are steward-owned: **Epic 19** (eight portals, uniform prefix), **Epic 21**
-(service face / MCP + supervisor run state), **Epic 29** (SKF domain skills + station personas).
-Marshal integrates at hooks — it does not re-spec those tiers here.
+**Five-tier symmetry.** Marshal's CLI tier is shipped (`pyforge-marshal` / `marshal` verbs).
+Empty portal shell and host MCP remain steward 19/21. **Skill, persona, and the first portal
+job are marshal Epic 27.** Marshal does not re-spec chrome or the event backbone.
 
 **Uniform URL.** Marshal's Lane 2 portal mounts at **`/stations/marshal/`** under the single host
 session — no station-specific origin, no bookmark-breaking slug outside the shared prefix.
@@ -3974,3 +3974,28 @@ So that swapping a runner or ACP adapter does not fork marshal.
 **Given** the current runner **When** the hook spec lands **Then** it is the default plugin
 **And** an alternate runner plugin can register without a process fork
 **And** a passed loop is not published as a Warden (PR-gate) verdict
+
+## Epic 27: Marshal owns its skill, persona, and one portal job
+
+Does **not** copy Canopy 18–30. Supervisor *ingest from bmad-loop* stays architecture-Deferred (not this epic).
+
+### Story 27.1: SKF domain skill and BMAD persona for marshal
+
+As an autonomous agent,
+I want a marshal SKF skill from `pyforge-marshal/` and a `bmad-agent-marshal` persona,
+So that Path B uses CAP-5 grammar and CAP-4 MCP only.
+
+**Type:** feature • **Effort:** L • **Deps:** S-26.1 • **FR/AD:** canopy FR-37, FR-38 • canopy AD-17
+**Given** steward 29 proved the shape **When** this story completes **Then** SKF compiles from `src/shared/packages/pyforge-marshal/` if missing
+**And** the persona uses only `pyforge marshal …` and `POST /stations/marshal/mcp`
+
+### Story 27.2: First portal slice — list loop homes
+
+As a marshal operator,
+I want `/stations/marshal/` to list provisioned loop homes,
+So that one operator job works in HTMX on the host.
+
+**Type:** feature • **Effort:** M • **Deps:** S-27.1 • **FR/AD:** canopy FR-10 • canopy AD-7
+**Given** an authenticated marshal-role session **When** the operator opens `/stations/marshal/` **Then** homes list via PortalClient only
+**And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
+**And** this story does not implement bmad-loop → supervisor ingest

@@ -26,6 +26,8 @@ development_status:
   3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed: done
   3-2-transcripts-join-the-compile-sources: done
   4-1-register-graphstore-as-cap-18-plugins: done
+  5-1-skf-skill-and-persona-for-scribe: backlog
+  5-2-first-portal-slice-recall-query: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-2: done
@@ -34,3 +36,5 @@ development_status:
   epic-3-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
+  epic-5: backlog
+  epic-5-retrospective: optional
