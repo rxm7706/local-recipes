@@ -42,10 +42,10 @@ moving the pin to `>=5.2.17,<6` once the feedstock publishes it (scanners key on
 | `python-duckdb` | current (pixi / atlas) | CAP-19 | Library, not a fourth infra kind. `vss` / `postgres` extensions: LOAD-only consumer (AD-13). |
 | `duckdb-server` | reciped (`recipes/duckdb-server`) | CAP-19 face | Optional HTTP/Arrow face. Not in `pixi.toml` until `query-plane-face` is answered. Not a Helm backing store. |
 | `kedro`, `kedro-datasets`, `kedro-dagster` | current (atlas env) | CAP-19, atlas | One Kedro *home* (atlas). Not eight projects (AD-21). |
-| `kedro-mcp`, `kedro-skills` | current | authoring | Skills: use on 34.2 catalog. MCP: wrapped, never load-bearing (atlas FR-7). |
+| `kedro-mcp`, `kedro-skills` | current | authoring | Skills: 34.2 catalog shipped. MCP: wrapped, never load-bearing (atlas FR-7). |
 | `kedro-viz` | current | atlas 12.2 | Pipeline DAG publish. Not Lane 3. |
 | `vizro` | `>=0.1.60` | Lane 3, CAP-7 | Runtime boards over BSL + plane. Not imported into Django. |
-| `vizro-mcp`, `vizro-e2e-flow` | current | Lane 3 authoring | Replaces Vizro-AI. Story after 34.2, not 34.1. |
+| `vizro-mcp`, `vizro-e2e-flow` | current | Lane 3 authoring | Replaces Vizro-AI. 36.2 is a grounded page; MCP authoring is still a later story. |
 | `vizro-ai` | `0.4.2` **final / deprecated** | legacy `query_vizro_ai` | No new features. |
 | `boring-semantic-layer` | `>=0.3.18` (SelfExplainML) | CAP-19 / UJ-6 | Certified metrics. Agents and Vizro do not invent raw SQL. |
 
@@ -57,13 +57,13 @@ for pipelines, Vizro for Lane 3, one Atlas Kedro home (see AD-21 / AD-22).
 
 | Pin | Station | Bind | Status |
 |---|---|---|---|
-| `kedro` + `kedro-datasets` + `kedro-dagster` | atlas (home); optional extract nodes | Named CAP-19 pipeline; Dagster refreshes cache | **34.2** |
+| `kedro` + `kedro-datasets` + `kedro-dagster` | atlas (home); optional extract nodes | Named CAP-19 pipeline; Dagster refreshes cache | **shipped 34.2** |
 | `kedro-skills` / `kedro-mcp` | atlas | `catalog-config` already in atlas `AGENTS.md`; MCP inspect after 34.2 | **use now** / wrap |
-| `vizro` + BSL | atlas, steward Lane 3 | Boards over plane metrics; CAP-7 isolation | **after 34.2** |
-| `vizro-mcp` + `vizro-e2e-flow` | herald/atlas authoring | Replace Vizro-AI for new boards | **new story after 34.2** |
+| `vizro` + BSL | atlas, steward Lane 3 | Boards over plane metrics; CAP-7 isolation | **shipped 36.1–36.2 (`estate-cache`)** |
+| `vizro-mcp` + `vizro-e2e-flow` | herald/atlas authoring | Replace Vizro-AI for new boards | **still later** (not 36.2) |
 | `cocoindex` + `graphifyy` | scribe | `scribe index`: AST graph + incremental index; link functions to Dream/PRD/spec_id | **bind** (not Epic 34) |
 | `openlineage-python` | marshal, steward | CloudEvents already CAP-8; emit OpenLineage on Dream→Spec→Mason→Warden→Steward | **bind** (CAP-8 face, not a fourth bus) |
-| `boring-semantic-layer` | atlas | Metrics on the plane (`package_download_velocity`, `ecosystem_cve_risk_score`, new CAP-19 relations) | **landed shape; extend 34.2+** |
+| `boring-semantic-layer` | atlas | Metrics on the plane (`package_download_velocity`, `ecosystem_cve_risk_score`, new CAP-19 relations) | **36.1 reads estate cache** |
 | `markitdown` | herald, scribe | docx/xlsx/pptx/pdf → markdown for Wagtail / Scribe memory | **bind** |
 | `graphviz2drawio` | herald | Kedro/Graphviz `.dot` → `.drawio` for architect review / decks | **bind** |
 | `filelock` | marshal, scribe; **atlas already** | Atlas `duckdb_writer` (FR-27). Same primitive for worktrees / scribe files | **extend** |

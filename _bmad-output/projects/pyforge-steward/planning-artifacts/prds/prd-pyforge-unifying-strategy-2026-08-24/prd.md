@@ -48,6 +48,10 @@ chrome, host MCP faces, dispatch, events, and the governed-DDL path in code.** C
 `:17`–`:19` executed. Isolated `mfa` sqlmigrate stays fake. Not a `services/` rewrite.
 **2026-08-26 evergreen:** CAP-19 (query plane) reopens this PRD. CAP-1..18 stay shipped
 slices. Rebuild of private analytical stores is in scope.
+**Same-day first slice:** Epic 34.1–34.5 + Lane 3 36.1–36.2 (`estate-cache`)
+shipped. Five-tier SM-5 holds (37.1, 40/40; mason skill = `conda-forge-expert`).
+Residual: SPEC OQs `query-plane-face` / `query-plane-catalog` /
+`query-plane-scribe-cutover`. Mosaic optional. Do not re-dispatch 18–37.
 
 ## 2. Target User
 
@@ -64,7 +68,7 @@ a requirement written only for the human reader will under-specify them. CAP-19 
 | **Compliance auditor** | Move from a finding to the package, build and fleet context around it | Warden's portal exists and shows compliance; nothing else has a portal |
 | **Packaging / platform engineer** | Drive any station without learning eight tools | Eight CLIs, eight verb vocabularies, eight output shapes |
 | **Autonomous agent** | Perform a station's work programmatically and reliably | One station of eight has a service face; long operations die with the connection |
-| **Dashboard / agent query** | Ask the estate a question (metric, SQL, neighbor) | Five private stores; Text-to-SQL can still hit OLTP |
+| **Dashboard / agent query** | Ask the estate a question (metric, SQL, neighbor) | First plane slice shipped; residual is face / catalog / Scribe-pgvector OQs — not a second engine |
 
 ### 2.2 Non-Users
 
@@ -847,11 +851,11 @@ Recall finds a semantically relevant result that token-overlap search misses. **
 ### 4.13 The agent-facing tiers
 
 **Description.** The Dream promises five-tier symmetry — CLI, portal, service, domain skill,
-persona — as the **03 shape of each of the eight stations**. The estate has one domain skill of
-eight and zero station personas, so two full tiers are missing and an 03 station cannot be called
-complete without them. 01/02 work does not owe this matrix. These are the capabilities most
-easily dropped as "documentation", which is exactly why the SPEC makes fewer-than-five on an
-**03 capability** a contract violation.
+persona — as the **03 shape of each of the eight stations**. That gap was the 2026-08-24
+motive: one domain skill of eight and zero station personas. **2026-08-26 (Epic 37.1):**
+the check reports **40/40**; mason's skill cell is `conda-forge-expert` (no
+`pyforge-mason/` skill). 01/02 work does not owe this matrix. Fewer-than-five on an
+**03 capability** remains a contract violation — the check now fails CI on a missing cell.
 
 **Functional Requirements:**
 
@@ -1273,10 +1277,12 @@ control they cannot.
    front door**, which means building the supervisor that makes them deployable. That is
    **CAP-17 / §4.14**, new scope taken deliberately.
 
-8. **Query plane face / catalog / Scribe cutover** — open on the SPEC as
+8. **Query plane face / catalog / Scribe cutover** — still open on the SPEC as
    `query-plane-face`, `query-plane-catalog`, `query-plane-scribe-cutover`.
-   Defaults: in-process first; named new Atlas pipeline; GraphStore driver on
-   the plane. Epic 34 may proceed on those defaults.
+   Defaults held through Epic 34: in-process first; named new Atlas pipeline;
+   store-port driver on the plane (**34.5 shipped the driver**). Residual is
+   Mosaic-as-required vs optional, catalog naming, and whether to retire
+   `scribe_schema` pgvector. Do not re-dispatch 34.1.
 
 ## 12. Traceability
 
@@ -1316,9 +1322,8 @@ then each station's process-hook story. Do not regenerate the whole steward spri
 (slug truncation). Packaging stays operator-owned (S-26.3, S-27.1). Scorecard remains a
 sibling Dream — CAP-18 is **not** that board.
 
-**2026-08-26 ready-to-implement:** SPEC `ready`. CAP-19 / Epic 34 is the live
-residual. Do not re-dispatch 18–32. First dispatch **S-34.1**
-(`specs/spec-34-1-read-only-live-attach.md`). `django-lasuite` is not a Canopy
-FR. OQs have defaults; do not block 34.1 on them. **After 34.1:** steward
-Epic 35 (`spec-35-1-cluster-requires-mcp-host.md`) on
-`spec-mcp-era-isolation` CAP-4 — cluster mcp-host fail-loud, not CAP-19.
+**2026-08-26 first slice shipped:** Epic 34.1–34.5, 35.1 (sibling MCP CAP-4),
+36.1–36.2, 37.1. SPEC stays `ready` for the three CAP-19 OQs — do not
+re-dispatch 18–37. `django-lasuite` is not a Canopy FR. Mosaic
+`duckdb-server` stays optional until `query-plane-face` is answered.
+MCP slice 3 (retire ImportError skip) stays parked.

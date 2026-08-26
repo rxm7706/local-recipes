@@ -4,7 +4,7 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: "modular monolith: Django apps as the composition unit; one ASGI process is the public edge"
-scope: "spec-pyforge-unifying-strategy — residual Canopy work over the shipped src/platform/ host (CAP-1..19, FR-1..FR-50 plus FR-9a/9b/21a). CAP-1..18 closeout 2026-08-26 stands; CAP-19 / AD-22 is the live residual."
+scope: "spec-pyforge-unifying-strategy — residual Canopy work over the shipped src/platform/ host (CAP-1..19, FR-1..FR-50 plus FR-9a/9b/21a). CAP-1..18 closeout 2026-08-26 stands. CAP-19 first slice (Epic 34 + Lane 3 estate-cache) shipped 2026-08-26; live residual is the three query-plane OQs."
 status: final
 created: "2026-08-24"
 updated: "2026-08-26"
@@ -235,6 +235,7 @@ Cite **parent AD-n** vs **canopy AD-n** (this file). Bare `AD-n` in epics is a r
 - **Binds:** CAP-19; FR-27 intent; FR-46..50; Atlas Kedro catalog; Scribe store port; parent AD-2 host import boundary
 - **Prevents:** a sibling HTAP spec; a ninth station; a second writable `.duckdb`; Airflow; pandas-as-federation; boot `INSTALL`; autonomous SQL on OLTP; `uv` Mosaic runtime; silent `01_raw` tree
 - **Rule:** DuckDB is the only analytical engine. Live Postgres is `ATTACH … READ_ONLY`. Kedro writes Parquet on a **named** pipeline. Vectors are `vss` on the plane writer. Mosaic `duckdb-server` is an optional pixi-sourced *face*, not a fourth infra kind. Atlas owns the engine; steward owns the through-line. Rebuild of Atlas RAG defaults, Scribe 28.2 semantic path, and agent DSNs is in scope. BSL remains the dashboard contract. CAP-7 / AD-20 still isolate rows on Mode A.
+- **Realization 2026-08-26:** Epic 34.1–34.5 + 36.1–36.2 shipped (`estate-cache` Vizro page over BSL). Scribe **driver** is on the plane; retiring `scribe_schema` pgvector is still `query-plane-scribe-cutover`. Five-tier roster is 40/40 (Epic 37.1); mason skill cell is `conda-forge-expert` (canopy AD-17 exception), not `.claude/skills/pyforge-mason/`.
 
 ## Consistency Conventions
 
@@ -335,12 +336,12 @@ flowchart LR
 | CAP-11 cache ≠ broker | two Redis Deployments + Celery workers | canopy AD-10 |
 | CAP-12 IdP roles + secrets | allauth + parent AD-12 mounts | canopy AD-19, AD-15 |
 | CAP-13 flags | OpenFeature FILE | canopy AD-11, AD-16 |
-| CAP-14 Scribe graph | PostgreSQL/pgvector behind existing port | parent AD-1, parent AD-5 isolation |
-| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/` | canopy AD-14, AD-17 |
+| CAP-14 Scribe graph | Port + lexical path; semantic recall on CAP-19 plane driver (34.5). `scribe_schema` pgvector retirement is OQ | parent AD-1, parent AD-5 isolation; canopy AD-22 |
+| CAP-15 skills | SKF compile from `pyforge-<station>` → `.claude/skills/`; **mason = `conda-forge-expert`** | canopy AD-14, AD-17 |
 | CAP-16 personas | BMAD launcher/agent; consults CAP-15 | canopy AD-14, AD-17 |
 | CAP-17 run state | supervisor → PostgreSQL `public.run_state` | canopy AD-12, AD-6 |
 | CAP-18 hooks | `pyforge-core` + Warden / station plugins | canopy AD-21 |
-| CAP-19 query plane | Atlas DuckDB + Kedro; stations as clients | canopy AD-22 |
+| CAP-19 query plane | Atlas DuckDB + Kedro; stations as clients. First slice shipped; OQs remain | canopy AD-22 |
 | Cross-cutting | replaceable layers (hook specs + plugins) | canopy AD-21 |
 
 ## Deferred

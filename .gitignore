@@ -863,3 +863,10 @@ _bmad/render/
 # developer following that example verbatim locally should not risk
 # `git add -A` staging it.
 /ci-airgap-mirror/
+
+# Manticore local studio engines (venv, ONNX voices, static ffmpeg).
+# Project scripts, slides, and preview.mp4 stay trackable.
+manticore/engines/audio-lab/.venv/
+manticore/engines/audio-lab/models/
+manticore/engines/audio-lab/hf-cache/
+manticore/engines/bin/

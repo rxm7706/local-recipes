@@ -49,7 +49,10 @@ open_questions:
 > `sprint-change-proposal-2026-08-26-query-plane.md` (CAP-19) then
 > `sprint-change-proposal-2026-08-26-evergreen-ready.md`. This Dream/SPEC
 > pair is living; CAP-1..18 closeout is a dated slice, not the end of the contract.
-> **Ready to implement:** first dispatch S-34.1.
+> **2026-08-26 first slice shipped:** Epic 34.1–34.5, Lane 3 36.1–36.2
+> (`estate-cache`), five-tier 37.1 (40/40; mason = `conda-forge-expert`).
+> Sibling Epic 35.1 is `spec-mcp-era-isolation` CAP-4, not this CAP set.
+> Residual: the three `open_questions` below. Do not re-dispatch 18–37.
 
 > **This SPEC extends `spec-python-agent-platform`, it does not replace it.** That Spec's CAP-1..6
 > are shipped and binding; nothing here re-mints them. `convergence.md` is the authority on which
@@ -72,6 +75,7 @@ dated. Closeout 2026-08-26: Lane 1 `/` **200** on CRC, CAP-9 `platform_app` DML-
 proven, Liquibase `:17`–`:19` executed. Parked outside this CAP set: Q5 scorecard (sibling Dream), MCP slice 3,
 optional 12.9 CI. MCP cluster fail-loud is **sibling** `spec-mcp-era-isolation`
 CAP-4 / steward Epic 35 — not a unifying CAP. **CAP-19 (query plane) is in this chain** — minted 2026-08-26;
+first slice **shipped 2026-08-26** (Epic 34 + Lane 3 `estate-cache`). Three OQs remain.
 CAP-1..18 closeout stands. Not a `services/` rewrite.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema
@@ -209,6 +213,8 @@ they are why this is not merely a UI project.
     and follows it, demonstrated for a station that has no skill today.
   - *(Correct-course 2026-08-24, operating-model Q2. Five-tier completeness is the 03 shape, not
     a mandate to build skill+persona+portal for every task.)*
+  - *(Realization 2026-08-26, Epic 37.1. Roster declared complete — 40/40. Mason's
+    skill cell is `conda-forge-expert`; there is no `pyforge-mason/` skill.)*
 
 - **CAP-16 — Every station can be addressed as a persona.**
   - **intent:** Each **03** station capability exposes an autonomous persona that acts through that
@@ -266,7 +272,9 @@ they are why this is not merely a UI project.
     Tests fail if a second writable analytical engine or an agent OLTP DSN
     is reintroduced.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
-    in-progress; rebuild is allowed. Not a ninth station. Atlas owns the
+    in-progress; rebuild is allowed. First slice shipped the same day:
+    34.1–34.5 + 36.1–36.2. Residual = three OQs. Mosaic optional.
+    Not a ninth station. Atlas owns the
     engine; steward owns the through-line.)*
 
 ## Constraints
@@ -371,7 +379,8 @@ they are why this is not merely a UI project.
   client is the only path.
 - **Never:** an **03** capability is declared complete on fewer than five tiers. 01/02
   deliverables are complete at spec + script/analysis or spec + skill. The eight stations are
-  03 and still owe all five tiers; new work is not a station.
+  03 and were **declared complete 2026-08-26** (Epic 37.1, 40/40; mason skill =
+  `conda-forge-expert`). A missing cell fails CI. New work is not a station.
 - **Always:** design processes as **hook specifications** plus **plugins**. As far as
   possible every layer is replaceable: the process owns named hook points; a plugin
   implements or replaces a layer without a fork (**CAP-18** is the shared contract).
@@ -411,7 +420,8 @@ they are why this is not merely a UI project.
   as it stands. The Dream's **03** symmetry is CLI
   (CAP-5), portal (CAP-3), service (CAP-4), domain skill (CAP-15) and persona (CAP-16); an 03
   station missing any of the five is unfinished, whatever its ledger says. 01/02 work is not
-  measured against this matrix.
+  measured against this matrix. **2026-08-26:** the eight-station roster reports 40/40
+  (Epic 37.1); mason's skill cell is `conda-forge-expert`.
 - **Always:** the eight station portals mount under a uniform `/stations/<name>/` prefix, decided
   2026-08-24. `compliance_face` moves from its shipped `/compliance/` mount and leaves a permanent
   redirect; the app switcher derives its entries from the registration seam rather than from a
@@ -533,6 +543,7 @@ OLTP.
   add `01_raw`.
 - **query-plane-scribe-cutover** — store-port driver on the plane, dual-write,
   or retire `scribe_schema` pgvector once FR-36 holds on the plane?
-  Default until answered: **driver on the plane**; lexical recall may stay
-  local; pgvector on *our* DB may remain until 34.5 proves FR-36.
-  There is no `GraphStore` class in `pyforge-scribe` today.
+  Default held: **driver on the plane**. **34.5 shipped that driver** and
+  FR-36 on the plane. Residual: dual-write vs retire pgvector. Lexical
+  recall may stay local. There is no `GraphStore` class in `pyforge-scribe`
+  today.

@@ -68,10 +68,20 @@ describes a greenfield `services/` FastAPI farm; **Grounding + the architecture 
   Epic 34 on `spec-pyforge-unifying-strategy` (`sprint-change-proposal-2026-08-26-query-plane.md`).
   Do not mint `pyforge-htap` or `spec-htap-query-plane`.
   `docs/dreams/htap-query-plane.md` is the absorbed capture.
+  **First slice shipped 2026-08-26:** Epic **34.1–34.5** (attach / named Parquet
+  / `vss` / agent DSN / Scribe plane driver) plus Lane 3 **36.1–36.2**
+  (`estate-cache` Vizro page over BSL). Residual is the three SPEC OQs
+  (`query-plane-face`, `query-plane-catalog`, `query-plane-scribe-cutover`).
+  Mosaic `duckdb-server` stays optional. Do not claim a 28-page Vizro inventory.
 - **Kedro is optional for pipelines; Vizro is Lane 3.** One Atlas Kedro *home*
   (plus extract nodes). Not eight Kedro projects (AD-21). Lane 3 is Vizro over
   BSL over the plane. `vizro-ai` 0.4.2 is deprecated — author with `vizro-mcp`
-  / `vizro-e2e-flow` after 34.2. `kedro-mcp` stays wrapped, never load-bearing.
+  / `vizro-e2e-flow` for *new* boards (36.2 is a grounded page, not that authoring
+  story). `kedro-mcp` stays wrapped, never load-bearing.
+- **Five-tier roster is complete (2026-08-26, Epic 37.1).** Live matrix **40/40**.
+  Mason's skill cell is **`conda-forge-expert`** (Epic 11: CFE stays; no
+  `pyforge-mason/` skill). A missing cell fails CI. 01/02 work is still outside
+  the denominator.
 - **Installed pins bind; they do not mint stations.** cocoindex/graphifyy,
   OpenLineage, markitdown, graphviz2drawio, filelock, go-sops/age, pandera,
   taplo/sqlfluff/yamllint, playwright — schedule in
@@ -120,8 +130,9 @@ repo's pipeline table.
   the sole PR gate (Q8) with those scanners as hook-plugins. Same pattern as
   Keycloak vs Entra / Okta / PingFederate.
 - **5-tier symmetry is the 03 shape (2026-08-24, Q2).** The eight stations, as
-  long-term platform capabilities, still owe CLI + portal + service + domain
-  skill + persona (CAP-15/16). **New work does not.** 01 may stay spec +
+  long-term platform capabilities, owe CLI + portal + service + domain
+  skill + persona (CAP-15/16) — **declared complete 2026-08-26 (Epic 37.1,
+  40/40; mason skill = `conda-forge-expert`)**. **New work does not.** 01 may stay spec +
   script/analysis. 02 may stay spec + skill. Only a promotion to 03 owes the
   full five tiers (and owner + SLA). Guildhall must not tile 01/02 work as a
   first-class station surface. **Correct-course note for CAP-15/16:** the
@@ -223,8 +234,9 @@ from `.cursor/pyforge-fleet-drain/` as the interim coordinator. Both can exist;
 - **Peers drained on one Canopy obligation each** (warden 9.1–9.3 PR-gate book;
   atlas/mason/marshal/doctor/herald/scribe process-hook extract). They **do not**
   copy steward Epics 18–30 into their `epics.md`. **Never:** a station is “Canopy
-  complete” only because its CLI package is excellent — 03 still owes five tiers,
-  which steward 29 gated; peer hook stories are CAP-18, not a second Guildhall.
+  complete” only because its CLI package is excellent — 03 owed five tiers
+  (steward 29 gated the check; Epic 37.1 declared 40/40 on 2026-08-26);
+  peer hook stories are CAP-18, not a second Guildhall.
 - **Parallel agents (HARD):** `BMAD_ACTIVE_PROJECT=<slug>` per invocation; write
   `_bmad-output/projects/<slug>/…` **literally**; **never** `scripts/bmad-switch`
   from a fan-out. Story specs are **tracked** in `planning-artifacts/specs/` after
@@ -291,10 +303,11 @@ new product. Architecture mermaid below is still pre-audit; this block wins.
 
 ## How to read this Dream (2026-08-26)
 
-This file is **evergreen**. CAP-1..18 closeout is a dated slice. CAP-19 and the
-bind-now stack are in flight. **Grounding + this section + The Dream (query
-plane) + the High-Leverage matrix + Constraints + the SPEC/`stack.md` are
-authoritative.**
+This file is **evergreen**. CAP-1..18 closeout is a dated slice. CAP-19's
+**first slice** (Epic 34 + Lane 3 `estate-cache`) shipped 2026-08-26; the
+three query-plane OQs and parked Mosaic / vizro-ai / MCP slice 3 remain.
+**Grounding + this section + The Dream (query plane) + the High-Leverage
+matrix + Constraints + the SPEC/`stack.md` are authoritative.**
 
 The long 2026-08-23 topology (10 layers, `services/`, `:800x` per station,
 “9 stations,” CodeRed CRX, Chroma as estate memory, Vault-in-app, MinIO as a
@@ -408,9 +421,11 @@ by CAP-7. Author new boards with `vizro-mcp` / `vizro-e2e-flow` after the
 cache exists. `query_vizro_ai` stays until that replace; do not grow
 Vizro-AI. Kedro-Viz is the pipeline DAG (atlas 12.2), not a dashboard.
 
-**What the Spec still leaves open** (defaults in CAP-19; Epic 34 may proceed):
-`query-plane-face`, `query-plane-catalog`, `query-plane-scribe-cutover`. First
-dispatch **34.1**. Tenant isolation on Mode A binds [[secure-live-dashboards]].
+**What the Spec still leaves open** (defaults held through Epic 34; do not
+re-dispatch 34.1): `query-plane-face`, `query-plane-catalog`,
+`query-plane-scribe-cutover`. 34.5 shipped the store-port driver; retiring
+`scribe_schema` pgvector is still that OQ. Tenant isolation on Mode A binds
+[[secure-live-dashboards]].
 
 ---
 
@@ -1477,7 +1492,11 @@ graph TD
 * **The Agent Canopy (`src/platform/` engine mounts — role name `pyforge-agent-platform`):**
   * Langflow & DB-GPT mounts. Path B is this Canopy, not Tachyon (Q6).
   * Cross-station semantic router to station MCP faces on the host.
-  * Estate memory and Text-to-SQL **will** hit the **query plane** (CAP-19 / Epic 34). Not Chroma, not OLTP `pgvector`. Today Atlas still ranks in its own DuckDB; Scribe still uses the 28.x driver.
+  * Estate memory and Text-to-SQL hit the **query plane** (CAP-19 / Epic 34,
+    shipped 2026-08-26). Not Chroma, not OLTP `pgvector` for autonomous SQL.
+    Atlas ranks on the plane writer; Scribe semantic recall uses the store-port
+    plane driver. Lexical recall and `scribe_schema` pgvector retirement stay
+    the `query-plane-scribe-cutover` OQ.
 
 ### 2. The 8 Station 5-Tier Symmetry Matrix
 
@@ -1485,7 +1504,7 @@ graph TD
 | :-: | :--- | :--- | :--- | :--- | :--- | :--- |
 | **1** | **`warden`** | `pyforge warden` | `django-warden` / `/stations/warden/` | `POST /stations/warden/mcp` | `pyforge-warden` | **`Agent-Warden`** (Compliance) |
 | **2** | **`atlas`** | `pyforge atlas` | `django-atlas` / `/stations/atlas/` | `POST /stations/atlas/mcp` | `pyforge-atlas` | **`Agent-Atlas`** (Intelligence) |
-| **3** | **`mason`** | `pyforge mason` | `django-mason` / `/stations/mason/` | `POST /stations/mason/mcp` | `pyforge-mason` | **`Agent-Mason`** (Build/Wheels) |
+| **3** | **`mason`** | `pyforge mason` | `django-mason` / `/stations/mason/` | `POST /stations/mason/mcp` | **`conda-forge-expert`** (Epic 11; no `pyforge-mason/` skill) | **`Agent-Mason`** (Build/Wheels) |
 | **4** | **`marshal`** | `pyforge marshal` | `django-marshal` / `/stations/marshal/` | `POST /stations/marshal/mcp` | `pyforge-marshal` | **`Agent-Marshal`** (Loop/Seed) |
 | **5** | **`doctor`** | `pyforge doctor` | `django-doctor` / `/stations/doctor/` | `POST /stations/doctor/mcp` | `pyforge-doctor` | **`Agent-Doctor`** (Fleet Healer) |
 | **6** | **`herald`** | `pyforge herald` | `django-herald` / `/stations/herald/` | `POST /stations/herald/mcp` | `pyforge-herald` | **`Agent-Herald`** (Presentations) |
@@ -1506,7 +1525,9 @@ graph TD
   through `django-pyforge` / `pyforge.core.client`. Host never imports
   `pyforge.*`.
 - **Eight stations, five tiers on 03 only.** The Canopy is not a ninth station.
-  New 01/02 work does not mint a portal/MCP/persona.
+  New 01/02 work does not mint a portal/MCP/persona. Roster **declared complete
+  2026-08-26** (Epic 37.1, 40/40). Mason skill = `conda-forge-expert`. A missing
+  cell fails CI.
 - **Lane 1 is Wagtail.** CodeRed is dropped.
 - **One analytical engine (CAP-19).** No private DuckDB, Chroma, or OLTP DSN
   for estate knowledge or Text-to-SQL. BSL is the dashboard/agent SQL contract.
@@ -1644,3 +1665,10 @@ graph TD
   “adopt for OIDC only” retracted. Feedstock / `suite-*` recipes unchanged.
 - **2026-08-26** — Dream→spec chain re-stamped for Epic 34. SPEC `ready`.
   Readiness CONCERNS—proceed. First dispatch `spec-34-1-read-only-live-attach`.
+- **2026-08-26** — Query-plane first slice + five-tier drain **shipped**.
+  Steward Epics **34.1–34.5**, **35.1** (sibling MCP cluster fail-loud),
+  **36.1–36.2** (BSL + grounded `estate-cache` Vizro page), **37.1**
+  (40/40; mason skill = `conda-forge-expert`). CAP-19 residual = three
+  SPEC OQs. Mosaic optional. MCP slice 3 / vizro-ai / Q5 / eight Kedro
+  projects stay parked. Hygiene (bmad-loop recipe 0.11.1, loop-home
+  refresh, deferred-work verify stamp) is **not** a canopy contract.

@@ -20,6 +20,10 @@ inputs:
 > exist — Scribe ships a single flat JSON file. Five-tier symmetry in this FAQ is the **03** station
 > shape, not every 01/02 task (Dream Grounding Q2). The binding contract is `SPEC.md`; the
 > corrections are tabulated in `addendum.md`.
+>
+> **2026-08-26:** do not append Epic 34–37 realization here. The binding contract
+> is `SPEC.md`; the living Dream and PRD carry the first-slice stamp. This file
+> stays the 2026-08-23 working-backwards exercise.
 
 # PyForge Unveils the First Unified Developer & AI Operating System for Modern Python & Conda Packaging
 
