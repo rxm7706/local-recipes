@@ -1,5 +1,21 @@
 """``marshal factory dispatch`` (Story 22.1, FR-193 CAP-1) -- launch exactly
-one worktree-isolated ``bmad-build-auto`` session under marshal governance."""
+one worktree-isolated ``bmad-build-auto`` session under marshal governance.
+
+Story 22.7 (FR-193 CAP-7) adds ``marshal factory drain``: the fleet-wide
+campaign mode that reads every pyforge station's ordered backlog from its
+TRACKED ``sprint-status-ledger.yaml`` (plus optional in-repo order
+overrides), applies a campaign mode, and hands each station its next story
+by calling ``dispatch_once`` -- the same primitive, once per station per
+cycle, so the CAP-2 zombie refusal, the CAP-5 one-per-station guard, and the
+CAP-5 cross-station overlap advisory are INHERITED, never re-implemented.
+Chaining is structural rather than scripted: a detached campaign supervisor
+re-runs the cycle, and a station whose story finished merge-through-finalize
+(CAP-4: CI-green merge, scoped ``sprint-ledger-sync --project <station>``,
+spec promotion) has an advanced ledger and a free slot, so the next cycle
+dispatches its next story. This supersedes ``.cursor/pyforge-fleet-drain/``'s
+hand-driven coordinator; campaign state lives in-repo under
+``pyforge-marshal``, never in session-local ``.cursor/`` YAML.
+"""
 
 from __future__ import annotations
 
@@ -13,12 +29,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import yaml
+
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
+from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
+from ..core import dispatch_fleet
 from ..core import policy
 from ..core.dispatch_completion import (
     DispatchCompletionInput,
@@ -35,6 +55,7 @@ from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
+from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort
 from .config import (
     PolicyIOError,
@@ -56,10 +77,48 @@ class DispatchPreflightConflict:
     message: str
     in_flight_story_key: str
 
+
+@dataclass(frozen=True)
+class DispatchAttempt:
+    """One ``dispatch_once`` outcome: envelope ``data`` plus its findings."""
+
+    data: dict[str, object]
+    findings: tuple[Finding, ...]
+
+    @property
+    def errors(self) -> tuple[Finding, ...]:
+        return tuple(f for f in self.findings if f.severity == Severity.ERROR)
+
+    @property
+    def launched(self) -> bool:
+        """True when a session pid was recorded and nothing blocked it."""
+        return not self.errors and self.data.get("session_pid") is not None
+
+
+@dataclass(frozen=True)
+class FleetCycleReport:
+    """One fleet-drain cycle's per-station results, findings, and data."""
+
+    results: tuple[dispatch_fleet.StationCycleResult, ...]
+    findings: tuple[Finding, ...]
+    data: dict[str, object]
+
+    @property
+    def complete(self) -> bool:
+        return dispatch_fleet.campaign_complete(self.results)
+
+
 _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "session.log"
 _SUPERVISOR_LOG_FILENAME = "dispatch-supervisor.log"
+_FLEET_SUPERVISOR_LOG_FILENAME = "fleet-drain-supervisor.log"
 _BASE_REF = "origin/main"
+
+#: How long the detached campaign supervisor waits between cycles -- passed
+#: to it, never slept on here. A cycle is cheap (ledger reads + git/process
+#: facts) and a story takes minutes to hours, so this matches the per-story
+#: supervisor's own 60 s tick.
+_FLEET_TICK_SECONDS = 60
 
 
 def add_factory_dispatch_subparser(factory_subparsers: argparse._SubParsersAction) -> None:
@@ -111,8 +170,13 @@ def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
 
 
-def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
-    command = "factory dispatch"
+def _emit(
+    args: argparse.Namespace,
+    data: dict[str, object],
+    findings: list[Finding],
+    *,
+    command: str = "factory dispatch",
+) -> int:
     envelope = build_envelope(
         command=command,
         verdict=compute_verdict(tuple(findings)),
@@ -504,6 +568,49 @@ def cross_station_surface_overlap_advisories(
     return tuple(advisories)
 
 
+def station_story_blocked_evidence(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    effective_policy: policy.EffectivePolicy,
+) -> str | None:
+    """Evidence that ``story_key``'s most recent dispatch on ``slug`` HALTed.
+
+    Story 22.7: the fleet driver needs to know "is this station's next story
+    blocked?" without inventing a second completion judgment. It reuses
+    CAP-2's own verdict resolution verbatim -- only the MOST RECENT run for
+    that story counts, so a story that failed once and was later re-driven to
+    ``live``/``completed`` is not treated as blocked forever.
+    """
+    feed_story = render_feed_key(normalize(story_key))
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        if journal.story_key != feed_story:
+            continue
+        verdict = resolve_dispatch_session_verdict(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+        )
+        if verdict == DispatchSessionVerdict.FAILED:
+            gate = journal.verification_failed_gate
+            detail = f", failed gate {gate}" if gate else ""
+            return (
+                f"the last dispatch of {feed_story!r} (run {run_dir.name!r}) "
+                f"ended 'failed' by git and process facts{detail}"
+            )
+        return None
+    return None
+
+
 def live_dispatch_conflict(
     *,
     fs: FsPort,
@@ -541,15 +648,46 @@ def run_dispatch(
     context: MarshalContext | None = None,
 ) -> int:
     del context
+    attempt = dispatch_once(
+        slug=args.slug,
+        story=args.story,
+        fs=fs,
+        vcs=vcs,
+        build_harness=build_harness,
+        process=process,
+    )
+    return _emit(args, dict(attempt.data), list(attempt.findings))
+
+
+def dispatch_once(
+    *,
+    slug: str,
+    story: str,
+    fs: FsPort | None = None,
+    vcs: VcsPort | None = None,
+    build_harness: BuildHarnessPort | None = None,
+    process: ProcessPort | None = None,
+) -> DispatchAttempt:
+    """Launch exactly one governed story session and report data + findings.
+
+    The whole body of ``marshal factory dispatch`` minus its envelope
+    rendering -- extracted verbatim (Story 22.7) so the fleet-drain mode can
+    call the SAME primitive once per station per cycle instead of shelling
+    out and re-parsing an envelope, or (worse) re-implementing the CAP-2
+    zombie refusal, the CAP-5 per-station guard, or the CAP-5 cross-station
+    overlap advisory. ``run_dispatch`` is now the thin argparse/emit shell
+    over this function; its behavior is unchanged.
+    """
     fs = fs if fs is not None else LocalFs()
     vcs = vcs if vcs is not None else GitVcs()
     build_harness = build_harness if build_harness is not None else BmadBuildHarness()
     process = process if process is not None else PosixProcess()
 
-    slug = args.slug
-    story = args.story
     findings: list[Finding] = []
     data: dict[str, object] = {"slug": slug, "story": story}
+
+    def _done() -> DispatchAttempt:
+        return DispatchAttempt(data=data, findings=tuple(findings))
 
     if not policy._is_valid_project_slug(slug):
         findings.append(
@@ -559,7 +697,7 @@ def run_dispatch(
                 message=f"malformed project slug {slug!r}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
 
     try:
         story_key = normalize(story)
@@ -571,7 +709,7 @@ def run_dispatch(
                 message=f"malformed story key {story!r}: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
     data["story_key"] = render_feed_key(story_key)
 
     try:
@@ -584,7 +722,7 @@ def run_dispatch(
                 message=f"cannot resolve repository root: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
 
     spec_path = dispatch_core.resolve_story_spec_path(repo_root, slug, story)
     if spec_path is None:
@@ -598,7 +736,7 @@ def run_dispatch(
                 ),
             )
         )
-        return _emit(args, data, findings)
+        return _done()
     data["spec_path"] = str(spec_path)
 
     try:
@@ -611,7 +749,7 @@ def run_dispatch(
                 message=f"cannot read spec {spec_path!r}: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
 
     effective_policy = _compose_policy(slug)
     difficulty = dispatch_core.read_declared_difficulty(spec_text)
@@ -673,7 +811,7 @@ def run_dispatch(
             )
         )
         data["in_flight_story"] = conflict.in_flight_story_key
-        return _emit(args, data, findings)
+        return _done()
 
     findings.extend(
         cross_station_surface_overlap_advisories(
@@ -697,7 +835,7 @@ def run_dispatch(
                 message=f"cannot provision dispatch worktree: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
     data["worktree_path"] = str(worktree)
 
     try:
@@ -710,7 +848,7 @@ def run_dispatch(
                 message=f"cannot read dispatch worktree baseline head: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
     data["baseline_head_sha"] = baseline_head_sha
 
     writer_id = _writer_id()
@@ -730,7 +868,7 @@ def run_dispatch(
                 message=f"cannot create dispatch run directory {run_dir!r}: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
 
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, 0),
@@ -759,7 +897,7 @@ def run_dispatch(
                 message=f"cannot journal dispatch intent: {exc}",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
 
     log_path = run_dir / _LOG_FILENAME
     data["log"] = str(log_path)
@@ -795,7 +933,7 @@ def run_dispatch(
             _append_entry(fs, run_dir, outcome_entry, fsync=False)
         except FsError:
             pass
-        return _emit(args, data, findings)
+        return _done()
 
     data["session_pid"] = launch.pid
     data["session_model"] = launch.model
@@ -897,7 +1035,7 @@ def run_dispatch(
         except FsError:
             pass
 
-    return _emit(args, data, findings)
+    return _done()
 
 
 def _spawn_dispatch_supervisor(
@@ -1253,3 +1391,668 @@ def run_dispatch_resume(
     findings.extend(sup_findings)
     data.update(sup_data)
     return _emit(args, data, findings)
+
+
+# =============================================================================
+# Story 22.7 (FR-193 CAP-7): fleet-wide drain as a marshal-orchestrated mode.
+#
+# Everything below COMPOSES already-shipped primitives and adds exactly one
+# new decision -- "which story does this station get next" -- whose pure core
+# lives in `core/dispatch_fleet.py`:
+#
+#   queue      <- HarnessPort.ledger_story_statuses over each station's
+#                 TRACKED sprint-status-ledger.yaml (the same parser
+#                 `marshal status --reconcile-ledger` already uses), plus an
+#                 OPTIONAL in-repo override file. Never `.cursor/…/queues.yaml`.
+#   preflight  <- dispatch_once -> station_in_flight_conflict (CAP-2/CAP-5)
+#   parallel   <- dispatch_once launches DETACHED and returns, so issuing one
+#                 dispatch per station in a cycle leaves eight sessions
+#                 running concurrently. FR-184's in-loop max_parallel clamp
+#                 is not read, written, or referenced anywhere here.
+#   land+chain <- the per-story dispatch supervisor each launch spawns already
+#                 owns verify -> land -> `dispatch_land_finalize` (merge,
+#                 scoped `sprint-ledger-sync --project <station>`, spec
+#                 promotion). The fleet mode adds no landing path at all: it
+#                 re-reads the advanced ledger on the next cycle, finds the
+#                 station's slot free, and dispatches the next story.
+# =============================================================================
+
+
+def add_factory_drain_subparser(factory_subparsers: argparse._SubParsersAction) -> None:
+    parser = factory_subparsers.add_parser(
+        "drain",
+        help="Fleet-wide drain across every pyforge station (Story 22.7).",
+        description=(
+            "Reads each pyforge station's ordered backlog from its TRACKED "
+            "sprint-status-ledger.yaml (plus optional in-repo order "
+            "overrides), applies the named campaign mode, preflights every "
+            "dispatch through the shipped zombie/in-flight refusals, and "
+            "launches one story per station -- detached, so stations run in "
+            "parallel. Unless --once is given, a detached campaign "
+            "supervisor re-runs the cycle so each station's next story is "
+            "chained once its predecessor's merge-through-finalize advances "
+            "the tracked ledger. --mode is REQUIRED and never defaulted."
+        ),
+    )
+    parser.add_argument(
+        "--mode",
+        default=None,
+        help=(
+            "Campaign mode: "
+            + " | ".join(dispatch_fleet.CAMPAIGN_MODES)
+            + " (required -- a missing or unknown mode is refused, never "
+            "silently defaulted)."
+        ),
+    )
+    parser.add_argument(
+        "--leave-remaining",
+        type=int,
+        default=1,
+        help=(
+            "Under --mode leave_one, how many backlog stories to leave "
+            "untouched per station (default: 1)."
+        ),
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run exactly one cycle and return; spawn no campaign supervisor.",
+    )
+    parser.add_argument(
+        "--max-cycles",
+        type=int,
+        default=0,
+        help="Campaign-supervisor cycle ceiling (0 = until the campaign completes).",
+    )
+    parser.add_argument(
+        "--tick-seconds",
+        type=int,
+        default=_FLEET_TICK_SECONDS,
+        help=f"Campaign-supervisor delay between cycles (default: {_FLEET_TICK_SECONDS}).",
+    )
+    parser.add_argument(
+        "--campaign",
+        default=None,
+        help=(
+            "Reuse an existing campaign run id instead of minting one -- how "
+            "the detached campaign supervisor keeps every cycle on one "
+            "journal (and so remembers which stations are blocked)."
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_fleet_drain)
+
+
+def _read_fleet_queue_config(
+    fs: FsPort, repo_root: Path
+) -> tuple[dict[str, tuple[str, ...]], dict[str, dict[str, str]], list[Finding]]:
+    """Read the OPTIONAL in-repo order-override / skip-policy file.
+
+    The in-repo analog of the interim runner's ``queues.yaml``
+    ``order_overrides``/``skip_policies`` blocks -- minus its ``stations:``
+    block, which was a regenerated copy of state the tracked ledgers already
+    hold. Absent (the default) means "ledger order, no skips"; unreadable or
+    malformed is reported, never silently treated as absent.
+    """
+    findings: list[Finding] = []
+    path = dispatch_fleet.queue_config_path(repo_root)
+    text = fs.read_text(path)
+    if text is None:
+        return {}, {}, findings
+    try:
+        document = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-008",
+                severity=Severity.WARN,
+                message=(
+                    f"cannot parse fleet queue overrides at {path}: {exc} "
+                    "-- falling back to tracked-ledger order with no skips"
+                ),
+                path=str(path),
+            )
+        )
+        return {}, {}, findings
+    if document is None:
+        return {}, {}, findings
+    if not isinstance(document, dict):
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-008",
+                severity=Severity.WARN,
+                message=(
+                    f"fleet queue overrides at {path} must be a mapping, got "
+                    f"{type(document).__name__} -- falling back to "
+                    "tracked-ledger order with no skips"
+                ),
+                path=str(path),
+            )
+        )
+        return {}, {}, findings
+
+    overrides: dict[str, tuple[str, ...]] = {}
+    raw_overrides = document.get("order_overrides") or {}
+    if isinstance(raw_overrides, dict):
+        for raw_station, raw_keys in raw_overrides.items():
+            if not isinstance(raw_keys, list):
+                continue
+            slug = dispatch_fleet.normalize_station_slug(str(raw_station))
+            overrides[slug] = tuple(str(k) for k in raw_keys if isinstance(k, str))
+
+    skips: dict[str, dict[str, str]] = {}
+    raw_skips = document.get("skip_policies") or []
+    if isinstance(raw_skips, list):
+        for entry in raw_skips:
+            if not isinstance(entry, dict):
+                continue
+            raw_station = entry.get("station")
+            raw_story = entry.get("story")
+            if not isinstance(raw_station, str) or not isinstance(raw_story, str):
+                continue
+            slug = dispatch_fleet.normalize_station_slug(raw_station)
+            reason = entry.get("reason")
+            skips.setdefault(slug, {})[raw_story] = (
+                str(reason) if isinstance(reason, str) and reason else "declared skip policy"
+            )
+    return overrides, skips, findings
+
+
+def _station_blocked_map(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    backlog: tuple[str, ...],
+    configured_skips: dict[str, str],
+    campaign_blocked: dict[str, str],
+    effective_policy: policy.EffectivePolicy,
+) -> dict[str, str]:
+    """Blocked stories at the HEAD of ``backlog``, with their reasons.
+
+    Walks the backlog only as far as the first dispatchable story: under
+    every mode the queue decision stops there, so probing the tail would be
+    pure cost. A story is blocked when a skip policy names it, when this
+    campaign already saw a non-liveness refusal for it, or when CAP-2's own
+    facts say its last dispatch ended ``failed``.
+    """
+    blocked: dict[str, str] = {}
+    for story in backlog:
+        if story in configured_skips:
+            blocked[story] = configured_skips[story]
+            continue
+        if story in campaign_blocked:
+            blocked[story] = campaign_blocked[story]
+            continue
+        try:
+            evidence = station_story_blocked_evidence(
+                fs=fs,
+                vcs=vcs,
+                process=process,
+                repo_root=repo_root,
+                slug=slug,
+                story_key=story,
+                effective_policy=effective_policy,
+            )
+        except (VcsCommandError, ValueError):
+            evidence = None
+        if evidence is None:
+            break
+        blocked[story] = evidence
+    return blocked
+
+
+def _classify_attempt(
+    slug: str, story: str, attempt: DispatchAttempt
+) -> tuple[dispatch_fleet.StationCycleStatus, str | None, list[Finding]]:
+    """Turn one ``dispatch_once`` outcome into a station status + findings.
+
+    A liveness refusal (CAP-2's MRS-DISP-011, CAP-5's MRS-DISP-021) is the
+    NORMAL state of a healthy campaign -- eight stations working means eight
+    busy stations -- so it is relayed as a campaign-level WARN that names the
+    original code and the in-flight story verbatim, rather than surfaced at
+    its own ERROR tier, which would red every cycle. Every other refusal is
+    relayed as-is, keeping its own registered code and severity: a missing
+    spec is a real problem the operator must see.
+    """
+    findings: list[Finding] = []
+    errors = attempt.errors
+    if not errors:
+        # Advisories (e.g. CAP-5's MRS-DISP-022 overlap) still surface.
+        findings.extend(attempt.findings)
+        return dispatch_fleet.StationCycleStatus.DISPATCHED, None, findings
+    liveness = next(
+        (f for f in errors if f.code in {"MRS-DISP-011", "MRS-DISP-021"}), None
+    )
+    if liveness is not None:
+        in_flight = attempt.data.get("in_flight_story")
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-006",
+                severity=Severity.WARN,
+                message=(
+                    f"station {slug!r}: no dispatch this cycle -- "
+                    f"{liveness.code} {liveness.message}"
+                ),
+            )
+        )
+        detail = f"{liveness.code}: in flight {in_flight!r}" if in_flight else liveness.code
+        return dispatch_fleet.StationCycleStatus.IN_FLIGHT, detail, findings
+    findings.extend(attempt.findings)
+    first = errors[0]
+    return (
+        dispatch_fleet.StationCycleStatus.REFUSED,
+        f"{first.code}: {first.message}",
+        findings,
+    )
+
+
+def execute_fleet_cycle(
+    *,
+    repo_root: Path,
+    mode: dispatch_fleet.FleetCampaignMode,
+    leave_remaining: int,
+    campaign_blocked: dict[str, dict[str, str]],
+    fs: FsPort,
+    vcs: VcsPort,
+    build_harness: BuildHarnessPort,
+    process: ProcessPort,
+    harness: HarnessPort,
+) -> FleetCycleReport:
+    """One fleet-drain cycle: plan every station, dispatch the eligible ones."""
+    findings: list[Finding] = []
+    results: list[dispatch_fleet.StationCycleResult] = []
+    overrides, configured_skips, config_findings = _read_fleet_queue_config(fs, repo_root)
+    findings.extend(config_findings)
+
+    slugs = dispatch_fleet.fleet_station_slugs(
+        dispatch_core.list_station_slugs(repo_root)
+    )
+    for slug in slugs:
+        ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
+        try:
+            statuses = harness.ledger_story_statuses(ledger_path)
+        except HarnessError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-003",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: cannot read the tracked ledger at "
+                        f"{ledger_path}: {exc} -- station excluded from this "
+                        "campaign (its backlog is unknown, never assumed empty)"
+                    ),
+                    path=str(ledger_path),
+                )
+            )
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus.LEDGER_UNREADABLE,
+                    remaining=0,
+                    detail=str(exc),
+                )
+            )
+            continue
+
+        backlog = dispatch_fleet.station_backlog(
+            statuses, order_override=overrides.get(slug)
+        )
+        effective_policy = _compose_policy(slug)
+        blocked = _station_blocked_map(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            backlog=backlog,
+            configured_skips=configured_skips.get(slug, {}),
+            campaign_blocked=campaign_blocked.get(slug, {}),
+            effective_policy=effective_policy,
+        )
+        plan = dispatch_fleet.plan_station_queue(
+            slug=slug,
+            backlog=backlog,
+            mode=mode,
+            leave_remaining=leave_remaining,
+            blocked=blocked,
+        )
+        for story, reason in plan.skipped:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-004",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: skipping blocked story {story!r} "
+                        f"under {mode.value} -- {reason}. It stays in the "
+                        "backlog and is never auto-retried."
+                    ),
+                )
+            )
+        if plan.outcome is dispatch_fleet.StationQueueOutcome.BLOCKED:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-005",
+                    severity=Severity.WARN,
+                    message=(
+                        f"station {slug!r}: story {plan.blocked_story!r} is "
+                        f"blocked -- {plan.blocked_reason}. It stays in the "
+                        "backlog, is never auto-retried, and is never forced "
+                        f"past; re-run with --mode "
+                        f"{dispatch_fleet.FleetCampaignMode.SKIP_ON_BLOCKED.value} "
+                        "to move on to this station's next story."
+                    ),
+                )
+            )
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus.BLOCKED,
+                    remaining=len(backlog),
+                    story=plan.blocked_story,
+                    detail=plan.blocked_reason,
+                    skipped=plan.skipped,
+                )
+            )
+            continue
+        if plan.next_story is None:
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus(plan.outcome.value),
+                    remaining=len(backlog),
+                    skipped=plan.skipped,
+                )
+            )
+            continue
+
+        attempt = dispatch_once(
+            slug=slug,
+            story=plan.next_story,
+            fs=fs,
+            vcs=vcs,
+            build_harness=build_harness,
+            process=process,
+        )
+        status, detail, attempt_findings = _classify_attempt(slug, plan.next_story, attempt)
+        findings.extend(attempt_findings)
+        if status is dispatch_fleet.StationCycleStatus.REFUSED:
+            campaign_blocked.setdefault(slug, {})[plan.next_story] = (
+                detail or "dispatch refused"
+            )
+        results.append(
+            dispatch_fleet.StationCycleResult(
+                slug=slug,
+                status=status,
+                remaining=len(backlog),
+                story=plan.next_story,
+                detail=detail,
+                skipped=plan.skipped,
+            )
+        )
+
+    data: dict[str, object] = {
+        "mode": mode.value,
+        "stations": [result.to_payload() for result in results],
+        "remaining_total": sum(result.remaining for result in results),
+        "dispatched": [
+            result.slug
+            for result in results
+            if result.status is dispatch_fleet.StationCycleStatus.DISPATCHED
+        ],
+    }
+    return FleetCycleReport(
+        results=tuple(results), findings=tuple(findings), data=data
+    )
+
+
+def _campaign_blocked_from_journal(
+    fs: FsPort, run_dir: Path, run_id: str
+) -> dict[str, dict[str, str]]:
+    """Rebuild "which stations are blocked" from this campaign's own journal.
+
+    Campaign state lives in the journal (the Spec's in-repo store), never in
+    a driver process's memory: each cycle runs in its own process under the
+    detached supervisor, and without this a station whose queued story was
+    refused for a non-liveness reason (no tracked spec, an unlaunchable
+    harness) would be retried on every single tick forever.
+    """
+    blocked: dict[str, dict[str, str]] = {}
+    text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    if text is None:
+        return blocked
+    folded = fold(text.splitlines())
+    for entry in folded.by_kind(dispatch_fleet.KIND_FLEET_CYCLE):
+        if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
+            continue
+        stations = entry.payload.get("stations")
+        if not isinstance(stations, list):
+            continue
+        for row in stations:
+            if not isinstance(row, dict):
+                continue
+            if row.get("status") != dispatch_fleet.StationCycleStatus.REFUSED.value:
+                continue
+            slug = row.get("station")
+            story = row.get("story")
+            if not isinstance(slug, str) or not isinstance(story, str):
+                continue
+            detail = row.get("detail")
+            blocked.setdefault(slug, {})[story] = (
+                detail if isinstance(detail, str) and detail else "dispatch refused"
+            )
+    return blocked
+
+
+def _journal_fleet_cycle(
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    report: FleetCycleReport,
+    findings: list[Finding],
+) -> None:
+    """Journal one cycle's intent/outcome pair under ``pyforge-marshal``.
+
+    ``writer_id`` carries this process's pid, so successive supervised cycles
+    (each its own process, all sharing one campaign run id) never collide on
+    a journal entry id.
+    """
+    writer_id = f"fleet-drain-{os.getpid()}"
+    intent = build_entry(
+        id=JournalEntryId(writer_id, 0),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_fleet.KIND_FLEET_CYCLE,
+        phase=Phase.INTENT,
+        payload={"mode": report.data.get("mode")},
+    )
+    outcome = build_entry(
+        id=JournalEntryId(writer_id, 1),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_fleet.KIND_FLEET_CYCLE,
+        phase=Phase.OUTCOME,
+        intent_id=intent.id,
+        payload={
+            "ok": True,
+            "complete": report.complete,
+            "stations": [result.to_payload() for result in report.results],
+        },
+    )
+    try:
+        _append_entry(fs, run_dir, intent, fsync=True)
+        _append_entry(fs, run_dir, outcome, fsync=False)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-009",
+                severity=Severity.WARN,
+                message=f"the fleet cycle ran but could not be journaled: {exc}",
+            )
+        )
+
+
+def _spawn_campaign_supervisor(
+    *,
+    process: ProcessPort,
+    repo_root: Path,
+    run_dir: Path,
+    run_id: str,
+    mode: dispatch_fleet.FleetCampaignMode,
+    leave_remaining: int,
+    max_cycles: int,
+    tick_seconds: int,
+) -> int:
+    """Detach the campaign supervisor -- the loop that chains next stories.
+
+    Mirrors the per-story dispatch supervisor's own shape (AD-22/Story 3.4):
+    the operator's foreground invocation runs ONE cycle and returns, and all
+    waiting lives in ``pyforge.marshal.dispatch_fleet_supervisor`` -- so the
+    ~600 s watchdog that killed the hand ritual's busy-waiting parent has
+    nothing to kill here. Raises ``ProcessError`` when the spawn fails; the
+    cycle that already ran still stands.
+    """
+    return process.spawn_detached(
+        [
+            sys.executable,
+            "-m",
+            "pyforge.marshal.dispatch_fleet_supervisor",
+            str(repo_root),
+            run_id,
+            mode.value,
+            str(leave_remaining),
+            str(max_cycles),
+            str(tick_seconds),
+        ],
+        cwd=repo_root,
+        log_path=run_dir / _FLEET_SUPERVISOR_LOG_FILENAME,
+    )
+
+
+def run_fleet_drain(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    vcs: VcsPort | None = None,
+    build_harness: BuildHarnessPort | None = None,
+    process: ProcessPort | None = None,
+    harness: HarnessPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal factory drain`` -- the one documented fleet-drain command.
+
+    Runs exactly ONE cycle and returns; unless ``--once`` is given (or the
+    campaign is already complete) it then detaches
+    ``pyforge.marshal.dispatch_fleet_supervisor``, which re-runs this same
+    command on a tick until the campaign completes. Nothing here waits.
+    """
+    del context
+    fs = fs if fs is not None else LocalFs()
+    vcs = vcs if vcs is not None else GitVcs()
+    build_harness = build_harness if build_harness is not None else BmadBuildHarness()
+    process = process if process is not None else PosixProcess()
+    harness = harness if harness is not None else resolve_loop_runner()
+
+    findings: list[Finding] = []
+    data: dict[str, object] = {}
+
+    try:
+        mode = dispatch_fleet.parse_campaign_mode(getattr(args, "mode", None))
+    except dispatch_fleet.InvalidCampaignModeError as exc:
+        findings.append(
+            Finding(code="MRS-DRAIN-001", severity=Severity.ERROR, message=str(exc))
+        )
+        return _emit(args, data, findings, command="factory drain")
+    data["mode"] = mode.value
+
+    leave_remaining = max(0, int(getattr(args, "leave_remaining", 1) or 0))
+    once = bool(getattr(args, "once", False))
+    max_cycles = max(0, int(getattr(args, "max_cycles", 0) or 0))
+    tick_seconds = max(1, int(getattr(args, "tick_seconds", _FLEET_TICK_SECONDS) or 1))
+
+    try:
+        repo_root = vcs.repo_common_root(Path.cwd())
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-002",
+                severity=Severity.ERROR,
+                message=f"cannot resolve repository root: {exc}",
+            )
+        )
+        return _emit(args, data, findings, command="factory drain")
+
+    run_id = getattr(args, "campaign", None) or mint_run_id(
+        dispatch_fleet.FLEET_JOURNAL_SLUG,
+        _format_utc_compact(_now_utc()),
+        _random_token(),
+    )
+    data["campaign"] = run_id
+    run_dir = dispatch_fleet.fleet_run_dir(repo_root, run_id)
+    try:
+        fs.ensure_dir(run_dir)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-009",
+                severity=Severity.WARN,
+                message=f"cannot create campaign run directory {run_dir}: {exc}",
+            )
+        )
+
+    report = execute_fleet_cycle(
+        repo_root=repo_root,
+        mode=mode,
+        leave_remaining=leave_remaining,
+        campaign_blocked=_campaign_blocked_from_journal(fs, run_dir, run_id),
+        fs=fs,
+        vcs=vcs,
+        build_harness=build_harness,
+        process=process,
+        harness=harness,
+    )
+    _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
+
+    data.update(report.data)
+    data["complete"] = report.complete
+    findings.extend(report.findings)
+
+    if not once and not report.complete:
+        try:
+            data["supervisor_pid"] = _spawn_campaign_supervisor(
+                process=process,
+                repo_root=repo_root,
+                run_dir=run_dir,
+                run_id=run_id,
+                mode=mode,
+                leave_remaining=leave_remaining,
+                max_cycles=max_cycles,
+                tick_seconds=tick_seconds,
+            )
+            data["supervisor_log"] = str(run_dir / _FLEET_SUPERVISOR_LOG_FILENAME)
+        except ProcessError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-007",
+                    severity=Severity.WARN,
+                    message=(
+                        f"the cycle completed but the campaign supervisor "
+                        f"could not be spawned: {exc} -- re-run "
+                        "`marshal factory drain` to advance the campaign"
+                    ),
+                )
+            )
+
+    if getattr(args, "format", "text") != "json":
+        try:
+            print(dispatch_fleet.render_cycle_summary(report.results), flush=True)
+        except (OSError, UnicodeEncodeError):
+            _suppress_downstream_pipe_close()
+    return _emit(args, data, findings, command="factory drain")
