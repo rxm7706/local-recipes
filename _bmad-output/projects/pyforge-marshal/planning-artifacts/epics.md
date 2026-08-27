@@ -3516,6 +3516,23 @@ both engines — `marshal factory dispatch` directly, and bmad-loop via
 `render_policy_toml`'s `[adapter].name` derivation — with the previous cursor behavior
 preserved as the `cursor` profile.
 
+### Story 22.9: A dispatch branch names its station
+**Type:** bug • **Effort:** S • **Deps:** S-22.7 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-2/CAP-5)
+**Surface:** `core/dispatch.py::dispatch_worktree_branch`, `cli/dispatch.py::_ensure_dispatch_worktree`, landing/status consumers of the branch name, tests
+**Note:** found live 2026-08-27 pushing preserve snapshots: every dispatch branch renders
+`marshal/<story_key>` with no station slug (mason 12.1 landed on `marshal/12.1`), and
+`_ensure_dispatch_worktree` RESOLVES THE WORKTREE BY BRANCH NAME — so two stations sharing
+a story key would silently reuse each other's worktree. Correctness at fleet-drain scale
+(Story 22.7 multiplies branches across all eight stations), not cosmetics. Deps on 22.7
+deliberately: its in-flight session edits `cli/dispatch.py`; implementing before it lands
+manufactures a merge conflict.
+**Given** a dispatch for station `<slug>` story `<key>` **When** the worktree branch is
+derived **Then** it carries the station (`dispatch/<slug>/<key>`), no two stations can
+collide on a shared story key, in-flight or preserved branches under the legacy
+`marshal/<key>` name are still resolved (or documented as land-first), and every consumer
+of the branch name (worktree lookup, in-flight conflict guard, landing, status overlay)
+agrees on the one derivation.
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
 as Story 22.7 (2026-08-27, backlog), with the companion
