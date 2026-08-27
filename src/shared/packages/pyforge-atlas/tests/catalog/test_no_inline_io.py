@@ -9,7 +9,7 @@ Check 3 — AD-1 import direction: no ``dagster`` / ``kedro_mcp`` imports in
 package code (the spine pairs this meta-test with ``kedro-catalog-check``
 explicitly).
 
-Review-pass P3: the scan is ``ATLAS_PKG.rglob('*.py')`` minus the four
+Review-pass P3: the scan is ``ATLAS_PKG.rglob('*.py')`` minus the five
 exempt root-level framework files (conftest ``NO_INLINE_IO_EXEMPT``) — NOT
 a hardcoded dir list, so coverage is complete by construction: any new
 module anywhere in the package (including subpackage ``__init__.py``
