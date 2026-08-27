@@ -375,6 +375,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the visual pass is inherently out of reach of this verification too. The `dashboard-dryrun` gate still builds the Dashboard OBJECT and asserts structure only, never launching a server, so the browser-rendered UI and the §2.1 semantic-HTML/ARIA check remain unverified by anything.
+
+  evidence-update: 2026-08-26 — the two blockers are now removed and the FIRST visual pass ran. (1) Serve entrypoint exists: `pixi run -e local-recipes dashboard-serve` (`scripts/dashboard_serve.py`, same PYTHONPATH as the dryrun gate; foreground, 127.0.0.1:8050). (2) Operator-session visual verification via headless Chrome screenshots, human-reviewed: `factory-status` fully live (AD-17 build stamp rendered, real sprint-ledger rows in the grid, 9-page nav present, dark theme correct); root page = `feedstock-health` renders the page shell + AD-17 provenance line degrading HONESTLY ("unavailable — backing file not found: data/primary/core_feedstock_health/core_feedstock_health.parquet") with an empty grid — the grounded pages need the atlas Kedro pipeline outputs materialized at the data root before they show data in a fresh checkout. Residual before this entry can close: the §2.1 semantic-HTML/ARIA browser-agent navigation check, and a data-present visual pass after a pipeline run materializes the Parquet tree.
 ## DW-D3-1 — the live Vizro-AI NL→chart backend bring-up (ATTENDED, Q3) — DEFERRED to the wave-boundary event
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`

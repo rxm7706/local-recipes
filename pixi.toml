@@ -953,6 +953,11 @@ cmd = "python scripts/promote_sprint_status.py"
 description = "FR-7 / Story 30.2: fail if the retired Guildhall generator, data.js, or the four dashboard-gen/watch/check/drift pixi tasks are reintroduced. Kedro-Viz is out of scope."
 cmd = "python -m pyforge.doctor.sources dashboard-drift"
 
+[feature.local-recipes.tasks.dashboard-serve]
+description = "Serve the pyforge-atlas Vizro dashboard locally (DW-D2-3's missing entrypoint): builds via the same build_dashboard() the dashboard-dryrun gate exercises, then .run()s a local dev server -- foreground, 127.0.0.1:8050 by default (-- --port N to change), no daemon. dashboard-dryrun proves the OBJECT builds; this is how you LOOK at it."
+cmd = "python scripts/dashboard_serve.py"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
 [feature.local-recipes.tasks.dashboard-dryrun]
 description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in local-recipes (the env carrying vizro + boring_semantic_layer). Full 28-page inventory is CIS-two-spine deferred (DW-D2). Offline, --frozen."
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard -q"
