@@ -112,7 +112,7 @@ sibling ledgers and the detector both use.
   origin: spec-deferred 8822027f8d86 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done 2026-08-27 — Story 3.3. `scan_transcripts()` now enforces a file-count cap (256) and total-byte budget (1 GiB) allocated newest-first, a 30s per-file timeout (partial results kept, warned), and an mtime+size-keyed scan cache beside the graph store (`transcript-scan-cache.json`) that resolves the spec's open scan-economics question as incremental-by-mtime with a full-fidelity fallback. Dedup stays post-cache so curated-overlap semantics are unchanged. Live re-measure at close: 25 files / 651MB scanned in 2.2s cold, 0.3s cached.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 

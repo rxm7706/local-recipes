@@ -11,6 +11,7 @@ spec-3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed.md.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -386,6 +387,195 @@ def test_multi_file_scan_is_in_sorted_filename_order(
     assert len(proposal.candidates) == 2
     assert proposal.candidates[0].source_file.name == "aaa-first.jsonl"
     assert proposal.candidates[1].source_file.name == "zzz-second.jsonl"
+
+
+# --- Story 3.3: bounded scan (caps / timeout / cache) ------------------------
+
+
+def _set_mtime(path: Path, mtime_s: int) -> None:
+    os.utime(path, ns=(mtime_s * 1_000_000_000, mtime_s * 1_000_000_000))
+
+
+def test_file_count_cap_prefers_newest_files_and_warns(
+    transcript_root: Path, memory_root: Path
+) -> None:
+    oldest = _write_jsonl(
+        transcript_root,
+        "aaa-oldest.jsonl",
+        [_assistant_line(text_blocks=["We decided to archive the oldest ingestion job."])],
+    )
+    middle = _write_jsonl(
+        transcript_root,
+        "bbb-middle.jsonl",
+        [_assistant_line(text_blocks=["We chose to deprecate the legacy webhook retry queue entirely."])],
+    )
+    newest = _write_jsonl(
+        transcript_root,
+        "ccc-newest.jsonl",
+        [_assistant_line(text_blocks=["Settled on keeping the build script single-threaded for now."])],
+    )
+    _set_mtime(oldest, 1_000)
+    _set_mtime(middle, 2_000)
+    _set_mtime(newest, 3_000)
+
+    proposal = scan_transcripts(transcript_root, memory_root, max_files=2)
+
+    # Newest-first allocation: the OLDEST file loses the budget, not the
+    # lexicographically last one.
+    assert {c.source_file.name for c in proposal.candidates} == {
+        "bbb-middle.jsonl",
+        "ccc-newest.jsonl",
+    }
+    assert len(proposal.warnings) == 1
+    assert "capped" in proposal.warnings[0]
+    assert "skipped 1 of 3" in proposal.warnings[0]
+    assert "max_files=2" in proposal.warnings[0]
+
+
+def test_byte_budget_skips_files_beyond_it_newest_first(
+    transcript_root: Path, memory_root: Path
+) -> None:
+    older = _write_jsonl(
+        transcript_root,
+        "aaa-older.jsonl",
+        [_assistant_line(text_blocks=["We decided to archive the oldest ingestion job."])],
+    )
+    newer = _write_jsonl(
+        transcript_root,
+        "bbb-newer.jsonl",
+        [_assistant_line(text_blocks=["Settled on keeping the build script single-threaded for now."])],
+    )
+    _set_mtime(older, 1_000)
+    _set_mtime(newer, 2_000)
+    # A budget exactly covering the newest file: the newer file fits, the
+    # older one no longer does.
+    budget = newer.stat().st_size
+
+    proposal = scan_transcripts(transcript_root, memory_root, max_total_bytes=budget)
+
+    assert {c.source_file.name for c in proposal.candidates} == {"bbb-newer.jsonl"}
+    assert len(proposal.warnings) == 1
+    assert "capped" in proposal.warnings[0]
+    assert f"max_total_bytes={budget}" in proposal.warnings[0]
+
+
+def test_per_file_timeout_keeps_partial_results_with_warning(
+    transcript_root: Path, memory_root: Path
+) -> None:
+    _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=["We decided to use SQLite for the local cache."])],
+    )
+
+    # A zero budget fires the deadline at the first line -- zero candidates,
+    # one warning, no exception (the never-abort posture of every bound).
+    proposal = scan_transcripts(transcript_root, memory_root, per_file_timeout_s=0.0)
+
+    assert proposal.candidates == ()
+    assert len(proposal.warnings) == 1
+    assert "timed out" in proposal.warnings[0]
+    assert "session-a.jsonl" in proposal.warnings[0]
+
+
+def test_cache_hit_avoids_rereading_unchanged_files(
+    transcript_root: Path, memory_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=["We decided to use SQLite for the local cache."])],
+    )
+    cache_path = tmp_path / "scan-cache.json"
+
+    first = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+    assert len(first.candidates) == 1
+    assert cache_path.is_file()
+
+    real_read_text = Path.read_text
+
+    def _no_reread(self: Path, *args, **kwargs):
+        if self == target:
+            raise AssertionError("cached, unchanged transcript must not be re-read")
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", _no_reread)
+
+    second = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+
+    # Byte-equivalent with or without the cache hit -- the proposal is the
+    # same object graph, warnings included.
+    assert second.candidates == first.candidates
+    assert second.warnings == ()
+
+
+def test_cache_is_invalidated_when_the_file_changes(
+    transcript_root: Path, memory_root: Path, tmp_path: Path
+) -> None:
+    path = _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=["We decided to use SQLite for the local cache."])],
+    )
+    _set_mtime(path, 1_000)
+    cache_path = tmp_path / "scan-cache.json"
+    scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+
+    _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=["We chose to deprecate the legacy webhook retry queue entirely."])],
+    )
+    _set_mtime(path, 2_000)
+
+    proposal = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+
+    assert len(proposal.candidates) == 1
+    assert "webhook retry queue" in proposal.candidates[0].text
+
+
+def test_cached_matches_still_dedup_against_newly_curated_memory(
+    transcript_root: Path, memory_root: Path, tmp_path: Path
+) -> None:
+    """Pins the load-bearing cache design point: the cache stores raw
+    PRE-dedup matches, and the curated-overlap check re-runs on every scan
+    -- so capturing a candidate between two cached scans silences it, and
+    re-running stays idempotent exactly as Story 3.1 promised."""
+    _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=["We decided to use SQLite for the local cache."])],
+    )
+    cache_path = tmp_path / "scan-cache.json"
+    first = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+    assert len(first.candidates) == 1
+
+    _write_curated(
+        memory_root, "project", "sqlite-cache", "We decided to use SQLite for the local cache."
+    )
+
+    second = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+
+    assert second.candidates == ()
+
+
+def test_malformed_cache_is_ignored_and_replaced(
+    transcript_root: Path, memory_root: Path, tmp_path: Path
+) -> None:
+    _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=["We decided to use SQLite for the local cache."])],
+    )
+    cache_path = tmp_path / "scan-cache.json"
+    cache_path.write_text("{not valid json", encoding="utf-8")
+
+    proposal = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
+
+    assert len(proposal.candidates) == 1
+    replaced = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert replaced["version"] == 1
+    assert len(replaced["files"]) == 1
 
 
 # --- default_transcript_root() ----------------------------------------------

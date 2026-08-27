@@ -551,6 +551,25 @@ def test_graph_compile_happy_path_is_unattended_and_reports_node_count(
     assert (tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph.json").is_file()
 
 
+def test_graph_compile_overlapping_run_skips_with_exit_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 3.3: an overlapping cron firing (or a manual run while the
+    nightly is still going) must be a clean exit-0 skip -- never a
+    corrupted double-write, never red cron mail."""
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    from pyforge.scribe import compile as compile_module
+
+    store_path = tmp_path / ".claude" / "data" / "pyforge-scribe" / "graph.json"
+    with compile_module._compile_lock(store_path):
+        result = runner.invoke(app, ["graph", "compile", "--nightly"])
+
+    assert result.exit_code == 0
+    assert "skipped" in _combined_output(result)
+    assert not store_path.exists()
+
+
 def test_recall_no_compiled_graph_yet_reports_no_grounded_answer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

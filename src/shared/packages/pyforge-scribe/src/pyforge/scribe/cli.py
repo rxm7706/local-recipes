@@ -17,7 +17,7 @@ import typer
 
 from pyforge.scribe import __version__
 from pyforge.scribe.capture import capture as capture_write
-from pyforge.scribe.compile import compile_graph, default_store_path
+from pyforge.scribe.compile import CompileInProgressError, compile_graph, default_store_path
 from pyforge.scribe.graph_store_plugins import open_graph_store
 from pyforge.scribe.models import CaptureType
 from pyforge.scribe.promote import (
@@ -211,6 +211,13 @@ def _run_transcripts(source: Path | None) -> None:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc
 
+    # Story 3.3 bound warnings (cap skips, per-file timeouts) -- surfaced the
+    # same way `graph compile` reports its own, so a capped interactive scan
+    # is never mistaken for a complete one. No cache here: the interactive
+    # flow has no durable home for one (cache_path stays None).
+    for warning in proposal.warnings:
+        typer.echo(f"warning: {warning}", err=True)
+
     typer.echo(_render_transcript_proposal(proposal))
 
     if not proposal.candidates:
@@ -254,10 +261,19 @@ def graph_compile(
 ) -> None:
     """Rebuild the compiled knowledge graph from `.claude/memory/`,
     `.memlog.md` files, git history, retros, CHANGELOGs (Story 2.2/2.3), and
-    un-curated session transcripts (Story 3.2). Never prompts -- safe to run
-    from cron/CI with no human present."""
+    un-curated session transcripts (Story 3.2; bounded per Story 3.3). Never
+    prompts -- safe to run from cron with no human present; the documented
+    nightly trigger is an opt-in operator crontab entry (see this package's
+    `docs/cli-runbooks.md`). An overlapping run against the same store skips
+    cleanly with exit 0 rather than double-writing."""
     try:
         result = compile_graph(memory_root=_MEMORY_ROOT, repo_root=Path.cwd(), nightly=nightly)
+    except CompileInProgressError as exc:
+        # Benign under a scheduler (Story 3.3): an overlapping cron firing
+        # must not produce a non-zero exit / red cron mail -- mirror the
+        # runbook cron line's own `flock -n` skip semantics.
+        typer.echo(f"skipped: {exc}", err=True)
+        raise typer.Exit(code=0) from exc
     except ValueError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from exc

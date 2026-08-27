@@ -760,7 +760,7 @@ def test_transcript_surface_source_file_rotated_before_stat_does_not_abort_compi
 
     real_scan = compile_module.scan_transcripts
 
-    def scan_then_rotate(root: Path, curated_root: Path):
+    def scan_then_rotate(root: Path, curated_root: Path, **kwargs):
         proposal = real_scan(root, curated_root)
         for candidate in proposal.candidates:
             candidate.source_file.unlink()
@@ -804,7 +804,7 @@ def test_transcript_surface_scanned_candidates_survive_a_root_pruned_mid_compile
 
     real_scan = compile_module.scan_transcripts
 
-    def scan_then_prune(root: Path, curated_root: Path):
+    def scan_then_prune(root: Path, curated_root: Path, **kwargs):
         proposal = real_scan(root, curated_root)
         shutil.rmtree(root)
         return proposal
@@ -824,6 +824,110 @@ def test_transcript_surface_scanned_candidates_survive_a_root_pruned_mid_compile
     assert transcript_nodes[0].citation == "session-a.jsonl:L1"
     # ...and no warning claiming the surface was unavailable, because it wasn't.
     assert [w for w in result.warnings if "transcript" in w] == []
+
+
+def test_worktree_homes_are_not_compile_surfaces(tmp_path: Path, memory_root: Path) -> None:
+    """Story 3.3 review finding: the dot-prefixed worktree homes
+    (`.worktrees/`, and `worktrees/` under `.cursor`/`.claude`) hold full
+    duplicate checkouts -- indexing them mints duplicate doc/memlog nodes
+    citing throwaway trees, and traversing them is most of what made the
+    live nightly compile non-terminating."""
+    capture(memory_root, "feedback", "content")
+    dot_worktree = tmp_path / ".worktrees" / "story-x"
+    dot_worktree.mkdir(parents=True)
+    (dot_worktree / "CHANGELOG.md").write_text("# Changes\n\nduplicate checkout\n", encoding="utf-8")
+    nested_worktree = tmp_path / ".cursor" / "worktrees" / "story-y"
+    nested_worktree.mkdir(parents=True)
+    (nested_worktree / ".memlog.md").write_text("duplicate memlog\n", encoding="utf-8")
+    # A real one at the repo root still compiles.
+    (tmp_path / "CHANGELOG.md").write_text("# Changes\n\nreal\n", encoding="utf-8")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=tmp_path / "no-transcripts",
+    )
+
+    doc_ids = [n.id for n in store.iter_nodes() if n.id.startswith(("doc:", "memlog:"))]
+    assert doc_ids == ["doc:CHANGELOG.md"]
+
+
+# --- Story 3.3: overlap lock + bounded-scan cache -----------------------------
+
+
+def test_second_compile_against_a_locked_store_is_refused_not_queued(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """An overlapping compile is pure waste (each run is a full rebuild of
+    the same derived store), so the lock skips rather than waits -- unlike
+    `capture.py::_locked`, which polls because two captures are both meant
+    to land."""
+    capture(memory_root, "feedback", "content")
+    store_path = tmp_path / "graph.json"
+
+    with compile_module._compile_lock(store_path):
+        with pytest.raises(
+            compile_module.CompileInProgressError, match="already holds the lock"
+        ):
+            compile_graph(
+                memory_root=memory_root,
+                repo_root=tmp_path,
+                store=FlatFileGraphStore(store_path),
+                transcript_root=tmp_path / "no-transcripts",
+            )
+        # Refused BEFORE any store mutation -- nothing was reset or written.
+        assert not store_path.exists()
+
+    # Lock released with its holder -- the next compile proceeds normally.
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=tmp_path / "no-transcripts",
+    )
+    assert result.node_count == 1
+    assert store_path.is_file()
+
+
+def test_compile_writes_the_transcript_scan_cache_beside_the_store(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Story 3.3's mtime-incremental pass: `compile_graph()` points the
+    scanner's cache at the graph store's own directory (gitignored,
+    derived-artifact home), so an unattended nightly re-run over an
+    unchanged transcript surface is cheap."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_transcript_line("We decided to use SQLite for the local cache.")],
+    )
+    store_path = tmp_path / "graph.json"
+
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=transcript_root,
+    )
+
+    cache_path = tmp_path / "transcript-scan-cache.json"
+    assert cache_path.is_file()
+    cached = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert cached["version"] == 1
+    assert str(transcript_root / "session-a.jsonl") in cached["files"]
+    # The idempotency contract survives the cache being in play: a second
+    # compile (now cache-served) produces byte-identical store output.
+    first_bytes = store_path.read_bytes()
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=FlatFileGraphStore(store_path),
+        transcript_root=transcript_root,
+    )
+    assert store_path.read_bytes() == first_bytes
 
 
 def test_transcript_surface_root_that_is_a_regular_file_warns_as_not_a_directory(
