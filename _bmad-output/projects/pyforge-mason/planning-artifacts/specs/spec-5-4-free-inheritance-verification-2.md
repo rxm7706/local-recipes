@@ -2,8 +2,9 @@
 title: 'Free-inheritance verification (SM-4) -- recheck 2026-08-20'
 type: 'chore'
 created: '2026-08-20'
-status: 'blocked'
-blocking_condition: 'unmet external dependency -- Mason v1 has not shipped; no new CFE MINOR since baseline'
+updated: '2026-08-27'
+status: 'done'
+blocking_condition: 'cleared -- see Resolution record 2026-08-27 (was: unmet external dependency -- Mason v1 has not shipped; no new CFE MINOR since baseline)'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -119,3 +120,40 @@ edited, or deleted; `sprint-status.yaml` and the PRD were left unmodified.
 **Recommendation:** re-invoke this recheck again once Story 5.5 lands and Epic 5 is declared `done`
 in `sprint-status.yaml`, and periodically thereafter until `CHANGELOG.md`'s top entry advances past
 `8.81.0` with a MINOR bump.
+
+## Resolution record — 2026-08-27
+
+Both Block-If conditions cleared the day after this recheck, and the story closed for real on
+2026-08-21 — but **the closing run's spec was never promoted from Tier-3** (the known gap class
+this directory's README documents from the Phase-1 audit). Verified 2026-08-27: the only 5-4
+files in gitignored `implementation-artifacts/` are byte-identical twins of the two tracked
+`blocked` run records — no third (closing) spec exists anywhere, because the close was a
+hand-driven operator decision recorded directly in `epics.md`, not a bmad-loop run that drafted
+a spec. **This dated record stands in for the never-written closing-run spec**, and this file's
+`status:` now reflects the story's real state.
+
+**Landing evidence** (each SHA verified `git merge-base --is-ancestor <sha> main`):
+
+- **The external event** the Execution checklist waited on: CFE MINOR **v8.82.0** landed
+  2026-08-20 via merge `604549100a` (Story 5.5's Rule-2 closing retrospective, bmad-loop run
+  `20260820-140534-3fbe`), followed same-day by PATCH passes v8.82.1–v8.82.3 — clearing the
+  "no new CFE MINOR since baseline v8.81.0" condition. Story 5.5 went `done` in the tracked
+  ledger the same day (commit `68ffab9ab4`, which also marked this story `blocked` — matching
+  this file), clearing the ship-point condition.
+- **The close itself**: commit `7a05d20034` (2026-08-21, on main's first-parent chain —
+  "mason: Story 5.4 free-inheritance verification — SM-4 recorded, Epic 5 closed"). It
+  executed this spec's Execution checklist in substance: zero Mason change in the CFE merge
+  (`git diff --name-only 604549100a~1 604549100a -- src/shared/packages/pyforge-mason` empty);
+  the affected verb identified (`optimize_recipe` → `recipe_optimizer.py`, whose
+  `_read_conda_forge_python_floor()` v8.82.0 repaired) with an executed A/B; the verb re-run
+  green through the inherited code (`mason recipe optimize recipes/channels --format json` →
+  `status: ok`). The commit recorded the dated SM-4 satisfaction block in `epics.md` § Story
+  5.4 (the AC's designated record; the PRD §7 location this spec named was superseded by that
+  operator choice), flipped `5-4-free-inheritance-verification` and `epic-5` to `done` in the
+  tracked ledger, and opened `DW-5-4-1` in `deferred-work-ledger.md`.
+- **The honest caveat carried forward**: SM-4 is recorded *provisionally* — the observed MINOR
+  was produced by Mason's own closing retro (not an organic external effort), and the live
+  `python_min` floor (3.10) coincides with the old fallback, so the verb-level output delta is
+  latent. `DW-5-4-1` (open, severity low) owns re-confirmation at the next organic CFE MINOR
+  or the next floor bump — that residual is deferred work, not a blocked story, which is why
+  this file reads `done` rather than re-blocked.
