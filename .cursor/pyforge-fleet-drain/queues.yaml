@@ -1,3 +1,15 @@
+# SUPERSEDED 2026-08-27 (Story 22.7 / FR-193 CAP-7) — do not regenerate.
+# `marshal factory drain` reads the tracked sprint-status-ledger.yaml files
+# directly, so the `stations:` block below has no successor at all: it was a
+# regenerated copy of ledger state. The `order_overrides` / `skip_policies`
+# blocks have a successor FORMAT —
+#   _bmad-output/projects/pyforge-marshal/planning-artifacts/fleet-drain-queue.yaml
+# — but this campaign's own entries were deliberately NOT carried over: every
+# story they name (steward 12-7, 26-3/26-4, 27-1..27-4; the marshal ordering)
+# has since landed `done`, so migrating them would create a live in-repo file
+# whose every entry is already inert. That file is optional and absent by
+# default; author it when a campaign actually needs an override or a skip.
+#
 # GENERATED — run: python3 .cursor/pyforge-fleet-drain/generate-queues.py
 # Hand-edit order_overrides / skip_policies / campaign.mode only; re-run to refresh backlog from ledgers.
 

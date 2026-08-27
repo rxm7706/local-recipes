@@ -1,5 +1,13 @@
 # PyForge fleet drain — repeatable hand-driven `bmad-build-auto` playbook
 
+> **SUPERSEDED (2026-08-27, Story 22.7 / FR-193 CAP-7).** Phases 0–5 below are
+> productized end to end as `marshal factory drain` (`--mode` is required and
+> never defaulted). Queue state is the tracked `sprint-status-ledger.yaml` files themselves,
+> plus an OPTIONAL (absent by default) `planning-artifacts/fleet-drain-queue.yaml` under
+> `pyforge-marshal` carrying only order overrides + skip policies; campaign journals live in
+> that project's `implementation-artifacts/fleet-drain-runs/`.
+> Kept as the historical record — **do not replay this hand ritual.**
+
 **Scope:** all eight active PyForge BMAD stations (`pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden}`).
 
 **Purpose:** drain each station's story backlog using the **single-story, worktree-isolated, non-fork** `bmad-build-auto` pattern — **not** `bmad-loop`, **not** marshal factory spin. One story in flight per station; stations run in parallel with each other.
