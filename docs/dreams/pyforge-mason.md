@@ -2,7 +2,7 @@
 title: Mason — forge the blocks, bind the environment, ship the structure
 type: dream
 owner: mason
-status: specified
+status: realized
 ---
 
 # Mason — the craft of shipping, made a command
@@ -118,3 +118,19 @@ cautionary tale) · [[pyforge-warden]] (judges what he ships) ·
   [[presenton-pixi-image]] was archived separately (blocked, not absorbed —
   it is genuinely unrelated subject matter to this Dream). Dream refreshed to
   current state.
+- **2026-08-26** — **realized.** The station is complete per the fleet ledger
+  (2026-08-21): all 50 stories across 11 epics `done` — the backlog grew past
+  the original 5/38 through Epics 6–11 (CFE-rebuild pilot + re-scope gate,
+  machine-checked recipe knowledge, pixi base-layer convention, external
+  integration seams, the build-engine hook, and the station persona +
+  `/stations/mason/` portal slice, the last landing 2026-08-25/26). The three
+  verb families exist as dreamed (`recipe` ×8 wrapped through the one CFE port,
+  `package build/ship` with asymmetric receipts, `environment lock/check`), the
+  seam-holds proof suite is green, and "Mason ships Mason" is proven at the
+  dry-run/TestPyPI-rehearsal tier. The 2026-08-02 "What is real" snapshot above
+  (4/38, Epics 2–5 not started) is superseded by this entry. Close-out retro:
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/retros/retro-pyforge-mason-2026-08-26.md`;
+  as-built truth-ups landed the same day in the Spec/PRD/architecture-spine/brief
+  § Currency reconciliation sections. With this flip the chain-layers audit's
+  `behind-code` flag for mason is suppressed **by design** — the chain is no
+  longer being built; the artifacts are maintained as the as-built record.

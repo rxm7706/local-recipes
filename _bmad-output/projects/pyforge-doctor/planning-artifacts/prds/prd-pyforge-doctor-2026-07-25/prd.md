@@ -1,9 +1,9 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: 2026-08-02
+updated: '2026-08-26'
 status: final
-currency_review: "Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale. Prior 2026-08-04 entry (structural, spec/brief timestamp bump) superseded by this one."
+currency_review: "Reviewed 2026-08-26 — chain-currency sweep. SPEC-doctor (status shipped, CAP-1..9) and its .memlog had moved through 2026-08-22 while this PRD sat at 2026-08-02; reconciled in the appended § Currency reconciliation — 2026-08-26 (open-questions dispositions, FR inventory boundary vs. the decompose-directly Spec convention, Canopy/operating-model obligations, Unifying Strategy roles). FR-14/FR-15 sections below were added 2026-08-08 without a frontmatter bump at the time — this stamp also covers them. Prior: Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale."
 inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
@@ -567,3 +567,69 @@ cannot currently reach it.*
   no new NLP/inference layer.
 - §7 SM-2/SM-3 — qualitative/observed-adoption success signals only; no analytics
   infrastructure in scope for a single-operator internal tool.
+
+## Currency reconciliation — 2026-08-26
+
+*Chain-currency sweep (CHAIN-CURRENCY-RUNBOOK.md): `specs/spec-pyforge-doctor/`
+(SPEC status `shipped`, CAP-1..9; its `.memlog` last moved 2026-08-22) had out-dated
+this PRD's 2026-08-02 stamp. Reconciled against the SPEC, the 2026-08-08 research
+refresh wave, the as-built package, and the Unifying Strategy. The body above is the
+contract of record for FR-1..15; this section records what reality did to it.*
+
+**Delivery state.** All of §6.1 (FR-1..9) and §6.3 (FR-10..13) shipped — 16 stories,
+Epics 1–4, merged via PRs #156/#162/#167/#290/#299/#303, retro'd 2026-08-08. FR-14 and
+FR-15 (added 2026-08-08, below §8) shipped as Epics 5–6: the marshal-durability source,
+the source registry, and the re-homing of the 10 judging detectors as Doctor sources
+behind the `python -m pyforge.doctor.sources` dispatcher (14 addressable sources as of
+2026-08-26), each structurally barred from importing the station it judges. The
+`sources/marshal.py` gap FR-15's grounding named ("not wired to any verb") closed via
+Story 5.2. The tracked ledger reports **82/82 stories done across Epics 1–18** as of
+this stamp.
+
+**FR-inventory boundary — the decompose-directly convention.** FR-1..15 (plus FR-16,
+the spike-report classifier, minted 2026-08-11 at epics level) is the complete FR set
+this PRD owns, but it is deliberately **not** the complete story universe: Epics 7–16
+decompose sibling doctor Specs directly (spec-deferred-work-visibility,
+spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program,
+spec-bmad-method-version-drift, spec-backlog-intake-check, spec-sibling-dreams-drift),
+referencing their CAP-Ns without minting new PRD FR-Ns — the precedent `epics.md`'s own
+currency_review records. Read this PRD's FR list as the v1 + Charter-§6 contract, not
+as an index of everything Doctor now does.
+
+**§8 Open Questions — dispositions (per the 2026-08-08 research refresh + shipped code):**
+
+1. *Severity default for credential-hygiene findings* — resolved in practice by
+   per-finding tri-state semantics inside `checks/env_hygiene.py` rather than a
+   category-wide default; the SPEC still carries the residual `warn_or_fail` wording.
+2. *Generalization boundary for env hygiene* — shipped as the general
+   unconditional-credential-injection scanner; host-scoped attaches produce no finding.
+3. *Default watch-axis set* — **`staleness`+`cve`**, as leaned; `adoption` stayed
+   opt-in (FR-12's own consequence held).
+4. *JSON schema versioning* — `schema_version: 1` shipped on `DoctorReport` (NFR-5);
+   the bump *policy* (what triggers a version bump, how consumers react) remains open —
+   also still open in the SPEC's Open Questions.
+5. *Own taxonomy vs. warden's `ErrorKind`* — own closed taxonomy (AD-3); zero
+   cross-package vocabulary drift over the whole build.
+6. *`check --list` in v1?* — shipped in v1 (registry-addressable checks; public
+   `VALID_WATCH_AXES` on the monitor side).
+
+**Success metrics status.** SM-4 met (env-hygiene live, JFROG_API_KEY worked example
+caught). SM-1/SM-2/SM-3 are qualitative by design; the 2026-08-08 domain refresh flagged
+that SM-1's premise (Marshal invoking `doctor check` unprompted pre-spin) is wiring
+outside Doctor's own stories and was not yet institutional habit at that date.
+Counter-metrics held: SM-C1's 5-second budget survived Epic 6's source additions
+(re-profiled in Story 6.1; the benchmark asserts a minimum findings count so
+broken-and-therefore-fast cannot pass).
+
+**Estate obligations post-dating this PRD (owned by `epics.md`, recorded here for
+traceability).** The 2026-08-24 Canopy and operating-model passes bound Doctor as spoke
+#5 of the `src/platform/` host: portal `/stations/doctor/` (first slice — last fleet
+pulse — landed 2026-08-26 via `PortalClient` only), service face `POST
+/stations/doctor/mcp` on the host ASGI, SKF domain skill + `bmad-agent-doctor` persona
+(Epic 18), and gather/prescribe hook specs with default plugins on the shared
+`pyforge.core.hooks` contract (Epic 17 / FR-45, canopy AD-21). Per the Unifying
+Strategy (`spec-pyforge-unifying-strategy`), Doctor's role is fleet vitals and
+prescriptions; the §2.1 "Operability exit code" framing above is now a fleet-wide
+constraint: **findings stay advisory or Warden inputs — never a second PR-gate
+verdict.** None of these reopen §5's non-goals; the read-only boundary (NFR-1) holds
+with the sole sanctioned widening AD-12 records (a `run_git` leg inside `cli_bridge`).

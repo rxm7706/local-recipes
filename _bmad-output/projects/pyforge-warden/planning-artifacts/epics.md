@@ -14,8 +14,8 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the architecture's own currency_review confirms it is unchanged since the 2026-07-16 rebaseline this epic breakdown already reflects (31 stories, FR32-FR40). Re-checked and confirmed current; no changes made."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -741,3 +741,24 @@ So that the portal uses the host MCP face instead of only local ORM lists.
 **Type:** feature • **Effort:** M • **Deps:** S-10.1 • **FR/AD:** canopy FR-10, FR-12 • canopy AD-7
 **Given** an authenticated warden-role session **When** the operator starts an audit from HTMX **Then** `start`/`get` go through PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
+
+## Currency validation — 2026-08-26
+
+Validated against the architecture's 2026-08-26 reconciliation pass (chain-currency
+sweep). Findings, all confirmatory:
+
+- **Story set matches ground truth.** Epics 1–10, 41 stories, map 1:1 to
+  `sprint-status-ledger.yaml` keys and all read `done` (2026-08-26) — including the
+  epic-7/8/9 rollups whose earlier `backlog` drift the Unifying Strategy
+  `convergence.md` had flagged (since cleared).
+- **The Canopy obligations (2026-08-24 section above) landed as written:** portal
+  relocated to `django-warden` / `django_warden_fabric` with the `/compliance/`
+  permanent redirect (2026-08-24, steward S-19.1); station MCP faces registered on
+  the host (2026-08-25, steward Epic 21); Epic 10's skill/persona + PortalClient
+  slice landed 2026-08-26.
+- **The operating-model obligations hold in code:** Epic 9 shipped the hook book on
+  `pyforge.core.hooks` with today's scanners as the default plugin bundle; the
+  no-competing-verdict and green-without-Checkmarx invariants are test-enforced
+  (9.3).
+- No epic or story restructuring was needed; this note and the frontmatter bump are
+  the only changes in this pass.

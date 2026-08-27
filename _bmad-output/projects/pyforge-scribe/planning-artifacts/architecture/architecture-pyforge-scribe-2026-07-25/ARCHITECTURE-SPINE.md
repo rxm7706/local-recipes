@@ -7,8 +7,8 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the PRD's own currency_review confirms its 2026-08-01 updated: bump was structural (project relocation / memlog story-completion recording), not content drift. Architecture content re-checked against the unchanged PRD and confirmed current; no changes made."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — reconciled against the re-cut PRD (updated 2026-08-26), the shipped code through the 2026-08-26 plane driver, and the Unifying Strategy pack: AD-5's port held and now fronts three plugin-registered drivers (flat-file default, PG/pgvector, CAP-19 plane) under the 2026-08-26 dual-write operator decision; module inventory and Deferred list trued up. See § Currency reconciliation."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
   - '_bmad-output/projects/pyforge-scribe/planning-artifacts/prds/prd-pyforge-scribe-2026-07-25/prd.md (+ addendum.md) — the binding contract'
@@ -235,12 +235,32 @@ settled.
 
 Intentionally undecided, each with its owner/revisit condition:
 
-- **`GraphStore` concrete engine** (flat-file/index extending `.claude/memory/MEMORY.md`'s pattern vs. an embedded graph database, e.g. a LadybugDB-class successor to the archived KuzuDB) → epics/implementation phase, gated by a small spike comparing the two against Wave 2's actual query needs (PRD Open Question 1).
+- **`GraphStore` concrete engine** (flat-file/index extending `.claude/memory/MEMORY.md`'s pattern vs. an embedded graph database, e.g. a LadybugDB-class successor to the archived KuzuDB) → epics/implementation phase, gated by a small spike comparing the two against Wave 2's actual query needs (PRD Open Question 1). *(Closed — flat-file won v1 without the spike; the engine question then became a plugin surface. See § Currency reconciliation.)*
 - **`scribe graph compile`'s exact v1 input glob list** (which `.memlog.md` files, which retro/CHANGELOG paths, how much of `docs/dreams/`) → epics/implementation phase (PRD Open Question 2); AD-1/AD-9 fix the shape, not the list.
 - **`scribe recall` output format** (plain text vs. structured JSON vs. both) → epics/implementation phase (PRD `[ASSUMPTION 9.2]`); no product requirement distinguishes them yet.
 - **`scribe recall`'s LLM-optionality** — pure grounded retrieval (return the matching record + citation, no generative synthesis) vs. an opt-in local-LLM synthesis layer → epics/implementation phase (PRD Open Question 3); AD-6/AD-8 bind that whichever is chosen, it stays air-gap-safe and citation-honest.
 - **ADR-format interop** — whether `scribe capture --type decision` formally adopts the `docs/adr/`-style numbering/format the domain research found as dominant practice, or keeps its own vocabulary → epics/implementation phase (PRD Open Question 4); does not affect this spine's invariants either way.
 - **`anthropics/claude-code#38536` watch-item** (native team-shared memory) — no action; re-check at Wave 1 implementation start and at Wave 2 kickoff (PRD Open Question 5).
 - **Legacy `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" de-duplication** (PRD Open Question 6 / legacy spec Q3) → human-reviewed edit at Wave 1 implementation, explicitly out of Scribe's own write-boundary (AD-2/AD-7 do not cover `CLAUDE.md`).
-- **`pydantic` exact version pin for the new package** → confirmed at Wave 1 implementation start against the then-current root `pixi.toml`.
-- **Scheduling mechanism for `scribe graph compile --nightly`** (cron vs. CI job vs. a bmad-loop-style scheduled task) — not fixed here; AD-6 only requires that whichever mechanism is chosen does not introduce a persistent network-listening daemon.
+- **`pydantic` exact version pin for the new package** → confirmed at Wave 1 implementation start against the then-current root `pixi.toml`. *(Done — the shipped `pyproject.toml` carries the resolved pin.)*
+
+## Currency reconciliation — 2026-08-26
+
+Reconciled against the re-cut PRD (updated 2026-08-26, § Currency reconciliation), the shipped code at `src/shared/packages/pyforge-scribe/` through commit `2d264c7f5c` (2026-08-26), and the Unifying Strategy pack (`spec-pyforge-unifying-strategy`, updated 2026-08-26). The nine ADs all held through ship and through three post-ship epics; none required correction. What this spine's static sections no longer show:
+
+**AD-5 held, then compounded.** The `GraphStore` port shipped as a `typing.Protocol` (`graph_store.py:59` — structural typing, no concrete base class; the strategy SPEC's "no `GraphStore` class exists in `pyforge-scribe`" phrasing means exactly this). No story after 2.1 touched the port's internals, and the deferred engine choice resolved *without* ever forcing one:
+- `FlatFileGraphStore` (v1, one deterministic JSON file at `.claude/data/pyforge-scribe/graph.json`) — still the default.
+- **CAP-18 plugin registration** (Epic 4 / Story 4.1, 2026-08-24): drivers register on the shared `pyforge.core.hooks` contract (`GRAPHSTORE_HOOK_SPEC`); `graph_store_plugins.py::open_graph_store` selects by owner (`PYFORGE_GRAPHSTORE_OWNER`; DSN via `SCRIBE_GRAPH_DSN`, plane path via `QUERY_PLANE_DUCKDB`). Callers still never import an engine client — AD-5's rule, now enforced by the factory.
+- `PostgresGraphStore` (steward Epic 28.1, 2026-08-25, `graph_store_pg.py`, owner `steward`): pgvector in the schema-isolated `scribe_schema`; semantic recall behind the same port (canopy FR-36, 28.2).
+- `PlaneGraphStore` (steward 34.5 / canopy FR-50, 2026-08-26, `graph_store_plane.py`, owner `atlas`): node snapshot + `FLOAT[N]` HNSW-rankable embeddings on the CAP-19 query plane (`atlas.duckdb`; refuses in-memory DuckDB and Chroma by construction).
+
+**Operator decision 2026-08-26 (`query-plane-scribe-cutover`, strategy SPEC § Open Questions): dual-write for now.** The plane, via the 34.5 store-port driver, is **primary** and satisfies FR-36; `scribe_schema` pgvector **stays written as the safety net** until the plane has operating history — its retirement is a future explicit decision, not an implication. Lexical recall may stay local (flat-file). This spine's addenda and any epic derived from it must not treat the PG path as retired.
+
+**AD-6 held under semantic recall.** Embeddings (`embeddings.py::embed_text`) are deterministic and local — no model download, no network call; the default configuration (flat-file owner, lexical recall) still performs zero outbound calls, and the PG/plane drivers activate only via explicit owner/env selection. Air-gap-by-construction survives the semantic upgrade.
+
+**AD-7's consumer list materialized.** Integration now happens through: the `scribe` CLI and unified `pyforge scribe` grammar (CAP-5); `POST /stations/scribe/mcp` (CAP-4); the portal slice at `/stations/scribe/` which submits recall queries via `PortalClient` only (Story 5.2 — no raw HTTP, enforced by `tests/meta/test_first_portal_slice.py`); the SKF domain skill (`.claude/skills/pyforge-scribe/`, CLI-only guidance) and `bmad-agent-scribe` persona (Story 5.1). Five-tier station shape declared complete 2026-08-26 (strategy Epic 37.1).
+
+**Module inventory drift** (Structural Seed shows the 2026-07-25 plan): the shipped tree adds `embeddings.py`, `transcripts.py` (Epic 3 — transcript scanning into the reviewed promotion flow, and transcripts as a sixth compile surface with provenance; an amendment to the PRD's transcript non-goal, recorded there), `graph_store_pg.py`, `graph_store_plane.py`, `graph_store_plugins.py`, and a `tests/meta/` tier (persona/skill/portal conformance). AD-1 (rebuild-from-scratch compile), AD-4 (invalidate-never-delete), and AD-9 (additive-only input contract) held unchanged through all of it — the transcript surface joined without any rewrite of Wave 1's schema.
+
+**Known engineering debt this spine inherits** (2026-08-08 technical report + `deferred-work-ledger.md`): `promote.py` has never received an adversarial review (RISK-1, open); the nightly compile is unattended-by-construction but unscheduled (RISK-2, still true 2026-08-26); the transcript surface is the only compile surface with no cost bound on the unattended path (DW-FU-3-2-2); recall tie-breaks on node id ascending, which for date-ordered filenames favors the older statement (DW-FU-3-2-4).
+- **Scheduling mechanism for `scribe graph compile --nightly`** (cron vs. CI job vs. a bmad-loop-style scheduled task) — not fixed here; AD-6 only requires that whichever mechanism is chosen does not introduce a persistent network-listening daemon. *(Still genuinely open 2026-08-26 — no scheduler invokes the compile; RISK-2 in the 2026-08-08 technical report.)*

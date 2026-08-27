@@ -2,9 +2,9 @@
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: 2026-08-01
+updated: 2026-08-26
 project: pyforge-mason
-currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
+currency_review: Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after the station completed (fleet ledger 2026-08-21) plus post-completion stories 10.1/11.1/11.2; OQ-4/OQ-6/OQ-8 stamped RESOLVED in place; divergences named in § Currency reconciliation. Prior review 2026-08-04 (structural timestamp bump, no drift).
 dream: docs/dreams/packaging-factory.md
 adopted_kernel: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
@@ -1100,20 +1100,25 @@ Carried forward:
    origin dream places it in the packaging factory; the crew charter omits it from Mason's cadence.
    *Owner: crew-level. Revisit: before v2 scoping.*
 4. **OQ-4** — Should `mason environment lock` prefer `conda-lock` or `pixi.lock` when both are
-   viable, and is the relationship between them one of succession? Unresolved by available sources.
-   *Owner: architect. Revisit: at architecture.*
+   viable, and is the relationship between them one of succession?
+   *RESOLVED by implementation (Epic 4, 2026-08-14/15): `conda-lock` is the sole lock engine
+   (`engines/condalock.py`, Stories 4.1/4.3/4.4); no pixi-lock adapter was built. The 2026-08-08
+   market research (§ 4) recommended pixi-first with conda-lock as the compatibility adapter —
+   the implementation deliberately took the other branch; a pixi adapter stays possible behind
+   AD-12 without a redesign.*
 5. **OQ-5** — Is there a real user for `--target application` / `--target binary`, or is `library`
    the whole product? *Owner: PM. Revisit: after v1 feedback.*
 6. **OQ-6** — Competitive coverage risk: the survey was assembled from known primary sources without
-   a web-search budget. A discovery sweep for unknown dual-publish entrants has not been run. Would
-   invalidate D-1's differentiation premise if one exists. *Owner: PM. Revisit: before public
-   positioning.*
+   a web-search budget. *RESOLVED 2026-08-08: the discovery sweep ran with live web evidence
+   (`../../research/market-mason-packaging-automation-2026-08-08.md`). No dual-ship entrant
+   exists — the two nearest analogues (whl2conda, hatch-conda-build) are dual-build, not
+   dual-ship, and `pixi publish` shipped conda-only. D-1's differentiation premise held; the
+   standing threat is prefix.dev's velocity (its OQ-M1), to re-check at public positioning.*
 7. **OQ-7** — Does Mason declare a minimum CFE version once coupling fragility is observed?
    *Owner: architect. Revisit: on first adapter break.*
 8. **OQ-8** *(new in r2)* — Is CFE's Docker / CI-parity build reachable through an adapter at all?
-   The Docker path is a pixi task (`recipe-build-docker` → `build-locally.py`), not a canonical
-   script, and `local_builder.py` is explicitly Docker-less. If no adapter-reachable entry point
-   exists, drop FR-9's Docker bullet. *Owner: architect. Revisit: at S-2.6.*
+   *RESOLVED at S-2.6 (2026-08-13): yes — `mason recipe build --docker --config <name>` shipped;
+   the drop-FR-9's-Docker-bullet contingency never triggered.*
 9. **OQ-9** *(new in r2)* — Can the FR-45 governance check inspect the effort's commit range
    automatically in this repository's branching model, or must it be a documented manual gate?
    *Owner: architect. RESOLVED 2026-08-10 (correct-course): S-5.2 scopes automatically to commits touching `src/shared/packages/pyforge-mason/**`.*
@@ -1142,6 +1147,41 @@ Carried forward:
   pure-Python library; a compiled package would exercise paths Mason's self-hosting does not.
 
 ---
+
+## Currency reconciliation — 2026-08-26 (as-built truth-up)
+
+The station this PRD specified is **shipped**: the fleet ledger reported mason complete
+2026-08-21 (11 epics / 50 stories all `done`), with post-completion stories 10.1/11.1/11.2
+landing 2026-08-25/26. Reconciled against `src/shared/packages/pyforge-mason/`:
+
+- **The FR surface held.** All eight `recipe` verbs (FR-7–FR-14), `package build`/`ship` with
+  the four-target vocabulary and asymmetric receipts (FR-15–FR-24), `environment lock`/`check`
+  (FR-25–FR-29), CLI shell/dual output/exit codes/`doctor` (FR-30–FR-35), distribution
+  (FR-36–FR-41), the enforcement meta-tests and closing Rule-2 retrospective (FR-42–FR-47),
+  and configuration/logging/rehearsal (FR-48–FR-50) all exist as specified. The D-12 bare-noun
+  `--ship` alias is the one alias exception, enforced by an explicit combined-usage reject in
+  `cli.py`.
+- **SM-1's evidence tier, stated honestly:** "Mason ships Mason" is proven at the
+  dry-run/rehearsal tier — S-3.8's real self-hosting proof of the ship plan plus S-3.9's
+  TestPyPI rehearsal gate. The irreversible public PyPI publish of `pyforge-mason` has not been
+  executed; SM-1's "achieved before v1 is declared done" is met at that documented tier.
+- **Engine decisions, as landed:** PyPI upload via `twine` (`engines/twine.py`) — the 2026-08-08
+  market research's neutral-name (`pypi_upload`) and uv-consideration recommendations were
+  reviewed and not adopted; channel upload via `pixi upload prefix` (OQ-2's resolution, matching
+  that research); lock/check via `conda-lock` only (OQ-4's resolution, diverging from that
+  research's pixi-first recommendation); `gh` joined the engine set for open-PR interrogation
+  (FR-18 idempotence), alongside `pypi_index.py` for the PyPI half.
+- **Scope grew past FR-1..FR-50 under other contracts:** Epics 6–11 (CFE-rebuild pilot +
+  re-scope gate under `spec-conda-forge-expert-rebuild`/amended AD-15; machine-checked recipe
+  knowledge; pixi base-layer convention; workflow_call CI + air-gap contract socket; the
+  build-engine hook, canopy AD-21; the `bmad-agent-mason` persona and `/stations/mason/` portal
+  slice, canopy FR-38/FR-10). This PRD remains the contract for the mason CLI proper.
+- **D-8 (no Mason MCP server) still holds for the package.** The station's MCP face
+  (`POST /stations/mason/mcp`) and portal slice are served by the Canopy platform host — they
+  arrived via the canopy chain, not by adding a server to `pyforge.mason`.
+- **Ground-truth counts have drifted as §14 predicted** (CFE v8.79.1-era measurements: 41,410
+  LOC / 46 MCP tools / 66 scripts → 67 canonical / 60 wrappers at 2026-08-08); they were used
+  for shape arguments only and no requirement depends on them.
 
 ## Satellite: Presenton (air-gapped conda-native repackaging)
 

@@ -7,8 +7,8 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6 — the binding contract; §-references below point here)'
@@ -91,7 +91,7 @@ graph TD
 
 - **Binds:** FR-2, FR-13, FR-16..21, all node ports
 - **Prevents:** two pipelines writing one dataset; hidden cross-pipeline coupling (the legacy "dependencies in the developer's head")
-- **Rule:** the pipeline set is exactly spec § 5.2 (Core · PyPI Intelligence · Vulnerability · VCS & Health · Universal SBOM · Seed-Gaps · Read-Surface/Derived-Artifacts). Each dataset has exactly one producing pipeline; consumers reference it by catalog name (e.g. Phase H: PyPI Intelligence produces, VCS & Health consumes). Phase I becomes an explicit node. New signals join their assigned pipeline, never a new ad-hoc one.
+- **Rule:** the pipeline set is exactly spec § 5.2 (Core · PyPI Intelligence · Vulnerability · VCS & Health · Universal SBOM · Seed-Gaps · Read-Surface/Derived-Artifacts). Each dataset has exactly one producing pipeline; consumers reference it by catalog name (e.g. Phase H: PyPI Intelligence produces, VCS & Health consumes). Phase I becomes an explicit node. New signals join their assigned pipeline, never a new ad-hoc one. *(Amended 2026-08-26: "fixed" binds the migration surface — the closed seven stay sealed and no migration signal leaves its pipeline. Three additional pipeline packages exist as-built, each added through a governed chain, never ad-hoc: `upstream_discovery` (spec-upstream-discovery / Epic 13), `artifactory_downloads` (spec-artifactory-download-intelligence / Epic 15), and `query_plane_cache` (canopy CAP-19, story 34.2 — the operator-answered "named new pipeline" sitting strictly downstream of the seven, reading their outputs without modifying them). The producer-owns-dataset invariant is unchanged and holds across all ten.)*
 
 ### AD-4 — Parquet + DuckDB singularity (FR-5)
 
@@ -379,6 +379,73 @@ Intentionally undecided, each with its owner/revisit condition:
 - **Phase B.6 full yanked detection** (prefix.dev GraphQL `variants.yankedReason` hook) → optional follow-on after B1, not this migration.
 - **kedro-viz prototype refresh** (`prototypes/cf-atlas-kedro-viz`) → follow-up effort, predates the seven-pipeline decomposition.
 - **Wiki persona prompt content + crew design detail** → H1/H2 story specs (H2 is dev-auto for exactly this judgment).
+
+## Currency reconciliation — 2026-08-26
+
+The spine's invariants were written against the migration (Waves 0 + A–H, shipped
+2026-07-18) and last reviewed 2026-08-02. Since then Epics 12–19 and the canopy
+CAP-19 first slice landed in the governed surface. Reconciled against the code
+(`src/shared/packages/pyforge-atlas/src/pyforge/atlas/`), the station's Tier-2
+specs (motion through 2026-08-22), and the pyforge-unifying-strategy pack
+(SPEC + stack.md + convergence.md, 2026-08-24/26).
+
+- **AD-3 amended in place** (above): ten pipeline packages as-built — the closed
+  seven plus `upstream_discovery`, `artifactory_downloads`, and
+  `query_plane_cache`, each chartered through its own Spec or the canopy chain.
+  The spec-upstream-discovery open question ("which of the 7 hosts discovery, or
+  an 8th via correct-course?") resolved to governed new pipelines; nothing joined
+  the sealed seven.
+- **Canopy AD-numbering disambiguation.** Epics 18/19 and the canopy chain cite
+  "canopy AD-21" (**Atlas is the estate's one Kedro home**) and other canopy AD-n —
+  those are the unifying-strategy architecture's numbers, **not** this spine's
+  (this spine's AD-21 is the WASM read surface). Read `canopy AD-n` as a foreign
+  namespace; no renumbering here.
+- **CAP-19: Atlas owns the estate's HTAP query plane** (first slice 2026-08-26,
+  canopy stories 34.1–34.5 + 36.1–36.2, tracked on the steward chain). As-built
+  modules beyond the Structural Seed: `live_attach.py` (read-only fixture-Postgres
+  `ATTACH`; consumer paths `LOAD` `postgres`/`vss`, never `INSTALL` on boot —
+  AD-13's discipline extended to extensions), `query_plane_cache.py` + the
+  `query_plane_cache` pipeline (estate Parquet cache; scan path takes a file path
+  only, never an OLTP DSN), `query_plane_vectors.py` + `rag/` (vectors persisted on
+  `atlas.duckdb` via `vss`/HNSW — no second file, no implicit in-memory store),
+  `duckdb_writer.py` (the FR-27 single-writer intent, `filelock`-guarded; Steward
+  refuses a second writer on `atlas.duckdb` host-side). One analytical engine, one
+  writer; `ATTACH` joins sources and never mints a second writable `.duckdb`. This
+  is consistent with AD-4's singularity, now serving the estate rather than only
+  this station.
+- **Two MCP faces, one contract.** Beside the in-package `pyforge.atlas.mcp`
+  (AD-7), Steward serves the atlas service face on the host ASGI
+  (`POST /stations/atlas/mcp`, dual-era `mcp` SDK, atlas-only `start`/`get`
+  disconnect-survival). AD-7's no-business-logic rule governs both. Meanwhile the
+  2026-08-08 research's standing fact holds: all *production* consumption (Doctor's
+  four axes included) still rides the legacy `conda_forge_server.py` surface —
+  legacy retirement must re-back those tools with Kedro/DuckDB reads (path (a)) or
+  it breaks Doctor; that story is still unowned.
+- **AD-8 era note: `vizro-ai` is deprecated** (canopy Lane 3 ruling — Vizro over
+  BSL over the plane; `vizro-mcp`/`vizro-e2e-flow` for new boards). AD-8's
+  Vizro-AI/D3 wording is historical delivery, not forward guidance; the BSL-as-only
+  -translation-interface rule itself is unchanged and now also fronts the estate
+  cache (Lane 3 36.1–36.2). The Stack table's `vizro-ai` row is the 2026-07-17
+  seed, kept as record.
+- **CAP-18 hooks (Epic 18):** existing Kedro pipeline/project hooks mapped onto the
+  shared `pyforge-core` registration contract (`cap18.py`); no second plugin API,
+  no atlas PR-gate verdict beside Warden. AD-1's replaceable-glue rule was the
+  reason this was an audit, not a build.
+- **New presentation surface (Epic 14):** `views/` (Panel/Bokeh static view
+  catalog, widget registry, WebSocket live layer, air-gap asset rewriting) — a
+  read-only consumer under AD-8/AD-17 discipline; it introduces no second metric
+  surface.
+- **kedro-dagster watch made operational** (2026-08-08 research): the concrete-
+  deterioration tripwire is now two-condition — (a) a Kedro/Dagster minor breaks
+  `kedro-test`'s import smoke of the glue (AD-16 already exercises this) **and**
+  (b) no upstream fix or acknowledged issue within 60 days. Both together trigger
+  the AD-1 exit ramps; either alone is noise.
+- **Unmoved attended boundaries** (AD-11/AD-19 unchanged, restated so this pass
+  does not launder them): the credentialed B4 parity run + sign-off + legacy
+  retirement (`DW-B4-1`/`DW-B4-2`), the F1 benchmark (`DW-F1-1`), and the live
+  Dagster daemon (`DW-C1-1` — Cluster B's injected fetchers activate only there).
+  The production data path remains the legacy orchestrator; AD-4's "after B4
+  retires the legacy write path" clause is still in its pre-B4 state.
 
 ---
 

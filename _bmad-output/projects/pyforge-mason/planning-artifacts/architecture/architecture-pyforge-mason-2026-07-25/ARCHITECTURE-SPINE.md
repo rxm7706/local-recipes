@@ -7,8 +7,8 @@ paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
 scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the PRD's r2 adversarial-review pass added FR-47..FR-50 (closing Rule-2 retrospective, configuration surface, logging/child-output handling, publish rehearsal), current v1 MVP scope per PRD §6.1, not deferred. FR-47/FR-48 were already covered in substance by AD-15/AD-13 respectively, just uncited — bound now. FR-49 (stream-vs-capture child output) and FR-50 (pypi-test rehearsal gate) were genuinely new rules; added as AD-25/AD-26."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — as-built truth-up against src/shared/packages/pyforge-mason/ after station completion (fleet ledger 2026-08-21): every AD verified holding in code; OQ-A1/OQ-A3/OQ-A4 stamped resolved in place; engine/stack drift and post-completion scope growth named in § Currency reconciliation. Prior review 2026-08-02 (AD-25/AD-26 added for FR-49/FR-50)."
 binds:
   - 'FR-1..FR-50'
   - 'NFR-1..NFR-16'
@@ -406,6 +406,9 @@ sequenceDiagram
   (PRD OQ-2).
 - **Lock engine selection** — `conda-lock` vs `pixi.lock` preference when both apply (PRD OQ-4).
   AD-12 makes either satisfiable; the policy is a use-case decision, deferred to implementation.
+  *Settled at implementation (Epic 4): `conda-lock` only (`engines/condalock.py`); the 2026-08-08
+  market research's pixi-first recommendation was not adopted, and a pixi adapter remains
+  possible behind AD-12.*
 - **CFE version compatibility** — Mason declares no minimum CFE version (PRD §11). Deferred until a
   real adapter break makes the constraint concrete.
 - **Concurrency** — every operation is sequential in v1. Parallel multi-target shipping and parallel
@@ -437,16 +440,59 @@ sequenceDiagram
 
 ## open_questions[]
 
-- **OQ-A1** — Which CFE scripts does the AD-3 declaration table name for each of FR-7 – FR-14? A
-  mechanical mapping the first story must produce; no invariant depends on it.
+- **OQ-A1** — RESOLVED by implementation (S-2.1 and the verb stories): the AD-3 declaration
+  table lives in `cfe.py`, one wrapped script per recipe verb, exactly as anticipated — a
+  mechanical mapping, no invariant touched.
 - **OQ-A2** — RESOLVED 2026-08-13 (S-3.5's spec): `engines/pixi` covers both -- `build()` (Story
   3.2) and the new `upload()` (Story 3.5) stay one adapter, one protocol per AD-12, wrapping `pixi
   upload prefix` rather than `pixi publish` (which rebuilds from a workspace manifest, duplicating
   `build()`'s own job).
-- **OQ-A3** — What exactly is the FR-42 deny-list's content? The rule is fixed (AD-1); the concrete
-  pattern set is an implementation artifact that must be reviewable and hard to weaken silently.
-- **OQ-A4** — Should `doctor` be a fourth noun or a top-level verb? Currently top-level (PRD FR-30);
-  cosmetic, no invariant affected.
+- **OQ-A3** — RESOLVED by implementation (S-2.2): the FR-42 deny-list landed as
+  `tests/meta/test_no_recipe_knowledge.py` with planted-violation fixtures per category, so a
+  deny-list matching nothing is a failing test; weakening an entry requires an asserted rationale.
+- **OQ-A4** — RESOLVED as built: `doctor` is a top-level leaf with no verb level (PRD FR-30,
+  `cli.py`); cosmetic, no invariant affected.
+
+---
+
+## Currency reconciliation — 2026-08-26 (as-built truth-up)
+
+The spine's structure survived contact with implementation intact: the station shipped complete
+(fleet ledger 2026-08-21; 11 epics / 50 stories `done`, post-completion stories 10.1/11.1/11.2
+landed 2026-08-25/26), and every invariant above is enforced in code by the meta-test suite it
+prescribed (`tests/meta/`: dependency direction, exit-code ownership, render ownership,
+capability tiers, adapter sole-caller, no-recipe-knowledge with planted fixtures, credential
+isolation, no-config-file, namespace-is-implicit, engine version-range sync, CFE independence,
+persona-consults-CFE, portal-last-diagnose). Reconciled against
+`src/shared/packages/pyforge-mason/`:
+
+- **Structural seed vs as-built tree.** As seeded: `cli.py`, `render.py`, `resolve.py`,
+  `cfe.py`, `recipe.py`, `package.py`, `environment.py`, `doctor.py`, `errors.py`,
+  `exit_codes.py`, `models.py`, `engines/` (pep517/pixi/twine/condalock). Grown since, outside
+  the seed: `engines/gh.py` (open-PR interrogation, AD-10/FR-18), `pypi_index.py` (PyPI JSON
+  interrogation, AD-10), `engines/build_hooks.py` (Story 10.1 — the replaceable
+  `pyforge.mason.build_engine` hook on `pyforge.core.hooks`; default `around` keeps the
+  CFE-native path the backend, conda-build registered but never spawned), `airgap_contract.py`
+  (Story 9.2 — contract socket with a deliberately empty backend registry), and `boot.py`
+  (steward S-25.4 boot re-index — a steward-owned contract hosted in this package, not part of
+  this spine's own capability map).
+- **Stack drift, expected and synced:** pixi is now pinned at the 0.77.x range (was seeded
+  `>=0.72.2`), twine 7.x, conda-lock 4.x — the in-code constants byte-mirror `pixi.toml` and are
+  held in sync by `tests/meta/test_engine_version_range_sync.py`, exactly the "the code owns
+  this once it exists" handoff the Stack section declared. The recipe engine has moved past the
+  seeded "conda-forge-expert v8.79.x" (still external and unversioned, per PRD §11 — no minimum
+  declared, no adapter break observed).
+- **`_KNOWN_ENGINES` is five, not four:** `pixi`, `twine`, `conda-lock`, `build`
+  (`pyproject-build`), `gh`.
+- **Deferred § "MCP surface" holds as written:** `pyforge.mason` ships no MCP server (D-8). The
+  station's MCP face (`POST /stations/mason/mcp`) and the `/stations/mason/` last-diagnose
+  portal slice (Story 11.2, via PortalClient) are served by the Canopy platform host under
+  canopy FR-10/AD-7 — an addition beside this spine, not a reversal of its deferral.
+- **AD-15 as amended ran its course:** Epic 6 executed the rebuild pilot slice and the re-scope
+  gate under `spec-conda-forge-expert-rebuild`; the divergence-and-endgame guard (S-6.2) landed
+  red-first as prescribed.
+- **Behind-code suppression is now by design:** the owner Dream flipped to `realized`
+  2026-08-26 with the station complete; this spine is maintained as the as-built record.
 
 ---
 

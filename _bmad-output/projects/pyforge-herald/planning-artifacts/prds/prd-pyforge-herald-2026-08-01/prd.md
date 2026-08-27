@@ -3,7 +3,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: 2026-08-02
+updated: "2026-08-26"
 project: pyforge-herald
 spec_source: spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md, folded in 2026-08-02)
 dream_source: docs/dreams/pyforge-herald.md
@@ -98,7 +98,7 @@ Herald is the factory's **voice and visual surface**. Invisible engineering is f
 - ✓ Build outputs gitignored (regenerable in <5s for HTML, <60s for video)
 
 **Quality & Rendering**
-- ✓ All 9 HTML decks render without error; dashboard-check passes
+- ✓ All 9 HTML decks render without error; `retired-console-check` passes (renamed from `dashboard-check`, deleted with the Guildhall generator — steward 30.2, 2026-08-25)
 - ✓ All 9 PPTX files open and edit in Microsoft PowerPoint; fonts/colors/layouts preserved
 - ✓ All infographics render as inline SVG (zero `.png`/`.jpg`)
 - ✓ All decks follow six-act structure with ~28 slides, 90KB+ class, inline SVGs
@@ -384,7 +384,7 @@ Herald is the factory's **voice and visual surface**. Invisible engineering is f
 
 **Artifacts**:
 - Herald CLI (`seed`, `pull`, `watch`, `stale-mirror`, `export` commands)
-- Pixi tasks (`deck-export`, `narration-extract`, `dashboard-check`)
+- Pixi tasks (`deck-export`, `narration-extract`, `retired-console-check` — the `dashboard-check` task named at authoring time was deleted 2026-08-25, steward 30.2)
 - Design system tokens (Modernist-Identity project in Design)
 - Presentation site (rxm7706.github.io or similar)
 
@@ -444,7 +444,7 @@ Herald is the factory's **voice and visual surface**. Invisible engineering is f
 **All must pass before marking complete:**
 
 1. ✓ 9 Design projects seeded, prototypes authored, all 9 × 6 artifact sets committed
-2. ✓ All 9 HTML decks render without error; dashboard-check passes
+2. ✓ All 9 HTML decks render without error; `retired-console-check` passes
 3. ✓ All 9 PPTX files open and edit in Microsoft PowerPoint
 4. ✓ All infographics inline SVG (zero raster)
 5. ✓ All narration scripts extracted and available for video pipeline
@@ -890,3 +890,64 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 - **Herald v0.1.0 CLI**: existing codebase (entry point for extension)
 
 <!-- END verbatim prd-herald-moments-2-4-2026-08-02/prd.md -->
+
+---
+
+## Currency reconciliation — 2026-08-26
+
+Re-derived against the 2026-08-25 SPEC re-cut (`specs/spec-pyforge-herald/SPEC.md`), the
+2026-08-08 research wave, and the as-built package (`src/shared/packages/pyforge-herald/`,
+epics 1–17 all `done` in `sprint-status-ledger.yaml`, 61 stories). Both PRD bodies above are
+preserved as the historical requirements record; the deltas below are what changed under them:
+
+1. **Metadata correction.** "Status: Draft (ready for architecture → epics decomposition)"
+   is long stale — the chain was decomposed and fully implemented. Delivery record:
+   Epics 1–12 (47 stories) merged by 2026-08-08 (PRs #111/#114/#116, #308–#316); Epics
+   13–17 (14 stories) merged 2026-08-11 → 2026-08-26 (Epic 13 via `loop/pyforge-herald`
+   landings `1f5ddee114`/`488105bdc1`/`828a89fadd`/`8ba853c78a`; Epics 14–17 hand-landed,
+   `c47a46d1b7` … `a1d0609c4f`).
+2. **The satellite PRD's automation requirements have now genuinely shipped — twice-shaped.**
+   The 2026-08-08 build delivered FR-3/FR-4/FR-5 data models and CLI/web surfaces
+   **scaled down** (operator-triggered CLI, local JSON/markdown stores, static-snapshot
+   dashboard — the pivot recorded in the 08-08 retro §4). Epic 13 ("the live backend",
+   done 2026-08-13) then delivered the deferred substrate for real, with these deviations
+   from the FR text a reader should treat as the as-built truth:
+   - **FR-7.1 webhooks:** shipped as framework-agnostic `webhook.py` — HMAC-verified
+     (`hmac.compare_digest`, SHA-256) `on-ship` / `on-pr-close` handlers; the triggering CI
+     is **GitHub Actions** (recorded first-AC decision, spec-13-4); the endpoint rides
+     Steward's `spec-secure-live-dashboards` trust boundary, never a bespoke perimeter.
+   - **FR-7.2 scheduler:** weekly aggregation + evidence revalidation run via
+     `scheduler.py` and a fifth top-level CLI verb (`herald scheduler run`), CI-scheduled —
+     not an always-on Thursday-2300-UTC cron daemon.
+   - **Storage (open question 1, "database or frontmatter"):** resolved as stdlib
+     **SQLite** (`.herald/herald.db`, WAL, versioned migration runner — `db.py`) behind the
+     unchanged pure-function seam; notices' git-tracked markdown remains the durable copy.
+     The satellite's PostgreSQL/SQLAlchemy/Celery assumptions were never built.
+   - **Concurrency prerequisite** (not in this PRD at all): the lost-update limit every
+     store inherited from `state.py` was closed first (story 13.1, stdlib `fcntl`/`msvcrt`
+     advisory locking, then SQLite transactions in 13.3) before any second writer existed.
+   - **End-to-end proof:** story 13.6 demonstrated a real merge creating a progress record
+     and a success-claim draft with no human action — the "no silent shipping" goal proven,
+     CI-contained (persistent always-on hosting remains a Steward-owned deployment concern).
+3. **Post-PRD scope the PRD does not cover** (governed by `epics.md` + its 2026-08-24
+   Canopy/operating-model obligations, deliberately *not* retrofitted into FR form here):
+   Epic 14 deck visual-QA gates (`herald deck qa <slug>`: headless-Chromium render gate +
+   image-slot scan, report-only); Epic 15 PowerPoint-native editable-deck pipeline
+   (template-parse-then-fill + Pillow-measured autofit shapes — unparked 2026-08-22 after
+   the shipped Marp PPTX exports were proven to be background-image slides with zero
+   editable text runs); Epic 16 exporter hook plugins (Marp/PPTX/`.dc.html` on the shared
+   `pyforge.core.hooks` contract; export success is never a PR-gate verdict); Epic 17
+   station SKF skill + `bmad-agent-herald` persona and the first `/stations/herald/`
+   portal slice (HTMX via PortalClient on the Canopy host — no station origin, no second
+   public port; service face is `POST /stations/herald/mcp`).
+4. **Audience/market grounding refreshed** — per
+   `research/market-herald-post-ship-landscape-research-2026-08-08.md`, Herald's nearest
+   external category is now the internal-developer-portal class (records + scorecard
+   dashboard), not changelog automation; the telemetry-native sourcing this PRD's
+   satellite treats as given did not ship in v1 (operator-typed flags) and is only
+   partially closed by Epic 13's automation. Freshness UX ("attested-at as prominent as
+   the record") is the standing borrow from that category.
+5. **Success-metric status:** the satellite's adoption/engagement metrics (§ Success
+   Metrics) remain **unmeasured** — near-zero production usage time; they are targets,
+   not results. The authoritative verification record is the package test suite and the
+   per-story Review Triage Logs.

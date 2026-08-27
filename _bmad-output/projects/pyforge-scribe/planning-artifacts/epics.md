@@ -11,8 +11,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the architecture spine's own currency_review confirms its FR-1..FR-15 binds are unchanged. Epic/story breakdown re-checked against that unchanged architecture and confirmed current; no changes made."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -357,3 +357,7 @@ So that Lane 2 does a real job in HTMX.
 **Type:** feature • **Effort:** M • **Deps:** S-5.1 • **FR/AD:** canopy FR-10 • canopy AD-7
 **Given** an authenticated scribe-role session **When** the operator submits a query **Then** results render via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy
+
+## Currency validation — 2026-08-26
+
+Validated against the reconciled architecture spine (updated 2026-08-26) and the as-built code through commit `2d264c7f5c`. All 14 stories (1.1–5.2) are `done` per the tracked `sprint-status-ledger.yaml`; no heading or status was changed by this pass. Spot-checks: Story 4.1's ACs are satisfied as built — `graph_store_plugins.py::open_graph_store` selects drivers by owner on the CAP-18 hook contract with `FlatFileGraphStorePlugin` as the default, and the steward PG driver registers as a second plugin (`graph_store_pg.py`), not a fork. Story 5.2's PortalClient-only rule is enforced by `tests/meta/test_first_portal_slice.py`. The Canopy-obligations table's line "today's shipped backend is `FlatFileGraphStore` only" is now dated: since 2026-08-25/26 the PG (steward 28.1) and plane (steward 34.5) drivers exist behind the same port — governed by the **2026-08-26 dual-write operator decision** (plane primary satisfying FR-36; `scribe_schema` pgvector written as safety net; strategy SPEC § Open Questions, `query-plane-scribe-cutover`), which stays steward-owned and mints **no new scribe epic or story**. Epic 3's transcript scope is reconciled in the PRD (§5 amendment note) — this breakdown required no structural change. Residual work is tracked in `deferred-work-ledger.md` (DW-FU-3-2 family) and the 2026-08-08 technical report (RISK-1 promote.py review, RISK-2 unscheduled nightly), not as new stories here.

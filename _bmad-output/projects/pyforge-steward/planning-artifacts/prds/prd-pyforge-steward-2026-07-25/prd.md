@@ -1,9 +1,9 @@
 ---
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: 2026-08-01
+updated: "2026-08-26"
 status: final
-currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
+currency_review: Reviewed 2026-08-26 — reconciled against the refreshed brief, the story-spec estate's latest motion (2026-08-22 spec-folder pass), and as-built code; FR-1..31 all shipped; deltas recorded in § Currency reconciliation — 2026-08-26.
 ---
 
 # PRD: Steward (`pyforge-steward`)
@@ -45,7 +45,7 @@ There is no external customer and no second human operator. Steward is not desig
 - **Host-scoped credential** — a credential whose attachment to an outbound HTTP request is gated by the request's destination host, not attached unconditionally (the fix-shape for the `JFROG_API_KEY` leak pattern).
 - **Reconciliation** — a deploy step that diffs current-vs-desired state and only acts (commits/pushes) when a real difference exists, rather than blindly re-applying every run.
 - **Ceiling** — a machine-readable declared resource-spend limit (e.g. `1500usd/month`), distinct from *enforcement* (checking live spend against the ceiling), which v1 does not implement.
-- **pixi environment estate** — the named entries in this repo's root `pixi.toml` `[environments]` table (currently ~14: `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`, `pyforge-warden`, `pyforge-atlas`, `bmad-ui`, and combinations).
+- **pixi environment estate** — the named entries in this repo's root `pixi.toml` `[environments]` table (~14 at authoring time: `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`, `pyforge-warden`, `pyforge-atlas`, `bmad-ui`, and combinations; **27 as of 2026-08-26** — the count is derived from the table at run time, never hardcoded in Steward).
 - **Age identity / recipient** — the private/public keypair pair used by the `age` encryption tool; Steward's `keys` duty uses these as its at-rest secret-encryption primitive (§4.1, decision D2).
 
 ## 4. Features
@@ -339,9 +339,11 @@ when any station CLI is missing, unimportable, or over its documented start-up b
 
 ### Two boards, one truth — `spec-jira-github-projects-sync` (FR-27..FR-31)
 
-*Greenfield: nothing exists today. Three open questions remain in the Spec (authoritative
-side, Mode A vs B, Mode B's schema); **Q1/Q5 were resolved 2026-08-08** — an external
-board pair, hence Steward's, hence these FRs.*
+*Greenfield at authoring time (2026-08-08): nothing existed. Three open questions remained
+in the Spec (authoritative side, Mode A vs B, Mode B's schema); **Q1/Q5 were resolved
+2026-08-08** — an external board pair, hence Steward's, hence these FRs. **Since shipped:**
+Epic 8 landed 2026-08-09..13 as Stories 8.1–8.7, extending FR-27..31 with the schedule
+trigger (8.4) and assignee/identity-link propagation (8.7).*
 
 #### FR-27: Bidirectional propagation
 **Consequences:** a status/assignee/link change on either board reaches the other with no
@@ -362,4 +364,51 @@ does not stop the batch for every other item.
 #### FR-31: Explicit status-vocabulary translation
 **Consequences:** every status crossing the boundary passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through that invents a state.
+
+## Currency reconciliation — 2026-08-26
+
+Fired by the `spec→prd` staleness edge: the story-spec estate under
+`planning-artifacts/specs/` last moved 2026-08-22 (the fleet-wide spec-folder pass making
+every spec folder accept a 6.11 `bmad-spec` update, plus the Epic 12/15 extension specs of
+the same day), while this PRD's stamp sat at 2026-08-01. Reconciled against the refreshed
+brief (same date), the spec estate, and as-built code. Concrete deltas:
+
+**Every FR this PRD carries is shipped.** FR-1..18 as Epics 1–4 (18/18 stories, PRs #157,
+#291, #297, #302, #305; whole-build retro `retros/retro-steward-2026-08-08.md`). The
+2026-08-08 backlog section's FR-19..21 shipped as Epic 6 (module provisioning), FR-22..26
+as Epic 7 (the one-container Guild), FR-27..31 as Epic 8 (Jira ↔ GitHub Projects sync,
+extended to 8.1–8.7). `spec-pyforge-steward/SPEC.md` was stamped `status: shipped` in the
+2026-08-15 fleet-wide decomposition audit; nothing in the 08-22 spec-folder motion
+contradicts an FR here.
+
+**§9's three open questions are closed** — resolved at the architecture step exactly as
+this PRD asked: the credential inventory carries a `provenance: issued|observed` field
+(OQ1), the host allowlist reads `_http.py`'s existing `resolve_*_urls`/`*_BASE_URL` table
+directly (OQ2), and Steward config lives in the repo-root tracked `.steward/` dotdir,
+surviving `bmad-switch` (OQ3). See the architecture spine's Consistency Conventions table.
+
+**D6's deploy target was later retired on purpose.** The manual `dashboard-gen` + push
+loop this PRD formalized (FR-8..11) was replaced end-to-end and then the generator itself
+was deleted: CAP-2 of `spec-pyforge-unifying-strategy` superseded the static Guildhall
+console with the CMS-managed Lane 1 front door, and Story 30.2 (2026-08-25) removed
+`dashboard-gen` and its inbound references after the console-parity inventory proved
+coverage. `steward deploy dashboard` remains as a reconciled diff+commit over
+`docs/dashboard/` (Kedro-Viz staging + stub; the build step is a no-op) — FR-9/FR-10/FR-11
+semantics intact, FR-8's wrapped task gone with the console. SM-2 was met for the whole
+period the manual loop existed.
+
+**Scope boundary, restated for downstream readers.** This PRD decomposes FR-1..31 and is
+the durable record of them. Everything the station shipped past FR-31 — Epics 9–37:
+secure live dashboards, the python-agent-platform host, the Canopy chain (18–30),
+install-class wiring, CAP-18 plugins, skill/persona, the query plane (34), Lane 3, and the
+five-tier roster drain (37.1, 2026-08-26) — decomposes from its own owned specs
+(`spec-secure-live-dashboards`, `spec-python-agent-platform`,
+`spec-pyforge-unifying-strategy` with `prd-pyforge-unifying-strategy-2026-08-24`, and
+siblings), per this PRD's own 2026-08-08 rule: a capability decomposes here iff its Dream
+is `owner: steward` **and** no later chain owns it. As of 2026-08-26 the station ledger
+reads 37/37 epics, 131/131 stories `done`.
+
+**Fact updates in place this pass:** the §3 pixi-estate count (~14 → 27, annotated), and
+the FR-27..31 preamble's "greenfield / nothing exists today" claim (now dated and closed
+by Epic 8). No FR text was altered.
 

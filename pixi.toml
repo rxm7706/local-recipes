@@ -901,6 +901,10 @@ cmd = "python -m pyforge.doctor.sources dream-chain --dreams"
 description = "Detector: a station's board tells the truth about what it OWNS and what it has DONE. INV-A every open Spec a station owns is decomposed into its chain, or is registered in DEFERRED_SPECS with a reason (Marshal's PRD decomposed 2 of 24; Steward rendered 18/18 while owning three undecomposed drafts). INV-B epics.md story ids == the tracked ledger's keys, both directions (Doctor rendered complete 16/16 while carrying a story with no ledger key). INV-C the Guildhall build line == the ledger (Herald rendered 12/19 against a ledger of 47/47). Reports UNMEASURABLE rather than inventing orphans for projects keying stories non-numerically by design. Every one of these needed a human to notice."
 cmd = "python -m pyforge.doctor.sources chain-completeness"
 
+[feature.local-recipes.tasks.chain-currency-sweep-check]
+description = "Detector: the eight station planning spines are CURRENT -- the CAP-3 chain audit's staleness + coherence checkpoints swept across all 8 stations in one run (layers/orphans deliberately excluded: they are chain-completeness policy work, and folding the deck gap in would make this permanently red). scope=repo -- reads tracked planning artifacts, dreams, and tracked ledgers only. Exit 0 current / 1 findings (run the reconciler per _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md) / 2 could-not-run. Flags: -- --json, -- --project <slug>. Contract: docs/dreams/chain-currency-sweep.md."
+cmd = "python scripts/chain_currency_sweep_check.py"
+
 [feature.local-recipes.tasks.chain-layers-audit-check]
 description = "Detector: Stories 17-3 + 21-1 / FR-150 + FR-192 CAP-3 — read-only per-project chain audit. Pass/fail per checkpoint (layers, coherence, staleness, orphan-freedom) seeded from pyforge.doctor.sources.fleet_scan + dream-chain (never a cached table). Distinct from chain-completeness INV-A..D and dreams-hygiene. Pass -- --project <slug> (required). Exit non-zero on checkpoint fail."
 cmd = "python -m pyforge.doctor.sources chain-completeness --layers"
