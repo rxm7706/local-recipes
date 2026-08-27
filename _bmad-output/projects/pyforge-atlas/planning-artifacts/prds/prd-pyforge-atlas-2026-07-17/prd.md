@@ -2,10 +2,10 @@
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: 2026-08-01
+updated: "2026-08-26"
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
-currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level).
+currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
 ---
 
 # PRD: cf_atlas Kedro/Dagster/DuckDB Migration
@@ -2953,4 +2953,108 @@ was written is dropped, not re-proposed.
 #### FR-68: Downstream handoff
 **Consequences:** a selected candidate hands off to Mason's packaging flow as structured
 data, not prose; Atlas proposes and never authors a recipe (Charter §4 — one craft each).
+
+## Currency reconciliation — 2026-08-26
+
+The station's Tier-2 spec estate moved through 2026-08-22 and its code surface
+through 2026-08-26 while this PRD's last review was 2026-08-01. Reconciled here
+against the specs under `planning-artifacts/specs/`, the 2026-08-08 research pair,
+the pyforge-unifying-strategy pack
+(`_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/`),
+and the shipped package at `src/shared/packages/pyforge-atlas/`.
+
+### FR-61..FR-68 delivered
+
+Both Specs decomposed above on 2026-08-08 shipped in full: `spec-kedro-org-tooling-adoption`
+(Epic 12, stories 12.1–12.3 done — kedro-skills audited-then-adopted at a pinned
+version, the **real** DAG published continuously through `steward deploy dashboard`
+per FR-62's owner-≠-mechanism rule, and a dated vscode-kedro defer verdict) and
+`spec-upstream-discovery` (Epic 13, stories 13.1–13.5 done — injected-fetcher
+trending ingest, declared-rule tier classification, the read-only
+`trending-candidates` surface, the fixed-source org-audit track, and the structured
+Mason handoff). Both Specs now read `status: shipped`.
+
+### The PRD's FR set is deliberately frozen; later capabilities decompose from their own Specs
+
+Post-migration capability chains no longer route through this PRD. Four more
+atlas-owned Tier-2 Specs were chartered/decomposed since 08-08, each straight into
+`epics.md` (the convention the 08-08 section above started, now the settled
+pattern — this document remains the migration-era contract plus the 08-08
+addendum, not a rolling capability index):
+
+- **`spec-atlas-query-dashboards`** → Epic 14 (14.1–14.4 done): Panel/Bokeh
+  hand-someone-a-link views — static view catalog over 6 zero-arg CLIs, a pluggable
+  widget-type registry, Bokeh WebSocket interactivity, air-gap asset rewriting.
+- **`spec-artifactory-download-intelligence`** → Epic 15 (15.1–15.3 done):
+  mock-first org-Artifactory download telemetry — injectable AQL adapter, identity
+  join + internal/private flag, Kedro pipeline surfacing. Live-instance bring-up
+  stays outside the Spec by its own frontmatter.
+- **`spec-wagtail-corporate-brain`** → Epic 16 (16.1–16.2 done, after a
+  correct-course resolved a duplicate Epic 16 numbering): the narrow `DW-H3` La
+  Suite Docs REST contract — instance deploy definition plus a fully-offline httpx
+  bring-up rehearsal inside the default `kedro-test` gate. The **attended
+  production bring-up remains open** under `DW-H1`/`DW-H3`; the canopy chain
+  answered `lane1-serves-dw-h3` **no** on 2026-08-25 (host Wagtail `/cms/` is not
+  the `LaSuiteClient` `/api/v1/documents/` contract), so DW-H3 stays Atlas's.
+- **`spec-conda-forge-packaging-inventory-operations`** → Epic 17
+  (`in-progress`): 17.1 chartered the quartet's governed spec surface (parselmouth
+  fold placement resolved 2026-08-22 into the atlas mapping chain); 17.2 landed
+  execution-ready handoffs; live credentialed execution verification is attended
+  and pending.
+
+Estate hygiene from the same window: `spec-microsoft-org-sweep` **archived**
+(absorbed — its org-audit intent is FR-67's fixed-source track),
+`spec-pyforge-atlas-intelligence-platform` **archived** (duplicate), and
+`spec-enterprise-data-models-and-apis` **parked as an extension point** (trigger
+recorded 2026-08-22; DRF JSON:API stays off the portal face per canopy
+operating-model Q7).
+
+### The unifying strategy binds Atlas's estate roles (2026-08-24/26)
+
+The pyforge-unifying-strategy chain ratified what the 2026-08-08 cross-station
+research recommended, and it now frames this PRD's read-surface and agent-surface
+requirements:
+
+- **One Kedro home (canopy AD-21).** Stations never stand up sibling Kedro
+  deployments; Kedro extract/transform for the estate lives here. The closed seven
+  migration pipelines stay sealed; the package now carries ten pipeline packages —
+  `upstream_discovery` (Epic 13), `artifactory_downloads` (Epic 15), and
+  `query_plane_cache` (canopy 34.2, the operator-answered "named new pipeline"
+  sitting downstream of the seven) added through governed chains.
+- **CAP-19 query-plane engine owner.** First slice shipped 2026-08-26 in this
+  package's surface (canopy stories 34.1–34.5 + Lane 3 36.1–36.2, tracked on the
+  steward chain, deliberately not re-minted here): read-only fixture-Postgres
+  attach (`live_attach.py`), the named `query_plane_cache` pipeline writing the
+  estate Parquet cache, vectors persisted on the plane (`query_plane_vectors.py`,
+  `vss`/HNSW, LOAD-only per AD-13), Scribe semantic recall ranked on the plane, and
+  Lane 3 BSL + a grounded Vizro page over the estate cache. One writer on
+  `atlas.duckdb` (FR-27 intent); Steward refuses a second writer and serves the
+  atlas MCP face on the host ASGI (`POST /stations/atlas/mcp`).
+- **Lane 3 is Vizro over BSL over the plane; `vizro-ai` is deprecated** for new
+  boards (`vizro-mcp`/`vizro-e2e-flow` replace it). FR-9's shipped `query_vizro_ai`
+  NL surface stands as legacy-era delivery, not the forward pattern; its live LLM
+  backend (`DW-D3-1`) is unresolved and no longer worth resolving on the deprecated
+  library.
+- **Five-tier station completeness.** Epic 18 mapped the existing Kedro hooks onto
+  the CAP-18 shared plugin contract (no second plugin API); Epic 19 shipped the SKF
+  domain skill, the `bmad-agent-atlas` persona, and the first portal slice on
+  `/stations/atlas/`. The estate roster reports 40/40 (canopy 37.1). This
+  partially discharges DC-1's intent (agent/operator reach beyond MCP) without
+  minting the public versioned API tier, which stays deferred.
+
+### What has NOT moved (so this PRD does not silently overclaim)
+
+Per the 2026-08-08 post-ship research and the deferred-work ledger's per-entry
+verification: the production data path is **still the legacy orchestrator** — the
+Cluster-A retirement chain (fixture recapture `DW-B4-3`, credentialed parity
+`DW-B4-1`, sign-off + retirement `DW-B4-2`) has not run, `may_retire_legacy`
+correctly returns `allowed=False`, and every external consumer (Doctor's four watch
+axes foremost) is wired to the legacy `conda_forge_server.py` surface. Retirement
+therefore carries an integration obligation: re-back those tools with Kedro/DuckDB
+reads (research path (a)) — an explicit story the retirement plan must own, with
+Doctor's test suite as the acceptance gate. Also unmoved: the F1 benchmark
+(`DW-F1-1`), the live Dagster daemon (`DW-C1-1` — injected fetchers activate only
+at that attended bring-up), the composed `semantic_packages` store behind the
+shell pages (`DW-D2-2`, demand-driven), and the Phase-P BigQuery cost-gate routing
+(`DW-B2-4`/`DW-B4-4` — a safety item to close before any credentialed Phase-P run).
 

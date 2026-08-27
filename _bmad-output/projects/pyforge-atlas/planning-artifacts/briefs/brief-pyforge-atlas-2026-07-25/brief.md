@@ -2,7 +2,7 @@
 title: 'Product Brief: Atlas (pyforge-atlas)'
 status: complete
 created: 2026-07-25
-updated: 2026-07-25
+updated: "2026-08-26"
 inputs:
   - 'docs/dreams/pyforge-atlas.md'
   - 'docs/dreams/pyforge-charter.md § 3 Atlas'
@@ -11,6 +11,8 @@ inputs:
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md'
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/domain-dependency-intelligence-ecosystem-observability-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-kedro-dagster-duckdb-stack-currency-research-2026-07-25.md'
+  - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-atlas-post-ship-debt-and-cross-station-integration-research-2026-08-08.md  # folded in 2026-08-26'
+  - '_bmad-output/projects/pyforge-atlas/planning-artifacts/research/technical-kedro-ecosystem-and-stack-currency-research-2026-08-08.md  # folded in 2026-08-26'
   - 'src/shared/packages/pyforge-atlas/ (shipped package — README.md, pyproject.toml, tests/)'
 note: 'RETROSPECTIVE brief — Atlas shipped 2026-07-18 (32/32 stories, PRs #58-#105) before the factory adopted the research-first convention (2026-07-25 campaign). This brief backfills the missing product-brief tier and describes what was actually built and why it was worth building, grounded in the real, shipped evidence — it is not a pre-build planning input.'
 ---
@@ -82,8 +84,11 @@ validated against comparable dependency-intelligence platforms (domain research,
   30d, EPSS 1d, CWE 90d, …) in one reusable class, deleting the bespoke `phase_state`
   checkpoint table entirely.
 - **Dagster (via `kedro-dagster`) orchestrates; the Boring Semantic Layer (Ibis →
-  DuckDB) is the one read-surface translation interface** — the 28 legacy CLIs became
-  Vizro pages plus a Vizro-AI natural-language field and the `query_vizro_ai` MCP tool;
+  DuckDB) is the one read-surface translation interface** — the legacy CLI read
+  surface became BSL-driven Vizro pages (**8 pages + factory-status shipped; the
+  full 28-CLI page inventory is deliberately deferred, `DW-D2-1`** — corrected here
+  2026-08-26 to match the PRD's 2026-08-01 CAP-8 / AUD-ATLAS-041 correction) plus a
+  Vizro-AI natural-language field and the `query_vizro_ai` MCP tool;
   23 of the 46 MCP tools in `conda_forge_server.py` were audited and re-authored over
   Kedro session/catalog APIs so agents trigger pipelines and read datasets without
   `kedro-mcp` ever being load-bearing.
@@ -136,23 +141,32 @@ facing surface, not a growth vector.
 
 ## Success Criteria (as delivered)
 
-- **SM-1 (Parity before retirement):** the B4 attended parity gate reported zero
-  material drift against the legacy `cf_atlas.db` on the `v_actionable_packages`-family
-  views before the legacy orchestrator was retired.
+- **SM-1 (Parity before retirement):** the B4 parity **harness** was delivered
+  fixture-green and loop-callable — but the credentialed full parity run, the human
+  sign-off, and the legacy retirement itself are attended boundary events that
+  **have not yet occurred** (`DW-B4-1`/`DW-B4-2`; `may_retire_legacy` correctly
+  returns `allowed=False`, and `conda_forge_atlas.py` remains live). *(Corrected
+  2026-08-26: this bullet previously claimed the gate had reported zero drift and
+  legacy had been retired — the same overclaim the Spec fixed on 2026-07-27 under
+  AUD-ATLAS-047/-049, and which the 2026-08-08 post-ship research re-confirmed as
+  still outstanding.)*
 - **SM-2 (Agent-maintainability — the load-bearing metric):** the three new-signal
   stories (Basilisk, velocity, migration-readiness) landed as nodes + catalog entries +
   pandera contracts with zero hand-written checkpoint/TTL/backoff code, and all
   loop-drivable stories executed under `bmad-loop` without any gate being weakened or
   removed to hit the target — the anti-metric (SM-C2) held.
 - **SM-3 (Incremental re-materialization):** warm-incremental refresh re-runs only
-  affected nodes; the F1 benchmark recorded both the warm-incremental win and the
-  honest cold-full wall-clock against the network-bound 3–4h legacy baseline — the
-  counter-metric (SM-C1) explicitly forbade over-claiming an engine-swap cold-start
-  miracle, and the shipped evidence didn't chase one.
-- **SM-4/SM-5 (Read-surface + agent-surface completeness):** every read-only legacy
-  CLI question is answerable from a Vizro page or its FR-9-named exception artifact;
-  `query_vizro_ai` is callable via MCP; the MCP trigger/read surface and the A2A
-  payload hand-off both work end-to-end from a BMAD agent session.
+  affected nodes; the DuckDB-singularity half of F1 shipped, but the **cold/warm F1
+  benchmark itself was never run** (`DW-F1-1` — an attended event whose pass
+  threshold must be fixed in the story spec before it runs). The counter-metric
+  (SM-C1) explicitly forbade over-claiming an engine-swap cold-start miracle, and
+  no shipped claim chases one. *(Corrected 2026-08-26: this bullet previously
+  stated the benchmark had been recorded.)*
+- **SM-4/SM-5 (Read-surface + agent-surface completeness):** the live-confirmed
+  core CLI questions are answerable from the 8 shipped Vizro pages + factory-status
+  or an FR-9-named exception artifact (the full 28-CLI inventory is deferred,
+  `DW-D2-1`); `query_vizro_ai` is callable via MCP; the MCP trigger/read surface and
+  the A2A payload hand-off both work end-to-end from a BMAD agent session.
 - **All 8 per-epic retrospectives remain optional** (recorded in sprint-status, not
   gating) — the only formally open item against the shipped scope.
 
@@ -162,9 +176,9 @@ facing surface, not a growth vector.
 |---|---|
 | 0 | SKF legacy-translation skill (execution scaffolding) |
 | A | nebi scaffold, data catalog (20 override points + credential scoping), `IncrementalParquetDataset` |
-| B | Node ports (conda-side + PyPI/vuln), MCP audit, B4 parity sign-off, external-refresh assets, seed-gaps, SBOM intake, **Basilisk**, **velocity**, **migration-readiness** |
+| B | Node ports (conda-side + PyPI/vuln), MCP audit, B4 parity **harness** (credentialed run + sign-off remain attended-pending, `DW-B4-1`/`DW-B4-2`), external-refresh assets, seed-gaps, SBOM intake, **Basilisk**, **velocity**, **migration-readiness** |
 | C | Dagster compilation + schedules (`kedro-dagster`), `kedro-viz` |
-| D | BSL models, Vizro dashboard (28 CLIs ported), Vizro-AI + MCP tool |
+| D | BSL models, Vizro dashboard (8 pages + factory-status; full 28-CLI inventory deferred, `DW-D2-1`), Vizro-AI + MCP tool |
 | E | A2A interface, OpenLineage + OpenTelemetry |
 | F | DuckDB consolidation + benchmark, pandera validation hooks, `vss` similarity search, hygiene + policy gate |
 | G | WASM/Pyodide portability, static Parquet host, Dagster sensors |
@@ -219,6 +233,78 @@ gates it in.
 - Headless/express drafting: produced without an interactive discovery conversation,
   consistent with the other backfilled briefs in this campaign (Doctor, Herald, Mason,
   Scribe, Steward).
+
+## Currency reconciliation — 2026-08-26
+
+This pass folds in the two 2026-08-08 research reports (post-ship debt &
+cross-station integration; Kedro-ecosystem adoption gap & stack currency) and the
+station's growth since, so the brief describes Atlas as it stands rather than as it
+stood at ship+7. The in-place corrections above (SM-1, SM-3, SM-4/SM-5, the Wave
+B/D rows, the 28-CLI Solution claim) fix sentences the shipped record contradicts;
+this section records what is genuinely new.
+
+**The production data path is still the legacy orchestrator — by design, and now on
+the record.** The 08-08 post-ship research established that every daily-use read
+surface (the 17 atlas CLIs, `conda_forge_server.py`'s MCP tools, Doctor's watch
+axes) runs against `cf_atlas.db` built by the legacy `conda_forge_atlas.py`; the
+migrated Kedro package is code-complete and contract-tested but not yet the system
+of record, because the retirement chain (fixture recapture → credentialed parity →
+human sign-off → retirement, Cluster A) is a sequence of attended events none of
+which has happened. Two consequences the original brief could not have stated:
+(1) retirement is not Atlas-internal — it breaks Doctor unless the
+`conda_forge_server.py` atlas tools are re-backed with Kedro/DuckDB reads (the
+research's recommended path (a), still unowned); (2) "the intelligence layer every
+station consumes" is today the layer *one* station consumes — Doctor's four axes
+are the fleet's single, exemplary live integration, and its transport/degrade
+design is the template for the next consumer.
+
+**"Add phase 24 by writing a node" was exercised for real.** Since 2026-08-02 the
+station shipped Epics 12–19: the Kedro-org tooling audit (kedro-skills audited
+against the AD-invariants before trust; the real DAG published continuously through
+`steward deploy dashboard`; a recorded vscode-kedro defer verdict), the
+upstream-discovery engine (trending ingest → tier classification →
+`trending-candidates` surface → org-audit track → structured Mason handoff, all via
+injected fetchers), the Panel/Bokeh query-dashboard views (static catalog, widget
+registry, WebSocket interactivity, air-gap asset rewriting), mock-first Artifactory
+download intelligence (injectable AQL adapter, identity join, Kedro pipeline
+surfacing), the narrow Wagtail/La Suite `DW-H3` contract work (instance deploy
+definition + a fully-offline httpx bring-up rehearsal; the attended production
+bring-up stays open under `DW-H1`/`DW-H3`), the governed packaging-inventory intake
+engine (17.1 chartered, 17.2 execution-ready handoffs; attended credentialed
+verification pending), CAP-18 hook mapping (no second plugin API), and Atlas's own
+SKF skill, `bmad-agent-atlas` persona, and first portal slice on
+`/stations/atlas/`. The dependency-intelligence pipeline set grew from the closed
+seven to ten packages — `upstream_discovery`, `artifactory_downloads`, and
+`query_plane_cache` each added through a governed chain, never ad-hoc.
+
+**The cross-station question the 08-08 research answered became strategy.** Its
+recommendation — the unifiable asset is not the stack but *Atlas as the fleet's
+single data platform*; stations consume Atlas datasets/MCP tools, never sibling
+Kedro deployments — was ratified by the pyforge-unifying-strategy chain
+(2026-08-24/26) as canopy AD-21: **Atlas is the estate's one Kedro home.** The same
+chain made Atlas the **CAP-19 HTAP query-plane engine owner** (first slice shipped
+2026-08-26: read-only live Postgres attach, the named `query_plane_cache` pipeline
+writing the estate Parquet cache, vectors persisted on the plane via `vss`/HNSW,
+Scribe semantic recall ranking on the plane, Lane 3 BSL + a grounded Vizro page
+over the estate cache; Steward serves the atlas MCP face on the host ASGI and
+refuses a second writer on `atlas.duckdb`). Lane 3 is Vizro over BSL over the
+plane; **`vizro-ai` is deprecated for new boards** (`vizro-mcp`/`vizro-e2e-flow`
+replace it) — the shipped `query_vizro_ai` surface is legacy-era, not the pattern
+forward. The five-tier station roster (CLI · portal · service · skill · persona)
+reports 40/40 as of 2026-08-26.
+
+**Stack currency (08-08 refresh, superseding the 07-25 § on currency):** every
+component still live; Dagster's release cadence held ~4 weeks post-Prefect-
+acquisition; `kedro-dagster`'s bus-factor ≈ 1 is re-confirmed and now carries an
+operational two-condition tripwire (an import-smoke break in `kedro-test` **and**
+no upstream fix/acknowledgment within 60 days → take the recorded exit ramps)
+instead of a vibes-based watch. `kedro-mcp` staying non-load-bearing is vindicated
+(9 months dormant upstream).
+
+**Satellites:** the Unity Data Stack and Wasm Analytics Stack sections below remain
+archived planning records. The unifying-strategy Spec names their revival an
+explicit non-goal ("Not a lakehouse product or Unity / Wasm satellite revival"), so
+neither satellite is pending work of this station.
 
 ---
 

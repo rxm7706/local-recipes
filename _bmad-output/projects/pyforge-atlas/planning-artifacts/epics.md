@@ -8,8 +8,8 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: '2026-08-14'
-currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -1767,3 +1767,37 @@ So that Lane 2 does a real job without Vizro or La Suite.
 **Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** canopy FR-10 • canopy AD-7
 **Given** an authenticated atlas-role session **When** the operator opens `/stations/atlas/` **Then** one row renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no DW-H3 REST
+
+---
+
+## Validation note — 2026-08-26 (chain-currency sweep)
+
+Validated against the architecture spine as re-cut today (its `## Currency
+reconciliation — 2026-08-26` + the AD-3 amendment). Findings, none requiring a
+heading or status change:
+
+- **Story-to-architecture fit holds.** Epics 12–19 all land inside the amended
+  AD-3 shape: 13.x built `upstream_discovery` and 15.x `artifactory_downloads` as
+  governed new pipelines; no story wrote into the sealed seven from outside them.
+  Epic 18's audit-don't-rebuild outcome (`cap18.py` maps existing hooks; no second
+  plugin API) matches AD-1; Epic 19's ACs (persona uses only `pyforge atlas …` +
+  `POST /stations/atlas/mcp`; portal renders via PortalClient only) match the
+  spine's two-MCP-faces note and the canopy contract.
+- **Foreign AD/FR namespaces are cited correctly.** The `canopy AD-21` / `canopy
+  FR-37/38/10` references in Epics 18–19 belong to the unifying-strategy
+  architecture, not this project's AD-1..AD-23/FR-1..FR-22 — disambiguated in the
+  spine's reconciliation section; the epic text needs no edit.
+- **CAP-19 stories (canopy 34.1–34.5, Lane 3 36.1–36.2) are deliberately NOT
+  minted here** although their code lands in this station's surface — they are
+  tracked on the steward chain (one story in flight per station; the strategy SPEC
+  forbids re-dispatching 18–37). This file remains the canonical story source for
+  atlas-keyed ledger stories only (AD-72 role unchanged).
+- **Numbering is as intended:** Epic 11 does not exist (10 → 12 by design — Epic
+  10 was the post-audit insertion, 12+ the post-migration chains), and the earlier
+  duplicate-Epic-16 numbering was resolved by the 2026-08-22 correct-course
+  (`c388980450`); one Epic 16 heading remains.
+- **Statuses spot-checked against the tracked ledger** (12.1–13.5, 14.1–14.4,
+  15.1–15.3, 16.1–16.2, 18.1, 19.1–19.2 done; 17.1–17.2 done with Epic 17's
+  attended live-execution verification carried on the Spec, which reads
+  `in-progress`): no rollup drift found in this pass. `epics→sprint` currency
+  self-heals via the daily ledger stamp.
