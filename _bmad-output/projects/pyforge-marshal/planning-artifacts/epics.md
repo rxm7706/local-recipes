@@ -3396,9 +3396,10 @@ this session.
 
 **Goal:** FR-193 (sole assignment of this id as of 2026-08-27 — the former Story 19.4
 double-cite is re-anchored to FR-132, PRD § 18.1): decomposes
-`spec-marshal-single-story-dispatch`'s CAP-1..7 (Spec landed 2026-08-21 from
+`spec-marshal-single-story-dispatch`'s CAP-1..8 (Spec landed 2026-08-21 from
 `docs/dreams/marshal-single-story-dispatch.md`; the 2026-08-21 pass covered CAP-1..6 —
-CAP-7 decomposed 2026-08-27 as Story 22.7). The fastest story-landing
+CAP-7 decomposed 2026-08-27 as Story 22.7, CAP-8 added and decomposed 2026-08-27 as
+Story 22.8 after the live cursor-auth dispatch failure). The fastest story-landing
 pattern the factory has run — one story per fresh worktree-isolated `bmad-dev-auto` session (the retired 6.x name of `bmad-build-auto`, as run),
 real-completion await, independent verification, PR landing; validated at N=22 on 2026-08-21
 — exists only as an interactive session's hand ritual. This epic makes it a governed marshal
@@ -3496,6 +3497,24 @@ posture), and chains each station's next story when merge-through-finalize compl
 (S-22.4 with merge-in-agent: merge when CI green, scoped
 `sprint-ledger-sync --project <station>`, spec promotion, queue regen) — the eight-station
 2026-08-22/23 hand ritual replays without session discipline.
+
+### Story 22.8: The session harness is profile-driven across agent CLIs
+**Type:** feature • **Effort:** L • **Deps:** S-22.1 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-8)
+**Surface:** `adapters/harness_bmadbuild.py` (the FR-52 seam, grown profile-plural), `core/harness_profile.py` (new), `data/harness_profiles/*.toml`, `ports/build_harness.py`, `cli/dispatch.py`, `core/policy.py` (new `harness_preference` key + the documented repo-defaults layer wired into `compose()`), `adapters/harness_bmadloop.py` (`[adapter].name` derivation)
+**Note:** motivated live 2026-08-27: all three real dispatches (atlas/mason/marshal) died
+instantly on the hardcoded `cursor agent` harness's auth wall — `binary_present()` was
+necessary-but-insufficient (binary found on PATH, session dead on `Authentication
+required`). Mirrors bmad-loop's own declarative CLI-profile pattern in marshal-owned code
+(AD-3: marshal never imports `bmad_loop` outside `harness_bmadloop.py`).
+**Given** a station dispatch **When** the operator's policy expresses an ordered
+`harness_preference` **Then** the session launches under the first profile whose binary
+resolves AND whose declared authcheck passes, every skipped candidate is a structured
+finding (never silent — the cursor-auth failure mode becomes a named skip), the launched
+argv is rendered from that profile's declarative template (worktree, prompt, per-CLI
+model-flag spelling and trust/permission flags), and the SAME one policy preference drives
+both engines — `marshal factory dispatch` directly, and bmad-loop via
+`render_policy_toml`'s `[adapter].name` derivation — with the previous cursor behavior
+preserved as the `cursor` profile.
 
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed

@@ -56,8 +56,12 @@ def test_registered_codes_contains_the_real_codes():
     floor-raise's own policy.toml write failure, AD-26). Story 3.13's
     core/policy.py::compose adds MRS-POLICY-007 (a composed max_parallel
     above 1 -- bmad_loop 0.9.0's own Phase 5 fan-out scheduler is unbuilt
-    and clamps every run to 1). This asserts the registry's exact real
-    contents."""
+    and clamps every run to 1). Story 22.8's profile-driven session harness
+    adds MRS-POLICY-008 (no harness_preference entry has a bmad-loop
+    counterpart -- the rendered [adapter].name keeps the template default)
+    and MRS-DISP-027/028/029 (a skipped preference candidate; an ignored
+    overlay profile file; an omitted model tier). This asserts the
+    registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -69,6 +73,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-POLICY-005",
             "MRS-POLICY-006",
             "MRS-POLICY-007",
+            "MRS-POLICY-008",
             "MRS-INIT-001",
             "MRS-INIT-002",
             "MRS-INIT-003",
@@ -272,6 +277,9 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DRAIN-007",
             "MRS-DRAIN-008",
             "MRS-DRAIN-009",
+            "MRS-DISP-027",
+            "MRS-DISP-028",
+            "MRS-DISP-029",
         }
     )
 

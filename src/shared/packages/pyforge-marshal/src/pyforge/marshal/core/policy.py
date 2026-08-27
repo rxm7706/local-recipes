@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 28-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 29-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
@@ -23,7 +23,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 12 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 13 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -42,7 +42,12 @@ on by later stories (4.5, 4.8, 4.10), never narrowed by a journal entry, plus
 STATIC for the identical reason ``epic_surfaces``/``model_tier_map`` are:
 declared and validated here, rendered by ``cli/init.py::run_init`` into a
 loop home's ``.mcp.json`` and probed for resolvability by ``run_preflight``,
-never narrowed by a journal entry. 16
+never narrowed by a journal entry, and (Story 22.8) ``harness_preference``
+-- FR-193 CAP-8's ordered session-harness profile preference, STATIC for
+the identical structural-declaration reason ``verify_commands`` is: an
+ordered tuple of profile names declared and validated here, consumed by
+``cli/dispatch.py``'s resolution and ``adapters/harness_bmadloop.py``'s
+``[adapter].name`` derivation, never narrowed by a journal entry. 16
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -153,7 +158,7 @@ from types import MappingProxyType
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 
-# --- the closed 28-key vocabulary -------------------------------------------
+# --- the closed 29-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -197,6 +202,18 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # Story 1.7's pattern) and `run_preflight` probes each declared
         # server's command for resolvability.
         "mcp_servers",
+        # Story 22.8's 13th STATIC key, the vocabulary's 29th (FR-193
+        # CAP-8): the ordered session-
+        # harness profile preference for the SECOND engine (`marshal factory
+        # dispatch`) and, via `adapters/harness_bmadloop.py`'s
+        # `[adapter].name` derivation, the bmad-loop engine too -- one
+        # policy-expressed preference, both engines. STATIC for the identical
+        # structural-declaration reason `verify_commands` is: an ordered
+        # tuple of profile names, declared and validated here (shape-only --
+        # whether a named profile exists/resolves/authenticates is
+        # dispatch-time resolution's concern, reported as MRS-DISP-027/003),
+        # never narrowed at runtime by a journal entry.
+        "harness_preference",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -440,6 +457,18 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # declared yet" posture `epic_surfaces`/`model_tier_map` already carry
     # for the identical STATIC/empty-mapping shape.
     "mcp_servers": {},
+    # Story 22.8's `harness_preference` (FR-193 CAP-8): the product's own
+    # neutral order over the five packaged profiles -- claude first because
+    # it is the fleet's reference adapter (`harness_bmadloop.py`'s
+    # `_POLICY_TEMPLATE` already bakes `[adapter].name = "claude"` as the
+    # repo baseline, so the default preference and the default bmad-loop
+    # render agree by construction, keeping the default render
+    # byte-identical); cursor second as the incumbent this seam previously
+    # hardcoded; then the two verified alternates; devin last (declared
+    # stub, no local binary). A machine's own auth reality belongs in the
+    # repo/project layers (`_bmad-output/policy-defaults.toml` expresses
+    # this machine's), never tuned here.
+    "harness_preference": ("claude", "cursor", "copilot", "gemini", "devin"),
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -452,10 +481,13 @@ REDACTED_SENTINEL = "***REDACTED***"
 
 
 class PolicyLayer(StrEnum):
-    """The 3-member precedence chain (AD-16): Marshal defaults -> project
-    policy -> invocation flags, last wins, no fourth layer."""
+    """The 4-member precedence chain (AD-16, as documented since Story 1.10
+    and WIRED in Story 22.8): Marshal defaults -> repo defaults
+    (`_bmad-output/policy-defaults.toml`) -> project policy -> invocation
+    flags, last wins."""
 
     DEFAULT = "default"
+    REPO_DEFAULTS = "repo_defaults"
     PROJECT = "project"
     FLAG = "flag"
 
@@ -665,6 +697,32 @@ def _valid_mcp_servers(value: object) -> dict[str, dict[str, object]] | None:
             env[env_key] = env_value
         result[name] = {"command": command, "args": args, "env": env}
     return result
+
+
+def _valid_harness_preference(value: object) -> tuple[str, ...] | None:
+    """``harness_preference`` (Story 22.8, FR-193 CAP-8): an ordered,
+    duplicate-free tuple of profile-name-shaped strings. Reuses
+    ``_valid_str_tuple``'s base shape, then adds two checks of its own (a
+    separate function per the ``_valid_landing_base_branch`` "unrelated
+    questions" precedent): every entry must draw from the conservative slug
+    charset (a profile name is a packaged/overlay TOML file stem -- anything
+    that could split or escape that stem is out, the same threat model as
+    the project-slug guard), and no entry may repeat (a duplicated
+    preference entry is a collision no resolution order could honor
+    meaningfully -- rejected loudly rather than silently deduplicated).
+    Whether a named profile EXISTS is deliberately not checked here
+    (shape-only, FR-53's spirit): resolution reports an unknown name as
+    MRS-DISP-027 at dispatch time, where the profile set -- packaged plus
+    overlay -- is actually knowable."""
+    base = _valid_str_tuple(value)
+    if base is None:
+        return None
+    seen: set[str] = set()
+    for entry in base:
+        if not set(entry) <= _SLUG_CHARS or entry.strip(".") == "" or entry in seen:
+            return None
+        seen.add(entry)
+    return base
 
 
 def _valid_bool(value: object) -> bool | None:
@@ -1144,20 +1202,23 @@ def _merge_field(
     key: str,
     validator: _Validator,
     default_value: object,
+    repo_defaults: Mapping[str, object],
     project: Mapping[str, object],
     flags: Mapping[str, object],
     findings: list[Finding],
     finding_code: str,
 ) -> PolicyField:
-    """Apply the fixed ``defaults -> project -> flags`` precedence to one
-    field (AD-16). A layer's malformed value is reported (never raised) via
-    ``finding_code`` and excluded; the field keeps whatever the previous
-    (better) layer already established -- see the module docstring's
-    "compose() never raises" note for the stated assumption this encodes."""
+    """Apply the fixed ``defaults -> repo_defaults -> project -> flags``
+    precedence to one field (AD-16; the repo layer wired in Story 22.8). A
+    layer's malformed value is reported (never raised) via ``finding_code``
+    and excluded; the field keeps whatever the previous (better) layer
+    already established -- see the module docstring's "compose() never
+    raises" note for the stated assumption this encodes."""
     value = copy.deepcopy(default_value)
     layer = PolicyLayer.DEFAULT
     raw_source = value
     for layer_name, mapping, layer_enum in (
+        ("repo_defaults", repo_defaults, PolicyLayer.REPO_DEFAULTS),
         ("project", project, PolicyLayer.PROJECT),
         ("flag", flags, PolicyLayer.FLAG),
     ):
@@ -1173,20 +1234,22 @@ def _merge_field(
 
 
 def _merge_landing_rules(
+    repo_defaults: Mapping[str, object],
     project: Mapping[str, object],
     flags: Mapping[str, object],
     findings: list[Finding],
 ) -> PolicyField:
-    """Same ``defaults -> project -> flags`` precedence as ``_merge_field``
-    (AD-16), specialized for ``landing_rules`` so a malformed layer's
-    finding names the SPECIFIC offending rule (review finding P6) via
-    ``_malformed_landing_rules_finding`` instead of the generic
-    ``_malformed_finding``'s whole-raw-value dump."""
+    """Same ``defaults -> repo_defaults -> project -> flags`` precedence as
+    ``_merge_field`` (AD-16), specialized for ``landing_rules`` so a
+    malformed layer's finding names the SPECIFIC offending rule (review
+    finding P6) via ``_malformed_landing_rules_finding`` instead of the
+    generic ``_malformed_finding``'s whole-raw-value dump."""
     key = "landing_rules"
     value = copy.deepcopy(DEFAULT_POLICY[key])
     layer = PolicyLayer.DEFAULT
     raw_source = value
     for layer_name, mapping, layer_enum in (
+        ("repo_defaults", repo_defaults, PolicyLayer.REPO_DEFAULTS),
         ("project", project, PolicyLayer.PROJECT),
         ("flag", flags, PolicyLayer.FLAG),
     ):
@@ -1218,6 +1281,7 @@ def _base_worktree_seed_paths(project_slug: str | None) -> tuple[str, ...]:
 
 def _compose_worktree_seed_paths(
     project_slug: str | None,
+    repo_defaults: Mapping[str, object],
     project: Mapping[str, object],
     flags: Mapping[str, object],
     findings: list[Finding],
@@ -1239,6 +1303,7 @@ def _compose_worktree_seed_paths(
     layer = PolicyLayer.DEFAULT
     raw_source: object = base
     for layer_name, mapping, layer_enum in (
+        ("repo_defaults", repo_defaults, PolicyLayer.REPO_DEFAULTS),
         ("project", project, PolicyLayer.PROJECT),
         ("flag", flags, PolicyLayer.FLAG),
     ):
@@ -1255,7 +1320,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 12 public STATIC
+    """The composed, immutable policy value (AD-10): 13 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     16 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -1280,6 +1345,7 @@ class EffectivePolicy:
     landing_base_branch: PolicyField
     landing_resync_commands: PolicyField
     mcp_servers: PolicyField
+    harness_preference: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1296,6 +1362,7 @@ class EffectivePolicy:
             "landing_base_branch",
             "landing_resync_commands",
             "mcp_servers",
+            "harness_preference",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1344,6 +1411,7 @@ class EffectivePolicy:
                 "landing_base_branch",
                 "landing_resync_commands",
                 "mcp_servers",
+                "harness_preference",
             )
         )
         seed = ", ".join(
@@ -1364,7 +1432,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (12 static + 16 seed) -- AD-35's naming primitive. Hashing only
+        (13 static + 16 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -1396,6 +1464,7 @@ class EffectivePolicy:
             "landing_base_branch": _field_payload(self.landing_base_branch),
             "landing_resync_commands": _field_payload(self.landing_resync_commands),
             "mcp_servers": _field_payload(self.mcp_servers),
+            "harness_preference": _field_payload(self.harness_preference),
         }
         payload.update(
             {key: _field_payload(field) for key, field in self._seed.items()}
@@ -1408,13 +1477,18 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 28-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 29-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
     Story 1.10 to read repo-wide policy from `_bmad-output/policy-defaults.toml`
     and insert it between code defaults and project-layer overrides; it defaults
-    to ``None`` (empty dict) for backward compatibility.
+    to ``None`` (empty dict) for backward compatibility. Story 22.8 WIRED it
+    into the fold (it had been accepted and ignored): a repo-defaults value
+    wins over the code default, loses to project/flags, and reports
+    provenance ``layer=repo_defaults``; its malformed values and unknown
+    keys report through the same MRS-POLICY-001/002/003 codes as every
+    other layer, naming the ``repo_defaults`` layer.
 
     Never raises for malformed CONTENT within ``project``/``flags`` --see
     the module docstring for the exact "excluded, not poisoned" fallback
@@ -1429,6 +1503,12 @@ def compose(
     """
     if not isinstance(project_slug, str):
         raise TypeError(f"project_slug must be a str, got {project_slug!r}")
+    if repo_defaults is None:
+        repo_defaults = {}
+    if isinstance(repo_defaults, str) or not isinstance(repo_defaults, Mapping):
+        raise TypeError(
+            f"repo_defaults must be a Mapping, not a bare str: {repo_defaults!r}"
+        )
     if isinstance(project, str) or not isinstance(project, Mapping):
         raise TypeError(f"project must be a Mapping, not a bare str: {project!r}")
     if isinstance(flags, str) or not isinstance(flags, Mapping):
@@ -1440,7 +1520,11 @@ def compose(
     if not slug_ok:
         findings.append(_project_slug_finding(project_slug))
 
-    for layer_name, mapping in (("project", project), ("flag", flags)):
+    for layer_name, mapping in (
+        ("repo_defaults", repo_defaults),
+        ("project", project),
+        ("flag", flags),
+    ):
         for key in mapping:
             if key not in _ALL_KEYS:
                 findings.append(_unknown_key_finding(key, layer_name))
@@ -1449,18 +1533,20 @@ def compose(
         "verify_commands",
         _valid_str_tuple,
         DEFAULT_POLICY["verify_commands"],
+        repo_defaults,
         project,
         flags,
         findings,
         "MRS-POLICY-002",
     )
     worktree_seed_paths = _compose_worktree_seed_paths(
-        project_slug if slug_ok else None, project, flags, findings
+        project_slug if slug_ok else None, repo_defaults, project, flags, findings
     )
     merge_subject_template = _merge_field(
         "merge_subject_template",
         _valid_merge_subject_template,
         DEFAULT_POLICY["merge_subject_template"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1470,6 +1556,7 @@ def compose(
         "model_tier_map",
         _valid_model_tier_map,
         DEFAULT_POLICY["model_tier_map"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1479,16 +1566,18 @@ def compose(
         "epic_surfaces",
         _valid_epic_surfaces,
         DEFAULT_POLICY["epic_surfaces"],
+        repo_defaults,
         project,
         flags,
         findings,
         "MRS-POLICY-002",
     )
-    landing_rules = _merge_landing_rules(project, flags, findings)
+    landing_rules = _merge_landing_rules(repo_defaults, project, flags, findings)
     landing_merge_strategy = _merge_field(
         "landing_merge_strategy",
         _valid_merge_strategy,
         DEFAULT_POLICY["landing_merge_strategy"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1498,6 +1587,7 @@ def compose(
         "landing_branch_retirement",
         _valid_bool,
         DEFAULT_POLICY["landing_branch_retirement"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1507,6 +1597,7 @@ def compose(
         "landing_resync",
         _valid_bool,
         DEFAULT_POLICY["landing_resync"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1516,6 +1607,7 @@ def compose(
         "landing_base_branch",
         _valid_landing_base_branch,
         DEFAULT_POLICY["landing_base_branch"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1525,6 +1617,7 @@ def compose(
         "landing_resync_commands",
         _valid_str_tuple,
         DEFAULT_POLICY["landing_resync_commands"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1534,6 +1627,17 @@ def compose(
         "mcp_servers",
         _valid_mcp_servers,
         DEFAULT_POLICY["mcp_servers"],
+        repo_defaults,
+        project,
+        flags,
+        findings,
+        "MRS-POLICY-002",
+    )
+    harness_preference = _merge_field(
+        "harness_preference",
+        _valid_harness_preference,
+        DEFAULT_POLICY["harness_preference"],
+        repo_defaults,
         project,
         flags,
         findings,
@@ -1544,6 +1648,7 @@ def compose(
             "gate_mode",
             _valid_gate_mode,
             DEFAULT_POLICY["gate_mode"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1553,6 +1658,7 @@ def compose(
             "frozen_surfaces",
             _valid_str_tuple,
             DEFAULT_POLICY["frozen_surfaces"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1562,6 +1668,7 @@ def compose(
             "max_dev_attempts",
             _valid_attempt_count,
             DEFAULT_POLICY["max_dev_attempts"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1571,6 +1678,7 @@ def compose(
             "max_review_cycles",
             _valid_attempt_count,
             DEFAULT_POLICY["max_review_cycles"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1580,6 +1688,7 @@ def compose(
             "max_followup_reviews",
             _valid_attempt_count,
             DEFAULT_POLICY["max_followup_reviews"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1589,6 +1698,7 @@ def compose(
             "idle_threshold_minutes",
             _valid_positive_number,
             DEFAULT_POLICY["idle_threshold_minutes"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1598,6 +1708,7 @@ def compose(
             "max_tokens_per_story",
             _valid_positive_number,
             DEFAULT_POLICY["max_tokens_per_story"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1607,6 +1718,7 @@ def compose(
             "max_tokens_per_run",
             _valid_positive_number,
             DEFAULT_POLICY["max_tokens_per_run"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1616,6 +1728,7 @@ def compose(
             "max_wall_clock_minutes_per_story",
             _valid_positive_number,
             DEFAULT_POLICY["max_wall_clock_minutes_per_story"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1625,6 +1738,7 @@ def compose(
             "max_wall_clock_minutes_per_run",
             _valid_positive_number,
             DEFAULT_POLICY["max_wall_clock_minutes_per_run"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1634,6 +1748,7 @@ def compose(
             "max_parallel",
             _valid_parallel_count,
             DEFAULT_POLICY["max_parallel"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1646,6 +1761,7 @@ def compose(
             "review_on_timeout",
             _valid_review_on_timeout,
             DEFAULT_POLICY["review_on_timeout"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1655,6 +1771,7 @@ def compose(
             "review_on_status_contradiction",
             _valid_review_on_status_contradiction,
             DEFAULT_POLICY["review_on_status_contradiction"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1664,6 +1781,7 @@ def compose(
             "dev_contract_nudge",
             _valid_bool,
             DEFAULT_POLICY["dev_contract_nudge"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1673,6 +1791,7 @@ def compose(
             "operator_enabled",
             _valid_bool,
             DEFAULT_POLICY["operator_enabled"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1682,6 +1801,7 @@ def compose(
             "stream_capture_kb",
             _valid_stream_capture_kb,
             DEFAULT_POLICY["stream_capture_kb"],
+            repo_defaults,
             project,
             flags,
             findings,
@@ -1711,6 +1831,7 @@ def compose(
         landing_base_branch=landing_base_branch,
         landing_resync_commands=landing_resync_commands,
         mcp_servers=mcp_servers,
+        harness_preference=harness_preference,
         _seed=seed,
     )
     return effective, tuple(findings)

@@ -50,6 +50,7 @@ from pyforge.core.errors import PyforgeError
 
 from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..core import policy
+from ..core.harness_profile import bmadloop_adapter_for_preference
 from ..core.landing import LandingRule, landing_rule_to_dict
 from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.verdict import compute_verdict, exit_code_for
@@ -163,10 +164,15 @@ _UNSETTABLE_KEYS = frozenset(
         "dev_contract_nudge",
         "operator_enabled",
         "stream_capture_kb",
+        # Story 22.8's `harness_preference` (FR-193 CAP-8) -- a tuple of
+        # profile names, the same "no string value could ever satisfy this
+        # validator" reason `verify_commands`/`landing_resync_commands` are
+        # excluded for.
+        "harness_preference",
     }
 )
 
-# Field render order: the 12 static keys, then the 16 seed keys -- matches
+# Field render order: the 13 static keys, then the 16 seed keys -- matches
 # the spec's own enumeration order (Boundaries & Constraints, second
 # bullet). `idle_threshold_minutes` (Story 3.5) and Story 3.6's 4 budget
 # ceilings are deliberately NOT `--set` targets (unlike the other 5 scalar
@@ -192,6 +198,11 @@ _FIELD_ORDER: tuple[str, ...] = (
     "landing_base_branch",
     "landing_resync_commands",
     "mcp_servers",
+    # Story 22.8's `harness_preference` (FR-193 CAP-8) closes the static
+    # block for the same reason every static key since `epic_surfaces`
+    # appends here: `marshal-policy.toml`/repo-defaults only, no `--set`
+    # surface (list-typed).
+    "harness_preference",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",
@@ -330,7 +341,7 @@ def _parse_set_flags(raw_items: list[tuple[str, str]]) -> dict[str, object]:
 
 
 def _iter_fields(effective: policy.EffectivePolicy):
-    """Yield ``(key, PolicyField)`` for all 28 keys in ``_FIELD_ORDER``. Seed
+    """Yield ``(key, PolicyField)`` for all 29 keys in ``_FIELD_ORDER``. Seed
     fields are read exclusively through ``seed_view()`` -- never through
     ``effective._seed`` directly (AD-26; guarded by
     ``tests/meta/test_ad26_seed_field_access_guard.py``)."""
@@ -359,7 +370,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 28-key document matching ``schemas/policy.json`` exactly:
+    """The flat 29-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}
@@ -377,6 +388,30 @@ def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, objec
 #: rendered `.bmad-loop/policy.toml`, which is a derived artifact (AD-12/AD-35)
 #: and gitignored.
 PROJECT_POLICY_RELPATH = "_bmad-output/projects/{slug}/planning-artifacts/marshal-policy.toml"
+
+#: The repo-defaults policy layer (AD-16 layer 2 of 4) -- tracked, repo-wide
+#: decisions every station inherits. Documented since Story 1.10; read here
+#: since Story 22.8 wired `compose()`'s `repo_defaults` parameter into the
+#: fold.
+REPO_POLICY_DEFAULTS_RELPATH = "_bmad-output/policy-defaults.toml"
+
+
+def read_repo_policy_defaults() -> tuple[Mapping[str, object], Finding | None]:
+    """Read the tracked repo-defaults layer (Story 22.8, completing Story
+    1.10's promise). A missing file is the ordinary no-repo-layer case --
+    ``({}, None)``, never a finding (a fresh checkout without the file must
+    compose exactly as before). An unreadable/malformed file degrades to an
+    empty layer plus its ``MRS-POLICY-004`` finding, mirroring the
+    ``--project-policy`` read's own reported-never-raised posture."""
+    path = repo_root() / REPO_POLICY_DEFAULTS_RELPATH
+    if not path.is_file():
+        return {}, None
+    try:
+        with open(path, "rb") as handle:
+            return tomllib.load(handle), None
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        error = PolicyIOError(f"cannot read repo policy defaults {str(path)!r}: {exc}")
+        return {}, error.finding
 
 
 def repo_root() -> Path:
@@ -550,6 +585,12 @@ def run_config(args: argparse.Namespace) -> int:
     # Marshal's bare defaults -- only the read step earns that fallback.
     project_data: Mapping[str, object] = {}
     io_findings: list[Finding] = []
+    # The repo-defaults layer (Story 22.8 wiring of Story 1.10's parameter):
+    # read before the project layer so the operator scanning findings
+    # top-down meets the layers in precedence order.
+    repo_defaults, repo_defaults_finding = read_repo_policy_defaults()
+    if repo_defaults_finding is not None:
+        io_findings.append(repo_defaults_finding)
     policy_source: Path | None = args.project_policy
     if policy_source is None and project_slug:
         # CONVENTION LOOKUP. Without this, composing needs `--project-policy`
@@ -570,7 +611,10 @@ def run_config(args: argparse.Namespace) -> int:
 
     flags = _parse_set_flags(args.set_)
     effective, findings = policy.compose(
-        project_slug=project_slug, project=project_data, flags=flags
+        project_slug=project_slug,
+        repo_defaults=repo_defaults,
+        project=project_data,
+        flags=flags,
     )
     # io_findings FIRST: the --project-policy read happens before compose(),
     # and its failure is the root CAUSE of every "layer=default" symptom
@@ -614,6 +658,27 @@ def run_config(args: argparse.Namespace) -> int:
         # writing a composition Marshal could not determine the intent of would
         # hand bmad-loop a policy born of a failed invocation.
         if status_for(compute_verdict(findings)) is Status.OK:
+            # Story 22.8 (CAP-8, "one preference, two engines"): the render
+            # derives `[adapter].name` from `harness_preference` itself
+            # (adapters/harness_bmadloop.py); this boundary only REPORTS the
+            # case where no preference entry has a bmad-loop counterpart --
+            # the render keeps the template default, and silence here would
+            # hide that the operator's expressed preference did not reach
+            # the bmad-loop engine.
+            if bmadloop_adapter_for_preference(effective.harness_preference.value) is None:
+                findings = (
+                    *findings,
+                    Finding(
+                        code="MRS-POLICY-008",
+                        severity=Severity.WARN,
+                        message=(
+                            "no harness_preference entry has a bmad-loop "
+                            "adapter counterpart -- the rendered "
+                            "[adapter].name keeps the template default "
+                            f"(preference: {list(effective.harness_preference.value)!r})"
+                        ),
+                    ),
+                )
             try:
                 harness_policy_path = write_policy_toml(
                     effective, args.write_harness_policy

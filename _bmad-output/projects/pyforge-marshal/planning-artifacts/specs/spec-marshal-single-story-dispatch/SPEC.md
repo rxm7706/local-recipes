@@ -2,7 +2,7 @@
 id: SPEC-marshal-single-story-dispatch
 spec: marshal-single-story-dispatch
 status: in-progress
-updated: "2026-08-27"  # decomposition reconciled: CAP-1..6 shipped (Epic 22 Stories 22.1-22.6, all done); CAP-7 decomposed as Story 22.7 (backlog) — see the Decomposition record below. Frontmatter had read `ready` while six of seven capabilities were already shipped.
+updated: "2026-08-27"  # decomposition reconciled: CAP-1..6 shipped (Epic 22 Stories 22.1-22.6, all done); CAP-7 decomposed as Story 22.7 (backlog) — see the Decomposition record below. Frontmatter had read `ready` while six of seven capabilities were already shipped. Same day, later: CAP-8 added (profile-driven adapter-plural harness) after the live cursor-auth dispatch failure, decomposed as Story 22.8.
 owner-dream: docs/dreams/marshal-single-story-dispatch.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
@@ -135,6 +135,31 @@ mode beside `spin`, never a replacement.**
     recovers supervision; a story that completed while unsupervised is reconciled from git
     facts rather than lost; the journal carries per-story timing a downstream consumer can
     read without new instrumentation.
+- **CAP-8** *(added 2026-08-27 — motivated by the live fleet-drain failure of the same
+  date: all three real dispatches, atlas/mason/marshal, died instantly on the hardcoded
+  `cursor agent` harness's `Authentication required` wall while `binary_present()` reported
+  the harness available)*
+  - **intent:** The session-harness layer is adapter-plural and profile-driven: an ordered
+    `harness_preference` policy key (4-layer composable, machine preference expressible in
+    `_bmad-output/policy-defaults.toml`) selects among declarative marshal-owned CLI
+    profiles (`claude`, `cursor`, `gemini`, `copilot`, `devin`, extensible via a repo
+    overlay) — each declaring binary, argv template (worktree/prompt/trust-flag shape),
+    per-CLI model-flag spelling, and a cheap non-interactive authcheck (or a documented
+    reason none exists). Resolution takes the first profile whose binary resolves AND whose
+    authcheck passes; every skipped candidate is a structured finding, never silent. The
+    ONE policy preference drives BOTH engines: `marshal factory dispatch` launches the
+    resolved profile directly, and bmad-loop's rendered `policy.toml` derives
+    `[adapter].name` from the same preference (translated to bmad-loop's own adapter
+    names; a preference with no bmad-loop counterpart renders the default and reports it).
+    Mirrors bmad-loop's declarative-profile pattern in marshal's own code — AD-3 stands
+    (no `bmad_loop` import outside `harness_bmadloop.py`), and FR-52's single-seam
+    discipline stands (binary invocation stays confined to the adapter module).
+  - **success:** With cursor unauthenticated and claude authenticated, a dispatch launches
+    under the claude profile and reports the cursor skip by name; with nothing dispatchable
+    the refusal names every candidate tried and why; the cursor profile preserves the
+    previously-hardcoded invocation shape; `render_policy_toml` derives `[adapter].name`
+    from the same preference with byte-identical default output; the empirical argv shapes
+    for claude/cursor/gemini/copilot are smoke-verified against the real CLIs.
 - **CAP-7**
   - **intent:** Fleet-wide drain across all eight pyforge stations is a marshal-orchestrated
     mode: read per-station ordered backlogs (from tracked ledgers + optional overrides),
@@ -240,6 +265,7 @@ shipped; CAP-7 is now decomposed but not implemented.
 | CAP-5 (one in flight per station; parallel stations; loud overlap) | Story 22.5 — `22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud` | done |
 | CAP-6 (run survives its operator; journal carries the timing signal) | Story 22.6 — `22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal` | done |
 | CAP-7 (fleet-wide drain as a marshal-orchestrated mode) | Story 22.7 — `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode` (minted this pass; previously uncovered — Epic 22's goal decomposed CAP-1..6 only, with CAP-7 named merely as the acceptance oracle) | backlog |
+| CAP-8 (profile-driven, adapter-plural session harness; one preference, both engines) | Story 22.8 — `22-8-the-session-harness-is-profile-driven-across-agent-clis` (CAP added 2026-08-27 after the live cursor-auth dispatch failure; decomposed and implemented same day) | done |
 
 Shipped-surface evidence for CAP-1..6: `marshal factory dispatch` /
 `dispatch-attach` / `dispatch-resume` (PRD § 18.3), `pyforge.marshal.dispatch_supervisor`,
@@ -247,4 +273,4 @@ Shipped-surface evidence for CAP-1..6: `marshal factory dispatch` /
 `specs/spec-22-1-*.md` … `spec-22-6-*.md`. CAP-7's interim oracle remains the companion
 `fleet-drain-playbook.md` + `.cursor/pyforge-fleet-drain/` (no `--fleet`/`drain` verb, no
 campaign-mode policies in `cli/dispatch.py` as of this pass). This Spec flips to `shipped`
-when Story 22.7 lands.
+when Stories 22.7 and 22.8 both land.

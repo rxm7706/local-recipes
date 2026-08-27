@@ -100,6 +100,7 @@ development_status:
   22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: done
   22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal: done
   22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode: backlog
+  22-8-the-session-harness-is-profile-driven-across-agent-clis: done
   23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: done
   23-2-wall-clock-is-never-blended-with-active-compute: done
   23-3-the-coverage-caption-partitions-by-true-reason: done

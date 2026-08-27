@@ -1,0 +1,43 @@
+# Cursor Agent (Story 22.8, FR-193 CAP-8). Preserves the pre-profile
+# harness's invocation semantics (`--trust --workspace <worktree>
+# [--model <m>] <prompt>`, model passed through verbatim) with two
+# empirically-driven corrections, both from the live 2026-08-27 probes:
+# the binary is `cursor-agent` (the standalone CLI actually verified;
+# `cursor agent ...` is the IDE launcher forwarding to it -- both report
+# the same auth state, probed live), and `-p/--print` is added -- the
+# documented "for scripts or non-interactive use" mode with full tool
+# access, which is what a detached log-file session is. The old no-`-p`
+# shape launched the interactive TUI and never once ran to completion
+# headless (its only three launches died on auth first).
+#
+# Trust semantics (verified 2026-08-27): WITHOUT `--trust`, `-p` mode in an
+# untrusted directory stops at a trust prompt asking for --trust/--yolo/-f
+# -- and that refusal ALSO exits 0, so no smoke probe may trust the exit
+# code alone.
+#
+# This CLI is the one whose silent auth failure motivated CAP-8: on
+# 2026-08-27 three real dispatches died instantly on `Error: Authentication
+# required. Please run 'cursor agent login' first` while binary_present()
+# reported the harness available. The authcheck below is that failure mode
+# made a named, structured skip.
+name = "cursor"
+binary = "cursor-agent"
+argv = [
+  "-p",
+  "--trust",
+  "--workspace",
+  "{worktree}",
+  "{model_args}",
+  "{prompt}",
+]
+model_args = ["--model", "{model}"]
+# The pre-profile harness passed marshal's policy-resolved model straight
+# through -- preserved.
+model_passthrough = true
+# `cursor-agent status` prints "✓ Logged in as <account>" and exits fast
+# (verified live 2026-08-27); logged out it prints "Not logged in", which
+# the pattern below does not match.
+authcheck_args = ["status"]
+authcheck_ok_pattern = "Logged in as"
+verified = true
+notes = "Verified 2026-08-27: authenticated, smoke-tested --trust -p shape; binary corrected cursor->cursor-agent."
