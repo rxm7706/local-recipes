@@ -2,7 +2,7 @@
 title: Chain currency sweep — contracts that are re-derived, not decayed
 type: dream
 owner: doctor
-status: dreamt
+status: specified
 ---
 
 # Chain currency sweep — contracts that are re-derived, not decayed
@@ -59,3 +59,13 @@ Three grounding sources, all mandatory, per artifact touched:
   remedy loop, not a new red light.
 - Not a replacement for the marshal SYNC-RUNBOOK loop, which keeps its own scope (skill-facing
   volatile facts); this sweep owns the planning-spine feeds edges.
+
+## Realization log
+
+- **2026-08-26 — specified.** `bmad-spec` produced
+  `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-chain-currency-sweep/SPEC.md`
+  (status `ready`; success bound to `chain-currency-sweep-check` exit 0 across all 8 stations,
+  stamp-only diffs forbidden). The detector shipped the same day
+  (`scripts/chain_currency_sweep_check.py`, auto-discovered by the registry), and Run 1 — the
+  26-finding clearance — executed as eight parallel per-station cascades, validating the
+  runbook on its first outing.
