@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 96
+# stories: 102
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness: done
@@ -46,6 +46,11 @@ development_status:
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done
   2-3-implement-incrementalparquetdataset-for-ttl-gating: done
+  20-1-one-boot-script-raises-both-plane-faces: backlog
+  20-2-face-parity-is-part-of-done: backlog
+  20-3-named-pipeline-derivation-of-the-dashboard-stores: backlog
+  20-4-the-cis-two-spine-specs-exist: backlog
+  20-5-port-the-remaining-nineteen-vizro-pages: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done
@@ -96,6 +101,7 @@ development_status:
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
+  epic-20: backlog
   epic-3: done
   epic-3-retrospective: done
   epic-4: done
