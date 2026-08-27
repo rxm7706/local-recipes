@@ -42,7 +42,11 @@ from pyforge.marshal.core.journal import (
 )
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.verdict import EXIT_OK
-from pyforge.marshal.ports.build_harness import DispatchLaunchResult
+from pyforge.marshal.ports.build_harness import (
+    DispatchLaunchResult,
+    HarnessCandidateSkip,
+    HarnessResolution,
+)
 
 # --------------------------------------------------------------------------
 # Pure planning core
@@ -247,16 +251,29 @@ class FakeBuildHarness:
         self.present = present
         self.dispatched: list[tuple[str, str]] = []
 
-    def binary_present(self) -> bool:
-        return self.present
+    def binary_present(self, preference=(), repo_root=None) -> HarnessResolution:
+        if not self.present:
+            return HarnessResolution(
+                profile=None,
+                skipped=tuple(
+                    HarnessCandidateSkip(
+                        profile=name, reason=f"binary {name!r} not found on PATH"
+                    )
+                    for name in preference
+                ),
+            )
+        chosen = next(iter(preference), "claude")
+        return HarnessResolution(profile=chosen, binary_path=f"/usr/bin/{chosen}")
 
     def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
         self.dispatched.append((kwargs["project_slug"], kwargs["story_key"]))
+        resolution = kwargs.get("resolution")
         return DispatchLaunchResult(
             pid=7070,
             command=("cursor", "agent"),
             model=kwargs.get("model"),
             budget_env=dict(kwargs.get("budget_env") or {}),
+            profile=resolution.profile if resolution is not None else None,
         )
 
 

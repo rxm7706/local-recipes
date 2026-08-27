@@ -790,7 +790,7 @@ def dispatch_once(
                 message=f"no dispatchable session-harness profile ({tried})",
             )
         )
-        return _emit(args, data, findings)
+        return _done()
     data["harness_profile"] = resolution.profile
 
     conflict = station_in_flight_conflict(
