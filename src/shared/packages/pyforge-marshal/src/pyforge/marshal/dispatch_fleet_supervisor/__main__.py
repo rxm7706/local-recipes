@@ -35,6 +35,17 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 _DEFAULT_TICK_SECONDS = 60
 
+#: How many CONSECUTIVE cycles may fail to produce a readable envelope
+#: before this supervisor gives up. ``ProcessPort.run`` never raises on a
+#: non-zero exit, and ``cycle_reported_complete`` reads anything it cannot
+#: parse as "not complete" -- correct in isolation (never abandon a live
+#: campaign on one unreadable tick) but, with the default unbounded
+#: ``--max-cycles``, a cycle command that can NEVER succeed (a traceback, an
+#: argparse usage error, an unresolvable repo root) would otherwise be
+#: re-run every tick forever. Distinguishing "ran and reported not-complete"
+#: from "blew up" is what makes the ceiling safe to apply.
+_MAX_CONSECUTIVE_UNREADABLE_CYCLES = 5
+
 
 def build_cycle_argv(
     *,
@@ -61,24 +72,33 @@ def build_cycle_argv(
     ]
 
 
-def cycle_reported_complete(stdout: str) -> bool:
-    """Read ``data.complete`` out of one cycle's JSON envelope.
+def cycle_completion(stdout: str) -> bool | None:
+    """``data.complete`` out of one cycle's JSON envelope, or ``None``.
 
-    Unparseable output is NOT read as "complete": an unreadable cycle means
-    the supervisor does not know, and stopping on "don't know" would silently
-    abandon a live campaign. It ticks again instead (``--max-cycles`` remains
-    the ceiling).
+    ``None`` means "this cycle produced no readable verdict" -- a traceback,
+    an argparse usage error, an envelope without ``data.complete``. That is
+    deliberately NOT the same answer as ``False`` ("ran fine, still work to
+    do"): stopping on "don't know" would silently abandon a live campaign,
+    while treating it as an ordinary tick forever is how an unrunnable
+    command becomes an immortal 60 s spinner. The caller ticks again on
+    ``None`` but counts it, and gives up after
+    ``_MAX_CONSECUTIVE_UNREADABLE_CYCLES``.
     """
     try:
         envelope = json.loads(stdout)
     except (ValueError, TypeError):
-        return False
+        return None
     if not isinstance(envelope, dict):
-        return False
+        return None
     data = envelope.get("data")
-    if not isinstance(data, dict):
-        return False
+    if not isinstance(data, dict) or "complete" not in data:
+        return None
     return data.get("complete") is True
+
+
+def cycle_reported_complete(stdout: str) -> bool:
+    """``True`` only when a cycle explicitly reported itself complete."""
+    return cycle_completion(stdout) is True
 
 
 def run_fleet_campaign_supervisor(
@@ -95,6 +115,7 @@ def run_fleet_campaign_supervisor(
     argv = build_cycle_argv(mode=mode, leave_remaining=leave_remaining, run_id=run_id)
     tick = max(1, tick_seconds)
     cycles = 0
+    unreadable_streak = 0
     while True:
         if max_cycles and cycles >= max_cycles:
             print(
@@ -120,7 +141,22 @@ def run_fleet_campaign_supervisor(
         print(result.stdout, flush=True)
         if result.stderr:
             print(result.stderr, file=sys.stderr, flush=True)
-        if cycle_reported_complete(result.stdout):
+        completion = cycle_completion(result.stdout)
+        if completion is None:
+            unreadable_streak += 1
+            if unreadable_streak >= _MAX_CONSECUTIVE_UNREADABLE_CYCLES:
+                print(
+                    f"fleet campaign supervisor: {unreadable_streak} "
+                    f"consecutive cycles for campaign {run_id!r} produced no "
+                    "readable verdict; stopping rather than re-running an "
+                    "unrunnable command forever. Last stderr: "
+                    f"{(result.stderr or '').strip()[-500:]!r}",
+                    file=sys.stderr,
+                )
+                return 1
+            continue
+        unreadable_streak = 0
+        if completion:
             print(
                 f"fleet campaign supervisor: campaign {run_id!r} complete "
                 f"after {cycles} supervised cycle(s)",

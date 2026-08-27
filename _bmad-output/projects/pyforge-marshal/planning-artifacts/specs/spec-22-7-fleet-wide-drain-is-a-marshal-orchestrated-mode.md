@@ -4,7 +4,7 @@ type: feature
 created: '2026-08-27'
 status: in-progress
 updated: '2026-08-27'
-baseline_revision: 5bae7d330164a14de41ca789d8edefeab858a213
+baseline_revision: fecee52191fd42d6554e1cf012615d61e2ef3188
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

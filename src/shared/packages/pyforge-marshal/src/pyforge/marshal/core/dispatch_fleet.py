@@ -205,6 +205,17 @@ def fleet_run_dir(repo_root: Path, run_id: str) -> Path:
     return fleet_runs_dir(repo_root) / run_id
 
 
+def fleet_cycle_lock_path(repo_root: Path) -> Path:
+    """The FLEET-WIDE cycle-lock path (``FsPort.acquire_advisory_lock``
+    locks a ``.lock`` sibling of this, never this path itself).
+
+    Deliberately NOT scoped to a campaign id: the failure this serializes is
+    two *different* campaigns racing on the same station, so a per-campaign
+    lock would let exactly the case it exists to prevent straight through.
+    """
+    return fleet_runs_dir(repo_root) / "campaign"
+
+
 def queue_config_path(repo_root: Path) -> Path:
     """The optional in-repo order-override / skip-policy file."""
     return (
@@ -259,11 +270,24 @@ def station_backlog(
 def apply_order_override(
     backlog: Sequence[str], override: Sequence[str] | None
 ) -> tuple[str, ...]:
-    """Override entries first (in override order), then the rest by story key."""
+    """Override entries first (in override order), then the rest by story key.
+
+    The override file is hand-maintained, so a repeated key is a plausible
+    edit: de-duplicated here rather than passed through, since a backlog
+    carrying the same story twice inflates ``remaining`` and re-plans a
+    story already dispatched this cycle. An override entry naming a key that
+    is not in the backlog (a typo, or a story since marked ``done``) is
+    simply inert.
+    """
     if not override:
         return tuple(sorted(backlog, key=_sort_key))
-    present = [key for key in override if key in backlog]
-    tail = sorted((key for key in backlog if key not in present), key=_sort_key)
+    present: list[str] = []
+    seen: set[str] = set()
+    for key in override:
+        if key in backlog and key not in seen:
+            seen.add(key)
+            present.append(key)
+    tail = sorted((key for key in backlog if key not in seen), key=_sort_key)
     return tuple(present + tail)
 
 
@@ -274,18 +298,33 @@ def plan_station_queue(
     mode: FleetCampaignMode,
     leave_remaining: int = 1,
     blocked: Mapping[str, str] | None = None,
+    declared_skips: Mapping[str, str] | None = None,
 ) -> StationQueuePlan:
     """Decide this cycle's story for one station (pure).
 
-    ``blocked`` maps a story key to the reason it may not be dispatched --
-    a configured skip policy, or CAP-2 git/process facts showing the last
-    dispatch of that story ended ``failed``. Under ``skip_on_blocked`` the
-    walk steps past each blocked story (reporting it); under the other two
-    modes the station stops there. A blocked story is NEVER removed from the
-    backlog and never auto-retried -- it stays queued for a human.
+    Two kinds of "not this story", deliberately NOT the same thing:
+
+    * ``declared_skips`` -- the operator's own hand-authored instruction
+      ("steward 12-7 needs a live OCP cluster"), the in-repo analog of the
+      interim runner's ``skip_policies`` entries, every one of which carried
+      ``action: skip_on_blocked``. A declared skip is honored under EVERY
+      mode: the 2026-08-22/23 campaign ran ``mode: drain_to_zero`` WITH those
+      seven steward skip policies, and skipping to 12-8 is exactly the
+      outcome the hand ritual produced. Treating an explicit "don't try this
+      one" as "halt the whole station" would make replaying that campaign
+      impossible in its own mode.
+    * ``blocked`` -- DERIVED evidence that a story may not be dispatched:
+      CAP-2 git/process facts showing its last dispatch ended ``failed``, or
+      a non-liveness refusal this campaign already recorded. That is what the
+      campaign mode governs: ``skip_on_blocked`` steps past it (reporting
+      it), the other two modes stop the station there.
+
+    Neither kind is ever removed from the backlog or auto-retried -- both
+    stay queued, reported by name, for a human.
     """
     ordered = tuple(backlog)
     blocked = dict(blocked or {})
+    declared = dict(declared_skips or {})
     if not ordered:
         return StationQueuePlan(slug=slug, backlog=ordered, outcome=StationQueueOutcome.DRAINED)
     if mode is FleetCampaignMode.LEAVE_ONE and len(ordered) <= max(0, leave_remaining):
@@ -294,6 +333,10 @@ def plan_station_queue(
         )
     skipped: list[tuple[str, str]] = []
     for story in ordered:
+        declared_reason = declared.get(story)
+        if declared_reason is not None:
+            skipped.append((story, declared_reason))
+            continue
         reason = blocked.get(story)
         if reason is None:
             return StationQueuePlan(
@@ -325,10 +368,36 @@ def plan_station_queue(
 def campaign_complete(results: Iterable[StationCycleResult]) -> bool:
     """True when no station can make further progress in this campaign.
 
+    This is the SUPERVISOR'S STOP SIGNAL -- "nothing more this campaign can
+    do", not "everything drained". A station whose ledger will not read, or
+    whose head story is blocked, is terminal *for this campaign* precisely
+    because marshal cannot fix it by ticking again; ``unresolved_stations``
+    below is what keeps that honest in the operator's report.
+
     An empty fleet counts as complete (nothing to drain). A station that was
     dispatched or is in flight is progress, so the campaign continues.
     """
     return all(result.status in TERMINAL_STATION_STATUSES for result in results)
+
+
+def unresolved_stations(
+    results: Iterable[StationCycleResult],
+) -> tuple[StationCycleResult, ...]:
+    """Terminal-but-NOT-drained stations -- what "complete" does not cover.
+
+    ``campaign_complete`` answers "can this campaign still act?", which is
+    the right signal for the supervisor and the wrong one to hand an
+    operator on its own: a fleet whose last unread ledger went terminal
+    reports complete while real backlog goes unattended. Every station here
+    still has work, and every one of them is already named by its own
+    ``MRS-DRAIN-003``/``-004``/``-005`` finding.
+    """
+    return tuple(
+        result
+        for result in results
+        if result.status in TERMINAL_STATION_STATUSES
+        and result.status is not StationCycleStatus.DRAINED
+    )
 
 
 def render_cycle_summary(results: Sequence[StationCycleResult]) -> str:

@@ -1544,7 +1544,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # 001 missing/unknown campaign mode (ERROR -- never defaulted);
         # 002 repo root unresolvable (ERROR); 003 a station's tracked ledger
         # could not be read (WARN -- that station is reported, the campaign
-        # continues); 004 blocked story skipped under skip_on_blocked (WARN);
+        # continues); 004 story skipped -- either a hand-declared skip policy
+        # (honored under every mode) or a derived block under
+        # skip_on_blocked; either way it stays in backlog (WARN);
         # 005 station blocked, story stays in backlog, never auto-retried
         # (WARN); 006 a station's dispatch was refused this cycle because it
         # already has a live in-flight story (WARN -- "busy" is the normal
@@ -1554,7 +1556,15 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # 008 the optional queue-override file could not be read/parsed
         # (WARN -- ledger order applies); 009 cycle journal write failed
         # (WARN, mirroring MRS-DISP-009's "the work happened, the record
-        # didn't" tier).
+        # didn't" tier); 010 another fleet-drain cycle holds the fleet-wide
+        # campaign lock (ERROR -- this invocation dispatched nothing and
+        # spawned no supervisor; the interim runner's singleton-coordinator
+        # convention made structural); 011 one station's dispatch raised
+        # unexpectedly (ERROR for that station -- the rest of the fleet
+        # continues, because an alphabetical loop that aborts starves every
+        # station after it, on every tick, forever); 012 no pyforge stations
+        # were discovered at all (ERROR -- an empty fleet is vacuously
+        # "complete", which must never read as a drained one).
         "MRS-DRAIN-001",
         "MRS-DRAIN-002",
         "MRS-DRAIN-003",
@@ -1564,6 +1574,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DRAIN-007",
         "MRS-DRAIN-008",
         "MRS-DRAIN-009",
+        "MRS-DRAIN-010",
+        "MRS-DRAIN-011",
+        "MRS-DRAIN-012",
         # Story 22.8 (profile-driven session harness, FR-193 CAP-8): 027
         # one preference candidate skipped -- unknown profile / binary not
         # found / authcheck failed (WARN, one per skip: the 2026-08-27

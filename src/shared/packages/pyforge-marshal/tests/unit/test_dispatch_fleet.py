@@ -17,7 +17,9 @@ from pathlib import Path
 
 import pytest
 
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli.dispatch import (
     execute_fleet_cycle,
     run_fleet_drain,
@@ -42,6 +44,7 @@ from pyforge.marshal.core.journal import (
 )
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.ports.fs import AdvisoryLock
 from pyforge.marshal.ports.build_harness import (
     DispatchLaunchResult,
     HarnessCandidateSkip,
@@ -150,6 +153,55 @@ def test_other_modes_stop_at_a_blocked_story_and_never_force_past_it() -> None:
     assert plan.next_story is None
 
 
+def test_a_declared_skip_is_honored_under_every_mode() -> None:
+    """The 2026-08-22/23 campaign ran ``mode: drain_to_zero`` WITH seven
+    hand-authored steward ``skip_policies``. An operator's explicit "don't
+    try this one" is not the same fact as derived HALT evidence: it is
+    honored under every mode, or that campaign could not be replayed in the
+    mode it actually ran."""
+    for mode in FleetCampaignMode:
+        plan = plan_station_queue(
+            slug="pyforge-steward",
+            backlog=("12-7-live-ocp", "12-8-github-projects"),
+            mode=mode,
+            leave_remaining=0,
+            declared_skips={"12-7-live-ocp": "Live OCP/CRC."},
+        )
+        assert plan.outcome is StationQueueOutcome.DISPATCH, mode
+        assert plan.next_story == "12-8-github-projects", mode
+        assert plan.skipped == (("12-7-live-ocp", "Live OCP/CRC."),), mode
+        # Never removed from the backlog, never auto-retried.
+        assert "12-7-live-ocp" in plan.backlog
+
+
+def test_a_declared_skip_never_masks_a_derived_block_on_a_later_story() -> None:
+    plan = plan_station_queue(
+        slug="pyforge-steward",
+        backlog=("12-7-live-ocp", "12-8-github-projects"),
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        declared_skips={"12-7-live-ocp": "Live OCP/CRC."},
+        blocked={"12-8-github-projects": "its last dispatch ended 'failed'"},
+    )
+    assert plan.outcome is StationQueueOutcome.BLOCKED
+    assert plan.blocked_story == "12-8-github-projects"
+    assert plan.skipped == (("12-7-live-ocp", "Live OCP/CRC."),)
+
+
+def test_every_declared_skip_consumed_reports_all_skipped() -> None:
+    plan = plan_station_queue(
+        slug="pyforge-steward",
+        backlog=("27-1-liquibase", "27-2-preupgrade"),
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        declared_skips={
+            "27-1-liquibase": "Operator Liquibase >=5.0.4 feedstock.",
+            "27-2-preupgrade": "Deps 27-1.",
+        },
+    )
+    assert plan.outcome is StationQueueOutcome.ALL_SKIPPED
+    assert plan.next_story is None
+    assert len(plan.skipped) == 2
+
+
 def test_fleet_station_slugs_are_derived_not_declared() -> None:
     slugs = dispatch_fleet.fleet_station_slugs(
         ("pyforge-atlas", "local-recipes", "pyforge-zzz-new-station", "deckcraft")
@@ -180,8 +232,20 @@ def _init_git_repo(path: Path) -> None:
 class FakeFs:
     """Writes through to the real tree so run dirs stay discoverable."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, lock_unavailable: bool = False) -> None:
         self.files: dict[Path, str] = {}
+        self.lock_unavailable = lock_unavailable
+        self.locks_acquired: list[Path] = []
+        self.locks_released: list[Path] = []
+
+    def acquire_advisory_lock(self, path: Path, *, timeout_s: float) -> AdvisoryLock:
+        if self.lock_unavailable:
+            raise FsError(f"timed out after {timeout_s}s waiting for {path}")
+        self.locks_acquired.append(path)
+        return AdvisoryLock(path=path.with_suffix(path.suffix + ".lock"), handle=None)
+
+    def release_advisory_lock(self, lock: AdvisoryLock) -> None:
+        self.locks_released.append(lock.path)
 
     def is_dir(self, path: Path) -> bool:
         return path.is_dir()
@@ -850,7 +914,7 @@ def _drain_args(**overrides) -> argparse.Namespace:
 def _run_drain(tmp_path: Path, args: argparse.Namespace, **kwargs) -> int:
     return run_fleet_drain(
         args,
-        fs=FakeFs(),
+        fs=kwargs.get("fs") or FakeFs(),
         vcs=kwargs.get("vcs") or FakeVcs(tmp_path),
         build_harness=kwargs.get("build_harness") or FakeBuildHarness(),
         process=kwargs.get("process") or FakeProcess(alive=False),
@@ -1017,3 +1081,514 @@ def test_campaign_supervisor_reads_completion_from_the_cycle_envelope() -> None:
     # abandon a live campaign.
     assert cycle_reported_complete("not json at all") is False
     assert cycle_reported_complete("") is False
+
+
+# --------------------------------------------------------------------------
+# The acceptance oracle: the eight-station 2026-08-22/23 campaign, replayed
+#
+# `fleet-drain-playbook.md` is this story's acceptance oracle, and the
+# campaign it validated is on disk in the superseded interim runner
+# (`.cursor/pyforge-fleet-drain/queues.yaml`): eight stations, `mode:
+# drain_to_zero`, six already drained, marshal + steward carrying ordered
+# backlogs under `order_overrides`, and steward carrying hand-authored
+# `skip_policies` (12-7 needs a live OCP cluster). The fixture below replays
+# that exact shape through `marshal factory drain` and asserts the hand
+# ritual's own outcomes -- skip, parallel, chain, drained -- fall out of the
+# machinery with no operator holding session discipline.
+# --------------------------------------------------------------------------
+
+#: The live fleet, derived the same way `list_station_slugs` derives it.
+_EIGHT_STATIONS = (
+    "pyforge-atlas",
+    "pyforge-doctor",
+    "pyforge-herald",
+    "pyforge-marshal",
+    "pyforge-mason",
+    "pyforge-scribe",
+    "pyforge-steward",
+    "pyforge-warden",
+)
+_ALREADY_DRAINED = tuple(
+    slug for slug in _EIGHT_STATIONS if slug not in {"pyforge-marshal", "pyforge-steward"}
+)
+
+
+def _campaign_fixture(tmp_path: Path) -> dict[str, tuple[tuple[str, str], ...]]:
+    """Seed the eight-station fleet in its 2026-08-22/23 starting state."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(
+        tmp_path,
+        stories={
+            **{slug: [] for slug in _ALREADY_DRAINED},
+            # marshal's real override head, then the key that follows it.
+            "pyforge-marshal": ["22-7-fleet-wide-drain", "22-8-profile-driven-harness"],
+            "pyforge-steward": [
+                "12-7-live-ocp",
+                "12-8-github-projects",
+                "12-9-story-ledger",
+            ],
+        },
+    )
+    (
+        tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts"
+    ).mkdir(parents=True, exist_ok=True)
+    dispatch_fleet.queue_config_path(tmp_path).write_text(
+        # The in-repo analog of queues.yaml's two hand-edited blocks. The
+        # `stations:` block it also carried is deliberately absent: that was
+        # a regenerated copy of state the tracked ledgers already hold.
+        "order_overrides:\n"
+        "  marshal:\n"
+        "    - 22-8-profile-driven-harness\n"
+        "    - 22-7-fleet-wide-drain\n"
+        "skip_policies:\n"
+        "  - station: steward\n"
+        "    story: 12-7-live-ocp\n"
+        "    reason: Live OCP/CRC.\n",
+        encoding="utf-8",
+    )
+    return {
+        **{slug: (("1-1-shipped", "done"),) for slug in _ALREADY_DRAINED},
+        "pyforge-marshal": (
+            ("22-7-fleet-wide-drain", "backlog"),
+            ("22-8-profile-driven-harness", "backlog"),
+        ),
+        "pyforge-steward": (
+            ("12-7-live-ocp", "backlog"),
+            ("12-8-github-projects", "backlog"),
+            ("12-9-story-ledger", "backlog"),
+        ),
+    }
+
+
+def test_eight_station_campaign_replays_without_session_discipline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ledgers = _campaign_fixture(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    vcs = FakeVcs(tmp_path)
+    process = FakeProcess(alive=True)
+    harness = FakeBuildHarness()
+
+    def cycle():
+        return _cycle(
+            tmp_path,
+            mode=FleetCampaignMode.DRAIN_TO_ZERO,
+            ledgers=ledgers,
+            vcs=vcs,
+            process=process,
+            build_harness=harness,
+        )
+
+    # --- Cycle 1: parallel launch across the two non-drained stations ------
+    first = cycle()
+    statuses = _status_by_station(first)
+    assert len(statuses) == len(_EIGHT_STATIONS)
+    for slug in _ALREADY_DRAINED:
+        assert statuses[slug] is StationCycleStatus.DRAINED
+    assert statuses["pyforge-marshal"] is StationCycleStatus.DISPATCHED
+    assert statuses["pyforge-steward"] is StationCycleStatus.DISPATCHED
+    # The order override decides marshal's story; the declared skip policy
+    # carries steward past 12-7 to 12-8 -- under drain_to_zero, the mode the
+    # campaign actually ran.
+    assert sorted(harness.dispatched) == [
+        ("pyforge-marshal", "22.8"),
+        ("pyforge-steward", "12.8"),
+    ]
+    skip = next(f for f in first.findings if f.code == "MRS-DRAIN-004")
+    assert "12-7-live-ocp" in skip.message and "Live OCP/CRC." in skip.message
+    assert "declared skip policy" in skip.message
+    # A campaign with work in flight is never reported complete.
+    assert first.complete is False
+    assert first.data["dispatched"] == ["pyforge-marshal", "pyforge-steward"]
+
+    # --- Cycle 2: one story in flight per station, nothing redispatched ----
+    held = cycle()
+    held_statuses = _status_by_station(held)
+    assert held_statuses["pyforge-marshal"] is StationCycleStatus.IN_FLIGHT
+    assert held_statuses["pyforge-steward"] is StationCycleStatus.IN_FLIGHT
+    assert len(harness.dispatched) == 2
+    relays = {f.message for f in held.findings if f.code == "MRS-DRAIN-006"}
+    assert any("MRS-DISP-011" in m for m in relays)
+    assert held.complete is False
+
+    # --- Cycle 3: merge-through-finalize chains each station's next story --
+    # CAP-4's composition (CI-green merge + scoped `sprint-ledger-sync
+    # --project <station>` + spec promotion) is what advances these two
+    # facts; the fleet mode adds no landing path of its own.
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("22.8"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("12.8"))
+    process.alive = False
+    ledgers["pyforge-marshal"] = (
+        ("22-7-fleet-wide-drain", "backlog"),
+        ("22-8-profile-driven-harness", "done"),
+    )
+    ledgers["pyforge-steward"] = (
+        ("12-7-live-ocp", "backlog"),
+        ("12-8-github-projects", "done"),
+        ("12-9-story-ledger", "backlog"),
+    )
+    chained = cycle()
+    assert sorted(harness.dispatched[2:]) == [
+        ("pyforge-marshal", "22.7"),
+        ("pyforge-steward", "12.9"),
+    ]
+    chained_statuses = _status_by_station(chained)
+    assert chained_statuses["pyforge-marshal"] is StationCycleStatus.DISPATCHED
+    assert chained_statuses["pyforge-steward"] is StationCycleStatus.DISPATCHED
+
+    # --- Exit criteria: every station drained (or wholly skipped) ---------
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("22.7"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("12.9"))
+    ledgers["pyforge-marshal"] = (
+        ("22-7-fleet-wide-drain", "done"),
+        ("22-8-profile-driven-harness", "done"),
+    )
+    ledgers["pyforge-steward"] = (
+        ("12-7-live-ocp", "backlog"),
+        ("12-8-github-projects", "done"),
+        ("12-9-story-ledger", "done"),
+    )
+    final = cycle()
+    final_statuses = _status_by_station(final)
+    assert final_statuses["pyforge-marshal"] is StationCycleStatus.DRAINED
+    # steward's only remaining key is the one the operator declared skipped:
+    # it stays in the backlog, is never auto-retried, and is never forced.
+    assert final_statuses["pyforge-steward"] is StationCycleStatus.ALL_SKIPPED
+    steward = next(r for r in final.results if r.slug == "pyforge-steward")
+    assert steward.remaining == 1
+    assert steward.skipped == (("12-7-live-ocp", "Live OCP/CRC."),)
+    assert len(harness.dispatched) == 4
+    assert final.complete is True
+
+
+def test_eight_station_campaign_halts_one_station_without_stopping_the_rest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A HALT mid-drain is per-station, reported by name, and never forced:
+    the other seven stations keep working (playbook incident table)."""
+    ledgers = _campaign_fixture(tmp_path)
+    # marshal's override head already HALTed: its session is gone and its
+    # branch never merged, so CAP-2's own facts judge that run `failed`.
+    _seed_live_dispatch_journal(
+        tmp_path,
+        slug="pyforge-marshal",
+        run_id="run-halt",
+        story_key="22.8",
+        baseline_head_sha="baseline1234",
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers=ledgers,
+        process=FakeProcess(alive=False),
+        build_harness=harness,
+    )
+    statuses = _status_by_station(report)
+    assert statuses["pyforge-marshal"] is StationCycleStatus.BLOCKED
+    # Steward is untouched by marshal's HALT and lands its next story.
+    assert statuses["pyforge-steward"] is StationCycleStatus.DISPATCHED
+    assert harness.dispatched == [("pyforge-steward", "12.8")]
+    blocked = next(f for f in report.findings if f.code == "MRS-DRAIN-005")
+    assert "pyforge-marshal" in blocked.message
+    assert "22-8-profile-driven-harness" in blocked.message
+    assert "never auto-retried" in blocked.message
+
+    # Same fleet under skip_on_blocked: marshal steps past the HALTed story
+    # to its next one -- the steward-12-7 remedy from the incident table,
+    # applied to derived HALT evidence.
+    skipping = FakeBuildHarness()
+    _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.SKIP_ON_BLOCKED,
+        ledgers=ledgers,
+        process=FakeProcess(alive=False),
+        build_harness=skipping,
+    )
+    assert ("pyforge-marshal", "22.7") in skipping.dispatched
+
+
+def test_the_replayed_campaign_keeps_its_state_in_repo_never_in_cursor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Spec's named subsumption target: campaign/queue state lives
+    in-repo under `pyforge-marshal`, never session-local `.cursor/`."""
+    ledgers = _campaign_fixture(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    code = _run_drain(tmp_path, _drain_args(once=True), ledgers=ledgers)
+    assert code == EXIT_OK
+    runs = dispatch_fleet.fleet_runs_dir(tmp_path)
+    assert runs.is_relative_to(tmp_path / "_bmad-output" / "projects" / "pyforge-marshal")
+    journal = next(iter(runs.glob("*/journal.jsonl")))
+    body = journal.read_text(encoding="utf-8")
+    for slug in _EIGHT_STATIONS:
+        assert slug in body
+    assert not (tmp_path / ".cursor").exists()
+
+
+# --------------------------------------------------------------------------
+# Review findings (2026-08-27 adversarial pass) — regression pins
+# --------------------------------------------------------------------------
+
+
+def test_campaign_state_survives_an_over_threshold_cycle_payload(
+    tmp_path: Path,
+) -> None:
+    """AD-30 sidecars on the READ side.
+
+    A cycle payload carries one row per station plus every skip reason and
+    refusal detail, so a real eight-station campaign crosses
+    ``SIDECAR_THRESHOLD_BYTES`` within a few cycles — at which point
+    ``prepare_for_write`` moves the payload to ``blobs/`` and leaves a
+    ``{"sidecar_ref": …}`` pointer. Folding without resolving those pointers
+    quarantines exactly the entries the blocked map is read from, so the
+    station would be retried on every tick forever and the campaign could
+    never report itself complete.
+    """
+    from pyforge.marshal.cli.dispatch import (
+        FleetCycleReport,
+        _campaign_blocked_from_journal,
+        _journal_fleet_cycle,
+    )
+    from pyforge.marshal.core.journal import SIDECAR_THRESHOLD_BYTES
+
+    fs = FakeFs()
+    run_dir = tmp_path / "campaign"
+    run_dir.mkdir()
+    detail = "MRS-DISP-005: no tracked spec found for story " + ("x" * 400)
+    results = tuple(
+        dispatch_fleet.StationCycleResult(
+            slug=f"pyforge-station-{n}",
+            status=StationCycleStatus.REFUSED,
+            remaining=3,
+            story=f"{n}-1-a-story-key-of-realistic-length",
+            detail=detail,
+        )
+        for n in range(12)
+    )
+    report = FleetCycleReport(
+        results=results, findings=(), data={"mode": "drain_to_zero"}
+    )
+    _journal_fleet_cycle(fs, run_dir, "camp-1", report, [])
+
+    # Precondition: this payload really did take the sidecar route.
+    body = (run_dir / "journal.jsonl").read_text(encoding="utf-8")
+    assert '"sidecar_ref"' in body
+    assert (run_dir / "blobs").is_dir()
+    blob = next(iter((run_dir / "blobs").iterdir()))
+    assert len(blob.read_text(encoding="utf-8").encode("utf-8")) > SIDECAR_THRESHOLD_BYTES
+
+    recovered = _campaign_blocked_from_journal(fs, run_dir, "camp-1")
+    assert len(recovered) == 12
+    assert recovered["pyforge-station-0"]["0-1-a-story-key-of-realistic-length"] == detail
+
+
+def test_exactly_one_drain_cycle_runs_at_a_time_fleet_wide(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The interim runner's singleton-coordinator convention, made structural:
+    two concurrent drains must never both see a station's slot free."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": ["22-7-fleet"]})
+    monkeypatch.chdir(tmp_path)
+    process = FakeProcess(alive=False)
+    harness = FakeBuildHarness()
+    code = _run_drain(
+        tmp_path,
+        _drain_args(),
+        ledgers={"pyforge-marshal": (("22-7-fleet", "backlog"),)},
+        fs=FakeFs(lock_unavailable=True),
+        process=process,
+        build_harness=harness,
+    )
+    out = capsys.readouterr().out
+    assert code != EXIT_OK
+    assert "MRS-DRAIN-010" in out
+    # Nothing dispatched, and no second campaign supervisor left behind.
+    assert harness.dispatched == []
+    assert process.spawned == []
+
+
+def test_the_cycle_lock_is_released_even_on_the_happy_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": []})
+    monkeypatch.chdir(tmp_path)
+    fs = FakeFs()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True),
+        ledgers={"pyforge-marshal": (("1-1-shipped", "done"),)},
+        fs=fs,
+    )
+    assert fs.locks_acquired == [dispatch_fleet.fleet_cycle_lock_path(tmp_path)]
+    assert len(fs.locks_released) == 1
+    # Fleet-wide, never per-campaign: two different campaigns racing on one
+    # station is precisely the case this lock exists to prevent.
+    assert "campaign" not in fs.locks_acquired[0].parent.name
+
+
+def test_one_stations_raising_dispatch_never_starves_the_rest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The station loop is alphabetical: an unguarded raise would silently
+    starve every station after it, on every supervised tick, forever — and
+    journal no cycle at all."""
+    from pyforge.marshal.cli import dispatch as dispatch_cli
+
+    _init_git_repo(tmp_path)
+    _seed_fleet(
+        tmp_path,
+        stories={"pyforge-doctor": ["14-1-canary"], "pyforge-marshal": ["22-7-fleet"]},
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    real_dispatch_once = dispatch_cli.dispatch_once
+
+    def exploding(*, slug: str, story: str, **kwargs):
+        if slug == "pyforge-doctor":  # sorts BEFORE pyforge-marshal
+            raise VcsCommandError("worktree vanished under a live session")
+        return real_dispatch_once(slug=slug, story=story, **kwargs)
+
+    monkeypatch.setattr(dispatch_cli, "dispatch_once", exploding)
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={
+            "pyforge-doctor": (("14-1-canary", "backlog"),),
+            "pyforge-marshal": (("22-7-fleet", "backlog"),),
+        },
+        build_harness=harness,
+    )
+    statuses = _status_by_station(report)
+    assert statuses["pyforge-doctor"] is StationCycleStatus.REFUSED
+    assert statuses["pyforge-marshal"] is StationCycleStatus.DISPATCHED
+    assert harness.dispatched == [("pyforge-marshal", "22.7")]
+    crash = next(f for f in report.findings if f.code == "MRS-DRAIN-011")
+    assert "pyforge-doctor" in crash.message
+    assert "VcsCommandError" in crash.message
+
+
+def test_an_empty_fleet_is_reported_never_read_as_drained(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`campaign_complete(())` is vacuously True — without a finding this is
+    a clean 'campaign complete' from a repo with no projects tree at all."""
+    _init_git_repo(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    report = _cycle(tmp_path, mode=FleetCampaignMode.DRAIN_TO_ZERO, ledgers={})
+    assert report.results == ()
+    empty = next(f for f in report.findings if f.code == "MRS-DRAIN-012")
+    assert empty.severity is Severity.ERROR
+    assert "never treated as a drained one" in empty.message
+
+
+def test_complete_is_reported_alongside_what_it_does_not_cover(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`complete` is the supervisor's stop signal ("nothing more this
+    campaign can do"), NOT "everything drained" — a station whose ledger will
+    not read is terminal with its real backlog unattended, so it is named."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": [], "pyforge-doctor": []})
+    monkeypatch.chdir(tmp_path)
+    report = _cycle(
+        tmp_path,
+        mode=FleetCampaignMode.DRAIN_TO_ZERO,
+        ledgers={"pyforge-marshal": (("1-1-shipped", "done"),)},
+    )
+    assert report.complete is True
+    unresolved = report.data["unresolved"]
+    assert unresolved == [
+        {"station": "pyforge-doctor", "status": "ledger-unreadable", "remaining": 0}
+    ]
+    assert any(f.code == "MRS-DRAIN-003" for f in report.findings)
+
+
+def test_a_path_shaped_campaign_id_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`--campaign` names a directory under the campaign runs tree."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": []})
+    monkeypatch.chdir(tmp_path)
+    code = _run_drain(
+        tmp_path,
+        _drain_args(campaign="../../escaped"),
+        ledgers={"pyforge-marshal": ()},
+    )
+    assert code != EXIT_OK
+    assert "MRS-DRAIN-001" in capsys.readouterr().out
+    assert not (tmp_path.parent / "escaped").exists()
+
+
+def test_a_negative_cycle_ceiling_is_refused_not_clamped_to_unbounded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`max(0, -1)` is 0, and 0 means UNBOUNDED here — the opposite ask."""
+    _init_git_repo(tmp_path)
+    _seed_fleet(tmp_path, stories={"pyforge-marshal": []})
+    monkeypatch.chdir(tmp_path)
+    code = _run_drain(
+        tmp_path, _drain_args(max_cycles=-1), ledgers={"pyforge-marshal": ()}
+    )
+    assert code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-DRAIN-001" in out and "--max-cycles" in out
+
+
+def test_order_override_deduplicates_a_repeated_key() -> None:
+    """The override file is hand-maintained; a repeated key would otherwise
+    put the same story in the backlog twice."""
+    backlog = ("2-1-a", "3-1-b")
+    assert apply_order_override(backlog, ["3-1-b", "3-1-b", "2-1-a"]) == (
+        "3-1-b",
+        "2-1-a",
+    )
+
+
+def test_campaign_supervisor_stops_re_running_an_unrunnable_cycle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`ProcessPort.run` never raises on a non-zero exit and an unreadable
+    cycle reads as "not complete" — with the default unbounded --max-cycles
+    that makes a permanently broken command an immortal 60s spinner."""
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    monkeypatch.setattr(sup.time, "sleep", lambda _s: None)
+
+    class ExplodingProcess:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def run(self, argv, *, cwd):
+            self.calls += 1
+            return type(
+                "R", (), {"stdout": "Traceback (most recent call last): ...", "stderr": "boom"}
+            )()
+
+    process = ExplodingProcess()
+    code = sup.run_fleet_campaign_supervisor(
+        repo_root=Path("/tmp"),
+        run_id="camp-1",
+        mode="drain_to_zero",
+        leave_remaining=1,
+        max_cycles=0,  # unbounded
+        tick_seconds=1,
+        process=process,
+    )
+    assert code == 1
+    assert process.calls == sup._MAX_CONSECUTIVE_UNREADABLE_CYCLES
+
+
+def test_campaign_supervisor_distinguishes_unreadable_from_not_complete() -> None:
+    from pyforge.marshal.dispatch_fleet_supervisor.__main__ import cycle_completion
+
+    assert cycle_completion('{"data": {"complete": true}}') is True
+    assert cycle_completion('{"data": {"complete": false}}') is False
+    # "don't know" is its own answer, never conflated with "still working".
+    assert cycle_completion("not json at all") is None
+    assert cycle_completion('{"data": {}}') is None
+    assert cycle_completion("") is None

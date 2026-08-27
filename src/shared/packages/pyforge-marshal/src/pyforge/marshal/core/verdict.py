@@ -1023,6 +1023,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DRAIN-007": Verdict.WARN,
     "MRS-DRAIN-008": Verdict.WARN,
     "MRS-DRAIN-009": Verdict.WARN,
+    # 010/012 make THIS invocation a no-op (a concurrent cycle holds the
+    # fleet-wide lock; no station exists to drain) and 011 is a station whose
+    # dispatch raised where the shipped code paths promised a finding -- all
+    # three are ERROR, unlike the per-station reports above, which describe a
+    # campaign that is still doing its job.
+    "MRS-DRAIN-010": Verdict.ERROR,
+    "MRS-DRAIN-011": Verdict.ERROR,
+    "MRS-DRAIN-012": Verdict.ERROR,
     # Story 22.8 profile-driven harness (CAP-8): a skipped preference
     # candidate, an ignored overlay profile file, and an omitted model tier
     # are all advisories on a dispatch that still proceeds (or, when

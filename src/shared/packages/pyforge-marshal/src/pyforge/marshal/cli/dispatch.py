@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import secrets
 import sys
 from dataclasses import dataclass
@@ -119,6 +120,19 @@ _BASE_REF = "origin/main"
 #: facts) and a story takes minutes to hours, so this matches the per-story
 #: supervisor's own 60 s tick.
 _FLEET_TICK_SECONDS = 60
+
+#: Short, matching `cli/land.py`'s own advisory-lock convention: a cycle is
+#: cheap and the supervisor re-ticks, so waiting long buys nothing over
+#: refusing and letting the next cycle retry.
+_FLEET_CYCLE_LOCK_TIMEOUT_S = 5.0
+
+#: The run-id shape `mint_run_id` produces. `--campaign` names a DIRECTORY
+#: under the campaign runs tree, so anything path-shaped is refused.
+_SAFE_CAMPAIGN_ID_RE = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+
+
+def _is_safe_campaign_id(raw: str) -> bool:
+    return bool(_SAFE_CAMPAIGN_ID_RE.match(raw)) and raw not in {".", ".."}
 
 
 def add_factory_dispatch_subparser(factory_subparsers: argparse._SubParsersAction) -> None:
@@ -1498,6 +1512,11 @@ def _read_fleet_queue_config(
     block, which was a regenerated copy of state the tracked ledgers already
     hold. Absent (the default) means "ledger order, no skips"; unreadable or
     malformed is reported, never silently treated as absent.
+
+    Every ``skip_policies`` entry is an operator's DECLARED skip, honored
+    under every campaign mode -- the interim runner's own entries all carried
+    ``action: skip_on_blocked`` while the campaign ran ``drain_to_zero``.
+    Mode governs DERIVED blocks (CAP-2 failure evidence), not these.
     """
     findings: list[Finding] = []
     path = dispatch_fleet.queue_config_path(repo_root)
@@ -1575,18 +1594,22 @@ def _station_blocked_map(
     campaign_blocked: dict[str, str],
     effective_policy: policy.EffectivePolicy,
 ) -> dict[str, str]:
-    """Blocked stories at the HEAD of ``backlog``, with their reasons.
+    """DERIVED blocks at the HEAD of ``backlog``, with their evidence.
 
     Walks the backlog only as far as the first dispatchable story: under
     every mode the queue decision stops there, so probing the tail would be
-    pure cost. A story is blocked when a skip policy names it, when this
-    campaign already saw a non-liveness refusal for it, or when CAP-2's own
-    facts say its last dispatch ended ``failed``.
+    pure cost. A story is blocked when this campaign already saw a
+    non-liveness refusal for it, or when CAP-2's own facts say its last
+    dispatch ended ``failed``.
+
+    ``configured_skips`` is read here ONLY to keep walking past a story the
+    operator declared skipped -- those never enter the returned map, because
+    a hand-declared skip is honored under every mode while a derived block
+    is what the campaign mode governs (see ``plan_station_queue``).
     """
     blocked: dict[str, str] = {}
     for story in backlog:
         if story in configured_skips:
-            blocked[story] = configured_skips[story]
             continue
         if story in campaign_blocked:
             blocked[story] = campaign_blocked[story]
@@ -1675,11 +1698,28 @@ def execute_fleet_cycle(
     slugs = dispatch_fleet.fleet_station_slugs(
         dispatch_core.list_station_slugs(repo_root)
     )
+    if not slugs:
+        # Distinct from "every station is drained": `campaign_complete(())`
+        # is vacuously True, so without this the operator would get a clean,
+        # findings-free "campaign complete" from a repo where the projects
+        # tree was simply unreadable or absent -- a false green.
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-012",
+                severity=Severity.ERROR,
+                message=(
+                    "no pyforge stations found under "
+                    f"{dispatch_core.canonical_repo_root(repo_root)}"
+                    "/_bmad-output/projects -- an empty fleet is reported, "
+                    "never treated as a drained one"
+                ),
+            )
+        )
     for slug in slugs:
         ledger_path = dispatch_fleet.station_ledger_path(repo_root, slug)
         try:
             statuses = harness.ledger_story_statuses(ledger_path)
-        except HarnessError as exc:
+        except (HarnessError, OSError, ValueError) as exc:
             findings.append(
                 Finding(
                     code="MRS-DRAIN-003",
@@ -1706,6 +1746,7 @@ def execute_fleet_cycle(
             statuses, order_override=overrides.get(slug)
         )
         effective_policy = _compose_policy(slug)
+        station_skips = configured_skips.get(slug, {})
         blocked = _station_blocked_map(
             fs=fs,
             vcs=vcs,
@@ -1713,7 +1754,7 @@ def execute_fleet_cycle(
             repo_root=repo_root,
             slug=slug,
             backlog=backlog,
-            configured_skips=configured_skips.get(slug, {}),
+            configured_skips=station_skips,
             campaign_blocked=campaign_blocked.get(slug, {}),
             effective_policy=effective_policy,
         )
@@ -1723,16 +1764,22 @@ def execute_fleet_cycle(
             mode=mode,
             leave_remaining=leave_remaining,
             blocked=blocked,
+            declared_skips=station_skips,
         )
         for story, reason in plan.skipped:
+            basis = (
+                "declared skip policy"
+                if story in station_skips
+                else f"blocked, and {mode.value} skips past it"
+            )
             findings.append(
                 Finding(
                     code="MRS-DRAIN-004",
                     severity=Severity.WARN,
                     message=(
-                        f"station {slug!r}: skipping blocked story {story!r} "
-                        f"under {mode.value} -- {reason}. It stays in the "
-                        "backlog and is never auto-retried."
+                        f"station {slug!r}: skipping story {story!r} "
+                        f"({basis}) -- {reason}. It stays in the backlog "
+                        "and is never auto-retried."
                     ),
                 )
             )
@@ -1773,14 +1820,49 @@ def execute_fleet_cycle(
             )
             continue
 
-        attempt = dispatch_once(
-            slug=slug,
-            story=plan.next_story,
-            fs=fs,
-            vcs=vcs,
-            build_harness=build_harness,
-            process=process,
-        )
+        # Per-station isolation: one station's git/fs failure must never
+        # abort the cycle, because the loop is alphabetical and an abort
+        # would silently starve every station after it -- forever, since the
+        # supervisor reproduces the identical crash every tick and no cycle
+        # is journaled at all. `dispatch_once` itself converts most failures
+        # into findings, but not every path it reaches is guarded (a
+        # worktree deleted under a still-live session makes
+        # `_live_dispatch_evidence` re-raise `VcsCommandError`), so the
+        # station is reported refused and the campaign moves on.
+        try:
+            attempt = dispatch_once(
+                slug=slug,
+                story=plan.next_story,
+                fs=fs,
+                vcs=vcs,
+                build_harness=build_harness,
+                process=process,
+            )
+        except (VcsCommandError, FsError, ProcessError, OSError, ValueError) as exc:
+            reason = f"dispatch raised {type(exc).__name__}: {exc}"
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-011",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"station {slug!r}: dispatching {plan.next_story!r} "
+                        f"failed unexpectedly -- {reason}. The station is "
+                        "left in backlog and the rest of the fleet continues."
+                    ),
+                )
+            )
+            campaign_blocked.setdefault(slug, {})[plan.next_story] = reason
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus.REFUSED,
+                    remaining=len(backlog),
+                    story=plan.next_story,
+                    detail=reason,
+                    skipped=plan.skipped,
+                )
+            )
+            continue
         status, detail, attempt_findings = _classify_attempt(slug, plan.next_story, attempt)
         findings.extend(attempt_findings)
         if status is dispatch_fleet.StationCycleStatus.REFUSED:
@@ -1798,6 +1880,7 @@ def execute_fleet_cycle(
             )
         )
 
+    unresolved = dispatch_fleet.unresolved_stations(results)
     data: dict[str, object] = {
         "mode": mode.value,
         "stations": [result.to_payload() for result in results],
@@ -1806,6 +1889,14 @@ def execute_fleet_cycle(
             result.slug
             for result in results
             if result.status is dispatch_fleet.StationCycleStatus.DISPATCHED
+        ],
+        # What `complete` does NOT mean: `complete` is "this campaign can do
+        # nothing more", and these stations still have work marshal could not
+        # take (unreadable ledger, blocked head story, everything skipped,
+        # `leave_one`'s deliberate tail).
+        "unresolved": [
+            {"station": r.slug, "status": r.status.value, "remaining": r.remaining}
+            for r in unresolved
         ],
     }
     return FleetCycleReport(
@@ -1825,10 +1916,34 @@ def _campaign_blocked_from_journal(
     harness) would be retried on every single tick forever.
     """
     blocked: dict[str, dict[str, str]] = {}
-    text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    try:
+        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    except (FsError, ValueError):
+        return blocked
     if text is None:
         return blocked
-    folded = fold(text.splitlines())
+    lines = text.split("\n")
+    # AD-30 sidecars are NOT optional on this read side. A cycle payload
+    # carries one row per station plus every skip reason and refusal detail,
+    # and eight stations cross `SIDECAR_THRESHOLD_BYTES` (4 KiB) well before
+    # a real campaign finishes -- at which point `prepare_for_write` writes
+    # the payload to `blobs/` and leaves a `{"sidecar_ref": ...}` pointer.
+    # Folding without resolving those pointers quarantines the very entries
+    # this function exists to read, so a station refused for a non-liveness
+    # reason (no tracked spec) would be silently retried on every 60 s tick
+    # forever and the campaign could never report itself complete.
+    # Deferred import, matching `cli/deploy.py`'s own `.gate` convention: a
+    # module-level `from .gate import ...` here would be load-order fragile
+    # (gate -> spin -> dispatch). The helper is reused rather than re-copied.
+    from .gate import _sidecar_refs_for_fold
+
+    sidecars: dict[str, str | None] = {}
+    for ref in _sidecar_refs_for_fold(lines):
+        try:
+            sidecars[ref] = fs.read_text(run_dir / ref)
+        except (FsError, ValueError):
+            sidecars[ref] = None
+    folded = fold(lines, sidecars=sidecars)
     for entry in folded.by_kind(dispatch_fleet.KIND_FLEET_CYCLE):
         if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
             continue
@@ -1974,7 +2089,24 @@ def run_fleet_drain(
 
     leave_remaining = max(0, int(getattr(args, "leave_remaining", 1) or 0))
     once = bool(getattr(args, "once", False))
-    max_cycles = max(0, int(getattr(args, "max_cycles", 0) or 0))
+    # A NEGATIVE ceiling is refused rather than clamped: `max(0, -1)` is 0,
+    # and 0 means UNBOUNDED here -- silently the opposite of what the
+    # operator asked for.
+    raw_max_cycles = int(getattr(args, "max_cycles", 0) or 0)
+    if raw_max_cycles < 0:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"--max-cycles must be >= 0, got {raw_max_cycles} "
+                    "(0 means 'until the campaign completes', so a negative "
+                    "value cannot be clamped to it without inverting the ask)"
+                ),
+            )
+        )
+        return _emit(args, data, findings, command="factory drain")
+    max_cycles = raw_max_cycles
     tick_seconds = max(1, int(getattr(args, "tick_seconds", _FLEET_TICK_SECONDS) or 1))
 
     try:
@@ -1989,7 +2121,25 @@ def run_fleet_drain(
         )
         return _emit(args, data, findings, command="factory drain")
 
-    run_id = getattr(args, "campaign", None) or mint_run_id(
+    raw_campaign = getattr(args, "campaign", None)
+    if raw_campaign is not None and not _is_safe_campaign_id(str(raw_campaign)):
+        # `--campaign` names a DIRECTORY under the campaign runs tree, so an
+        # unvalidated value escapes it (`--campaign ../../x`) and `ensure_dir`
+        # would happily create it.
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed campaign id {raw_campaign!r}: expected the "
+                    "run-id shape marshal mints (letters, digits, '.', '_', "
+                    "'-'), never a path"
+                ),
+            )
+        )
+        return _emit(args, data, findings, command="factory drain")
+
+    run_id = raw_campaign or mint_run_id(
         dispatch_fleet.FLEET_JOURNAL_SLUG,
         _format_utc_compact(_now_utc()),
         _random_token(),
@@ -2007,18 +2157,52 @@ def run_fleet_drain(
             )
         )
 
-    report = execute_fleet_cycle(
-        repo_root=repo_root,
-        mode=mode,
-        leave_remaining=leave_remaining,
-        campaign_blocked=_campaign_blocked_from_journal(fs, run_dir, run_id),
-        fs=fs,
-        vcs=vcs,
-        build_harness=build_harness,
-        process=process,
-        harness=harness,
-    )
-    _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
+    # The interim runner's singleton-coordinator rule (COORDINATOR.md's
+    # hand-maintained STATUS.md owner/state table), made STRUCTURAL: one
+    # FLEET-WIDE advisory lock, held for the whole cycle, so two concurrent
+    # drains can never both see the same station's slot free and both call
+    # `dispatch_once` on it. The lock is deliberately not scoped to the
+    # campaign id -- two DIFFERENT campaigns racing is the exact duplicate-
+    # dispatch shape this guard exists to prevent. A refusal is cheap to
+    # recover from: the detached supervisor simply ticks again.
+    try:
+        cycle_lock = fs.acquire_advisory_lock(
+            dispatch_fleet.fleet_cycle_lock_path(repo_root),
+            timeout_s=_FLEET_CYCLE_LOCK_TIMEOUT_S,
+        )
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-010",
+                severity=Severity.ERROR,
+                message=(
+                    f"another fleet-drain cycle holds the campaign lock "
+                    f"(waited {_FLEET_CYCLE_LOCK_TIMEOUT_S}s): {exc}. Exactly "
+                    "one drain cycle runs at a time fleet-wide -- nothing was "
+                    "dispatched, and no campaign supervisor was spawned."
+                ),
+            )
+        )
+        return _emit(args, data, findings, command="factory drain")
+
+    try:
+        report = execute_fleet_cycle(
+            repo_root=repo_root,
+            mode=mode,
+            leave_remaining=leave_remaining,
+            campaign_blocked=_campaign_blocked_from_journal(fs, run_dir, run_id),
+            fs=fs,
+            vcs=vcs,
+            build_harness=build_harness,
+            process=process,
+            harness=harness,
+        )
+        _journal_fleet_cycle(fs, run_dir, run_id, report, findings)
+    finally:
+        try:
+            fs.release_advisory_lock(cycle_lock)
+        except FsError:
+            pass
 
     data.update(report.data)
     data["complete"] = report.complete
@@ -2045,7 +2229,11 @@ def run_fleet_drain(
                     message=(
                         f"the cycle completed but the campaign supervisor "
                         f"could not be spawned: {exc} -- re-run "
-                        "`marshal factory drain` to advance the campaign"
+                        f"`marshal factory drain --mode {mode.value} "
+                        f"--campaign {run_id}` to advance THIS campaign "
+                        "(omitting --campaign mints a new one, which starts "
+                        "with an empty blocked map and spawns a second "
+                        "supervisor)"
                     ),
                 )
             )
