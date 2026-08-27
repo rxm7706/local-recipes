@@ -2,12 +2,15 @@
 title: 'Product Brief: Doctor (pyforge-doctor)'
 status: complete
 created: 2026-07-25
-updated: 2026-07-25
+updated: '2026-08-26'
 inputs:
   - 'docs/dreams/pyforge-doctor.md'
   - 'docs/dreams/ecosystem-crew.md § 6 Doctor'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-07-25.md'
+  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-08-08.md'
+  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/technical-pyforge-doctor-cli-architecture-research-2026-08-08.md'
+  - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/market-doctor-health-diagnostics-2026-08-08.md'
   - 'src/shared/packages/pyforge-warden/src/pyforge/warden/{cli,engines}.py (--doctor exit-code + subprocess-seam precedent)'
 ---
 
@@ -219,3 +222,58 @@ prove the consolidation-and-ranking thesis on warden + atlas before widening sco
   reports (`domain-preflight-health-diagnostics-tooling-research-2026-07-25.md`,
   `technical-pyforge-doctor-cli-architecture-research-2026-07-25.md`) — the PRD stage
   should treat them as a starting point to confirm or revise, not as settled fact.
+
+## Currency reconciliation — 2026-08-26
+
+*Chain-currency sweep (CHAIN-CURRENCY-RUNBOOK.md): the 2026-08-08 research refresh wave
+(`domain-…-2026-08-08.md`, `technical-…-2026-08-08.md`, `market-doctor-health-diagnostics-2026-08-08.md`,
+now listed in `inputs:`) post-dated this brief. This section folds those reports' findings
+in and marks which of the brief's framings they settled. The body above is preserved as
+the 2026-07-25 problem statement; where it conflicts with this section, this section wins.*
+
+**The bet paid off — the brief's thesis is post-ship fact, not framing.** Doctor's v1
+(the three verbs, 16 stories, Epics 1–4) shipped in full via PRs #156/#162/#167/#290/#299/#303,
+and the 2026-08-08 domain refresh verified that every load-bearing convention this brief
+imported from the domain survey **held under implementation pressure**: read-only enforced
+by an AST meta-test (not discipline), tri-state `DoctorStatus` load-bearing in real
+normalizer semantics, the "operability, not policy" exit-code split adopted wholesale from
+warden, and the brief's strongest prediction — that cf_atlas already *is* the fleet-scale
+data model Renovate users hand-roll — confirmed: `monitor --fleet` shipped four axes with
+zero new data pipeline.
+
+**All five Open Questions carried to the PRD are answered** (domain refresh §2; technical
+refresh §1):
+
+1. *Library import or subprocess for warden's self-check?* — **Library import**, at one
+   sanctioned lazy import site (`sources/warden.py`, AD-1), meta-test-enforced.
+2. *MCP tool surface or CLI for `monitor --fleet`?* — **Both, MCP-first with CLI fallback**
+   (AD-6), attempt-and-fall-through rather than detection; the pattern was designed once and
+   reused three times (staleness → cve/abandonment → adoption) without divergence.
+3. *Persistent fleet-health surface: v1 or v1.x?* — **v1.x, then shipped**: graduated to
+   FR-11 in the 2026-08-02 dream-consolidation pass and delivered as `fleet_surface.py`
+   (Story 4.2).
+4. *Credential-hygiene scope beyond JFROG_API_KEY?* — resolved by shipping the general
+   env-hygiene AST scanner (`checks/env_hygiene.py`) with per-finding tri-state semantics
+   rather than a category-wide severity answer; the JFROG_API_KEY worked example is caught,
+   host-scoped attaches are not.
+5. *Own taxonomy or import warden's `ErrorKind`?* — **Own closed taxonomy** (AD-3),
+   deliberately; zero cross-package vocabulary drift in four epics vindicated the call.
+
+**Success criteria, as measured at the refresh:** the consolidation half is structurally
+delivered (one CLI, one schema-versioned `DoctorReport`, `--json` everywhere, the 5-second
+budget guarded by a benchmark that also asserts a minimum findings count). The *adoption*
+half — Marshal running `doctor check` unprompted before every factory spin-up — was the
+open item as of 2026-08-08; its wiring lives outside Doctor's own stories.
+
+**Scope statement is now historical.** This brief bounded v1 to consolidation over
+warden + atlas. The station has since grown far past that boundary under later planning
+artifacts (not this brief): the Charter §6 verdict re-homing (PRD FR-14/FR-15 — Doctor
+is now the home for every detector judging another station's artifact), deferred-work
+visibility and re-verification, the fleet hygiene sweep, BMAD core/suite drift watch,
+the chain-layers currency audit, gather/prescribe hook plugins, and the Canopy tiers
+(portal slice at `/stations/doctor/`, MCP face `POST /stations/doctor/mcp`, SKF skill +
+persona) — see `epics.md` Epics 5–18 and the successor Specs under `specs/`. Per the
+Unifying Strategy (`spec-pyforge-unifying-strategy`), Doctor's estate role is fleet
+vitals and prescriptions whose findings stay **advisory or Warden inputs — never a
+second PR gate** — a constraint this brief's "operability, not policy" framing
+anticipated and that now binds fleet-wide.

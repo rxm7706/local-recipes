@@ -7,8 +7,8 @@ paradigm: 'facade over existing instruments (pipes-and-filters gather → normal
 scope: 'pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo pixi workspace member consolidating pyforge-warden + cf_atlas'
 status: final
 created: '2026-07-25'
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13, explicitly sequenced as v1.x, after Epics 1-3 ship). Added a Frontier section (AD-7..AD-10) documenting each at the same rigor as the v1 rules, deferred exactly as the PRD scopes them — not built now, not undocumented either."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — chain-currency sweep cascade (the PRD re-dated after reconciling against SPEC-doctor + the 2026-08-08 research refresh). Appended § Currency reconciliation — 2026-08-26: as-built module inventory vs. the Structural Seed (normalize.py and a standalone cli.py never shipped as drawn; sources/ grew to a 13-module conformance-verdict home with its own dispatcher), AD-1..AD-6 verified held, AD-11..AD-13's standing confirmed, Epic 17 hooks + Epic 18 Canopy tiers recorded. AD-11..AD-13 were appended 2026-08-08/2026-08-21 without a frontmatter bump at the time — this stamp covers them. Prior: Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13); added the Frontier section (AD-7..AD-10)."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13]
 sources:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md'
@@ -376,4 +376,65 @@ already invokes. This is the same *missing observation plane* the `scope="runtim
 detectors live with (`dashboard_drift`, `loop_stall`, `unpushed_work`) — a named
 condition in this repo, not a new one. Divergence is therefore caught at landing time,
 not at push time.
+
+## Currency reconciliation — 2026-08-26
+
+*Chain-currency sweep (CHAIN-CURRENCY-RUNBOOK.md): the PRD re-dated this pass after
+reconciling against SPEC-doctor and the 2026-08-08 research refresh, which fires the
+`prd→arch` edge. This section is the as-built reconciliation: where the shipped package
+diverges from the spine above, this section names it; everything unnamed shipped as drawn.*
+
+**The invariants held.** AD-1 (one sanctioned lazy warden import, meta-test-enforced),
+AD-2 (closed `{0, 2, 130}` exit domain via `verdict.py`), AD-3 (own closed taxonomy;
+zero `ErrorKind` drift), AD-4 (`prescribe`/`score` purity — zero findings against the
+boundary across the whole build), AD-5/AD-12 (`cli_bridge` the sole subprocess site,
+widened once, in place, when `sources/marshal.py`'s first cut called `subprocess`
+directly and the meta-test caught it), AD-6 (MCP-first/CLI-fallback — designed once,
+reused verbatim for cve/abandonment and adoption with zero new exception classes).
+The 2026-08-08 technical refresh's scorecard: "the 07-25 report's reuse-don't-invent
+program was executed with unusual fidelity."
+
+**Structural Seed vs. as-built — named divergences (not defects):**
+
+- **`normalize.py` never shipped as a standalone module.** Normalization lives inside
+  each gather filter (every source returns closed-shape `Finding`s directly); the
+  Normalize-filter *rule* holds, its module boundary was unnecessary.
+- **`cli.py` never shipped**; verb parsing + dispatch live in `__main__.py`
+  (console script `doctor = pyforge.doctor.__main__:main`).
+- **`sources/` outgrew the seed by an order of magnitude.** Drawn with two modules
+  (warden, atlas); as-built it is the fleet's conformance-verdict home (FR-15/AD-11):
+  `atlas`, `warden`, `marshal`, `ledger`, `board`, `chain`, `deps`, `factory`,
+  `hygiene`, `bmad_method`, `backlog_intake`, `sibling_dreams`, plus a
+  `python -m pyforge.doctor.sources` dispatcher exposing 14 addressable sources
+  (`bmad-drift`, `bmad-method-version-drift`, `chain-completeness` [with `--dreams` /
+  `--layers --project` audit modes], `check-layout`, `dashboard-drift`,
+  `deferred-work`, `dream-chain`, `due-for-verification`, `forward-dependency`,
+  `ledger-direction`, `ledger-regression`, `sibling-dreams-drift`, `spec-surface`,
+  `story-status`). Epic 6.9 retired the legacy `scripts/` shims onto this dispatcher.
+- **Frontier modules are all real now:** `score.py` (AD-7), `fleet_surface.py` (AD-8),
+  the adoption Source (AD-9), `Prescription`'s safe-upgrade pairing (AD-10) — the
+  "not yet built" markers in the Capability → Architecture Map are historical.
+- **`hooks.py` (Epic 17 / FR-45, canopy AD-21, post-dating this spine):** gather and
+  prescribe are hook specs on the shared `pyforge.core.hooks` contract
+  (`GATHER_HOOK_SPEC` / `PRESCRIBE_HOOK_SPEC`, owner `doctor`), with today's
+  `atlas`/`warden`/`env_hygiene` gathers and `prescribe.*` as the default plugins — a
+  seam *around* the AD-1..AD-6 filters, not a change to them. Plugins never publish a
+  verdict: findings stay `Finding`/`Prescription` report data.
+- **Canopy tiers (2026-08-24 obligations, steward-owned host):** Doctor's portal
+  (`django_doctor_portal`, first slice `/stations/doctor/` rendering the last fleet
+  pulse via `PortalClient` only — no `pyforge.*` import under `src/platform/`), the
+  MCP service face `POST /stations/doctor/mcp` on the host ASGI, and the SKF skill +
+  `bmad-agent-doctor` persona (Epic 18). These are *faces over* this spine's CLI
+  contract; they reopen none of AD-1..AD-6/NFR-1..5.
+
+**Estate constraint made explicit (Unifying Strategy):** Doctor findings are advisory
+or Warden *inputs* — never a competing PR-gate verdict. AD-2's "operability, not
+policy" rule is the local enforcement of that fleet-wide clause.
+
+**Carried debts (technical refresh 2026-08-08 §6, still open as of this pass):** the
+shared AST alias-resolution helper for meta-test guards (3 recurrences; the shared
+`pyforge-testing-kit` that landed 2026-08-23 covers mock families, not AST guards);
+atlas label/JSON-shape coupling guarded by convention rather than a label-subset smoke
+assertion; per-call MCP session spawn (deliberate, unmeasured); `_default_repo_root`'s
+`parents[8]` fallback.
 
