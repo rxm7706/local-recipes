@@ -3,7 +3,7 @@ title: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: 2026-08-02
+updated: "2026-08-26"
 altitude: feature
 ---
 
@@ -268,7 +268,7 @@ altitude: feature
 
 Build Layer (Vite):
   Markdown → HTML deck engine (dist/, gitignored, regenerable <5s)
-  All 6 formats ready for shipping; dashboard-check validates.
+  All 6 formats ready for shipping; retired-console-check validates.
 ```
 
 ---
@@ -323,7 +323,7 @@ Build Layer (Vite):
 - ✅ 9 prototypes authored per six-act framework, etagged, tracked.
 - ✅ 54 artifacts exported (9 stations × 6 formats) and tracked.
 - ✅ All 9 PPTX files open in PowerPoint; fonts, colors, layouts preserved.
-- ✅ All 9 HTML decks render; `dashboard-check` passes.
+- ✅ All 9 HTML decks render; `retired-console-check` passes (renamed from `dashboard-check`; steward 30.2, 2026-08-25).
 - ✅ All 9 narration scripts extracted and available for video pipeline.
 - ✅ Zero manual file transfers; design-code-bridge automation end-to-end.
 - ✅ Tracked footprint: ~144 files (62% reduction vs. unoptimized).
@@ -521,3 +521,81 @@ Claim/Notice { ID, Date, Content, Evidence: [{type, url, label}, ...] }
 ---
 
 *AD-1..AD-10 distilled from spec-pyforge-herald/SPEC.md (formerly spec-herald-pitch/SPEC.md) + prd-pyforge-herald-2026-08-01/prd.md. AD-11..AD-20 folded in 2026-08-02 from architecture-herald-moments-2-4-2026-08-02/ARCHITECTURE-SPINE.md (archived, unmodified, at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-moments-2-4-2026-08-02/). Decisions logged in .memlog.md.*
+
+---
+
+## Currency reconciliation — 2026-08-26
+
+Reconciliation pass cascaded from the same-day brief/PRD re-dating; grounded in the as-built
+package (`src/shared/packages/pyforge-herald/src/pyforge/herald/`), the Epic 13–17 story
+specs, and the Canopy obligations recorded in `epics.md` (2026-08-24). AD-1..AD-20 above
+stand as written **except** where marked below; the satellite's deferred decisions are now
+mostly closed by shipped code.
+
+**Satellite ADs vs. the as-built live backend (Epic 13, done 2026-08-13):**
+
+- **AD-13/AD-17 (storage)** — resolved concretely: one stdlib **SQLite** database
+  (`.herald/herald.db`, WAL, versioned migration runner in `db.py`) carries Progress/Claims/
+  Notices behind the pre-existing pure-function seam; the CLI/web-tab contract kept its
+  shape, and notices' git-tracked markdown archive stays the durable copy (AD-17's
+  archive-friendly half held exactly as designed). Satellite Deferred Decision 1 (database
+  choice) is closed: SQLite, not PostgreSQL; no SQLAlchemy/Alembic.
+- **Concurrency prerequisite (implicit in AD-18/AD-19, never its own AD)** — before any
+  second writer existed, story 13.1 replaced the unlocked whole-file read-modify-write with
+  a stdlib cross-platform advisory lock (`locking.py`, `fcntl`/`msvcrt`); 13.3 then subsumed
+  it under SQLite's transactional locking. DW-1-4-2 resolved.
+- **AD-14 (webhook + cron dispatch)** — shipped, reshaped: `webhook.py` is a
+  framework-agnostic module (HMAC-SHA256 verification, `on-ship`/`on-pr-close`), mounted via
+  `webhook_host.py` onto the host ASGI inside **Steward's `spec-secure-live-dashboards`
+  trust boundary** — no bespoke Herald perimeter, no Flask/FastAPI app of Herald's own. The
+  triggering CI is GitHub Actions (recorded decision, spec-13-4). The cron half runs as
+  `scheduler.py` behind a fifth top-level CLI verb (`herald scheduler run`, CI-scheduled)
+  rather than a resident APScheduler/Celery daemon — Satellite Deferred Decision 2
+  (queue/job infrastructure) closed as "none needed".
+- **AD-16 (operator authorization)** — the `[ASSUMPTION]` is discharged: role isolation and
+  audit for Herald's web/portal surfaces ride **`pyforge.steward.dashboard`** (CAP-7), per
+  the Canopy obligations; Herald does not own an auth model. Satellite Deferred Decision 5
+  closed the same way.
+- **AD-19 (resilience)** — retry/backoff + operator-alert delivery shipped in `webhook.py`
+  as specced; 13.6 proved the composed path live (a real merge creates progress + a
+  success-claim draft with no human action, CI-contained).
+- **AD-11 (single dispatcher)** — held and stretched exactly as designed:
+  `TOP_LEVEL_COMMANDS` is now `("deck", "progress", "success", "notice", "scheduler")`; the
+  extension cost was a subparser, not a rearchitecture (AD-20 vindicated).
+
+**New architectural surface since this spine was cut (no AD renumbering; recorded here):**
+
+- **Deck visual QA (Epic 14)** — `deck_qa.py`: a gate-registry + machine-readable report
+  interface (gate-id-keyed, round-trippable) under `herald deck qa <slug>` (entrypoint
+  decision, spec-14-1); a headless-Chromium render gate (playwright-python, already pinned —
+  serves built `dist/` over a throwaway loopback static server, **not** `file://`, because
+  Chromium blocks module imports cross-origin under `file://` — recorded decision,
+  spec-14-2); an image-slot scan gate. Constraint held: report-only, never mutates deck
+  sources, never rebuilds.
+- **PPTX-native pipeline (Epic 15)** — `pptx_pipeline.py` + `templates/`:
+  template-parse-then-fill (`spec.json` machine contract + `content_plan.json`; raw OOXML
+  never hand-written) producing decks whose every text run edits in PowerPoint, plus
+  Pillow real-font-measured autofit shapes for dense content. This **amends AD-3's PPTX
+  row**: deckcraft's markdown→PPTX slice produced background-image slides with zero
+  editable text runs (proven 2026-08-22, the unpark trigger); the editable-deliverable
+  path is now the template pipeline. It coexists with, never replaces, the HTML/Marp path.
+- **Exporters as hook plugins (Epic 16, canopy AD-21)** — `exporters.py`: Marp, PPTX, and
+  `.dc.html` export register as default plugins on the shared `pyforge.core.hooks`
+  contract (HookSpec/HookPlugin/PluginRegistry); no station-local plugin loader; export
+  success is a station result, never a PR quality-gate verdict (`SecondVerdictError`).
+- **Canopy service face + portal (Epic 17)** — Herald capabilities surface through
+  `POST /stations/herald/mcp` on the host ASGI and the `/stations/herald/` HTMX portal
+  slice (deck status for one slug, rendered via PortalClient only — no raw HTTP, no
+  `pyforge.*` imports under `src/platform/`, shared `django-pyforge` chrome only). No
+  standalone port, no `services/` microservice. The station SKF skill
+  (`.claude/skills/pyforge-herald/`, v0.1.0) and `bmad-agent-herald` persona act only
+  through the `pyforge herald …` grammar + that MCP face.
+- **Verification rename** — the Guildhall generator and its `dashboard-check` pixi task
+  were deleted 2026-08-25 (steward 30.2); render verification references above now read
+  `retired-console-check` (corrected in place at the two remaining occurrences).
+
+**Deferred decisions still genuinely open:** Satellite items 3 (evidence auto-extraction
+source), 4 (notice versioning depth) and 6 (i18n) remain open and non-blocking; Moment-1
+deferred decisions 1–3 (review cadence, extraction automation, video render scheduling)
+remain open — the video pipeline (AD-8/AD-9/AD-10 boundary with Manticore) is still
+unexercised downstream.

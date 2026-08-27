@@ -3,7 +3,7 @@ title: "Herald Pitch Expansion — Moment 1 Orchestration"
 slug: brief-herald-pitch-2026-08-01
 status: ready
 created: 2026-08-01
-updated: 2026-08-02
+updated: "2026-08-26"
 context: pyforge-herald
 ---
 
@@ -116,7 +116,7 @@ Herald's **Four Moments of Proclamation** reframe deck work as a continuous prac
 - ✓ Build outputs (fragments.json, dist/, assets/, .mp4) gitignored and regenerable in <30s
 
 ### Quality & Rendering (Phase 3–4)
-- ✓ All 9 HTML decks render without error; `dashboard-check` passes for all
+- ✓ All 9 HTML decks render without error; `retired-console-check` passes for all (the `dashboard-check` task named at authoring time was deleted with the Guildhall generator, steward story 30.2, 2026-08-25)
 - ✓ All 9 PPTX files open and edit in Microsoft PowerPoint
 - ✓ All infographics render as inline SVG (zero PNG/JPG raster)
 
@@ -164,3 +164,45 @@ Feed this brief into **`bmad-prd`** → **`bmad-architecture`** → **`bmad-crea
 ---
 
 *Brief synthesized from Dream (herald-pitch.md) + Spec (spec-herald-pitch/SPEC.md) + Research (market-and-requirements-analysis.md). Created 2026-08-01.*
+
+---
+
+## Currency reconciliation — 2026-08-26
+
+Reconciled against the 2026-08-08 research wave (three reports this brief predates), the
+2026-08-25 re-cut of `specs/spec-pyforge-herald/SPEC.md`, and the as-built code under
+`src/shared/packages/pyforge-herald/`. The body above is the historical 2026-08-01/02
+intake record; these deltas correct what a reader must no longer take at face value:
+
+1. **The effort this brief pitched is shipped — and the station has moved well past it.**
+   Moment 1 (Epics 1–5, the `herald deck` bridge CLI) and Moments 2–4 (Epics 6–12) landed
+   47/47 stories by 2026-08-08; since then Herald added Epics 13–17 (all `done` in the
+   sprint ledger, 61 stories total): the live backend (SQLite store, HMAC webhook,
+   scheduler — the automation this brief deferred to "Moment 2 or beyond"), deck visual-QA
+   gates, the PowerPoint-native editable-deck pipeline, exporter hook plugins, and the
+   station SKF skill + `/stations/herald/` portal slice. Status lives in
+   `epics.md` + `sprint-status-ledger.yaml`, not in this brief's success-criteria checklists.
+2. **Market framing superseded** (per
+   `research/market-herald-post-ship-landscape-research-2026-08-08.md`): what shipped is a
+   records-with-lifecycles + dashboard system, so Herald's nearest analogue category moved
+   from changelog automation (release-please/towncrier/LaunchNotes) to the internal
+   developer portal category (Backstage/Port/Cortex) — with Moments 3–4's claim-shaped
+   narrative occupying an intersection no IDP covers. This brief's quantitative claims
+   ("67% faster iteration / 62% less content drift", the sizing figures inherited from
+   `market-and-requirements-analysis.md`) were found **unverifiable** in that refresh and
+   must be treated as illustrative narrative, not evidence
+   (`feedback_bmad_verifies_spec_cost_claims`).
+3. **The telemetry-native differentiator this brief implied did not ship in v1** — Moments
+   records were operator-typed flags, not telemetry-derived (research §2, "inversion"
+   finding). Epic 13 has since partially closed that gap from the automation side
+   (webhook + scheduler create records without a human), while telemetry-derived CLI
+   defaults remain open follow-up.
+4. **Video pipeline status unchanged**: narration extraction shipped as specced (HER-6);
+   bmad-manticore rendering remains downstream and unexercised — the "Out (deferred to
+   Moment 2)" line above is still accurate.
+5. **Tooling rename**: the `dashboard-check` verification task no longer exists (Guildhall
+   generator deleted 2026-08-25, steward 30.2); the surviving check is
+   `retired-console-check` (corrected in place above, matching the SPEC's own 08-25 re-cut).
+6. **"Next Steps" above is historical** — the PRD → architecture → epics chain it calls for
+   was run in full (2026-08-01/02 artifacts, since reconciled on this same date); do not
+   re-run planning from this brief.
