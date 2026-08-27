@@ -14,8 +14,8 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: 2026-08-01
-currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
+updated: "2026-08-26"
+currency_review: Reviewed 2026-08-26 — reconciled against the 2026-08-22 spec layer (spec-package-inventory-eligibility + spec-compliance-factory-web-face, both since shipped as Epics 7-8), the Unifying Strategy contract (sole PR-gate verdict, hook book, plugins), and the as-built package. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-08-26.
 classification:
   projectType: cli_tool
   projectTypeNote: "Non-interactive CI/CD policy/quality-gate CLI; primary consumer is a pipeline, not a human terminal. report-schema.json is the data contract (an output_formats concern). developer_tool label dropped (no public SDK/IDE surface). Interactive/shell-completion UX deprioritized."
@@ -677,3 +677,67 @@ Offline-operation *property* (mechanism behind FR11) · noise-free machine-outpu
 - **Per-format supported-construct matrix** (J8) — declared as the thing "without which coverage is undefined per format," currently lives only in Risk-Mitigation prose; give it an owning FR/NFR or an explicit architecture deliverable.
 - **`environment.yml` / `pixi.toml` corpus ratchet** — the six-formats claim is corpus-ratcheted (NFR-R1/R2) only for `recipe.yaml` + `meta.yaml`; these two are "sampled" with no baseline.
 - **FR30 dual-config robustness** — config-key precedence-determinism / conflict-surfacing / forward-compat live only as CLI-section prose ACs; NFR-I2 scopes stability to report + SBOM + exit-enum, not the config-key input contract.
+
+## Currency reconciliation — 2026-08-26
+
+*Trigger: the project's spec layer moved past this PRD — two new Tier-2 specs landed
+2026-08-22 (`specs/spec-package-inventory-eligibility/` and
+`specs/spec-compliance-factory-web-face/`, both `ready` then shipped), while the
+canonical `specs/spec-pyforge-warden/` contract itself is unchanged (`status: shipped`).
+This section reconciles the PRD against that newer spec layer, the Unifying Strategy
+pack (steward `spec-pyforge-unifying-strategy`), and the as-built code at
+`src/shared/packages/pyforge-warden/` + `src/shared/packages/django-warden/`.*
+
+**What this PRD still governs, verified against code.** The v1 CLI core — FR1–FR40,
+the four axes, the frozen 7-rung lattice and `{0,1,2,130}` exit domain, the
+`ComplianceReport` at schema 1.1.0, waivers/baseline, the fix-PR actuator — matches the
+shipped package (2026-08-08 technical research re-measured it; nothing in the FR text
+required correction in this pass). All 31 v1 stories plus the ten post-v1 stories below
+read `done` in `sprint-status-ledger.yaml` (2026-08-26).
+
+**What grew beyond this PRD — governed by the 2026-08-22 specs + `epics.md`, not
+retrofitted into the FR text above:**
+
+1. **Epic 7 — estate-wide eligibility** (decomposes
+   `spec-package-inventory-eligibility` CAP-1..3; landed 2026-08-22): `sources.py`
+   SourceContract adapters + the standalone identity API, `eligibility.py`'s
+   provenance-carrying eligibility union (`eligible-union` / `observed-in-use` /
+   `flagged-for-review` — deliberately distinct from the per-project Status rungs),
+   `eligibility_sbom.py` CycloneDX emission + the FABRIC 13-archetype fixture corpus.
+   This answers "can I use this package" estate-wide; the PRD's per-project gate is
+   unchanged underneath it.
+2. **Epic 8 — the web face** (decomposes `spec-compliance-factory-web-face` CAP-1..2;
+   landed 2026-08-22): manifest upload runs the **existing** engines async (Celery,
+   keys-not-blobs), results render byte-equal to the CLI with `_phase_guard`-derived
+   monotonic progress. The `classification.projectType: cli_tool` / "no service, no
+   UI" framing above is hereby scoped to **the v1 CLI core**: the compliance factory
+   now also has a web portal — shipped first as `src/platform/` `compliance_face`,
+   relocated 2026-08-24 to `django-warden` (`django_warden_fabric`) at
+   `/stations/warden/` with a permanent `/compliance/` redirect (steward S-19.1) —
+   and a host MCP face (`POST /stations/warden/mcp`). Engines are called, never
+   reimplemented; the portal is a projection with no second write path.
+3. **Epic 9 — PR-gate hook specs; scanners are plugins** (FR-44, CAP-18 retrofit;
+   landed 2026-08-24): `hooks.py` publishes the PR-gate hook book on
+   `pyforge.core.hooks`; `scanner_plugins.py` wraps today's engines as the default
+   plugin bundle; commercial scanners (Checkmarx, Sonar, Black Duck, GHAS) are
+   optional plugins, and a default run stays green with none present. Per the
+   Unifying Strategy's binding Always/Never: **Warden is the only PR quality-gate
+   verdict on the Golden Path; no plugin publishes a competing pass/fail.** This
+   strengthens, and does not alter, the FR20/J9 verdict contract.
+4. **Epic 10 — station skill, persona, portal slice** (landed 2026-08-26): the SKF
+   domain skill + `bmad-agent-warden` persona (grammar `pyforge warden …`; MCP face
+   only; never a second verdict), and `/stations/warden/` start/get one audit through
+   PortalClient only.
+
+**Growth/Vision bookkeeping — no silent scope creep the other way.** SARIF output,
+public PyPI/conda-forge publish, engine-swappability via `--engine`, and axes 5–6
+(Sigstore/SLSA provenance; OpenSSF Scorecard maintenance) remain **unbuilt** and stay
+in Growth/Vision. The "cf_atlas promotion" consumption seam is now complemented (not
+replaced) by the portal + MCP faces.
+
+**Upstream watch folded from the 2026-08-08 technical research:** osv-scanner v2.5.0
+(2026-08-07) is now Scalibr-based end-to-end — the story-6.6 version-range pin +
+`--version` pre-flight is the defense, and the next in-range bump warrants a
+deliberate conformance re-run; deptry lives at `osprey-oss/deptry`, still v0.25.1.
+Standing P0 debt (open in `deferred-work-ledger.md`): DW-5-2-5 (the corpus-oracle
+suite is unscheduled) and DW-5-2-7 (the 2027-07-24 baseline expiry cliff).

@@ -39,8 +39,8 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the PRD's own currency_review confirms its 2026-08-01 updated: bump was structural (project relocation / memlog story-completion recording), not content drift. Architecture content re-checked against the unchanged PRD and confirmed current; no changes made."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — cascade from the PRD's 2026-08-26 reconciliation (spec layer moved 2026-08-22). As-built module divergences recorded (no determinism.py; extract/ ships _identity.py, not _jinja.py/requirements.py), post-v1 surfaces added (Epics 7-10: sources/eligibility/eligibility_sbom, hooks + scanner_plugins on pyforge.core.hooks, django-warden portal, MCP face), engine-contract currency re-pinned (deptry at osprey-oss, still 0.25.1; osv-scanner 2.5.0 is Scalibr-based). See § Currency reconciliation — 2026-08-26."
 ---
 
 # Architecture Decision Document
@@ -370,3 +370,78 @@ The false-green triad + the Gap-C ecosystem-identity predicate + the E1 non-rend
 **AI agent guidelines:** follow § Core Architectural Decisions + § Implementation Patterns exactly; use the single `ResolvedInventory` + canonical enums; keep `extract/` execution-free; route all subprocesses through `_engine_env()`; sort before every emit.
 **First implementation priority:** complete-the-scaffold — wire E1 (`discovery` → `routing` → `extract/*` → `inventory`) into the `cli.py` stub + stand up the corpus-conformance + differential-oracle harness, then generate `data/conda_pypi_map.json` from the atlas.
 **Execution model (2026-07-12 — "Option B"):** stories are driven by **`bmad-dev-auto`** sessions orchestrated by **`bmad-loop`** (`DEV → VERIFY → REVIEW → VERIFY → COMMIT`; policy at `.bmad-loop/policy.toml`), per `docs/specs/bmad-loop-adoption.md`. The deterministic `[verify]` gate is `pixi run -e pyforge-warden pyforge-warden-test` — so the 1.1/1.2 contract tests + C0a/C0c gates mechanically police every later story. Gates graduate: `per-story-spec-approval` (1.1/1.2) → `per-epic` (E2+). The epics' Given/When/Then ACs are the contract dev-auto's spec conversion must preserve verbatim; CRITICAL escalations resolve via `bmad-loop-resolve`; the sprint feed is `sprint-status.yaml` from `bmad-sprint-planning`.
+
+## Currency reconciliation — 2026-08-26
+
+*Cascade from the PRD's 2026-08-26 reconciliation. Grounded in the as-built package
+(`src/shared/packages/pyforge-warden/src/pyforge/warden/`, read this pass), the
+2026-08-08 technical research, the two 2026-08-22 specs behind Epics 7–8, and the
+Unifying Strategy pack. Contract-vs-code divergences are recorded here, not papered
+over; the v1 body above is otherwise confirmed accurate against the shipped code.*
+
+### As-built divergences from § Project Structure (recorded, accepted)
+
+- **`determinism.py` was never created.** Canonicalization + the `--deterministic`
+  volatile-field pinning live inside `report.py` and `cli.py` (the same
+  consolidation precedent as `errors.py` → `models.py`, ratified at Story 1.7). The
+  NFR-R3b discipline itself shipped and is tested (twice-run byte-identical); only
+  the module boundary differs from the tree above.
+- **`extract/` ships a different helper set than planned:** no `_jinja.py` and no
+  `requirements.py` as named — the shipped submodules are `__init__.py`,
+  `recipe_v1.py`, `meta_v0.py`, `environment_yml.py`, `pixi.py`, `pyproject.py`,
+  `lockfiles.py`, and `_identity.py` (identity helpers; the Jinja
+  neutralize/safe-filter logic lives inside the format modules; PyPI requirements
+  handling is delegated per the PyPI path's no-bespoke-parsing rule). The
+  no-execution-zone AST-denylist invariant holds over the whole directory as shipped.
+- **Post-v1 modules not in the v1 tree** (additive, each behind existing seams):
+  `sources.py`, `eligibility.py`, `eligibility_sbom.py` (Epic 7 — SourceContract
+  adapters generalizing `feeds.py`'s fetch/cache/provenance shape, the
+  provenance-carrying eligibility union, CycloneDX projection); `hooks.py`,
+  `scanner_plugins.py` (Epic 9 — see below).
+
+### New architectural surfaces since the v1 close
+
+- **Hook specs + plugins (Epic 9, FR-44 / CAP-18, landed 2026-08-24).** Warden owns
+  the PR-gate hook book, published on the shared `pyforge.core.hooks` registration
+  API (never a Warden-only second loader). Today's engines are wrapped — not
+  rewritten — as the default plugin bundle (`scanner_plugins.py`); commercial
+  scanners (Checkmarx, Sonar, Black Duck, GHAS) are optional plugins. Binding
+  invariants from the Unifying Strategy: **Warden's verdict is the only PR
+  quality-gate pass/fail on the Golden Path; no plugin publishes a competing
+  verdict; the core gate never fails solely because a named scanner plugin is
+  absent.** The verdict.py sole-ownership wall is unchanged by the plugin layer.
+- **The web face (Epic 8, landed 2026-08-22; relocated 2026-08-24).** A Django app —
+  distribution `django-warden`, module `django_warden_fabric` — on the Canopy host at
+  `/stations/warden/`, with `/compliance/` as a permanent redirect (steward S-19.1).
+  Upload → Celery job → the **existing** engines (keys-not-blobs; blobs never
+  transit broker/DB); results render byte-equal to the CLI; progress derives from
+  phase position (`_phase_guard`). The portal is a read/projection surface — no
+  second write path, no engine reimplementation, no `pyforge.*` imports under
+  `src/platform/`.
+- **MCP + persona faces (Epic 10 + steward Epic 21, landed 2026-08-25/26).** Host
+  ASGI MCP face at `POST /stations/warden/mcp`; portal actions go through
+  PortalClient only; the `bmad-agent-warden` persona uses `pyforge warden …` grammar
+  and never publishes a second verdict.
+
+### Engine-contract currency (re-pinning the `pinnedEngineContracts` snapshot)
+
+- **deptry**: upstream transferred to `osprey-oss/deptry`; still v0.25.1 (no release
+  since 2026-03), so the pinned rule/JSON contract above remains literally accurate.
+- **osv-scanner**: v2.5.0 (2026-08-07) migrated scanning/filtering/matching
+  end-to-end onto **OSV-Scalibr** — the next in-range bump is a pipeline
+  replacement, not a point release. The story-6.6 version-range pin + `--version`
+  pre-flight is the designed defense; widen the pin only after a deliberate
+  conformance re-run against 2.5.x (the "unrecognized record shape → error"
+  fail-closed-hard seam is where Scalibr-era output drift would land).
+
+### Standing debt with architectural weight (open in `deferred-work-ledger.md`)
+
+- **DW-5-2-5** — nothing schedules `pyforge-warden-test-corpus-oracle`; the
+  differential-oracle + precision tests sit outside the default gate. The strongest
+  honesty check in this document's validation story is currently unexecuted by CI.
+- **DW-5-2-7** — all 19 baseline entries expire simultaneously 2027-07-24
+  (deterministic future red-day; stagger before the cliff).
+- **Family A opportunity (2026-08-08 research):** identity handling is spread across
+  `inventory.py` / `mapping.py` / `report._canonical_subject_key` / `cli.py` — an
+  "identity sole-ownership" module + meta-test would be the third wall matching the
+  two that exist (verdict, subprocess). Candidate future work, not yet scheduled.

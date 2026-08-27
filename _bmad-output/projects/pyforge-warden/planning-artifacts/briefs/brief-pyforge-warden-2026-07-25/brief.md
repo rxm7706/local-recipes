@@ -2,7 +2,7 @@
 title: 'Product Brief: Warden (pyforge-warden)'
 status: complete
 created: 2026-07-25
-updated: 2026-07-25
+updated: "2026-08-26"
 inputs:
   - 'docs/dreams/pyforge-warden.md'
   - 'docs/dreams/pyforge-charter.md § 4 Warden'
@@ -11,6 +11,8 @@ inputs:
   - '_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md'
   - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/market-dependency-compliance-sca-landscape-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/domain-dependency-compliance-verdict-semantics-research-2026-07-25.md'
+  - '_bmad-output/projects/pyforge-warden/planning-artifacts/research/technical-warden-dependency-gate-refresh-2026-08-08.md (folded 2026-08-26)'
+  - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/ (SPEC.md, stack.md, convergence.md — folded 2026-08-26)'
   - 'src/shared/packages/pyforge-warden/ (shipped package — README.md, pyproject.toml, src/pyforge/warden/*.py, tests/)'
 note: 'RETROSPECTIVE brief — Warden shipped its complete v1 on 2026-07-25 (31/31 stories, PR #110 merged) before the factory adopted the research-first convention (same-day campaign). This brief backfills the missing product-brief tier and describes what was actually built and why it was worth building, grounded in the real, shipped evidence — it is not a pre-build planning input.'
 ---
@@ -204,3 +206,72 @@ or maintenance axis would likely extend that same pattern rather than invent a n
 - Headless/express drafting: produced without an interactive discovery conversation,
   consistent with the other backfilled briefs in this campaign (Doctor, Herald, Mason,
   Scribe, Steward).
+
+## Currency reconciliation — 2026-08-26
+
+The body above is the retrospective record of the **v1 close** (2026-07-25, 31/31
+stories, six epics, PR #110) and is retained as history. This pass folds in what has
+happened since — the 2026-08-08 technical research refresh (which post-dated this
+brief) and the post-v1 growth through 2026-08-26 — as concrete deltas:
+
+**1. The 2026-08-08 technical research is now folded in**
+(`research/technical-warden-dependency-gate-refresh-2026-08-08.md` — the post-ship
+technical audit the 2026-07-25 research pair left open). Its load-bearing findings for
+this brief's claims:
+
+- The shipped surface is measured, not asserted: ~11,700 lines across 20 modules, with
+  three **machine-enforced** concentrations of authority — verdict sole-ownership
+  (`verdict.py` + its meta-test), subprocess sole-siting (`engines.py`/`_engine_env()`),
+  and the frozen `report-schema.json`/`models.py`/`verdict.py` trio. The C0
+  never-false-green claim in this brief held in every recorded incident.
+- Four recurring bug **families** were named from the 8 retros + the verified
+  deferred-work ledger: (A) cross-ecosystem name/version identity normalization —
+  the deepest, with an "identity sole-ownership module" proposed as a third wall;
+  (B) remediation/advice correctness (the verdict is safe; the advice strings are the
+  false-statement hotspot); (C) shared constants + calendar time bombs; (D)
+  validation-wiring gaps — "the gate that doesn't gate itself."
+- Two P0 debt items remain **open** as of the 2026-08-26 ledger:
+  **DW-5-2-5** (nothing schedules `pyforge-warden-test-corpus-oracle` — the strongest
+  honesty check is never executed by CI) and **DW-5-2-7** (all 19
+  `.warden-baseline.yaml` entries expire simultaneously 2027-07-24 — a deterministic
+  future red-day).
+- Upstream watch: **osv-scanner v2.5.0** (2026-08-07) migrated end-to-end onto
+  OSV-Scalibr — the next in-range engine bump is a pipeline replacement, defended by
+  the 6.6 version-range pin; **deptry** transferred to `osprey-oss/deptry` (still
+  v0.25.1, no release since 2026-03).
+
+**2. Scope has grown past this brief's "31/31, six epics" frame.** The sprint ledger
+(2026-08-26) shows **41/41 stories done across ten epics**:
+
+- **Epic 7** (2026-08-22, decomposes `spec-package-inventory-eligibility`) — the
+  estate-wide eligibility union: `sources.py` SourceContract adapters + the identity
+  API, `eligibility.py` provenance-carrying union, `eligibility_sbom.py` CycloneDX out
+  + the FABRIC fixture corpus.
+- **Epic 8** (2026-08-22, decomposes `spec-compliance-factory-web-face`) — the web
+  face: upload runs the real engines async (Celery, keys-not-blobs), results render
+  with derived progress. Relocated 2026-08-24 to `src/shared/packages/django-warden`
+  (`django_warden_fabric`) at `/stations/warden/`, with `/compliance/` kept as a
+  permanent redirect (steward Story 19.1).
+- **Epic 9** (2026-08-24) — Warden publishes the **PR-gate hook book** on
+  `pyforge.core.hooks`; today's engines and commercial scanners (Checkmarx, Sonar,
+  Black Duck, GHAS) become optional **plugins**; default Warden stays green with no
+  named commercial scanner present.
+- **Epic 10** (2026-08-26) — station-owned SKF skill + `bmad-agent-warden` persona
+  (Path B uses `pyforge warden …` grammar + `POST /stations/warden/mcp` only), and the
+  first portal slice: start/get one audit through PortalClient.
+
+**3. The Unifying Strategy pack now names Warden's estate roles**
+(`spec-pyforge-unifying-strategy`, steward): Warden is **the only PR quality-gate
+verdict on the Golden Path** — external scanners register as Warden plugins under
+Warden-owned hook specifications, never a competing pass/fail, and the core gate never
+fails solely because a named scanner plugin is absent (CAP-18). The Canopy host serves
+Warden's portal and MCP face; the historical `/compliance/` URL survives as a
+permanent redirect. This is the durable framing of the brief's "fleet distribution"
+persona: distribution is now the platform, not just a CI template.
+
+**4. Open-question closures from the list above:** the `fpgmaas/deptry` citation
+question is resolved — `architecture.md`'s pinned contract cites `deptry.com` and the
+upstream org move (`osprey-oss`) is recorded in its 2026-08-26 reconciliation; the
+Charter "6-Axis" framing note still stands (axes 5–6 provenance/maintenance remain
+Vision-tier, unbuilt as of 2026-08-26); the Snyk expiry-field verification remains
+unperformed.
