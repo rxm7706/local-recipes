@@ -55,9 +55,8 @@ NO_INLINE_IO_EXEMPT = {
     "pipeline_registry.py",
     # Story 20.1 (CAP-5, query-plane-face ruling 2026-08-26): the ONE boot
     # script that launches the Mosaic duckdb-server HTTP/Arrow face — it must
-    # spawn the server process (subprocess) and speak loopback HTTP (urllib)
-    # to bootstrap the READ_ONLY plane attach. Boot framework code, not a
-    # data-access node; its launch surface is gated explicitly by
+    # spawn the server process (subprocess, on the denylist). Boot framework
+    # code, not a data-access node; its launch surface is gated explicitly by
     # tests/singularity/test_one_duckdb_server_launch_site.py.
     "query_plane_boot.py",
 }

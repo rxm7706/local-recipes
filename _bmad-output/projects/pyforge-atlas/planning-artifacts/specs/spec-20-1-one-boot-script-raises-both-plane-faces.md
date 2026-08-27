@@ -216,6 +216,23 @@ Verified against the live tree 2026-08-27 (worktree HEAD `5bae7d3301`):
 
 ## Spec Change Log
 
+- **2026-08-27 (resume pass — the 09:37 dev session died on the account usage limit; work
+  preserved as wip commit `9ce94fb846`, resumed by redispatch):** code + tests + pixi
+  dep/task/lock were already landed in the wip commit. This pass completed the outstanding
+  tasks: (1) the Design Notes record of the bound subprocess contract, the eager-read-write
+  yield handling, and the linux-64 dep scoping — the boot module and tests cited "recorded in
+  the story spec's Design Notes" but the record was missing; (2) the `duckdb-server` catalog
+  entry in `docs/reference/library-llms-full.md` (§ 6 entry + § 17 gotcha `pkg` + env-table
+  row + header note; `llms-full-check` now clean); (3) `environment.yaml` re-export —
+  byte-identical, the `build` env does not include the pyforge-atlas feature; (4) fixed the
+  stale urllib mention in `tests/catalog/conftest.py`'s exemption comment. Verification this
+  pass: story tests + both singularity gates green; full `kedro-test` = 1258 passed / 3 failed
+  / 2 errors — all five confirmed pre-existing at baseline `5bae7d3301` (SKF marker in
+  CLAUDE.md, sprint-ledger key drift, MCP pipeline-name drift, missing pg binaries in this
+  lean worktree; none touch this story's files); CLI exercised live: stack-down exit 0 +
+  notice, SecondWriterRefused exit 1, stack-up both faces + HTTP query served + SIGINT
+  exit 130.
+
 ## Review Triage Log
 
 ## Design Notes
@@ -239,6 +256,35 @@ Verified against the live tree 2026-08-27 (worktree HEAD `5bae7d3301`):
   library face is in-process — holding it in a foreground CLI serves no other process);
   stack-up CLI stays foreground as the server's supervisor. The API (`boot_query_plane`) hands
   both handles to the caller, who owns closing them.
+- **Bound subprocess contract (implement-time, from the INSTALLED duckdb-server 0.31.0 — never
+  training data):** `pkg/__main__.py::serve` reads exactly ONE optional positional
+  (`sys.argv[1]`, default `":memory:"`) — the launch argv is `duckdb-server <db_path>`, nothing
+  else. There is NO port flag and NO host flag: `pkg/server.py::server` hard-codes
+  `app.listen(3000, …)` (socketify), so `DEFAULT_PORT = 3000` and a real launch with any other
+  `port=` fails loud (`ValueError`) rather than reporting an endpoint that points nowhere. The
+  server requires no extension `INSTALL` at boot (`duckdb.connect(db_path)` + query handlers
+  only), so the Block-If did not trigger. Consequence for the real-binary smoke: the
+  free-port-helper pattern cannot pick the server's port; the guard is availability of the fixed
+  port 3000, else skip.
+- **Chosen handling: the server's eager read-write open vs the live plane writer.** The
+  installed server opens the path eagerly, READ-WRITE, at startup — and duckdb 1.5.5 refuses
+  ANY second cross-process open (read-only or read-write) while a read-write connection is held
+  (verified live 2026-08-27; the `file:…?access_mode=read_only` URI form is not accepted). The
+  two faces therefore cannot both hold live DuckDB connections on the same file. Handling
+  (recorded here per this spec's Tasks, not silently guessed): on the stack-up path the boot
+  closes only the raw in-process connection (`library._con.close()`) BEFORE launching the
+  server, KEEPING the `atlas.duckdb.writer.lock` filelock held for the boot's whole lifetime —
+  `SecondWriterRefused` still guards the plane against any other pyforge writer while the HTTP
+  face lives, and the server is the plane's sole DuckDB holder. A `library-face-yielded` notice
+  (`reason: duckdb-single-process-lock`) makes the yield structured and visible; re-close on
+  `library.close()` is a no-op. Row-for-row parity proof across the faces is Story 20.2's, per
+  the Never section.
+- **Pixi dep scoping (implement-time, from the solve):** `duckdb-server` itself is noarch but
+  hard-deps `socketify`, which conda-forge ships only for linux-64/osx-64 — so the dep lands in
+  `[feature.pyforge-atlas.target.linux-64.dependencies]` (cross-platform placement broke the
+  osx-arm64/win-64 solves). On other platforms the boot's provisioning preflight raises the
+  typed `DuckDBServerNotProvisionedError` instead — never a silent INSTALL. Floor `>=0.27.0`
+  confirmed against the solve (conda-forge carries 0.27.0–0.31.0; 0.31.0 resolved).
 
 ## Verification
 
