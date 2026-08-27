@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 219
+# stories: 220
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -99,6 +99,7 @@ development_status:
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
   22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: done
   22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal: done
+  22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode: backlog
   23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: done
   23-2-wall-clock-is-never-blended-with-active-compute: done
   23-3-the-coverage-caption-partitions-by-true-reason: done
