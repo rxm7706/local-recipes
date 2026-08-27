@@ -1,15 +1,16 @@
 ---
 id: SPEC-pyforge-mason
+updated: "2026-08-26"
 owner-dream: docs/dreams/pyforge-mason.md
 covers-dreams:
   - docs/dreams/presenton-pixi-image.md   # folded in 2026-08-02 as CAP-8..CAP-13 (see § Satellite below); satisfies INV-1 for this Dream
 surface:
-  - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds (not yet created)
+  - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds — as-built and shipped (fleet ledger: complete 2026-08-21)
 companions:
   - glossary.md                                                                      # spec-authored: the vocabulary the chain requires verbatim
   - ../../prds/prd-pyforge-mason-2026-07-25/prd.md                                   # adopted (chain): FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13
-  - ../../architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md   # adopted (chain): the 16 ADs, structural seed, stack, diagrams
-  - ../../epics.md                                                                   # adopted (chain): 5 epics / 38 stories
+  - ../../architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md   # adopted (chain): the ADs (AD-1..AD-16 + AD-25/AD-26; Presenton AD-17..AD-24), structural seed, stack, diagrams
+  - ../../epics.md                                                                   # adopted (chain): 11 epics / 50 stories as-built (was 5/38 at authoring; see § Currency reconciliation)
   - ../spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
 sources:
   - ../../../../../../docs/dreams/packaging-factory.md
@@ -137,6 +138,73 @@ The chain's adversarial review returned *major revision required* and **was reso
 13. **Should self-diagnosis be a fourth noun or a top-level verb?** Currently top-level; cosmetic, no invariant affected.
 
 ---
+
+## Currency reconciliation — 2026-08-26 (as-built truth-up)
+
+The station shipped: the fleet ledger reported mason **complete 2026-08-21** (11 epics / 50
+stories all `done` in `sprint-status-ledger.yaml`), with three post-completion stories (10.1
+build-engine hook, 11.1 persona, 11.2 portal slice) landing 2026-08-25/26. This section
+reconciles the Spec against the as-built code in `src/shared/packages/pyforge-mason/`; the
+capability text above (CAP-1..CAP-7) is confirmed accurate as written unless named below.
+
+**As-built surface (ground truth).** `mason recipe {new,validate,build,diagnose,optimize,scan,
+submit,update}` (the eight CAP-2 verbs, exactly); `mason package {build,ship}` plus the one
+documented bare-noun alias `mason package --ship <targets>` (D-12) — CAP-5's "exactly one
+documented alias exception" holds, guarded by `cli.py`'s explicit reject of `--ship` combined
+with a verb; `mason environment {lock,check}`; top-level `mason doctor` (OQ-13 settled:
+top-level, as built). Six global flags (AD-13's closed set) each with a `MASON_*` environment
+form; five exit codes (0/1/2/3/130) owned solely by `exit_codes.py`. Engines as provisioned
+(`_KNOWN_ENGINES`, five): `pixi`, `twine`, `conda-lock`, `build` (`pyproject-build`), `gh` —
+adapters `engines/{pep517,pixi,twine,condalock,gh}.py` plus the `pypi_index.py` PyPI-JSON
+interrogator (CAP-3 idempotence) — with in-code version-range constants mirrored from
+`pixi.toml` and held in sync by `tests/meta/test_engine_version_range_sync.py` (pixi 0.77.x /
+twine 7.x / conda-lock 4.x as of 2026-08-21).
+
+**Open Questions settled by implementation** (list left intact above as the historical record):
+OQ-1 — the adapter declaration table exists in `cfe.py` (one wrapped script per recipe verb).
+OQ-3 — the deny-list landed as `tests/meta/test_no_recipe_knowledge.py` with planted-violation
+fixtures (S-2.2), non-vacuous by construction. OQ-4 — the channel target uploads via
+`pixi upload prefix` (neither `pixi publish` nor `anaconda upload`; PRD OQ-2 resolution,
+2026-08-13). OQ-5 — `conda-lock` is the sole lock engine (`engines/condalock.py`); no pixi-lock
+adapter was built. OQ-6 — the CI-parity container build **was** adapter-reachable: `mason recipe
+build --docker --config` shipped in S-2.6, so the drop-from-scope contingency never triggered.
+OQ-7 — the
+governance check inspects the commit range automatically: S-5.2 scopes to commits touching
+`src/shared/packages/pyforge-mason/**` (correct-course, 2026-08-10). OQ-11 — the competitive
+discovery sweep ran as `../../research/market-mason-packaging-automation-2026-08-08.md`: no
+dual-ship entrant found; the differentiation premise held. OQ-13 — top-level, as built. Still genuinely open: OQ-2
+(verbs beyond eight — none added, counter-metric respected), OQ-8 (multi-ecosystem autotick
+ownership), OQ-9 (minimum CFE version — none declared, no adapter break observed yet), OQ-10
+(application/binary shapes), OQ-12 (positioning claim).
+
+**Divergences and scope growth, named:**
+
+1. **Scope grew past CAP-1..CAP-7.** Epics 6–11 shipped under authority this kernel does not
+   carry: Epic 6 (CFE-rebuild pilot slice + re-scope gate) under `spec-conda-forge-expert-rebuild`
+   and amended AD-15; Epic 7 (machine-checked recipe knowledge); Epic 8 (pixi base-layer
+   Containerfile convention); Epic 9 (workflow_call CI + the air-gap distribution contract
+   socket, `airgap_contract.py`, empty backend registry by design); Epic 10 (the replaceable
+   build-engine hook `engines/build_hooks.py`, default = the CFE-native path, conda-build
+   registered but never spawned — canopy AD-21); Epic 11 (the `bmad-agent-mason` persona that
+   consults conda-forge-expert, and the `/stations/mason/` last-diagnose portal slice via
+   PortalClient — canopy FR-38/FR-10). Those bind to their own spec/canopy contracts; this
+   kernel remains the contract for the mason CLI itself.
+2. **The 2026-08-08 market-research recommendations were partially adopted.** Adopted: channel
+   upload via the pixi/rattler upload family (§ 2c). **Not adopted:** the neutral
+   `pypi_upload` adapter name — the uploader shipped as `engines/twine.py` with twine the
+   engine (uv remains a swap behind the AD-12 protocol, at rename cost); and the pixi-first
+   lock-engine recommendation (§ 4) — Epic 4 shipped conda-lock-only. Both are recorded
+   decisions, not oversights.
+3. **The success signal is proven at the rehearsal tier.** "Mason ships Mason" landed as S-3.8's
+   real self-hosting proof of the ship **dry-run plan** plus S-3.9's TestPyPI rehearsal gate;
+   the irreversible public PyPI publish of `pyforge-mason` has not been executed. The honest
+   caveat in § Success signal stands and is now dated rather than hypothetical.
+4. **Code exists beyond this Spec's surface intent:** `boot.py` (steward S-25.4 boot re-index —
+   steward-owned contract hosted in the mason package) sits outside CAP-1..7; noted so the
+   "counter-metrics" reading of Mason's line count attributes it correctly.
+5. **`behind-code` suppression is now by design:** with the owner Dream flipped to `realized`
+   (2026-08-26), the chain-layers audit's behind-code flag for this station is retired — the
+   chain is no longer "still being built."
 
 ## Satellite: Presenton (air-gapped conda-native repackaging)
 

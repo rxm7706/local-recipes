@@ -2,13 +2,14 @@
 title: "Product Brief: Mason (pyforge-mason)"
 status: draft
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-26
 project: pyforge-mason
 dream: docs/dreams/packaging-factory.md
 adopted_kernel: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/research/market-mason-packaging-automation-2026-08-08.md
   - docs/dreams/ecosystem-crew.md (§ 5 Mason)
 ---
 
@@ -84,8 +85,9 @@ orchestration. The skill owns recipe semantics, and continues to, because a mand
 updates for free. Forking would mean re-earning 106 gotchas and then drifting behind them forever.
 
 Where nothing exists to wrap — PyPI publishing, lock orchestration — Mason builds natively,
-orchestrating established engines (`build`, `twine`/`uv`, `pixi build`, conda-lock) rather than
-re-solving or re-building anything.
+orchestrating established engines rather than re-solving or re-building anything. (As landed:
+`build`, `twine`, `pixi`, `conda-lock`, plus `gh` for open-PR interrogation; `uv` was considered
+in the 2026-08-08 research refresh and not adopted — see § Currency reconciliation.)
 
 ## What Makes This Different
 
@@ -147,7 +149,8 @@ packages, so this is a real and near test, not an aspiration.
 **In (v1).**
 - `mason recipe` — the lifecycle loop, delegated to CFE via one adapter module
 - `mason package` — build wheel + conda artifact; ship to PyPI; initiate the conda-forge path
-- `mason environment lock` — wrap conda-lock / `pixi.lock`, thin
+- `mason environment lock` — wrap a lock engine, thin (as landed: `conda-lock` only; no
+  pixi-lock adapter in v1)
 - Packaging as a pixi workspace member, mirroring `pyforge-warden` / `pyforge-atlas` exactly:
   hatchling + `pixi-build-python`, PEP-420 `src/pyforge/mason/`, argparse CLI, lean dependencies,
   engines as conda run-dependencies, the three-task build triad
@@ -206,19 +209,78 @@ invented in.
 ## open_questions[]
 
 1. **OQ-1** *(scope-critical)* — Must `mason` run in a repository with **no** `.claude/` present
-   (arbitrary CI, another org)? If yes, wrapping is materially weakened and vendoring must be
-   re-evaluated. This is the highest-leverage unanswered question in the brief.
+   (arbitrary CI, another org)? *RESOLVED downstream (PRD D-2, spec non-goal): no — `mason
+   recipe` requires a discoverable CFE installation and degrades with a structured error without
+   one, while `package`/`environment` run anywhere, CFE-absent. Bought deliberately; vendoring
+   stayed rejected.*
 2. **OQ-2** — Does `--ship conda-forge` mean "open a staged-recipes PR" (asynchronous, human-gated)
-   or "upload to a conda channel" (synchronous)? Plausibly both, as distinct targets.
+   or "upload to a conda channel" (synchronous)? *RESOLVED downstream (PRD D-3): both, as
+   distinct targets — `conda-forge` (async, reports `pending` + PR reference) and
+   `channel:<name>` (synchronous upload via `pixi upload prefix`).*
 3. **OQ-3** — Does Mason eventually **replace** the ~105 CFE pixi tasks, or coexist indefinitely?
-   `pyforge-atlas` never answered this and now runs two implementations.
-4. **OQ-4** — Credential model for `--ship pypi`: API token, OIDC trusted publishing, or
-   artifact-only (build but do not upload)?
-5. **OQ-5** — Python floor: 3.12 (warden) or 3.14 (atlas)?
+   *RESOLVED for v1 (PRD D-4): coexistence; nothing removed or deprecated. Migration is its own
+   effort, post-seam-proof.*
+4. **OQ-4** — Credential model for `--ship pypi`: *RESOLVED (PRD D-5): API token, read at point
+   of use, validated pre-build; OIDC/trusted publishing deferred past v1 (the 2026-08-08
+   research flags it as the market's golden path — a live v2 candidate).*
+5. **OQ-5** — Python floor: *RESOLVED (PRD D-6): `>=3.12`, matching warden.*
 6. **OQ-6** — Does Mason own multi-ecosystem autotick, or is that Marshal/Steward territory? The
    dream places it in the packaging factory; the crew charter omits it from Mason's cadence.
+   *(Still open at crew level — carried through PRD OQ-3 to v2 scoping.)*
 7. **OQ-7** — Coverage risk: the competitive survey ran without a web-search budget and was built
-   from known primary sources. A discovery sweep for unknown entrants has **not** been run.
+   from known primary sources. *RESOLVED 2026-08-08: the discovery sweep ran with live web
+   evidence (`market-mason-packaging-automation-2026-08-08.md`) — no dual-ship entrant exists;
+   the D-1 gap held. See § Currency reconciliation below.*
+
+---
+
+## Currency reconciliation — 2026-08-26 (as-built truth-up)
+
+The product this brief pitched is **shipped**: the fleet ledger reported the station complete
+2026-08-21 (11 epics / 50 stories all `done`; post-completion stories 10.1/11.1/11.2 landed
+2026-08-25/26). The three verb families exist exactly as the Executive Summary framed them —
+`mason recipe` (eight lifecycle verbs, all delegated through the one CFE adapter), `mason
+package` (build + the dual-ship motion with asymmetric receipts, `pending` never collapsed into
+success — the "known asymmetry" paragraph above became the shipped reporting contract), and
+`mason environment` (lock + check via conda-lock). "Mason ships Mason" is proven at the
+rehearsal tier (S-3.8's dry-run-plan self-hosting proof + S-3.9's TestPyPI rehearsal gate); the
+irreversible public PyPI publish has not been executed.
+
+### The 2026-08-08 research wave, folded
+
+The market refresh (`research/market-mason-packaging-automation-2026-08-08.md` — the discovery
+sweep this brief's OQ-7 asked for, run with live web evidence; the same wave also refreshed the
+2026-07-25 domain report's ground-truth counts to 67 canonical scripts / 60 wrappers / 46 MCP
+tools) moved five market facts, none of which broke the pitch:
+
+1. **Recipe generation commoditized at the v1 format level** — grayskull emits v1 `recipe.yaml`
+   and rattler-build grew `generate-recipe`. Mason's `recipe new` stays a thin delegation;
+   delegation-fidelity is what keeps Mason indifferent to which generator CFE uses.
+2. **`pixi publish` shipped — conda-only.** The dual-ship gap (this brief's core differentiator)
+   got a dated second confirmation: nobody offers "one CLI, both ecosystems, one receipt." The
+   nearest analogues (whl2conda, hatch-conda-build) are dual-build, not dual-ship.
+3. **The lockfile war ended by absorption, mostly pixi's way** — conda-lock's own maintainer
+   calls pixi the future; conda natively reads both lockfile formats since May 2026. The
+   research recommended pixi-first for Epic 4; **the implementation chose conda-lock-only** — a
+   named divergence, revisitable behind the engine protocol.
+4. **Publishing grew a security dimension** — OIDC trusted publishing and Sigstore attestations
+   are the market's golden path. v1 stayed token-based (D-5); this is the clearest v2 candidate
+   the brief's Vision should inherit.
+5. **pixi-build is still preview but crossed an adoption threshold** (CPython, SciPy, Xarray,
+   Dask build with it) — the repo's bet looks market-aligned rather than eccentric.
+
+Recommendation adoption, named: channel upload via the pixi upload family — **adopted**
+(`pixi upload prefix`); neutral `pypi_upload` adapter name and uv as uploader — **not adopted**
+(shipped as `engines/twine.py`, twine the engine); pixi-first lock engine — **not adopted**
+(conda-lock only). The counter-example this brief cites (atlas's ~29,000-line unused rebuild)
+stayed avoided: zero recipe knowledge in Mason is enforced by the planted-fixture deny-list
+meta-test, and the seam-guard suite is green.
+
+Scope grew past this brief under other contracts (Epics 6–11: the CFE-rebuild pilot + re-scope
+gate, machine-checked recipe knowledge, the pixi base-layer convention, workflow_call CI + the
+air-gap contract socket, the build-engine hook, and the station persona + `/stations/mason/`
+portal slice) — the station is more than the CLI this brief pitched, and the brief remains the
+record of the CLI's own pitch.
 
 ---
 

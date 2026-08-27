@@ -12,14 +12,14 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
-epicCount: 6
-storyCount: 42
+epicCount: 11
+storyCount: 50
 frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the architecture spine's AD-13/AD-15/AD-25/AD-26 now bind FR-47..FR-50, matching this epics doc's own r2 revision (S-1.10, S-3.9, S-5.5), which already fully covered FR-47..FR-50 (see the FR coverage table above). Re-checked and confirmed current; no story changes made."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -1665,3 +1665,17 @@ So that one operator job works in HTMX on the host.
 **Type:** feature • **Effort:** M • **Deps:** S-11.1 • **FR/AD:** canopy FR-10 • canopy AD-7
 **Given** an authenticated mason-role session **When** the operator opens `/stations/mason/` **Then** one diagnosis renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no MinIO
+
+---
+
+## Validation note — 2026-08-26 (chain-currency truth-up)
+
+Validated against the same-day truth-upped ARCHITECTURE-SPINE and the as-built code in
+`src/shared/packages/pyforge-mason/`: all 50 stories across Epics 1–11 are `done` in the tracked
+`sprint-status-ledger.yaml` (station complete per fleet ledger 2026-08-21; Stories 10.1, 11.1
+and 11.2 landed post-completion, 2026-08-25/26 — commits `6359c4676d`, `110f0c5212`,
+`5a957ef25f`). Every `### Story` heading here still maps 1:1 to a ledger story key; no heading
+or status was changed by this note. Frontmatter counts corrected 6/42 → 11/50 to match the
+document's own contents. As-built divergences (engine choices, research-recommendation
+adoption, SM-1's rehearsal-tier evidence) are recorded in the Spec/PRD/spine § Currency
+reconciliation sections and in `retros/retro-pyforge-mason-2026-08-26.md`, not restated here.
