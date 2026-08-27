@@ -12,7 +12,11 @@ from pyforge.marshal.cli.dispatch import run_dispatch
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
-from pyforge.marshal.ports.build_harness import DispatchLaunchResult
+from pyforge.marshal.ports.build_harness import (
+    DispatchLaunchResult,
+    HarnessCandidateSkip,
+    HarnessResolution,
+)
 
 
 def _init_git_repo(path: Path) -> None:
@@ -82,17 +86,32 @@ class FakeBuildHarness:
         self.present = present
         self.pid = pid
         self.calls: list[dict[str, object]] = []
+        self.preference_seen: tuple[str, ...] | None = None
 
-    def binary_present(self) -> bool:
-        return self.present
+    def binary_present(self, preference=(), repo_root=None) -> HarnessResolution:
+        self.preference_seen = tuple(preference)
+        if not self.present:
+            return HarnessResolution(
+                profile=None,
+                skipped=tuple(
+                    HarnessCandidateSkip(
+                        profile=name, reason=f"binary {name!r} not found on PATH"
+                    )
+                    for name in preference
+                ),
+            )
+        chosen = next(iter(preference), "claude")
+        return HarnessResolution(profile=chosen, binary_path=f"/usr/bin/{chosen}")
 
     def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
         self.calls.append({"worktree": worktree, **kwargs})
+        resolution = kwargs.get("resolution")
         return DispatchLaunchResult(
             pid=self.pid,
-            command=("cursor", "agent"),
+            command=("fake-harness",),
             model=kwargs.get("model"),
             budget_env=dict(kwargs.get("budget_env") or {}),
+            profile=resolution.profile if resolution is not None else None,
         )
 
 
@@ -179,3 +198,88 @@ def test_run_dispatch_refuses_missing_harness(tmp_path: Path, monkeypatch: pytes
         process=FakeProcess(),
     )
     assert code != EXIT_OK
+
+
+def test_run_dispatch_carries_profile_and_reports_skips(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Story 22.8: the envelope names the resolved profile; every skipped
+    preference candidate surfaces as a structured MRS-DISP-027 WARN."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    import json
+
+    from pyforge.marshal.ports.build_harness import (
+        HarnessCandidateSkip as Skip,
+    )
+    from pyforge.marshal.ports.build_harness import (
+        HarnessResolution as Resolution,
+    )
+
+    class SkippingHarness(FakeBuildHarness):
+        def binary_present(self, preference=(), repo_root=None):
+            self.preference_seen = tuple(preference)
+            return Resolution(
+                profile="claude",
+                binary_path="/usr/bin/claude",
+                skipped=(
+                    Skip(profile="cursor", reason="authcheck exited 1 (auth required)"),
+                ),
+            )
+
+    harness = SkippingHarness()
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert code == EXIT_OK
+    # the policy default preference reached the resolution profile-first
+    assert harness.preference_seen == ("claude", "cursor", "copilot", "gemini", "devin")
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["harness_profile"] == "claude"
+    skips = [f for f in payload["findings"] if f["code"] == "MRS-DISP-027"]
+    assert len(skips) == 1 and "cursor" in skips[0]["message"]
+    assert harness.calls and harness.calls[0]["resolution"].profile == "claude"
+
+
+def test_run_dispatch_refusal_names_every_candidate_tried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """MRS-DISP-003 must say what was tried and why each candidate was
+    skipped -- the 2026-08-27 silent cursor-auth death, made loud."""
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    import json
+
+    args = argparse.Namespace(slug=slug, story=story, format="json")
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        args,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(present=False),
+        process=FakeProcess(),
+    )
+    assert code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    refusals = [f for f in payload["findings"] if f["code"] == "MRS-DISP-003"]
+    assert len(refusals) == 1
+    message = refusals[0]["message"]
+    assert "no dispatchable session-harness profile" in message
+    for name in ("claude", "cursor", "copilot", "gemini", "devin"):
+        assert name in message

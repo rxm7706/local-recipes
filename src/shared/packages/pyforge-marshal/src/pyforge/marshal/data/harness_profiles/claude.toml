@@ -1,0 +1,31 @@
+# Claude Code (Story 22.8, FR-193 CAP-8). EMPIRICALLY VERIFIED 2026-08-27 on
+# this machine: `claude -p --permission-mode bypassPermissions "<prompt>"`
+# runs non-interactively from an arbitrary directory and exits 0 with the
+# prompt's output; no trust flag exists or is needed. The worktree is the
+# launch cwd (the adapter runs Popen with cwd=<worktree>), so no --add-dir
+# is required for in-worktree work.
+#
+# Detach decision (recorded): Popen-detached `-p`, deliberately NOT
+# `--bg`/`--background` -- marshal's dispatch supervisor tracks the exact
+# child PID it spawned, and a self-backgrounding CLI would make that PID a
+# short-lived launcher (double-detach), orphaning supervision.
+name = "claude"
+binary = "claude"
+argv = [
+  "-p",
+  "--permission-mode",
+  "bypassPermissions",
+  "{model_args}",
+  "{prompt}",
+]
+model_args = ["--model", "{model}"]
+# Marshal's model tiers (opus/sonnet/haiku) ARE valid `--model` aliases for
+# this CLI -- verbatim passthrough, no map needed.
+model_passthrough = true
+# `claude auth status` prints JSON incl. `"loggedIn": true` and exits 0 when
+# authenticated (verified live 2026-08-27). Output-matched, not
+# exit-code-only, per the CAP-8 authcheck contract.
+authcheck_args = ["auth", "status"]
+authcheck_ok_pattern = "\"loggedIn\":\\s*true"
+verified = true
+notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocation shape."

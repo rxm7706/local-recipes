@@ -778,6 +778,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-POLICY-005": Verdict.WARN,
     "MRS-POLICY-006": Verdict.UNEVALUABLE,
     "MRS-POLICY-007": Verdict.WARN,
+    # Story 22.8 (CAP-8): the harness_preference -> bmad-loop counterpart
+    # advisory -- the render stands on the template default, the operator is
+    # told; MRS-POLICY-005's own non-blocking tier.
+    "MRS-POLICY-008": Verdict.WARN,
     "MRS-INIT-001": Verdict.UNEVALUABLE,
     "MRS-INIT-002": Verdict.UNEVALUABLE,
     "MRS-INIT-003": Verdict.ERROR,
@@ -1001,6 +1005,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-024": Verdict.WARN,
     "MRS-DISP-025": Verdict.WARN,
     "MRS-DISP-026": Verdict.ERROR,
+    # Story 22.8 profile-driven harness (CAP-8): a skipped preference
+    # candidate, an ignored overlay profile file, and an omitted model tier
+    # are all advisories on a dispatch that still proceeds (or, when
+    # nothing resolves, MRS-DISP-003's ERROR carries the refusal) -- the
+    # MRS-DISP-022 advisory tier.
+    "MRS-DISP-027": Verdict.WARN,
+    "MRS-DISP-028": Verdict.WARN,
+    "MRS-DISP-029": Verdict.WARN,
 }
 
 

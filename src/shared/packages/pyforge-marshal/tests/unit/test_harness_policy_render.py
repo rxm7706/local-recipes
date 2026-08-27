@@ -522,3 +522,75 @@ def test_the_guard_never_hands_the_loop_write_baseline():
     S-13.2 exists to end: the loop must RECONCILE by naming the paths it
     changed, never accept its own drift as correct."""
     assert "--write-baseline" not in _SURFACE_RECONCILE_COMMAND
+
+
+# --- Story 22.8 (FR-193 CAP-8): [adapter].name derives from harness_preference
+
+
+def test_default_preference_renders_byte_identically():
+    """The default preference's first counterpart-bearing entry is claude --
+    deliberately equal to the template baseline (see DEFAULT_POLICY's own
+    comment) -- so the derive path assigns nothing and every pre-22.8
+    caller's render is byte-identical, template comment included."""
+    text = render_policy_toml(_compose())
+    assert 'name = "claude"               # claude | codex | gemini' in text
+
+
+def test_preference_led_by_a_counterpart_bearing_profile_renders_its_adapter():
+    effective = _compose(harness_preference=["gemini", "claude"])
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert doc["adapter"]["name"] == "gemini"
+
+
+def test_cursor_led_preference_falls_through_to_the_next_counterpart():
+    """cursor has no bmad_loop adapter -- the derivation falls through to
+    the next preference entry rather than writing an unknown name that
+    would brick the loop home's next run at profile resolution."""
+    effective = _compose(harness_preference=["cursor", "copilot"])
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert doc["adapter"]["name"] == "copilot"
+
+
+def test_no_counterpart_preference_keeps_the_template_default():
+    effective = _compose(harness_preference=["cursor", "devin"])
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert doc["adapter"]["name"] == "claude"
+
+
+def test_explicit_adapter_argument_still_wins_over_the_preference():
+    effective = _compose(harness_preference=["gemini"])
+    doc = tomllib.loads(render_policy_toml(effective, adapter="codex"))
+    assert doc["adapter"]["name"] == "codex"
+
+
+def test_cli_write_harness_policy_warns_when_no_counterpart_exists(tmp_path):
+    """MRS-POLICY-008 (Story 22.8): a preference with no bmad-loop
+    counterpart still renders (template default adapter) but the operator is
+    TOLD their expressed preference did not reach the bmad-loop engine."""
+    import json as json_module
+
+    from pyforge.marshal.cli.main import main
+
+    policy_toml = tmp_path / "project-policy.toml"
+    policy_toml.write_text(
+        'harness_preference = ["cursor", "devin"]\n', encoding="utf-8"
+    )
+    home = tmp_path / "home"
+    home.mkdir()
+    import contextlib
+    import io
+
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        rc = main([
+            "config", "--project", "acme",
+            "--project-policy", str(policy_toml),
+            "--write-harness-policy", str(home), "--format", "json",
+        ])
+    assert rc == 0, "a WARN advisory must not block the render"
+    payload = json_module.loads(buffer.getvalue())
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-POLICY-008" in codes
+    written = home / ".bmad-loop" / "policy.toml"
+    parsed = tomllib.loads(written.read_text(encoding="utf-8"))
+    assert parsed["adapter"]["name"] == "claude", "template default must stand"

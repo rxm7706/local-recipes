@@ -41,6 +41,7 @@ from .config import (
     _read_project_policy,
     _suppress_downstream_pipe_close,
     conventional_project_policy_path,
+    read_repo_policy_defaults,
 )
 
 if TYPE_CHECKING:
@@ -134,6 +135,12 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
 
 
 def _compose_policy(slug: str) -> policy.EffectivePolicy:
+    # Story 22.8: the repo-defaults layer (AD-16 layer 2) composes here too
+    # -- `harness_preference` is repo-expressed on this machine
+    # (`_bmad-output/policy-defaults.toml`). An unreadable file degrades to
+    # an empty layer, the same silent-tolerant posture this helper already
+    # takes for the project layer (run_config is the loud boundary).
+    repo_defaults, _repo_finding = read_repo_policy_defaults()
     project_data: dict[str, object] = {}
     candidate = conventional_project_policy_path(slug)
     if candidate.is_file():
@@ -141,7 +148,9 @@ def _compose_policy(slug: str) -> policy.EffectivePolicy:
             project_data = dict(_read_project_policy(candidate))
         except PolicyIOError:
             project_data = {}
-    effective, _findings = policy.compose(project_slug=slug, project=project_data, flags={})
+    effective, _findings = policy.compose(
+        project_slug=slug, repo_defaults=repo_defaults, project=project_data, flags={}
+    )
     return effective
 
 
@@ -565,16 +574,6 @@ def run_dispatch(
         return _emit(args, data, findings)
     data["story_key"] = render_feed_key(story_key)
 
-    if not build_harness.binary_present():
-        findings.append(
-            Finding(
-                code="MRS-DISP-003",
-                severity=Severity.ERROR,
-                message="session harness binary not found on PATH (cursor)",
-            )
-        )
-        return _emit(args, data, findings)
-
     try:
         repo_root = vcs.repo_common_root(Path.cwd())
     except VcsCommandError as exc:
@@ -620,6 +619,41 @@ def run_dispatch(
     budget_env = dispatch_core.build_budget_env(effective_policy)
     data["model"] = model
     data["budget_env"] = dict(budget_env)
+
+    # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
+    # policy's ordered `harness_preference` walked to the first profile
+    # whose binary resolves AND whose authcheck passes. Binary presence
+    # alone was necessary-but-insufficient (2026-08-27: three real
+    # dispatches died on cursor's auth wall with the binary on PATH), so
+    # every skipped candidate is a structured finding, never silent.
+    preference = tuple(effective_policy.harness_preference.value)
+    resolution = build_harness.binary_present(preference, repo_root=repo_root)
+    for profile_error in resolution.profile_errors:
+        findings.append(
+            Finding(code="MRS-DISP-028", severity=Severity.WARN, message=profile_error)
+        )
+    for skip in resolution.skipped:
+        findings.append(
+            Finding(
+                code="MRS-DISP-027",
+                severity=Severity.WARN,
+                message=f"harness profile {skip.profile!r} skipped: {skip.reason}",
+            )
+        )
+    if not resolution:
+        tried = (
+            "; ".join(f"{s.profile}: {s.reason}" for s in resolution.skipped)
+            or "empty harness_preference -- no candidate to try"
+        )
+        findings.append(
+            Finding(
+                code="MRS-DISP-003",
+                severity=Severity.ERROR,
+                message=f"no dispatchable session-harness profile ({tried})",
+            )
+        )
+        return _emit(args, data, findings)
+    data["harness_profile"] = resolution.profile
 
     conflict = station_in_flight_conflict(
         fs=fs,
@@ -712,6 +746,7 @@ def run_dispatch(
             "budget_env": dict(budget_env),
             "bmad_active_project": slug,
             "baseline_head_sha": baseline_head_sha,
+            "harness_profile": resolution.profile,
         },
     )
     try:
@@ -731,6 +766,7 @@ def run_dispatch(
     try:
         launch = build_harness.dispatch(
             worktree,
+            resolution=resolution,
             project_slug=slug,
             story_key=render_feed_key(story_key),
             spec_path=spec_path,
@@ -762,6 +798,15 @@ def run_dispatch(
         return _emit(args, data, findings)
 
     data["session_pid"] = launch.pid
+    data["session_model"] = launch.model
+    if launch.model_omitted_reason is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-029",
+                severity=Severity.WARN,
+                message=launch.model_omitted_reason,
+            )
+        )
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, 1),
         ts=_format_entry_ts(_now_utc()),
@@ -774,6 +819,7 @@ def run_dispatch(
             "session_pid": launch.pid,
             "model": launch.model,
             "budget_env": dict(launch.budget_env),
+            "harness_profile": launch.profile,
         },
     )
     try:

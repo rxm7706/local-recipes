@@ -1,0 +1,30 @@
+# GitHub Copilot CLI 1.0.80 (Story 22.8, FR-193 CAP-8). EMPIRICALLY
+# VERIFIED 2026-08-27 on this machine: `copilot -p "<prompt>"
+# --allow-all-tools` runs non-interactively and exits 0 (auth rode the
+# existing GitHub credentials -- no login step). `--allow-all-tools` is
+# documented as required for non-interactive mode. `-p/--prompt` takes the
+# prompt as its VALUE, so `{prompt}` sits directly after it (unlike the
+# positional-prompt CLIs).
+#
+# No cheap non-interactive authcheck exists in this build (no `auth`
+# subcommand; probed live 2026-08-27) -- binary presence gates this profile
+# and an auth failure surfaces in session.log (authcheck_note below).
+#
+# No model mapping: this CLI's `--model` vocabulary is its own (`auto`,
+# provider-qualified ids) and none of marshal's tier names is a verified
+# member, so the model flags are OMITTED with MRS-DISP-029 and the session
+# runs on the CLI's default model -- honest over guessed.
+#
+# The binary ships in the repo's pixi env, not on a bare operator PATH --
+# hence the fallback dir below.
+name = "copilot"
+binary = "copilot"
+argv = [
+  "-p",
+  "{prompt}",
+  "--allow-all-tools",
+]
+fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
+authcheck_note ="No cheap non-interactive auth probe in CLI 1.0.80 (no auth subcommand); auth rides GitHub credentials and a failure surfaces at session start in session.log."
+verified = true
+notes = "Verified 2026-08-27: authenticated via GitHub credentials, smoke-tested -p --allow-all-tools shape (COPILOT-OK, exit 0). Same-day later re-probe reached the service but failed rc=1 'You have no quota' -- an account-quota condition, not an argv defect; nothing non-interactive pre-detects it (see authcheck_note), it surfaces in session.log."

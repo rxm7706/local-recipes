@@ -1640,6 +1640,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
+            harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             _seed=seed,
         )
 
@@ -1659,6 +1660,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
+            harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -1678,6 +1680,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             landing_base_branch=PolicyField(value="main", layer="default", raw_source="main"),
             landing_resync_commands=PolicyField(value=(), layer="default", raw_source=()),
             mcp_servers=PolicyField(value={}, layer="default", raw_source={}),
+            harness_preference=PolicyField(value=(), layer="default", raw_source=()),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -1731,7 +1734,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_twenty_eight_keys():
+def test_schema_file_declares_the_twenty_nine_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -1750,6 +1753,7 @@ def test_schema_file_declares_the_twenty_eight_keys():
         "landing_base_branch",
         "landing_resync_commands",
         "mcp_servers",
+        "harness_preference",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -2120,3 +2124,128 @@ def test_gate_mode_autonomy_labels_verbatim_fr24_text():
     assert labels["per-epic"]["name"] == "Conditional / Context Gates"
     assert labels["none"]["level"] == "L4"
     assert labels["none"]["name"] == "Approver"
+
+
+# --- Story 22.8 (FR-193 CAP-8): harness_preference + the wired repo layer ----
+
+
+def test_harness_preference_default_is_the_neutral_five_profile_order():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    field = effective.harness_preference
+    assert field.value == ("claude", "cursor", "copilot", "gemini", "devin")
+    assert field.layer == PolicyLayer.DEFAULT
+
+
+def test_harness_preference_composes_from_the_project_layer():
+    effective, findings = compose(
+        project_slug="acme", project={"harness_preference": ["gemini"]}, flags={}
+    )
+    assert findings == ()
+    assert effective.harness_preference.value == ("gemini",)
+    assert effective.harness_preference.layer == PolicyLayer.PROJECT
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "claude",  # bare str, not a list
+        ["claude", "claude"],  # duplicate entry
+        ["claude", ""],  # empty entry
+        ["cl aude"],  # charset violation
+        ["../evil"],  # path-shaped
+        [".."],  # pure-dot
+    ],
+)
+def test_harness_preference_malformed_layer_is_excluded(bad):
+    effective, findings = compose(
+        project_slug="acme", project={"harness_preference": bad}, flags={}
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert effective.harness_preference.layer == PolicyLayer.DEFAULT
+
+
+def test_repo_defaults_layer_wins_over_default_and_loses_to_project():
+    """Story 22.8 wires compose()'s documented-but-ignored repo_defaults
+    parameter (Story 1.10's promise): repo beats code default, project
+    beats repo, and provenance names the layer."""
+    repo_only, findings = compose(
+        project_slug="acme",
+        repo_defaults={"harness_preference": ["claude", "copilot"]},
+        project={},
+        flags={},
+    )
+    assert findings == ()
+    assert repo_only.harness_preference.value == ("claude", "copilot")
+    assert repo_only.harness_preference.layer == PolicyLayer.REPO_DEFAULTS
+    assert repo_only.harness_preference.layer.value == "repo_defaults"
+
+    project_wins, _ = compose(
+        project_slug="acme",
+        repo_defaults={"harness_preference": ["claude", "copilot"]},
+        project={"harness_preference": ["gemini"]},
+        flags={},
+    )
+    assert project_wins.harness_preference.value == ("gemini",)
+    assert project_wins.harness_preference.layer == PolicyLayer.PROJECT
+
+
+def test_repo_defaults_layer_applies_to_seed_fields_too():
+    effective, findings = compose(
+        project_slug="acme",
+        repo_defaults={"max_followup_reviews": 4},
+        project={},
+        flags={},
+    )
+    assert findings == ()
+    field = effective.seed_view()["max_followup_reviews"]
+    assert field.value == 4
+    assert field.layer == PolicyLayer.REPO_DEFAULTS
+
+
+def test_repo_defaults_unknown_key_names_the_repo_layer():
+    _, findings = compose(
+        project_slug="acme", repo_defaults={"bogus_key": 1}, project={}, flags={}
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-001"]
+    assert "repo_defaults" in findings[0].message
+
+
+def test_repo_defaults_malformed_value_is_excluded_for_that_layer_only():
+    effective, findings = compose(
+        project_slug="acme",
+        repo_defaults={"gate_mode": "bogus"},
+        project={"gate_mode": "none"},
+        flags={},
+    )
+    assert [f.code for f in findings] == ["MRS-POLICY-003"]
+    assert "repo_defaults" in findings[0].message
+    assert effective.seed_view()["gate_mode"].value == "none"
+
+
+def test_repo_defaults_rejects_a_bare_str():
+    with pytest.raises(TypeError):
+        compose(
+            project_slug="acme",
+            repo_defaults="gate_mode=none",  # type: ignore[arg-type]
+            project={},
+            flags={},
+        )
+
+
+def test_content_hash_distinguishes_repo_defaults_provenance():
+    """Same effective value, different winning layer (repo vs project) --
+    must not collide, the exact discrimination content_hash exists for."""
+    via_repo, _ = compose(
+        project_slug="acme",
+        repo_defaults={"harness_preference": ["gemini"]},
+        project={},
+        flags={},
+    )
+    via_project, _ = compose(
+        project_slug="acme",
+        project={"harness_preference": ["gemini"]},
+        flags={},
+    )
+    assert via_repo.harness_preference.value == via_project.harness_preference.value
+    assert via_repo.content_hash != via_project.content_hash

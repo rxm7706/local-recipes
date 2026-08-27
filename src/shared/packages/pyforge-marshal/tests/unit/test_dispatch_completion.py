@@ -20,7 +20,7 @@ from pyforge.marshal.core.dispatch_completion import (
 )
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
-from pyforge.marshal.ports.build_harness import DispatchLaunchResult
+from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
 
 
 def _init_git_repo(path: Path) -> None:
@@ -195,14 +195,15 @@ class FakeBuildHarness:
         self.pid = pid
         self.calls: list[dict[str, object]] = []
 
-    def binary_present(self) -> bool:
-        return True
+    def binary_present(self, preference=(), repo_root=None) -> HarnessResolution:
+        chosen = next(iter(preference), "claude")
+        return HarnessResolution(profile=chosen, binary_path=f"/usr/bin/{chosen}")
 
     def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
         self.calls.append({"worktree": worktree, **kwargs})
         return DispatchLaunchResult(
             pid=self.pid,
-            command=("cursor", "agent"),
+            command=("fake-harness",),
             model=kwargs.get("model"),
             budget_env=dict(kwargs.get("budget_env") or {}),
         )

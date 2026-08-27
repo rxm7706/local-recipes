@@ -1,0 +1,19 @@
+# Devin (Story 22.8, FR-193 CAP-8). DECLARED, UNTESTED, ABSENT on this
+# machine: Devin is primarily a cloud service; no local `devin` CLI binary
+# exists on this stack (probed 2026-08-27), so this profile is
+# profile-shaped-but-absent by design -- it exists so a future local CLI
+# slots into the preference order without a marshal code change, and so the
+# resolution path reports the absence loudly (MRS-DISP-027 "binary not
+# found") instead of the name being silently unknown. The argv below is a
+# GUESSED prompt-mode shape, never smoke-verified; verify empirically and
+# correct this file (or override it in _bmad-output/harness-profiles/)
+# before ever placing devin first in a live preference.
+name = "devin"
+binary = "devin"
+argv = [
+  "-p",
+  "{prompt}",
+]
+authcheck_note = "No local binary exists on this stack (cloud service); no auth probe is definable until a real CLI is present."
+verified = false
+notes = "Declared stub, absent binary, argv unverified guess (2026-08-27)."

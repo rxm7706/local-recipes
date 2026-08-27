@@ -214,6 +214,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from ..core import policy
 from ..core.egress import to_redacted
+from ..core.harness_profile import bmadloop_adapter_for_preference
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
@@ -465,14 +466,22 @@ def render_policy_toml(
     is legal on both sides and renders fine). A plain exception, not an
     ``MRS-*`` finding -- no CLI caller exists yet to convert one.
 
-    ``adapter`` (Story 6.5, FR-44): when given, overwrites ``[adapter].name``
-    -- the template's own hardcoded ``"claude"`` baseline is otherwise NEVER
-    derived from ``effective`` (confirmed live: no existing composed field
-    names the configured adapter at all). Mirrors ``difficulty``'s own
-    additive, backward-compatible keyword shape; every existing caller that
-    never passes it renders byte-identically unaffected. Applied
-    independently of ``difficulty``'s own tier-batching (which touches only
-    ``[adapter.<stage>].model`` sub-tables, never ``[adapter].name``).
+    ``adapter`` (Story 6.5, FR-44): when given, overwrites ``[adapter].name``.
+    When OMITTED, Story 22.8 (FR-193 CAP-8, "one preference, two engines")
+    derives it from ``effective.harness_preference`` -- the first preference
+    entry with a bmad-loop counterpart (``core/harness_profile.py::
+    bmadloop_adapter_for_preference``, a pure code-constant translation, no
+    file I/O). A preference with NO counterpart keeps the template baseline
+    (the ``--write-harness-policy`` boundary reports that as
+    ``MRS-POLICY-008``). The derived name is only assigned when it DIFFERS
+    from the document's current value, so the default preference (whose
+    first counterpart-bearing entry is ``claude``, deliberately equal to the
+    template baseline -- see ``DEFAULT_POLICY``'s own comment) renders
+    byte-identically to every pre-22.8 caller. An explicit ``adapter``
+    argument still wins (Story 6.5's smoke path forces arbitrary names).
+    Applied independently of ``difficulty``'s own tier-batching (which
+    touches only ``[adapter.<stage>].model`` sub-tables, never
+    ``[adapter].name``).
     """
     doc = tomlkit.parse(_POLICY_TEMPLATE)
 
@@ -519,6 +528,10 @@ def render_policy_toml(
 
     if adapter is not None:
         doc["adapter"]["name"] = adapter
+    else:
+        derived = bmadloop_adapter_for_preference(effective.harness_preference.value)
+        if derived is not None and str(doc["adapter"]["name"]) != derived:
+            doc["adapter"]["name"] = derived
 
     tier_map = effective.model_tier_map.value
     if difficulty is not None and difficulty in tier_map:

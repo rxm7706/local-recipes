@@ -260,9 +260,10 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_twenty_eight_keys(capsys, monkeypatch):
-    """AC: 'every one of the (now 28, Story 25.4's 5 bmad-loop 0.10/0.11
-    knobs joining Story 3.13's `max_parallel`, Story 6.9's `mcp_servers`,
+def test_config_prints_all_twenty_nine_keys(capsys, monkeypatch):
+    """AC: 'every one of the (now 29, Story 22.8's `harness_preference`
+    joining Story 25.4's 5 bmad-loop 0.10/0.11
+    knobs, Story 3.13's `max_parallel`, Story 6.9's `mcp_servers`,
     Story 4.5's `landing_resync_commands`, Story 4.4's
     `landing_base_branch`, and Story 4.7's 4 landing keys) keys prints
     its effective value and winning layer' -- checked
@@ -287,6 +288,7 @@ def test_config_prints_all_twenty_eight_keys(capsys, monkeypatch):
         "landing_base_branch",
         "landing_resync_commands",
         "mcp_servers",
+        "harness_preference",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -305,7 +307,7 @@ def test_config_prints_all_twenty_eight_keys(capsys, monkeypatch):
         "stream_capture_kb",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 28
+    assert captured.out.count("(layer=") == 29
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -511,10 +513,17 @@ def test_config_materialize_path_is_content_addressed_by_hash(tmp_path, monkeypa
     main(["config", "--materialize", str(target_dir)])
     written = next(target_dir.glob("policy-*.json"))
     document = json.loads(written.read_text(encoding="utf-8"))
-    # the filename embeds the same content_hash compose() would compute
+    # the filename embeds the same content_hash compose() would compute --
+    # including the repo-defaults layer run_config reads since Story 22.8
+    from pyforge.marshal.cli.config import read_repo_policy_defaults
     from pyforge.marshal.core.policy import compose
 
-    effective, _ = compose(project_slug="", project={}, flags={})
+    effective, _ = compose(
+        project_slug="",
+        repo_defaults=read_repo_policy_defaults()[0],
+        project={},
+        flags={},
+    )
     assert written.name == f"policy-{effective.content_hash}.json"
     assert document["gate_mode"]["value"] == effective.seed_view()["gate_mode"].value
 
@@ -556,10 +565,16 @@ def test_config_materialize_target_collision_with_directory_reports_finding(tmp_
     """A directory occupying the content-addressed path must not read as a
     silent no-write 'success' -- the write-once check distinguishes file
     from non-file."""
+    from pyforge.marshal.cli.config import read_repo_policy_defaults
     from pyforge.marshal.core.policy import compose
 
     target_dir = tmp_path / "materialized"
-    effective, _ = compose(project_slug="", project={}, flags={})
+    effective, _ = compose(
+        project_slug="",
+        repo_defaults=read_repo_policy_defaults()[0],
+        project={},
+        flags={},
+    )
     target_dir.mkdir(parents=True)
     (target_dir / f"policy-{effective.content_hash}.json").mkdir()
 
@@ -590,12 +605,17 @@ def test_config_materialize_failure_preserves_a_successful_project_layer(tmp_pat
     toml_path = tmp_path / "project-policy.toml"
     toml_path.write_text('gate_mode = "per-epic"\n', encoding="utf-8")
 
+    from pyforge.marshal.cli.config import read_repo_policy_defaults
     from pyforge.marshal.core.policy import compose
 
     # Must match exactly what run_config() will compose below (same slug,
-    # same project layer) so the collision lands on the SAME content hash.
+    # same repo-defaults layer, same project layer) so the collision lands
+    # on the SAME content hash.
     effective, _ = compose(
-        project_slug="", project={"gate_mode": "per-epic"}, flags={}
+        project_slug="",
+        repo_defaults=read_repo_policy_defaults()[0],
+        project={"gate_mode": "per-epic"},
+        flags={},
     )
     target_dir = tmp_path / "materialized"
     target_dir.mkdir(parents=True)

@@ -1,0 +1,43 @@
+# Gemini CLI 0.56.0 (Story 22.8, FR-193 CAP-8). EMPIRICALLY VERIFIED
+# 2026-08-27 on this machine: `gemini --skip-trust -p "<prompt>"` from an
+# untrusted dir runs headless and exits 0 with the prompt's output. WITHOUT
+# `--skip-trust` it refuses ("not running in a trusted directory ...") and
+# that refusal ALSO exits 0 -- match output, never exit code, in any smoke
+# probe. Startup stderr is noisy (ripgrep fallback + [STARTUP] warnings) and
+# harmless. `--yolo` auto-approves tool actions -- required for an
+# unattended story session (the -p smoke probe needed no tools; a
+# bmad-build-auto session does).
+#
+# No cheap non-interactive authcheck exists in 0.56.0 (no auth-status
+# subcommand; --help probed live 2026-08-27) -- binary presence gates this
+# profile (authcheck_note below).
+#
+# The binary ships in the repo's pixi env, not on a bare operator PATH --
+# hence the fallback dir below.
+name = "gemini"
+binary = "gemini"
+argv = [
+  "--skip-trust",
+  "--yolo",
+  "{model_args}",
+  "-p",
+  "{prompt}",
+]
+model_args = ["-m", "{model}"]
+fallback_bin_dirs = [".pixi/envs/local-recipes/bin"]
+authcheck_note = "No cheap non-interactive auth probe in gemini 0.56.0; OAuth creds are ambient and a failure surfaces at session start in session.log."
+verified = true
+notes = "Verified 2026-08-27: authenticated; --skip-trust --yolo -p shape smoke-tested; haiku->gemini-3-flash-preview verified end-to-end (HARNESS-OK, exit 0)."
+
+# Marshal tiers -> Gemini model ids, probed live 2026-08-27 against gemini
+# 0.56.0: `gemini-3-flash-preview` VERIFIED end-to-end; the retired
+# `gemini-2.5-flash` id made `-p` HANG PAST 180s (killed by timeout) -- a
+# wrong model id is a hang, not an error, on this CLI, so every spelling
+# here must stay probe-verified. `gemini-3-pro-preview` is ACCEPTED by the
+# service (the probe reached a clean HTTP 429 quota response, not the
+# unknown-model hang) but was quota-blocked on this account's free tier at
+# probe time -- expect 429s on the pro tiers until quota allows.
+[model_map]
+opus = "gemini-3-pro-preview"
+sonnet = "gemini-3-pro-preview"
+haiku = "gemini-3-flash-preview"

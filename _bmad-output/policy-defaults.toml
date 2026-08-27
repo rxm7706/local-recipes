@@ -34,3 +34,21 @@
 # pyforge/marshal/core/policy.py:DEFAULT_POLICY` for the full incident history
 # and the design rationale for keeping this at the repo level.
 max_followup_reviews = 2
+
+# harness_preference (Story 22.8, FR-193 CAP-8): THIS MACHINE's expressed
+# session-harness order for `marshal factory dispatch` AND (via
+# render_policy_toml's [adapter].name derivation) bmad-loop -- one
+# preference, two engines. Recorded 2026-08-27 after the live fleet-drain
+# failure: the harness was hardcoded to `cursor agent`, whose auth had
+# lapsed, and all three real dispatches died instantly. Order reflects this
+# machine's verified estate that day: claude (authenticated, the reference
+# adapter), cursor (re-authenticated the same day; the previous incumbent),
+# copilot + gemini (authenticated in the repo pixi env, smoke-verified),
+# devin (declared stub, no local binary). Resolution skips anything whose
+# binary or authcheck fails, loudly (MRS-DISP-027), so a lapsed login moves
+# the launch down this list instead of killing it.
+#
+# Wired since Story 22.8: `marshal config` and `marshal factory dispatch`
+# read this layer (compose()'s repo_defaults); it wins over marshal's code
+# default and loses to a project's marshal-policy.toml / --set flags.
+harness_preference = ["claude", "cursor", "copilot", "gemini", "devin"]
