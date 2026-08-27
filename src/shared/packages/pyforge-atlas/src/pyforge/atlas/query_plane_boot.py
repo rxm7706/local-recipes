@@ -46,9 +46,11 @@ the boot never shells out to any installer.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 from collections.abc import Callable, Sequence
@@ -161,6 +163,15 @@ def boot_query_plane(
 
     try:
         if launcher is None:
+            if host != DEFAULT_HOST:
+                raise ValueError(
+                    "the installed duckdb-server (0.27–0.31) has no host "
+                    "flag — the boot merely REPORTS the endpoint, so "
+                    f"host={host!r} would advertise an endpoint that may "
+                    "point nowhere (the same failure the port guard "
+                    f"prevents); pass host={DEFAULT_HOST!r} or inject a "
+                    "launcher that owns the endpoint contract"
+                )
             if port != DEFAULT_PORT:
                 raise ValueError(
                     "the installed duckdb-server (0.27–0.31) hard-codes its "
@@ -212,7 +223,10 @@ def boot_query_plane(
             }
         )
         process = chosen_launcher(argv)
-    except Exception:
+    except BaseException:
+        # BaseException, not Exception: a KeyboardInterrupt / SystemExit
+        # between connect_writer and return must not leak the writer filelock
+        # to in-process API callers (review finding 3, Story 20.1).
         library.close()
         raise
 
@@ -277,14 +291,25 @@ def _shutdown(process: Any) -> None:
 
 
 def _supervise(boot: PlaneBoot) -> int:
-    """Foreground-supervise the HTTP face (CLI, stack-up path).
+    """Foreground-supervise the HTTP face (CLI, stack-up path; main thread
+    only — the SIGTERM registration below requires it).
 
-    SIGINT → clean shutdown, exit 130 (NFR-6 interrupted); the server exiting
-    on its own is an error (exit 2) — a supervisor with nothing left to
-    supervise did not succeed.
+    SIGINT → clean shutdown, exit 130 (NFR-6 interrupted). SIGTERM (a
+    systemd/CI stop) is funneled through the SAME clean shutdown and also
+    exits 130, so stopping the supervisor can never orphan the duckdb-server
+    child holding the plane read-write with the filelock left behind (review
+    finding 7, Story 20.1). The server exiting on its own is an error
+    (exit 2) — a supervisor with nothing left to supervise did not succeed.
     """
     assert boot.http is not None
     process = boot.http.process
+
+    def _on_sigterm(signum: int, frame: object) -> None:
+        # Same terminate/wait/kill of the child, same library-handle close,
+        # same exit 130 as SIGINT.
+        raise KeyboardInterrupt
+
+    previous = signal.signal(signal.SIGTERM, _on_sigterm)
     try:
         returncode = process.wait()
         print(
@@ -296,6 +321,20 @@ def _supervise(boot: PlaneBoot) -> int:
         _shutdown(process)
         return 130
     finally:
+        signal.signal(signal.SIGTERM, previous)
+        boot.library.close()
+
+
+def _best_effort_teardown(boot: PlaneBoot) -> None:
+    """Post-boot escape hatch (CLI): leave no child and no held lock behind.
+
+    Never raises — it runs on paths that are already exiting on an interrupt
+    or an unexpected error (review finding 2, Story 20.1).
+    """
+    if boot.http is not None:
+        with contextlib.suppress(Exception):
+            _shutdown(boot.http.process)
+    with contextlib.suppress(Exception):
         boot.library.close()
 
 
@@ -303,10 +342,11 @@ def main(argv: list[str] | None = None) -> int:
     """Boot the plane; print one-line JSON envelope(s); NFR-6 exit codes.
 
     0 pass / 1 policy fail (typed refusals: SecondWriterRefused,
-    DuckDBServerNotProvisionedError) / 2 error / 130 interrupted. Stack-down
-    boots, emits the notice envelope, releases and exits 0 (the library face
-    is in-process — holding it in a foreground CLI serves no other process);
-    stack-up stays foreground as the server's supervisor.
+    DuckDBServerNotProvisionedError) / 2 error / 130 interrupted (SIGINT, or
+    SIGTERM while supervising). Stack-down boots, emits the notice envelope,
+    releases and exits 0 (the library face is in-process — holding it in a
+    foreground CLI serves no other process); stack-up stays foreground as the
+    server's supervisor.
     """
     args = _build_parser().parse_args(argv)
     try:
@@ -329,14 +369,26 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
 
-    for notice in boot.notices:
-        print(json.dumps(notice))
-    sys.stdout.flush()
+    try:
+        for notice in boot.notices:
+            print(json.dumps(notice))
+        sys.stdout.flush()
 
-    if boot.http is None:
-        boot.library.close()
-        return 0
-    return _supervise(boot)
+        if boot.http is None:
+            boot.library.close()
+            return 0
+        return _supervise(boot)
+    except KeyboardInterrupt:
+        _best_effort_teardown(boot)
+        return 130
+    except Exception as exc:
+        # Failures AFTER boot_query_plane returned (notice printing,
+        # supervise/shutdown internals) must not escape the NFR-6 mapping as
+        # Python's default exit 1 — that code means "policy fail" (review
+        # finding 2, Story 20.1).
+        print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
+        _best_effort_teardown(boot)
+        return 2
 
 
 if __name__ == "__main__":

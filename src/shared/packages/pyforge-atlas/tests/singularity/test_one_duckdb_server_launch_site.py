@@ -14,6 +14,12 @@ sole-engine gate beside it):
 (c) the boot module's AST contains no SQL ``INSTALL`` string reaching an
     ``.execute`` call (the spec-34-1 string/AST-gate precedent: the boot path
     never network-INSTALLs a DuckDB extension).
+
+Hardened against the review-pass evasions (finding 6, Story 20.1): module
+``as``-aliases of subprocess/os count, ``os.posix_spawn*`` counts, importing
+the boot module's launch machinery (``SERVER_EXECUTABLE`` /
+``_launch_duckdb_server``) counts as a duckdb-server mention, and the INSTALL
+gate inspects keyword arguments too.
 """
 
 from __future__ import annotations
@@ -30,6 +36,21 @@ _SUBPROCESS_LAUNCHERS = frozenset(
     {"Popen", "run", "call", "check_call", "check_output"}
 )
 
+# Importing the boot module's launch machinery is a duckdb-server mention even
+# without the literal string (review finding 6c, Story 20.1: ``from
+# pyforge.atlas.query_plane_boot import SERVER_EXECUTABLE`` + a Popen carries
+# no ``"duckdb-server"`` constant and must not slip past gate (a)).
+_BOOT_LAUNCH_REEXPORTS = frozenset({"SERVER_EXECUTABLE", "_launch_duckdb_server"})
+
+
+def _is_os_launcher(name: str) -> bool:
+    """``os``-namespace process launchers: ``system``/``popen`` exactly, plus
+    the ``exec*``/``spawn*``/``posix_spawn*`` families (review finding 6b,
+    Story 20.1: ``posix_spawn`` starts with neither ``exec`` nor ``spawn``)."""
+    return name in ("system", "popen") or name.startswith(
+        ("exec", "spawn", "posix_spawn")
+    )
+
 
 def _names_imported_from(tree: ast.AST, module: str) -> dict[str, str]:
     """Local-name -> original-name for ``from <module> import …`` bindings."""
@@ -41,15 +62,32 @@ def _names_imported_from(tree: ast.AST, module: str) -> dict[str, str]:
     return bound
 
 
+def _module_aliases(tree: ast.AST, module: str) -> set[str]:
+    """Every local name the whole module is bound to — the plain name plus any
+    ``import <module> as <alias>`` (review finding 6a, Story 20.1:
+    ``import subprocess as sp; sp.Popen(…)`` must count)."""
+    aliases = {module}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == module:
+                    aliases.add(alias.asname or alias.name)
+    return aliases
+
+
 def _launch_hits(tree: ast.AST) -> list[str]:
     """Every subprocess-launch call in a module, statically, via AST.
 
-    Attribute form: ``subprocess.Popen``/``run``/``call``/``check_*`` and
-    ``os.system``/``os.exec*``/``os.spawn*``/``os.popen``. Bare-name form is
-    counted only when the name was imported FROM ``subprocess``/``os`` — keyed
-    on the ORIGINAL name so an ``as`` alias cannot hide a launcher, and an
-    unrelated local function named ``run`` is not a false positive.
+    Attribute form: ``<subprocess>.Popen``/``run``/``call``/``check_*`` and
+    ``<os>.system``/``popen``/``exec*``/``spawn*``/``posix_spawn*`` — where
+    the base resolves through ``import subprocess`` / ``import os``
+    INCLUDING ``as`` aliases. Bare-name form is counted only when the name
+    was imported FROM ``subprocess``/``os`` — keyed on the ORIGINAL name so
+    an ``as`` alias cannot hide a launcher, and an unrelated local function
+    named ``run`` is not a false positive.
     """
+    sub_bases = _module_aliases(tree, "subprocess")
+    os_bases = _module_aliases(tree, "os")
     sub_imported = {
         local
         for local, original in _names_imported_from(tree, "subprocess").items()
@@ -58,9 +96,7 @@ def _launch_hits(tree: ast.AST) -> list[str]:
     os_imported = {
         local
         for local, original in _names_imported_from(tree, "os").items()
-        if original == "system"
-        or original == "popen"
-        or original.startswith(("exec", "spawn"))
+        if _is_os_launcher(original)
     }
     hits: list[str] = []
     for node in ast.walk(tree):
@@ -69,14 +105,10 @@ def _launch_hits(tree: ast.AST) -> list[str]:
         fn = node.func
         if isinstance(fn, ast.Attribute) and isinstance(fn.value, ast.Name):
             base, attr = fn.value.id, fn.attr
-            if base == "subprocess" and attr in _SUBPROCESS_LAUNCHERS:
-                hits.append(f"subprocess.{attr}")
-            elif base == "os" and (
-                attr == "system"
-                or attr == "popen"
-                or attr.startswith(("exec", "spawn"))
-            ):
-                hits.append(f"os.{attr}")
+            if base in sub_bases and attr in _SUBPROCESS_LAUNCHERS:
+                hits.append(f"{base}.{attr}")
+            elif base in os_bases and _is_os_launcher(attr):
+                hits.append(f"{base}.{attr}")
         elif isinstance(fn, ast.Name):
             if fn.id in sub_imported:
                 hits.append(fn.id)
@@ -86,16 +118,27 @@ def _launch_hits(tree: ast.AST) -> list[str]:
 
 
 def _mentions_duckdb_server(tree: ast.AST) -> bool:
-    return any(
-        isinstance(node, ast.Constant)
-        and isinstance(node.value, str)
-        and "duckdb-server" in node.value
-        for node in ast.walk(tree)
-    )
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and "duckdb-server" in node.value
+        ):
+            return True
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and node.module.rpartition(".")[2] == "query_plane_boot"
+            and any(alias.name in _BOOT_LAUNCH_REEXPORTS for alias in node.names)
+        ):
+            return True
+    return False
 
 
 def _execute_calls_install(tree: ast.AST) -> list[str]:
-    """SQL ``INSTALL`` strings reaching an ``.execute`` call (spec-34-1 shape)."""
+    """SQL ``INSTALL`` strings reaching an ``.execute`` call (spec-34-1 shape;
+    positional AND keyword argument values — ``execute(query="INSTALL …")``
+    must not slip past, review finding 6d, Story 20.1)."""
     found: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -106,16 +149,16 @@ def _execute_calls_install(tree: ast.AST) -> list[str]:
             name = func.attr
         elif isinstance(func, ast.Name):
             name = func.id
-        if name != "execute" or not node.args:
+        if name != "execute":
             continue
-        arg0 = node.args[0]
-        if isinstance(arg0, ast.Constant) and isinstance(arg0.value, str):
-            if arg0.value.lstrip().upper().startswith("INSTALL"):
-                found.append(arg0.value)
-        if isinstance(arg0, ast.JoinedStr):
-            raw = ast.unparse(arg0)
-            if "INSTALL" in raw.upper():
-                found.append(raw)
+        for arg in [*node.args, *(kw.value for kw in node.keywords)]:
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                if arg.value.lstrip().upper().startswith("INSTALL"):
+                    found.append(arg.value)
+            if isinstance(arg, ast.JoinedStr):
+                raw = ast.unparse(arg)
+                if "INSTALL" in raw.upper():
+                    found.append(raw)
     return found
 
 

@@ -2,18 +2,35 @@
 title: 'Story 20.1: One boot script raises both plane faces (CAP-5)'
 type: 'feature'
 created: '2026-08-27'
-status: 'in-progress'
+status: 'done'
 updated: '2026-08-27'
 baseline_revision: '5bae7d330164a14de41ca789d8edefeab858a213'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/stack.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-34-1-read-only-live-attach.md
 warnings: [oversized]
-deferred: []
+deferred:
+  - summary: >-
+      Stack-up PlaneBoot.library is a lock token whose query methods raise raw duckdb
+      closed-connection errors once the connection yields to the HTTP face; consider a typed
+      yielded-state guard, and/or the server-on-:memory: + exec-API ATTACH-read-only design
+      (with autoinstall/autoload_known_extensions=false) as a route to two concurrently
+      usable faces.
+    evidence: |-
+      duckdb 1.5.5 refuses any second cross-process open while a read-write connection is
+      held (verified live 2026-08-27), so the boot yields the in-process connection before
+      launching duckdb-server (recorded handling, Design Notes); a caller using boot.library
+      after the yield gets an untyped closed-connection error, and connect_reader from other
+      processes also fails while the HTTP face lives. Surfaced by the 2026-08-27 review pass
+      (intent-alignment + edge-case reviewers); concurrent-usability proof is Story 20.2's
+      face-parity scope per the intent's Never clause.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/query_plane_boot.py
+    severity: medium
 ---
 
 <intent-contract>
@@ -235,6 +252,56 @@ Verified against the live tree 2026-08-27 (worktree HEAD `5bae7d3301`):
 
 ## Review Triage Log
 
+### 2026-08-27 — Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 7: (high 0, medium 4, low 3)
+- defer: 1: (high 0, medium 1, low 0)
+- reject: 15: (high 0, medium 0, low 15)
+- addressed_findings:
+  - `[medium]` `[patch]` CLI boundary had zero coverage (NFR-6 exit lattice + JSON envelopes
+    could regress undetected) → four in-process `main()` tests added: stack-down 0 + one-line
+    envelope; second-boot 1 + `SecondWriterRefused` envelope; missing-provisioning 1 +
+    `DuckDBServerNotProvisionedError` envelope; unexpected crash 2 + stderr diagnostic —
+    mutation-verified (swallowing typed refusals into the generic handler now fails
+    `test_cli_unexpected_crash_exits_two`).
+  - `[medium]` `[patch]` post-boot exceptions escaped the NFR-6 mapping as Python's default
+    exit 1 → `main()`'s post-boot section wrapped (KeyboardInterrupt → 130, other → 2 + stderr
+    diagnostic) with a never-raising `_best_effort_teardown`.
+  - `[medium]` `[patch]` the load-bearing library-face yield (`library._con.close()`) had no
+    always-run coverage (deleting it passed every offline test) → the injected launcher now
+    runs a CROSS-process `duckdb.connect` probe. Deviation from the reviewer's prescribed
+    mechanism, verified live: an in-process `duckdb.connect` shares DuckDB's cached database
+    instance and succeeds even while the writer is held (proves nothing); only a cross-process
+    open reproduces the real server's constraint — mutation-verified (deleting the yield line
+    fails the test).
+  - `[medium]` `[patch]` four launch-site gate evasions (`import subprocess as sp`,
+    `os.posix_spawn`, importing `SERVER_EXECUTABLE`/`_launch_duckdb_server` without the
+    literal string, `execute(query="INSTALL …")`) → gate hardened; all four probed shapes
+    detected, all three gates still pass against the boot module.
+  - `[low]` `[patch]` stack-up cleanup caught only `Exception` → `except BaseException` so
+    KeyboardInterrupt/SystemExit cannot leak the writer filelock to API callers.
+  - `[low]` `[patch]` unvalidated `host` echoed into the reported endpoint (installed server
+    has no host flag) → guard mirroring the port guard (real launcher + host != 127.0.0.1 →
+    ValueError), plus a mirror test.
+  - `[low]` `[patch]` SIGTERM orphaned the supervised server holding the plane read-write →
+    `_supervise` registers a SIGTERM handler funneling into the SIGINT clean-shutdown path,
+    exit 130, previous handler restored.
+
+Defer (recorded in frontmatter `deferred`): the yielded stack-up library handle's ergonomics /
+two-faces concurrent usability — Story 20.2's face-parity scope per the intent's Never clause.
+Notable rejects: two reviewer claims verified FALSE against ground truth (`connect_writer`
+already mkdirs the plane's parent, `duckdb_writer.py:43`; the change-log's urllib sentence is
+accurate — the wip conftest comment carried it, invisible in a baseline→HEAD diff); the
+remaining rejects were speculative hardening beyond the contract (post-launch liveness probe,
+envelope stream unification, child-stdout redirection, smoke port race), recorded design
+deviations the intent authorizes (declaration-style stack signal, linux-64 target-table dep
+scoping, atlas-surface gate scope per the F1 precedent), style nits, and a
+two-lock-environments observation that is normal pixi feature composition. Post-patch: story
+tests + launch-site gate 25 passed; `duckdb-singularity` 6 passed; catalog + writer suites 52
+passed.
+
 ## Design Notes
 
 - **Stack-up signal (minted here):** no probe of the compose/Django stack exists in atlas and
@@ -299,3 +366,81 @@ Verified against the live tree 2026-08-27 (worktree HEAD `5bae7d3301`):
 **Manual checks (if no CLI):**
 - `git diff pixi.toml` shows exactly one new dependency line + one new task block under the
   pyforge-atlas feature; `pixi.lock` + `environment.yaml` regenerated in the same commit.
+
+## Auto Run Result
+
+Status: done (2026-08-27, bmad-build-auto single-story dispatch; resumed the 09:37 session's
+wip commit `9ce94fb846` after it died on the account usage limit — this run verified every wip
+claim rather than trusting it, then completed, reviewed, and patched).
+
+**Summary of implemented change:** `pyforge.atlas.query_plane_boot` — the ONE pixi-sourced
+boot script for the CAP-19 query plane (the 2026-08-26 `query-plane-face` ruling's "both, one
+boot script"). The in-process library face always opens via the existing
+`connect_writer` seam; the Mosaic `duckdb-server` HTTP/Arrow face launches from the same
+module's single `subprocess.Popen` site only when `PYFORGE_PLATFORM_STACK_UP`/`stack_up=` is
+truthy, degrading to library-face-only with a structured one-line JSON notice when the stack
+is down. Provisioning absence raises typed `DuckDBServerNotProvisionedError` (never an
+INSTALL); a second boot is refused by the existing `SecondWriterRefused`. NFR-6 CLI
+(`pixi run -e pyforge-atlas query-plane-boot`): 0/1/2/130, SIGINT+SIGTERM clean shutdown.
+
+**Files changed:**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/query_plane_boot.py` — NEW: the one
+  boot module (API `boot_query_plane` + NFR-6 CLI + supervisor).
+- `src/shared/packages/pyforge-atlas/tests/test_query_plane_boot.py` — NEW: all four
+  I/O-matrix rows, env-signal parsing, cross-process yield probe, five CLI exit-code/envelope
+  tests, guarded real-binary smoke.
+- `src/shared/packages/pyforge-atlas/tests/singularity/test_one_duckdb_server_launch_site.py`
+  — NEW: the hardened one-launch-site AST gate (three assertions, F1 style).
+- `pixi.toml` — `duckdb-server >=0.27.0` under `[feature.pyforge-atlas.target.linux-64.dependencies]`
+  (socketify solve constraint, documented) + `query-plane-boot` task; `pixi.lock` re-solved
+  (insert-only; 0.31.0 resolved).
+- `docs/reference/library-llms-full.md` — `duckdb-server` catalog entry (§6, §17 `import pkg`
+  gotcha, env-table row, header note).
+- `src/shared/packages/pyforge-atlas/tests/catalog/conftest.py` + `test_no_inline_io.py` —
+  boot module added to the no-inline-IO exemption set (launch surface gated explicitly by the
+  singularity test instead).
+- `environment.yaml` — re-export byte-identical (the `build` env excludes the pyforge-atlas
+  feature); no hunk.
+
+**Review findings breakdown:** 4 parallel reviewers (blind, edge-case, verification-gap,
+intent-alignment). Triage: 7 patch (0 high, 4 medium, 3 low — all applied and
+mutation-verified where demonstrable), 1 defer (yielded-face ergonomics → frontmatter
+`deferred`, Story 20.2 scope), 15 reject (incl. two claims disproven against ground truth),
+0 intent_gap, 0 bad_spec.
+
+**Follow-up review recommendation: true** — patched severities high 0 / medium 4 / low 3;
+score = 3×4 + 1×3 = 15 ≥ 5.
+
+**Verification performed (all re-run post-patch by the coordinator):**
+- `pixi run -e pyforge-atlas duckdb-singularity` → 6 passed (sole-engine + one-launch-site).
+- story tests (both new files) → 25 passed, real-binary smoke included (not skipped).
+- `pixi run -e pyforge-atlas query-plane-boot` (no signal) → exit 0, one-line
+  `http-face-not-raised` JSON envelope.
+- `pixi run -e local-recipes llms-full-check` → exit 0 (catalog clean).
+- `pixi run -e pyforge-atlas kedro-test` → 1263 passed / 21 skipped; 3 failed + 2 errors, ALL
+  pre-existing at baseline `5bae7d3301` (verified: none of their inputs are in the story
+  diff; `pixi.lock` change is insert-only): CLAUDE.md SKF-block vs pinned manifest
+  (`tests/meta/test_skf_skill_and_persona.py`), sprint-ledger key drift
+  (`tests/dashboard/test_dashboard_dryrun.py`), MCP `PIPELINE_NAMES` registry drift
+  (`tests/mcp/test_audit_mapping.py`), and two `test_read_only_live_attach.py` errors from
+  missing `initdb`/`pg_ctl` in this lean worktree (fixture's own fail-loud; `platform-dev`
+  env not installed here). Estate drift owned outside this story — flagged for the landing
+  pass, not fixed here (Never section limits scope).
+- Live CLI matrix (pre-patch pass): stack-up both faces + real HTTP query served, SIGINT →
+  130; `SecondWriterRefused` → 1.
+
+**Residual risks:**
+- While the HTTP face lives, the server is the plane's sole DuckDB holder: the returned
+  `library` handle is a lock token (untyped closed-connection error on use) and
+  `connect_reader` from other processes fails — recorded handling (Design Notes) forced by
+  duckdb 1.5.5's single-writer cross-process rule; parity/usability proof is Story 20.2's.
+  The operator memory's alternative (server on `:memory:` + ATTACH read-only) is captured in
+  the deferred item for 20.2's consideration.
+- The HTTP face is linux-64-only (socketify availability); other platforms always terminate
+  in MISSING_PROVISIONING.
+- The installed server hard-codes port 3000 (no port/host flags); the boot fails loud on any
+  other requested value with the real launcher.
+- The stack-up signal is a declaration (env/arg), not a live platform probe — trusted input
+  by design, wireable to a real probe later without contract change.
+- Launch contract verified against installed 0.31.0; floor `>=0.27.0` admits older solves
+  whose argv contract was not re-verified (lock currently pins 0.31.0).

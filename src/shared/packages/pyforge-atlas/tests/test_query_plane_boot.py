@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import shutil
 import socket
+import subprocess
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -66,13 +68,42 @@ def test_stack_down_raises_library_face_only(
 def test_stack_up_launches_via_injected_launcher(tmp_path: Path) -> None:
     path = _plane(tmp_path)
     recorded: list[list[str]] = []
+    probe_rcs: list[int] = []
 
     def launcher(argv: Any) -> _FakeProcess:
         recorded.append(list(argv))
+        # The load-bearing yield, proven where it matters (review finding 5,
+        # Story 20.1): the real server opens the path READ-WRITE from its OWN
+        # process at launch, and duckdb refuses any cross-process open while
+        # an in-process read-write connection is held — so this CROSS-process
+        # probe succeeds only because boot_query_plane yielded its connection
+        # before calling the launcher. (An in-process ``duckdb.connect`` here
+        # would silently share the cached database instance and prove nothing
+        # — verified live 2026-08-27.)
+        probe = subprocess.run(  # noqa: S603 — fixed argv, no shell
+            [
+                sys.executable,
+                "-c",
+                "import sys, duckdb; con = duckdb.connect(sys.argv[1]); "
+                "con.execute('SELECT 1'); con.close()",
+                str(path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert probe.returncode == 0, (
+            "the plane DB must be openable cross-process at launch time, "
+            "exactly as the real server requires (is the library-face yield "
+            f"missing?): {probe.stderr}"
+        )
+        probe_rcs.append(probe.returncode)
         return _FakeProcess()
 
     boot = boot_query_plane(path, stack_up=True, launcher=launcher)
     try:
+        # The launch-time cross-process open genuinely ran and succeeded.
+        assert probe_rcs == [0]
         # Both handles are returned.
         assert boot.http is not None
         assert isinstance(boot.http.process, _FakeProcess)
@@ -103,6 +134,20 @@ def test_stack_up_with_custom_port_and_real_launcher_fails_loud(
     path = _plane(tmp_path)
     with pytest.raises(ValueError, match="3000"):
         boot_query_plane(path, stack_up=True, port=8123, launcher=None)
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_stack_up_with_custom_host_and_real_launcher_fails_loud(
+    tmp_path: Path,
+) -> None:
+    # Mirror of the port guard (review finding 4, Story 20.1): the installed
+    # duckdb-server has no host flag either, so a real launch with any other
+    # host would report an endpoint that may point nowhere. Fail loud, and
+    # release the writer lock on the way out.
+    path = _plane(tmp_path)
+    with pytest.raises(ValueError, match="no host"):
+        boot_query_plane(path, stack_up=True, host="192.168.1.5", launcher=None)
     writer = connect_writer(path)
     writer.close()
 
@@ -175,6 +220,79 @@ def test_explicit_override_beats_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert stack_is_up(False) is False
     monkeypatch.delenv(STACK_UP_ENV, raising=False)
     assert stack_is_up(True) is True
+
+
+# --- CLI boundary: main(), the NFR-6 exit lattice, the JSON envelopes --------
+# (review finding 1, Story 20.1: nothing crossed the CLI boundary before —
+# reordering main()'s except handlers went undetected.)
+
+
+def test_cli_stack_down_exits_zero_with_one_line_envelope(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.delenv(STACK_UP_ENV, raising=False)
+    path = _plane(tmp_path)
+    assert query_plane_boot.main(["--path", str(path)]) == 0
+    captured = capsys.readouterr()
+    lines = [line for line in captured.out.splitlines() if line.strip()]
+    assert len(lines) == 1, captured.out
+    envelope = json.loads(lines[0])
+    assert envelope["event"] == "http-face-not-raised"
+    assert envelope["reason"] == "stack-down"
+    # The CLI released the library face on exit: a follow-up writer succeeds.
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_cli_second_boot_exits_one_with_typed_refusal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.delenv(STACK_UP_ENV, raising=False)
+    path = _plane(tmp_path)
+    holder = connect_writer(path)
+    try:
+        assert query_plane_boot.main(["--path", str(path)]) == 1
+    finally:
+        holder.close()
+    envelope = json.loads(capsys.readouterr().out.strip())
+    assert envelope["event"] == "boot-refused"
+    assert envelope["error"] == "SecondWriterRefused"
+
+
+def test_cli_missing_provisioning_exits_one_with_typed_refusal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv(STACK_UP_ENV, "1")
+    monkeypatch.setattr(query_plane_boot.shutil, "which", lambda _: None)
+    path = _plane(tmp_path)
+    assert query_plane_boot.main(["--path", str(path)]) == 1
+    envelope = json.loads(capsys.readouterr().out.strip())
+    assert envelope["event"] == "boot-refused"
+    assert envelope["error"] == "DuckDBServerNotProvisionedError"
+    # The writer lock was released on the refusal path.
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_cli_unexpected_crash_exits_two(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def explode(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(query_plane_boot, "boot_query_plane", explode)
+    assert query_plane_boot.main(["--path", str(_plane(tmp_path))]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "RuntimeError: boom" in captured.err
 
 
 # --- real-binary smoke (guarded) --------------------------------------------
