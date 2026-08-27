@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-bg: #f3f2f2; --color-surface: #eae9e9; --color-text: #201e1d;
+    --color-accent: #ec3013; --color-accent-2: #e15b47;
+    --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+    --color-neutral-200: #eae7e7; --color-neutral-300: #d7d3d3; --color-neutral-400: #bab6b6;
+    --color-accent-100: #fff2ef; --color-accent-200: #ffe0d9; --color-accent-400: #ff9783; --color-accent-700: #ae1800;
+    --font-body: "Archivo", system-ui, sans-serif;
+  }
+  body { margin:0; background:#cfcccb; }
+  .code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  h2 { font-family:'Archivo', system-ui, sans-serif; font-weight:800; }
+  svg text { font-family:'Archivo', system-ui, sans-serif; }
+</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <!-- 01 · COVER -->
+  <section data-label="Cover" data-speaker-notes="PyForge Unifying Strategy — the Canopy and the 8-station hub-and-spoke enterprise architecture. Eight excellent CLIs, one estate: one chrome, one session, one grammar, one event backbone, one query plane." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column;">
+    <div style="font-size:19px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; opacity:0.9;">PyForge estate Dream · steward chain · spec-pyforge-unifying-strategy</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:150px; line-height:0.94; letter-spacing:-0.02em; margin:40px 0 0;">The Canopy</h2>
+    <div class="code" style="font-size:24px; font-weight:700; margin-top:22px; opacity:0.92;">pyforge-unifying-strategy · the 8-station hub-and-spoke enterprise architecture</div>
+    <p style="font-size:30px; line-height:1.45; margin:38px 0 0; max-width:1480px; font-weight:500;">Eight capability stations, each an excellent CLI that stopped there. The Canopy — <span class="code">src/platform/</span> — mounts them under <b>one chrome, one session, one grammar, one event backbone and one query plane</b>, with a governance mandate: schema change auditable, identity revocable, failure contained.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid var(--color-bg); padding-top:22px; font-size:18px; font-weight:600;"><span>Warden · Atlas · Mason · Marshal · Doctor · Herald · Scribe · Steward</span><span>01 / 27</span></div>
+  </section>
+
+  <!-- 02 · WHY -->
+  <section data-label="Why the Canopy" data-speaker-notes="Eight stations, one canopy. Sign in once, never leave the origin. Nineteen capabilities; CAP-1..18 closed 2026-08-26, CAP-19 first slice shipped the same day." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="font-size:17px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why the Canopy</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:1.0; letter-spacing:-0.02em; margin:20px 0 0; max-width:1600px;">Eight stations. One canopy. <span style="color:var(--color-accent);">Sign in once, never leave the origin.</span></h2>
+    <div style="flex:1; display:flex; align-items:center;">
+      <div style="display:flex; width:100%; border-top:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider);">
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">01</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Warden</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">compliance gate</div></div>
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">02</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Atlas</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">package graph</div></div>
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">03</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Mason</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">recipe builder</div></div>
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">04</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Marshal</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">loop cockpit</div></div>
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">05</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Doctor</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">health &amp; remedy</div></div>
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">06</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Herald</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">decks &amp; stage</div></div>
+        <div style="flex:1; padding:28px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">07</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Scribe</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">team memory</div></div>
+        <div style="flex:1; padding:28px 18px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; color:var(--color-accent);">08</div><div style="font-size:24px; font-weight:700; margin-top:8px;">Steward</div><div style="font-size:16px; margin-top:4px; color:#605d5d;">platform custody</div></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>02 / 27</span></div>
+  </section>
+
+  <!-- 03 · ACT I -->
+  <section data-label="Act I" data-speaker-notes="Act I — the friction. Eight terminals, eight mental models, and a governance mandate riding on top." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-text); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT I</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:1.0; letter-spacing:-0.02em; margin:24px 0 0;">Eight terminals</h2>
+    <p style="font-size:30px; line-height:1.45; margin:30px 0 0; max-width:1400px; opacity:0.85;">Excellent stations, no estate. No shared identity, no shared vocabulary, no way for one station to tell another that something happened.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid rgba(243,242,242,0.4); padding-top:22px; font-size:18px; font-weight:600; opacity:0.8;"><span>The friction</span><span>03 / 27</span></div>
+  </section>
+
+  <!-- 04 · THE PROBLEM -->
+  <section data-label="The problem" data-speaker-notes="Eight terminals and mental models per operator; one of eight portals mounted before the drain; zero station-to-station signals. And the deployment target is air-gapped and regulated — the mandate is governance, not UI." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">01</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">The problem</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0; align-items:center;">
+      <p style="font-size:28px; line-height:1.5; margin:0; padding-right:44px;">Each station shipped as a <b>genuinely good CLI and stopped there</b>. An operator wanting compliance findings, package health, fleet status and build queues holds eight terminals — and gets <b>no help relating them</b>.</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 36px;"><div style="font-size:100px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">8</div><div style="font-size:21px; line-height:1.4; margin-top:12px;">terminals and mental models per operator</div></div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 36px;"><div style="font-size:100px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">1<span style="font-size:52px;">/8</span></div><div style="font-size:21px; line-height:1.4; margin-top:12px;">portals mounted before the drain — warden's at <span class="code">/compliance/</span></div></div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 36px;"><div style="font-size:100px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">0</div><div style="font-size:21px; line-height:1.4; margin-top:12px;">ways for one station to tell another that something happened</div></div>
+    </div>
+    <div style="border:3px solid var(--color-text); padding:24px 32px; font-size:24px; line-height:1.45;"><b>The mandate is governance:</b> schema change auditable, identity revocable, failure contained — five RFCs and eight blind-spot directives. Never merely a UI project.</div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:28px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>04 / 27</span></div>
+  </section>
+
+  <!-- 05 · FOUR USERS -->
+  <section data-label="Four users" data-speaker-notes="Platform engineer: eight CLIs, no shared grammar. Auditor: compliance and nothing else. Operator: the app role could alter its own schema. Agent: only atlas had a service face — and the agent is a first-class user." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">02</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Four users, four broken paths</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:36px; align-content:center;">
+      <div style="border:3px solid var(--color-text);"><div style="background:var(--color-text); color:var(--color-bg); padding:20px 24px;"><div style="font-size:15px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Builds it</div><div style="font-size:28px; font-weight:800; margin-top:4px;">Platform engineer</div></div><div style="padding:26px 24px; font-size:21px; line-height:1.5;">Eight separate CLIs. <b>No shared grammar</b> — every station its own verbs and output shape.</div></div>
+      <div style="border:3px solid var(--color-text);"><div style="background:var(--color-text); color:var(--color-bg); padding:20px 24px;"><div style="font-size:15px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Answers for it</div><div style="font-size:28px; font-weight:800; margin-top:4px;">Auditor</div></div><div style="padding:26px 24px; font-size:21px; line-height:1.5;">Warden's portal — the one that existed. <b>Compliance and nothing else</b>; no path to package, build or fleet context.</div></div>
+      <div style="border:3px solid var(--color-text);"><div style="background:var(--color-text); color:var(--color-bg); padding:20px 24px;"><div style="font-size:15px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Runs it</div><div style="font-size:28px; font-weight:800; margin-top:4px;">Operator</div></div><div style="padding:26px 24px; font-size:21px; line-height:1.5;"><span class="code">kubectl</span> + Helm. Schema change was whatever migrations did — <b>the app role could alter its own schema</b>.</div></div>
+      <div style="border:3px solid var(--color-accent);"><div style="background:var(--color-accent); color:var(--color-bg); padding:20px 24px;"><div style="font-size:15px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.85;">First-class user</div><div style="font-size:28px; font-weight:800; margin-top:4px;">Agent</div></div><div style="padding:26px 24px; font-size:21px; line-height:1.5; background:var(--color-accent-100);">Atlas's MCP server — the only one. <b>Seven stations had no service face</b>; long operations died with the connection.</div></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>05 / 27</span></div>
+  </section>
+
+  <!-- 06 · ACT II -->
+  <section data-label="Act II" data-speaker-notes="Act II — one canopy. The hub-and-spoke insight: one platform canopy mounting eight stations, a modular monolith, not a services farm." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-text); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT II</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:1.0; letter-spacing:-0.02em; margin:24px 0 0;">One canopy</h2>
+    <p style="font-size:30px; line-height:1.45; margin:30px 0 0; max-width:1400px; opacity:0.85;">Hub and spoke: one ASGI host carries chrome, identity, portals and service faces. Heavy work goes to Celery. Not a <span class="code">services/</span> farm.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid rgba(243,242,242,0.4); padding-top:22px; font-size:18px; font-weight:600; opacity:0.8;"><span>The insight</span><span>06 / 27</span></div>
+  </section>
+
+  <!-- 07 · HUB & SPOKE -->
+  <section data-label="Hub and spoke" data-speaker-notes="The Canopy at the center — chrome, OIDC, Wagtail, portals, MCP faces, dispatch, events — and never imports pyforge.*. Eight spokes. Below, exactly three backing kinds: PostgreSQL, Redis, Kubernetes." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:70px 110px 56px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:14px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">03</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">The hub-and-spoke topology</h2></div>
+    <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:14px 0 6px;">
+      <svg viewBox="0 0 1128 700" style="height:100%; max-width:100%;" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#201e1d" stroke-width="2">
+          <line x1="564" y1="330" x2="564" y2="120"/><line x1="564" y1="330" x2="854" y2="170"/>
+          <line x1="564" y1="330" x2="966" y2="330"/><line x1="564" y1="330" x2="854" y2="490"/>
+          <line x1="564" y1="330" x2="564" y2="540"/><line x1="564" y1="330" x2="274" y2="490"/>
+          <line x1="564" y1="330" x2="162" y2="330"/><line x1="564" y1="330" x2="274" y2="170"/>
+        </g>
+        <line x1="564" y1="410" x2="564" y2="618" stroke="#201e1d" stroke-width="2" stroke-dasharray="6 5"/>
+        <rect x="414" y="250" width="300" height="160" fill="#ec3013"/>
+        <text x="564" y="284" text-anchor="middle" fill="#f3f2f2" font-size="20" font-weight="900" letter-spacing="1">THE CANOPY</text>
+        <text x="564" y="306" text-anchor="middle" fill="#f3f2f2" font-size="12.5" font-family="ui-monospace, Menlo, monospace">src/platform/ · one ASGI process</text>
+        <text x="564" y="330" text-anchor="middle" fill="#ffe0d9" font-size="12">django-pyforge chrome · allauth OIDC</text>
+        <text x="564" y="349" text-anchor="middle" fill="#ffe0d9" font-size="12">Wagtail / · 8 portals · 8 MCP faces</text>
+        <text x="564" y="368" text-anchor="middle" fill="#ffe0d9" font-size="12">pyforge dispatch · CloudEvents backbone</text>
+        <text x="564" y="392" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="700" letter-spacing="0.5">NEVER IMPORTS pyforge.* — packages only</text>
+        <g>
+          <rect x="479" y="91" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="564" y="116" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Warden</text>
+          <text x="564" y="136" text-anchor="middle" fill="#605d5d" font-size="10.5">sole PR-gate verdict</text>
+          <rect x="769" y="141" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="854" y="166" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Atlas</text>
+          <text x="854" y="186" text-anchor="middle" fill="#605d5d" font-size="10.5">graph · Kedro home · plane writer</text>
+          <rect x="881" y="301" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="966" y="326" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Mason</text>
+          <text x="966" y="346" text-anchor="middle" fill="#605d5d" font-size="10.5">conda-forge recipes</text>
+          <rect x="769" y="461" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="854" y="486" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Marshal</text>
+          <text x="854" y="506" text-anchor="middle" fill="#605d5d" font-size="10.5">loop cockpit · run verbs</text>
+          <rect x="479" y="511" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="564" y="536" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Doctor</text>
+          <text x="564" y="556" text-anchor="middle" fill="#605d5d" font-size="10.5">diagnostics · advisory only</text>
+          <rect x="189" y="461" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="274" y="486" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Herald</text>
+          <text x="274" y="506" text-anchor="middle" fill="#605d5d" font-size="10.5">decks · proclamations</text>
+          <rect x="77" y="301" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="162" y="326" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Scribe</text>
+          <text x="162" y="346" text-anchor="middle" fill="#605d5d" font-size="10.5">team memory · graph port</text>
+          <rect x="189" y="141" width="170" height="58" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+          <text x="274" y="166" text-anchor="middle" fill="#201e1d" font-size="17" font-weight="800">Steward</text>
+          <text x="274" y="186" text-anchor="middle" fill="#605d5d" font-size="10.5">custody · owns this chain</text>
+        </g>
+        <text x="740" y="240" fill="#ae1800" font-size="11" font-weight="700" font-family="ui-monospace, Menlo, monospace">/stations/&lt;name&gt;/</text>
+        <text x="700" y="452" fill="#ae1800" font-size="11" font-weight="700" font-family="ui-monospace, Menlo, monospace">POST /stations/&lt;name&gt;/mcp</text>
+        <rect x="94" y="618" width="280" height="56" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+        <text x="234" y="642" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="800">PostgreSQL 17</text>
+        <text x="234" y="661" text-anchor="middle" fill="#605d5d" font-size="10.5">OLTP · app schemas · pgvector</text>
+        <rect x="424" y="618" width="280" height="56" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+        <text x="564" y="642" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="800">Redis 7</text>
+        <text x="564" y="661" text-anchor="middle" fill="#605d5d" font-size="10.5">broker (noeviction) + cache (allkeys-lru)</text>
+        <rect x="754" y="618" width="280" height="56" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+        <text x="894" y="642" text-anchor="middle" fill="#201e1d" font-size="15" font-weight="800">Kubernetes / OpenShift</text>
+        <text x="894" y="661" text-anchor="middle" fill="#605d5d" font-size="10.5">Helm chart + OCP overlay · restricted-v2</text>
+      </svg>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:14px; font-size:16px; color:#605d5d; font-weight:600;"><span>Exactly three backing kinds — a fourth has failed design review</span><span>07 / 27</span></div>
+  </section>
+
+  <!-- 08 · LANE MODEL -->
+  <section data-label="The lane model" data-speaker-notes="Three lanes behind one OIDC session: Wagtail front door, eight HTMX portals, Vizro analytics with row isolation. Agents come through the MCP faces and the unified grammar. Heavy work lands on Celery over redis-broker." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:70px 110px 56px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:14px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">04</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Three lanes, one session — two agent doors</h2></div>
+    <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:14px 0 6px;">
+      <svg viewBox="0 0 1128 640" style="height:100%; max-width:100%;" xmlns="http://www.w3.org/2000/svg">
+        <rect x="140" y="28" width="220" height="50" fill="#201e1d"/>
+        <text x="250" y="59" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="800">Operator</text>
+        <rect x="800" y="28" width="240" height="50" fill="#201e1d"/>
+        <text x="920" y="59" text-anchor="middle" fill="#f3f2f2" font-size="16" font-weight="800">Agent</text>
+        <line x1="250" y1="78" x2="250" y2="118" stroke="#201e1d" stroke-width="2"/>
+        <line x1="920" y1="78" x2="920" y2="196" stroke="#201e1d" stroke-width="2"/>
+        <rect x="60" y="120" width="700" height="56" fill="#ec3013"/>
+        <text x="82" y="144" fill="#f3f2f2" font-size="13" font-weight="900" letter-spacing="1">ONE SESSION — django-allauth OIDC</text>
+        <text x="82" y="163" fill="#ffe0d9" font-size="11.5">sign in once at the front door · roles from the IdP · revoked role gone on the next request (CAP-12)</text>
+        <line x1="410" y1="176" x2="410" y2="200" stroke="#201e1d" stroke-width="2"/>
+        <rect x="60" y="202" width="700" height="88" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="80" y="228" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">LANE 1 · THE FRONT DOOR · CAP-2</text>
+        <text x="80" y="250" fill="#201e1d" font-size="15.5" font-weight="800">Wagtail CMS at /</text>
+        <text x="80" y="272" fill="#605d5d" font-size="12">pages published with no code deploy · admin behind the IdP — /cms/ answers 302 to OIDC · supersedes the static console</text>
+        <rect x="60" y="306" width="700" height="88" fill="#fff2ef" stroke="#ec3013" stroke-width="2"/>
+        <text x="80" y="332" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">LANE 2 · EIGHT PORTALS · CAP-1 + CAP-3</text>
+        <text x="80" y="354" fill="#201e1d" font-size="15.5" font-weight="800" font-family="ui-monospace, Menlo, monospace">/stations/&lt;name&gt;/</text>
+        <text x="80" y="376" fill="#605d5d" font-size="12">HTMX · zero domain models · chrome from django-pyforge · adding a portal changes no host code outside its registration</text>
+        <rect x="60" y="410" width="700" height="88" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="80" y="436" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">LANE 3 · ANALYTICS · CAP-7</text>
+        <text x="80" y="458" fill="#201e1d" font-size="15.5" font-weight="800">Vizro over BSL over the query plane</text>
+        <text x="80" y="480" fill="#605d5d" font-size="12">per-tenant row isolation at the identity boundary — two roles, same board URL, provably different row sets</text>
+        <rect x="800" y="202" width="240" height="130" fill="#fff2ef" stroke="#ec3013" stroke-width="2"/>
+        <text x="820" y="228" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">SERVICE FACES · CAP-4</text>
+        <text x="820" y="252" fill="#201e1d" font-size="13.5" font-weight="800" font-family="ui-monospace, Menlo, monospace">POST /stations/&lt;n&gt;/mcp</text>
+        <text x="820" y="274" fill="#605d5d" font-size="11.5">on the host ASGI · dual-era</text>
+        <text x="820" y="292" fill="#605d5d" font-size="11.5">2025-03-26 → 2026-07-28</text>
+        <text x="820" y="310" fill="#605d5d" font-size="11.5">start/get survives disconnects</text>
+        <rect x="800" y="352" width="240" height="92" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="820" y="378" fill="#ae1800" font-size="11" font-weight="800" letter-spacing="0.8">ONE GRAMMAR · CAP-5</text>
+        <text x="820" y="402" fill="#201e1d" font-size="13" font-weight="800" font-family="ui-monospace, Menlo, monospace">pyforge &lt;stn&gt; &lt;noun&gt; &lt;verb&gt;</text>
+        <text x="820" y="424" fill="#605d5d" font-size="11.5">dispatches to the 8 CLIs · CI parity</text>
+        <line x1="920" y1="332" x2="920" y2="352" stroke="#201e1d" stroke-width="2"/>
+        <line x1="760" y1="350" x2="800" y2="350" stroke="#201e1d" stroke-width="2" stroke-dasharray="5 4"/>
+        <line x1="410" y1="498" x2="410" y2="530" stroke="#201e1d" stroke-width="2"/>
+        <line x1="920" y1="444" x2="920" y2="530" stroke="#201e1d" stroke-width="2"/>
+        <rect x="60" y="532" width="980" height="72" fill="#201e1d"/>
+        <text x="82" y="560" fill="#f3f2f2" font-size="13.5" font-weight="800">OUT-OF-REQUEST POOL — Celery workers on redis-broker (noeviction) · CAP-11</text>
+        <text x="82" y="582" fill="#bab6b6" font-size="12">broker and cache are separate resources with separate eviction — filling the cache to its limit provably loses no queued task · workers and web scale independently</text>
+      </svg>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:14px; font-size:16px; color:#605d5d; font-weight:600;"><span>Lane 2 is HTMX, not DRF — compute JSON stays FastAPI behind CAP-6's client</span><span>08 / 27</span></div>
+  </section>
+
+  <!-- 09 · NINETEEN CAPS -->
+  <section data-label="Nineteen capabilities" data-speaker-notes="The whole contract: CAP-1..18 closed 2026-08-26 — chrome, front door, portals, MCP faces, grammar, identity client, Lane 3, events, governed DDL, containment, broker/cache split, revocable access, flags, Scribe store, skills, personas, supervisor, hook contract. CAP-19 is the evergreen query-plane reopen, first slice shipped the same day." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:70px 110px 56px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:14px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">05</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Nineteen capabilities at a glance</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(5,1fr); grid-auto-rows:1fr; gap:0; border-left:2px solid var(--color-divider); border-top:2px solid var(--color-divider); margin-top:20px; font-size:15px;">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-1</b> · Shared chrome — <span class="code">django-pyforge</span></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-2</b> · CMS front door at <span class="code">/</span>; console retired</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-3</b> · Eight portals, one session</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-4</b> · MCP faces on the host ASGI</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-5</b> · One command grammar</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-6</b> · One client, carrying identity</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-7</b> · Analytics behind the door</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-8</b> · Event backbone + DLQ</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);"><b style="color:var(--color-accent-700);">CAP-9</b> · Governed DDL — <b>proven live</b></div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-10</b> · Failure is contained</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-11</b> · Queue ≠ cache</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-12</b> · Revocable access, delivered secrets</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-13</b> · Flags without redeploy</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-14</b> · Scribe outlives one file</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-15</b> · Domain skills — 40/40</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-16</b> · Station personas — 40/40</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-17</b> · Run state is a service</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px;"><b style="color:var(--color-accent-700);">CAP-18</b> · One hook-spec + plugin shape</div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100); grid-column: span 2;"><b style="color:var(--color-accent-700);">CAP-19</b> · One HTAP query plane; stations are clients — <b>first slice shipped · evergreen</b></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:14px; margin-top:20px; font-size:16px; color:#605d5d; font-weight:600;"><span>Every success criterion is written to fail when the capability is absent</span><span>09 / 27</span></div>
+  </section>
+  <!-- 10 · ACT III -->
+  <section data-label="Act III" data-speaker-notes="Act III — how the mounting works: chrome, front door, portals, identity, service faces, skills and personas." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-text); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT III</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:1.0; letter-spacing:-0.02em; margin:24px 0 0;">How the mounting works</h2>
+    <p style="font-size:30px; line-height:1.45; margin:30px 0 0; max-width:1400px; opacity:0.85;">One chrome package, one front door, one URL scheme, one identity path, one service-face design.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid rgba(243,242,242,0.4); padding-top:22px; font-size:18px; font-weight:600; opacity:0.8;"><span>The mechanics</span><span>10 / 27</span></div>
+  </section>
+
+  <!-- 11 · ONE CHROME -->
+  <section data-label="One chrome" data-speaker-notes="django-pyforge: app switcher from AppConfig registration (owner, backup, work_class, promotion date), OIDC-aware base layout, Modernist theme, zero CDNs. Proven by a test that fails if a portal ships its own copy. django-lasuite had no chrome — this was ours to build." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">06</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">One chrome — <span class="code">django-pyforge</span> · CAP-1</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:36px; align-content:center;">
+      <div style="border:3px solid var(--color-text); padding:34px 30px;"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">App switcher</div><p style="font-size:21px; line-height:1.5; margin:14px 0 0;">Entries derive from each portal's <b>registration seam</b> — never a path list. The seam carries owner, backup, <span class="code">work_class</span>, promotion date; the Guildhall refuses to tile 01/02 work.</p></div>
+      <div style="border:3px solid var(--color-text); padding:34px 30px;"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Base layout + theme</div><p style="font-size:21px; line-height:1.5; margin:14px 0 0;">OIDC-aware <span class="code">pyforge/base.html</span>, Modernist theme, WhiteNoise assets, <b>zero external CDNs</b>. Portals extend it and inherit switcher + auth context.</p></div>
+      <div style="border:3px solid var(--color-accent); padding:34px 30px; background:var(--color-accent-100);"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Proof, not promise</div><p style="font-size:21px; line-height:1.5; margin:14px 0 0;">Identical chrome, zero duplicated files — <b>a test fails if a portal ships its own copy</b>. A portal that owns chrome has violated the contract.</p></div>
+    </div>
+    <div style="border:3px solid var(--color-text); padding:22px 30px; font-size:20px; line-height:1.5;">Reusable-app convention: distribution <span class="code">django-&lt;station&gt;</span> · module <span class="code">django_&lt;station&gt;_&lt;app&gt;</span> · label <span class="code">&lt;station&gt;_&lt;app&gt;</span> — and a model never moves between apps.</div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:26px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>11 / 27</span></div>
+  </section>
+
+  <!-- 12 · FRONT DOOR -->
+  <section data-label="The front door" data-speaker-notes="CAP-2 supersedes the shipped console — parity before removal. 23 surfaces: 14 runtime, 7 build-time-only, 3 mixed; the seven collapse to four decisions; 100+ inbound references. CAP-17 is the one place the chain grew: a supervisor publishes run state instead of reading an operator's disk. Live: / 200, /cms/ 302 to OIDC." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">07</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">The front door displaces something that worked · CAP-2 + CAP-17</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-content:center;">
+      <div>
+        <div style="display:flex; border:3px solid var(--color-text);">
+          <div style="flex:1.3; padding:24px 26px; border-right:3px solid var(--color-text);"><div style="font-size:72px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1;">14</div><div style="font-size:19px; margin-top:8px;">runtime-reproducible</div></div>
+          <div style="flex:1; padding:24px 26px; border-right:3px solid var(--color-text); background:var(--color-accent-100);"><div style="font-size:72px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">7</div><div style="font-size:19px; margin-top:8px;">build-time-only</div></div>
+          <div style="flex:1; padding:24px 26px;"><div style="font-size:72px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1;">3</div><div style="font-size:19px; margin-top:8px;">mixed</div></div>
+        </div>
+        <p style="font-size:21px; line-height:1.5; margin:22px 0 0;">23 console surfaces, honestly counted. The seven collapsed to <b>four decisions</b>; the retired path had <b>100+ inbound references</b> (its own story); the Kedro-Viz tree is <b>not</b> a parity obligation. The committed-snapshot model is the property the supersession removes.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:24px; justify-content:center;">
+        <div style="border:3px solid var(--color-accent); background:var(--color-accent-100); padding:24px 28px;"><div style="font-size:22px; font-weight:800;">CAP-17 — run state becomes a service</div><p style="font-size:19px; line-height:1.5; margin:10px 0 0;">The console read <span class="code">~/.bmad-loops</span> and tmux off a local disk. The operator chose to keep those surfaces and pay: a supervisor publishes them. <b>The replacement is held to a higher bar than what it replaces — deliberately.</b></p></div>
+        <div style="border:3px solid var(--color-text); padding:24px 28px;"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Live proof · CRC 2026-08-26</div><div style="font-size:20px; margin-top:10px; line-height:1.6;"><span class="code">GET /</span> → <b>200</b> — published from PostgreSQL · <span class="code">/cms/</span> → <b>302</b> to the IdP · page edits deploy nothing</div></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>12 / 27</span></div>
+  </section>
+
+  <!-- 13 · PORTALS + IDENTITY -->
+  <section data-label="Portals and identity" data-speaker-notes="Uniform /stations/name/ — warden moved off /compliance/ behind a permanent redirect. Portal to client to service: RS256 delegated JWT, audience-bound, five-minute expiry; the service verifies independently; Celery captures the subject for scoped execution tokens." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">08</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Eight portals, one identity path · CAP-3 + CAP-6</h2></div>
+    <div style="flex:1; display:flex; align-items:center; gap:0;">
+      <div style="flex:1.05; border:3px solid var(--color-text); padding:30px 26px;"><div style="font-size:15px; font-weight:700; color:var(--color-accent);">PORTAL</div><div style="font-size:26px; font-weight:800; margin:10px 0 12px;">HTMX view</div><div style="font-size:19px; line-height:1.5;">Zero domain models. Adding or removing a portal changes <b>no host code</b> outside its own registration.</div></div>
+      <div style="padding:0 16px; font-size:40px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1.35; border:3px solid var(--color-accent); padding:30px 26px; background:var(--color-accent-100);"><div style="font-size:15px; font-weight:700; color:var(--color-accent-700);">THE ONLY PATH · CAP-6</div><div style="font-size:26px; font-weight:800; margin:10px 0 12px;"><span class="code">pyforge.core</span> client</div><div style="font-size:19px; line-height:1.5;">Mints a signed <b>RS256</b> assertion — <span class="code">sub</span>=<span class="code">idp_subject</span>, roles, <span class="code">aud=mcp:&lt;station&gt;</span>, <span class="code">delegated_by=pyforge-host</span>, <span class="code">exp ≤ 5 min</span>. HMAC rejected: a shared secret is not an identity.</div></div>
+      <div style="padding:0 16px; font-size:40px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1.05; border:3px solid var(--color-text); padding:30px 26px;"><div style="font-size:15px; font-weight:700; color:var(--color-accent);">SERVICE</div><div style="font-size:26px; font-weight:800; margin:10px 0 12px;">Verifies, independently</div><div style="font-size:19px; line-height:1.5;">Signature + audience checked — provably <b>which end user</b> the call served. A forwarded header is never trusted.</div></div>
+      <div style="padding:0 16px; font-size:40px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1.05; border:3px solid var(--color-text); padding:30px 26px;"><div style="font-size:15px; font-weight:700; color:var(--color-accent);">LONG WORK</div><div style="font-size:26px; font-weight:800; margin:10px 0 12px;">Celery, delegated</div><div style="font-size:19px; line-height:1.5;">Tasks capture <span class="code">idp_subject</span> at invocation and mint scoped execution tokens (BS-3).</div></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>Uniform /stations/&lt;name&gt;/ — warden's /compliance/ lives on as a permanent redirect</span><span>13 / 27</span></div>
+  </section>
+
+  <!-- 14 · SERVICE FACES -->
+  <section data-label="Service faces" data-speaker-notes="Eight MCP faces on the host ASGI. Era discipline: accept five revisions, echo the client's, never sniff names. Disconnect survival is a start/get pair over a durable store — the Tasks extension has no server-side runtime anywhere. Task handles are capabilities. Keep-alives under 30 seconds." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">09</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Every station has a service face · CAP-4</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-content:center;">
+      <div style="border:3px solid var(--color-text); padding:32px 34px;">
+        <div style="font-size:17px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin-bottom:18px;">The wire rules — era discipline</div>
+        <div style="display:flex; flex-direction:column; gap:16px; font-size:21px; line-height:1.45;">
+          <div><b>Accept <span class="code">2025-03-26</span> → <span class="code">2026-07-28</span></b> — the fleet is split; pinning either end alone rejects real traffic.</div>
+          <div><b>Echo the client's revision</b> — a client aborts on an unknown one <i>even when it is newer</i>.</div>
+          <div><b>Never branch on a client's name.</b> Only the declared revision decides.</div>
+        </div>
+      </div>
+      <div style="border:3px solid var(--color-accent); padding:32px 34px; background:var(--color-accent-100);">
+        <div style="font-size:17px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin-bottom:18px;">Disconnect survival — outcome, not extension</div>
+        <div style="display:flex; flex-direction:column; gap:16px; font-size:21px; line-height:1.45;">
+          <div><b><span class="code">start</span>/<span class="code">get</span> over a durable store</b> — SEP-2663's own lifecycle; adopting Tasks later is a wire-layer swap.</div>
+          <div><b>The handle is a capability</b> — opaque, high-entropy, TTL'd.</div>
+          <div><b>Never:</b> progress notifications, sticky sessions, stream replay. Keep-alives <b>well under 30 s</b>.</div>
+        </div>
+      </div>
+    </div>
+    <div style="border:3px solid var(--color-text); padding:22px 30px; font-size:22px; line-height:1.5;"><b>Success:</b> an agent completes a multi-minute operation across a simulated ingress disconnect — and retrieves the result from a different replica.</div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:26px; font-size:16px; color:#605d5d; font-weight:600;"><span>POST /stations/&lt;name&gt;/mcp · official mcp 2.0.0 SDK · GET answers 405</span><span>14 / 27</span></div>
+  </section>
+
+  <!-- 15 · ACT IV -->
+  <section data-label="Act IV" data-speaker-notes="Act IV — the governance mandate: auditable schema change, contained failure, revocable identity, delivered secrets, offline flags." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-text); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT IV</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:1.0; letter-spacing:-0.02em; margin:24px 0 0;">The governance mandate</h2>
+    <p style="font-size:30px; line-height:1.45; margin:30px 0 0; max-width:1400px; opacity:0.85;">Auditable · revocable · contained. The reason this was never merely a front-end effort.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid rgba(243,242,242,0.4); padding-top:22px; font-size:18px; font-weight:600; opacity:0.8;"><span>The mandate</span><span>15 / 27</span></div>
+  </section>
+
+  <!-- 16 · GOVERNED DDL -->
+  <section data-label="Governed DDL" data-speaker-notes="RFC-5's literal form was unimplementable — post_migrate must run. Enforcement moved to the database role: author in Django, extract with sqlmigrate, land a changeset, CI gate, Liquibase hook Job at weight minus one, migrate fake, DML-only pods. Proven on CRC: platform_app refused CREATE." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">11</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Schema change is governed, not incidental · CAP-9</h2></div>
+    <div style="flex:1; display:flex; align-items:center; gap:0;">
+      <div style="flex:1; border:3px solid var(--color-text); padding:24px 20px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">AUTHOR</div><div style="font-size:22px; font-weight:800; margin:8px 0 10px;">Django migration</div><div style="font-size:17px; line-height:1.45;">Developers keep their tooling.</div></div>
+      <div style="padding:0 12px; font-size:34px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:3px solid var(--color-text); padding:24px 20px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">EXTRACT</div><div style="font-size:22px; font-weight:800; margin:8px 0 10px;"><span class="code">sqlmigrate</span></div><div style="font-size:17px; line-height:1.45;">Reviewable SQL → changeset.</div></div>
+      <div style="padding:0 12px; font-size:34px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1.15; border:3px solid var(--color-accent); padding:24px 20px; background:var(--color-accent-100);"><div style="font-size:14px; font-weight:700; color:var(--color-accent-700);">CI GATE</div><div style="font-size:22px; font-weight:800; margin:8px 0 10px;">Stale = build fails</div><div style="font-size:17px; line-height:1.45;">No prior art existed — built here.</div></div>
+      <div style="padding:0 12px; font-size:34px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1.15; border:3px solid var(--color-text); padding:24px 20px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">HOOK JOB · −1</div><div style="font-size:22px; font-weight:800; margin:8px 0 10px;"><span class="code">liquibase update</span></div><div style="font-size:17px; line-height:1.45;">Migration role holds DDL; platform image; never an init container.</div></div>
+      <div style="padding:0 12px; font-size:34px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:3px solid var(--color-text); padding:24px 20px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">RECONCILE</div><div style="font-size:22px; font-weight:800; margin:8px 0 10px;"><span class="code">migrate --fake</span></div><div style="font-size:17px; line-height:1.45;"><span class="code">post_migrate</span> still fires.</div></div>
+      <div style="padding:0 12px; font-size:34px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:3px solid var(--color-text); padding:24px 20px; background:var(--color-neutral-200);"><div style="font-size:14px; font-weight:700;">RUN</div><div style="font-size:22px; font-weight:800; margin:8px 0 10px;"><span class="code">platform_app</span></div><div style="font-size:17px; line-height:1.45;">DML-only pods; test DBs carved out.</div></div>
+    </div>
+    <div style="border:3px solid var(--color-accent); background:var(--color-accent-100); padding:22px 30px; font-size:21px; line-height:1.5;"><b>Proven on CRC 2026-08-26:</b> <span class="code">CREATE</span> on <span class="code">public</span> <b>refused</b> as <span class="code">platform_app</span> · <span class="code">/api/health</span> 200 as that role · contrib + Wagtail changesets <span class="code">:15</span>–<span class="code">:19</span> executed. Never <span class="code">preserveSchemaCase</span> — issue 7624 lands DDL silently in <span class="code">public</span>.</div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:26px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>16 / 27</span></div>
+  </section>
+
+  <!-- 17 · THIRTEEN DIRECTIVES -->
+  <section data-label="Thirteen directives" data-speaker-notes="Five RFCs and eight blind spots; four rewritten by research against live pins. RFC-1 one ASGI; RFC-3 RS256; RFC-4 loop depth eight; RFC-5 role-based. BS-1's premise was false — Scribe was a JSON file. BS-4: PyBreaker's async circuit never trips; we wrote the wrapper. The rule: an invariant with no failing test is not implemented." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:70px 110px 56px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:14px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">12</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Thirteen directives — four rewritten by research · CAP-10</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:0 48px; align-content:center; font-size:17.5px; line-height:1.4;">
+      <div style="display:grid; grid-template-columns:96px 1fr; gap:0; border-top:2px solid var(--color-text);">
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">RFC-1</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">revised</b> — one ASGI Deployment; Celery is the second pool</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">RFC-2</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);">as written — broker (noeviction) split from cache (allkeys-lru)</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">RFC-3</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">revised</b> — RS256, not HMAC; audience-bound, exp ≤ 5 min</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">RFC-4</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">revised</b> — <span class="code">pyforge.events(.dlq)</span>, XAUTOCLAIM, loop depth 8</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">RFC-5</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">revised</b> — role-based least-bad; zero prior art existed</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-1</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">premise false</b> — Scribe was one JSON file, not SQLite; flat-file → pgvector behind the port</div>
+        <div style="padding:10px 0; font-weight:800;" class="code">BS-2</div><div style="padding:10px 0;"><b style="color:var(--color-accent-700);">revised</b> — <span class="code">/mcp/sse</span> deprecated twice over; the 30 m annotation never raises <span class="code">timeout client</span></div>
+      </div>
+      <div style="display:grid; grid-template-columns:96px 1fr; gap:0; border-top:2px solid var(--color-text);">
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-3</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);">as written — Celery delegation context + scoped tokens (Keycloak caveat pinned)</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-4</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">revised</b> — PyBreaker's async circuit <b>never trips</b>; our ~40-line wrapper over its own storage</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-5</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);">as written — single writer; every other handle <span class="code">read_only=True</span> → CAP-19's plane</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-6</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);">as written — schema-versioned CloudEvents; validation in domain adapters</div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-7</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);">as written — <span class="code">PydanticFormErrorBridge</span> in <span class="code">django-pyforge</span></div>
+        <div style="padding:10px 0; border-bottom:1px solid var(--color-divider); font-weight:800;" class="code">BS-8</div><div style="padding:10px 0; border-bottom:1px solid var(--color-divider);"><b style="color:var(--color-accent-700);">revised</b> — reconcile on restart, yes; MinIO, no — RWX, not a fourth kind</div>
+        <div style="padding:14px 0 0; grid-column:span 2; font-weight:800; color:var(--color-accent-700);">An invariant with no test that fails in its absence is not implemented.</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:14px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>17 / 27</span></div>
+  </section>
+
+  <!-- 18 · EVENT BACKBONE -->
+  <section data-label="Event backbone" data-speaker-notes="CloudEvents on Redis Streams over redis-broker. Envelope carries spec_id, git sha, SBOM purl. Consumer groups, PEL, XAUTOCLAIM harvest, DLQ. Poisoned events quarantine; cycles halt at depth eight. Jira is an adapter — never a required field." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">13</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Stations can tell each other things · CAP-8</h2></div>
+    <div style="flex:1; display:flex; align-items:center; gap:0;">
+      <div style="flex:1; border:3px solid var(--color-text); padding:28px 24px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">PUBLISH</div><div style="font-size:24px; font-weight:800; margin:8px 0 12px;">CloudEvents envelope</div><div style="font-size:18px; line-height:1.5;"><span class="code">schema_version 2.x</span> · <span class="code">spec_id</span> + git sha + SBOM purl. Jira is an adapter — an event is <b>never rejected</b> for lack of a key.</div></div>
+      <div style="padding:0 14px; font-size:36px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:3px solid var(--color-text); padding:28px 24px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">STREAM</div><div style="font-size:24px; font-weight:800; margin:8px 0 12px;"><span class="code">pyforge.events</span></div><div style="font-size:18px; line-height:1.5;">Consumer groups per station; validation in domain adapters, never at the stream boundary.</div></div>
+      <div style="padding:0 14px; font-size:36px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:3px solid var(--color-text); padding:28px 24px;"><div style="font-size:14px; font-weight:700; color:var(--color-accent);">UNACKED</div><div style="font-size:24px; font-weight:800; margin:8px 0 12px;">PEL → <span class="code">XAUTOCLAIM</span></div><div style="font-size:18px; line-height:1.5;">Stalled deliveries are reclaimed; retries counted, not infinite.</div></div>
+      <div style="padding:0 14px; font-size:36px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:3px solid var(--color-accent); padding:28px 24px; background:var(--color-accent-100);"><div style="font-size:14px; font-weight:700; color:var(--color-accent-700);">QUARANTINE</div><div style="font-size:24px; font-weight:800; margin:8px 0 12px;"><span class="code">pyforge.events.dlq</span></div><div style="font-size:18px; line-height:1.5;">Poison lands here, not in a retry loop; cycles halt at <span class="code">pyforgeloopdepth</span> = 8.</div></div>
+    </div>
+    <div style="border:3px solid var(--color-text); padding:22px 30px; font-size:21px; line-height:1.5;">OpenLineage rides <b>this</b> fabric for Dream→Spec→Mason→Warden→Steward lineage — a face on CAP-8, never a fourth bus.</div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:26px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>18 / 27</span></div>
+  </section>
+
+  <!-- 19 · REVOCABLE / DELIVERED / FLIPPABLE -->
+  <section data-label="Revocable delivered flippable" data-speaker-notes="CAP-12: roles from the IdP, revoked next request; secrets by reference, go-sops and age in estate, Vault outside the image. CAP-13: OpenFeature flagd FILE resolver — in-process, no egress, one flag flips three surfaces. The price: six conda-forge builds — four OpenFeature feedstocks, a cachebox 5.x build, and liquibase with the JDBC driver vendored." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">14</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Revocable, delivered, flippable · CAP-12 + CAP-13</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:36px; align-content:center;">
+      <div style="border:3px solid var(--color-text); padding:32px 30px;"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Identity</div><p style="font-size:21px; line-height:1.5; margin:14px 0 0;">Authorization derives from <b>IdP roles</b>. Revoke at the IdP — access is gone <b>on the next request</b>. Nothing cached, nothing to chase.</p></div>
+      <div style="border:3px solid var(--color-text); padding:32px 30px;"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Secrets</div><p style="font-size:21px; line-height:1.5; margin:14px 0 0;">Pod specs carry <b>references only</b>. In-estate vaulting is <span class="code">go-sops</span> + <span class="code">age</span>; HashiCorp Vault stays a profile adapter <b>outside the image</b>.</p></div>
+      <div style="border:3px solid var(--color-text); padding:32px 30px;"><div style="font-size:16px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Flags</div><p style="font-size:21px; line-height:1.5; margin:14px 0 0;">OpenFeature flagd <b>FILE resolver</b> — in-process, full targeting engine, <b>zero egress</b>. One change flips Django, service and CLI with no redeploy.</p></div>
+    </div>
+    <div style="border:3px solid var(--color-accent); background:var(--color-accent-100); padding:24px 32px; display:flex; align-items:baseline; gap:24px;"><div style="font-size:64px; font-weight:900; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">6</div><div style="font-size:21px; line-height:1.5;"><b>conda-forge builds were the committed price</b> — 4 OpenFeature feedstocks (absent from anaconda.org entirely) + a <span class="code">cachebox</span> 5.x build + <span class="code">liquibase</span> 5.0.4+ with the PostgreSQL JDBC driver vendored. The air-gap gate is a gate, not a warning.</div></div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:26px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>19 / 27</span></div>
+  </section>
+
+  <!-- 20 · ACT V -->
+  <section data-label="Act V" data-speaker-notes="Act V — the proof. Dreamt, grounded, drained, deployed, closed out, reopened — all dated." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-text); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT V</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:1.0; letter-spacing:-0.02em; margin:24px 0 0;">The proof</h2>
+    <p style="font-size:30px; line-height:1.45; margin:30px 0 0; max-width:1400px; opacity:0.85;">Dreamt → grounded → drained → deployed → closed out → reopened. Every claim dated; nothing projected.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid rgba(243,242,242,0.4); padding-top:22px; font-size:18px; font-weight:600; opacity:0.8;"><span>Dated records only</span><span>20 / 27</span></div>
+  </section>
+
+  <!-- 21 · FOUR DAYS -->
+  <section data-label="Four days" data-speaker-notes="August 23: dreamt. August 24: the grounding audit — the host already existed; ten rulings; spec, brief, PRD, spine and epics the same day. August 24 to 25: the fleet drain. August 25: 12-7 on CRC, /ht/ 200. August 26: closeout — / 200, CAP-9 proven — and the same day, CAP-19 minted and its first slice shipped. The Dream is evergreen." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">15</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Dream to live cluster in four days — dated</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(6,1fr); gap:0; align-content:center; border-top:3px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-divider); padding:26px 20px 0 0;"><div class="code" style="font-size:16px; font-weight:700; color:var(--color-accent-700);">08-23</div><div style="font-size:24px; font-weight:800; margin:10px 0;">Dreamt</div><div style="font-size:16.5px; line-height:1.45;">Hub-and-spoke blueprint, adversarial reviews, 5 RFCs + 8 blind spots.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:26px 20px 0;"><div class="code" style="font-size:16px; font-weight:700; color:var(--color-accent-700);">08-24</div><div style="font-size:24px; font-weight:800; margin:10px 0;">Grounded</div><div style="font-size:16.5px; line-height:1.45;">The audit found <b>the host already built</b>. Ten rulings; four directives rewritten; spec → PRD → epics in one day.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:26px 20px 0;"><div class="code" style="font-size:16px; font-weight:700; color:var(--color-accent-700);">08-24→25</div><div style="font-size:24px; font-weight:800; margin:10px 0;">Drained</div><div style="font-size:16.5px; line-height:1.45;">Steward Epics 18–32 + eight peer hook stories; one story in flight per station.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:26px 20px 0;"><div class="code" style="font-size:16px; font-weight:700; color:var(--color-accent-700);">08-25</div><div style="font-size:24px; font-weight:800; margin:10px 0;">Deployed</div><div style="font-size:16.5px; line-height:1.45;">12-7 on attended CRC: Helm deployed, Liquibase + <span class="code">migrate --fake</span>, <span class="code">/ht/</span> <b>200</b>.</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:26px 20px 0; background:var(--color-accent-100);"><div class="code" style="font-size:16px; font-weight:700; color:var(--color-accent-700);">08-26</div><div style="font-size:24px; font-weight:800; margin:10px 0;">Closed out</div><div style="font-size:16.5px; line-height:1.45;">Lane 1 <span class="code">/</span> <b>200</b>; CAP-9 DML-only <b>proven</b>; CAP-1..18 closed.</div></div>
+      <div style="padding:26px 0 0 20px; background:var(--color-accent-100);"><div class="code" style="font-size:16px; font-weight:700; color:var(--color-accent-700);">08-26</div><div style="font-size:24px; font-weight:800; margin:10px 0; color:var(--color-accent);">Reopened</div><div style="font-size:16.5px; line-height:1.45;">CAP-19 minted <b>and first slice shipped the same day</b>. The Dream ruled <b>evergreen</b>.</div></div>
+    </div>
+    <div style="border:3px solid var(--color-text); padding:22px 30px; font-size:20px; line-height:1.5;"><b>The grounding discipline is the story:</b> written as greenfield, audited to the residual — extending shipped prior art, re-minting nothing, correcting premises in both directions.</div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; margin-top:26px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>21 / 27</span></div>
+  </section>
+
+  <!-- 22 · QUERY PLANE -->
+  <section data-label="Query plane" data-speaker-notes="CAP-19: five private stores become one DuckDB HTAP plane — live read-only attach, Kedro-written Parquet cache on a named pipeline, vss vectors. Stations and agents are clients over a library face or the Mosaic HTTP face. Tests fail if a second writable engine or an agent OLTP DSN reappears." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:70px 110px 56px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:14px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">16</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">One HTAP query plane; stations are clients · CAP-19</h2></div>
+    <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:14px 0 6px;">
+      <svg viewBox="0 0 1128 560" style="height:100%; max-width:100%;" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#201e1d" stroke-width="2">
+          <line x1="300" y1="120" x2="404" y2="180"/>
+          <line x1="300" y1="330" x2="404" y2="290"/>
+          <line x1="724" y1="180" x2="828" y2="112"/>
+          <line x1="724" y1="235" x2="828" y2="222"/>
+          <line x1="724" y1="290" x2="828" y2="332"/>
+          <line x1="724" y1="345" x2="828" y2="442"/>
+        </g>
+        <line x1="188" y1="255" x2="188" y2="296" stroke="#201e1d" stroke-width="2"/>
+        <rect x="60" y="70" width="240" height="96" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="80" y="96" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="0.8">SOURCE · LIVE</text>
+        <text x="80" y="118" fill="#201e1d" font-size="15" font-weight="800">Platform PostgreSQL</text>
+        <text x="80" y="138" fill="#605d5d" font-size="11">OLTP · app schemas · attached</text>
+        <text x="80" y="154" fill="#605d5d" font-size="11">READ-ONLY — never agent SQL</text>
+        <rect x="60" y="180" width="240" height="76" fill="#eae7e7" stroke="#9b9797" stroke-width="2"/>
+        <text x="80" y="205" fill="#605d5d" font-size="10.5" font-weight="800" letter-spacing="0.8">SEALED · UNTOUCHED</text>
+        <text x="80" y="226" fill="#201e1d" font-size="14" font-weight="800">Seven canonical pipelines</text>
+        <text x="80" y="245" fill="#605d5d" font-size="11">closed set — keep producing as-is</text>
+        <rect x="60" y="298" width="240" height="96" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="80" y="324" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="0.8">SOURCE · DERIVED</text>
+        <text x="80" y="346" fill="#201e1d" font-size="15" font-weight="800">Kedro — named pipeline</text>
+        <text x="80" y="366" fill="#605d5d" font-size="11">downstream of the seven; writes the</text>
+        <text x="80" y="382" fill="#605d5d" font-size="11">Parquet cache · Dagster refreshes</text>
+        <rect x="404" y="130" width="320" height="270" fill="#ec3013"/>
+        <text x="564" y="166" text-anchor="middle" fill="#f3f2f2" font-size="19" font-weight="900" letter-spacing="0.5">THE QUERY PLANE</text>
+        <text x="564" y="188" text-anchor="middle" fill="#ffe0d9" font-size="12" font-family="ui-monospace, Menlo, monospace">one DuckDB HTAP engine · one writer</text>
+        <g fill="#f3f2f2" font-size="12.5">
+          <text x="430" y="222" font-weight="800">A · LIVE</text><text x="430" y="240" fill="#ffe0d9" font-size="11.5">read-only ATTACH — declared views for humans</text>
+          <text x="430" y="270" font-weight="800">B · CACHE</text><text x="430" y="288" fill="#ffe0d9" font-size="11.5">Kedro-written Parquet — boards + autonomous SQL</text>
+          <text x="430" y="318" font-weight="800">C · VECTOR</text><text x="430" y="336" fill="#ffe0d9" font-size="11.5">vss / HNSW — even when the DB forbids pgvector</text>
+        </g>
+        <text x="564" y="372" text-anchor="middle" fill="#f3f2f2" font-size="11" font-weight="700" letter-spacing="0.4">consumers LOAD extensions — never INSTALL on boot</text>
+        <rect x="828" y="70" width="240" height="80" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="848" y="96" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="0.8">CLIENT · LANE 3</text>
+        <text x="848" y="118" fill="#201e1d" font-size="14.5" font-weight="800">Vizro over BSL</text>
+        <text x="848" y="138" fill="#605d5d" font-size="11">certified metrics — no invented raw SQL</text>
+        <rect x="828" y="182" width="240" height="80" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="848" y="208" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="0.8">CLIENT · STATIONS</text>
+        <text x="848" y="230" fill="#201e1d" font-size="14.5" font-weight="800">Library face — in-process</text>
+        <text x="848" y="250" fill="#605d5d" font-size="11">every consumer that can reach the file</text>
+        <rect x="828" y="292" width="240" height="80" fill="#fff2ef" stroke="#ec3013" stroke-width="2"/>
+        <text x="848" y="318" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="0.8">CLIENT · AGENTS</text>
+        <text x="848" y="340" fill="#201e1d" font-size="14.5" font-weight="800">HTTP face — Mosaic</text>
+        <text x="848" y="360" fill="#605d5d" font-size="11">DB-GPT / Langflow estate reads · no OLTP DSN</text>
+        <rect x="828" y="402" width="240" height="80" fill="#f3f2f2" stroke="#201e1d" stroke-width="2"/>
+        <text x="848" y="428" fill="#ae1800" font-size="10.5" font-weight="800" letter-spacing="0.8">CLIENT · SCRIBE</text>
+        <text x="848" y="450" fill="#201e1d" font-size="14.5" font-weight="800">Store-port driver (34.5)</text>
+        <text x="848" y="470" fill="#605d5d" font-size="11">semantic recall on the plane — port intact</text>
+        <rect x="60" y="440" width="664" height="72" fill="#201e1d"/>
+        <text x="82" y="468" fill="#f3f2f2" font-size="13" font-weight="800">TESTS FAIL IF: a second writable analytical engine appears · an agent OLTP DSN is reintroduced</text>
+        <text x="82" y="490" fill="#bab6b6" font-size="11.5">Domain ports stay — Scribe store port, Atlas catalog prefixes, BSL metrics. Storage, scan and nearest-neighbor do not.</text>
+      </svg>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:14px; font-size:16px; color:#605d5d; font-weight:600;"><span>OQ rulings 2026-08-26: both faces, one boot script · a named new pipeline · dual-write for now</span><span>22 / 27</span></div>
+  </section>
+
+  <!-- 23 · FIVE-TIER -->
+  <section data-label="Five-tier symmetry" data-speaker-notes="Every 03 station owes five tiers: CLI, portal, service, skill, persona. Declared complete 2026-08-26 — 40 of 40, with mason's skill cell being conda-forge-expert. A missing cell fails CI. 01/02 work is never scored against this matrix." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">17</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Five-tier symmetry — declared complete, 40/40</h2></div>
+    <div style="flex:1; display:flex; align-items:center; gap:60px;">
+      <div style="flex:1;">
+        <div style="display:grid; grid-template-columns:1.6fr repeat(5,1fr); gap:0; border:3px solid var(--color-text); font-size:19px;">
+          <div style="padding:12px 18px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:15px;">STATION</div>
+          <div style="padding:12px 8px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:15px; text-align:center;">CLI</div>
+          <div style="padding:12px 8px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:15px; text-align:center;">PORTAL</div>
+          <div style="padding:12px 8px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:15px; text-align:center;">SERVICE</div>
+          <div style="padding:12px 8px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:15px; text-align:center;">SKILL</div>
+          <div style="padding:12px 8px; background:var(--color-text); color:var(--color-bg); font-weight:800; font-size:15px; text-align:center;">PERSONA</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Warden</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Atlas</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Mason</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; background:var(--color-accent-100); color:var(--color-accent-700); font-weight:800; font-size:14px;">CFE</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Marshal</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Doctor</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Herald</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Scribe</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+          <div style="padding:10px 18px; border-top:1px solid var(--color-divider); font-weight:700;">Steward</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div><div style="padding:10px 8px; border-top:1px solid var(--color-divider); text-align:center; color:var(--color-accent); font-weight:800;">✓</div>
+        </div>
+      </div>
+      <div style="width:420px; display:flex; flex-direction:column; gap:22px;">
+        <div style="border:3px solid var(--color-accent); background:var(--color-accent-100); padding:24px 28px;"><div style="font-size:56px; font-weight:900; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">40/40</div><div style="font-size:19px; margin-top:10px; line-height:1.45;">declared complete 2026-08-26 (Epic 37.1). A missing cell <b>fails CI</b>.</div></div>
+        <div style="border:3px solid var(--color-text); padding:22px 26px; font-size:18px; line-height:1.5;">Mason's skill cell is <span class="code">conda-forge-expert</span> — the original exemplar; no <span class="code">pyforge-mason</span> skill exists or is owed. 01/02 work is never scored against this matrix.</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>23 / 27</span></div>
+  </section>
+
+  <!-- 24 · ACT VI -->
+  <section data-label="Act VI" data-speaker-notes="Act VI — held lines, honest leftover, and the on-ramp." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-text); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:26px; letter-spacing:0.16em; color:var(--color-accent-400);">ACT VI</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:1.0; letter-spacing:-0.02em; margin:24px 0 0;">Held lines &amp; the road</h2>
+    <p style="font-size:30px; line-height:1.45; margin:30px 0 0; max-width:1400px; opacity:0.85;">What the chain refuses to build, what it honestly left, and where you start.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; border-top:2px solid rgba(243,242,242,0.4); padding-top:22px; font-size:18px; font-weight:600; opacity:0.8;"><span>Honesty · doctrine · on-ramp</span><span>24 / 27</span></div>
+  </section>
+
+  <!-- 25 · HELD LINES -->
+  <section data-label="Held lines" data-speaker-notes="No ninth station, no services farm, no fourth backing kind, no CodeRed or django-lasuite on the host, no second PR-gate verdict, no agent on the OLTP DSN, no CLI absorbed. Leftover: the mfa fake, optional 12.9 CI, MCP slice 3, the sibling scorecard, deprecated vizro-ai — and a recommended Django pin bump." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">18</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Held lines — and the honest leftover</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:1.15fr 1fr; gap:56px; align-content:center;">
+      <div style="display:flex; flex-direction:column; gap:14px; font-size:20px; line-height:1.45;">
+        <div><b>No ninth station.</b> The Canopy is steward's surface; the roster stays eight.</div>
+        <div><b>No <span class="code">services/</span> farm.</b> MCP and portals ride the host ASGI; heavy work is Celery.</div>
+        <div><b>No fourth backing kind.</b> PostgreSQL + Redis + Kubernetes, exactly; DuckDB is a query face.</div>
+        <div><b>No CodeRed, no <span class="code">django-lasuite</span> on the host.</b> Dropped on evidence; retracted on inspection.</div>
+        <div><b>No second PR-gate verdict.</b> Warden is sole; scanners are Warden plugins on CAP-18 hooks.</div>
+        <div><b>No agent on the OLTP DSN.</b> After CAP-19 that is a test failure, not a style objection.</div>
+        <div><b>No CLI absorbed.</b> The grammar dispatches; station binaries stay first-class.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; border:3px solid var(--color-text); font-size:18px;">
+        <div style="padding:16px 22px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">mfa</span> — the one isolated <span class="code">sqlmigrate</span> that stays fake</div>
+        <div style="padding:16px 22px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">12.9 CI</span> — portability smoke, optional, awaiting Actions minutes</div>
+        <div style="padding:16px 22px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">MCP slice 3</span> — ImportError-skip retirement, parked with the sibling isolation spec</div>
+        <div style="padding:16px 22px; border-bottom:1px solid var(--color-divider);"><span class="code" style="font-weight:700;">Q5 scorecard</span> — sibling Dream; unpublished metrics must not steer work</div>
+        <div style="padding:16px 22px;"><span class="code" style="font-weight:700;">vizro-ai</span> — deprecated; new boards via <span class="code">vizro-mcp</span> / <span class="code">vizro-e2e-flow</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>Recommended: Django pin → &gt;=5.2.17,&lt;6 when the feedstock's 5.x branch publishes it</span><span>25 / 27</span></div>
+  </section>
+
+  <!-- 26 · ON-RAMP -->
+  <section data-label="Start here" data-speaker-notes="Three steps from eight terminals to one estate: sign in once at the front door; speak one grammar; point your agent at the MCP faces — start the build, lose the connection, come back and get the result." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:80px 110px 64px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:22px; border-bottom:3px solid var(--color-text); padding-bottom:16px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:var(--color-accent);">→</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.01em;">Start here — the on-ramp</h2></div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:40px; align-content:center;">
+      <div style="border:3px solid var(--color-text); padding:40px 36px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:80px; font-weight:900; line-height:1; color:var(--color-accent);">1</div><div style="font-size:30px; font-weight:800; margin:18px 0 12px;">Sign in once</div><p style="font-size:21px; line-height:1.5; margin:0;">The front door at <span class="code">/</span> — then all eight portals and the boards on one session, never leaving the origin.</p></div>
+      <div style="border:3px solid var(--color-text); padding:40px 36px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:80px; font-weight:900; line-height:1; color:var(--color-accent);">2</div><div style="font-size:30px; font-weight:800; margin:18px 0 12px;">Speak one grammar</div><p style="font-size:21px; line-height:1.5; margin:0;"><span class="code">pyforge &lt;station&gt; &lt;noun&gt; &lt;verb&gt;</span> — every station verb, one entry point, binaries still first-class.</p></div>
+      <div style="border:3px solid var(--color-accent); padding:40px 36px; background:var(--color-accent-100);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:80px; font-weight:900; line-height:1; color:var(--color-accent);">3</div><div style="font-size:30px; font-weight:800; margin:18px 0 12px;">Point your agent at it</div><p style="font-size:21px; line-height:1.5; margin:0;"><span class="code">POST /stations/&lt;name&gt;/mcp</span> — start the build, lose the connection, come back and <span class="code">get</span> the result.</p></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; border-top:2px solid var(--color-divider); padding-top:16px; font-size:16px; color:#605d5d; font-weight:600;"><span>PYFORGE UNIFYING STRATEGY</span><span>26 / 27</span></div>
+  </section>
+
+  <!-- 27 · CLOSING -->
+  <section data-label="Closing" data-speaker-notes="The Dream is evergreen — closeout is a dated slice, not the end of the contract. One estate: sign in once, one grammar, disconnect-surviving agents, egress-blocked deploys, and a database role that provably cannot alter its own schema." style="box-sizing:border-box; width:100%; height:100%; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-body); padding:100px 120px 72px; display:flex; flex-direction:column;">
+    <div style="font-size:19px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">The Dream is evergreen — closeout is a dated slice, not the end of the contract</div>
+    <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:54px; line-height:1.14; letter-spacing:-0.015em; margin:40px 0 0; max-width:1640px;">An operator signs in once and moves from a published page to eight portals to a board that shows only their rows. An agent drives the same stations over MCP and survives the disconnect. The estate deploys egress-blocked — with a database role that provably cannot alter its own schema.</p>
+    <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid var(--color-bg); padding-top:24px; font-size:18px; font-weight:600;"><span><b>PyForge Unifying Strategy</b> · steward chain · spec-pyforge-unifying-strategy · CAP-1..19</span><span>27 / 27</span></div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

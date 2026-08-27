@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #4d170e; }
+  .code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+</style>
+</helmet>
+<section style="box-sizing:border-box; width:1920px; height:1080px; background:#201e1d; color:#f3f2f2; font-family:'Archivo',system-ui,sans-serif; padding:84px 100px 60px; display:flex; flex-direction:column;">
+  <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:16px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700;">
+    <span style="color:#ff9783;">Executive summary · PyForge Unifying Strategy · steward chain</span>
+    <span style="opacity:0.6;">Evergreen · CAP-1..18 closed 2026-08-26 · CAP-19 live</span>
+  </div>
+  <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; line-height:0.98; letter-spacing:-0.02em; margin:36px 0 0;">Eight stations. One canopy. <span style="color:#ec3013;">One estate.</span></h1>
+  <p style="font-size:25px; line-height:1.5; margin:28px 0 0; max-width:1660px; opacity:0.92;">PyForge's eight capability stations each shipped as an excellent CLI — and stopped there. The Canopy (<span class="code">src/platform/</span>) mounts them under <b>one chrome, one OIDC session, one command grammar, one event backbone and one query plane</b>, on a modular monolith carrying exactly PostgreSQL + Redis + Kubernetes. The governance mandate rides with it: schema change auditable by database privilege, identity revocable at the IdP, failure contained by tested invariants.</p>
+  <div style="flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:32px; align-content:center; margin-top:12px;">
+    <div style="border:2px solid rgba(243,242,242,0.35); padding:26px 30px;">
+      <div style="font-size:15px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:#ff9783;">What shipped</div>
+      <div style="font-size:20px; line-height:1.55; margin-top:12px;">Wagtail front door at <span class="code">/</span> (console superseded, parity-gated) · eight HTMX portals under <span class="code">/stations/&lt;name&gt;/</span> · eight MCP faces on the host ASGI with <span class="code">start</span>/<span class="code">get</span> disconnect survival · <span class="code">pyforge</span> dispatch · CloudEvents backbone with DLQ · Lane 3 row isolation · skills + personas, 40/40.</div>
+    </div>
+    <div style="border:2px solid #ec3013; padding:26px 30px; background:rgba(236,48,19,0.12);">
+      <div style="font-size:15px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:#ff9783;">Proven live · CRC</div>
+      <div style="font-size:20px; line-height:1.55; margin-top:12px;"><span class="code">GET /</span> <b>200</b> — published from PostgreSQL (2026-08-26) · <span class="code">/cms/</span> <b>302</b> to the IdP · <span class="code">/ht/</span> <b>200</b> (12-7, 2026-08-25) · <span class="code">platform_app</span> is DML-only — <b><span class="code">CREATE</span> refused</b> · Liquibase changesets <span class="code">:15</span>–<span class="code">:19</span> executed.</div>
+    </div>
+    <div style="border:2px solid rgba(243,242,242,0.35); padding:26px 30px;">
+      <div style="font-size:15px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:#ff9783;">What's next</div>
+      <div style="font-size:20px; line-height:1.55; margin-top:12px;"><b>CAP-19, the query plane</b> — one DuckDB HTAP engine (live read-only attach · Kedro-written Parquet cache · <span class="code">vss</span> vectors); five private stores rebuilt onto it; first slice shipped 2026-08-26. The Dream is <b>evergreen</b> — closeout is a dated slice, not the end.</div>
+    </div>
+  </div>
+  <div style="display:flex; border-top:2px solid rgba(243,242,242,0.35); padding-top:26px; gap:56px;">
+    <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">19</div><div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">capabilities, every success criterion failing in its absence</div></div>
+    <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">4</div><div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">dated days from grounding audit to live cluster</div></div>
+    <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">40/40</div><div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">five-tier matrix — CLI · portal · service · skill · persona</div></div>
+    <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">6</div><div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">conda-forge builds — the committed air-gap price</div></div>
+    <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">3</div><div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">backing kinds, exactly — PostgreSQL · Redis · Kubernetes</div></div>
+    <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">0</div><div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">re-authentications, raw portal requests, or agent OLTP DSNs</div></div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080}}"></script>
+</body>
+</html>
