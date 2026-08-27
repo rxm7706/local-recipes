@@ -73,6 +73,6 @@ Station tasks use **only** these kinds:
 - **No direct filesystem.** Do not use Read, Write, Delete, StrReplace, EditNotebook, open, Path.write, or any other file tool against recipes, skills, or source. Do not edit `conda-forge-expert` and do not write a SKF skill that replaces it.
 - **No ad-hoc HTTP.** Do not use curl, requests, httpx, urllib, WebFetch, or WebSearch. Do not GET/PUT/PATCH arbitrary URLs. The only HTTP allowed is `POST /stations/mason/mcp`.
 - **No 01 mint.** Recipe experiments stay work_class 01. Do not mint a portal, MCP, or persona for 01 recipe experiments.
-- **No Wave B.** Do not implement `/stations/mason/` diagnose portal UI, MinIO, or Story 11.2.
+- **No MinIO.** Do not introduce MinIO or any object-store backing for mason. (The former Wave B prohibition on the `/stations/mason/` diagnose portal is retired — Story 11.2 shipped 2026-08-26.)
 
 A transcript of a completed station task must show only `pyforge mason …` grammar and `POST /stations/mason/mcp` (plus the conda-forge-expert consult above). Direct filesystem or ad-hoc HTTP in the transcript is a failing contract.
