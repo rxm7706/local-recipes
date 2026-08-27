@@ -116,8 +116,23 @@ Regenerating a board view is optional confirmation, not the measure.
 
 ## Worked Examples
 
-- **Run 1 (pending)** — the 2026-08-26 clearance: 26 staleness findings across the 8
+- **Run 1 (2026-08-26) — COMPLETE, board cleared.** 26 staleness findings across the 8
   station flagships (research-wave→brief ×8, spec-re-stamp→prd ×8, code→retro ×6,
   marshal prd→arch, mason behind-code ×3) + 1 overtaken
-  (`spec-pyforge-unifying-strategy`). Append the outcome, deviations, and timings here
-  when it lands.
+  (`spec-pyforge-unifying-strategy`) → `chain-currency-sweep-check` **exit 0 fleet-wide**.
+  Executed exactly per this runbook: Phase 0 operator session answered the strategy spec's
+  three residual OQs (both-faces-one-boot-script / named-new-pipeline / dual-write); then
+  eight parallel single-story station agents (physical paths, no bmad-switch, no agent
+  commits), each cascade brief→PRD→arch(→epics note)→retro, one commit per station.
+  Wall-clock ≈15 min for all eight in parallel (7–15 min each); every station green on its
+  FIRST detector iteration. Mason ran the behind-code remedy's realized-flip path: as-built
+  truth-up + close-out retro + Dream `specified`→`realized`, hygiene clean.
+  **Deviations/lessons:** (1) the audit reads the working tree — verify on the branch that
+  carries your edits, not main (a false "overtaken still red" cost one diagnosis cycle);
+  (2) genuine reconciliation surfaces real defects beyond the findings — atlas's brief
+  carried four shipped-reality overclaims, steward's arch spine had an unparseable
+  frontmatter (unescaped apostrophe), herald found two `dashboard-check` remnants the
+  30.2 retirement missed, mason's chain counts had drifted 5/38→11/50, marshal registered
+  FR-192..195 with two numbering defects filed; (3) keep the shared files (dreams README)
+  to exactly one writer — the mason agent owned it, the parent did the chain-currency row
+  after. Landed via the sweep/run-1 branch (stacked on PR #877).
