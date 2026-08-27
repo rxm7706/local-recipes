@@ -12,13 +12,13 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-packaging-automation-tooling-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
-epicCount: 11
-storyCount: 50
+epicCount: 12
+storyCount: 58
 frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: '2026-08-26'
+updated: '2026-08-27'
 currency_review: "Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -1666,6 +1666,86 @@ So that one operator job works in HTMX on the host.
 **Given** an authenticated mason-role session **When** the operator opens `/stations/mason/` **Then** one diagnosis renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no MinIO
 
+## Epic 12: The CFE rebuild continues — gate closure and slice 2
+
+**Spec binding.** Resumes `spec-conda-forge-expert-rebuild` (CAP-2, CAP-3, CAP-4 residuals)
+from Epic 6's re-scope gate (decision ADJUST, 2026-08-21, campaign-state.yaml): Stories
+12.1–12.5 clear the guard's live clause-(b) finding and close the gate's four recorded
+pre-conditions plus its own enforcement gap (GATHERED GAPS #2/#5); Stories 12.6–12.8 carry
+slice 2 to CAP-2's bar and mint the second re-scope checkpoint. Slices 3–5 and the end
+cutover (CAP-3 clause (c)) decompose only from 12.8's recorded decision, not here — the same
+decompose-no-further discipline Epic 6 held. Rules 1/2 govern (CFE surface); the live skill
+stays authoritative for all conda-forge work at every commit until the end cutover.
+
+### Story 12.1: Landed retros are mirrored into the pilot brief
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild CAP-3 (dual-landing rule)
+**Given** the guard's live clause-(b) finding (4 qualifying CFE Rule-2 retros in
+`806cb63046..HEAD`, newest `565ef7d194`, none mirrored; `brief_mirrored_through: null`)
+**Then** each landed retro's CFE-surface delta is mirrored into slice 1's brief,
+`brief_mirrored_through` records the newest mirrored SHA, and
+`pixi run -e local-recipes cfe-rebuild-guard-check` exits clean — the detector, not this
+story, re-opens the duty on the next unmirrored retro.
+
+### Story 12.2: CI enforcement for the guard and the equivalence net
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild CAP-3 (re-scope pre-condition (a))
+**Given** the advisory-only detectors CI step (always `exit 0`, findings surface as
+annotations only) **Then** either cfe-rebuild-guard-check findings block CI as a red check,
+or a dated conscious acceptance of advisory-only enforcement lands in campaign-state.yaml —
+and in BOTH branches the CFE regression suite plus `test_slice1_equivalence.py` run in a CI
+workflow, so divergence has a place to red.
+
+### Story 12.3: The real audit tool backs the pilot zero-drift claim
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild CAP-2 (re-scope pre-condition (b))
+**Given** slice 1's `equivalence: green` rests partly on a manual sha256 substitute
+(`forge-tier.yaml` absent in the audit worktree; skf-audit-skill halts at exit 3,
+`forge-tier-missing`) **Then** skf-setup has run in the worktree doing the audit,
+skf-audit-skill completes end-to-end against the compiled
+`.claude/skills/cfe-recipe-generation/` package, and its verdict replaces the substitute in
+campaign-state.yaml — drift, if surfaced, honestly reopens slice 1's record rather than
+being suppressed.
+
+### Story 12.4: The re-scope gate is machine-enforced
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild CAP-3/CAP-4 (GATHERED GAPS #5)
+**Given** the gate is honored by session discipline alone (nothing reads
+`re_scope_gate`) **Then** `scripts/cfe_rebuild_guard_check.py` gains a clause (d): a
+`brief_path` set on any slice of order ≥ 2 while campaign-state.yaml does not record the
+four pre-conditions closed (or explicitly waived by a human) is a finding — proven red by a
+fixture before it lands, matching Story 6.2's discipline.
+
+### Story 12.5: The ownership decision is recorded
+**Type:** chore • **Effort:** XS • **Deps:** — • **FR/AD:** spec-conda-forge-expert-rebuild Open Question 1 (re-scope pre-condition (d))
+**Given** SPEC.md's Open Question 1 (mason owns the whole rebuild vs per-slice station
+ownership — atlas arguably owns the Slice-3 tier) predates any slice beyond the first
+**Then** the operator's decision is recorded dated in SPEC.md § Open Questions and mirrored
+into campaign-state.yaml, and slice 3's brief authorship follows it — until recorded,
+slice-2 briefing stays gated (12.6's Deps).
+
+### Story 12.6: Slice 2 brief — cross-slice dependencies re-derived first
+**Type:** feature • **Effort:** M • **Deps:** S-12.2, S-12.3, S-12.4, S-12.5 • **FR/AD:** spec-conda-forge-expert-rebuild CAP-2/CAP-4 (re-scope pre-condition (c))
+**Given** the gate's pre-conditions closed **Then** skf-brief-skill produces slice 2's brief
+with its full cross-slice dependency list re-derived (not just re-confirming the
+CVE-DB/Slice-3 ordering risk slice-map.md already names, and deciding
+`native-build.sh`/`build-locally.py`'s cutover scope no later than this brief), the relevant
+gotchas as verbatim inputs, and campaign-state slice 2 at `briefed` with `brief_path` set —
+budgeting at least one BLOCKED-and-retry cycle per slice 1's precedent.
+
+### Story 12.7: Slice 2 compiled and equivalence-validated
+**Type:** feature • **Effort:** L • **Deps:** S-12.6 • **FR/AD:** spec-conda-forge-expert-rebuild CAP-2
+**Given** the brief **Then** CAP-2's bar holds for slice 2: compiled replacement; the
+slice's existing regression tests pass UNMODIFIED; the equivalence harness reports zero
+divergence on the shared corpus; the REAL skf-audit-skill reports zero drift (no manual
+substitute this time); the old path stays authoritative and no caller flips (flip and
+retirement remain campaign-end, CAP-3 clause (c)); and the story closes with its Rule-2
+retro mirrored into the slice briefs (clause (b) green).
+
+### Story 12.8: The slice-2 re-scope checkpoint
+**Type:** chore • **Effort:** S • **Deps:** S-12.7 • **FR/AD:** spec-conda-forge-expert-rebuild CAP-4
+**Given** the completed slice 2 **Then** a second dated re-scope note in campaign state
+records slice 2's measured cost and the go/adjust/stop decision for slices 3–4, slice 5's
+opportunistic porting, and the end-cutover decomposition trigger — no slice-3 brief and no
+endgame stories before this lands (the 6.4 note's own recommendation before the 12.3x
+slice).
+
 ---
 
 ## Validation note — 2026-08-26 (chain-currency truth-up)
@@ -1679,3 +1759,18 @@ or status was changed by this note. Frontmatter counts corrected 6/42 → 11/50 
 document's own contents. As-built divergences (engine choices, research-recommendation
 adoption, SM-1's rehearsal-tier evidence) are recorded in the Spec/PRD/spine § Currency
 reconciliation sections and in `retros/retro-pyforge-mason-2026-08-26.md`, not restated here.
+
+## Reconciliation note — 2026-08-27 (spec-conda-forge-expert-rebuild)
+
+`spec-conda-forge-expert-rebuild` reconciled against this chain: CAP-1 and CAP-4's gate are
+decomposed-and-done (Epic 6, Stories 6.1/6.4); CAP-2 and CAP-3 are decomposed with recorded
+residuals (the sha256 audit substitute, GATHERED GAPS #1; advisory-only CI enforcement, #2;
+the unenforced gate, #5; plus the guard's live clause-(b) unmirrored-retro finding). The
+uncovered remainder — gate closure and the campaign's continuation through slice 2 — is
+minted as **Epic 12** (8 stories, `backlog` in the tracked ledger); slices 3–5 and the end
+cutover stay gated on Story 12.8's checkpoint by design. The Spec's status moved
+`ready → in-progress`; its dated decomposition record lives in
+`specs/spec-conda-forge-expert-rebuild/SPEC.md`. Frontmatter counts corrected 11/50 → 12/58.
+Same pass: Story 5.4's closing-run spec was confirmed never promoted from Tier-3 — the
+tracked recheck spec (`specs/spec-5-4-free-inheritance-verification-2.md`) now carries the
+dated Resolution record standing in for it (landing evidence: `7a05d20034`, 2026-08-21).

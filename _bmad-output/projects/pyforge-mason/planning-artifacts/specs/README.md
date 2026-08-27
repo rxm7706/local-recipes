@@ -15,6 +15,8 @@ mode, caught before a teardown could eat them).
 
 This directory also holds a Dream-level Spec for a Mason-owned satellite
 Dream (`spec-conda-forge-expert-rebuild/SPEC.md`, distinct from the
-per-story `spec-<epic>-<story>-...md` files above) — `status: draft`, not
-yet decided fold-in vs. archive. See
+per-story `spec-<epic>-<story>-...md` files above) — `status: in-progress`
+as of 2026-08-27 (was `draft` at the 2026-08-08 triage, `ready` from
+2026-08-10): decomposed into Epic 6 (done) and Epic 12 (backlog); see its
+own § Decomposition record. Historical pointer:
 `_bmad-output/DREAM-TRIAGE-2026-08-08.md`.

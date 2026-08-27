@@ -1,8 +1,13 @@
 ---
 spec: mcp-era-isolation
-status: ready
+# Flipped ready -> shipped 2026-08-27 (chain reconciliation): CAP-1..3 were
+# delivered direct-to-SPEC as slice 1 (commit cb87d8c352, CRC-proven same day
+# per .memlog.md); CAP-4 via Epic 35 / Story 35.1 (ledger done). See the dated
+# evidence map at the end of this file. Slice 2 stays with
+# spec-mcp-factory-stdio-translator; slice 3 stays parked (retire-skip.md).
+status: shipped
 created: "2026-08-26"
-updated: "2026-08-26"
+updated: "2026-08-27"
 owner-dream: docs/dreams/mcp-era-isolation.md
 surface:
   - docs/dreams/mcp-era-isolation.md
@@ -114,3 +119,43 @@ proxy URL does not template.
 ## Open Questions
 
 - None for slice 1. Invert vs sidecar is decided: sidecar first.
+- The SEP-2663 Tasks scheduled re-check is **not** carried here (this SPEC's
+  constraint is "do not wait on Tasks"); it lives in
+  `spec-pyforge-unifying-strategy`'s answered `mcp-tasks-runtime` OQ
+  (2026-08-24).
+
+## Shipped — capability→story evidence map (2026-08-27)
+
+Chain reconciliation pass. Every capability is delivered and verified; this
+SPEC owes no residual work. Slice 2 (factory stdio) is owned by
+`spec-mcp-factory-stdio-translator`; slice 3 (retiring the ImportError skip)
+stays parked behind `retire-skip.md`'s trigger.
+
+- **CAP-1 — dual-era atlas face on the host path.** Direct-to-SPEC (slice 1;
+  the face/pattern itself was minted by Stories 21.2/21.4 under FR-11).
+  Evidence: commit `cb87d8c352` (`mcp_dual_era.py`, `mcp_http.py` rework,
+  `src/platform/mcp_host/app.py`); CRC proof 2026-08-26 recorded in
+  `.memlog.md` — `/ht/` 200, initialize `2025-06-18` echoed, header
+  `2026-07-28` accepted, unsupported revision → `-32022`, GET 405
+  `Allow: POST`, `import langflow` still green in the web image.
+- **CAP-2 — isolated mcp-host env.** Direct-to-SPEC (slice 1). Evidence:
+  `pixi.toml` `[feature.mcp-host]` (mcp `>=2.1.0`, mcp-types, uvicorn,
+  starlette; no FastMCP, no Langflow) + the `mcp-host` env; `.memlog.md`
+  records the env solving at mcp 2.1.1 with `MCPServer` importable while the
+  `python-agent-platform` lock stays mcp 1.28.1;
+  `tests/packaging/test_mcp_era_isolation.py`.
+- **CAP-3 — host proxies; sidecar down is loud.** Direct-to-SPEC (slice 1).
+  Evidence: `django_pyforge/mcp_http.py` forwards on
+  `MCP_HOST_SIDECAR_BASE_URL` without importing `MCPServer` in the web
+  interpreter; unreachable sidecar → error log + HTTP 502;
+  `src/platform/tests/test_mcp_host_sidecar.py`.
+- **CAP-4 — cluster overlay cannot omit mcp-host.** Decomposed: Epic 35 /
+  Story 35.1 (`spec-35-1-cluster-requires-mcp-host.md`, status done
+  2026-08-26; ledger `35-1-cluster-requires-mcp-host: done`). Evidence:
+  `mcp-host-deployment.yaml` `required` guard on empty
+  `mcpHost.image.repository`; `test_chart_invariants.py` — empty-repository
+  render fails, no `mcpHost.enabled` knob, exactly one mcp-host Deployment +
+  ClusterIP, `MCP_HOST_SIDECAR_BASE_URL` wired on web/worker;
+  `stage_one.py` production/cluster required-setting check (laptop /
+  `platform-ci-test` stay URL-unset); sidecar down is 502, not a web
+  CrashLoop; the ImportError skip is retained per `retire-skip.md`.

@@ -1,7 +1,8 @@
 ---
 id: SPEC-marshal-single-story-dispatch
 spec: marshal-single-story-dispatch
-status: ready
+status: in-progress
+updated: "2026-08-27"  # decomposition reconciled: CAP-1..6 shipped (Epic 22 Stories 22.1-22.6, all done); CAP-7 decomposed as Story 22.7 (backlog) — see the Decomposition record below. Frontmatter had read `ready` while six of seven capabilities were already shipped.
 owner-dream: docs/dreams/marshal-single-story-dispatch.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
@@ -221,3 +222,29 @@ verbs and in-repo queue state under `pyforge-marshal` (not session-local `.curso
   also live diff surfaces.
 - Whether completion detection needs a dedicated sidecar (Story 3.4 shape) or the existing
   supervisor generalizes to a second engine.
+
+## Decomposition record (2026-08-27)
+
+Reconciliation pass against `epics.md` (canonical) and the tracked
+`sprint-status-ledger.yaml`. This Spec's frontmatter read `ready` while Epic 22's
+2026-08-21 decomposition of CAP-1..6 had already shipped end to end — the known
+stale-frontmatter pattern. Status corrected to `in-progress`: six of seven capabilities are
+shipped; CAP-7 is now decomposed but not implemented.
+
+| Capability | Covering story (epics.md / ledger key) | Ledger status |
+|---|---|---|
+| CAP-1 (governed, isolated single-story launch) | Story 22.1 — `22-1-the-dispatch-verb-launches-one-governed-isolated-story-session` | done |
+| CAP-2 (completion from git+process facts; zombie never redispatched) | Story 22.2 — `22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched` | done |
+| CAP-3 (verification is the product; no landing on a self-report) | Story 22.3 — `22-3-verification-is-the-product-no-landing-on-a-self-report` | done |
+| CAP-4 (lands through existing machinery, marshal-native) | Story 22.4 — `22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native` | done |
+| CAP-5 (one in flight per station; parallel stations; loud overlap) | Story 22.5 — `22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud` | done |
+| CAP-6 (run survives its operator; journal carries the timing signal) | Story 22.6 — `22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal` | done |
+| CAP-7 (fleet-wide drain as a marshal-orchestrated mode) | Story 22.7 — `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode` (minted this pass; previously uncovered — Epic 22's goal decomposed CAP-1..6 only, with CAP-7 named merely as the acceptance oracle) | backlog |
+
+Shipped-surface evidence for CAP-1..6: `marshal factory dispatch` /
+`dispatch-attach` / `dispatch-resume` (PRD § 18.3), `pyforge.marshal.dispatch_supervisor`,
+`dispatch_verify`, `dispatch_land` (+ `core/dispatch_landing.py`), per-story promoted specs
+`specs/spec-22-1-*.md` … `spec-22-6-*.md`. CAP-7's interim oracle remains the companion
+`fleet-drain-playbook.md` + `.cursor/pyforge-fleet-drain/` (no `--fleet`/`drain` verb, no
+campaign-mode policies in `cli/dispatch.py` as of this pass). This Spec flips to `shipped`
+when Story 22.7 lands.

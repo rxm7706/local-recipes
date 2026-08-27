@@ -11,8 +11,9 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 21  # 2026-08-15: Epic 21 added (FR-192 — fleet-chain-completeness, found undecomposed in the fleet-wide decomposition audit; only Story 21.1 cleared, 21.2-21.5 blocked on Q1-Q4). Story 19.4 also added (FR-193, testing-charter CAP-5), no new epic.
-storyCount: 125  # 2026-08-15: 119 + 5 (Epic 21, Stories 21.1-21.5) + 1 (Story 19.4) = 125. Not yet re-verified against sprint-status-ledger.yaml -- these are docs-only decomposition, not yet promoted to Tier-3/tracked ledger.
+epicCount: 27  # 2026-08-27: restamped to the live document (Epics 22-27 landed without bumping this field; the previous stamp was 2026-08-15's Epic 21 addition, which also noted Story 19.4 — whose FR cite is FR-132 as of 2026-08-27, the FR-193 double-assignment resolved per PRD § 18.1).
+storyCount: 166  # 2026-08-27: 165 ledger-verified story keys + Story 22.7 (FR-193 CAP-7 fleet drain, backlog; tracked ledger synced in the same pass) = 166. The ledger's key count is the enumeration; this numeral is a dated snapshot.
+updated: "2026-08-27"  # spec-marshal-single-story-dispatch reconciliation (Story 22.7 minted for CAP-7) + the PRD § 18.1 FR-numbering INV-A pass (FR-148..152/FR-192 partition recorded; Story 19.4 re-cited FR-193 → FR-132).
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -108,7 +109,7 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E19** | The testing charter, enforced | One TEA generator, shared kit, coverage gates | 3 | (new 2026-08-10) |
 | **E20** | The loop cannot lose work, and a landing is always recognizable | The operator can trust that a stranded attempt is preserved and loud, a scope drift refuses instead of passing, and every classifier agrees a landed story landed | 10 | (new 2026-08-14) |
 | **E21** | The planning chain regenerates itself, and audits whether it's coherent | Chain regeneration becomes one invocation; a coherence verdict reaches the fleet board | 5 | (new 2026-08-15; row added 2026-08-21 — it was missing from this table) |
-| **E22** | Single-story dispatch is a marshal verb | The 22-story hand ritual replays as governed machinery: one isolated session per story, judged from git facts, independently verified, landed with the full paper trail | 6 | (new 2026-08-21) |
+| **E22** | Single-story dispatch is a marshal verb | The 22-story hand ritual replays as governed machinery: one isolated session per story, judged from git facts, independently verified, landed with the full paper trail | 7 | (new 2026-08-21; 22.7 added 2026-08-27) |
 | **E23** | Velocity captures hand-driven work | Every done story with real signal shows a timing mark; wall-clock never masquerades as active-compute | 3 | (new 2026-08-21) |
 | **E24** | Liveness is one command | "Is this run alive?" answered by the supported CLI — never by hand-parsing engine.pid | 3 | (new 2026-08-21) |
 | **E25** | Aligned to the installed BMAD era | Artifacts, patterns, and marshal surfaces match 6.11/0.11 — retired IDs purged and guarded, every spec folder tool-updatable, the new policy knobs governed and run states named | 7 | (new 2026-08-22) |
@@ -146,7 +147,9 @@ ledger were synced in the SAME pass, and this table's Total is re-verified again
 ledger's post-sync story-key count (**155**) rather than the running arithmetic above —
 which had drifted twice more since 2026-08-14 (the E21 row was missing from this table
 entirely, and post-2026-08-14 story additions such as 10.8 were never folded into the
-Total). The numeral rots; the ledger's key count is the enumeration.*
+Total). The numeral rots; the ledger's key count is the enumeration. **Story 22.7 added
+2026-08-27** (FR-193 CAP-7 fleet drain — the one CAP the 2026-08-21 decomposition left
+uncovered; tracked ledger synced in the same pass, key count now **166**).*
 
 **Epics 7-12 were a separate document until 2026-08-08** (`epics-genesis-installer.md`, now
 archived). They were always Marshal's own — the installer's buildable half moved here on
@@ -3103,7 +3106,11 @@ unresolvable slug exits non-zero naming itself.
 
 ## Epic 17: Instruments verified, chains regenerable
 
-**Goal:** FR-144..FR-152: gate the detectors themselves and make chain regeneration one
+**Goal:** FR-144..FR-152 (FR-148..152 = the FIRST decomposition of
+`spec-fleet-chain-completeness`, realized here as the `marshal chain` slice — Stories
+17.3/17.4; completed by FR-192/Epic 21's `marshal planning` slice. Overlap resolved
+2026-08-27, PRD § 18.1 — each id keeps its shipped owner, no renumber): gate the detectors
+themselves and make chain regeneration one
 invocation. Convergence (corrected post-blind-review): FR-144 is LARGELY COVERED (doctor's
 fixture suites) — the `covers-dreams:` pin ALREADY EXISTS; the true residual is the
 unparseable-frontmatter-becomes-a-finding behaviour, currently pinned as its opposite; FR-150 is PARTIAL (chain-completeness INV-A..D +
@@ -3192,7 +3199,7 @@ as a shared kit (seeded, not rewritten) and at least one other station imports f
 naming the uncovered module (unit >80% / integration >70%), not just printing a percentage.
 
 ### Story 19.4: Test architecture stays current as stories land
-**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** FR-193 (spec-pyforge-testing-charter, CAP-5; found undecomposed, 2026-08-15 fleet-wide decomposition audit)
+**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** FR-132 (spec-pyforge-testing-charter, CAP-5; found undecomposed, 2026-08-15 fleet-wide decomposition audit; re-cited 2026-08-27 from the double-assigned FR-193 — FR-132's § 16.1 registration is this story's title verbatim, PRD § 18.1)
 **Surface:** `scripts/bmad_tea_playwright.py` (or successor)'s own re-run path; each station's `test-architecture.md`
 **Given** an epic completes **Then** re-running S-19.1's generator against the station's own
 epics regenerates its story-coverage table without hand-editing — a story that shipped
@@ -3305,7 +3312,10 @@ real retirements again where recovered branches are demonstrably merged.
 
 ## Epic 21: The planning chain regenerates itself, and audits whether it's coherent
 
-**Goal:** FR-192: decomposes `spec-fleet-chain-completeness`'s CAP-1..5 (found undecomposed,
+**Goal:** FR-192 (the second, full decomposition — completes FR-148..152's Epic 17
+`marshal chain` slice as the `marshal planning` verb group; overlap resolved 2026-08-27,
+PRD § 18.1 — each id keeps its shipped owner, no renumber): decomposes
+`spec-fleet-chain-completeness`'s CAP-1..5 (found undecomposed beyond Epic 17's slice,
 2026-08-15 fleet-wide decomposition audit). The factory's 8-layer planning chain
 (Dream→Spec→Research→Brief→PRD→Architecture→Epics→Code) falls out of sync by hand today — the
 2026-08-02 dream-consolidation pass across all 8 stations did every satellite retirement and
@@ -3384,8 +3394,11 @@ this session.
 
 ## Epic 22: Single-story dispatch is a marshal verb, not a session's discipline
 
-**Goal:** FR-193: decomposes `spec-marshal-single-story-dispatch`'s CAP-1..6 (Spec landed
-2026-08-21 from `docs/dreams/marshal-single-story-dispatch.md`). The fastest story-landing
+**Goal:** FR-193 (sole assignment of this id as of 2026-08-27 — the former Story 19.4
+double-cite is re-anchored to FR-132, PRD § 18.1): decomposes
+`spec-marshal-single-story-dispatch`'s CAP-1..7 (Spec landed 2026-08-21 from
+`docs/dreams/marshal-single-story-dispatch.md`; the 2026-08-21 pass covered CAP-1..6 —
+CAP-7 decomposed 2026-08-27 as Story 22.7). The fastest story-landing
 pattern the factory has run — one story per fresh worktree-isolated `bmad-dev-auto` session (the retired 6.x name of `bmad-build-auto`, as run),
 real-completion await, independent verification, PR landing; validated at N=22 on 2026-08-21
 — exists only as an interactive session's hand ritual. This epic makes it a governed marshal
@@ -3465,9 +3478,29 @@ recovery (the `changes.patch` analog); and the journal records per-story start/e
 baseline→final revisions — making dispatch the at-source producer of the effort signal
 Epic 23 renders (E23 consumes; neither depends on the other landing first).
 
+### Story 22.7: Fleet-wide drain is a marshal-orchestrated mode
+**Type:** feature • **Effort:** L • **Deps:** S-22.1, S-22.2, S-22.4, S-22.5 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-7; decomposed 2026-08-27 — the one CAP the 2026-08-21 pass left uncovered)
+**Surface:** `cli/dispatch.py` (fleet mode), `core/`, in-repo queue state under `pyforge-marshal`
+**Note:** the Spec's Success signal binds the subsumption target: Epic 22.1+ must absorb
+`.cursor/pyforge-fleet-drain/` as marshal verbs and in-repo queue state under
+`pyforge-marshal` (never session-local `.cursor/`); the companion
+`fleet-drain-playbook.md` (validated 2026-08-22/23) stays the interim acceptance oracle
+until the verb ships. Verb naming (`marshal factory dispatch --fleet` vs `marshal drain`)
+stays provisional pending PRD Q-15, matching this epic's naming posture.
+**Given** the eight pyforge stations with per-station ordered backlogs (tracked ledgers +
+optional overrides) **When** the operator runs the one documented fleet-drain command
+**Then** marshal applies the campaign mode (`drain_to_zero`, `leave_one`,
+`skip_on_blocked` policies), preflights each dispatch (S-22.2's zombie refusal), launches
+one story per station in parallel (S-22.5's per-station guard and untouched FR-184 clamp
+posture), and chains each station's next story when merge-through-finalize completes
+(S-22.4 with merge-in-agent: merge when CI green, scoped
+`sprint-ledger-sync --project <station>`, spec promotion, queue regen) — the eight-station
+2026-08-22/23 hand ritual replays without session discipline.
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
-22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** (companion
-`spec-marshal-single-story-dispatch/fleet-drain-playbook.md`, validated 2026-08-22/23) is
+22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
+as Story 22.7 (2026-08-27, backlog), with the companion
+`spec-marshal-single-story-dispatch/fleet-drain-playbook.md` (validated 2026-08-22/23) as
 the acceptance oracle for the full eight-station campaign. The Spec's remaining open questions
 (enforceable budget signal; advisory's comparison basis; dedicated sidecar vs generalized
 supervisor) are story-level design decisions inside 22.1/22.5/22.2 respectively, not

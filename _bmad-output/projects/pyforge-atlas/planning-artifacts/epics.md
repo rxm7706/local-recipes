@@ -8,8 +8,8 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: '2026-08-26'
-currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file."
+updated: '2026-08-27'
+currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -1767,6 +1767,77 @@ So that Lane 2 does a real job without Vizro or La Suite.
 **Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** canopy FR-10 • canopy AD-7
 **Given** an authenticated atlas-role session **When** the operator opens `/stations/atlas/` **Then** one row renders via PortalClient only
 **And** no raw HTTP, no `pyforge.*` under `src/platform/`, no chrome copy, no DW-H3 REST
+
+---
+
+## Epic 20: The query plane meets the query surfaces
+
+Decomposes **`spec-atlas-query-dashboards`**
+(`planning-artifacts/specs/spec-atlas-query-dashboards/SPEC.md`) **CAP-5..CAP-7** — the
+2026-08-27 extension minted from the three operator rulings dated 2026-08-26 in the steward
+strategy SPEC § Open Questions (`query-plane-face`: both faces, one boot script, parity part
+of done; `query-plane-catalog`: named new pipeline as the opt-in optimization layer, closed
+seven sealed; `query-plane-scribe-cutover`: dual-write — covered by steward 34.5, no atlas
+story owed). CAP-1..CAP-4 shipped as Epic 14 and are untouched here.
+
+**Fenced off (no double-mint).** The CAP-19 engine's first slice — steward 34.1–34.5 plus
+Lane 3 36.1–36.2 — shipped 2026-08-26 on the STEWARD chain (see this file's 2026-08-26
+validation note); this epic owns only the atlas-side query-surface residue: the boot script,
+the face-parity gate, the composed-dashboard-store derivation, the CIS two-spine specs, and
+the remaining 19 Vizro pages (adopting the DW-D2-1/2/3 residue, which had ledger entries but
+no story home for dispatch).
+
+### Story 20.1: One boot script raises both plane faces (CAP-5)
+**Effort:** M • **Deps:** — • **Status:** backlog
+**Given** the shipped CAP-19 engine (steward 34.1–34.5) **When** the single pixi-sourced boot
+script runs **Then** the in-process library face is available by default (AD-16 local-first;
+DuckDB stays a query face, never a fourth backing store) **And** the Mosaic `duckdb-server`
+HTTP/Arrow face is raised by the SAME script only when the platform stack is up — with the
+stack down it degrades to library-face-only with a structured notice, never a crash **And**
+no second boot path exists (grep-verifiable: exactly one `duckdb-server` launch site)
+(`query-plane-face` ruling, 2026-08-26).
+
+### Story 20.2: Face parity is part of done (CAP-5)
+**Effort:** S • **Deps:** S-20.1 • **Status:** backlog
+**Given** both faces up on fixture data **When** the parity gate runs an identical query set
+against the library face and the HTTP/Arrow face **Then** results agree row-for-row **And** a
+seeded divergence fails the gate (proven in-test) **And** filesystem-less consumers bind to
+the HTTP face per CAP-19's success wording ("the plane DSN or HTTP face") — parity is part of
+the face's definition of done per the `query-plane-face` ruling (2026-08-26); the gate is
+offline-safe.
+
+### Story 20.3: Named-pipeline derivation of the dashboard stores (CAP-6)
+**Effort:** M • **Deps:** — • **Status:** backlog
+**Given** the sealed seven pipelines' canonical outputs **When** the NAMED downstream plane
+pipeline runs (one `kedro run --pipeline <named>`) **Then** the composed semantic stores the
+grounded dashboard pages bind to (DW-D2-2's `semantic_packages` family plus the
+`core_feedstock_health` Parquet the 2026-08-26 first visual pass found absent in a fresh
+checkout) are materialized **And** zero diff lands inside the sealed seven and no silent
+`01_raw` tree appears (`query-plane-catalog` ruling, 2026-08-26) **And** consumers keep the
+per-call choice — canonical datasets direct, or the plane as the fast path **And**
+`dashboard/data.py`'s "BSL-wired SHELL pages" banner retires, with DW-D2-2 closed citing this
+story.
+
+### Story 20.4: The CIS two-spine specs exist (CAP-7)
+**Effort:** M • **Deps:** — • **Status:** backlog
+**Given** DW-D2-1 — checked 2026-08-27: the CIS DESIGN/EXPERIENCE gap STILL BLOCKS (the
+`DESIGN.md` + `EXPERIENCE.md` spine specs were never produced; no evidence-update since the
+2026-07-30 verification) **When** the CIS Carson/Maya planning pass runs **Then** both spine
+files land under `planning-artifacts/` covering every one of the 19 unshipped pages **And**
+DW-D2-1's close cites them **And** until this story lands, S-20.5 must not expand the page
+set past the live-confirmed core.
+
+### Story 20.5: Port the remaining nineteen Vizro pages (CAP-7)
+**Effort:** L • **Deps:** S-20.3, S-20.4 • **Status:** backlog
+**Given** the two-spine specs (S-20.4 — this story is GATED: the DW-D2-1 CIS gap still blocks
+as of 2026-08-27) and the materialized stores (S-20.3) **When** the remaining 19 of 28 CLI
+pages port against the spines — BSL-routed, reading canonical datasets or the plane per the
+`query-plane-catalog` ruling's per-call choice **Then** all 28 pages render with stable
+ids/titles **And** the DW-D2-3 residual executes: the §2.1 semantic-HTML/ARIA browser-agent
+navigation check plus a data-present visual pass through
+`pixi run -e local-recipes dashboard-serve` (`scripts/dashboard_serve.py`, the DW-D2-3
+serve entrypoint, evidence-update 2026-08-26) **And** Vizro stays outside the Canopy host
+(this file's Canopy obligation 3) and Django imports no Vizro.
 
 ---
 

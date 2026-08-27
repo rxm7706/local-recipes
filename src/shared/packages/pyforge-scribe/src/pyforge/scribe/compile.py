@@ -35,15 +35,37 @@ entry) logs a warning to stderr and is skipped -- it does not abort the rest
 of the compile; only a missing/malformed `memory_root` raises, mirroring
 `capture.py`'s existing contract.
 
+**Scheduled, not self-scheduling (Story 3.3).** This verb is the schedulable
+unit -- the herald Story-13.5 pattern: no scheduler dependency, no GitHub
+Actions workflow (every input worth compiling -- `.claude/memory/`, the
+per-user transcript root, the gitignored `.claude/data/` store -- is
+operator-local, so a GH-hosted runner would compile an empty machine); the
+documented trigger is an opt-in operator-installed `crontab` entry, see
+`docs/cli-runbooks.md` in this package. Two Story 3.3 guards make that safe:
+the transcript scan is bounded (caps/timeout/mtime-cache, see
+`transcripts.py`; the cache lives beside the graph store, so it shares the
+store's own gitignored, derived-artifact home), and overlapping runs against
+one store are refused -- `compile_graph()` takes a non-blocking advisory
+lock keyed to the store path (the same stdlib flock pattern as
+`capture.py::_locked`, but skip-not-wait) and raises
+`CompileInProgressError` when another compile already holds it, which the
+CLI reports as a clean exit-0 skip so an overlapping cron firing is never a
+corrupted double-write and never red cron mail.
+
 Zero required network calls (AD-6): the only subprocess invoked is
 `git log` (local, read-only -- never `fetch`/`pull`/`clone`/`ls-remote`).
 """
 
 from __future__ import annotations
 
+import contextlib
+import fnmatch
+import hashlib
+import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,6 +86,12 @@ _EXCLUDED_DIR_NAMES = frozenset(
         ".pixi",
         "node_modules",
         "worktrees",
+        # Story 3.3: the dot-prefixed worktree home at the repo root
+        # (`.worktrees/`) holds the same full duplicate checkouts the bare
+        # "worktrees" entry was always meant to exclude (`.cursor/worktrees`,
+        # `.claude/worktrees`) -- indexing them mints duplicate memlog/
+        # changelog/retro nodes citing throwaway trees.
+        ".worktrees",
         "data",  # .claude/data -- the graph store's own gitignored home
         "dist",
         "dist-conda",
@@ -76,6 +104,13 @@ _EXCLUDED_DIR_NAMES = frozenset(
 
 _DEFAULT_MAX_COMMITS = 100
 _MAX_DOC_TEXT_CHARS = 20_000  # bound lexical-scan/serialization cost per node
+
+
+class CompileInProgressError(RuntimeError):
+    """Another `scribe graph compile` currently holds this store's lock
+    (Story 3.3). Benign under a scheduler -- the CLI turns it into an
+    exit-0 skip, mirroring the `flock -n` semantics the runbook's cron
+    line adds as its own outer layer."""
 
 
 @dataclass(frozen=True)
@@ -110,7 +145,9 @@ def compile_graph(
 
     `nightly` is accepted for CLI/scheduling clarity only -- compile is
     unattended-by-construction either way (no prompts in any code path).
-    Raises `ValueError` if `memory_root` does not exist, before any read.
+    Raises `ValueError` if `memory_root` does not exist, before any read;
+    raises `CompileInProgressError` (Story 3.3) if another compile already
+    holds this store's lock, before any store mutation.
     Pass `store` directly (e.g. a `FlatFileGraphStore` under `tmp_path`) in
     tests instead of relying on `store_path`'s repo-relative default.
     `transcript_root` defaults to `default_transcript_root()` when `None`
@@ -129,42 +166,111 @@ def compile_graph(
 
         store = open_graph_store(store_path or default_store_path(repo_root))
 
-    warnings: list[str] = []
-    store.reset()
-
-    memory_nodes = _read_memory_surface(memory_root, repo_root, warnings)
-    for node in memory_nodes:
-        store.upsert_node(node)
-
-    for node in _read_memlog_surface(repo_root):
-        store.upsert_node(node)
-
-    for node in _read_changelog_surface(repo_root):
-        store.upsert_node(node)
-
-    for node in _read_retro_surface(repo_root):
-        store.upsert_node(node)
-
-    for node in _read_git_surface(repo_root, max_commits, warnings):
-        store.upsert_node(node)
-
-    resolved_transcript_root = (
-        transcript_root if transcript_root is not None else default_transcript_root()
+    resolved_path = Path(
+        getattr(store, "store_path", store_path or default_store_path(repo_root))
     )
-    for node in _read_transcript_surface(memory_root, resolved_transcript_root, warnings):
-        store.upsert_node(node)
 
-    invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
+    with _compile_lock(resolved_path):
+        warnings: list[str] = []
+        store.reset()
 
-    store.commit()
+        memory_nodes = _read_memory_surface(memory_root, repo_root, warnings)
+        for node in memory_nodes:
+            store.upsert_node(node)
 
-    resolved_path = getattr(store, "store_path", store_path or default_store_path(repo_root))
+        for node in _read_memlog_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_changelog_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_retro_surface(repo_root):
+            store.upsert_node(node)
+
+        for node in _read_git_surface(repo_root, max_commits, warnings):
+            store.upsert_node(node)
+
+        resolved_transcript_root = (
+            transcript_root if transcript_root is not None else default_transcript_root()
+        )
+        transcript_nodes = _read_transcript_surface(
+            memory_root,
+            resolved_transcript_root,
+            warnings,
+            cache_path=_transcript_scan_cache_path(resolved_path),
+        )
+        for node in transcript_nodes:
+            store.upsert_node(node)
+
+        invalidated_count = _apply_supersession(memory_root, memory_nodes, store, warnings)
+
+        store.commit()
+
     return CompileResult(
         node_count=len(list(store.iter_nodes())),
         invalidated_count=invalidated_count,
         store_path=resolved_path,
         warnings=tuple(warnings),
     )
+
+
+def _transcript_scan_cache_path(resolved_store_path: Path) -> Path:
+    """The scan cache lives beside the graph store file (Story 3.3) -- in
+    production that is `.claude/data/pyforge-scribe/`, already gitignored
+    and already the home of derived, disposable artifacts (AD-1); in tests
+    it follows the injected store into `tmp_path` so no test ever touches a
+    real cache."""
+    return resolved_store_path.parent / "transcript-scan-cache.json"
+
+
+@contextlib.contextmanager
+def _compile_lock(store_target: Path):
+    """Refuse -- never queue -- an overlapping compile against one store
+    (Story 3.3).
+
+    The same cross-platform stdlib advisory-lock shape as
+    `capture.py::_locked` (``fcntl`` on POSIX, ``msvcrt`` on Windows; lock
+    file in the OS temp dir keyed by the resolved target path, never inside
+    the repo tree), with one deliberate difference: `capture()` WAITS up to
+    its timeout because two captures are both meant to land, while two
+    concurrent compiles are pure waste -- each is a full rebuild of the
+    same derived store -- so a busy lock raises `CompileInProgressError`
+    immediately instead of polling.
+    """
+    root_key = hashlib.sha256(str(store_target.resolve()).encode("utf-8")).hexdigest()[:16]
+    lock_path = Path(tempfile.gettempdir()) / f"pyforge-scribe-compile-{root_key}.lock"
+    lock_file = open(lock_path, "a+")
+    busy_message = (
+        f"another `scribe graph compile` already holds the lock for {store_target} "
+        f"({lock_path}) -- skipped, nothing recompiled"
+    )
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+
+            lock_file.seek(0)  # lock a consistent byte-0 region across processes
+            try:
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError:
+                raise CompileInProgressError(busy_message) from None
+            try:
+                yield
+            finally:
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise CompileInProgressError(busy_message) from None
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+    finally:
+        lock_file.close()
 
 
 # --- surface: .claude/memory/ -------------------------------------------------
@@ -259,14 +365,36 @@ def _is_excluded(parts: tuple[str, ...]) -> bool:
 
 
 def _rglob_excluding(repo_root: Path, pattern: str) -> list[Path]:
-    results = []
-    for path in sorted(repo_root.glob(pattern)):
-        if not path.is_file():
-            continue
-        if _is_excluded(path.relative_to(repo_root).parts[:-1]):
-            continue
-        results.append(path)
-    return results
+    """All files whose NAME matches ``pattern``'s final component, outside
+    the excluded directories.
+
+    Implemented as an `os.walk` that PRUNES excluded directories instead of
+    a `Path.glob("**/...")` that filters them afterwards (Story 3.3 review
+    finding: glob still traversed `.git`/`.pixi`/the worktree homes it was
+    about to discard, and on the live repo the `.memlog.md` glob alone
+    exceeded 9 minutes -- which made the "nightly" compile verb
+    non-terminating in practice, the exact condition Story 3.3 exists to
+    end). The result set is identical to the old post-hoc filter: a file
+    was excluded iff some ancestor path component tripped `_is_excluded`,
+    and refusing to descend at the first tripping component removes exactly
+    those files. Like `Path.glob`, `os.walk` does not follow directory
+    symlinks, and neither hides dot-prefixed entries.
+    """
+    name_pattern = pattern.rsplit("/", 1)[-1]
+    results: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(repo_root):
+        rel_parts = Path(dirpath).relative_to(repo_root).parts
+        dirnames[:] = [d for d in dirnames if not _is_excluded(rel_parts + (d,))]
+        for filename in filenames:
+            # fnmatchcase, not fnmatch: `Path.glob` matched case-sensitively
+            # on every platform, and this must stay a pure traversal-cost
+            # fix, never a silent node-set change.
+            if not fnmatch.fnmatchcase(filename, name_pattern):
+                continue
+            path = Path(dirpath) / filename
+            if path.is_file():
+                results.append(path)
+    return sorted(results)
 
 
 def _node_from_text_file(path: Path, *, kind: GraphNodeKind, repo_root: Path) -> GraphNode:
@@ -350,16 +478,23 @@ def _read_git_surface(repo_root: Path, max_commits: int, warnings: list[str]) ->
 
 
 def _read_transcript_surface(
-    memory_root: Path, transcript_root: Path, warnings: list[str]
+    memory_root: Path,
+    transcript_root: Path,
+    warnings: list[str],
+    cache_path: Path | None = None,
 ) -> list[GraphNode]:
     """Registers Story 3.1's `scan_transcripts()` output as the sixth
-    compile source (CAP-2). All decision-marking/dedup logic lives in that
-    scanner -- no second implementation here (Epic 3's own Cross-Story
-    Dependencies). A missing/unreadable `transcript_root` (the ordinary
-    case: transcripts are per-user/local, so a machine that has simply never
-    run a session against this repo has no root at all) degrades to a
-    warning and zero nodes, same as every other optional surface -- it never
-    aborts the compile.
+    compile source (CAP-2). All decision-marking/dedup logic -- and, since
+    Story 3.3, the caps/timeout bounds and the mtime+size scan cache
+    (`cache_path`, pointed at the store's own directory by
+    `compile_graph()`) -- lives in that scanner; no second implementation
+    here (Epic 3's own Cross-Story Dependencies). The scanner's own
+    warnings (cap skips, per-file timeouts, an unwritable cache) are
+    forwarded onto this compile's warning channel. A missing/unreadable
+    `transcript_root` (the ordinary case: transcripts are per-user/local,
+    so a machine that has simply never run a session against this repo has
+    no root at all) degrades to a warning and zero nodes, same as every
+    other optional surface -- it never aborts the compile.
 
     A per-`(source_file, line_number)` occurrence counter disambiguates
     multiple candidates on one transcript line into distinct ids:
@@ -376,10 +511,12 @@ def _read_transcript_surface(
     candidate's own file+line, not a stable per-fact key.
     """
     try:
-        proposal = scan_transcripts(transcript_root, memory_root)
+        proposal = scan_transcripts(transcript_root, memory_root, cache_path=cache_path)
     except ValueError as exc:
         warnings.append(_transcript_unavailable_warning(transcript_root, exc))
         return []
+
+    warnings.extend(proposal.warnings)
 
     # `scan_transcripts()` swallows an `OSError` from its own glob, so an
     # existing-but-unreadable root would otherwise be indistinguishable from

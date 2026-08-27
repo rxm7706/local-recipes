@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: '2026-08-26'
+updated: '2026-08-27'
 currency_review: "Reviewed 2026-08-26 — validated against the reconciled architecture spine (updated 2026-08-26): all 14 stories done per the tracked ledger, structure unchanged; the 2026-08-26 dual-write decision mints no new scribe story. See § Currency validation — 2026-08-26."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -278,6 +278,52 @@ full) resolves here.
 alongside git history/memlogs/retros/CHANGELOGs/dreams with the same provenance
 discipline — the next Scribe layer cannot re-miss them.
 
+### Story 3.3: The nightly compile gets a schedule and a cost ceiling
+**Type:** feature • **Effort:** M • **Deps:** S-3.2 • **FR/AD:** PRD SM-4 / FR-11 • RISK-2 (2026-08-08 technical report) • DW-FU-3-2-2 • scribe AD-6
+
+*Minted 2026-08-27 from the SM-4 gap: the nightly compile existed as a verb but nothing
+scheduled it, and the Epic 3 transcript surface made an unattended run cost-unbounded.
+Scoping follows the herald Story-13.5 pattern — the CLI verb is the schedulable unit; an
+opt-in, operator-installed local `crontab` entry is the trigger. GitHub Actions is
+disqualified: the transcript root (`~/.claude/projects/<encoded-cwd>/`), `.claude/memory/`,
+and the `.claude/data/` graph store are all operator-local, so a GH-hosted runner would
+compile an empty machine every night (the same reasoning `herald/scheduler.py` and
+pyforge-herald's `docs/cli-runbooks.md` record for `.herald/herald.db`) — mirror the
+pattern, do NOT couple into `herald scheduler run`.*
+
+**Acceptance Criteria:**
+
+**Given** a transcript root of any size
+**When** `scribe graph compile` (any mode) reaches the transcript surface
+**Then** the scan is bounded as a precondition of unattended scheduling: a file-count cap
+and a total-byte budget (newest files first) select what is read, a per-file timeout
+abandons a pathological file with a warning instead of hanging the run, and an
+mtime+size-keyed scan cache under the graph store's own directory makes a re-run over an
+unchanged surface skip re-reading unchanged files — all bounds defaulting high enough to
+cover the live 27-file/631MB surface without dropping data (closes DW-FU-3-2-2).
+
+**Given** an operator who wants the compile nightly
+**When** they follow `src/shared/packages/pyforge-scribe/docs/cli-runbooks.md` (herald
+`docs/cli-runbooks.md` format)
+**Then** a documented, opt-in `crontab -e` entry — path-parameterized per checkout, `cd`
+to the repo root, `flock -n`-wrapped, appending to a stated log destination
+(`~/.cache/scribe-nightly-compile.log`) — is the trigger; no GitHub Actions workflow is
+added.
+
+**Given** a `scribe graph compile` already running against the same graph store
+**When** a second invocation starts (an overlapping cron firing, or an operator running
+it by hand)
+**Then** the second run skips cleanly — a non-blocking lock keyed to the store path
+(mirroring `capture.py::_locked`'s stdlib flock pattern) makes it exit 0 with a
+"skipped" message, never a corrupted double-write and never a red cron mail — and
+FR-11's byte-identical idempotent rerun still holds with the scan cache in play.
+
+**Given** the runbook and the bounded, guarded verb exist
+**When** this story completes
+**Then** PRD SM-4 flips to met with the runbook as evidence (dated notes in §7 and
+§ Currency reconciliation), and the deferred-work ledger's DW-FU-3-2-2 is closed with
+the same date.
+
 ## Canopy obligations (2026-08-24)
 
 Phase 5 correct-course (`sprint-change-proposal-2026-08-24-canopy.md`, **approved**). CAP-14 graph
@@ -360,4 +406,4 @@ So that Lane 2 does a real job in HTMX.
 
 ## Currency validation — 2026-08-26
 
-Validated against the reconciled architecture spine (updated 2026-08-26) and the as-built code through commit `2d264c7f5c`. All 14 stories (1.1–5.2) are `done` per the tracked `sprint-status-ledger.yaml`; no heading or status was changed by this pass. Spot-checks: Story 4.1's ACs are satisfied as built — `graph_store_plugins.py::open_graph_store` selects drivers by owner on the CAP-18 hook contract with `FlatFileGraphStorePlugin` as the default, and the steward PG driver registers as a second plugin (`graph_store_pg.py`), not a fork. Story 5.2's PortalClient-only rule is enforced by `tests/meta/test_first_portal_slice.py`. The Canopy-obligations table's line "today's shipped backend is `FlatFileGraphStore` only" is now dated: since 2026-08-25/26 the PG (steward 28.1) and plane (steward 34.5) drivers exist behind the same port — governed by the **2026-08-26 dual-write operator decision** (plane primary satisfying FR-36; `scribe_schema` pgvector written as safety net; strategy SPEC § Open Questions, `query-plane-scribe-cutover`), which stays steward-owned and mints **no new scribe epic or story**. Epic 3's transcript scope is reconciled in the PRD (§5 amendment note) — this breakdown required no structural change. Residual work is tracked in `deferred-work-ledger.md` (DW-FU-3-2 family) and the 2026-08-08 technical report (RISK-1 promote.py review, RISK-2 unscheduled nightly), not as new stories here.
+Validated against the reconciled architecture spine (updated 2026-08-26) and the as-built code through commit `2d264c7f5c`. All 14 stories (1.1–5.2) are `done` per the tracked `sprint-status-ledger.yaml`; no heading or status was changed by this pass. Spot-checks: Story 4.1's ACs are satisfied as built — `graph_store_plugins.py::open_graph_store` selects drivers by owner on the CAP-18 hook contract with `FlatFileGraphStorePlugin` as the default, and the steward PG driver registers as a second plugin (`graph_store_pg.py`), not a fork. Story 5.2's PortalClient-only rule is enforced by `tests/meta/test_first_portal_slice.py`. The Canopy-obligations table's line "today's shipped backend is `FlatFileGraphStore` only" is now dated: since 2026-08-25/26 the PG (steward 28.1) and plane (steward 34.5) drivers exist behind the same port — governed by the **2026-08-26 dual-write operator decision** (plane primary satisfying FR-36; `scribe_schema` pgvector written as safety net; strategy SPEC § Open Questions, `query-plane-scribe-cutover`), which stays steward-owned and mints **no new scribe epic or story**. Epic 3's transcript scope is reconciled in the PRD (§5 amendment note) — this breakdown required no structural change. Residual work is tracked in `deferred-work-ledger.md` (DW-FU-3-2 family) and the 2026-08-08 technical report (RISK-1 promote.py review, RISK-2 unscheduled nightly), not as new stories here. *(Addendum 2026-08-27: the RISK-2 residual and DW-FU-3-2-2 named above are now owned by Story 3.3 — minted that date under Epic 3.)*

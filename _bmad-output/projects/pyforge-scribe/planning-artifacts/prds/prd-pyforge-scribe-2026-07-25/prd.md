@@ -1,7 +1,7 @@
 ---
 title: pyforge-scribe
 created: 2026-07-25
-updated: 2026-08-26
+updated: 2026-08-27
 status: final
 currency_review: Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
 ---
@@ -195,7 +195,7 @@ Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem,
 
 **Secondary**
 - **SM-3**: 100% of promoted team-memory entries carry the correct pointer-stub + `promoted: true` marker in user-local memory after promotion (idempotency spot-check). Validates FR-5, FR-6.
-- **SM-4**: `scribe graph compile --nightly` completes unattended, with zero manual intervention, across at least 4 consecutive scheduled runs post-Wave-2. Validates FR-11.
+- **SM-4**: `scribe graph compile --nightly` completes unattended, with zero manual intervention, across at least 4 consecutive scheduled runs post-Wave-2. Validates FR-11. *(Met 2026-08-27 by Story 3.3: the verb is the schedulable unit per the herald Story-13.5 pattern; the documented, opt-in operator crontab entry in `src/shared/packages/pyforge-scribe/docs/cli-runbooks.md` is the trigger and the evidence — the transcript scan is bounded (caps/timeout/mtime-cache, DW-FU-3-2-2 closed), overlapping runs skip via a non-blocking store lock, and the live-repo compile was verified terminating (5.2s cold / 2.7s cache-served, byte-identical rerun). The 4-consecutive-runs count accrues on the operator machine's cron log.)*
 - **SM-5**: Zero required network calls observed during a `scribe capture` / `scribe graph compile` / `scribe recall` invocation run with network access blocked (air-gap functional test). Validates the air-gap NFR.
 
 **Counter-metrics (do not optimize)**
@@ -270,7 +270,7 @@ This PRD was cut 2026-07-25 and last content-reviewed 2026-08-04, before Scribe 
 
 **§5 Non-Goals — one amendment.** The "no session-transcript mining, permanent" stance was amended by Epic 3 (see the dated note in §5): transcripts are mined only as reviewed promotion candidates and as a compile source — ambient auto-capture and hook automation remain non-goals as written.
 
-**§7 Success metrics — status.** SM-1 met (seed promotion performed by the tool, pointer stub live 2026-08-07); SM-2 met (grounded, cited recall shipped; determinism proven with two independent store instances); SM-3 holds for every promotion to date; SM-5 holds (offline-conformance tests; deterministic local embeddings). **SM-4 remains unmet — no scheduler invokes the nightly compile** (RISK-2, 2026-08-08 technical report; still true 2026-08-26). One classifier deviation on record: Story 1.5 delivered 1 of 2 seed entries at first pass (`_find_missing_repo_path()` stale-veto), accepted as correct classify-then-confirm behavior.
+**§7 Success metrics — status.** SM-1 met (seed promotion performed by the tool, pointer stub live 2026-08-07); SM-2 met (grounded, cited recall shipped; determinism proven with two independent store instances); SM-3 holds for every promotion to date; SM-5 holds (offline-conformance tests; deterministic local embeddings). **SM-4 remains unmet — no scheduler invokes the nightly compile** (RISK-2, 2026-08-08 technical report; still true 2026-08-26). *(Resolved 2026-08-27: Story 3.3 shipped the herald-13.5 pattern — the CLI verb is the schedulable unit, an opt-in operator-local `crontab` entry is the trigger; GitHub Actions stays disqualified because every input worth compiling (transcripts, `.claude/memory/`, the `.claude/data/` store) is operator-local. The transcript surface is bounded as a precondition (file/byte caps, per-file timeout, mtime-incremental scan cache — DW-FU-3-2-2 closed), overlapping runs skip via a non-blocking store lock, and a live-repo review finding was fixed en route: the repo-wide memlog/CHANGELOG/retro globs traversed `.git`/`.pixi`/worktree homes and made the verb non-terminating (>9 min for one surface); pruning-at-walk brought the full compile to 5.2s cold / 2.7s cached, byte-identical on rerun. Runbook + cron entry: `src/shared/packages/pyforge-scribe/docs/cli-runbooks.md`. SM-C2 respected — supersession semantics untouched.)* One classifier deviation on record: Story 1.5 delivered 1 of 2 seed entries at first pass (`_find_missing_repo_path()` stale-veto), accepted as correct classify-then-confirm behavior.
 
 **New requirements landed above this PRD's FR ceiling** (owned by their own specs, not retrofitted here): transcript scanner + compile source (spec-scribe-mines-raw-session-transcripts CAP-1..2, Epic 3); `GraphStore` as CAP-18 plugins (FR-45, Epic 4); SKF skill + persona ownership and the first portal slice (canopy FR-37/38, FR-10; Epic 5); durable PG driver + semantic recall (canopy FR-35/36, steward Epic 28); plane ranking (FR-50, steward 34.5). Scribe's five-tier station shape (CLI, portal, MCP face, skill, persona) was declared complete 2026-08-26 (strategy Epic 37.1, 40/40).
 
