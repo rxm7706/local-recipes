@@ -2,9 +2,11 @@
 title: Landed retros are mirrored into the pilot brief
 type: chore
 created: '2026-08-27'
-status: ready
+status: in-review
 updated: '2026-08-27'
-baseline_revision: cc8b3b2b1c09d6e56a5aebf752e25f507c846571
+# Implementation complete in this worktree 2026-08-27 (see Auto Run Result); status flips
+# to done at landing, with the ledger, per the dispatch convention.
+baseline_revision: 5bae7d330164a14de41ca789d8edefeab858a213
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -107,3 +109,67 @@ authored here.
   compiled package's own record of which source scripts it ported and why (a distinct,
   non-CFE-surface skill tree); a useful cross-check for what the brief should already
   reflect.
+
+## Tasks & Acceptance
+
+**Execution (2026-08-27):**
+- [x] Locate/reconstruct the brief target — CONFIRMED ABSENT in this worktree AND the main
+  tree (`forge-data/` holds only `cf-atlas-legacy/` + `.gitkeep`); the authoring worktree
+  (`.claude/worktrees/agent-a00a0f6206d94a499`, per the compiled package's
+  `metadata.json:source_repo`) is torn down. RECONSTRUCTED verbatim from the authoring
+  session's transcripts (`~/.claude/projects/.../bb1777ca-.../subagents/agent-a13bf77a53f12f805.jsonl`):
+  the initial `skf-write-skill-brief.py` draft was recovered from a Read tool-result, and the
+  two 2026-08-21 amendment scripts (`add_skip_amendments.py` — 24 headless auth-doc skip
+  amendments from the surviving candidates JSON `tool-results/bljugy7rw.txt`;
+  `add_runtime_dep_amendment.py` — `_cfy_template.py` + 7 templates scope expansion) were
+  replayed exactly. Byte-verified against both recorded `skf-atomic-write` receipts:
+  8370 bytes after amendment 1, 11634 bytes final — exact match on both checkpoints.
+- [x] Read all 4 qualifying commits' real diffs (`git show`/`diff-tree`/`--numstat`, never
+  the subject line): they are two substantive CFE deltas, each landing twice (feat + merge) —
+  CFE v8.83.0 = `6ace3fd6`/`2d276ecb` (PR #606: SKILL.md +G109/+G110, cheatsheet
+  SelfExplainML publish flow, version files); CFE v8.84.0 = `621ab29c`/`565ef7d194` (PR #676:
+  `github_updater.py` +167/−9 — `update_recipe_head()` + `_fetch_default_branch_head()` +
+  `--head` CLI, HEAD-advance for commit-pinned recipes; version files).
+- [x] Mirror both deltas into the brief as two dated `scope.amendments` entries
+  (`action: retro-mirror`, `category: dual-landing`, each listing both its feat and merge
+  SHAs) plus a dated `scope.notes` section recording the reconstruction provenance, the
+  dual-landing mirror, and the historical correction that the brief's pre-existing
+  "THIRD, NOT fixed" `github_version_checker.py` claim was superseded by Story 6.3's
+  gap-closure pass (operator-decided port, `ec193303b6`). Brief re-validated with the real
+  `skf-validate-brief-schema.py`: `valid: True`, 0 errors, 0 warnings. Final brief =
+  16400 bytes, sha256 `01f4284c26e1…`; a byte-identical durability copy was also placed at
+  the same gitignored path in the main tree (this worktree is disposable — leaving the only
+  copy here would re-create the exact Tier-3 loss this story just repaired).
+- [x] `campaign-state.yaml` — `slices[0].brief_mirrored_through: null →
+  "565ef7d194b1ccd740951250aa6535b65bdfc7b6"` (full 40-char SHA — the detector compares
+  `%H` output by equality); replaced the field's now-false "0 retros in range" comment;
+  appended the v8.84.0 divergence consequence to slice-1's `next_action` (compiled
+  `github_updater.py` copy is now BEHIND live; re-port/re-validate before slice 1 advances
+  past `compiled`; the recorded `equivalence: green` predates v8.84.0); `last_updated →
+  2026-08-27`. Nothing else touched — no `status`/`equivalence` value changed, `epics.md`
+  and `sprint-status-ledger.yaml` untouched, CFE surface untouched (read-only `git show`).
+
+**Acceptance Criteria (verified):**
+- `pixi run -e local-recipes cfe-rebuild-guard-check` — exit 0, "clean", after reporting
+  "4 qualifying CFE retro commit(s) in 806cb63046..HEAD". `--json`: `{"retros_scanned": 4,
+  "findings": []}`.
+- 5th-retro edge case re-checked at close: HEAD is `5bae7d3301` (= this spec's
+  `baseline_revision`), newest qualifying retro unchanged at `565ef7d194…`.
+- `pixi run -e local-recipes pytest tests/scripts/test_cfe_rebuild_guard_check.py -q` —
+  29/29 pass (detector logic untouched, as required).
+
+## Auto Run Result
+
+Status: done (working tree of `dispatch-pyforge-mason-12.1`, uncommitted — landing, ledger
+flip for key `12-1-landed-retros-are-mirrored-into-the-pilot-brief`, and the `maintenance`
+PR label are the dispatcher's; no `recipes/**` or `pixi.toml` change, so no env-sync).
+
+Residual risks: (1) the brief remains gitignored Tier-3 state — durable only as long as a
+live tree carries it (both this worktree and the main tree now do, byte-identical); (2) the
+reconstruction is byte-count-verified against the two recorded atomic-write receipts, not
+sha256-verified (no content hash of the original survives to compare against) — the
+double checkpoint match (8370/11634) plus identical PyYAML serialization make silent
+divergence very unlikely but not formally impossible; (3) the v8.84.0 divergence between
+the live `github_updater.py` and the compiled package's copy is RECORDED, not resolved —
+resolving it belongs to the slice-1 re-validation work (Story 12.3's real-audit pass is the
+natural place), not this chore.
