@@ -1310,6 +1310,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-POLICY-005",
         "MRS-POLICY-006",
         "MRS-POLICY-007",
+        # Story 22.8 (FR-193 CAP-8, "one preference, two engines"):
+        # MRS-POLICY-008 -- no `harness_preference` entry has a bmad-loop
+        # adapter counterpart, so the rendered `[adapter].name` keeps the
+        # template default (WARN, the MRS-POLICY-005 advisory tier: the
+        # composition stands, the operator is told their preference did not
+        # reach the bmad-loop engine).
+        "MRS-POLICY-008",
         "MRS-INIT-001",
         "MRS-INIT-002",
         "MRS-INIT-003",
@@ -1529,6 +1536,21 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-024",
         "MRS-DISP-025",
         "MRS-DISP-026",
+        # Story 22.8 (profile-driven session harness, FR-193 CAP-8): 027
+        # one preference candidate skipped -- unknown profile / binary not
+        # found / authcheck failed (WARN, one per skip: the 2026-08-27
+        # cursor-auth failure mode made a named, structured skip); 028 an
+        # overlay profile file under `_bmad-output/harness-profiles/` could
+        # not be loaded and was ignored (WARN); 029 the policy model tier
+        # could not be rendered for the resolved profile -- no model_map
+        # entry and no verbatim passthrough -- so the model flags were
+        # omitted and the session runs on the CLI's default model (WARN,
+        # honest-over-guessed). MRS-DISP-003 (registered at Story 22.1)
+        # stays the ERROR for "nothing dispatchable", now naming every
+        # candidate tried.
+        "MRS-DISP-027",
+        "MRS-DISP-028",
+        "MRS-DISP-029",
     }
 )
 
