@@ -2063,6 +2063,14 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         na = set(FLEET_NA.get(slug, set())) | (set() if slug in FLEET_UX else {"ux"})
         if parent:
             na |= {"dream"}
+        # Deck-on-demand (operator ruling 2026-08-27, from the pyforge-unifying-strategy
+        # pilot): a deck is REQUIRED only for a station flagship chain or where one
+        # already exists. Every other chain reads n/a rather than a standing gap — the
+        # pilot showed deck cost scales with the grounding corpus, and a chain without a
+        # rich SPEC pack yields a thin deck or forces invention. DERIVED, not declared:
+        # a satellite that gains presentations/<slug>/ is measured again automatically.
+        if not primary and not files["deck"]:
+            na |= {"deck"}
         sub = {st: s for st in FLEET_SUBSCORE
                if (s := _subscore(st, slug, project, primary, files[st], pitch))}
         reached = [s for s in FLEET_STAGES if stages[s]]

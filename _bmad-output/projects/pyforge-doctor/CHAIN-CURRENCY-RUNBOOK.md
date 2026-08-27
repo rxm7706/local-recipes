@@ -47,7 +47,7 @@ generator). Get them wrong and the sweep mints findings instead of clearing them
 | `feeds` code→retro | Retro for that station (`bmad-retrospective`, `-H` supported), landed in `planning-artifacts/retros/` |
 | `behind-code` | Truth-up spec/PRD/arch against as-built code; if the station has genuinely shipped, close out (retro) and flip its Dream to `realized` — suppression is then by design, not evasion |
 | `overtaken` | Resolve the spec's residual `open_questions` with the operator; record dated answers in § Open Questions; empty the frontmatter list |
-| layer gap (missing stage artifact) | Produce the artifact via its BMAD skill, or declare the stage n/a for that chain class — a policy decision, not a per-chain patch |
+| layer gap (missing stage artifact) | Produce the artifact via its BMAD skill, or declare the stage n/a for that chain class — a policy decision, not a per-chain patch. **Deck ruling (operator, 2026-08-27, from the pyforge-unifying-strategy pilot): deck-on-demand** — the deck stage is n/a for any non-flagship chain without one (derived in `scripts/fleet_scan.py`; a chain gaining `presentations/<slug>/` is measured again automatically); a satellite deck is produced only when the chain has a rich SPEC pack and an audience |
 
 ## The grounding triple (every artifact touched, no exceptions)
 
