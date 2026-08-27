@@ -35,15 +35,35 @@ entry) logs a warning to stderr and is skipped -- it does not abort the rest
 of the compile; only a missing/malformed `memory_root` raises, mirroring
 `capture.py`'s existing contract.
 
+**Scheduled, not self-scheduling (Story 3.3).** This verb is the schedulable
+unit -- the herald Story-13.5 pattern: no scheduler dependency, no GitHub
+Actions workflow (every input worth compiling -- `.claude/memory/`, the
+per-user transcript root, the gitignored `.claude/data/` store -- is
+operator-local, so a GH-hosted runner would compile an empty machine); the
+documented trigger is an opt-in operator-installed `crontab` entry, see
+`docs/cli-runbooks.md` in this package. Two Story 3.3 guards make that safe:
+the transcript scan is bounded (caps/timeout/mtime-cache, see
+`transcripts.py`; the cache lives beside the graph store, so it shares the
+store's own gitignored, derived-artifact home), and overlapping runs against
+one store are refused -- `compile_graph()` takes a non-blocking advisory
+lock keyed to the store path (the same stdlib flock pattern as
+`capture.py::_locked`, but skip-not-wait) and raises
+`CompileInProgressError` when another compile already holds it, which the
+CLI reports as a clean exit-0 skip so an overlapping cron firing is never a
+corrupted double-write and never red cron mail.
+
 Zero required network calls (AD-6): the only subprocess invoked is
 `git log` (local, read-only -- never `fetch`/`pull`/`clone`/`ls-remote`).
 """
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,6 +96,13 @@ _EXCLUDED_DIR_NAMES = frozenset(
 
 _DEFAULT_MAX_COMMITS = 100
 _MAX_DOC_TEXT_CHARS = 20_000  # bound lexical-scan/serialization cost per node
+
+
+class CompileInProgressError(RuntimeError):
+    """Another `scribe graph compile` currently holds this store's lock
+    (Story 3.3). Benign under a scheduler -- the CLI turns it into an
+    exit-0 skip, mirroring the `flock -n` semantics the runbook's cron
+    line adds as its own outer layer."""
 
 
 @dataclass(frozen=True)

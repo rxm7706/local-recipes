@@ -27,6 +27,14 @@ development_status:
   10-1-extract-the-build-engine-hook: done
   11-1-persona-consults-conda-forge-expert: done
   11-2-first-portal-slice-recipe-diagnose: done
+  12-1-landed-retros-are-mirrored-into-the-pilot-brief: backlog
+  12-2-ci-enforcement-for-the-guard-and-the-equivalence-net: backlog
+  12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim: backlog
+  12-4-the-re-scope-gate-is-machine-enforced: backlog
+  12-5-the-ownership-decision-is-recorded: backlog
+  12-6-slice-2-brief-cross-slice-dependencies-re-derived-first: backlog
+  12-7-slice-2-compiled-and-equivalence-validated: backlog
+  12-8-the-slice-2-re-scope-checkpoint: backlog
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -70,6 +78,8 @@ development_status:
   epic-10-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
+  epic-12: backlog
+  epic-12-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done

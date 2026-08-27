@@ -1,7 +1,8 @@
 ---
 id: SPEC-conda-forge-expert-rebuild
 spec: conda-forge-expert-rebuild
-status: ready
+status: in-progress
+updated: "2026-08-27"
 owner-dream: docs/dreams/conda-forge-expert-rebuild.md
 surface:
   - .claude/skills/conda-forge-expert/**      # the skill being rebuilt slice by slice (parallel-run target; flips at the end cutover)
@@ -182,3 +183,41 @@ tools noticed the transition except through the CHANGELOG.
 5. **How do Rule-2 retros work mid-campaign?** Each slice epic ends with a retro — but
    does it edit the legacy `SKILL.md`, the successor slice's skill, or both during the
    overlap window? The first slice's retro sets the precedent.
+
+## Decomposition record — 2026-08-27 (reconcile pass; status `ready → in-progress`)
+
+Reconciled against mason's chain (`epics.md`, the tracked `sprint-status-ledger.yaml`, this
+directory's `campaign-state.yaml` + `slice-map.md`, and `scripts/cfe_rebuild_guard_check.py`'s
+live output). Capability coverage as found:
+
+- **CAP-1 — decomposed and done.** Story 6.1 (`6-1-slice-map-and-campaign-state: done`;
+  commit `23130ee53f`, PR #570, 2026-08-21). `slice-map.md` derives 5 slices covering all
+  68 scripts / 57 wrappers / 46 MCP tools with zero unclassified files; ordering fixed,
+  first slice named.
+- **CAP-2 — decomposed and done for the pilot, with a recorded substitute.** Story 6.3
+  (done; commits `bf81f0b7ff` BLOCKED-then-retry + `ec193303b6`, PR #586). Slice 1 is
+  `compiled` with `equivalence: green` (60/60 regression + 6/6 equivalence tests); clause 5
+  (skf-audit-skill zero drift) was verified by a manual sha256 substitute because
+  `forge-tier.yaml` is absent (campaign-state GATHERED GAPS #1) — the real-audit residual is
+  now **Story 12.3**. CAP-2's pattern for slice 2 is **Stories 12.6/12.7**.
+- **CAP-3 — decomposed and done for the detector, open on enforcement.** Story 6.2 (done;
+  commit `1510a022e6`, PR #578) shipped `scripts/cfe_rebuild_guard_check.py`, all three
+  clauses proven red by fixture. Residuals: the CI step is advisory-only (`exit 0` always —
+  GATHERED GAPS #2; "fails CI" is not yet literally true) → **Story 12.2**; the detector has
+  a LIVE clause-(b) finding today (4 qualifying Rule-2 retros in `806cb63046..HEAD`, newest
+  `565ef7d194`, none mirrored into slice 1's brief) → **Story 12.1**; the re-scope gate
+  itself is unenforced (GATHERED GAPS #5) → **Story 12.4**.
+- **CAP-4 — decomposed and done.** Stories 6.1 + 6.4 (done; commit `f04553bced`).
+  `campaign-state.yaml` tracks per-slice status, survives sessions, and carries the dated
+  re-scope note (2026-08-21, decision **ADJUST**: four pre-conditions gate slice 2's brief).
+  The second checkpoint the note recommends before the 12.3x slice is **Story 12.8**.
+
+**Uncovered remainder → Epic 12** (`epics.md`, 8 stories, `backlog` in the tracked ledger):
+gate closure (12.1–12.5, mapping 1:1 to the live clause-(b) finding, pre-conditions (a),
+(b), (d) and gap #5) and the campaign's continuation through slice 2 (12.6–12.8, honoring
+pre-condition (c)). Open Question 1 above is now owned by **Story 12.5**. Slices 3–5 and
+the end cutover (clause (c) endgame) deliberately remain undecomposed until Story 12.8's
+recorded decision — the campaign decomposes in checkpoint-gated waves, per this Spec's own
+"commits to the remainder only as campaign-tracked sequence" and Epic 6's
+decompose-no-further discipline. Nothing in this pass implemented, briefed, or compiled any
+slice; the live skill remains authoritative throughout.

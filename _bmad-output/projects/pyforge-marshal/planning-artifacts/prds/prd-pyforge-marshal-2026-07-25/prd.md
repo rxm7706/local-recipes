@@ -2163,7 +2163,8 @@ Epic 21–27 era — and re-grounds the document's live claims. Nothing above is
 ### 18.1 The FR space: FR-192..FR-195 registered
 
 `epics.md` cites four FRs this PRD did not carry. Registered here, defined by their
-epics-side usage; all of their stories are `done` in the tracked ledger:
+epics-side usage; all of their stories are `done` in the tracked ledger (one exception
+since 2026-08-27: Story 22.7, minted for FR-193's CAP-7, is `backlog`):
 
 #### FR-192: The planning chain regenerates itself, and audits whether it is coherent
 The **second, full decomposition** of `spec-fleet-chain-completeness` (CAP-1..5) into
@@ -2172,9 +2173,19 @@ code-status preservation, the audit mode extended to full CAP-3 coverage, review
 orphan cleanup, per-project invocation. **Relationship to FR-148..FR-152 (§ 16.6):** those
 were the first decomposition of the same Spec; Epic 17 realized their audit slice (Story
 17.3 / FR-150 → the `chain` verb group), and FR-192's Epic 21 shipped the rest as the
-`marshal planning` verb group. The two FR ids over one Spec are a recorded numbering
-overlap, not a contradiction — reconcile at the next INV-A pass without touching any
-`done` story key.
+`marshal planning` verb group. **Resolved 2026-08-27** (the INV-A pass this filing
+anticipated), by scope partition rather than renumber: **FR-148..FR-152 (§ 16.6) remain
+the registration of the Spec's five capabilities as first decomposed — realized by Epic
+17's shipped slice** (Story 17.3: FR-150 residual + FR-152 → the read-only layer audit;
+Story 17.4: FR-148/149/151 → `marshal chain regenerate`); **FR-192 is scoped to Epic 21's
+second-era completion of the same five** (the `marshal planning` verb group + full CAP-3),
+never a fresh registration of them. Fresh FR numbers were deliberately NOT minted (FR-196
+stays the next free id): every candidate renumber target is load-bearing in shipped
+surfaces outside the planning chain — `pixi.toml`'s `chain-layers-audit-check` description
+(`17-3 + 21-1 / FR-150 + FR-192`), `pyforge.doctor.sources` module/test comments,
+`pyforge/marshal/cli/chain.py` and `core/chain_regen.py` docstrings — so a renumber on
+either side would desync code that cites these ids. No `done` story key was touched;
+`epics.md`'s Epic 17 and Epic 21 goals now carry the same partition.
 
 #### FR-193: Single-story dispatch is a marshal verb, not a session's discipline
 Decomposes `spec-marshal-single-story-dispatch` (CAP-1..6) into **Epic 22** (Stories
