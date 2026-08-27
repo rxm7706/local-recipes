@@ -1536,6 +1536,34 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-024",
         "MRS-DISP-025",
         "MRS-DISP-026",
+        # Story 22.7 (fleet-wide drain, FR-193 CAP-7): its own area, not more
+        # MRS-DISP-* codes -- the fleet driver is a distinct command surface
+        # (`marshal factory drain`) whose findings are about the CAMPAIGN,
+        # while every per-dispatch refusal it relays keeps its own MRS-DISP-*
+        # code named verbatim in the relay message.
+        # 001 missing/unknown campaign mode (ERROR -- never defaulted);
+        # 002 repo root unresolvable (ERROR); 003 a station's tracked ledger
+        # could not be read (WARN -- that station is reported, the campaign
+        # continues); 004 blocked story skipped under skip_on_blocked (WARN);
+        # 005 station blocked, story stays in backlog, never auto-retried
+        # (WARN); 006 a station's dispatch was refused this cycle because it
+        # already has a live in-flight story (WARN -- "busy" is the normal
+        # state of a healthy campaign, so relaying MRS-DISP-011/021's own
+        # ERROR tier verbatim would red every cycle); 007 campaign supervisor
+        # could not be spawned (WARN -- the cycle that already ran stands);
+        # 008 the optional queue-override file could not be read/parsed
+        # (WARN -- ledger order applies); 009 cycle journal write failed
+        # (WARN, mirroring MRS-DISP-009's "the work happened, the record
+        # didn't" tier).
+        "MRS-DRAIN-001",
+        "MRS-DRAIN-002",
+        "MRS-DRAIN-003",
+        "MRS-DRAIN-004",
+        "MRS-DRAIN-005",
+        "MRS-DRAIN-006",
+        "MRS-DRAIN-007",
+        "MRS-DRAIN-008",
+        "MRS-DRAIN-009",
         # Story 22.8 (profile-driven session harness, FR-193 CAP-8): 027
         # one preference candidate skipped -- unknown profile / binary not
         # found / authcheck failed (WARN, one per skip: the 2026-08-27
