@@ -27,6 +27,27 @@ This is a multi-skill repo: conda-forge recipe work uses the `conda-forge-expert
 
 Recipe-only PRs (touching only `recipes/**`) need neither.
 
+**Repo surfaces beyond `recipes/`:** the PyForge Guild station code (atlas, doctor, herald, marshal, mason, scribe, steward, warden, plus `pyforge-core` / `pyforge-testing-kit` and the `django-*` UI packages) lives in `src/shared/packages/pyforge-*`, each with its own pixi environment and `pyforge-<station>-test` / `-build` tasks. The Vizro/BSL fleet dashboard is part of pyforge-atlas (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/`); the old GuildHall Pages console is retired and `retired-console-check` fails CI if it is reintroduced.
+
+## Common Commands
+
+Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list -e local-recipes` for the full set). The `local-recipes` env is the day-to-day default. Full recipe-lifecycle reference: `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md`.
+
+**Recipes:**
+- Build one recipe natively (recommended default): `pixi run -e local-recipes recipe-build recipes/<name>` — rattler-build, auto-detects platform, layers conda-forge-pinning so `${{ python_min }}` resolves like upstream CI. Variants: `recipe-build-docker`, `recipe-build-cross`.
+- Lint all recipes: `pixi run -e conda-smithy lint` (CI-parity alternative: `pixi exec conda-smithy recipe-lint`).
+- Generate a recipe: `pixi run -e grayskull pypi <pkg>` (v1 format), or `pixi run -e local-recipes generate-recipe`; `generate-npm` / `generate-cran` / `generate-cpan` / `generate-luarocks` for other ecosystems.
+- Full staged-recipes-style build of changed recipes: `python build-locally.py`.
+
+**Tests:**
+- CFE skill suite: `pixi run -e local-recipes test-skill` — scope with `--unit` / `--integration` / `--meta`, single test via `--keyword <expr>`; network tests are opt-in (`-m network`).
+- A PyForge station: `pixi run -e pyforge-<station> pyforge-<station>-test` (e.g. `pixi run -e pyforge-warden pyforge-warden-test`).
+- Dashboard structural gate (offline, never serves): `pixi run -e local-recipes dashboard-dryrun`.
+
+**Health / status:**
+- All detectors: `pixi run -e local-recipes detectors` (CI subset: `detectors-ci`); exit 0 = pass, 1 = findings, 2 = could-not-run (never a false green).
+- Fleet progress: `pixi run -e local-recipes fleet-picture` — read-only, never gating; paste its stdout verbatim, not reformatted.
+
 ## BMAD Method Documentation
 
 The BMAD Method is an AI-driven software development framework used in this project.

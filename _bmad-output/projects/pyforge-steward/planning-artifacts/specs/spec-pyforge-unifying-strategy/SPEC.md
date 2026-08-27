@@ -32,10 +32,7 @@ surface:
   - environment.yaml
 sources:
   - ../../../../../../docs/dreams/pyforge-unifying-strategy.md
-open_questions:
-  - query-plane-face
-  - query-plane-catalog
-  - query-plane-scribe-cutover
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete,
@@ -52,7 +49,8 @@ open_questions:
 > **2026-08-26 first slice shipped:** Epic 34.1–34.5, Lane 3 36.1–36.2
 > (`estate-cache`), five-tier 37.1 (40/40; mason = `conda-forge-expert`).
 > Sibling Epic 35.1 is `spec-mcp-era-isolation` CAP-4, not this CAP set.
-> Residual: the three `open_questions` below. Do not re-dispatch 18–37.
+> Residual: none — the last three `open_questions` were answered 2026-08-26 (see § Open
+> Questions). Do not re-dispatch 18–37.
 
 > **This SPEC extends `spec-python-agent-platform`, it does not replace it.** That Spec's CAP-1..6
 > are shipped and binding; nothing here re-mints them. `convergence.md` is the authority on which
@@ -75,7 +73,7 @@ dated. Closeout 2026-08-26: Lane 1 `/` **200** on CRC, CAP-9 `platform_app` DML-
 proven, Liquibase `:17`–`:19` executed. Parked outside this CAP set: Q5 scorecard (sibling Dream), MCP slice 3,
 optional 12.9 CI. MCP cluster fail-loud is **sibling** `spec-mcp-era-isolation`
 CAP-4 / steward Epic 35 — not a unifying CAP. **CAP-19 (query plane) is in this chain** — minted 2026-08-26;
-first slice **shipped 2026-08-26** (Epic 34 + Lane 3 `estate-cache`). Three OQs remain.
+first slice **shipped 2026-08-26** (Epic 34 + Lane 3 `estate-cache`). All OQs answered 2026-08-26.
 CAP-1..18 closeout stands. Not a `services/` rewrite.
 
 The mandate riding on it is governance: an air-gapped, regulated deployment target needs schema
@@ -273,7 +271,8 @@ they are why this is not merely a UI project.
     is reintroduced.
   - *(Minted 2026-08-26, operator: evergreen Dream; SPEC may return
     in-progress; rebuild is allowed. First slice shipped the same day:
-    34.1–34.5 + 36.1–36.2. Residual = three OQs. Mosaic optional.
+    34.1–34.5 + 36.1–36.2. OQs closed 2026-08-26: both faces, one boot
+    script (Mosaic committed); named new pipeline; dual-write.
     Not a ninth station. Atlas owns the
     engine; steward owns the through-line.)*
 
@@ -535,15 +534,26 @@ OLTP.
   conda channels govern the Python/pixi graph, `spec-python-agent-platform` CAP-6 governs
   deployment images and already admits non-conda third-party images. See
   `research/technical-pyforge-unifying-strategy-airgap-delivery-2026-08-24.md`.
-- **query-plane-face** — in-process DuckDB only for Epic 34.1–34.3, Mosaic
-  `duckdb-server` as HTTP/Arrow face, or both with one boot script? Default
-  until answered: in-process first; server is optional and pixi-sourced.
-- **query-plane-catalog** — new named Atlas pipeline vs reopen the closed
-  seven? Default until answered: **named new pipeline**; do not silently
-  add `01_raw`.
-- **query-plane-scribe-cutover** — store-port driver on the plane, dual-write,
-  or retire `scribe_schema` pgvector once FR-36 holds on the plane?
-  Default held: **driver on the plane**. **34.5 shipped that driver** and
-  FR-36 on the plane. Residual: dual-write vs retire pgvector. Lexical
-  recall may stay local. There is no `GraphStore` class in `pyforge-scribe`
-  today.
+- ~~**query-plane-face**~~ — **answered 2026-08-26 (operator): both, one boot script.**
+  Library-first stands for every consumer that can reach the file (AD-16 local-first;
+  DuckDB stays a query face, never a fourth backing store), AND the Mosaic
+  `duckdb-server` HTTP/Arrow face is committed now behind the same single boot
+  script — raised only when the platform stack is up, pixi-sourced. The two faces
+  serve the identical plane; parity between them is part of the face's definition of
+  done. Consumers with no filesystem access (DB-GPT / Langflow estate reads, live
+  console queries) bind to the HTTP face per CAP-19's success wording ("the plane DSN
+  or HTTP face").
+- ~~**query-plane-catalog**~~ — **answered 2026-08-26 (operator): named new pipeline**,
+  explicitly framed as the opt-in optimization layer: the closed seven stay sealed and
+  keep producing the canonical datasets untouched; the new named pipeline sits
+  downstream, deriving the plane's Parquet cache from their outputs; consumers choose
+  per call — canonical datasets direct, or the plane as the fast path. Reopening the
+  seven was considered and declined: it would entangle plane-writing into
+  regression-gated shipped pipelines for no functional gain, since a downstream
+  pipeline reads their outputs without modifying them. No silent `01_raw`.
+- ~~**query-plane-scribe-cutover**~~ — residual **answered 2026-08-26 (operator):
+  dual-write for now.** The plane (via the 34.5 store-port driver) is primary and
+  satisfies FR-36; `scribe_schema` pgvector stays written as the safety net until the
+  plane has operating history, then retirement becomes its own explicit decision.
+  Lexical recall may stay local. There is still no `GraphStore` class in
+  `pyforge-scribe`.

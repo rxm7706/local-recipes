@@ -165,6 +165,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`fleet-stewardship.md`](fleet-stewardship.md) | realized · perpetual | Tend every touchable feedstock: refresh tracks, platform expansion, failure remediation — recurring waves, never finished. |
 | [`upstream-discovery.md`](upstream-discovery.md) | archived | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
 | [`regenerable-factory.md`](regenerable-factory.md) | realized | Backfill Dream→PRD→spec chains under every realized surface (BMAD brownfield) so the factory can change any code through the pipeline; drift checks on all code; the regeneration drill as proof. |
+| [`chain-currency-sweep.md`](chain-currency-sweep.md) | dreamt | Planning spines re-derived, not decayed: the two-layer detector+reconciler sweep that clears the chain audit's staleness/coherence findings — per-station cascades grounded in research, the Unifying Strategy, and as-built code. |
 
 **Capabilities**
 
