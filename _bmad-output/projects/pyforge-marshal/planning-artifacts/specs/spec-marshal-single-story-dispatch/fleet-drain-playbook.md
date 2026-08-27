@@ -1,11 +1,17 @@
 # Fleet drain playbook — operational prototype for Epic 22
 
 **Status:** living reference (validated 2026-08-22 → 2026-08-23)  
-**Binds to:** `spec-marshal-single-story-dispatch` CAP-1..CAP-7, Epic 22 Stories 22.1–22.6  
-**Interim runner:** `.cursor/pyforge-fleet-drain/` (Cursor hand-driven; until `marshal factory dispatch` ships)
+**Binds to:** `spec-marshal-single-story-dispatch` CAP-1..CAP-7, Epic 22 Stories 22.1–22.7  
+**Interim runner:** `.cursor/pyforge-fleet-drain/` — **superseded 2026-08-27** by Story 22.7's
+`marshal factory drain`; kept as the campaign's historical record, not a runbook.
 
 This companion is the **acceptance oracle** for Epic 22: when Story 22.1 lands, a operator replaying the
 2026-08-22/23 fleet drain must get the same outcomes from marshal verbs, not from session discipline.
+Story 22.7 pins that replay as a fixture —
+`tests/unit/test_dispatch_fleet.py::test_eight_station_campaign_replays_without_session_discipline`
+seeds this campaign's exact shape (eight stations, `drain_to_zero`, six drained, marshal + steward
+under `order_overrides`, steward's 12-7 `skip_policies` entry) and asserts its skip / parallel /
+chain / drained outcomes.
 
 ---
 
@@ -19,7 +25,7 @@ This companion is the **acceptance oracle** for Epic 22: when Story 22.1 lands, 
 | Merge when CI green + ledger sync + spec promote | 22.4 | compose `land` / `deploy land-story` + Epic 15 |
 | Independent verify before merge | 22.3 | Epic 2 gate objects on frozen surface |
 | Survive operator death | 22.6 | journal + attach/resume |
-| Fleet-wide queue + modes | **CAP-7** (this spec) | `marshal factory dispatch --fleet` / `marshal drain` |
+| Fleet-wide queue + modes | 22.7 | `marshal factory drain --mode <mode>` (shipped 2026-08-27; the provisional `--fleet` / `marshal drain` spellings resolved to this one) |
 
 ---
 
@@ -40,10 +46,21 @@ and a package surface under `src/shared/packages/pyforge-<slug>/` (steward also 
 |------|----------|
 | `drain_to_zero` | Dispatch until ledger has zero non-`done` story keys |
 | `leave_one` | Stop with `leave_remaining` story untouched (graceful shutdown) |
-| `skip_on_blocked` | HALT on blocked story → skip to next queue entry, report to operator (steward `12-7` live OCP) |
+| `skip_on_blocked` | HALT on blocked story → skip to next queue entry, report to operator |
 
-Queue source: per-station ordered backlog from `sprint-status-ledger.yaml` + `order_overrides`
-(interim: `.cursor/pyforge-fleet-drain/queues.yaml` + `generate-queues.py`).
+`--mode` is required and never defaulted (`MRS-DRAIN-001`).
+
+Mode governs **derived** blocks only — CAP-2 git/process facts saying a story's last dispatch ended
+`failed`. A **declared** `skip_policies` entry (the hand-authored kind, e.g. steward `12-7` needs a live
+OCP cluster) is honored under *every* mode: the 2026-08-22/23 campaign ran `drain_to_zero` *with* seven
+such entries, so collapsing the two would make its own mode unreplayable. Either way the story stays in
+the backlog and is never auto-retried.
+
+Queue source: per-station ordered backlog from the tracked `sprint-status-ledger.yaml` files, plus the
+optional in-repo `_bmad-output/projects/pyforge-marshal/planning-artifacts/fleet-drain-queue.yaml`
+(`order_overrides` + `skip_policies` only). The interim `.cursor/pyforge-fleet-drain/queues.yaml` +
+`generate-queues.py` — including its regenerated `stations:` block, which duplicated ledger state — is
+superseded; campaign journals live under that project's `implementation-artifacts/fleet-drain-runs/`.
 
 ---
 
@@ -65,11 +82,18 @@ Coordinator role collapses to monitor + rescue (blocked CI, symlink breakage, Se
 
 ---
 
-## One dispatch cycle (reference)
+## One dispatch cycle
 
-Detailed step-by-step (prompt skeleton, recovery playbooks, verification commands) lives in the
-interim runner copy at `.cursor/pyforge-fleet-drain/PLAN.md` — keep in sync when this companion
-changes; Story 22.1 implementation tests against both.
+Since Story 22.7 a cycle is machinery, not a checklist: `marshal factory drain --mode <mode>` runs
+**exactly one** cycle in the operator's foreground and returns, then detaches
+`pyforge.marshal.dispatch_fleet_supervisor`, which re-runs that same published command
+(`--once --campaign <run_id>`) on a tick until the campaign reports itself complete. Nothing in the
+foreground waits — the ~600 s watchdog that killed the hand ritual's busy-waiting parent has nothing
+to kill. Chaining is structural: a station whose story finished merge-through-finalize has an advanced
+tracked ledger and a free in-flight slot, so the next cycle hands it its next story.
+
+`--once` runs a single cycle with no supervisor. The hand-ritual step-by-step (prompt skeleton,
+recovery playbooks) survives at `.cursor/pyforge-fleet-drain/PLAN.md` as historical record only.
 
 ---
 
@@ -88,5 +112,8 @@ changes; Story 22.1 implementation tests against both.
 
 ## Exit criteria (campaign)
 
-All stations `drained: true` in queue file (zero backlog per ledger), or `leave_one` target reached.
-Post-drain: optional epics retrospective; marshal journal becomes source for dashboard-velocity Dream.
+Every station terminal for this campaign — `drained` (zero non-`done` keys in its tracked ledger),
+`left-remaining` (the `leave_one` target), `blocked`, `all-skipped`, or `ledger-unreadable`. That is
+exactly `data.complete` in the cycle envelope, and it is what stops the campaign supervisor; a busy or
+just-dispatched station is progress, never terminal. Post-drain: optional epics retrospective; the
+marshal journal becomes source for the dashboard-velocity Dream.
