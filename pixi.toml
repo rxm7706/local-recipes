@@ -1975,6 +1975,22 @@ kedro-skills = ">=0.1.1"
 # from SelfExplainML (conda-forge still at 0.2.0). Same floor as local-recipes.
 boring-semantic-layer = ">=0.3.18"
 
+[feature.pyforge-atlas.target.linux-64.dependencies]
+# Story 20.1 (CAP-5, `query-plane-face` ruling 2026-08-26): Mosaic duckdb-server —
+# the optional HTTP/Arrow face raised ONLY by pyforge.atlas.query_plane_boot (the
+# one boot script) when the platform stack is up. Env supply only — deliberately
+# NOT a pyforge-atlas package run-dep: the in-process library face never needs it
+# (AD-16 local-first) and the boot degrades to library-face-only without it.
+# linux-64 only here: duckdb-server itself is noarch, but hard-deps socketify,
+# which conda-forge ships only on linux-64/osx-64 (no osx-arm64, no win-64) —
+# placing it in the cross-platform table breaks the osx-arm64-min/win-64 solves
+# (same shape as local-recipes' ocrmypdf/pixitainer scoping). On the other
+# platforms the boot's provisioning preflight fails loud with the typed
+# DuckDBServerNotProvisionedError instead — never a silent INSTALL.
+# Import name is "pkg", NOT "duckdb_server" (recipes/duckdb-server G7 note).
+# Floor confirmed against the solve 2026-08-27: conda-forge carries 0.27.0–0.31.0.
+duckdb-server = ">=0.27.0"
+
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
@@ -2006,6 +2022,10 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/orchestration -q"
 [feature.pyforge-atlas.tasks.duckdb-singularity]
 description = "Wave F verify gate (Story F1, FR-5 / AD-4): the DuckDB-singularity grep gate — NO sqlite3 read/write path anywhere in the migrated pyforge/atlas surface (DuckDB/Parquet is the sole engine); the one legacy-SQLite reader (the B4 credentialed parity comparator) is pinned to tests/, never src/. The cold-start/warm-incremental benchmark is the ATTENDED half (DW-F1-1). Offline, --frozen."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
+
+[feature.pyforge-atlas.tasks.query-plane-boot]
+description = "Story 20.1 (CAP-5, `query-plane-face` ruling 2026-08-26): the ONE pixi-sourced boot script raising both plane faces — always opens the in-process library face on atlas.duckdb via duckdb_writer.connect_writer (AD-16 local-first; DuckDB stays a query face, never a fourth backing store), and raises the Mosaic duckdb-server HTTP/Arrow face from this SAME script ONLY when the platform stack is up (PYFORGE_PLATFORM_STACK_UP truthy: 1/true/yes/on); stack down degrades to library-face-only with a structured one-line JSON notice, never a crash. No second boot path exists (grep/AST-gated by tests/singularity/test_one_duckdb_server_launch_site.py). NFR-6 exit codes: 0 pass, 1 policy-fail (typed refusals, e.g. SecondWriterRefused / DuckDBServerNotProvisionedError), 2 error, 130 interrupted."
+cmd = "python -m pyforge.atlas.query_plane_boot"
 
 [feature.pyforge-atlas.tasks.viz]
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
