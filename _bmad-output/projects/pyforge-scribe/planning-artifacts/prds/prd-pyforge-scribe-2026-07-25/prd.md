@@ -1,9 +1,9 @@
 ---
 title: pyforge-scribe
 created: 2026-07-25
-updated: 2026-08-01
+updated: 2026-08-26
 status: final
-currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
+currency_review: Reviewed 2026-08-26 — reconciled against SPEC-scribe (status shipped, re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (2026-08-26), and as-built code through the 2026-08-26 plane driver; §5's transcript non-goal amended, §8's open questions dispositioned. See § Currency reconciliation.
 ---
 
 # PRD: pyforge-scribe (Scribe)
@@ -160,7 +160,7 @@ Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem,
 
 ## 5. Non-Goals (Explicit)
 
-- **No ambient/automatic capture.** Scribe does not passively mine chat logs, Slack, or session transcripts for decisions — capture is always a deliberate, authored action (`scribe capture`). This is a permanent design stance, not a Wave 1 limitation (distinguishes Scribe from Mem0's conversation-extraction model per the market research).
+- **No ambient/automatic capture.** Scribe does not passively mine chat logs, Slack, or session transcripts for decisions — capture is always a deliberate, authored action (`scribe capture`). This is a permanent design stance, not a Wave 1 limitation (distinguishes Scribe from Mem0's conversation-extraction model per the market research). *(Amended 2026-08-22 by `spec-scribe-mines-raw-session-transcripts` / Epic 3: raw session transcripts are now scanned to surface promotion **candidates** into the reviewed `capture --promote` flow — never auto-promoted — and join the compile sources with provenance. The review gate stands; the "never mines session transcripts" absolutism does not. See § Currency reconciliation.)*
 - **No `Stop`/`SessionEnd`/`PreCompact` hook automation** in Wave 1 or Wave 2 — inherited from the legacy spec's D4/NG2. A future wave may revisit this; it is out of scope here.
 - **No cross-repo synchronization.** Each repo's Scribe instance is self-contained (legacy spec NG5, reaffirmed).
 - **No plugin/marketplace packaging** until a second consumer repo exists (legacy spec NG3/D5, reaffirmed).
@@ -203,6 +203,8 @@ Scribe is registered as a pixi workspace member (per this repo's dual-ecosystem,
 - **SM-C2**: `scribe graph compile` runtime. Do not optimize compile speed at the expense of FR-10's supersession correctness (a fast but lossy compile is worse than a correct, slower one). Counterbalances SM-4.
 
 ## 8. Open Questions
+
+*(All six were resolved or re-scoped post-ship — dated dispositions in § Currency reconciliation — 2026-08-26. Preserved below as written 2026-07-25.)*
 
 1. **Graph storage engine** — embedded graph database (e.g., LadybugDB, successor to the now-archived KuzuDB) vs. a flat-file/index model extending `.claude/memory/MEMORY.md`'s existing pattern. Domain research flags this as genuinely undecided; resolve at architecture phase, ideally via an ADR captured through Scribe itself once `scribe capture` exists (dogfooding opportunity).
 2. **Wave 2's exact v1 input surface for `scribe graph compile`** — FR-9 fixes the shape (git history, memlogs, retros, CHANGELOGs, team memory, `docs/dreams/`) but the precise file-glob/inclusion list is a PRD-to-epics scope decision, not resolved here.
@@ -253,3 +255,23 @@ Timing is load-bearing on three independent fronts, per the research reports:
 - `docs/dreams/pyforge-scribe.md`, `docs/dreams/team-memory.md`, `docs/dreams/sentinel.md`, `docs/dreams/ecosystem-crew.md` § 7 — founding Dream documents.
 - `docs/intake/sentinel/` — repatriated Build-Spec v2.1 evidence (the ancestor Sentinel effort, unshipped).
 - `docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/` — origin essay for the graph-compile loop's shape.
+
+## Currency reconciliation — 2026-08-26
+
+This PRD was cut 2026-07-25 and last content-reviewed 2026-08-04, before Scribe shipped. It is now reconciled against the canonical `spec-pyforge-scribe/SPEC.md` (status **shipped**; re-stamped 2026-08-22), the 2026-08-08 research refreshes, the Unifying Strategy pack (`spec-pyforge-unifying-strategy`, updated 2026-08-26), and the as-built code through 2026-08-26. The FR-1..FR-15 contract itself required no correction — every FR shipped as written (15/15 covered per `epics.md` Final Validation; epics 1–2, PRs #296/#301). What moved is everything around it:
+
+**§8 Open Questions — dated dispositions.**
+1. *Graph storage engine* — **resolved in stages.** Flat-file won v1 (`FlatFileGraphStore`, Story 2.1); no comparative spike ran — the flat-file/index model was adopted directly as the architecture's lowest-risk default (SPEC-scribe's own open question about that spike is answered: settled choice, not provisional). The engine question then stopped being binary: CAP-18 plugin registration (Epic 4, Story 4.1, 2026-08-24) made the store a hook surface with flat-file as default plugin; steward Epic 28 added `PostgresGraphStore` (pgvector, `scribe_schema`); steward 34.5 added `PlaneGraphStore` on the CAP-19 query plane (`atlas.duckdb`, 2026-08-26). **Operator decision 2026-08-26** (`query-plane-scribe-cutover`, strategy SPEC § Open Questions): **dual-write** — the plane store-port driver is primary and satisfies canopy FR-36 (semantic recall); `scribe_schema` pgvector stays written as the safety net until the plane has operating history; lexical recall may stay local. Note the port is a `typing.Protocol` (structural), not a concrete base class — the strategy SPEC's "no `GraphStore` class exists" phrasing refers to exactly this.
+2. *Compile input surface* — **resolved: five named surfaces** (`.claude/memory/`, `**/.memlog.md`, git history capped at 100 commits, `**/*retro*.md`, `**/CHANGELOG.md`); `docs/dreams/` was cut from v1 despite FR-9 naming it — an explicit scope cut (2026-08-08 domain refresh argues for restoring it). Raw session transcripts joined as a sixth surface via Epic 3 (Story 3.2, 2026-08-22).
+3. *Local LLM for recall* — **resolved: no.** v1 recall is deterministic lexical token-overlap with citation resolution on the return path; semantic recall arrived later (2026-08-25/26) behind the same port using deterministic local embeddings — still zero network, the air-gap NFR (SM-5) holds.
+4. *ADR-format interop* — **resolved: Scribe kept its own 3-type taxonomy** (`feedback`/`project`/`reference`), byte-compatible with Claude Code auto-memory rather than `docs/adr/` convention; defensible, unexamined since (2026-08-08 domain refresh).
+5. *`anthropics/claude-code#38536`* — **re-ranked to threat #1** (2026-08-08 market refresh): a leaked unreleased native sync engine is server-synced and last-write-wins; the answer to "does `.claude/memory/` fold into it?" is **coexist** — Scribe's reviewed promotion gate is the tier above native osmosis, not a casualty of it.
+6. *CLAUDE.md BMAD↔CFE de-duplication* — **not exercised.** As of 2026-08-26 root `CLAUDE.md` still carries the full `## BMAD ↔ conda-forge-expert integration` section *and* team memory carries the promoted rule; the "remove, single source of truth" default remains an unexercised human edit. Accepted duplication, on record.
+
+**§5 Non-Goals — one amendment.** The "no session-transcript mining, permanent" stance was amended by Epic 3 (see the dated note in §5): transcripts are mined only as reviewed promotion candidates and as a compile source — ambient auto-capture and hook automation remain non-goals as written.
+
+**§7 Success metrics — status.** SM-1 met (seed promotion performed by the tool, pointer stub live 2026-08-07); SM-2 met (grounded, cited recall shipped; determinism proven with two independent store instances); SM-3 holds for every promotion to date; SM-5 holds (offline-conformance tests; deterministic local embeddings). **SM-4 remains unmet — no scheduler invokes the nightly compile** (RISK-2, 2026-08-08 technical report; still true 2026-08-26). One classifier deviation on record: Story 1.5 delivered 1 of 2 seed entries at first pass (`_find_missing_repo_path()` stale-veto), accepted as correct classify-then-confirm behavior.
+
+**New requirements landed above this PRD's FR ceiling** (owned by their own specs, not retrofitted here): transcript scanner + compile source (spec-scribe-mines-raw-session-transcripts CAP-1..2, Epic 3); `GraphStore` as CAP-18 plugins (FR-45, Epic 4); SKF skill + persona ownership and the first portal slice (canopy FR-37/38, FR-10; Epic 5); durable PG driver + semantic recall (canopy FR-35/36, steward Epic 28); plane ranking (FR-50, steward 34.5). Scribe's five-tier station shape (CLI, portal, MCP face, skill, persona) was declared complete 2026-08-26 (strategy Epic 37.1, 40/40).
+
+**Carried risk, unchanged:** `promote.py` (the only write path outside `.claude/memory/`) has still never received an adversarial review (RISK-1, open since the Story 1.3 dangling-commit recovery).
