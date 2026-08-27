@@ -7,11 +7,11 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-08-02'
-currency_review: "Reviewed 2026-08-02 — the PRD's own currency_review confirms its 2026-08-01 updated: bump was structural (project relocation / memlog story-completion recording), not content drift. Architecture content re-checked against the unchanged PRD and confirmed current; no changes made."
+updated: '2026-08-26'
+currency_review: "Reviewed 2026-08-26 — reconciled against the re-cut PRD (same date), as-built code, and the strategy chain's own spine. AD-4 amended (dashboard-gen retired, Story 30.2); both Deferred items that were owed to Epic A/E are closed (age pin landed, Duty protocol landed); deltas in § Currency reconciliation — 2026-08-26."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18]
 sources:
-  - '_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md (binding contract — the PRD's Decisions D1-D6 are read-only inputs here, not re-derived)'
+  - "_bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md (binding contract — the PRD's Decisions D1-D6 are read-only inputs here, not re-derived)"
   - '_bmad-output/projects/pyforge-steward/planning-artifacts/research/technical-steward-pixi-workspace-member-research-2026-07-25.md'
   - '_bmad-output/projects/pyforge-steward/planning-artifacts/research/domain-steward-platform-ops-tooling-research-2026-07-25.md'
   - 'src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py (read directly, 2026-07-25)'
@@ -76,6 +76,7 @@ graph TD
 - **Binds:** deploy
 - **Prevents:** an ArgoCD/Flux-class GitOps control plane entering scope (explicit non-goal, PRD §5)
 - **Rule:** `steward deploy dashboard` computes a diff (freshly-built `docs/dashboard/` output vs. the currently committed tree) before any git mutation; a no-diff run performs zero commits (FR-9's testable consequence). No daemon, scheduler, or new GitHub Actions workflow ships in v1 (PRD D6) — the operator or an existing workflow invokes the CLI.
+- **AMENDED 2026-08-26 (Story 30.2, CAP-2).** The wrapped external is **retired**: the `dashboard-gen` generator (the static Guildhall console's build path) was deleted 2026-08-25 with its 100+ inbound references, superseded by the CMS-managed Lane 1 front door on the Canopy host (`spec-pyforge-unifying-strategy` CAP-2, parity proven by `console-parity-inventory.md` first). `deploy.py`'s `build_dashboard` is now an injectable no-op (`("true",)`) and the verb survives as the reconciled diff+commit over `docs/dashboard/` (Kedro-Viz staging + the stub) — the AD-4 reconciliation invariant (diff-before-mutate, zero commits on no-diff) is unchanged and still tested. The mermaid diagram's `DEPLOY --> DASHGEN` edge is historical, like `PROVISION --> WORKTREE` after AD-5's 2026-08-09 amendment.
 
 ### AD-5 — Provision wraps, never forks, Marshal-owned machinery (FR-12/13, PRD D4)
 
@@ -208,3 +209,43 @@ No human elicitation occurred (headless/express run, per the calling task's dire
 - **Third-party credential-revocation API integration** (JFrog, GitHub, Anthropic) → explicit v1 non-goal (PRD §5); if ever taken up, each provider is its own adapter, still bound by AD-1.
 - **Automated budget enforcement / metered spend source** → explicit v1 non-goal (PRD §5); AD-6 stays in force (honest not-configured signal) until a real spend source exists to wire in.
 - **CLI command-tree depth / lazy-loading / entry-point plugin architecture** (the general 2026 guidance the technical-research report surfaced) → not warranted at v1's four-subcommand scale; revisit only if Steward's duty count or per-duty verb count grows materially.
+
+## Currency reconciliation — 2026-08-26
+
+Cascade pass after the brief and PRD re-dated (research→brief and spec→prd edges); this
+spine re-checked against the as-built package (`src/shared/packages/pyforge-steward/`),
+the Canopy host (`src/platform/`), and the strategy chain's own spine. Deltas:
+
+- **Two Deferred items are closed by landed code.** The `age` version range is pinned —
+  `age = ">=1.3.1,<1.4"` in the package `pixi.toml` `[package.run-dependencies]`, a range
+  pin per Warden's NFR-C1 precedent, with the in-file note that the upstream binary
+  reports `(devel)` so the conda package version is the pinnable surface. The `Duty`
+  protocol's exact signature landed in `interfaces.py` (`name: str`,
+  `run(ns) -> DutyResult`; a duty never calls `sys.exit`) exactly as AD-7/AD-8 bound.
+- **AD-7/AD-8 scaled far past the four duties they were written for and held.** The
+  as-built module roster is now ~12 duty adapters (`keys`, `deploy`, `provision`,
+  `budget`, plus `sync`, `workspace`, `upgrade`, `suite`/`suite_advance`, `bootstrap`,
+  `deploy_profiles`, `five_tier`, `fresh_clone`, and the `dashboard/` package) — every
+  one dispatches through the same protocol with `cli.main()` still the sole exit-code
+  owner. The v1 "revisit if the duty count grows materially" trigger has now genuinely
+  fired for the lazy-loading question; no problem observed yet, so it stays Deferred on
+  evidence, not oversight.
+- **The plugin seam the Deferred list anticipated arrived via CAP-18, not entry-points.**
+  Story 32.2 registered Steward's deploy-profile adapters as plugins on the shared
+  `pyforge-core` hook-spec/registration contract (`spec-pyforge-unifying-strategy`
+  CAP-18) — the cross-station shape, chosen over a Steward-private entry-point scheme.
+- **AD-4 amended in place this pass** (see above): `dashboard-gen` retired by Story 30.2;
+  the reconciliation invariant survives the retirement of the wrapped external.
+- **The "own architecture pass" this spine demanded for OpenShift/air-gap happened.**
+  The Deferred entry for `presenton-pixi-image`/air-gap deploy said any future epic needs
+  its own spine rather than an AD-4 extension — that is exactly what occurred:
+  `architecture-pyforge-unifying-strategy-2026-08-24/ARCHITECTURE-SPINE.md` (with
+  `architecture-unified-container-2026-08-09` and siblings) governs the Canopy, the Helm
+  chart + OCP overlay (Epic 12, `/ht/` 200 on CRC 2026-08-25), and the platform image.
+  **This spine remains authoritative for the CLI package only** (scope line unchanged:
+  FR-1..18); it is not the decomposition surface for Epics 9–37.
+- **One retro-fed gap worth carrying forward** (from `retro-steward-2026-08-08.md`): the
+  scaffold standardized exit codes (AD-8) but not error *rendering*, and the
+  `--json`-error-path bug recurred twice before being patched per-module. If a further
+  duty module is added, establish the shared `render_error(ns, message)` helper in
+  `interfaces.py` first — the retro's action item, recorded here so the spine owns it.

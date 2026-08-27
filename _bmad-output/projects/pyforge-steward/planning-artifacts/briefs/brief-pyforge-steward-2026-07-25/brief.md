@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: 2026-07-25
+updated: "2026-08-26"
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -70,3 +70,61 @@ This brief is derived from two 2026-07-25 research reports (both tracked under `
 - **OQ4 (Steward/Marshal provisioning boundary)**: does Steward's `provision` duty own bmad-loop runner provisioning itself, or only formalize what `scripts/bmad-loop-worktree` and the pixi `[environments]` table already do, leaving multi-project/worktree ownership with Marshal (per the Ecosystem Crew Dream's 2026-07-23 "Monorepo & Multi-Project Operation" assignment to Marshal)? The PRD must draw this boundary explicitly to avoid duty overlap.
 - **OQ5 (CLI framework)**: Typer (2026 general best practice) or match whatever `pyforge-warden`'s `cli.py` actually uses? Technical research recommends reading Warden's `cli.py` directly before deciding — not yet done as of this brief.
 - **OQ6 (deploy mechanism)**: for `steward deploy dashboard`, native GitHub Pages branch-based workflow (zero new Actions workflow) vs. a formal `upload-pages-artifact`/`deploy-pages` or `peaceiris/actions-gh-pages` Actions workflow for scheduled/push-button reconciliation? Both are valid 2026 patterns; left open for PRD/architecture.
+
+*(All six were decided at the PRD stage as D1–D6 — see `prds/prd-pyforge-steward-2026-07-25/prd.md` §8; none is open today.)*
+
+## Currency reconciliation — 2026-08-26
+
+This brief is the v1 founding document and stays unrewritten above this line; every
+present-tense claim above is dated 2026-07-25. Two newer research waves fired the
+`research→brief` staleness edge and are folded in here, together with the as-built code
+and the Unifying Strategy pack that now governs Steward's wider surface.
+
+**From `research/market-steward-platform-ops-2026-08-08.md` (post-ship analogue pass):**
+
+- Everything this brief scoped for v1 shipped — 18/18 stories, Epics 1–4, PRs #157, #291,
+  #297, #302, #305 — and every refusal this brief's non-goals named (no standing
+  secrets-manager service, no rotation scheduler, no provider revocation client, no cost
+  SDK) is now **pinned by an invariant test**, not prose.
+- The analogue comparison found Steward *ahead* of Vault-class tooling on exactly one
+  axis — host-scoped egress gating of credentials (the JFrog-leak closure, FR-1/FR-7) —
+  and honestly behind on exactly one — budget enforcement, where the Kubernetes lesson
+  ("a quota without an admission point is documentation") still holds: `budget check`
+  remains the honest `EXIT_BUDGET_NOT_CONFIGURED` stub because no metered spend source
+  is wired yet.
+- Of the three growth vectors it ranked: `provision --module` **shipped** (Epic 6,
+  2026-08-09); a real spend meter behind `budget check` and runner *reaping* (its OQ1/OQ3)
+  remain open, unforced by any incident.
+
+**From the 2026-08-24 strategy research wave** (the four
+`technical-pyforge-unifying-strategy-*-2026-08-24.md` files) **and the Unifying Strategy
+pack** (`specs/spec-pyforge-unifying-strategy/`): the four-duty CLI this brief describes is
+now a strict subset of the station. Steward owns the strategy — the Canopy host
+(`src/platform/`), the shared chrome (`django-pyforge`, CAP-1), the Lane 1 CMS front door
+(CAP-2), the eight-portal/MCP-face estate on the host ASGI (CAP-3/CAP-4), governed schema
+change (CAP-9), and the query-plane through-line (CAP-19, minted and first-sliced
+2026-08-26). As of 2026-08-26 the station's ledger reads **37/37 epics, 131/131 stories
+done**, the eight stations are declared five-tier complete (Epic 37.1), and the strategy
+SPEC's last three open questions were answered 2026-08-26 (`open_questions: []`).
+
+**Deltas against this brief's own claims:**
+
+- *Success criterion 2 ("`steward deploy` replaces `dashboard-gen` + push") was met, then
+  deliberately outlived.* CAP-2 superseded the static Guildhall console; Story 30.2
+  (2026-08-25) deleted the `dashboard-gen` generator and its 100+ inbound references.
+  `steward deploy dashboard` survives as a reconciled diff+commit over `docs/dashboard/`
+  (Kedro-Viz staging + stub) with a no-op build step; the live front door is Lane 1 `/`
+  on the Canopy (CRC-proven 200, 2026-08-26).
+- *"The 14-environment pixi estate"* is now a **27-environment** estate (root `pixi.toml`
+  `[environments]`, counted 2026-08-26); `steward provision --env` still materializes any
+  of them, and grew `--module`, `--list-modules`, and install-class judgment (Epics 6, 31).
+- *The `age` pin this brief left implicit landed as a range*: `age = ">=1.3.1,<1.4"` in the
+  package's `pixi.toml` run-dependencies, per the Warden NFR-C1 range-pin precedent.
+- *The "frontier" this brief excluded from v1 (OpenShift, air-gap bundles) has since been
+  built* — not under this brief, but under the station's later chains: the unified
+  container (Epic 7), the vanilla Helm chart + OCP overlay and air-gap parity gate
+  (Epic 12, `/ht/` 200 on CRC 2026-08-25), and the platform image (Epic 10). The
+  deferral was correct at the time and is simply over.
+
+Downstream currency lives in the PRD and architecture-spine reconciliations of this same
+date; this brief needs no further maintenance unless the v1 record itself is contradicted.

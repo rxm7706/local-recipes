@@ -9,7 +9,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/console-parity-inventory.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/resilience-invariants.md
 mode: headless-express
-updated: '2026-08-24'
+updated: '2026-08-26'
 currency_review: "Reviewed 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-20260824.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-20260810.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
@@ -2203,6 +2203,20 @@ So that a missing CLI, portal, service, skill, or persona fails CI.
 **Given** the eight roster stations **When** the check runs **Then** every cell is present
 **And** mason's skill cell is `conda-forge-expert` (no `pyforge-mason/` skill)
 **And** `DECLARED_COMPLETE` is the full roster
+
+## Currency validation note — 2026-08-26
+
+Chain-currency sweep pass (arch→epics cascade safety, no story or status changes).
+Validated this breakdown against the same-day reconciliations of the station brief, PRD,
+and `architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`, plus the Canopy
+spine (`architecture-pyforge-unifying-strategy-2026-08-24`) already listed in
+`inputDocuments`: every `### Story` heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key (AD-72 holds; 37 epics / 131 stories, all `done` per the
+ledger as of this date), the Epic 18–37 chain sections match the strategy SPEC's
+CAP-1..19 state (`open_questions: []` since 2026-08-26; CAP-19's first slice = Epics 34
+and 36 here; Epic 35 correctly attributed to `spec-mcp-era-isolation` CAP-4, not the
+unifying CAP set), and the AD-4 amendment (Story 30.2's `dashboard-gen` retirement) is
+already reflected by Epic 30's own text. No epic or story required correction.
 
 
 
