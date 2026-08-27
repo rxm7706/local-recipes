@@ -99,6 +99,7 @@ source_modules = [
     "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3 dispatch gate runner
         "pyforge.marshal.dispatch_land",  # Story 22.4 / FR-193 CAP-4
         "pyforge.marshal.dispatch_land_finalize",  # Story 22.4 finalize subprocess dispatch land composer
+        "pyforge.marshal.dispatch_fleet_supervisor",  # Story 22.7 / FR-193 CAP-7 campaign supervisor
     "pyforge.marshal.mcp",
     "pyforge.marshal.ports",
     "pyforge.marshal.scope",  # Story 20.6 / FR-190 CAP-1 verify_scope primitive
@@ -139,9 +140,19 @@ source_modules = ["pyforge.marshal.supervisor"]
 forbidden_modules = ["pyforge.marshal.cli"]
 
 [[tool.importlinter.contracts]]
-name = "AD-9: the dispatch supervisor has no control channel back to cli"
+name = "AD-9: the dispatch supervisors have no control channel back to cli"
 type = "forbidden"
-source_modules = ["pyforge.marshal.dispatch_supervisor"]
+# Story 22.7 added the fleet-drain CAMPAIGN supervisor to this contract
+# rather than minting a sixth: it is the same discipline over the same
+# seam. Its own module docstring asserts "this module imports no
+# pyforge.marshal.cli module" -- it drives the campaign the way an operator
+# would, by running the published `marshal factory drain --once` command
+# through the ProcessPort seam, so the claim needs teeth, not prose (the
+# same reasoning the Story 8.4 contract below records).
+source_modules = [
+    "pyforge.marshal.dispatch_supervisor",
+    "pyforge.marshal.dispatch_fleet_supervisor",
+]
 forbidden_modules = ["pyforge.marshal.cli"]
 
 [[tool.importlinter.contracts]]

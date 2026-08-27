@@ -262,6 +262,26 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-024",
             "MRS-DISP-025",
             "MRS-DISP-026",
+            # Story 22.7 (fleet-wide drain, FR-193 CAP-7): its own area for
+            # campaign-level findings -- 001 missing/unknown mode; 002 repo
+            # root; 003 unreadable station ledger; 004 blocked story skipped;
+            # 005 station blocked; 006 station busy this cycle; 007 campaign
+            # supervisor spawn; 008 unreadable queue overrides; 009 cycle
+            # journal write; 010 another cycle holds the fleet-wide campaign
+            # lock; 011 one station's dispatch raised (the rest continue);
+            # 012 no pyforge stations discovered at all.
+            "MRS-DRAIN-001",
+            "MRS-DRAIN-002",
+            "MRS-DRAIN-003",
+            "MRS-DRAIN-004",
+            "MRS-DRAIN-005",
+            "MRS-DRAIN-006",
+            "MRS-DRAIN-007",
+            "MRS-DRAIN-008",
+            "MRS-DRAIN-009",
+            "MRS-DRAIN-010",
+            "MRS-DRAIN-011",
+            "MRS-DRAIN-012",
             "MRS-DISP-027",
             "MRS-DISP-028",
             "MRS-DISP-029",
