@@ -1001,6 +1001,24 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-024": Verdict.WARN,
     "MRS-DISP-025": Verdict.WARN,
     "MRS-DISP-026": Verdict.ERROR,
+    # Story 22.7 (fleet-wide drain, FR-193 CAP-7). Only the two codes that
+    # make a campaign unrunnable at all are ERROR -- an unnamed/unknown mode
+    # and an unresolvable repo root. Everything else is a per-station report
+    # over a campaign that keeps going: a station whose ledger will not read,
+    # a blocked story skipped or left in backlog, a busy station, a failed
+    # supervisor spawn, an unreadable override file, a lost cycle journal.
+    # A per-dispatch refusal that is NOT liveness (a missing spec, an
+    # unlaunchable harness) is relayed with its OWN MRS-DISP-* code and keeps
+    # that code's ERROR tier -- see cli/dispatch.py::execute_fleet_cycle.
+    "MRS-DRAIN-001": Verdict.ERROR,
+    "MRS-DRAIN-002": Verdict.ERROR,
+    "MRS-DRAIN-003": Verdict.WARN,
+    "MRS-DRAIN-004": Verdict.WARN,
+    "MRS-DRAIN-005": Verdict.WARN,
+    "MRS-DRAIN-006": Verdict.WARN,
+    "MRS-DRAIN-007": Verdict.WARN,
+    "MRS-DRAIN-008": Verdict.WARN,
+    "MRS-DRAIN-009": Verdict.WARN,
 }
 
 
