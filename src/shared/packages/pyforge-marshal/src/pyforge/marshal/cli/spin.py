@@ -1001,11 +1001,14 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
         add_factory_dispatch_subparser,
         add_factory_dispatch_attach_subparser,
         add_factory_dispatch_resume_subparser,
+        add_factory_drain_subparser,
     )
 
     add_factory_dispatch_subparser(factory_subparsers)
     add_factory_dispatch_attach_subparser(factory_subparsers)
     add_factory_dispatch_resume_subparser(factory_subparsers)
+    # Story 22.7 (FR-193 CAP-7): the fleet-wide sibling of `dispatch`.
+    add_factory_drain_subparser(factory_subparsers)
 
 
 def _spawn_supervisor_sidecar(
