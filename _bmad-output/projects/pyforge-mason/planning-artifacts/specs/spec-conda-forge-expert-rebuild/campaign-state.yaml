@@ -12,7 +12,7 @@
 # `next_action`. That is the whole resume protocol.
 
 schema_version: 1
-last_updated: "2026-08-21"
+last_updated: "2026-08-27"
 
 spec:
   path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
@@ -290,9 +290,19 @@ slices:
                           # new script, which keeps a future real skf-audit-skill run from
                           # flagging it as drift.
     brief_path: "_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/cfe-recipe-generation/skill-brief.yaml"
-    brief_mirrored_through: null   # No qualifying CFE Rule-2 retro has landed since DEFAULT_SINCE
-                                    # (806cb63046..HEAD reports 0 retros as of this story) --
-                                    # clause (b) is vacuous regardless of this value; verified via
+    brief_mirrored_through: "565ef7d194b1ccd740951250aa6535b65bdfc7b6"
+                                    # Story 12.1 (2026-08-27): 4 qualifying CFE Rule-2 retros in
+                                    # 806cb63046..HEAD -- two substantive deltas, each landing as
+                                    # feat + merge: CFE v8.83.0 = 6ace3fd6/2d276ecb (PR #606,
+                                    # gotchas G109/G110 in SKILL.md), CFE v8.84.0 =
+                                    # 621ab29c/565ef7d194 (PR #676, github_updater.py HEAD-advance:
+                                    # update_recipe_head + --head). All 4 mirrored into the brief's
+                                    # scope.amendments (dated 2026-08-27); this SHA = the newest
+                                    # qualifying retro (the PR #676 merge). The brief file itself
+                                    # was reconstructed the same pass (Tier-3 loss to worktree
+                                    # teardown; transcript replay, byte-verified 8370 -> 11634
+                                    # against the 2026-08-21 skf-atomic-write receipts) before
+                                    # mirroring. Verified clean via
                                     # `pixi run -e local-recipes cfe-rebuild-guard-check`.
     coverage:
       scripts: 3
@@ -300,7 +310,7 @@ slices:
       mcp_tools: 3
     mason_caller: true
     mason_caller_count: 2   # of 10 _CFE_SCRIPTS adapters (generate_recipe, update_recipe_from_github) -- structured, not just a comment
-    next_action: "CAP-2 is complete for slice 1 (equivalence: green, 60/60 regression + 6/6 equivalence tests pass). CAP-4's re-scope gate ran in Story 6.4 (2026-08-21): campaign.re_scope_gate.reached is now true, decision: adjust -- see its note for the full cost accounting and four pre-conditions gating slice 2's brief. Slice 1 itself has no further action pending. Do not re-run skf-brief-skill/skf-create-skill from scratch -- the compiled package at .claude/skills/cfe-recipe-generation/ is real and current."
+    next_action: "CAP-2 is complete for slice 1 (equivalence: green, 60/60 regression + 6/6 equivalence tests pass). CAP-4's re-scope gate ran in Story 6.4 (2026-08-21): campaign.re_scope_gate.reached is now true, decision: adjust -- see its note for the full cost accounting and four pre-conditions gating slice 2's brief. Story 12.1 (2026-08-27) mirrored the 4 landed CFE Rule-2 retros into the brief (see brief_mirrored_through above); the v8.84.0 retro (621ab29c/565ef7d194) added HEAD-advance to the live github_updater.py, so the compiled package's copy of that script is now BEHIND the live original -- the live skill stays authoritative, and that copy must be re-ported/re-validated (equivalence re-run) before slice 1 advances past 'compiled'. The recorded equivalence: green predates v8.84.0 and holds for the corpus it was run against. Do not re-run skf-brief-skill/skf-create-skill from scratch -- the compiled package at .claude/skills/cfe-recipe-generation/ is real and current."
 
   - id: "slice-2-recipe-lifecycle"
     order: 2
