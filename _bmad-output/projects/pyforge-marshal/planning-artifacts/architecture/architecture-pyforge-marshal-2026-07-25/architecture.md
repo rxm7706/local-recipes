@@ -4,14 +4,15 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-of-process supervisor sidecar
-scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-65 / NFR-1..NFR-14.
+scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
+updated: 2026-08-26  # currency reconciliation + Part IV (AD-73..AD-80): re-derived against the 2026-08-14 PRD (FR-1..FR-191 + the § 18 registrations) and the 2026-08-22 Spec-era motion. In-place corrections: AD-3 import-linter provisioned; Stack bmad-loop row 0.9->0.11 era; AD-19/AD-35 harness-shape notes; AD-70 subcommand count. Part IV records the post-08-10 shipped decisions: landing-evidence grammar, upstream-drift containment, the dispatch verb, wall-clock velocity, liveness, 6.11 era pinning, the core hook plugin, and the estate faces (console superseded by unifying-strategy CAP-2). AD-1..AD-80, no gaps.
+# 2026-08-10  # Part II binding names re-issued (marshal-seed form; AD-64 rewritten, marker wire format marshal-seed:*, seed_model_version, .marshal/seed-state.yml) — correct-course. Prior: 2026-08-08  # Satellite retired -> "Part II — The seed installer (`marshal seed`)": FR1..FR62 citations renumbered FR-66..FR-127 (61 refs), OQ-1..9 -> Q-17..25 (22 refs). AD-51 amended typer+rich -> argparse on measurement (14 shipped subparsers, zero typer in tree); AD-54's verb collision closed via the `seed` noun group. New Part III, AD-66..AD-72: pyforge-core as an enforced leaf, extraction-retires-the-copy, frozen observable behaviour, the subprocess seam (Marshal is its own first subject), the seed verb group, the Marshal/Steward seam, and epics_role as declared-not-inferred. AD-1..AD-72, no gaps.
 # 2026-08-02  # genesis-installer architecture (AD-01..15 -> AD-51..65) consolidated in as a Satellite section (explicit user override); AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
-  - FR-1..FR-65
+  - FR-1..FR-191  # extended 2026-08-26 from FR-1..FR-65; Part II binds FR-66..FR-127, Part III FR-128..FR-163, Part IV the FR-164..FR-195 record
   - NFR-1..NFR-14
 sources:
   - planning-artifacts/prd.md
@@ -101,7 +102,7 @@ graph TD
 
 - **Binds:** FR-52, FR-9, FR-10, FR-17, FR-43, FR-57
 - **Prevents:** harness coupling leaking across the codebase, which would turn the §5.4 fork fallback from a bounded swap into a rewrite.
-- **Rule:** `adapters/harness_bmadloop.py` is the only module permitted to invoke the harness binary, import its package, read its policy file, or parse its output. Everything else depends on `ports.HarnessPort`. An import-linter contract (import-linter `>=2.13`, conda-forge-available, **not yet provisioned in `pixi.toml`**) fails the build on any other reference to the harness name.
+- **Rule:** `adapters/harness_bmadloop.py` is the only module permitted to invoke the harness binary, import its package, read its policy file, or parse its output. Everything else depends on `ports.HarnessPort`. An import-linter contract (import-linter `>=2.13`, conda-forge-available — *provisioned and shipped since Story 1.1; the contract lives in the member `pyproject.toml` `[tool.importlinter]`, corrected 2026-08-26 from "not yet provisioned in `pixi.toml`"*) fails the build on any other reference to the harness name.
 
 ### AD-4 — Pure core, impure edge
 
@@ -201,7 +202,7 @@ graph TD
 
 - **Binds:** FR-41, FR-43, FR-44, FR-47, FR-48, FR-7
 - **Prevents:** per-adapter `if` statements accumulating across the codebase and diverging from the harness's own profile definitions.
-- **Rule:** everything adapter-specific — binary name, skill-tree path, seed files, first-run requirement, bypass semantics — is read from the harness's declarative profile (packaged profile TOML, overlaid by project-local profile TOML) plus Marshal's probe record. Marshal contains **no** `if adapter == "..."` branch. An unknown adapter is handled generically or reported `unevaluable`; it is never a crash. Note that harness 0.9.0 changed `probe-adapter --json` and `diagnose --json` to emit pure JSON documents (breaking versus 0.8.x) and introduced schema-versioned JSON on several read commands; the probe-record parser targets the 0.9.x shape, which is exactly what the `<0.10` bound (AD-3) and the NFR-9 contract tests protect.
+- **Rule:** everything adapter-specific — binary name, skill-tree path, seed files, first-run requirement, bypass semantics — is read from the harness's declarative profile (packaged profile TOML, overlaid by project-local profile TOML) plus Marshal's probe record. Marshal contains **no** `if adapter == "..."` branch. An unknown adapter is handled generically or reported `unevaluable`; it is never a crash. Note that harness 0.9.0 changed `probe-adapter --json` and `diagnose --json` to emit pure JSON documents (breaking versus 0.8.x) and introduced schema-versioned JSON on several read commands; the probe-record parser targets the 0.9.x shape, which is exactly what the `<0.10` bound (AD-3) and the NFR-9 contract tests protect. *(Updated 2026-08-26: the supported range moved to `>=0.11.0,<0.12` and the parsers moved with it — Epic 25 pinned the 0.11 shapes against the installed package (enum mirrors, `STATUS_SCHEMA_VERSION`, `TERMINAL_PHASES` incl. `awaiting-operator`) so the next era bump fails the pin tests instead of misparsing; see AD-78.)*
 
 ### AD-20 — Time, process, and environment are injected
 
@@ -360,7 +361,7 @@ graph TD
 - **Prevents:** an idempotent `init` re-run with different flags rewriting the materialized policy while a live supervisor still holds the value it loaded at spawn — so `marshal config` prints one threshold and the supervisor enforces another, silently.
 - **Rule:** the materialized policy artifact is named by its content hash and never overwritten. A run pins its policy hash at spawn and every consumer resolves through that hash. Recomposition against a home with a live run either refuses or writes a new artifact, and the supervisor reports `policy-superseded` rather than switching. A per-home **`current` pointer file** names the live hash; it is the only mutable part, it is rewritten atomically, and `marshal config` resolves through it. Without it, two artifacts on disk and no live run leave FR-54 and AD-21's convergence check with no defined answer.
 
-  **`.bmad-loop/policy.toml` is a DERIVED artifact (F-1, resolved 2026-07-25).** The harness pins the path: `bmad-loop 0.9.0` hard-codes `POLICY_FILE = .bmad-loop/policy.toml` and exposes no policy-path flag on `run`. A content-addressed, never-overwritten artifact therefore cannot be what the harness consumes, and three rules collided head-on: AD-35 forbade the fixed name, AD-10's closing sentence forbade Marshal editing a shared repo-level file, and FR-51's tier-batching *required* rewriting `[adapter.dev].model` between batches. No story owned the conveyance.
+  **`.bmad-loop/policy.toml` is a DERIVED artifact (F-1, resolved 2026-07-25).** The harness pins the path: `bmad-loop 0.9.0` hard-codes `POLICY_FILE = .bmad-loop/policy.toml` and exposes no policy-path flag on `run`. *(Still true at 0.11.x, and the render moved with the era: Story 25.4 re-targeted the template to bmad-loop 0.11.0 — 28-key closed vocabulary, `[operator]` section — and re-rendered all 8 loop homes with `bmad-loop validate` exit 0, zero warnings, per home.)* A content-addressed, never-overwritten artifact therefore cannot be what the harness consumes, and three rules collided head-on: AD-35 forbade the fixed name, AD-10's closing sentence forbade Marshal editing a shared repo-level file, and FR-51's tier-batching *required* rewriting `[adapter.dev].model` between batches. No story owned the conveyance.
 
   Resolution, in four parts:
 
@@ -528,7 +529,7 @@ Seed — verified against this repository's own environment and package metadata
 | --- | --- | --- |
 | Python | `>=3.12` | matches the sibling `pyforge-warden` floor. Note the other sibling `pyforge-atlas` requires `>=3.14`, and the `local-recipes` / `pyforge-*` pixi envs run `python 3.14.*` |
 | hatchling | `>=1.30` | build backend, matching the harness's own build-system floor. The sibling packages declare `hatchling` unversioned; the repo's pixi envs use `>=1.31.0` (current release) |
-| bmad-loop | `>=0.9.0,<0.10` | **run dependency, never vendored** (AD-2, AD-3). Verified: MIT, `noarch: python`, entry point `bmad-loop`, packaged in this repo at `recipes/bmad-loop/`. 0.9.0 is the current upstream release (2026-07-21); cadence is fast (0.7.6 → 0.9.0 in three weeks), so the one-minor window is expected to need bumping — that is the point of FR-57 and NFR-9 |
+| bmad-loop | `>=0.11.0,<0.12` | **run dependency, never vendored** (AD-2, AD-3). Verified: MIT, `noarch: python`, entry point `bmad-loop`, packaged in this repo at `recipes/bmad-loop/`. *(Row re-verified 2026-08-26 — the seed read `>=0.9.0,<0.10` against 0.9.0 (2026-07-21) and predicted the one-minor window would need bumping; it did, twice. The shipped `pyproject.toml` pins `>=0.11.0,<0.12` and `marshal --version` resolves 0.11.1. Epic 25 / `spec-bmad-611-era-alignment` carried the 0.10/0.11 era into policy render, status parsing, and installed-package vocabulary pin tests — see AD-78.)* |
 | PyYAML | `>=6.0` | sprint feeds and BMAD artifacts. The **only** unconditional upstream harness dependency |
 | tomlkit | `>=0.13,<0.13.3` | comment-preserving policy writes. Upstream carries it in the optional `[tui]` extra, not core; it is present in-environment only because this repo's recipe flattens extras for `noarch`. The `local-recipes` env caps it at `<0.13.3` — do not assume ≥0.13.3 features |
 | psutil | `>=7.2.2` | supervisor process liveness. **Not** an upstream harness core dep on linux/osx (upstream marks it `sys_platform == 'win32'` plus a `non-linux` extra); unconditional here only via the same recipe flattening. Treat as new resolution surface on the stated install targets |
@@ -538,6 +539,8 @@ Seed — verified against this repository's own environment and package metadata
 | import-linter | `>=2.13` | enforces the AD-3 seam and AD-4 purity contracts in CI. Available on conda-forge; **not yet in `pixi.toml`** — provisioning it is part of Epic 1 |
 
 **Dependency policy.** Marshal's own direct dependencies stay within this set. Of the five Python entries, only **PyYAML** is an unconditional upstream harness dependency; `tomlkit` and `psutil` are upstream *optional extras* that resolve in-environment only because this repo's `recipes/bmad-loop/recipe.yaml` flattens them into unconditional `noarch` run deps — a local packaging decision that recipe itself marks provisional. `jsonschema` is entirely new surface. Marshal therefore adds a small but real resolution surface, and **must declare PyYAML, tomlkit, psutil and jsonschema as its own direct dependencies rather than inheriting them**. New dependencies require conda-forge availability and a stated reason — a deliberate posture given a documented 2026 supply-chain compromise of a popular gateway package. Only the harness carries an upper bound (AD-3 declares the supported range; FR-57 enforces it at runtime).
+
+**As-built delta (2026-08-26).** The shipped `pyproject.toml` carries three direct dependencies the seed table predates, each entering through a decision recorded in this document or Part IV: **`pyforge-core`** (the shared floor, AD-66 — verdict lattice, atomic write, report envelope, landing evidence, hooks), **`copier >=9.17,<10`** (the seed engine, AD-52/A-04/P-02 — sole import site `seed/engine/copier.py`, proven by meta-test), and **`packaging >=24.0`** (version-range parsing for FR-57's runtime range enforcement). `copier` retains its own upper bound alongside the harness's — both are wrapped engines behind a single seam, and the same bounded-swap argument applies.
 
 ---
 
@@ -1345,7 +1348,8 @@ why it is written here rather than quietly corrected.
 **Binds:** the `marshal seed` verb group. **Prevents:** two parsers in one binary; a second
 rendering path.
 **Rule:** `marshal seed <verb>` is a noun-group subparser on the same tree as the 14 shipped
-subcommands (AD-51), matching the shape `config` / `gate` / `factory` / `deploy` / `adapters` /
+subcommands (AD-51) *(a dated measurement — 18 as of 2026-08-26, `seed`/`refresh`/`chain`/`planning`
+having since joined the same tree)*, matching the shape `config` / `gate` / `factory` / `deploy` / `adapters` /
 `upstream` already use. Plan rendering is an envelope projection (NFR-12), not a second
 presentation stack. `marshal init` and `marshal check` keep their shipped meanings; the
 installer's same-named verbs live under `seed` and are therefore not collisions (AD-54).
@@ -1384,3 +1388,189 @@ documents; `epics-regenerable-factory.md` (shipped Dream, 0 stories in the curre
 mason's `epics-presenton-pixi-image.md` (archived Dream, 30 stories, 0 ledger keys) are
 `historical` and merging them would have injected 15 phantom epics and 30 phantom stories
 respectively.
+
+---
+
+## Part IV — The post-08-10 decision record (re-derived 2026-08-26)
+
+**Why this Part exists.** The PRD moved twice after this document's last touch — 2026-08-11
+(FR-181) and 2026-08-14 (FR-182..FR-191) — and its § 18 (2026-08-26) registers FR-192..FR-195
+from the 2026-08-15/08-21 epic additions; the Spec's memlog carries era-alignment motion
+through 2026-08-22. Marshal is the one station whose PRD outran its architecture, so this
+Part is a re-derivation, not a stamp: every decision below **already shipped** — made in a
+story spec under `planning-artifacts/specs/` and enforced in the tree — and is promoted here
+into the spine so the architecture once again governs everything the PRD binds. Numbering
+continues; nothing above is renumbered or weakened. Where a story spec and this Part differ
+in detail, the story spec is the contract (repo convention, 2026-07-25); this Part carries
+the invariant.
+
+### AD-73 — Landing evidence is one grammar with two consumers
+
+- **Binds:** FR-191, FR-186; extends AD-24 (merge-subject single owner), AD-33 (truth by domain)
+- **Prevents:** each consumer (marshal `status --reconcile-ledger`, doctor's marshal source,
+  the board) growing its own regex over commit subjects — the drift that made a legitimate
+  hand-landing invisible and a squash-merge blind.
+- **Rule:** the landing-evidence grammar lives once, in **`pyforge.core.landing_evidence`**;
+  marshal (`core/promotion.py`, `core/status.py`, `cli/status.py`) and doctor
+  (`pyforge.doctor.sources.marshal`) both consume it and neither re-implements it (Stories
+  20.8–20.10). `marshal land` renders subjects the same module parses (AD-24 carried to the
+  shared floor). Evidence classes are enumerated; an unrecognized landing path is a reported
+  finding, never a silent non-landing.
+
+### AD-74 — Upstream drift is contained loudly at the seam, never fixed in place
+
+- **Binds:** FR-188, FR-189, FR-190; extends AD-2 (wrap, never absorb), AD-3 (one seam), AD-8
+- **Prevents:** a wrapped engine's bug silently destroying or hiding work — the
+  stuck-orchestrator baseline-drift class (5 hits in one 2026-08-14 session) and the
+  intent-gap revert that discards a real attempt.
+- **Rule:** upstream defects in the pinned harness are handled by **detect → preserve →
+  defer-loud → file upstream**, never by patching the dependency in place (AD-2 stands even
+  when upstream is wrong). Shipped shape (Epic 20): a baseline-drift defer is detected at the
+  seam and can never pass silently (20.1/20.2, `baseline-drift-check`); an intent-gap halt
+  parks an `attempt-preserve/*` ref or `changes.patch` **before** any revert, a missing
+  preserve is its own watchdog finding (20.4/20.5), and the verify-scope primitive plus both
+  guards hard-fail on drift (20.6/20.7); a cross-project write resolves to the slug the
+  caller asked for (FR-190, closing the `bmad-switch` scope hole); the upstream filing is
+  gated and recorded on the FR-58 register (20.3). Work an upstream defect touched is
+  recoverable by construction, and the recovery is visible, not archaeological.
+
+### AD-75 — Dispatch is a governed verb, not a session's discipline
+
+- **Binds:** FR-193 (Epic 22, `spec-marshal-single-story-dispatch` CAP-1..6); extends AD-22
+  (detached default), AD-33 (git owns repository facts), AD-9
+- **Prevents:** the single-story dispatch method living as operator memory (the 2026-08-21
+  origin session), and a landing accepted on an agent's self-report.
+- **Rule:** `marshal factory dispatch` launches **one** governed, isolated, detached
+  `bmad-build-auto` story session per invocation. Completion is judged from **git and
+  process facts** — never the session's claim — and a zombie is never re-dispatched (22.2);
+  **verification is the product: no landing on a self-report** (22.3); a verified story
+  lands through the existing landing machinery, classified marshal-native (22.4); **one
+  story in flight per station**, stations in parallel, overlap loud (22.5); the dispatched
+  run survives its operator, with `dispatch-attach`/`dispatch-resume` recovering
+  supervision and the journal carrying the timing signal (22.6). Shared primitives live in
+  `pyforge.core.dispatch`; the 2026-08-25 fleet drain-bind campaign ran on these verbs as
+  product.
+
+### AD-76 — Wall-clock is a fallback velocity dimension, never blended
+
+- **Binds:** FR-194 (Epic 23); extends AD-33, AD-38 (a feed reports its own completeness)
+- **Prevents:** hand-driven work being invisible to velocity, and the opposite corruption —
+  wall-clock estimates averaged into measured active-compute numbers.
+- **Rule:** where no run journal exists, story duration derives from promoted-spec revision
+  fields as a **wall-clock fallback** (23.1); fallback values are never blended with
+  active-compute measurements in any aggregate (23.2); every coverage caption partitions its
+  population by the true reason a dimension is present or absent (23.3).
+
+### AD-77 — Liveness is one documented primitive
+
+- **Binds:** FR-195 (Epic 24), FR-181; extends AD-9 (external observation), AD-48
+- **Prevents:** the liveness footgun — operators greping `engine.pid` or `bmad-loop run`
+  strings, each with a documented false-negative mode (the fleet landing-pass trap).
+- **Rule:** Marshal owns the missing liveness primitive (24.1); the operator answer is
+  **one documented command** (24.2); an UNSUPERVISED row carries a cheap, documented
+  double-check before any re-spin (24.3), and a dead supervisor sidecar never hides a live
+  engine (FR-181, Story 5.8's fallback signal). No consumer infers liveness from pid files
+  or process-name greps.
+
+### AD-78 — The harness era is pinned by installed-package vocabulary tests
+
+- **Binds:** NFR-9, FR-57; Epic 25 (`spec-bmad-611-era-alignment` CAP-1..5); extends AD-19,
+  AD-35's F-1 render path
+- **Prevents:** the vendored policy template and status parsers silently rotting on a
+  harness minor bump — the exact watch item the 2026-08-08 technical research flagged for
+  `<0.10`, which then happened (0.10 and 0.11 shipped inside two weeks).
+- **Rule:** every vocabulary Marshal shares with the harness is **asserted against the
+  installed package, not against literals**: policy-knob enums mirror
+  `bmad_loop`'s own `REVIEW_ON_TIMEOUT_MODES`/`REVIEW_ON_STATUS_CONTRADICTION_MODES`
+  frozensets (25.4); the terminal-phase set mirrors `TERMINAL_PHASES` exactly —
+  `{done, deferred, escalated, awaiting-operator}` — with `awaiting-operator` a sixth fleet
+  state whose remedy text has one spelling (25.5); `STATUS_SCHEMA_VERSION` and the
+  `state.json` round-trip keys are pin-tested. The policy render targets the pinned era
+  (28-key closed vocabulary, `[operator]` section) and every rendered home passes
+  `bmad-loop validate` with zero warnings. A future era bump therefore fails loud in the
+  pin tests before any parser misreads — the first shipped slice of the NFR-9 contract
+  layer, and the model for the rest of it.
+
+### AD-79 — Marshal's loop runner is a `pyforge.core.hooks` plugin
+
+- **Binds:** Story 26.1; extends AD-66 (the leaf), AD-3 (one seam)
+- **Prevents:** a second, marshal-private hook mechanism appearing beside the shared one.
+- **Rule:** today's loop runner registers as the **default plugin on the shared
+  `pyforge.core.hooks` entry-point group** (`bmad-loop =
+  pyforge.marshal.adapters.harness_bmadloop:BmadLoopHarness` in `pyproject.toml`). No
+  parallel `pyforge.marshal.hooks` group may be added; the harness seam stays AD-3's single
+  module, now discoverable through the floor's plugin surface.
+
+### AD-80 — The station's estate faces: portal, MCP face, and a superseded console
+
+- **Binds:** FR-153..FR-156, Epic 27; the Unifying Strategy pack
+  (`spec-pyforge-unifying-strategy`, operator rulings 2026-08-24); extends AD-43, AD-71
+- **Prevents:** Marshal growing host-side services of its own, and two consoles both
+  claiming the front door.
+- **Rule:** Marshal's estate faces are (a) its **station portal** — one of eight on the
+  Canopy host, one session, chrome from `django-pyforge`, first slice = loop homes (Story
+  27.2); (b) its **MCP face on the host ASGI** (`POST /stations/marshal/mcp`) — never a
+  repo-root process farm; the local per-home render stays AD-43's `.mcp.json` +
+  `marshal-mcp` PATH-relative entry point (Epic 18: capabilities as named typed tools,
+  CLI⇄tool parity and coverage as gated numbers); and (c) its **skill and persona** (Story
+  27.1: `.claude/skills/pyforge-marshal`, `bmad-agent-marshal`; persona grammar
+  `pyforge marshal …`, distinct from the `marshal` binary). The **static Guildhall console
+  is superseded by the strategy's CAP-2 Lane 1 front door** (decided 2026-08-24, live
+  2026-08-26): parity is proven before the old build path is removed,
+  `spec-factory-console` is corrected to "superseded by CAP-2", and the console's residual
+  backlog stays Marshal's. The host never imports `pyforge.*` source; the ledger contract
+  (AD-71) is unchanged; and — recorded verbatim from the strategy — *never: Marshal stores
+  SLAs*.
+
+### Coverage-map extension (FR-164..FR-195)
+
+Continues the Part I table; each row names where the decision lives and what governs it.
+
+| FR range | Shipped as | Governed by |
+| --- | --- | --- |
+| Surface-drift reconciliation (FR-164..FR-169, FR-174) | Epic 13; `scripts/spec_surface_check.py` scoped stamps, `[drift-blind]`/`[drift-presumed]` | AD-15's coded-finding discipline at instrument granularity; PRD § 16.9 |
+| Durability signal repairs (FR-170, FR-171) | Stories 4.10/4.14-era; tip-based unpushed measurement | AD-46..AD-48 (no new invariant — signal fixes) |
+| PR-lifecycle hardening (FR-172, FR-173, FR-180) | `marshal land` in-flight refusal, post-landing home currency, stale-home spin refusal | AD-40, AD-21 |
+| Loop-seam containment (FR-175..FR-178) | deferred-work→ledger, safety-net reporting, one pusher, loop-agent git-state guard | AD-11, AD-42, AD-74 |
+| Board completeness (FR-179) | "how much is left" derivation | AD-38, AD-33 |
+| Supervisor fallback (FR-181) | Story 5.8 | AD-77 (with AD-9/AD-48) |
+| Adaptive tiering + clamp (FR-182..FR-184) | Stories 3.11–3.13 | AD-10/AD-16 (policy chain); AD-31 (loud advisory) |
+| Review depth + hand-finish visibility (FR-185, FR-186) | Stories 2.8, 5.9 | AD-31; AD-73 |
+| Detectable merge subject (FR-187) | Story 5.10 | AD-24, AD-73 |
+| Loop work-preservation + landing grammar (FR-188..FR-191) | Epic 20 | AD-74, AD-73 |
+| Chain regeneration, full CAP set (FR-192) | Epic 21 → `marshal planning` (first slice FR-148..152 / Epic 17 → `marshal chain`) | AD-72; PRD § 18.1's recorded overlap |
+| Single-story dispatch (FR-193, Epic-22 sense) | Epic 22 → `marshal factory dispatch` | AD-75 |
+| Hand-driven velocity (FR-194) | Epic 23 | AD-76 |
+| Liveness (FR-195) | Epic 24 | AD-77 |
+
+---
+
+## Currency reconciliation — 2026-08-26
+
+This pass cleared the `prd (2026-08-14) newer than arch (2026-08-10)` staleness finding by
+re-deriving the spine against the 08-14 PRD (plus its § 18 registrations), the Spec's
+2026-08-22 era-alignment motion, the 2026-08-24/26 Unifying Strategy pack, and the as-built
+tree (`src/shared/packages/pyforge-marshal/`: 129 src modules / ~63.1k LOC, 149 test files /
+~83.6k LOC; 18 top-level subcommands; 165/165 story keys done across Epics 1–27). Concrete
+deltas:
+
+1. **Part IV added (AD-73..AD-80)** — the shipped post-08-10 decisions promoted into the
+   spine: landing-evidence grammar (FR-191), upstream-drift containment (FR-188..190),
+   the dispatch verb (Epic 22), wall-clock velocity (Epic 23), liveness (Epic 24), the
+   installed-package era pin (Epic 25), the core hook plugin (26.1), and the estate faces
+   incl. the CAP-2 console supersession (Epic 27 + strategy pack). Plus the FR-164..FR-195
+   coverage-map extension.
+2. **Frontmatter re-bound** from FR-1..FR-65 to FR-1..FR-191 (with the § 18-registered
+   FR-192..FR-195 noted), matching the PRD's actual surface.
+3. **Stack corrected in place**: bmad-loop `>=0.9.0,<0.10` → **`>=0.11.0,<0.12`** (0.11.1
+   resolved); as-built dependency delta recorded (`pyforge-core`, `copier >=9.17,<10`,
+   `packaging >=24.0`); AD-3's "import-linter not yet provisioned" corrected (shipped since
+   Story 1.1, `[tool.importlinter]` in the member `pyproject.toml`).
+4. **Dated harness-shape notes** added at AD-19 (0.11 parsers pin-tested) and AD-35/F-1
+   (policy render targets 0.11.0; all 8 homes validate clean); AD-70's subcommand count
+   annotated (14 → 18).
+5. **Not changed, deliberately**: the Structural Seed and Part II/III bodies stay as the
+   dated design record — the code owns the live shape, per the Stack section's own preamble
+   — and `epics.md` is untouched (within the audit's grace window; the FR-193
+   double-assignment and FR-148..152/FR-192 overlap are recorded in the PRD's § 18 for the
+   next INV-A pass, not repaired here).

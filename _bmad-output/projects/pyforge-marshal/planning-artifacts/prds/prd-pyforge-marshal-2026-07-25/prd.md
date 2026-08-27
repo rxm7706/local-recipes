@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
+updated: 2026-08-26  # currency reconciliation (§ 18): the Spec's 2026-08-22 era-alignment motion folded in (Epic 25 / bmad-loop 0.11 — pin now >=0.11.0,<0.12); FR-192..FR-195 registered from epics.md's 2026-08-15/2026-08-21 additions (with the FR-193 double-assignment recorded as a defect); § 17's static-console line amended per the Unifying Strategy's CAP-2 supersession (2026-08-24). Shipped state re-grounded: 165/165 stories, Epics 1-27.
+# 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
 # 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
 # 2026-08-11  # FR-181 added to § 7.2 (docs/dreams/fleet-status-supervisor-fallback.md, spec-fleet-status-supervisor-fallback): a dead supervisor sidecar consults a fallback engine-liveness signal before reporting "unsupervised". Queued as Story 5.8 (epics.md, PR #425); this closes the chain-completeness INV-A gap that PR #425 left open (the FR entry, not the Dream/Spec/Story chain, was the missing piece). ONE FR space now FR-1..FR-181, no gaps.
 # 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-180, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
@@ -2135,6 +2136,106 @@ loop homes, and a pipeline ran through both with the hand-off owned by nobody.
   contract; any live UI is a cache over the same generators — the `artifact-console` failure
   mode (state existing only in the running thing) is on record as the reason.
 
+  *(Amended 2026-08-26 — the console half of this bullet is superseded.)* The Unifying
+  Strategy (`spec-pyforge-unifying-strategy`, operator decisions dated 2026-08-24) rules
+  that its **CAP-2 Lane 1 CMS front door supersedes Marshal's static Guildhall console** —
+  "Marshal's console is superseded, not co-owned" — with a migration obligation: feature
+  parity is proven **before** the old build path is removed, and `spec-factory-console` is
+  corrected to "superseded by CAP-2" in the same chain. The console's residual backlog, if
+  any, remains Marshal's and is not pulled into that chain. Lane 1 went live 2026-08-26
+  (`GET /` → 200). The *ledger* half of this seam is untouched: Marshal still produces
+  `sprint-status-ledger.yaml` and is accountable for its currency (FR-136..FR-139);
+  whatever front door publishes it never derives status itself.
+
 Where an outcome is one station's and the mechanism another's, Charter §5's *Outcome and
 mechanism* rule governs: the outcome-owner writes the story, the mechanism-owner owns the verb
 it calls.
+
+---
+
+## 18. Currency reconciliation — 2026-08-26
+
+The Spec (`specs/spec-pyforge-marshal/`, memlog re-stamped 2026-08-22) and `epics.md`
+(2026-08-25) both moved past this PRD's 2026-08-14 update. This section folds that motion
+in — the same INV-A discipline the 2026-08-11/08-14 header lines applied, extended to the
+Epic 21–27 era — and re-grounds the document's live claims. Nothing above is renumbered.
+
+### 18.1 The FR space: FR-192..FR-195 registered
+
+`epics.md` cites four FRs this PRD did not carry. Registered here, defined by their
+epics-side usage; all of their stories are `done` in the tracked ledger:
+
+#### FR-192: The planning chain regenerates itself, and audits whether it is coherent
+The **second, full decomposition** of `spec-fleet-chain-completeness` (CAP-1..5) into
+**Epic 21** (Stories 21.1–21.5, added 2026-08-15) — orchestrated regeneration,
+code-status preservation, the audit mode extended to full CAP-3 coverage, review-gated
+orphan cleanup, per-project invocation. **Relationship to FR-148..FR-152 (§ 16.6):** those
+were the first decomposition of the same Spec; Epic 17 realized their audit slice (Story
+17.3 / FR-150 → the `chain` verb group), and FR-192's Epic 21 shipped the rest as the
+`marshal planning` verb group. The two FR ids over one Spec are a recorded numbering
+overlap, not a contradiction — reconcile at the next INV-A pass without touching any
+`done` story key.
+
+#### FR-193: Single-story dispatch is a marshal verb, not a session's discipline
+Decomposes `spec-marshal-single-story-dispatch` (CAP-1..6) into **Epic 22** (Stories
+22.1–22.6, added 2026-08-21): `marshal factory dispatch` launches one governed, isolated,
+detached `bmad-build-auto` story session; completion is judged from git and process facts
+(a zombie is never re-dispatched); **verification is the product — no landing on a
+self-report**; a verified story lands through the existing machinery; one story in flight
+per station with stations in parallel and overlap loud; the run survives its operator and
+its journal carries the timing signal. **Recorded defect:** `epics.md` also assigns
+FR-193 to Story 19.4 (testing-charter CAP-5, added 2026-08-15) — one FR id, two Specs.
+The epics document is not restructured by this reconciliation; the collision is filed for
+the next INV-A pass (Story 19.4's substance is already this PRD's FR-132).
+
+#### FR-194: Velocity captures hand-driven work
+Decomposes `spec-dashboard-velocity-captures-hand-driven-work` (CAP-1..3) into **Epic 23**
+(Stories 23.1–23.3): wall-clock fallback derived from promoted-spec revision fields,
+never blended with active compute, with the coverage caption partitioned by true reason.
+
+#### FR-195: Liveness is one command
+Decomposes `spec-bmad-loop-liveness-footgun` (CAP-1..3) into **Epic 24** (Stories
+24.1–24.3): the missing liveness primitive, the operator answer as one documented
+command, and a cheap documented double-check for UNSUPERVISED rows.
+
+**ONE FR space now FR-1..FR-195**, with two recorded defects (the FR-148..152/FR-192
+overlap and the FR-193 double-assignment) instead of silent gaps.
+
+### 18.2 The harness era: 0.9 → 0.11, absorbed as product work
+
+Everything in §§ 4–6 citing `bmad-loop 0.9.0` and the `<0.10` pin is intake-era history —
+correct when written, superseded in the shipped tree. Live facts: the pin is
+**`bmad-loop >=0.11.0,<0.12`** (member `pyproject.toml`; 0.11.1 resolves;
+`marshal --version` reports both). **Epic 25** (`spec-bmad-611-era-alignment`, Stories
+25.1–25.7, all done 2026-08-22) carried the era into the product: retired v6 skill ids
+purged from seed templates and guarded by meta-test (25.1); repo skills matched to the
+installed package (25.2); every spec folder accepts a 6.11 `bmad-spec` update (25.3); the
+five 0.10/0.11 policy knobs became governable through the AD-16 chain — 28-key closed
+vocabulary, strict validators mirroring the installed enums, an `[operator]` render
+section (25.4); Marshal speaks the 0.11 status vocabulary — `awaiting-operator` as a
+sixth fleet state with `parked_stories`/`preserve_ref` surfaced (25.5); hand-driven runs'
+deferrals reach the tracked ledger unaided (25.6); and the factory's living docs were
+re-grounded with a named owner (25.7). The installed-package vocabulary pin tests shipped
+with 25.4/25.5 are the first real slice of NFR-9's contract-test layer — the top-ranked
+debt item in `research/technical-marshal-orchestration-refresh-2026-08-08.md` § 3.
+
+### 18.3 Shipped state and the command surface
+
+The tracked ledger reads **165/165 story keys done across Epics 1–27** (110-key /
+"50 stories" citations elsewhere in this document are dated snapshots). The `marshal`
+binary carries **18 top-level command groups** — `config init homes preflight teardown
+gate factory deploy land retire status check adapters upstream seed refresh chain
+planning` — plus `factory dispatch`/`dispatch-attach`/`dispatch-resume` (Epic 22), the
+`marshal-mcp` console script (Epic 18, FR-153..156), and the `pyforge.core.hooks` entry
+point registering the bmad-loop runner as the default plugin (Story 26.1). Package
+measure as of this pass: 129 src modules / ~63.1k LOC, 149 test files / ~83.6k LOC.
+
+### 18.4 The estate seam (Unifying Strategy, 2026-08-24/26)
+
+Folded per the amended § 17 bullet: the static console is superseded by CAP-2 with a
+parity-before-removal obligation; Marshal's estate faces are its **portal** (one of eight,
+one host session) and its **MCP face** on the host ASGI (`POST /stations/marshal/mcp` —
+never a repo-root process farm); the persona grammar is `pyforge marshal …`; the Epic 22
+dispatch verbs served as the 2026-08-25 fleet drain-bind campaign engine — product, not
+discipline. Boundary lines recorded verbatim from the strategy pack: *never: Marshal
+stores SLAs*; the host never imports `pyforge.*` source.

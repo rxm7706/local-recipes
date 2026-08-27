@@ -2,7 +2,8 @@
 title: Marshal — graduated autonomy on the factory floor
 status: draft
 created: 2026-07-25
-updated: 2026-08-02  # genesis-installer brief consolidated in as a Satellite section (explicit user override); competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
+updated: 2026-08-26  # currency reconciliation — the 2026-08-08 research triad (domain/market/technical refresh + technical-pyforge-unification) folded in; shipped state re-grounded at 165/165 stories, Epics 1-27; harness era corrected to bmad-loop >=0.11.0,<0.12. See "Currency reconciliation - 2026-08-26" at the end of this file.
+# 2026-08-02  # genesis-installer brief consolidated in as a Satellite section (explicit user override); competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -30,7 +31,7 @@ inputs:
 
 **Marshal** is the orchestration station of the pyforge Ecosystem Crew, productized: a deterministic CLI (`marshal`) that turns an approved spec into merged, verified code through gated, unattended development loops — and escalates to a human anything it cannot safely decide. Autonomy is a gradient, not a leap: attended stories first, then unattended loops wrapped in verify gates and quality gates, with every run visible in a durable journal.
 
-The capability already exists and already shipped real systems. It began as a hand-assembled stack — the external `bmad-loop` orchestrator plus `scripts/bmad-switch` and `scripts/bmad-loop-worktree` — which drove **pyforge-atlas to 57/57 stories** and **pyforge-warden to 43/43**, with **eight concurrent loop homes** on one machine. *(Updated 2026-08-01:)* **the product's first epic has now shipped through its own line** — Epic 1 · 10/10, six commands (`init · homes · preflight · config · teardown · --version`), 785 tests, coded `MRS-*` envelopes, one import-linter-enforced harness seam. What remains ahead: the supervisor for the failure modes the raw loop does not catch (Epic 3), gates as objects (Epic 2), the landing paper trail and PR lifecycle (Epic 4, now in charter), fleet status (Epic 5), and the portability layer proven rather than claimed (Epic 6).
+The capability already exists and already shipped real systems. It began as a hand-assembled stack — the external `bmad-loop` orchestrator plus `scripts/bmad-switch` and `scripts/bmad-loop-worktree` — which drove **pyforge-atlas to 57/57 stories** and **pyforge-warden to 43/43**, with **eight concurrent loop homes** on one machine. *(Updated 2026-08-01:)* **the product's first epic has now shipped through its own line** — Epic 1 · 10/10, six commands (`init · homes · preflight · config · teardown · --version`), 785 tests, coded `MRS-*` envelopes, one import-linter-enforced harness seam. What remains ahead: the supervisor for the failure modes the raw loop does not catch (Epic 3), gates as objects (Epic 2), the landing paper trail and PR lifecycle (Epic 4, now in charter), fleet status (Epic 5), and the portability layer proven rather than claimed (Epic 6). *(Updated 2026-08-26:)* **none of that remains ahead** — Epics 1–6 closed 50/50 by 2026-08-07 (Epic 4 PRs #266/#274–#282, Epic 5 #283–#288, Epic 6 9/9), and the tracked ledger now reads **165/165 stories done across Epics 1–27**, the folded-in seed installer (Epics 7–12) shipped as `marshal seed`. See § *Currency reconciliation — 2026-08-26* below.
 
 The market timing remains favourable, but the slot **narrowed between intake and now** — the 2026-07-31 refresh (`market-agent-orchestration-research-2026-07-31.md`) supersedes this paragraph's original framing. Gated-unattended is no longer the differentiator: "Ralph loops" made overnight autonomy with stop criteria a named industry practice; Claude Code Auto Mode ships layered in-session safety with approval checkpoints first-party; and **Composio AO — the closest competitor — runs worktree-isolated agents that manage their own PR lifecycle behind milestone gates**. The intake-era observations (OpenHands hard-disabling approval headless, Jules auto-approving on a timer, Spec Kit's recommended-not-enforced sequencing) still hold individually. What remains genuinely unclaimed is **four properties in combination**: the spec as an *executable contract* (frozen-surface scope checks — everyone stops on tests, nobody on contract conformance); the supervisor *outside the session*, un-disableable; **never-false-green** as a verdict lattice (unevaluable ≠ pass); and the paper trail that *survives teardown*. Marshal's slot is those four, self-hosted, with first-party run evidence.
 
@@ -122,10 +123,10 @@ Two to three years out, Marshal is the reference answer to a question the indust
 ## Assumptions
 
 - **A1.** The reference customer is this factory and its operator; there is no external customer discovery. Success criteria are drawn from live operational evidence, not interviews.
-- **A2.** `bmad-loop` remains actively maintained upstream. It moved 0.8.1 → 0.9.0 within the adoption window, gaining pluggable multiplexers and six adapter profiles. *(Re-verified 2026-08-01, STRENGTHENED: ten releases Jun 29 → Jul 21; predecessors retired cleanly — `bmad-automator` archived Jul 13 with a migration notice to bmad-loop; the method repo at 51k stars with "Dev Loop Automation" on its roadmap — logged as a convergence watch item on the §5.4 revisit list, not a fork trigger.)*
+- **A2.** `bmad-loop` remains actively maintained upstream. It moved 0.8.1 → 0.9.0 within the adoption window, gaining pluggable multiplexers and six adapter profiles. *(Re-verified 2026-08-01, STRENGTHENED: ten releases Jun 29 → Jul 21; predecessors retired cleanly — `bmad-automator` archived Jul 13 with a migration notice to bmad-loop; the method repo at 51k stars with "Dev Loop Automation" on its roadmap — logged as a convergence watch item on the §5.4 revisit list, not a fork trigger.)* *(Re-verified 2026-08-26: still holds — the pin has since moved two minors with the product, now `bmad-loop >=0.11.0,<0.12` with 0.11.1 resolving; Epic 25 (`spec-bmad-611-era-alignment`) absorbed the 0.10/0.11 era — policy knobs, status vocabulary, installed-package pin tests — rather than being stranded by it, exactly the wrap-side cost §5.4 priced in.)*
 - **A3.** BMAD Method conventions (`sprint-status.yaml`, `epics.md`, planning/implementation artifact tiers) remain the story-feed contract.
 - **A4.** Linux and macOS are the supported hosts for v1; Windows is WSL-only, consistent with the harness. *(Note 2026-08-01: upstream v0.9.0 shipped a Windows psmux backend — the assumption stands for v1, but the FR-58 register's "non-POSIX multiplexer" upstream-gap entry needs updating.)*
-- **A5.** Distribution through the local conda channel is acceptable for v1; `bmad-loop` is packaged here but not yet on conda-forge (`cfe-on-conda-forge-status: pending-submission-to-conda-forge`).
+- **A5.** Distribution through the local conda channel is acceptable for v1; `bmad-loop` is packaged here but not yet on conda-forge (`cfe-on-conda-forge-status: pending-submission-to-conda-forge`). *(Note 2026-08-26: the assumption held and became the shipped shape — `bmad-loop` is consumed as a plain conda run dependency built from `recipes/bmad-loop/recipe.yaml`; the git-pin era described in `docs/specs/bmad-loop-adoption.md` is over.)*
 - **A6.** Per repo convention (matching `deckcraft` and `pyforge-warden`), this brief is written flat into `planning-artifacts/` rather than into a `briefs/<run-folder>/` workspace with a `.memlog.md`; the brief's own frontmatter carries the input provenance.
 
 ## Open Questions
@@ -531,3 +532,76 @@ must be drawn in the PRD or the products will overlap:
 8. **`genesis check` and `bmad-drift-check`** — reuse, extract, or re-implement?
 9. **Legacy conventions as a first-class state** — is `present-legacy` recorded in the state
    file, and does the model define a deprecation path (e.g. `docs/specs/` → Tier 2)?
+
+---
+
+## Currency reconciliation — 2026-08-26
+
+The 2026-08-08 research triad (`domain-marshal-orchestration-2026-08-08.md`,
+`market-marshal-orchestration-refresh-2026-08-08.md`,
+`technical-marshal-orchestration-refresh-2026-08-08.md`, plus
+`technical-pyforge-unification-2026-08-08.md`) post-dated this brief's last update
+(2026-08-02) by six days; this section folds its findings in and re-grounds the brief's
+live claims against the tracked ledger, the shipped package, and the 2026-08-24/26
+Unifying Strategy pack. Concrete deltas:
+
+1. **Identity re-framed (domain research § 1).** "The orchestration station… gated,
+   unattended development loops" now describes roughly one shipped epic of six. The
+   accurate description as of 2026-08: **Marshal is the factory's execution-governance
+   CLI** — it provisions (E1), gates (E2), supervises (E3), lands (E4), reports (E5), and
+   ports (E6) unattended agent work; `bmad-loop` is one wrapped engine inside it
+   (wrap-never-absorb re-confirmed by the bmad-automator→bmad-loop lineage post-mortem).
+   The Executive Summary's verb list stands as history; the product outgrew it.
+
+2. **Shipped state.** The Executive Summary's "Epic 1 has now shipped … what remains
+   ahead" era is closed: the tracked `sprint-status-ledger.yaml` reads **165/165 story
+   keys done across Epics 1–27** (plus 31 done epic retros). Beyond Epics 1–6 that
+   includes: the seed installer shipped as `marshal seed` (Epics 7–12, the Satellite
+   below — no longer prospective); surface-drift reconciliation (13); the `pyforge-core`
+   shared floor (14); fleet refresh (15); board truth (16); instrument verification +
+   chain audit (17, 21); the governed MCP tool surface (18, incl. the `marshal-mcp`
+   entry point); the testing charter (19); loop work-preservation + the landing-evidence
+   grammar (20); **single-story dispatch as a product verb** (22 — `marshal factory
+   dispatch`); hand-driven velocity capture (23); liveness-as-one-command (24); BMAD-6.11
+   era alignment (25); the loop-runner hook extraction (26 — `pyforge.core.hooks`); and
+   Marshal's own skill/persona/portal slice (27). The `marshal` binary now carries **18
+   top-level command groups** (the brief's "four verbs plus two supporting surfaces"
+   is the charter kernel, not the surface).
+
+3. **Market verdict folded (market research §§ 1–6).** The four-property slot
+   (spec-as-executable-contract, outside supervisor, never-false-green, teardown-surviving
+   paper trail) **holds on re-check with shipped evidence rather than PRD citations** —
+   cite PR ranges #266–#288 and the Epic-5 live self-catch (the promote/reconcile run that
+   caught Story 5.1's own spec falling through promotion). Temporal (durable execution),
+   Backstage/Port (IDP scorecards, drill-through) enter the analysis as **pattern donors,
+   not adoptions** — zero-infrastructure is the moat. And Marshal walked into a **second
+   market** — scaffolding/templating (Copier/cruft/Backstage Templates) — where the
+   unclaimed capability it now ships is managed regions in brownfield files plus a
+   never-write guard (`marshal seed`, Satellite below).
+
+4. **Harness era corrected.** The Problem section's `bmad-loop 0.9.0` facts (six adapter
+   profiles; `.agents/skills/` gap; 92 skills) are intake-era history — accurate then,
+   superseded by Epic 6's shipped projection/conformance machinery. The live pin is
+   **`bmad-loop >=0.11.0,<0.12`** (0.11.1 resolved; reported by `marshal --version`). The
+   08-08 technical research's watch item — "a 0.10 release will hard-warn every `marshal
+   --version` and strand the vendored policy template" — fired and was absorbed by
+   **Epic 25** (`spec-bmad-611-era-alignment`): the 0.10/0.11 policy knobs are governable
+   (28-key vocabulary, `[operator]` render section), Marshal speaks the 0.11 status
+   vocabulary (`awaiting-operator` as a sixth fleet state), and installed-package
+   vocabulary pin tests now make the next era bump loud — the first shipped slice of the
+   NFR-9 contract-test layer the research ranked debt #1.
+
+5. **Estate posture (Unifying Strategy, 2026-08-24/26).** Marshal's faces on the Canopy
+   host: a station **portal** (one of eight, one session) and an **MCP face** on the host
+   ASGI (`POST /stations/marshal/mcp`) — never a separate process farm; the persona
+   grammar is `pyforge marshal …`. The **static Guildhall console is superseded** by the
+   strategy's CAP-2 Lane 1 CMS front door (decided 2026-08-24; `/` live 2026-08-26) with a
+   parity-before-removal migration obligation — `spec-factory-console` is to be corrected
+   "superseded by CAP-2", while the console's residual backlog stays Marshal's. The
+   dispatch verbs (Epic 22) were used as the **fleet drain-bind campaign engine**
+   (2026-08-25) — product, not discipline. Boundary line recorded verbatim: *never:
+   Marshal stores SLAs*.
+
+6. **Still open, unchanged.** Q2 (AGENTS.md family ownership — CAP-6 ships detection
+   only until settled), Q4 (fleet-level budgets), Q5 (OTel `gen_ai.*`), Q6 (ACP trigger,
+   pressure rising). The counter-metrics stand.
