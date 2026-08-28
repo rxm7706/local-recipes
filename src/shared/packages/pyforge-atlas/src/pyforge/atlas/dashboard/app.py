@@ -10,14 +10,28 @@ structure, exactly like the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` gates; i
 Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
 
-Page set (honest core; the full 28-page inventory is CIS-two-spine-deferred, DW-D2):
+Page set (the full 28-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
   * GROUNDED data pages — feedstock-health, my-feedstocks, estate-cache
     (BSL over a migrated dataset or the CAP-19 estate Parquet).
-  * BSL-WIRED SHELL pages — staleness-report, query-atlas, detail-cf-atlas (wired to
-    build_packages_model; render empty until the composed packages store lands, DW-D2).
+  * BSL-WIRED SHELL pages — staleness-report, query-atlas, detail-cf-atlas, adoption-stage
+    (wired to build_packages_model; render empty until the composed packages store lands).
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
     Card states the gap — no data function, no fabrication).
+  * BSL-WIRED SHELL pages (Story 20.5, unmigrated datasets) — the 13 remaining atlas-CLI /
+    cyclonedx-suite / seed-gap-suggester pages routed through a brand-new per-page BSL
+    model (``semantic/models.py``); each degrades honestly to empty until its own Kedro
+    pipeline materializes the backing Parquet (the DW-D2-2 lifecycle, generalized).
+  * REPORT-ARTIFACT pages — export-purls, inventory-match, add-handoff, library-futures
+    (FR-9: a write-path or per-invocation CLI; the dashboard surfaces the LATEST cached
+    run only, never triggers one).
+  * LIVE-SCAN-ARTIFACT pages — scan-project, env-inspect (per-invocation, user-supplied
+    input; the dashboard reads the latest cached invocation the same honest way — an
+    in-dashboard submit control is forward-looking work, not wired here).
   * factory-status — the fully-specified BMAD-artifact-state page (AD-17 build stamp).
+
+The 19-page spine (BSL models, layouts, personas, journeys) is
+``_bmad-output/projects/pyforge-atlas/planning-artifacts/{DESIGN,EXPERIENCE}.md`` (Story
+20.4, CAP-7).
 """
 
 from __future__ import annotations
@@ -56,7 +70,12 @@ class PageDef:
     id: str
     title: str
     cli: str  # the legacy read CLI this page ports (or "factory-status")
-    kind: str  # "grounded-data" | "bsl-shell" | "no-bsl-shell" | "factory"
+    # "grounded-data" | "bsl-shell" | "no-bsl-shell" | "factory" | "report-artifact"
+    # | "live-scan-artifact" — the latter two added by Story 20.5 (DESIGN.md § 1):
+    # report-artifact reads the LATEST cached run of a write-path/per-invocation CLI
+    # (the dashboard never triggers one); live-scan-artifact is per-invocation,
+    # user-supplied input (the dashboard would submit a NEW scan, not yet wired here).
+    kind: str
     note: str = ""
 
 
@@ -104,6 +123,173 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "no-bsl-shell",
         note="No D1 BSL model yet: the reverse-dependency graph over core_dependencies is "
         "not a declared BSL model. Full page CIS-two-spine-deferred (DW-D2).",
+    ),
+    # -- Story 20.5 (CAP-7) — the remaining 19 pages, per DESIGN.md/EXPERIENCE.md --
+    # Atlas-CLI pages (8, DESIGN.md § 3)
+    PageDef(
+        "cve-watcher",
+        "CVE Watch",
+        "cve-watcher",
+        "bsl-shell",
+        note="Wired to build_vuln_history_model; renders empty until the vuln_history "
+        "snapshot-diff dataset materializes.",
+    ),
+    PageDef(
+        "version-downloads",
+        "Version Downloads",
+        "version-downloads",
+        "bsl-shell",
+        note="Wired to build_version_downloads_model; renders empty until the "
+        "per-version download-history dataset materializes.",
+    ),
+    PageDef(
+        "release-cadence",
+        "Release Cadence",
+        "release-cadence",
+        "bsl-shell",
+        note="Wired to build_release_cadence_model.trend_label (release_cadence.py's "
+        "own accelerating/stable/decelerating/silent classifier, ported verbatim); "
+        "renders empty until the rolling-window dataset materializes.",
+    ),
+    PageDef(
+        "find-alternative",
+        "Find Alternative",
+        "find-alternative",
+        "bsl-shell",
+        note="Wired to build_alternative_candidates_model; renders empty until the "
+        "Phase E/J similarity dataset materializes.",
+    ),
+    PageDef(
+        "adoption-stage",
+        "Adoption Stage",
+        "adoption-stage",
+        "bsl-shell",
+        note="The portfolio-wide lifecycle VIEW; re-uses build_packages_model.adoption_stage "
+        "(no new model) over the same composed semantic_packages store as detail-cf-atlas.",
+    ),
+    PageDef(
+        "scan-project",
+        "Scan Project",
+        "scan-project",
+        "live-scan-artifact",
+        note="Wired to build_scan_result_model over the latest cached per-invocation scan; "
+        "an in-dashboard submit control (triggering a NEW scan) is forward-looking work, "
+        "not wired here — the page reads the last result the same honest way every other "
+        "shell page does.",
+    ),
+    PageDef(
+        "env-inspect",
+        "Environment Inspect",
+        "env-inspect",
+        "live-scan-artifact",
+        note="Wired to build_env_inspect_model over the latest cached per-invocation "
+        "rollup; same per-invocation shape and forward-looking submit-control note as "
+        "scan-project.",
+    ),
+    PageDef(
+        "distribution-breakdown",
+        "Distribution Breakdown",
+        "distribution-breakdown",
+        "bsl-shell",
+        note="Merges platform-breakdown / pyver-breakdown / channel-split behind one "
+        "`facet` dimension (build_distribution_breakdown_model); the python-version "
+        "facet's --policy-check bump-safety classifier (pyver_breakdown.py's own "
+        "policy_check_status, ported verbatim) rides along. Renders empty until the "
+        "per-facet download-breakdown dataset materializes.",
+    ),
+    # Cyclonedx-suite pages (7, DESIGN.md § 4)
+    PageDef(
+        "export-purls",
+        "Export Purls",
+        "export-purls",
+        "report-artifact",
+        note="An artifact-freshness index (build_purl_export_model), not a row-query; "
+        "renders empty until the six purl artifacts' regeneration manifest materializes.",
+    ),
+    PageDef(
+        "mapping-gap",
+        "Mapping Gap",
+        "mapping-gap",
+        "bsl-shell",
+        note="Wired to build_mapping_gap_model, READ-ONLY (the CLI's --write mode stays "
+        "CLI-only); renders empty until the classification-gap dataset materializes.",
+    ),
+    PageDef(
+        "universe-sbom",
+        "Universe SBOM",
+        "universe-sbom",
+        "bsl-shell",
+        note="A SUMMARY over the ~856k-component BOM (build_universe_sbom_summary_model), "
+        "never a full-table browse; renders empty until the universe-BOM summary "
+        "dataset materializes.",
+    ),
+    PageDef(
+        "inventory-match",
+        "Inventory Match",
+        "inventory-match",
+        "report-artifact",
+        note="FR-9 exception: the LATEST per-invocation match report only "
+        "(build_inventory_match_report_model), never a live re-match from the dashboard.",
+    ),
+    PageDef(
+        "add-handoff",
+        "Add Handoff",
+        "add-handoff",
+        "report-artifact",
+        note="FR-9 exception: the LATEST ADD-bucket worklist only "
+        "(build_add_handoff_report_model), READ-ONLY — a write-path CLI, never "
+        "triggered from the dashboard. Multi-agent claim/lock coordination is "
+        "forward-looking work (DESIGN.md § 4.5).",
+    ),
+    PageDef(
+        "library-futures",
+        "Library Futures",
+        "library-futures",
+        "report-artifact",
+        note="FR-9 exception: the LATEST cached futures scorecard only "
+        "(build_library_futures_report_model) — in-memory/inventory-scoped by design, "
+        "no live catalog column.",
+    ),
+    PageDef(
+        "recommend-2027",
+        "Recommend 2027",
+        "recommend-2027",
+        "bsl-shell",
+        note="Wired to build_recommend_2027_model (the S5-S7 per-signal scorecard); "
+        "renders empty until the annotated-BOM dataset materializes.",
+    ),
+    # Seed-gap-suggester pages (4, DESIGN.md § 5) — all READ-ONLY proposal lists
+    PageDef(
+        "lts-registry-gap",
+        "LTS Registry Gap",
+        "lts-registry-gap",
+        "bsl-shell",
+        note="Wired to build_lts_registry_gap_model, READ-ONLY suggester; renders "
+        "empty until the endoflife.date diff dataset materializes.",
+    ),
+    PageDef(
+        "cwe-seed-gap",
+        "CWE Seed Gap",
+        "cwe-seed-gap",
+        "bsl-shell",
+        note="Wired to build_cwe_seed_gap_model, READ-ONLY suggester; renders empty "
+        "until the Other-bucket CWE classification dataset materializes.",
+    ),
+    PageDef(
+        "spdx-schema-gap",
+        "SPDX Schema Gap",
+        "spdx-schema-gap",
+        "bsl-shell",
+        note="Wired to build_spdx_schema_gap_model, READ-ONLY suggester; renders "
+        "empty until the vendored-vs-upstream SPDX diff dataset materializes.",
+    ),
+    PageDef(
+        "license-map-gap",
+        "License Map Gap",
+        "license-map-gap",
+        "bsl-shell",
+        note="Wired to build_license_map_gap_model, READ-ONLY suggester; renders "
+        "empty until the unmapped-license dataset materializes.",
     ),
     PageDef("factory-status", "Factory Status", "factory-status", "factory"),
 )
@@ -252,6 +438,44 @@ def build_dashboard(
         reason="no data function registered for this page",
     )
 
+    # Story 20.5 (CAP-7) — the 19 remaining pages' own backing Parquet provenance
+    # (same AD-17 discipline as above: each page's OWN file mtime, "unavailable" +
+    # a reason when absent — never a fabricated stamp).
+    cve_watcher_provenance = _provenance.resolve_for_file(root / _data.VULN_HISTORY_PARQUET)
+    version_downloads_provenance = _provenance.resolve_for_file(
+        root / _data.VERSION_DOWNLOADS_PARQUET
+    )
+    release_cadence_provenance = _provenance.resolve_for_file(root / _data.RELEASE_CADENCE_PARQUET)
+    find_alternative_provenance = _provenance.resolve_for_file(
+        root / _data.ALTERNATIVE_CANDIDATES_PARQUET
+    )
+    scan_project_provenance = _provenance.resolve_for_file(root / _data.SCAN_RESULT_LATEST_PARQUET)
+    env_inspect_provenance = _provenance.resolve_for_file(root / _data.ENV_INSPECT_LATEST_PARQUET)
+    distribution_breakdown_provenance = _provenance.resolve_for_file(
+        root / _data.DISTRIBUTION_BREAKDOWN_PARQUET
+    )
+    export_purls_provenance = _provenance.resolve_for_file(
+        root / _data.PURL_EXPORT_MANIFEST_PARQUET
+    )
+    mapping_gap_provenance = _provenance.resolve_for_file(root / _data.MAPPING_GAP_PARQUET)
+    universe_sbom_provenance = _provenance.resolve_for_file(
+        root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET
+    )
+    inventory_match_provenance = _provenance.resolve_for_file(
+        root / _data.INVENTORY_MATCH_LATEST_PARQUET
+    )
+    add_handoff_provenance = _provenance.resolve_for_file(root / _data.ADD_HANDOFF_LATEST_PARQUET)
+    library_futures_provenance = _provenance.resolve_for_file(
+        root / _data.LIBRARY_FUTURES_LATEST_PARQUET
+    )
+    recommend_2027_provenance = _provenance.resolve_for_file(root / _data.RECOMMEND_2027_PARQUET)
+    lts_registry_gap_provenance = _provenance.resolve_for_file(
+        root / _data.LTS_REGISTRY_GAP_PARQUET
+    )
+    cwe_seed_gap_provenance = _provenance.resolve_for_file(root / _data.CWE_SEED_GAP_PARQUET)
+    spdx_schema_gap_provenance = _provenance.resolve_for_file(root / _data.SPDX_SCHEMA_GAP_PARQUET)
+    license_map_gap_provenance = _provenance.resolve_for_file(root / _data.LICENSE_MAP_GAP_PARQUET)
+
     by_id = {p.id: p for p in PAGE_INVENTORY}
     pages: list[vm.Page] = [
         _data_page(
@@ -292,6 +516,123 @@ def build_dashboard(
         ),
         _shell_page(by_id["behind-upstream"], provenance=no_bsl_model_provenance),
         _shell_page(by_id["whodepends"], provenance=no_bsl_model_provenance),
+        # -- Story 20.5 (CAP-7) — the remaining 19 pages --
+        _data_page(
+            by_id["cve-watcher"],
+            lambda: _data.load_cve_watcher(root / _data.VULN_HISTORY_PARQUET),
+            grounded=False,
+            provenance=cve_watcher_provenance,
+        ),
+        _data_page(
+            by_id["version-downloads"],
+            lambda: _data.load_version_downloads(root / _data.VERSION_DOWNLOADS_PARQUET),
+            grounded=False,
+            provenance=version_downloads_provenance,
+        ),
+        _data_page(
+            by_id["release-cadence"],
+            lambda: _data.load_release_cadence(root / _data.RELEASE_CADENCE_PARQUET),
+            grounded=False,
+            provenance=release_cadence_provenance,
+        ),
+        _data_page(
+            by_id["find-alternative"],
+            lambda: _data.load_find_alternative(root / _data.ALTERNATIVE_CANDIDATES_PARQUET),
+            grounded=False,
+            provenance=find_alternative_provenance,
+        ),
+        _data_page(
+            by_id["adoption-stage"],
+            lambda: _data.load_adoption_stage(root / _data.PACKAGES_PARQUET, now=now),
+            grounded=False,
+            provenance=packages_provenance,
+        ),
+        _data_page(
+            by_id["scan-project"],
+            lambda: _data.load_scan_project(root / _data.SCAN_RESULT_LATEST_PARQUET),
+            grounded=False,
+            provenance=scan_project_provenance,
+        ),
+        _data_page(
+            by_id["env-inspect"],
+            lambda: _data.load_env_inspect(root / _data.ENV_INSPECT_LATEST_PARQUET),
+            grounded=False,
+            provenance=env_inspect_provenance,
+        ),
+        _data_page(
+            by_id["distribution-breakdown"],
+            lambda: _data.load_distribution_breakdown(
+                root / _data.DISTRIBUTION_BREAKDOWN_PARQUET
+            ),
+            grounded=False,
+            provenance=distribution_breakdown_provenance,
+        ),
+        _data_page(
+            by_id["export-purls"],
+            lambda: _data.load_export_purls(root / _data.PURL_EXPORT_MANIFEST_PARQUET),
+            grounded=False,
+            provenance=export_purls_provenance,
+        ),
+        _data_page(
+            by_id["mapping-gap"],
+            lambda: _data.load_mapping_gap(root / _data.MAPPING_GAP_PARQUET),
+            grounded=False,
+            provenance=mapping_gap_provenance,
+        ),
+        _data_page(
+            by_id["universe-sbom"],
+            lambda: _data.load_universe_sbom(root / _data.UNIVERSE_SBOM_SUMMARY_PARQUET),
+            grounded=False,
+            provenance=universe_sbom_provenance,
+        ),
+        _data_page(
+            by_id["inventory-match"],
+            lambda: _data.load_inventory_match(root / _data.INVENTORY_MATCH_LATEST_PARQUET),
+            grounded=False,
+            provenance=inventory_match_provenance,
+        ),
+        _data_page(
+            by_id["add-handoff"],
+            lambda: _data.load_add_handoff(root / _data.ADD_HANDOFF_LATEST_PARQUET),
+            grounded=False,
+            provenance=add_handoff_provenance,
+        ),
+        _data_page(
+            by_id["library-futures"],
+            lambda: _data.load_library_futures(root / _data.LIBRARY_FUTURES_LATEST_PARQUET),
+            grounded=False,
+            provenance=library_futures_provenance,
+        ),
+        _data_page(
+            by_id["recommend-2027"],
+            lambda: _data.load_recommend_2027(root / _data.RECOMMEND_2027_PARQUET),
+            grounded=False,
+            provenance=recommend_2027_provenance,
+        ),
+        _data_page(
+            by_id["lts-registry-gap"],
+            lambda: _data.load_lts_registry_gap(root / _data.LTS_REGISTRY_GAP_PARQUET),
+            grounded=False,
+            provenance=lts_registry_gap_provenance,
+        ),
+        _data_page(
+            by_id["cwe-seed-gap"],
+            lambda: _data.load_cwe_seed_gap(root / _data.CWE_SEED_GAP_PARQUET),
+            grounded=False,
+            provenance=cwe_seed_gap_provenance,
+        ),
+        _data_page(
+            by_id["spdx-schema-gap"],
+            lambda: _data.load_spdx_schema_gap(root / _data.SPDX_SCHEMA_GAP_PARQUET),
+            grounded=False,
+            provenance=spdx_schema_gap_provenance,
+        ),
+        _data_page(
+            by_id["license-map-gap"],
+            lambda: _data.load_license_map_gap(root / _data.LICENSE_MAP_GAP_PARQUET),
+            grounded=False,
+            provenance=license_map_gap_provenance,
+        ),
         _factory_page(
             by_id["factory-status"],
             build_stamp=build_stamp,

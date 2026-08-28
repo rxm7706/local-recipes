@@ -192,3 +192,368 @@ def join_packages_by_maintainer(
     ``conda_name``.
     """
     return package_maintainers.join_many(packages, on="conda_name")
+
+
+# ===========================================================================
+# Story 20.5 (CAP-7) — BSL models for the remaining 19 Vizro pages, per the
+# CIS two-spine `DESIGN.md` § 3-5. Each model is declared exactly like the
+# ones above: an Ibis table read via `duckdb_table_from_parquet` binds to
+# dimensions/measures the page's loader (`dashboard/data.py`) queries through
+# `_bsl_query_or_empty`. None of these source datasets are migrated yet (the
+# named Kedro pipeline that materializes each is future work, exactly the
+# DW-D2-2 lifecycle the 3 original bsl-shell pages went through) — the model
+# declares the shape today; the honest-empty seam degrades to zero rows until
+# the pipeline lands.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# cve-watcher — vuln_history (DESIGN.md § 3.1)
+# ---------------------------------------------------------------------------
+
+
+def build_vuln_history_model(table: Any) -> SemanticModel:
+    """`cve-watcher` — per-(package,severity) CVE-count delta over a since-days window."""
+    return SemanticModel(
+        table=table,
+        name="vuln_history",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "severity": Dimension(expr=lambda t: t.severity),
+            "since_days": Dimension(expr=lambda t: t.since_days),
+            "vuln_kev_affecting_current": Dimension(expr=lambda t: t.vuln_kev_affecting_current),
+        },
+        measures={
+            "then_count": Measure(expr=lambda t: t.then_count.sum()),
+            "now_count": Measure(expr=lambda t: t.now_count.sum()),
+            "delta": Measure(expr=lambda t: (t.now_count - t.then_count).sum()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# version-downloads — per-version download history (DESIGN.md § 3.2)
+# ---------------------------------------------------------------------------
+
+
+def build_version_downloads_model(table: Any) -> SemanticModel:
+    """`version-downloads` — per-version adoption curve."""
+    return SemanticModel(
+        table=table,
+        name="version_downloads",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "version": Dimension(expr=lambda t: t.version),
+            "upload_date": Dimension(expr=lambda t: t.upload_date),
+        },
+        measures={
+            "downloads": Measure(expr=lambda t: t.downloads.sum()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# release-cadence — rolling-window release counts (DESIGN.md § 3.3)
+# ---------------------------------------------------------------------------
+
+
+def build_release_cadence_model(table: Any) -> SemanticModel:
+    """`release-cadence` — the honest label (metrics.release_trend_label) plus the
+    3 rolling-window release counts it's derived from."""
+    return SemanticModel(
+        table=table,
+        name="release_cadence",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "trend_label": Dimension(expr=metrics.release_trend_label),
+        },
+        measures={
+            "release_count_30d": Measure(expr=lambda t: t.releases_30d.sum()),
+            "release_count_90d": Measure(expr=lambda t: t.releases_90d.sum()),
+            "release_count_365d": Measure(expr=lambda t: t.releases_365d.sum()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# find-alternative — archived -> candidate similarity ranking (DESIGN.md § 3.4)
+# ---------------------------------------------------------------------------
+
+
+def build_alternative_candidates_model(table: Any) -> SemanticModel:
+    """`find-alternative` — ranked replacement candidates for an archived package.
+
+    ``similarity_score`` is a pre-computed composite (keyword/summary/dependent/
+    maintainer-overlap Jaccard x recency x downloads — ``find_alternative.py``'s own
+    in-memory scorer) — a Phase-E/J pipeline output column, not a BSL-derived formula
+    (mirrors ``downloads_total`` being a pre-aggregated measure, not re-summed logic).
+    """
+    return SemanticModel(
+        table=table,
+        name="alternative_candidates",
+        dimensions={
+            "archived_name": Dimension(expr=lambda t: t.archived_name, is_entity=True),
+            "candidate_name": Dimension(expr=lambda t: t.candidate_name),
+            "adoption_stage": Dimension(expr=lambda t: t.adoption_stage),
+        },
+        measures={
+            "similarity_score": Measure(expr=lambda t: t.similarity_score.mean()),
+            "downloads_total": Measure(expr=lambda t: t.downloads_total.sum()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# scan-project / env-inspect — per-invocation report models (DESIGN.md § 3.6-3.7)
+# ---------------------------------------------------------------------------
+
+
+def build_scan_result_model(table: Any) -> SemanticModel:
+    """`scan-project` — the LATEST per-invocation manifest/lock/SBOM scan result."""
+    return SemanticModel(
+        table=table,
+        name="scan_result",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "severity": Dimension(expr=lambda t: t.severity),
+            "license_spdx": Dimension(expr=lambda t: t.license_spdx),
+            "fix_available": Dimension(expr=lambda t: t.fix_available),
+            "scan_status": Dimension(expr=lambda t: t.scan_status),
+        },
+        measures={
+            "finding_count": Measure(expr=lambda t: t.conda_name.count()),
+        },
+    )
+
+
+def build_env_inspect_model(table: Any) -> SemanticModel:
+    """`env-inspect` — the LATEST per-invocation live-environment rollup."""
+    return SemanticModel(
+        table=table,
+        name="env_inspect",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "license_spdx": Dimension(expr=lambda t: t.license_spdx),
+            "non_permissive_flag": Dimension(expr=lambda t: t.non_permissive_flag),
+        },
+        measures={
+            "vuln_critical": Measure(expr=lambda t: t.vuln_critical.sum()),
+            "vuln_high": Measure(expr=lambda t: t.vuln_high.sum()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# distribution-breakdown — merged platform/pyver/channel facet (DESIGN.md § 3.8)
+# ---------------------------------------------------------------------------
+
+
+def build_distribution_breakdown_model(table: Any) -> SemanticModel:
+    """`distribution-breakdown` — merges `platform-breakdown` / `pyver-breakdown` /
+    `channel-split` behind one `facet` dimension; the python-version facet's
+    `--policy-check` bump-safety classifier (metrics.python_min_bump_status) rides
+    along as a 4th dimension, populated only on rows where the facet is
+    `python-version` (NULL declared/empirical inputs elsewhere resolve to "unknown",
+    never fabricated)."""
+    return SemanticModel(
+        table=table,
+        name="distribution_breakdown",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "facet": Dimension(expr=lambda t: t.facet),
+            "bucket": Dimension(expr=lambda t: t.bucket),
+            "python_min_bump_status": Dimension(expr=metrics.python_min_bump_status),
+        },
+        measures={
+            "downloads_90d": Measure(expr=lambda t: t.downloads_90d.sum()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cyclonedx-suite pages (DESIGN.md § 4)
+# ---------------------------------------------------------------------------
+
+
+def build_purl_export_model(table: Any) -> SemanticModel:
+    """`export-purls` — the artifact-freshness index (one row per output artifact)."""
+    return SemanticModel(
+        table=table,
+        name="purl_export",
+        dimensions={
+            "artifact_name": Dimension(expr=lambda t: t.artifact_name, is_entity=True),
+            "regenerated_at": Dimension(expr=lambda t: t.regenerated_at),
+        },
+        measures={
+            "row_count": Measure(expr=lambda t: t.row_count.sum()),
+        },
+    )
+
+
+def build_mapping_gap_model(table: Any) -> SemanticModel:
+    """`mapping-gap` — conda<->PyPI mapping classification gap, READ-ONLY."""
+    return SemanticModel(
+        table=table,
+        name="mapping_gap",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "classification": Dimension(expr=lambda t: t.classification),
+            "match_source": Dimension(expr=lambda t: t.match_source),
+            "match_confidence": Dimension(expr=lambda t: t.match_confidence),
+        },
+        measures={
+            "gap_count": Measure(expr=lambda t: t.conda_name.count()),
+        },
+    )
+
+
+def build_universe_sbom_summary_model(table: Any) -> SemanticModel:
+    """`universe-sbom` — universe-scale BOM SUMMARY (never a full ~856k-row browse)."""
+    return SemanticModel(
+        table=table,
+        name="universe_sbom_summary",
+        dimensions={
+            "component_purl": Dimension(expr=lambda t: t.component_purl, is_entity=True),
+            "slice": Dimension(expr=lambda t: t.slice),
+        },
+        measures={
+            "with_vulns_count": Measure(expr=lambda t: t.with_vulns_count.sum()),
+        },
+    )
+
+
+def build_inventory_match_report_model(table: Any) -> SemanticModel:
+    """`inventory-match` (FR-9 exception) — the LATEST per-invocation match report,
+    never a live re-match."""
+    return SemanticModel(
+        table=table,
+        name="inventory_match_report",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "bucket": Dimension(expr=lambda t: t.bucket),
+            "freshness_percentile": Dimension(expr=lambda t: t.freshness_percentile),
+            "match_confidence": Dimension(expr=lambda t: t.match_confidence),
+        },
+        measures={
+            "row_count": Measure(expr=lambda t: t.conda_name.count()),
+        },
+    )
+
+
+def build_add_handoff_report_model(table: Any) -> SemanticModel:
+    """`add-handoff` (FR-9 exception) — the LATEST ADD-bucket worklist, READ-ONLY."""
+    return SemanticModel(
+        table=table,
+        name="add_handoff_report",
+        dimensions={
+            "conda_name": Dimension(expr=lambda t: t.conda_name, is_entity=True),
+            "readiness": Dimension(expr=lambda t: t.readiness),
+            "license_blocker": Dimension(expr=lambda t: t.license_blocker),
+        },
+        measures={
+            "row_count": Measure(expr=lambda t: t.conda_name.count()),
+        },
+    )
+
+
+def build_library_futures_report_model(table: Any) -> SemanticModel:
+    """`library-futures` (FR-9 exception) — the LATEST cached futures scorecard
+    (in-memory/inventory-scoped by design — no live catalog column)."""
+    return SemanticModel(
+        table=table,
+        name="library_futures_report",
+        dimensions={
+            "package_name": Dimension(expr=lambda t: t.package_name, is_entity=True),
+            "futures_tier": Dimension(expr=lambda t: t.futures_tier),
+            "py314_readiness": Dimension(expr=lambda t: t.py314_readiness),
+        },
+        measures={
+            "futures_score": Measure(expr=lambda t: t.futures_score.mean()),
+        },
+    )
+
+
+def build_recommend_2027_model(table: Any) -> SemanticModel:
+    """`recommend-2027` — the S5->S7 per-signal scorecard."""
+    return SemanticModel(
+        table=table,
+        name="recommend_2027",
+        dimensions={
+            "package_name": Dimension(expr=lambda t: t.package_name, is_entity=True),
+            "futures_tier": Dimension(expr=lambda t: t.futures_tier),
+            "lts_status": Dimension(expr=lambda t: t.lts_status),
+            "eol_date": Dimension(expr=lambda t: t.eol_date),
+        },
+        measures={
+            "futures_score": Measure(expr=lambda t: t.futures_score.mean()),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Seed-gap-suggester pages (DESIGN.md § 5) — all four READ-ONLY proposal lists
+# against a hand-curated source-of-truth file; the dashboard never writes it.
+# ---------------------------------------------------------------------------
+
+
+def build_lts_registry_gap_model(table: Any) -> SemanticModel:
+    """`lts-registry-gap` — endoflife.date products not yet in `lts-registry.yaml`."""
+    return SemanticModel(
+        table=table,
+        name="lts_registry_gap",
+        dimensions={
+            "product_name": Dimension(expr=lambda t: t.product_name, is_entity=True),
+            "tier": Dimension(expr=lambda t: t.tier),
+            "matched_conda_name": Dimension(expr=lambda t: t.matched_conda_name),
+        },
+        measures={
+            "candidate_count": Measure(expr=lambda t: t.product_name.count()),
+        },
+    )
+
+
+def build_cwe_seed_gap_model(table: Any) -> SemanticModel:
+    """`cwe-seed-gap` — `Other`-bucketed CWEs ranked by real package impact."""
+    return SemanticModel(
+        table=table,
+        name="cwe_seed_gap",
+        dimensions={
+            "cwe_id": Dimension(expr=lambda t: t.cwe_id, is_entity=True),
+            "tier": Dimension(expr=lambda t: t.tier),
+            "suggested_category": Dimension(expr=lambda t: t.suggested_category),
+        },
+        measures={
+            "package_impact_count": Measure(expr=lambda t: t.package_impact_count.sum()),
+        },
+    )
+
+
+def build_spdx_schema_gap_model(table: Any) -> SemanticModel:
+    """`spdx-schema-gap` — vendored SPDX enum diffed against upstream SPDX."""
+    return SemanticModel(
+        table=table,
+        name="spdx_schema_gap",
+        dimensions={
+            "license_id": Dimension(expr=lambda t: t.license_id, is_entity=True),
+            "tier": Dimension(expr=lambda t: t.tier),
+        },
+        measures={
+            "package_usage_count": Measure(expr=lambda t: t.package_usage_count.sum()),
+        },
+    )
+
+
+def build_license_map_gap_model(table: Any) -> SemanticModel:
+    """`license-map-gap` — unmapped `pypi_intelligence.license_raw` strings ranked by
+    package impact, with a HINT (non-authoritative) suggested SPDX candidate."""
+    return SemanticModel(
+        table=table,
+        name="license_map_gap",
+        dimensions={
+            "license_raw": Dimension(expr=lambda t: t.license_raw, is_entity=True),
+            "tier": Dimension(expr=lambda t: t.tier),
+            "suggested_spdx": Dimension(expr=lambda t: t.suggested_spdx),
+        },
+        measures={
+            "package_count": Measure(expr=lambda t: t.package_count.sum()),
+        },
+    )
