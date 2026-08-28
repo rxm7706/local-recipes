@@ -863,6 +863,162 @@ def test_standing_false_positives_suppress_via_grammar(
     assert findings[0].evidence == {"audited": 1}
 
 
+# --- The branch-name fallback (mirrors marshal's own promotion.py) ---------
+#
+# Live 2026-08-28: doctor's story-status Routes 2/3 never tried the
+# `land/<station>-<epic>-<seq>` / `bmad-loop/<run>/<key>` branch-name
+# grammars when a GitHub PR merge subject's branch didn't carry a
+# station-prefixed segment -- marshal's own `promotion.py::_classify_merge_
+# subject` already had this fallback; doctor's port never picked it up.
+# Confirmed to have produced a false-positive FAIL for all 25 genuinely-
+# landed stories audited that session.
+
+
+def test_land_branch_wrapped_in_a_github_pr_subject_suppresses_the_false_green(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(
+        target,
+        "Merge pull request #395 from rxm7706/land/doctor-6-9-ledger",
+    )
+    _write_feed(target, "doctor", ["6-9-the-scripts-shims-retire"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
+        {"6-9-the-scripts-shims-retire": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_bmadloop_branch_wrapped_in_a_github_pr_subject_suppresses_the_false_green(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(
+        target,
+        "Merge pull request #602 from rxm7706/bmad-loop/20260811-190409-5c73/8-2-region-parser",
+    )
+    _write_feed(target, "marshal", ["8-2-region-parser"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "marshal", "run1",
+        {"8-2-region-parser": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_an_unrelated_pr_branch_does_not_suppress(tmp_path: Path) -> None:
+    """The fallback still requires a REAL branch-name grammar match -- a
+    ``maintenance/`` branch (not shaped like ``land/<station>-<epic>-<seq>``
+    or ``bmad-loop/<run>/<key>``) must not launder every open story. The
+    branch is deliberately key-free so Route 4 (loose co-occurrence) cannot
+    fire either -- this isolates the branch-name fallback specifically."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(
+        target,
+        "Merge pull request #543 from rxm7706/maintenance/doctor-ledger-sync",
+    )
+    _write_feed(target, "doctor", ["11-1-due-for-verification"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
+        {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+
+
+# --- Route 4: loose station+key co-occurrence, last resort -----------------
+
+
+def test_loose_co_occurrence_suppresses_a_hand_authored_landing_commit(
+    tmp_path: Path,
+) -> None:
+    """Real shape, confirmed live 2026-08-28 (doctor 11-1's actual landing
+    commit): no anchored grammar shape matches "<station>: promote story
+    <e>.<s> to done in the tracked ledger", but the station and the exact
+    key genuinely co-occur."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "doctor: promote story 11.1 to done in the tracked ledger")
+    _write_feed(target, "doctor", ["11-1-due-for-verification"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
+        {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_loose_co_occurrence_does_not_confuse_a_longer_key(tmp_path: Path) -> None:
+    """"11.10" must not satisfy key "11-1" -- the digit-boundary guard."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "doctor: promote story 11.10 to done in the tracked ledger")
+    _write_feed(target, "doctor", ["11-1-due-for-verification"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
+        {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+
+
+def test_loose_co_occurrence_requires_the_station_too(tmp_path: Path) -> None:
+    """The key alone, without the station word, must not suppress -- a
+    neighbouring station's commit mentioning the same numeric key must not
+    launder this one."""
+    target = tmp_path / "target"
+    target.mkdir()
+    _init_repo(target)
+    _commit(target, "marshal: promote story 11.1 to done in the tracked ledger")
+    _write_feed(target, "doctor", ["11-1-due-for-verification"])
+
+    loop_root = tmp_path / "loop_root"
+    _write_state(
+        loop_root, "doctor", "run1",
+        {"11-1-due-for-verification": {"phase": "deferred", "commit_sha": None}},
+    )
+
+    findings = marshal.gather_story_status(target, loop_root=loop_root)
+
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+
+
 # --- The documented loop_root default --------------------------------------
 
 

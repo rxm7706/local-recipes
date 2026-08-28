@@ -73,6 +73,26 @@ landings by hand with `git log --all --grep` while one tool re-flags what anothe
     patches (its honest "UNCONFIRMED, not proof it never landed" wording at `core/status.py:
     836-861` retained); `marshal retire` proposes real retirements again on the live tree, where
     recovered branches are demonstrably merged.
+- **CAP-4** *(added 2026-08-28 — motivated by a live fleet-wide hygiene sweep that found 25
+  standing `story-status` FAILs across doctor/marshal/mason/steward, all independently confirmed
+  genuinely-landed via `git merge-base --is-ancestor`)*
+  - **intent:** Story 20.9's own doctor-side adoption of the grammar was incomplete in two ways,
+    both closed here without touching the grammar itself: (a) `sources/marshal.py`'s Routes 2/3
+    never tried `classify_branch_name`'s `land/<station>-<epic>-<seq>` / `bmad-loop/<run>/<key>`
+    branch-name grammars when a captured GitHub-PR branch didn't carry a station/dispatch prefix
+    — `core/promotion.py::_classify_merge_subject` (CAP-3's own implementation) already had this
+    exact fallback; doctor's port never picked it up. (b) A residual class of real, hand-authored
+    landing commits (`"<station>: promote story <e>.<s> to done..."`,
+    `"land <station> <e1>.<s1>+<e2>.<s2> (N stories): ..."`, etc.) matches no anchored grammar
+    shape at all and never will — scoped to doctor's own advisory detector only (never the shared
+    grammar, never anything marshal's actual gating logic reads), a fourth, deliberately loose
+    "station + exact numeric key co-occur anywhere" route closes this without loosening any
+    safety-critical consumer.
+  - **success:** All 25 standing false positives (doctor 6 stories, marshal 10, mason 7, steward 2
+    — see this capability's own story for the full list) go green with no per-story whitelist,
+    same bar CAP-2 itself set; a genuinely-unlanded story (wrong station, or a longer numeric key
+    like "11.10" for a "11-1" search) still fails exactly as today, pinned by dedicated negative
+    tests; zero changes to `pyforge.core.landing_evidence` or `pyforge.marshal.core.promotion`.
 
 ## Constraints
 

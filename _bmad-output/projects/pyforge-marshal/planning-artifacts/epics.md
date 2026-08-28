@@ -3310,6 +3310,21 @@ consume the same grammar: the UNCONFIRMED pile shrinks from 26 to genuinely-unla
 (the honest "UNCONFIRMED, not proof it never landed" wording retained), and `retire` proposes
 real retirements again where recovered branches are demonstrably merged.
 
+### Story 20.11: Doctor's own adoption gap closes — the branch-name fallback and a loose last resort
+**Type:** bug • **Effort:** S • **Deps:** S-20.9, S-20.10 • **FR/AD:** FR-191 (spec-landing-evidence-grammar, CAP-4)
+**Surface:** `pyforge-doctor` `sources/marshal.py` (`_keys_from_merge_subjects`, `_keys_from_main_commits`, two new local helpers), `tests/unit/test_sources_marshal_story_status.py`
+**Note:** found live 2026-08-28 during a fleet-wide hygiene sweep: `story-status-check` FAILed 25
+stories (doctor 6, marshal 10, mason 7, steward 2), every one independently confirmed genuinely
+landed via `git merge-base --is-ancestor`. Root causes, both closed here: (a) doctor's Routes 2/3
+never tried `classify_branch_name`'s `land/`/`bmad-loop/` branch-name fallback that marshal's own
+`core/promotion.py::_classify_merge_subject` (Story 20.10) already has; (b) a real, irreducible
+tail of hand-authored landing-commit phrasings matches no anchored grammar shape and never will.
+**Given** the live repo **Then** all 25 standing false positives go green with no per-story
+whitelist, a genuinely-unlanded story (wrong station, or a longer numeric key colliding with a
+shorter one, e.g. "11.10" vs "11-1") still fails exactly as today, and neither
+`pyforge.core.landing_evidence` nor `pyforge.marshal.core.promotion` changes — the fix is entirely
+local to doctor's own port, scoped to an advisory finding.
+
 ## Epic 21: The planning chain regenerates itself, and audits whether it's coherent
 
 **Goal:** FR-192 (the second, full decomposition — completes FR-148..152's Epic 17
