@@ -2,17 +2,98 @@
 title: 'Story 20.5: Port the remaining nineteen Vizro pages (CAP-7)'
 type: 'feature'
 created: '2026-08-27'
-status: 'ready'
-updated: '2026-08-27'
-baseline_revision: 'cc8b3b2b1c09d6e56a5aebf752e25f507c846571'
+status: 'done'
+updated: '2026-08-28'
+baseline_revision: '3d8bc8250af65370dad0a8fdfbb345fa6e0d44aa'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached
+      per-invocation result via the same honest-empty BSL seam as every other shell page,
+      but do NOT wire an actual in-dashboard submit control that triggers a new scan (a
+      Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md /
+      EXPERIENCE.md describe an upload/path input as the primary interaction; building that
+      live-invocation wiring is a materially larger, separate engineering effort (a new
+      execution plane from Dash into the CLI layer) than porting a page against an existing
+      BSL model, and no precedent for a Dash-triggered subprocess exists anywhere in this
+      dashboard today.
+    evidence: >-
+      dashboard/data.py::load_scan_project / load_env_inspect docstrings state this
+      explicitly; PageDef notes for both pages in app.py carry the same "forward-looking
+      work, not wired here" language, mirroring DESIGN.md's own precedent for add-handoff /
+      library-futures' deferred multi-agent claim/lock coordination.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_scan_project,
+      load_env_inspect); dashboard/app.py PAGE_INVENTORY notes for scan-project/env-inspect
+    severity: medium
+  - summary: >-
+      The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing
+      accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select
+      control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"`
+      landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro
+      doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"`
+      landmark. Native `<a href>` links + heading elements remain genuinely, independently
+      navigable regardless, so the check does not fail on this, but the gap is real and
+      documented rather than asserted away.
+    evidence: >-
+      tests/dashboard/test_dashboard_e2e.py::test_dashboard_28_pages_semantic_nav_and_aria
+      docstring records exactly this; confirmed by hand against Playwright-captured DOM
+      dumps of the rendered dashboard (`page.locator("nav").count()` == 1, matching only the
+      empty top navbar; `role="navigation"`/`role="main"` counts == 0).
+    location: >-
+      src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py;
+      deferred-work-ledger.md DW-D2-3 resolution
+    severity: low
+  - summary: >-
+      A handful of DESIGN.md's per-page measures are genuinely multi-signal composite
+      scores computed by algorithms that need row-to-row comparison or set operations over
+      the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's
+      own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x
+      recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without
+      reimplementing a substantial search algorithm in SQL. These are modeled as
+      PRE-COMPUTED passthrough measures (like the existing downloads_total/downloads_30d
+      precedent) rather than re-derived BSL formulas; the actual computation is expected to
+      live in a future Kedro pipeline node that materializes the composite score as a
+      catalog column, matching DESIGN.md's own "Source dataset: Phase E keywords + Phase J
+      dependency similarity (TF-IDF)" framing (a pipeline output, not a CLI-side formula).
+      Two genuinely portable classifiers (release-cadence's trend_label,
+      distribution-breakdown's python-version bump-safety status) WERE ported verbatim from
+      their legacy CLI scripts with full provenance records, per existing repo convention.
+    evidence: >-
+      semantic/models.py::build_alternative_candidates_model docstring states this
+      explicitly; semantic/metrics.py's 2 new provenance entries (release_trend_label,
+      python_min_bump_status) cite their legacy_source verbatim.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py
+      (build_alternative_candidates_model and the other "BSL model (NEW)" composite-score
+      pages: mapping-gap match_confidence, universe-sbom with_vulns_count, the 3 FR-9
+      report-artifact scores, the 4 seed-gap-suggester package-impact/usage counts)
+    severity: low
+  - summary: >-
+      test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in
+      THIS worktree, verified pre-existing (identical failure on baseline main HEAD via
+      `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3
+      `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`,
+      which is absent in a fresh worktree/checkout (only the main checkout's local runtime
+      state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: grep
+      confirms `dashboard-dryrun` is not wired into any `.github/workflows/` job.
+    evidence: >-
+      `git stash` + re-running the single test reproduces the identical AssertionError on
+      unmodified main HEAD; `ls
+      _bmad-output/projects/pyforge-atlas/implementation-artifacts/` in this worktree shows
+      only `epic-20-context.md`, no `sprint-status.yaml`, while the sibling main checkout has
+      one (dated 2026-08-26, from prior session state never synced to this worktree, by
+      design -- gitignored Tier-3).
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py
+      (_default_paths); tests/dashboard/test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status
+    severity: low
 ---
 
 <intent-contract>

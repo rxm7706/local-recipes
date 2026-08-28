@@ -12,6 +12,7 @@ import re
 from playwright.sync_api import sync_playwright, expect
 import pytest
 
+from pyforge.atlas.dashboard import app
 from pyforge.atlas.dashboard.app import build_dashboard
 from vizro import Vizro
 
@@ -147,6 +148,73 @@ def test_dashboard_e2e_navigation_and_rendering(dashboard_server):
         
         grid_st = page.locator("#staleness-report--grid")
         expect(grid_st).to_be_visible()
-        
+
         # 7. Close browser
+        browser.close()
+
+
+def test_dashboard_28_pages_semantic_nav_and_aria(dashboard_server):
+    """DW-D2-3 residual (Story 20.5): the §2.1 semantic-HTML/ARIA browser-agent
+    navigation check — a browser-agent must be able to enumerate every one of the
+    28 pages via real, accessible-name-bearing anchors and land on a deterministic,
+    agent-legible heading + content region for each, with NO client-side error.
+
+    What this asserts as REAL (verified against the rendered DOM, never assumed):
+      * exactly 28 real ``<a href>`` navigation links exist (one per
+        ``PAGE_INVENTORY`` entry, in its deterministic order) — genuine semantic
+        HTML anchors, not JS-only click handlers a scraper/browser-agent could miss;
+      * each link's accessible name (its text content) equals that page's title
+        EXACTLY — the accessible name IS the page identity, never generic
+        boilerplate ("Page 1", "Link") a browser-agent would have to guess at;
+      * the accordion toggle exposes real ARIA state (``aria-expanded``) — the one
+        genuinely interactive nav control on this page;
+      * navigating to EVERY page (not just the 3 the rest of this file drives) by
+        its own href renders a deterministic ``<h2 id="page-title">`` matching that
+        page's title, and the page's own legibility Card/stamp Card is present.
+
+    What this deliberately does NOT assert (a real, documented gap, not silently
+    papered over per the ARIA_CHECK_FAILS edge case's "surfaced, never swallowed"
+    contract): Vizro's shipped page-select control is a ``<div>``-based accordion,
+    not a native ``<nav>``/``role="navigation"`` landmark, and page content sits in
+    a plain ``<div>``, not a ``<main>``/``role="main"`` landmark. That is a
+    pre-existing Vizro/dash-bootstrap-components framework limitation outside a
+    single recipe-dashboard-pages story's surgical-change scope (patching Vizro's
+    own component templates is a framework-level change, not a page port) —
+    recorded as a residual in the deferred-work-ledger, not asserted away here.
+    """
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(dashboard_server)
+
+        # -- the nav accordion carries real ARIA state on its one interactive control --
+        toggle = page.locator("#nav-panel button.accordion-button")
+        expect(toggle).to_have_attribute("aria-expanded", "true")
+
+        # -- every page has a real, accessible-name-bearing anchor, in deterministic order --
+        links = page.locator("#nav-panel a.accordion-item-link")
+        expect(links).to_have_count(len(app.PAGE_INVENTORY))
+        got = [
+            (links.nth(i).get_attribute("href"), links.nth(i).inner_text())
+            for i in range(len(app.PAGE_INVENTORY))
+        ]
+        expected = [
+            ("/" if i == 0 else f"/{pd.id}", pd.title)
+            for i, pd in enumerate(app.PAGE_INVENTORY)
+        ]
+        assert got == expected, f"nav link href/accessible-name mismatch: {got} != {expected}"
+
+        # -- every page is independently reachable + renders a deterministic heading --
+        for pd in app.PAGE_INVENTORY:
+            path = "/" if pd is app.PAGE_INVENTORY[0] else f"/{pd.id}"
+            page.goto(f"{dashboard_server}{path}")
+            heading = page.locator("h2#page-title")
+            expect(heading).to_contain_text(pd.title)
+            content_id = f"{pd.id}--stamp" if pd.kind == "factory" else f"{pd.id}--about"
+            expect(page.locator(f"#{content_id}")).to_be_visible()
+            # no Dash client-side error overlay leaked onto the rendered page.
+            assert page.locator("._dash-error-menu, #_dash-global-error-container .dash-fe-error__title").count() == 0, (
+                f"page {pd.id} raised a client-side error"
+            )
+
         browser.close()

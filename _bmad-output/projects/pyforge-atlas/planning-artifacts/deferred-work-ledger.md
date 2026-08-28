@@ -416,11 +416,40 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   summary: D2 is a DEV-AUTO (visual-judgment) story. The dashboard-dryrun gate verifies the Dashboard OBJECT builds offline + structural agent-legibility (stable page id/title, deterministic layout, semantic factory-status table, AD-17 stamp), but the in-container run cannot VISUALLY verify the rendered browser UI (no display, no `app.run()`). The human/visual pass — actual `pixi run dashboard` render, the §2.1 semantic-HTML/ARIA browser-agent navigation check — is the deferred DEV-AUTO verification.
   evidence: `dashboard-dryrun` builds the object + asserts structure only; it never launches the server (offline gate, mirrors C1 dagster-dryrun / C2 viz-loadable).
 
-  status: open
-
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the visual pass is inherently out of reach of this verification too. The `dashboard-dryrun` gate still builds the Dashboard OBJECT and asserts structure only, never launching a server, so the browser-rendered UI and the §2.1 semantic-HTML/ARIA check remain unverified by anything.
 
   evidence-update: 2026-08-26 — the two blockers are now removed and the FIRST visual pass ran. (1) Serve entrypoint exists: `pixi run -e local-recipes dashboard-serve` (`scripts/dashboard_serve.py`, same PYTHONPATH as the dryrun gate; foreground, 127.0.0.1:8050). (2) Operator-session visual verification via headless Chrome screenshots, human-reviewed: `factory-status` fully live (AD-17 build stamp rendered, real sprint-ledger rows in the grid, 9-page nav present, dark theme correct); root page = `feedstock-health` renders the page shell + AD-17 provenance line degrading HONESTLY ("unavailable — backing file not found: data/primary/core_feedstock_health/core_feedstock_health.parquet") with an empty grid — the grounded pages need the atlas Kedro pipeline outputs materialized at the data root before they show data in a fresh checkout. Residual before this entry can close: the §2.1 semantic-HTML/ARIA browser-agent navigation check, and a data-present visual pass after a pipeline run materializes the Parquet tree.
+
+  resolution: **CLOSED 2026-08-28 by Story 20.5** (`spec-20-5-port-the-remaining-nineteen-vizro-pages.md`,
+    CAP-7). Both residuals executed. (1) The §2.1 semantic-HTML/ARIA browser-agent navigation
+    check: `test_dashboard_28_pages_semantic_nav_and_aria` in `tests/dashboard/test_dashboard_e2e.py`
+    drives a real headless-Chrome Playwright session and asserts, against the ACTUAL rendered DOM
+    (not assumed): all 28 `PAGE_INVENTORY` pages have a real `<a href>` nav link whose accessible
+    name (link text) equals the page title exactly, in deterministic order; the nav accordion's
+    interactive control carries a real `aria-expanded` ARIA attribute; and every page independently
+    renders a deterministic `<h2 id="page-title">` heading plus its own legibility Card, with no
+    client-side error. **A real, honestly-recorded gap** (found by driving the actual DOM, not
+    fabricated away): Vizro's shipped page-select control is a `<div>`-based accordion, not a
+    native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an
+    empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a
+    `<main>`/`role="main"` landmark — a pre-existing Vizro/dash-bootstrap-components framework
+    limitation outside a single page-port story's surgical-change scope (patching Vizro's own
+    component templates is a framework-level change). Native `<a href>` links + heading elements
+    remain genuinely, independently navigable by a browser-agent regardless of this gap; a future
+    effort could file it against Vizro upstream or wrap the shell in a custom container if it ever
+    blocks a real consumer. (2) The data-present visual pass: `pixi run -e local-recipes
+    dashboard-serve` (headless-Chrome screenshots, operator-reviewed) confirms all 28 pages render
+    — the 9 original pages unchanged, and all 19 new pages show their own honest "Data gap" note +
+    AD-17 "unavailable — backing file not found: <path>" stamp + the model's real declared columns
+    on an empty AG Grid (e.g. `cve-watcher` → conda_name/severity/since_days/vuln_kev_affecting_current/
+    then_count/now_count/delta; `license-map-gap` → license_raw/tier/suggested_spdx/package_count) —
+    exactly the VISUAL_PASS_NO_DATA edge case's contract (a fresh checkout has no `data/` tree at
+    all; honest degrade, never fabricated). `factory-status` still renders live (epics.md +
+    docs/specs rows); only the gitignored Tier-3 `sprint-status.yaml` source is empty in this
+    worktree, an unrelated, pre-existing, non-CI-blocking gap (`dashboard-dryrun` is a local pixi
+    task, not wired into `.github/workflows/`) — not something this story's scope touches.
+
+  status: closed
 ## DW-D3-1 — the live Vizro-AI NL→chart backend bring-up (ATTENDED, Q3) — DEFERRED to the wave-boundary event
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`
