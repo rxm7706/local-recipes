@@ -171,6 +171,26 @@ mode beside `spin`, never a replacement.**
     dispatch --fleet` or `marshal drain`) and the eight-station 2026-08-22/23 hand ritual
     replays without session discipline; interim acceptance oracle is
     `fleet-drain-playbook.md` + `.cursor/pyforge-fleet-drain/` until the verb ships.
+- **CAP-9** *(added 2026-08-28 — motivated by three live dispatches (mason 12.7, atlas
+  20.5, mason 12.8) in one fleet-drain session, each observed journaling a `completed`
+  verdict ~2 seconds after launch, before any real work happened)*
+  - **intent:** CAP-2's `branch_merged` git fact is never true on ancestry alone.
+    `is_branch_merged` shells `git merge-base --is-ancestor branch into`, which answers
+    "yes" the instant a dispatch branch is forked from `into`'s own current tip — true of
+    every fresh dispatch at launch, before any commit exists, and not evidence of
+    anything having been merged. `gather_dispatch_git_facts` must gate that ancestry
+    answer on the branch having actually diverged from its own launch
+    `baseline_head_sha` before treating it as completion evidence.
+  - **success:** A dispatch's `branch_merged` fact reads `false` for as long as
+    `current_head_sha == baseline_head_sha`, regardless of what `is_branch_merged`
+    answers — closing the false-positive that otherwise poisons
+    `resolve_dispatch_session_verdict`'s journal short-circuit
+    (`completion_verdict in {COMPLETED, FAILED}`) for the run's entire lifetime, making
+    `marshal factory dispatch-resume`/`dispatch-attach` permanently unable to recover a
+    dead supervisor even while the dispatched session is genuinely still alive and
+    working. Once the branch carries real commits past baseline, a genuine "merged"
+    ancestry answer is trusted exactly as before (CAP-2 is otherwise unchanged) — this is
+    a divergence guard, not a rewrite of the ancestry check itself.
 
 ## Constraints
 
@@ -266,6 +286,7 @@ shipped; CAP-7 is now decomposed but not implemented.
 | CAP-6 (run survives its operator; journal carries the timing signal) | Story 22.6 — `22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal` | done |
 | CAP-7 (fleet-wide drain as a marshal-orchestrated mode) | Story 22.7 — `22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode` (minted this pass; previously uncovered — Epic 22's goal decomposed CAP-1..6 only, with CAP-7 named merely as the acceptance oracle) | backlog |
 | CAP-8 (profile-driven, adapter-plural session harness; one preference, both engines) | Story 22.8 — `22-8-the-session-harness-is-profile-driven-across-agent-clis` (CAP added 2026-08-27 after the live cursor-auth dispatch failure; decomposed and implemented same day) | done |
+| CAP-9 (`branch_merged` never trusts ancestry alone; requires real divergence past baseline) | Story 22.10 — `22-10-branch-merged-requires-real-divergence-not-just-ancestry` (CAP added 2026-08-28 after three live dispatches each journaled a false `completed` verdict ~2s post-launch, independently confirmed 20 of 26 real dispatch runs affected; decomposed, reviewed (2 layers, 1 medium patch + 2 low defers, 0 rejected), and landed same day; note the gap in Story 22.9, which never got a decomposition-record row here either) | done |
 
 Shipped-surface evidence for CAP-1..6: `marshal factory dispatch` /
 `dispatch-attach` / `dispatch-resume` (PRD § 18.3), `pyforge.marshal.dispatch_supervisor`,

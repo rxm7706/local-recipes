@@ -226,11 +226,20 @@ def gather_dispatch_git_facts(
         story_key=story_key,
         worktree=worktree,
     )
-    branch_merged = (
+    # `is_branch_merged` shells `git merge-base --is-ancestor branch into`,
+    # which is trivially true the instant a dispatch branch is forked from
+    # `into`'s current tip -- a freshly-provisioned branch with ZERO new
+    # commits IS already "an ancestor of main" (it literally is main's tip),
+    # which is not evidence anything was merged, only that nothing has
+    # happened yet. Ask the question regardless (existing branch-derivation
+    # callers rely on the ask itself), but only trust a "yes" once the
+    # branch has actually diverged from its own launch baseline.
+    raw_branch_merged = (
         vcs.is_branch_merged(repo_root, resolution.resolved, into=_MERGE_INTO)
         if resolution.resolved is not None
         else False
     )
+    branch_merged = raw_branch_merged and current_head_sha != baseline_head_sha
     subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
     merged_keys = promotion_core.merged_story_keys(
         subjects, merge_subject_template, project_slug
