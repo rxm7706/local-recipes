@@ -461,3 +461,36 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   close_when: steward S-32.1 done; doctor S-17.1 done (gather/prescribe plugins; findings not a second PR gate); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+### DW-FU-17-1: Live hygiene true-positive test fails because the cited herald fixture is now referenced by spec-9-2; not caused by 17.1.
+
+- source_spec: `planning-artifacts/specs/spec-17-1-extract-gather-prescribe-source-plugins.md`
+  summary: Live hygiene true-positive test fails because the cited herald fixture is now referenced by spec-9-2; not caused by 17.1.
+  evidence: pyforge-doctor-test: test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warden_station asserts the fixture is unreferenced; spec-9-2 now names it. Unrelated to hooks.py / diagnose plugin wiring.
+  location: src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py
+  origin: spec-deferred e13fc6bf3d85 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-2: Existing doctor check 5s budget test flakes on cold worktree starts and is not caused by this portal slice.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-first-portal-slice-fleet-pulse.md`
+  summary: Existing doctor check 5s budget test flakes on cold worktree starts and is not caused by this portal slice.
+  evidence: Full suite 1287 passed + 1 skipped + 1 failed on test_doctor_check_completes_within_the_five_second_budget (7.8s / 15.9s). Story 18.1 recorded the same flake. New 18.2 tests 7/7 passed.
+  location: src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py
+  origin: spec-deferred 2bb5888a6493 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-8-5: The normalized-summary exemption could in principle mask two genuinely distinct findings that happen to share byte-identical normalized `summary:` text.
+
+- source_spec: `planning-artifacts/specs/spec-8-5-the-detector-recognizes-content-that-already-reached-the-ledger-by-another-path.md`
+  summary: The normalized-summary exemption could in principle mask two genuinely distinct findings that happen to share byte-identical normalized `summary:` text.
+  evidence: Review-pass finding (2026-08-28): acknowledged as the same accepted tradeoff the write- side `deferred_work_promote.py` guard it mirrors already makes -- confirmed byte-identical `_normalize_summary` logic between the two files. Not a new defect this story introduces; full fuzzy/near-duplicate matching is explicitly out of scope, same rationale as the original write-side guard.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py (_tier3_entry_already_promoted)
+  origin: spec-deferred c7670f9c0848 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

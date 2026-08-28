@@ -74,6 +74,7 @@ development_status:
   8-2-minting-picks-the-next-free-suffix-per-station-convention: done
   8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision: done
   8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op: done
+  8-5-the-detector-recognizes-content-that-already-reached-the-ledger-by-another-path: done
   9-1-the-five-hygiene-finding-classes-get-testable-definitions: done
   9-2-the-sweep-runs-against-all-eight-stations: done
   9-3-hygiene-findings-report-and-never-mutate: done
