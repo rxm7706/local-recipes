@@ -101,6 +101,122 @@ def test_promoted_id_reports_no_finding(tmp_path: Path) -> None:
     assert not any(f.check == "tier3-only-deferral" for f in findings)
 
 
+# --- Content-comparison exemption (2026-08-28) ----------------------------------
+#
+# Live finding: a Tier-3 entry already reached the tracked ledger by some OTHER
+# path (a prior promotion run, a hand-edit) under a DIFFERENT, independently-
+# minted id -- an id-only comparison (above) wrongly reports it as missing.
+# Two independent signals, mirroring `deferred_work_promote.py`'s own write-side
+# collision guard and `frontmatter_deferral_in_tracked`'s own needle search.
+
+
+def test_tier3_only_id_with_matching_summary_in_tracked_reports_nothing(
+    tmp_path: Path,
+) -> None:
+    """Real shape, confirmed live (pyforge-atlas Tier-3 line 7 vs. its own
+    tracked ``DW-A1-6``): a Tier-3 entry's normalized summary already exists
+    in the tracked ledger under a completely different id."""
+    _write_tier3(
+        tmp_path, "proj",
+        "## DW-1\n- source_spec: `x`\n  summary: The workstation re-lock is blocked.\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-A1-6\nstatus: open\n- source_spec: `x`\n"
+        "  summary: The workstation re-lock is blocked.\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "tier3-only-deferral" for f in findings), findings
+
+
+def test_tier3_only_id_with_a_different_summary_still_reports_fail(
+    tmp_path: Path,
+) -> None:
+    """The exemption requires a REAL content match -- a merely-present
+    ``summary:`` field on both sides, with genuinely different text, must
+    not launder every unpromoted entry."""
+    _write_tier3(
+        tmp_path, "proj",
+        "## DW-1\n- source_spec: `x`\n  summary: A completely different finding.\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-A1-6\nstatus: open\n- source_spec: `x`\n"
+        "  summary: The workstation re-lock is blocked.\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "tier3-only-deferral" for f in findings), findings
+
+
+def test_tier3_only_id_with_matching_origin_fingerprint_reports_nothing(
+    tmp_path: Path,
+) -> None:
+    """Real shape, confirmed live (pyforge-atlas's own ``DW-10``): a bmad-loop
+    harvest-damping entry carries no ``summary:`` field at all (so the check
+    above can never fire for it), only an ``origin: spec-deferred
+    <fingerprint>`` marker -- already present in the tracked ledger, promoted
+    via the spec-frontmatter path under a different id entirely."""
+    _write_tier3(
+        tmp_path, "proj",
+        "## DW-10\n- source_spec: `x`\n  origin: spec-deferred 8b4c28559f93\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-FU-17-2\nstatus: open\n- source_spec: `x`\n"
+        "  origin: spec-deferred 8b4c28559f93 -- ingested from spec frontmatter\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "tier3-only-deferral" for f in findings), findings
+
+
+def test_tier3_only_id_with_a_different_fingerprint_still_reports_fail(
+    tmp_path: Path,
+) -> None:
+    """A different fingerprint (a different harvested spec-frontmatter
+    finding) must not exempt an unrelated entry."""
+    _write_tier3(
+        tmp_path, "proj",
+        "## DW-10\n- source_spec: `x`\n  origin: spec-deferred 8b4c28559f93\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-FU-17-2\nstatus: open\n- source_spec: `x`\n"
+        "  origin: spec-deferred aaaaaaaaaaaa -- ingested from spec frontmatter\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "tier3-only-deferral" for f in findings), findings
+
+
+def test_anonymous_tier3_entry_with_matching_summary_reports_nothing(
+    tmp_path: Path,
+) -> None:
+    """The same content-comparison exemption applies on the
+    ``tier3-entry-unidentified`` (anonymous/orphan) path, not just
+    ``tier3-only-deferral`` -- the two checks share one helper."""
+    _write_baseline(tmp_path, {"proj": 0})
+    _write_tier3(
+        tmp_path, "proj",
+        "- source_spec: `x`\n  summary: The workstation re-lock is blocked.\n",
+    )
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-A1-6\nstatus: open\n- source_spec: `x`\n"
+        "  summary: The workstation re-lock is blocked.\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "tier3-entry-unidentified" for f in findings), findings
+
+
 # --- No tracked ledger at all (substantive Tier-3) ------------------------------
 
 
