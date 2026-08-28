@@ -250,10 +250,30 @@ slices:
                           # front of live traffic. Story 12.3 (2026-08-28) flipped `equivalence`
                           # off "green" to "stale" -- see that field's own note below.
     equivalence: "stale"  # Story 12.3 (2026-08-28): flipped off "green" -- the real audit tool
-                          # now backs this, and it found real drift. Clauses 1-4 still hold as
-                          # Story 6.3 last verified them (re-verification of the pytest suites was
-                          # not re-run by this story; see their own history below for what was
-                          # last confirmed). Clause 5 (skf-audit-skill reports zero drift) is NO
+                          # now backs this, and it found real drift. CORRECTION (same-day review
+                          # pass): this comment's first draft claimed "Clauses 1-4 still hold as
+                          # Story 6.3 last verified them" -- FALSE, caught by independent review,
+                          # not by this pass. Re-running
+                          # `.claude/skills/conda-forge-expert/tests/integration/
+                          # test_slice1_equivalence.py -m slow` (2026-08-28) shows Clause 4 now
+                          # FAILS: `test_help_output_identical[github_updater.py]` -- 5 passed, 1
+                          # failed (was 6/6 passing at Story 6.3's landing) -- same root cause as
+                          # Clause 5's finding below (compiled github_updater.py's `--help` output
+                          # omits `--head`, since the flag doesn't exist in the compiled copy).
+                          # Clauses 1-3 were NOT re-run by this story and their status is
+                          # therefore last-confirmed-as-of-Story-6.3, not re-verified now -- Story
+                          # 6.3's own record (commit 440a918398, this file, pre-12.3): Clauses 1-2
+                          # (brief cites the gotchas; package compiled with scripts byte-identical)
+                          # were re-verified via sha256 for all 5 scripts (recipe-generator.py,
+                          # name_resolver.py, github_updater.py, _cfy_template.py,
+                          # github_version_checker.py) -- note github_updater.py's sha256 match is
+                          # now STALE per Clause 5's finding below, so Clause 2's byte-identical
+                          # claim for that one script no longer holds either, only the OTHER 4.
+                          # Clause 3 (all 60 existing regression tests pass unmodified): 60/60
+                          # passed against the compiled replacement's scripts as of Story 6.3,
+                          # incl. test_github_updater.py::test_dry_run_live_against_actionlint --
+                          # not re-run by this story, status as of 2026-08-21 only. Clause 5
+                          # (skf-audit-skill reports zero drift) is NO
                           # LONGER a sha256 substitute -- Story 12.3 ran `skf-setup` in this
                           # worktree (forge-tier.yaml + preferences.yaml now exist; tier Quick --
                           # no ast-grep/qmd/ccc), then drove skf-audit-skill's own real
@@ -330,7 +350,7 @@ slices:
       mcp_tools: 3
     mason_caller: true
     mason_caller_count: 2   # of 10 _CFE_SCRIPTS adapters (generate_recipe, update_recipe_from_github) -- structured, not just a comment
-    next_action: "Story 12.3 (2026-08-28) ran the real skf-audit-skill machinery and confirmed, quantified, and dated exactly the gap this next_action previously only predicted: `scripts/github_updater.py`'s compiled copy is missing CFE v8.84.0's HEAD-advance feature (update_recipe_head/_fetch_default_branch_head/--head CLI flag; SIGNIFICANT drift, 2 MEDIUM + 1 LOW, 0 CRITICAL/HIGH -- see equivalence's own note and forge-data/cfe-recipe-generation/1.0.0/drift-report-20260828-073026.md). REMAINING WORK before slice 1 can honestly return to equivalence: green: port those ~158 lines from the live source into the compiled package's github_updater.py (same pattern as Story 6.3's github_version_checker.py port), sha256-verify, then re-run test_slice1_equivalence.py + test_github_updater.py + a fresh skf-audit-skill pass to confirm zero drift for real. CAP-4's re-scope gate (Story 6.4, 2026-08-21) still records decision: adjust with its four pre-conditions gating slice 2's brief -- pre-condition (b) (setup-forge run in the audit worktree) is now satisfied by this story; the other three (CI enforcement, slice-2 cross-slice re-derivation, SPEC.md Open Question 1) are unaffected by this story and remain open. Do not re-run skf-brief-skill/skf-create-skill from scratch -- the compiled package at .claude/skills/cfe-recipe-generation/ is real and current; only github_updater.py needs a targeted re-port."
+    next_action: "Story 12.3 (2026-08-28) ran the real skf-audit-skill machinery and confirmed, quantified, and dated exactly the gap this next_action previously only predicted: `scripts/github_updater.py`'s compiled copy is missing CFE v8.84.0's HEAD-advance feature (update_recipe_head/_fetch_default_branch_head/--head CLI flag; SIGNIFICANT drift, 2 MEDIUM + 1 LOW, 0 CRITICAL/HIGH -- see equivalence's own note and forge-data/cfe-recipe-generation/1.0.0/drift-report-20260828-073026.md). REMAINING WORK before slice 1 can honestly return to equivalence: green: port those ~158 lines from the live source into the compiled package's github_updater.py (same pattern as Story 6.3's github_version_checker.py port), sha256-verify, then re-run test_slice1_equivalence.py + test_github_updater.py + a fresh skf-audit-skill pass to confirm zero drift for real. CAP-4's re-scope gate (Story 6.4, 2026-08-21) still records decision: adjust with its four pre-conditions gating slice 2's brief -- pre-condition (b) (setup-forge run in the audit worktree) is now satisfied by this story, SCOPED TO THIS WORKTREE ONLY: `_bmad/_memory/forger-sidecar/forge-tier.yaml` is gitignored, per-worktree state (confirmed .gitignore:805) -- it does not carry forward to a future worktree. Whichever worktree runs Story 12.7 (slice 2's real, non-substitute skf-audit-skill pass) will need `skf-setup` re-run from scratch there before skf-audit-skill can proceed past its own forge-tier-missing halt, exactly as this story had to. The other three pre-conditions (CI enforcement, slice-2 cross-slice re-derivation, SPEC.md Open Question 1) are unaffected by this story and remain open. Do not re-run skf-brief-skill/skf-create-skill from scratch -- the compiled package at .claude/skills/cfe-recipe-generation/ is real and current; only github_updater.py needs a targeted re-port."
 
   - id: "slice-2-recipe-lifecycle"
     order: 2

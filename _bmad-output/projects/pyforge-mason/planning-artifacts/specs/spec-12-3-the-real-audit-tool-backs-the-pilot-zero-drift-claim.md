@@ -5,7 +5,7 @@ created: '2026-08-27'
 status: done
 updated: '2026-08-28'
 baseline_revision: 440a9183981350421605dd17b61b8a4fc9d4312d
-final_revision: null
+final_revision: c9b2cdc3a3813753cc5ee444f3d88cb6c9c0a646
 review_loop_iteration: 0
 followup_review_recommended: true
 context:
@@ -14,7 +14,37 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-6-3-pilot-slice-recipe-generation-built-and-parallel-validated.md
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      skf-structural-diff.py has a name-collision/dedup bug: exports sharing the same name
+      (e.g. four scripts each exporting `main`) collapse to one entry in the "added" list.
+    evidence: |-
+      extraction-snapshot.json for this audit lists 73 exports (4 of them named `main`, one
+      per script); structural-diff-result.json's "added" list contains only 70 entries with
+      exactly one `main`, so 3 real export rows were silently dropped. Confirmed by direct
+      inspection of both committed JSON artifacts. Excluded from this story's severity
+      scoring already (the export-level diff was caveated as a baseline artifact), so it did
+      not change the recorded verdict -- but the underlying tool bug is real and will
+      undercount on every future audit of a multi-script skill with duplicate export names.
+    location: >-
+      _bmad/skf/shared/scripts/skf-structural-diff.py (dedup-by-name logic)
+    severity: medium
+  - summary: >-
+      cfe-recipe-generation's metadata.json records a dead doc source (a local filesystem path
+      into a deleted ephemeral worktree), which crashes skf-detect-docs.py instead of failing
+      gracefully.
+    evidence: |-
+      drift-report-20260828-073026.md's own Documentation Drift section: `doc_sources[0].url`
+      is `.../.claude/worktrees/agent-a00a0f6206d94a499/README.md` -- a local path into a
+      worktree that no longer exists, not a fetchable URL. `skf-detect-docs.py compare-hashes`
+      raised `ValueError: unknown url type` on it this run; the doc-drift check was skipped
+      per the workflow's own never-hard-halt rule. Pre-existing data-quality issue from
+      Stories 6.1-6.3's original metadata.json authorship, surfaced incidentally by this
+      story's audit run. Will recur on every future audit of this skill until the
+      doc_sources entry is corrected to a repo-relative path (or removed).
+    location: >-
+      .claude/skills/cfe-recipe-generation/active/cfe-recipe-generation/metadata.json (doc_sources[0].url)
+    severity: medium
 ---
 
 <intent-contract>
@@ -249,3 +279,41 @@ and deserves an independent look before being treated as the template for slice 
 (Story 12.7 names "the REAL skf-audit-skill reports zero drift (no manual substitute this
 time)" — worth confirming slice 2's compile preserves its provenance map so this reconstruction
 pattern does not need to repeat).
+
+## Review Triage Log
+
+### 2026-08-28 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4 (high 1, medium 0, low 3)
+- defer: 2 (high 0, medium 2, low 0)
+- reject: 7
+- addressed_findings:
+  - `[high]` `[patch]` `campaign-state.yaml`'s new "Clauses 1-4 still hold" claim was false —
+    independently re-ran `test_slice1_equivalence.py` and confirmed
+    `test_help_output_identical[github_updater.py]` currently fails, on the exact same root
+    cause (missing `--head`/HEAD-advance) as Clause 5's own audit finding. Rewrote the
+    equivalence comment to state Clause 4's harness is currently failing for that reason,
+    citing the test, instead of asserting it "still holds."
+  - `[low]` `[patch]` The rewritten equivalence comment dropped clause 1-4's specific prior
+    evidence (test counts, script/test file names), replacing it with a vague "see their own
+    history below." Re-cited the specific evidence while fixing the finding above.
+  - `[low]` `[patch]` `final_revision: null` was left on a `status: done` spec — this
+    project's convention (most `done` specs, e.g. spec-6-3, spec-5-5) records the actual
+    closing commit SHA. Set to the implementation commit.
+  - `[low]` `[patch]` `next_action`'s claim that CAP-4 pre-condition (b) is "now satisfied"
+    didn't note the satisfaction is scoped to this worktree's gitignored `forge-tier.yaml` and
+    won't carry to a future worktree (e.g. Story 12.7's). Added the scoping caveat.
+
+Rejected as noise or already resolved by this review pass itself: a claimed `degraded_mode`
+contradiction between the drift report and an improvement-queue finding (resolved — the two
+artifacts describe two different attempts in the same session, per the story's own Tasks &
+Acceptance narrative); `status: done` "contradicting" `followup_review_recommended: true` with
+"no follow-up mechanism" (the mechanism is this workflow's own review pass, running now);
+improvement-queue findings being "at risk of loss" (their substance is already duplicated in
+this tracked spec's Residual risks section); duplicate committed `audit-skill-result-*.json`
+files and the `forge-data/` commit-policy split (both consistent with skf-audit-skill's own
+documented behavior once read in full); "no adversarial review was run" (this review pass is
+that adversarial review); and the story title reading as inaccurate given the drift finding
+(the title describes putting a real tool behind the claim, an outcome the story's own I/O
+matrix explicitly anticipated could surface drift — not a promise of a clean result).
