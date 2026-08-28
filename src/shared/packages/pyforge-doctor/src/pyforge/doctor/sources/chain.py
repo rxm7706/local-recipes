@@ -2815,6 +2815,82 @@ def _load_deferred_work_baseline(
     return data, None
 
 
+def _normalize_summary(summary: str) -> str:
+    """Casefold + collapse-internal-whitespace form of a ``summary:`` value,
+    used ONLY for the duplicate-detection comparison below, never for what
+    gets reported. Duplicated verbatim from ``scripts/deferred_work_
+    promote.py``'s own helper of the same name (that script cannot be
+    imported here -- a repo-level script importing INTO an installed
+    package's read-only source is backwards; this module already
+    duplicates small helpers across exactly this kind of packaging
+    boundary, e.g. ``sources/marshal.py``'s own
+    ``_GITHUB_MERGE_SUBJECT_RE``). Catches a summary lightly reworded or
+    whitespace-normalized during a by-hand promotion pass, without
+    attempting full fuzzy/near-duplicate matching (explicitly out of
+    scope, same rationale as the original)."""
+    return re.sub(r"\s+", " ", summary).strip().casefold()
+
+
+def _tracked_summaries(tracked_path: Path) -> frozenset[str]:
+    """Every normalized ``summary:`` text already in the tracked ledger --
+    read via ``classify_tier3_entries`` (which reads a tracked ledger file
+    just as well as a Tier-3 one, per its own docstring). Live 2026-08-28:
+    confirmed real Tier-3 orphans whose CONTENT is byte-identical to an
+    already-tracked entry under a DIFFERENT, independently-minted id (e.g.
+    pyforge-atlas's Tier-3 line 7 vs. its own tracked ``DW-A1-6``) -- the
+    same class of ID-vs-content mismatch ``deferred_work_promote.py``'s
+    own ``_validate_batch`` collision guard already defends against on the
+    write side; this is the read-side (detector) analogue, so a Tier-3
+    entry that already reached the tracked ledger by some OTHER path (a
+    prior promotion run, a hand-edit) is not re-flagged as missing."""
+    if not _is_file(tracked_path):
+        return frozenset()
+    return frozenset(
+        _normalize_summary(s)
+        for e in classify_tier3_entries(tracked_path)
+        if (s := e.fields.get("summary", "").strip())
+    )
+
+
+_TIER3_ORIGIN_FINGERPRINT_RE = re.compile(
+    rf"^{re.escape(HARVEST_ORIGIN)}\s+(\S+)"
+)
+
+
+def _tier3_entry_already_promoted(
+    entry: LegacyEntry, *, tracked_summaries: frozenset[str], tracked_text: str,
+) -> bool:
+    """True when ``entry`` (a Tier-3 entry the position/id-based checks
+    below are about to flag) already reached the tracked ledger by some
+    OTHER path than the one that would flag it -- two independent signals,
+    tried in order:
+
+    1. Its normalized ``summary:`` text already appears in the tracked
+       ledger (``_tracked_summaries``'s own docstring) -- the
+       ``LEGACY_FLAT``/``IDENTIFIED_BULLETED`` shape with a real summary
+       field.
+    2. Its ``origin: spec-deferred <fingerprint>`` marker (bmad-loop's own
+       harvest-damping output, no ``summary:`` field of its own -- the
+       ``IDENTIFIED_PLAIN`` shape) already appears in the tracked ledger's
+       raw text, mirroring ``frontmatter_deferral_in_tracked``'s exact
+       needle-search convention. Live 2026-08-28: pyforge-atlas's own
+       ``DW-10`` carries no ``summary:`` field (so check 1 above can never
+       fire for it) but its ``origin: spec-deferred 8b4c28559f93`` marker
+       is already present in the tracked ledger, promoted via the
+       spec-frontmatter path (Story 25.6) under a different id entirely.
+    """
+    summary = entry.fields.get("summary", "").strip()
+    if summary and _normalize_summary(summary) in tracked_summaries:
+        return True
+    origin = entry.fields.get("origin", "").strip()
+    match = _TIER3_ORIGIN_FINGERPRINT_RE.match(origin)
+    if match is not None and tracked_text:
+        needle = f"{HARVEST_ORIGIN} {match.group(1)}"
+        if needle in tracked_text:
+            return True
+    return False
+
+
 def _check_project_deferred_work(
     target: Path, proj: Path, findings: list[dict], baseline: dict[str, int] | None,
 ) -> None:
@@ -2842,6 +2918,13 @@ def _check_project_deferred_work(
     t3_path = proj / TIER3_REL
     tracked_path = proj / TRACKED_REL
     has_tier3 = _is_file(t3_path)
+    # Hoisted here (was read a second time further down, for the
+    # spec-frontmatter check) -- also feeds the content-comparison
+    # exemption below.
+    tracked_text = (
+        tracked_path.read_text(encoding="utf-8", errors="replace")
+        if _is_file(tracked_path) else ""
+    )
 
     if has_tier3:
         # FILE-level check: an ID-only comparison silently passes a project with
@@ -2856,6 +2939,20 @@ def _check_project_deferred_work(
                 "tier3_bytes": size, "generic_id": False,
             })
 
+        # Content-comparison exemption (2026-08-28): a Tier-3 entry whose
+        # normalized summary already appears in the tracked ledger reached
+        # it by SOME path (a prior promotion run, a hand-edit) even though
+        # its id/position-based signal below says otherwise -- see
+        # `_tracked_summaries`'s own docstring. Computed once per project,
+        # shared by both checks below.
+        tracked_summaries = _tracked_summaries(tracked_path)
+        t3_entries_by_line = {
+            e.start_line: e for e in classify_tier3_entries(t3_path) if e.id is None
+        }
+        t3_entries_by_id = {
+            e.id: e for e in classify_tier3_entries(t3_path) if e.id is not None
+        }
+
         # Tier-3-anonymous check (Story 7.3, CAP-2/CAP-3): a POSITIONAL slice,
         # not a lookup -- `_anonymous()` returns Tier-3 anonymous entries' line
         # numbers in file order, and the file's append-only discipline makes
@@ -2865,6 +2962,11 @@ def _check_project_deferred_work(
         if baseline is not None:
             count = baseline.get(proj.name, 0)
             for n in _anonymous(t3_path)[count:]:
+                entry = t3_entries_by_line.get(n)
+                if entry is not None and _tier3_entry_already_promoted(
+                    entry, tracked_summaries=tracked_summaries, tracked_text=tracked_text,
+                ):
+                    continue  # already reached the tracked ledger by another path
                 findings.append({
                     "kind": "tier3-entry-unidentified", "project": proj.name,
                     "id": f"line {n}",
@@ -2877,6 +2979,11 @@ def _check_project_deferred_work(
         if t3:
             tracked_ids = _ids(tracked_path)
             for dw in sorted(t3 - tracked_ids):
+                entry = t3_entries_by_id.get(dw)
+                if entry is not None and _tier3_entry_already_promoted(
+                    entry, tracked_summaries=tracked_summaries, tracked_text=tracked_text,
+                ):
+                    continue  # already reached the tracked ledger by another path
                 findings.append({
                     "kind": "tier3-only-deferral", "project": proj.name, "id": dw,
                     "tier3": str(t3_path.relative_to(target)),
@@ -2904,10 +3011,8 @@ def _check_project_deferred_work(
 
     # Story 25.6 / CAP-6: spec-frontmatter deferrals must reach the tracked
     # ledger without a human relay (loop runs stay on the bmad-loop bridge).
-    tracked_text = (
-        tracked_path.read_text(encoding="utf-8", errors="replace")
-        if _is_file(tracked_path) else ""
-    )
+    # `tracked_text` is already read above (shared with the content-
+    # comparison exemption).
     for finding in discover_spec_frontmatter_deferrals(proj):
         if frontmatter_deferral_in_tracked(finding, tracked_text):
             continue

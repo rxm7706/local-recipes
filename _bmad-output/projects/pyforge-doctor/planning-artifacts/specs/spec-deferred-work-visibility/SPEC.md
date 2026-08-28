@@ -165,6 +165,29 @@ keep one big process instead of several small ones.
     already-fixed spec-surface bug before their branches caught up).
   - **success:** fleet-picture's ATTENTION block names a synthetically-staled loop-home branch
     without a separate manual check being run.
+- **CAP-11** *(added 2026-08-28 — motivated by a live fleet-wide hygiene sweep re-running
+  `deferred-work-check` and finding 117 standing `tier3-only-deferral`/`tier3-entry-unidentified`
+  findings across doctor/marshal/mason/scribe/steward/atlas)*
+  - **intent:** CAP-4..7's id/position-based coverage check has a real gap: a Tier-3 entry can
+    already have reached the tracked ledger by some OTHER path (a prior `--fix` run, a hand-edit,
+    the CAP-8..9 spec-frontmatter bridge) under a DIFFERENT, independently-minted id, and the
+    id/position comparison alone cannot see that — flagging it as missing when its CONTENT is
+    already tracked. `scripts/deferred_work_promote.py`'s own `_validate_batch` write-side
+    collision guard already defends against exactly this on the write side (a normalized-summary
+    match against the tracked ledger); this capability is the read-side (detector) analogue, plus
+    a second signal for the shape write-side matching cannot see: an `origin: spec-deferred
+    <fingerprint>` marker (CAP-8's own harvest-damping shape, no `summary:` field of its own)
+    already present in the tracked ledger's raw text, mirroring CAP-8's own
+    `frontmatter_deferral_in_tracked` needle-search exactly.
+  - **success:** Confirmed live: pyforge-atlas's own Tier-3 line 7 (summary byte-identical to its
+    own tracked `DW-A1-6`) and `DW-10` (no summary, `origin: spec-deferred 8b4c28559f93` already
+    present in the tracked ledger via the spec-frontmatter path) both stop being flagged, with no
+    per-entry whitelist. **Explicitly bounded, not a full-backlog claim:** this closes the
+    ID-vs-content-mismatch class specifically (6 of 117 findings on the live repo, all in
+    pyforge-atlas); the remaining ~111 are not asserted to be false positives by this capability —
+    they may be genuine, still-unpromoted backlog (Epic 8's own "bounded and shrinking" framing)
+    or a further, not-yet-identified detector gap, and are explicitly out of this capability's own
+    scope.
 
 ## Constraints
 
