@@ -357,15 +357,32 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   status: open
 
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the precondition never arrived. The CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) were not produced, so the full 28-page inventory stays blocked and the page set correctly was not expanded past the live-confirmed core.
-## DW-D2-2 — shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas / behind-upstream / whodepends)
+## DW-D2-2 — shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas; behind-upstream / whodepends stay open under DW-D2-1)
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
   summary: Several core pages are BSL-WIRED SHELLS: the loader queries the correct D1 semantic model, but the composed Parquet store that model binds to (e.g. a `semantic_packages` primary output joining the per-metric columns) is not materialized as a single dataset yet, so the page renders empty against the live catalog until that store lands. The loaders are honest (empty BSL query, never fabricated rows). Materializing the composed store (a small kedro node emitting the semantic-input Parquet) wires the live data. Pages backed by an existing single dataset (feedstock-health → core_feedstock_health; my-feedstocks → vcs_package_maintainers) are already live.
   evidence: `dashboard/data.py` shell loaders are grouped under a "BSL-wired SHELL pages (composed store not yet materialized — DW-D2)" banner; each returns an empty typed frame via `_bsl_query_or_empty` when the store is absent.
 
-  status: open
+  resolution: **CLOSED 2026-08-27 by Story 20.3** (`spec-20-3-named-pipeline-derivation-of-the-dashboard-stores.md`,
+    CAP-6 / the `query-plane-catalog` operator ruling, 2026-08-26). The named, downstream-only
+    `semantic_packages` Kedro pipeline (`pipelines/semantic_packages/`, auto-discovered, zero
+    registry edits) composes the `semantic_packages` primary store from the sealed `core` +
+    `vcs_health` pipelines' own catalog outputs — `core_packages_enumerated` (population),
+    `core_latest_status` (latest_status), `core_feedstock_attribution` ⋈
+    `vcs_archived_feedstocks` (feedstock_archived), `core_downloads` (downloads_total /
+    downloads_30d) — with zero diff inside the sealed seven. The 4 `metrics.METRIC_PROVENANCE`
+    deferred-input columns (`latest_conda_upload` / `latest_upload_age_days` / `releases_30d` /
+    `total_versions`) are declared NULL by the node, never fabricated — the honest-empty
+    convention holds for the new store. `dashboard/data.py`'s "packages composed store not yet
+    materialized — DW-D2" banner is retired (now reads "BSL-wired data pages over the composed
+    `semantic_packages` store"). A fresh checkout still renders honestly-empty until an operator
+    runs `kedro run --pipeline core`, `--pipeline vcs_health`, then `--pipeline
+    semantic_packages` — that operational precondition is documented, not a second code path.
+    `behind-upstream` / `whodepends` (named in this entry's title) stay NO-BSL-MODEL shells —
+    that gap is DW-D2-1's CIS two-spine scope (Story 20.4/20.5), not this one.
 
-  verified: 2026-07-30 — CONFIRMED STILL OPEN — the banner is still in the code. `dashboard/data.py:126` still reads 'BSL-wired SHELL pages (packages composed store not yet materialized — DW-D2)', with supporting notes at `:13` and `:46`. The composed store was never materialized, so those pages still render empty (honestly empty — never fabricated).
+  status: closed
+
 ## DW-D2-3 — DEV-AUTO visual verification of the rendered UI (headless container cannot)
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`

@@ -58,7 +58,17 @@ VALID_VERDICT_PREFIXES = ("read_dataset:", "pipeline-trigger", "deferred-to-BSL(
 # stated scope)". Without this exemption, the registry-mirror invariant below would force
 # every registered pipeline to gain a `run_<name>_pipeline` MCP tool, which is exactly what
 # this story's scope forbids.
-NO_MCP_TRIGGER_PIPELINES = {"artifactory_downloads"}
+#
+# Steward Story 34.2 (FR-47) registered `query_plane_cache` without adding this exemption --
+# found here (2026-08-27) as a pre-existing registry-mirror gap while landing Story 20.3;
+# fixed in the same edit rather than left red. `query_plane_cache` is invoked via `kedro run
+# --pipeline query_plane_cache` (see tests/test_query_plane_parquet_cache.py), never an MCP
+# trigger tool.
+#
+# Story 20.3 (CAP-6, `query-plane-catalog` ruling): `semantic_packages` is the SAME shape --
+# a named, downstream-only, opt-in derivation pipeline invoked via `kedro run --pipeline
+# semantic_packages` (see the story spec's AC), not through the MCP pipeline-trigger surface.
+NO_MCP_TRIGGER_PIPELINES = {"artifactory_downloads", "query_plane_cache", "semantic_packages"}
 
 
 def _declared_catalog_names() -> set[str]:
