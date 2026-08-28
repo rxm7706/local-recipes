@@ -2,6 +2,17 @@
 
 Story 22.5 (FR-193 CAP-5) adds declared-surface overlap detection for
 cross-station concurrent dispatch advisories.
+
+Story 22.9 (FR-193 CAP-2/CAP-5) makes the dispatch BRANCH name carry its
+station and puts the derivation here, once: ``dispatch_worktree_branch`` is
+the sole site that renders a dispatch branch string, and
+``resolve_dispatch_branch`` is the sole site that decides which branch a
+station's work actually lives on. Everything else in the package -- worktree
+provisioning, the in-flight conflict guard's git facts, and landing --
+imports one of the two. The one function that is NOT pure is
+``resolve_dispatch_branch``: it must ask git which branches exist, so it
+takes a ``VcsPort`` (the same read-only port the CLI already holds) and
+performs no writes.
 """
 
 from __future__ import annotations
@@ -11,10 +22,16 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePath
+from typing import TYPE_CHECKING
+
+from pyforge.core.landing_evidence import DISPATCH_BRANCH_PREFIX
 
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from ..ports.vcs import VcsPort
 
 KIND_DISPATCH_LAUNCH = "dispatch-launch"
 KIND_DISPATCH_SUPERVISOR_ATTACH = "dispatch-supervisor-attach"
@@ -29,6 +46,26 @@ KIND_DISPATCH_PRESERVE = "dispatch-preserve"
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"
 _DISPATCH_WORKTREE_PREFIX = "dispatch-"
+
+#: Story 22.9. A dispatch branch is ``dispatch/<slug>/<story_key>``. The
+#: station segment is load-bearing, not cosmetic:
+#: ``_ensure_dispatch_worktree`` resolves an existing worktree BY BRANCH
+#: NAME -- it still does -- so under the old station-less
+#: ``marshal/<story_key>`` name two stations sharing a story key
+#: (``pyforge-atlas 20.1`` and ``pyforge-doctor 20.1``) resolved to ONE
+#: branch and silently shared a tree. With the slug in the name that
+#: lookup can no longer cross stations.
+#:
+#: The literal lives in ``pyforge.core`` because both packages need it:
+#: marshal mints these branches, and ``pyforge.core.landing_evidence``
+#: must recognize them or a dispatch landing stops classifying. Imported,
+#: never re-spelled.
+_DISPATCH_BRANCH_PREFIX = DISPATCH_BRANCH_PREFIX
+
+#: The pre-22.9 station-less name (``marshal/<story_key>``). Still rendered
+#: -- never minted -- so in-flight and preserved branches under the old
+#: shape stay resolvable instead of being silently stranded.
+_LEGACY_DISPATCH_BRANCH_PREFIX = "marshal"
 
 
 @dataclass(frozen=True)
@@ -157,13 +194,211 @@ def build_budget_env(policy: EffectivePolicy) -> dict[str, str]:
     return env
 
 
-def dispatch_worktree_branch(story_key: str) -> str:
-    return f"marshal/{story_key}"
+def _safe_ref_segment(raw: str, fallback: str) -> str:
+    """One path-and-ref-safe segment: the sanitization ``dispatch_worktree_
+    path`` has always applied to the story key, extracted so the BRANCH name
+    and the WORKTREE path derive their segments identically (Story 22.9).
+
+    They must agree because ``resolve_dispatch_branch`` decides branch
+    attribution by comparing a branch-derived expectation against a
+    path-derived location; a key that sanitized on one side but not the
+    other would make the two diverge (and could render a ref git rejects).
+    Dot runs collapse to one dot and leading/trailing dots and dashes are
+    stripped: ``git check-ref-format`` rejects a ref containing ``..``
+    anywhere or a component that starts or ends with ``.``, and ``..`` is
+    also the segment that would traverse as a path. A segment left empty by
+    all of that becomes ``fallback``. Ordinary keys keep their single dot
+    (``22.9`` -> ``22.9``).
+    """
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", raw)
+    cleaned = re.sub(r"\.{2,}", ".", cleaned).strip("-.")
+    return cleaned or fallback
+
+
+def dispatch_worktree_branch(slug: str, story_key: str) -> str:
+    """The ONE dispatch-branch derivation (Story 22.9).
+
+    ``slug`` is a required positional, deliberately: the pre-22.9 signature
+    was ``dispatch_worktree_branch(story_key)``, so any consumer that was
+    not updated fails loudly with a ``TypeError`` instead of quietly
+    rendering a station-less name that could resolve another station's
+    worktree.
+
+    Both segments are sanitized by ``_safe_ref_segment`` -- the SAME rule
+    ``dispatch_worktree_path`` applies -- so a slug or key carrying ``/`` or
+    ``..`` can neither traverse nor split this name into extra ref
+    components. Ordinary inputs (``pyforge-marshal``, ``22.9``) render
+    unchanged.
+    """
+    return (
+        f"{_DISPATCH_BRANCH_PREFIX}"
+        f"/{_safe_ref_segment(slug, 'project')}"
+        f"/{_safe_ref_segment(story_key, 'story')}"
+    )
+
+
+def legacy_dispatch_worktree_branch(story_key: str) -> str:
+    """The pre-22.9 station-less branch name -- read, never minted."""
+    return f"{_LEGACY_DISPATCH_BRANCH_PREFIX}/{_safe_ref_segment(story_key, 'story')}"
+
+
+@dataclass(frozen=True)
+class DispatchBranchResolution:
+    """Which branch a station's dispatch work actually lives on (22.9).
+
+    ``branch`` is always the station-scoped name. ``resolved`` is the branch
+    that EXISTS and demonstrably belongs to this station (either
+    ``branch`` itself, or -- for work started before 22.9 -- the legacy
+    ``marshal/<key>`` name, in which case ``legacy`` is ``True``); it is
+    ``None`` when no branch exists yet and the caller may mint ``branch``.
+    ``refusal`` is set (and ``resolved`` is ``None``) when a legacy branch
+    exists that cannot be attributed to this station: the loud land-first
+    message, never a silent reuse of another station's tree.
+    """
+
+    branch: str
+    resolved: str | None = None
+    legacy: bool = False
+    refusal: str | None = None
+
+    @property
+    def effective_branch(self) -> str:
+        """The branch to act on: the resolved one, else the name to mint."""
+        return self.branch if self.resolved is None else self.resolved
+
+
+def _lexically_normalized(path: Path) -> PurePath:
+    """``path`` with ``..`` collapsed, without touching the filesystem.
+
+    ``PurePath.parts`` already drops ``.`` segments, duplicate separators
+    and trailing slashes, so ``..`` is the only spelling difference left
+    that would make two names for the same worktree compare unequal. Done
+    by hand rather than with ``os.path.normpath`` because AD-4 forbids
+    ``pyforge.marshal.core`` from importing ``os`` at all.
+    """
+    parts: list[str] = []
+    for part in path.parts:
+        if part == ".." and parts and parts[-1] not in ("..", path.anchor):
+            parts.pop()
+            continue
+        parts.append(part)
+    return PurePath(*parts) if parts else PurePath(".")
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    """Do two path spellings name the same worktree?
+
+    ``resolve()`` is the real answer (it follows symlinks). Its fallback
+    matters: ``resolve()`` can raise ``OSError`` (a symlink loop, an
+    over-long name), and a bare ``left == right`` there would call two
+    spellings of ONE worktree different and raise a spurious
+    ``MRS-DISP-030`` refusal on a dispatch that should have proceeded --
+    so the fallback compares lexically normalized forms instead.
+    """
+    try:
+        return left.resolve() == right.resolve()
+    except OSError:
+        return _lexically_normalized(left) == _lexically_normalized(right)
+
+
+def format_legacy_branch_refusal(
+    *,
+    legacy_branch: str,
+    branch: str,
+    checked_out_at: Path | None,
+) -> str:
+    """The land-first refusal for an unattributable legacy branch (22.9)."""
+    where = (
+        f"is checked out at {str(checked_out_at)!r}, which is not this "
+        "station's dispatch worktree"
+        if checked_out_at is not None
+        else "still exists with work that predates station-scoped branch "
+        "names and cannot be attributed to a station"
+    )
+    return (
+        f"legacy dispatch branch {legacy_branch!r} {where} — refusing to "
+        f"reuse it for {branch!r}. Land that branch first (merge its PR onto "
+        "main), then delete it; re-dispatch afterwards and the work lands on "
+        f"{branch!r}."
+    )
+
+
+def resolve_dispatch_branch(
+    vcs: VcsPort,
+    repo_root: Path,
+    *,
+    slug: str,
+    story_key: str,
+    worktree: Path | None = None,
+) -> DispatchBranchResolution:
+    """Resolve the branch holding ``slug``'s ``story_key`` dispatch (22.9).
+
+    The single place the legacy ``marshal/<key>`` name is reconciled, shared
+    by worktree provisioning, the completion supervisor's git facts, and
+    landing so all three agree.
+
+    Attribution of a legacy branch is a git fact, never a guess: a legacy
+    branch belongs to this station only when the worktree git reports it
+    checked out at is this station's dispatch worktree -- ``worktree``,
+    which defaults to ``dispatch_worktree_path(repo_root, slug,
+    story_key)`` and which existing runs pass explicitly from their
+    journal. A legacy branch git has checked out somewhere else belongs to
+    another station; a legacy branch with no worktree at all cannot be
+    attributed to any station. Both refuse.
+
+    Read-only. Raises whatever ``vcs`` raises (``VcsCommandError``); every
+    caller already handles it. Callers must act on ``resolved``, not on
+    ``effective_branch``, whenever they are about to ask git about the
+    branch: ``resolved is None`` means no branch of this story's exists.
+    """
+    branch = dispatch_worktree_branch(slug, story_key)
+    if vcs.branch_exists(repo_root, branch):
+        return DispatchBranchResolution(branch=branch, resolved=branch)
+
+    legacy_branch = legacy_dispatch_worktree_branch(story_key)
+    expected = (
+        worktree
+        if worktree is not None
+        else dispatch_worktree_path(repo_root, slug, story_key)
+    )
+    legacy_worktree = vcs.worktree_path_for_branch(repo_root, legacy_branch)
+    if legacy_worktree is not None:
+        if _same_path(legacy_worktree, expected):
+            return DispatchBranchResolution(
+                branch=branch, resolved=legacy_branch, legacy=True
+            )
+        return DispatchBranchResolution(
+            branch=branch,
+            refusal=format_legacy_branch_refusal(
+                legacy_branch=legacy_branch,
+                branch=branch,
+                checked_out_at=legacy_worktree,
+            ),
+        )
+    if vcs.branch_exists(repo_root, legacy_branch):
+        return DispatchBranchResolution(
+            branch=branch,
+            refusal=format_legacy_branch_refusal(
+                legacy_branch=legacy_branch,
+                branch=branch,
+                checked_out_at=None,
+            ),
+        )
+    return DispatchBranchResolution(branch=branch)
 
 
 def dispatch_worktree_path(repo_root: Path, slug: str, story_key: str) -> Path:
-    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", story_key).strip("-") or "story"
-    return canonical_repo_root(repo_root) / _WORKTREES_DIRNAME / f"{_DISPATCH_WORKTREE_PREFIX}{slug}-{safe}"
+    # Story 22.9: both segments go through `_safe_ref_segment`, the same
+    # rule `dispatch_worktree_branch` applies, so the branch name and this
+    # path never disagree about a key -- `resolve_dispatch_branch` compares
+    # one against the other to attribute a legacy branch.
+    safe_slug = _safe_ref_segment(slug, "project")
+    safe_key = _safe_ref_segment(story_key, "story")
+    return (
+        canonical_repo_root(repo_root)
+        / _WORKTREES_DIRNAME
+        / f"{_DISPATCH_WORKTREE_PREFIX}{safe_slug}-{safe_key}"
+    )
 
 
 def sanitize_worktree_name(repo_root: Path, slug: str, story_key: str) -> str:

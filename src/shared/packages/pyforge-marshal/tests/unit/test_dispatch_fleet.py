@@ -289,6 +289,9 @@ class FakeVcs:
     def repo_common_root(self, _cwd: Path) -> Path:
         return self.repo_root
 
+    def branch_exists(self, _repo_root: Path, _branch: str) -> bool:
+        return False
+
     def worktree_path_for_branch(self, _repo_root: Path, _branch: str) -> Path | None:
         return None
 
@@ -814,7 +817,7 @@ def test_merge_through_finalize_chains_the_stations_next_story(
 
     # Merge-through-finalize: the branch merges and the scoped ledger sync
     # advances the key. The next cycle chains 22.8 with no operator step.
-    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("22.7"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("pyforge-marshal", "22.7"))
     process.alive = False
     ledgers["pyforge-marshal"] = (("22-7-fleet", "done"), ("22-8-next", "backlog"))
     chained = _cycle(
@@ -1215,8 +1218,8 @@ def test_eight_station_campaign_replays_without_session_discipline(
     # CAP-4's composition (CI-green merge + scoped `sprint-ledger-sync
     # --project <station>` + spec promotion) is what advances these two
     # facts; the fleet mode adds no landing path of its own.
-    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("22.8"))
-    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("12.8"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("pyforge-marshal", "22.8"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("pyforge-steward", "12.8"))
     process.alive = False
     ledgers["pyforge-marshal"] = (
         ("22-7-fleet-wide-drain", "backlog"),
@@ -1237,8 +1240,8 @@ def test_eight_station_campaign_replays_without_session_discipline(
     assert chained_statuses["pyforge-steward"] is StationCycleStatus.DISPATCHED
 
     # --- Exit criteria: every station drained (or wholly skipped) ---------
-    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("22.7"))
-    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("12.9"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("pyforge-marshal", "22.7"))
+    vcs.merged_branches.add(dispatch_core.dispatch_worktree_branch("pyforge-steward", "12.9"))
     ledgers["pyforge-marshal"] = (
         ("22-7-fleet-wide-drain", "done"),
         ("22-8-profile-driven-harness", "done"),

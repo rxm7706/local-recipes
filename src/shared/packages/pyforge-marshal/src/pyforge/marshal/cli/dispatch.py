@@ -232,18 +232,54 @@ def _compose_policy(slug: str) -> policy.EffectivePolicy:
     return effective
 
 
+@dataclass(frozen=True)
+class DispatchWorktreeResolution:
+    """A provisioned dispatch worktree, or the refusal that stopped it (22.9)."""
+
+    branch: str
+    worktree: Path | None = None
+    legacy: bool = False
+    refusal: str | None = None
+
+
 def _ensure_dispatch_worktree(
     vcs: VcsPort, repo_root: Path, slug: str, story_key: str
-) -> Path:
-    branch = dispatch_core.dispatch_worktree_branch(story_key)
+) -> DispatchWorktreeResolution:
+    """Provision (or reuse) this station's dispatch worktree.
+
+    Story 22.9: the branch carries the station, so two stations sharing a
+    story key can no longer resolve each other's tree. A pre-22.9
+    ``marshal/<key>`` branch is still reused when git shows it checked out
+    at THIS station's dispatch worktree; otherwise it refuses loudly with
+    the land-first remedy rather than attaching to a tree it cannot
+    attribute.
+    """
+    # Derive the attribution path ONCE and hand it to the resolver, rather
+    # than letting the resolver compute its own default and recomputing the
+    # same thing here -- the other two callers already pass `worktree=`
+    # explicitly, and a single basis cannot drift from itself.
     worktree = dispatch_core.dispatch_worktree_path(repo_root, slug, story_key)
+    resolution = dispatch_core.resolve_dispatch_branch(
+        vcs, repo_root, slug=slug, story_key=story_key, worktree=worktree
+    )
+    if resolution.refusal is not None:
+        return DispatchWorktreeResolution(
+            branch=resolution.branch, refusal=resolution.refusal
+        )
+    branch = resolution.effective_branch
     existing = vcs.worktree_path_for_branch(repo_root, branch)
     if existing is not None:
-        return existing
+        return DispatchWorktreeResolution(
+            branch=branch, worktree=existing, legacy=resolution.legacy
+        )
     if worktree.exists():
-        return worktree
+        return DispatchWorktreeResolution(
+            branch=branch, worktree=worktree, legacy=resolution.legacy
+        )
     vcs.add_worktree(repo_root, worktree, branch, base=_BASE_REF)
-    return worktree
+    return DispatchWorktreeResolution(
+        branch=branch, worktree=worktree, legacy=resolution.legacy
+    )
 
 
 def iter_dispatch_run_dirs(repo_root: Path, slug: str) -> tuple[Path, ...]:
@@ -840,13 +876,55 @@ def dispatch_once(
     )
 
     try:
-        worktree = _ensure_dispatch_worktree(vcs, repo_root, slug, render_feed_key(story_key))
+        provisioned = _ensure_dispatch_worktree(
+            vcs, repo_root, slug, render_feed_key(story_key)
+        )
     except VcsCommandError as exc:
         findings.append(
             Finding(
                 code="MRS-DISP-006",
                 severity=Severity.ERROR,
                 message=f"cannot provision dispatch worktree: {exc}",
+            )
+        )
+        return _done()
+    data["branch"] = provisioned.branch
+    if provisioned.refusal is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-030",
+                severity=Severity.ERROR,
+                message=provisioned.refusal,
+            )
+        )
+        return _done()
+    if provisioned.legacy:
+        findings.append(
+            Finding(
+                code="MRS-DISP-031",
+                severity=Severity.WARN,
+                message=(
+                    f"story {render_feed_key(story_key)!r} is still on the "
+                    f"pre-22.9 branch name {provisioned.branch!r} and lands "
+                    "from there; it migrates to "
+                    f"{dispatch_core.dispatch_worktree_branch(slug, render_feed_key(story_key))!r} "
+                    "once that legacy branch is landed AND deleted — while "
+                    "it survives, a later dispatch of this story is refused "
+                    "(MRS-DISP-030) rather than migrated"
+                ),
+            )
+        )
+    worktree = provisioned.worktree
+    if worktree is None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-006",
+                severity=Severity.ERROR,
+                message=(
+                    "cannot provision dispatch worktree: branch "
+                    f"{provisioned.branch!r} resolved with neither a worktree "
+                    "nor a refusal"
+                ),
             )
         )
         return _done()

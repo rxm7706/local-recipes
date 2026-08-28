@@ -1039,6 +1039,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-027": Verdict.WARN,
     "MRS-DISP-028": Verdict.WARN,
     "MRS-DISP-029": Verdict.WARN,
+    # Story 22.9 station-scoped dispatch branches (CAP-2/CAP-5): an
+    # unattributable legacy `marshal/<key>` branch STOPS the dispatch or the
+    # landing (ERROR -- the alternative is reusing another station's tree,
+    # the defect this story exists to remove), while a legacy branch that IS
+    # this station's proceeds under an advisory (WARN, the MRS-DISP-022
+    # tier).
+    "MRS-DISP-030": Verdict.ERROR,
+    "MRS-DISP-031": Verdict.WARN,
 }
 
 

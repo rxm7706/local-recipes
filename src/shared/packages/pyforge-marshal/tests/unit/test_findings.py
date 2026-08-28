@@ -285,6 +285,12 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-027",
             "MRS-DISP-028",
             "MRS-DISP-029",
+            # Story 22.9 (station-scoped dispatch branches): 030 an
+            # unattributable legacy `marshal/<key>` branch refuses the
+            # dispatch/landing; 031 this run is on an attributable legacy
+            # branch and proceeds under an advisory.
+            "MRS-DISP-030",
+            "MRS-DISP-031",
         }
     )
 

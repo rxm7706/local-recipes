@@ -1592,6 +1592,18 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-027",
         "MRS-DISP-028",
         "MRS-DISP-029",
+        # Story 22.9 (station-scoped dispatch branches, FR-193 CAP-2/CAP-5):
+        # 030 a pre-22.9 `marshal/<key>` branch exists that cannot be
+        # attributed to this station -- either git has it checked out at
+        # another station's worktree, or it has no worktree at all -- so
+        # dispatch/landing refuses with the land-first remedy rather than
+        # silently reusing another station's tree (ERROR); 031 this run IS
+        # on such a legacy branch and git attributes it to this station, so
+        # it proceeds from there while the next dispatch of the same story
+        # uses the station-scoped name (WARN -- the migration is visible,
+        # never silent).
+        "MRS-DISP-030",
+        "MRS-DISP-031",
     }
 )
 
