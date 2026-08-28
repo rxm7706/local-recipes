@@ -629,3 +629,277 @@ status: open
   close_when: steward S-32.1 done; mason S-10.1 done (build-engine hook spec; today's engine is default plugin); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+### DW-12-1-1: Guard clause (b) never opens the brief it certifies -- brief_mirrored_through is a pure string equality against tracked YAML, so a re-lost or hollowed-out skill-brief.yaml ships green.
+
+- source_spec: `planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md`
+  summary: Guard clause (b) never opens the brief it certifies -- brief_mirrored_through is a pure string equality against tracked YAML, so a re-lost or hollowed-out skill-brief.yaml ships green.
+  evidence: scripts/cfe_rebuild_guard_check.py:223-245 uses brief_path for truthiness only and never reads or stats the file; all 29 tests construct synthetic state dicts; a repo-wide symbol search found no other automated consumer of the brief, and the dual-copy durability arrangement (worktree + main tree) has no ongoing sync check. Natural owner: Story 12.4's clause-(d) detector addition (a runtime-scope check that the brief exists and its amendments name the mirrored SHAs).
+  location: scripts/cfe_rebuild_guard_check.py:227
+  origin: spec-deferred 611b57d1d425 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-1-2: Slice-1 "equivalence: green" is stale relative to CFE v8.84.0, and guard clause (a) will pass a future compiled->parallel advancement -- the "re-port/re-validate before advancing" gate exists only as prose in next_action.
+
+- source_spec: `planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md`
+  summary: Slice-1 "equivalence: green" is stale relative to CFE v8.84.0, and guard clause (a) will pass a future compiled->parallel advancement -- the "re-port/re-validate before advancing" gate exists only as prose in next_action.
+  evidence: Clause (a) gates only parallel/audited/cut-over and trusts the recorded enum (cfe_rebuild_guard_check.py:198-218; the existing tests pin both behaviors). Recording the staleness machine-readably (an equivalence value or an equivalence_as_of SHA that clause (a) can compare) belongs to the slice-1 re-validation work (Story 12.3's real-audit pass) -- this chore's intent authorized only the brief mirror + pointer flip, and rewriting the recorded green would falsify the corpus it was legitimately run against.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:313
+  origin: spec-deferred 236876ec2b22 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-1-3: The new "retro-mirror" amendment action is outside skf consumer enums, and skill-brief.v1.json does not constrain scope.amendments at all -- "schema valid" never inspected the new entries.
+
+- source_spec: `planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md`
+  summary: The new "retro-mirror" amendment action is outside skf consumer enums, and skill-brief.v1.json does not constrain scope.amendments at all -- "schema valid" never inspected the new entries.
+  evidence: skf-provenance-gap-dispatch.py::_classify has a fixed action set (promoted/skipped/demoted-*); retro-mirror falls through to unresolved, which is fail-safe (surfaces for attention rather than hiding). The consequence path is speculative today -- both retro-mirrored paths are already in scope.include -- but recorded so the next skf schema/enum touch adds retro-mirror deliberately.
+  origin: spec-deferred 7e94ac4eb19e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-2-1: DW-12-2-3: test_github_updater_gap_closed (test_slice1_equivalence.py) makes a live GitHub API call but is marked only @pytest.mark.slow, not @pytest.mark.network, so the new blocking test-ci gate's "-m 'not network'" selection does not actually exclude it.
+
+- source_spec: `planning-artifacts/specs/spec-12-2-ci-enforcement-for-the-guard-and-the-equivalence-net.md`
+  summary: DW-12-2-3: test_github_updater_gap_closed (test_slice1_equivalence.py) makes a live GitHub API call but is marked only @pytest.mark.slow, not @pytest.mark.network, so the new blocking test-ci gate's "-m 'not network'" selection does not actually exclude it.
+  evidence: Verification-gap review confirmed the module-level skip guard does not trigger (.claude/skills/cfe-recipe-generation/active resolves; github_updater.py etc. exist), and the test's own docstring states it "does make a live network call on both sides now" since Story 6.3 ported github_version_checker.py, making _CHECKER_AVAILABLE True on both sides. A transient GitHub API failure or rate limit can red this blocking gate for reasons unrelated to any real CFE regression, undermining the offline-safety guarantee this story's own I/O matrix requires ("Avoids flaky CI from unreachable network calls"). Pre-existing since Story 6.3; only consequential now that this test runs inside a blocking gate for the first time. Cannot be fixed inside this story: the test file is under .claude/skills/conda-forge-expert/**, which the Never clause forbids mason from editing (mason-cfe-surface-check gate). Needs an owner who can add @pytest.mark.network to that test, or a suite-hygiene meta-check catching unmarked network calls.
+  location: .claude/skills/conda-forge-expert/tests/integration/test_slice1_equivalence.py:149
+  origin: spec-deferred a695de3ecb2d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-2-2: DW-12-2-4: cfe_rebuild_guard_check.py's clause-(b) unmirrored-retro commit scan walks every commit since a fixed baseline SHA with no rolling window or checkpoint, so its cost grows unbounded as repo history grows, and it now runs twice per PR (once inside the advisory repo-scope sweep, once more in the new dedicated blocking step).
+
+- source_spec: `planning-artifacts/specs/spec-12-2-ci-enforcement-for-the-guard-and-the-equivalence-net.md`
+  summary: DW-12-2-4: cfe_rebuild_guard_check.py's clause-(b) unmirrored-retro commit scan walks every commit since a fixed baseline SHA with no rolling window or checkpoint, so its cost grows unbounded as repo history grows, and it now runs twice per PR (once inside the advisory repo-scope sweep, once more in the new dedicated blocking step).
+  evidence: Edge-case review measured roughly 1097 commits / 16s locally for the existing scan; blind review independently flagged the same unbounded-growth risk. Pre-existing design predating this story (it already ran inside the advisory sweep before Story 12.2); this story's dedicated blocking step doubles the per-PR cost inside the same job rather than introducing the unbounded-growth property itself. The re-run itself is the sanctioned branch-(a) approach recorded in this spec's Design Notes, not a defect to patch here.
+  location: scripts/cfe_rebuild_guard_check.py
+  origin: spec-deferred 2b0e73dcdfba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-2-3: DW-12-2-5: commands-cheatsheet.md (CLAUDE.md's "canonical full recipe-lifecycle reference") documents test / test-all / test-coverage / test-recipes but was not updated to add the new test-ci task, so the cheatsheet goes stale the moment this story lands.
+
+- source_spec: `planning-artifacts/specs/spec-12-2-ci-enforcement-for-the-guard-and-the-equivalence-net.md`
+  summary: DW-12-2-5: commands-cheatsheet.md (CLAUDE.md's "canonical full recipe-lifecycle reference") documents test / test-all / test-coverage / test-recipes but was not updated to add the new test-ci task, so the cheatsheet goes stale the moment this story lands.
+  evidence: Blind review confirmed the cheatsheet's Tests section lists only the pre-existing tasks. Real doc drift, but the file is under .claude/skills/conda-forge-expert/**, which the Never clause forbids mason from editing (mason-cfe-surface-check gate) -- needs an owner outside this story, e.g. the next conda-forge-expert skill retro.
+  location: .claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md
+  origin: spec-deferred cea54654215b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-3-1: skf-structural-diff.py has a name-collision/dedup bug: exports sharing the same name (e.g. four scripts each exporting `main`) collapse to one entry in the "added" list.
+
+- source_spec: `planning-artifacts/specs/spec-12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim.md`
+  summary: skf-structural-diff.py has a name-collision/dedup bug: exports sharing the same name (e.g. four scripts each exporting `main`) collapse to one entry in the "added" list.
+  evidence: extraction-snapshot.json for this audit lists 73 exports (4 of them named `main`, one per script); structural-diff-result.json's "added" list contains only 70 entries with exactly one `main`, so 3 real export rows were silently dropped. Confirmed by direct inspection of both committed JSON artifacts. Excluded from this story's severity scoring already (the export-level diff was caveated as a baseline artifact), so it did not change the recorded verdict -- but the underlying tool bug is real and will undercount on every future audit of a multi-script skill with duplicate export names.
+  location: _bmad/skf/shared/scripts/skf-structural-diff.py (dedup-by-name logic)
+  origin: spec-deferred 7b7b754177e1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-3-2: cfe-recipe-generation's metadata.json records a dead doc source (a local filesystem path into a deleted ephemeral worktree), which crashes skf-detect-docs.py instead of failing gracefully.
+
+- source_spec: `planning-artifacts/specs/spec-12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim.md`
+  summary: cfe-recipe-generation's metadata.json records a dead doc source (a local filesystem path into a deleted ephemeral worktree), which crashes skf-detect-docs.py instead of failing gracefully.
+  evidence: drift-report-20260828-073026.md's own Documentation Drift section: `doc_sources[0].url` is `.../.claude/worktrees/agent-a00a0f6206d94a499/README.md` -- a local path into a worktree that no longer exists, not a fetchable URL. `skf-detect-docs.py compare-hashes` raised `ValueError: unknown url type` on it this run; the doc-drift check was skipped per the workflow's own never-hard-halt rule. Pre-existing data-quality issue from Stories 6.1-6.3's original metadata.json authorship, surfaced incidentally by this story's audit run. Will recur on every future audit of this skill until the doc_sources entry is corrected to a repo-relative path (or removed).
+  location: .claude/skills/cfe-recipe-generation/active/cfe-recipe-generation/metadata.json (doc_sources[0].url)
+  origin: spec-deferred 59b5653417e5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-4-1: spec-12-5's own Code Map suggests a top-level campaign-state.yaml field for the ownership decision, but Story 12.4 landed a nested field under campaign.re_scope_gate.pre_conditions instead, and the spec's own Block-If "flag for coordination" step wasn't exercised as a written artifact.
+
+- source_spec: `planning-artifacts/specs/spec-12-4-the-re-scope-gate-is-machine-enforced.md`
+  summary: spec-12-5's own Code Map suggests a top-level campaign-state.yaml field for the ownership decision, but Story 12.4 landed a nested field under campaign.re_scope_gate.pre_conditions instead, and the spec's own Block-If "flag for coordination" step wasn't exercised as a written artifact.
+  evidence: Confirmed by reading spec-12-5-the-ownership-decision-is-recorded.md's Code Map directly. Mitigated in practice: campaign-state.yaml's own d_ownership_decision note already instructs Story 12.5 to "populate this entry -- do not invent a second key" -- but spec-12-5.md itself was not updated to match.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md
+  origin: spec-deferred bdd85f375a8c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-4-2: Clause (d) checks a self-reported campaign.re_scope_gate.pre_conditions.<key>.status field rather than independently verified state, unlike clauses (a)-(c) which each derive their verdict from something other than a hand-set flag.
+
+- source_spec: `planning-artifacts/specs/spec-12-4-the-re-scope-gate-is-machine-enforced.md`
+  summary: Clause (d) checks a self-reported campaign.re_scope_gate.pre_conditions.<key>.status field rather than independently verified state, unlike clauses (a)-(c) which each derive their verdict from something other than a hand-set flag.
+  evidence: Confirmed by reading scan()'s clauses (a) (computed equivalence field), (b) (real git history via retro_commits_since), and (c) (campaign.callers entries) against clause (d)'s status-string membership check. The intent-contract's own Approach and AC text explicitly specify a recording-based check ("campaign-state.yaml does not record the four pre-conditions closed"), so this is a design observation the intent itself authorized, not a defect of this diff.
+  location: scripts/cfe_rebuild_guard_check.py (clause (d), scan())
+  origin: spec-deferred b5aebc5c8161 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-4-3: An explicit slice `id: null` (key present, value None) falls through `sl.get("id", "<unknown-slice>")`'s default, since the default only applies when the key is absent -- a finding would render the literal id value instead of the intended placeholder.
+
+- source_spec: `planning-artifacts/specs/spec-12-4-the-re-scope-gate-is-machine-enforced.md`
+  summary: An explicit slice `id: null` (key present, value None) falls through `sl.get("id", "<unknown-slice>")`'s default, since the default only applies when the key is absent -- a finding would render the literal id value instead of the intended placeholder.
+  evidence: Confirmed via grep that this exact sl.get("id", "<unknown-slice>") pattern is shared verbatim by clauses (a) and (b), predating this story -- not introduced by clause (d)'s new code, which matches the file's existing style per this story's own Boundaries.
+  location: scripts/cfe_rebuild_guard_check.py:322
+  origin: spec-deferred 7ba4e7710f27 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-4-4: Pre-condition `status` matching (RE_SCOPE_GATE_SATISFIED_STATUSES) is case/whitespace-sensitive -- e.g. "Closed" would not satisfy the gate.
+
+- source_spec: `planning-artifacts/specs/spec-12-4-the-re-scope-gate-is-machine-enforced.md`
+  summary: Pre-condition `status` matching (RE_SCOPE_GATE_SATISFIED_STATUSES) is case/whitespace-sensitive -- e.g. "Closed" would not satisfy the gate.
+  evidence: Confirmed via grep that clause (a)'s EQUIVALENCE_GATED_STATUSES membership check uses the same exact-string frozenset pattern with no case normalization anywhere in the file -- clause (d) matches established convention rather than introducing a new gap.
+  location: scripts/cfe_rebuild_guard_check.py:178,325-327
+  origin: spec-deferred fff94ae34801 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-5-1: The Operator ruling's own prose contains an ungrammatical phrase ("authored on and its stories carried by") mirrored verbatim into all three edited artifacts.
+
+- source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
+  summary: The Operator ruling's own prose contains an ungrammatical phrase ("authored on and its stories carried by") mirrored verbatim into all three edited artifacts.
+  evidence: Blind-hunter review flagged the phrase as not parsing (likely meant "authored by" or "authored within"). It is part of the operator's own verbatim ruling text, not this story's implementation prose, so editing it without operator re-confirmation risks drift between the three mirrored copies.
+  location: spec-12-5-the-ownership-decision-is-recorded.md:93 (mirrored into SPEC.md and campaign-state.yaml)
+  origin: spec-deferred 2477539da6b6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-5-2: The Operator ruling cites "CAP-19" as precedent without defining it anywhere in this SPEC's own Capabilities section or `sources:` frontmatter.
+
+- source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
+  summary: The Operator ruling cites "CAP-19" as precedent without defining it anywhere in this SPEC's own Capabilities section or `sources:` frontmatter.
+  evidence: Blind-hunter review confirmed by grep that CAP-19 belongs to a different BMAD project (pyforge-steward) and is not cross-referenced from spec-conda-forge-expert-rebuild/SPEC.md, making the citation unresolvable from this file alone.
+  location: spec-conda-forge-expert-rebuild/SPEC.md (Open Questions item 1, Resolved paragraph)
+  origin: spec-deferred 174e934370f7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-5-3: The Operator ruling's rationale is not cross-referenced against SPEC.md's own Non-goals §3, which frames the same legacy-vs-Kedro convergence question as "decided then, not now."
+
+- source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
+  summary: The Operator ruling's rationale is not cross-referenced against SPEC.md's own Non-goals §3, which frames the same legacy-vs-Kedro convergence question as "decided then, not now."
+  evidence: Blind-hunter review noted the new Resolved note already leans on that same question (assigning Slice 3's brief to atlas specifically to force the convergence decision into atlas's hands) but neither section cross-references the other.
+  location: spec-conda-forge-expert-rebuild/SPEC.md (Open Questions item 1 vs Non-goals §3)
+  origin: spec-deferred e217e74adbf8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-5-4: The Code Map's cited precedent ("Story 5.4's own recheck-spec resolution-record pattern") doesn't structurally match the in-place list-annotation style this story actually used.
+
+- source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
+  summary: The Code Map's cited precedent ("Story 5.4's own recheck-spec resolution-record pattern") doesn't structurally match the in-place list-annotation style this story actually used.
+  evidence: Blind-hunter review checked Story 5.4's actual precedent and found it to be a new "## Resolution record" section appended to the story's own spec file, not an in-place edit inserted into a numbered list inside a parent SPEC/PRD.
+  location: spec-12-5-the-ownership-decision-is-recorded.md:80 (Code Map)
+  origin: spec-deferred a73767276b6e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-5-5: This story's `context:` frontmatter doesn't list the sources the Operator ruling's rationale depends on (the CAP-19 material, the Phase-T/Epic-13 claim).
+
+- source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
+  summary: This story's `context:` frontmatter doesn't list the sources the Operator ruling's rationale depends on (the CAP-19 material, the Phase-T/Epic-13 claim).
+  evidence: Blind-hunter review noted the rationale's "Precedent" argument is traceable only via prose assertion, not via any document this story declares as context.
+  location: spec-12-5-the-ownership-decision-is-recorded.md:10-13 (frontmatter context:)
+  origin: spec-deferred 712eabe8a82d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-6-1: campaign-state.yaml's top-of-file "HOW TO RESUME" protocol reads only current_focus's own next_action, so a resuming session can miss a still-open next_action on a different slice.
+
+- source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
+  summary: campaign-state.yaml's top-of-file "HOW TO RESUME" protocol reads only current_focus's own next_action, so a resuming session can miss a still-open next_action on a different slice.
+  evidence: Established in Story 6.1, predates this story. campaign.current_focus was reassigned from slice-1 to slice-2 by this story; slice-1's own next_action (a targeted github_updater.py re-port) remains open and unresolved. This story added an adjacent comment flagging it, but the master resume-protocol one-liner near the top of the file still only names current_focus's slice.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:11-12
+  origin: spec-deferred 88dafeb4b73e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-6-2: slice-map.md classifies test-skill.py as one of Slice 2's own canonical scripts, but it is a throwaway ad-hoc script unrelated to recipe lifecycle.
+
+- source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
+  summary: slice-map.md classifies test-skill.py as one of Slice 2's own canonical scripts, but it is a throwaway ad-hoc script unrelated to recipe lifecycle.
+  evidence: slice-map.md documents test-skill.py as a 10-line ad-hoc script hitting api.anaconda.org for a single package, with the real test-suite entrypoint living elsewhere. This story's brief inherited the entry verbatim from slice-map.md, which is this story's documented read-only Code Map source, not a file it may correct.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md
+  origin: spec-deferred 3cba2a495cd8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-6-3: Slice 2's brief_path lands inside this ephemeral dispatch worktree's gitignored implementation-artifacts/ with no promotion-to-durable-storage step, mirroring slice 1's own unresolved precedent.
+
+- source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
+  summary: Slice 2's brief_path lands inside this ephemeral dispatch worktree's gitignored implementation-artifacts/ with no promotion-to-durable-storage step, mirroring slice 1's own unresolved precedent.
+  evidence: Per this repo's own documented Tier-3-teardown incident (pyforge-warden lost 13 of 31 story specs to worktree teardown before a promotion convention existed for tracked story specs), a Tier-3 brief with no analogous promotion step risks the same fate. This story followed its own spec's explicit physical-path directive; the gap is systemic to the campaign's Tier-3 brief convention, not something this story introduced.
+  location: _bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml
+  origin: spec-deferred 54551e8df924 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-6-4: Slice 1's own brief_path still points at pyforge-atlas's implementation-artifacts tree rather than pyforge-mason's, a divergence from the parallel-agent physical-path rule that this story's spec explicitly flagged as precedent.
+
+- source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
+  summary: Slice 1's own brief_path still points at pyforge-atlas's implementation-artifacts tree rather than pyforge-mason's, a divergence from the parallel-agent physical-path rule that this story's spec explicitly flagged as precedent.
+  evidence: Documented in this story's own spec Boundaries section as slice 1's atypical landing location. Pre-existing state from Story 12.1, unchanged by this story, and out of this story's own boundaries (which govern only slice 2's brief_path).
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml (slice-1-recipe-generation entry)
+  origin: spec-deferred 017538d2544a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-7-1: Five of the 25 tracked scripts compute a repo-root/data-dir path via a hardcoded Path(__file__) parent-hop count that resolves one directory level short of the real repo root at this package's deeper nesting -- a real behavioral divergence risk for relative-path callers, confirmed live and documented, deliberately not patched.
+
+- source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
+  summary: Five of the 25 tracked scripts compute a repo-root/data-dir path via a hardcoded Path(__file__) parent-hop count that resolves one directory level short of the real repo root at this package's deeper nesting -- a real behavioral divergence risk for relative-path callers, confirmed live and documented, deliberately not patched.
+  evidence: Confirmed for recipe_editor.py: `pixi run -e local-recipes python .claude/skills/cfe-recipe-lifecycle/active/cfe-recipe-lifecycle/scripts/recipe_editor.py recipes/_probe/recipe.yaml '[...]'` (relative path, cwd=repo root) fails with "Recipe directory does not exist: .../.claude/skills/recipes/_probe" while the live original succeeds. Same root cause in _path_guard.py (REPO_ROOT = parents[4]), _paths.py's own get_repo_root() (same pattern -- ironic, since its own docstring documents this exact class of bug repo-wide), gen_yml_reference.py (visible in its own --help text, proven by test_slice2_equivalence.py::test_gen_yml_reference_help_diverges_by_known_path_depth_bug), and mapping_manager.py/vulnerability_scanner.py's un-.resolve()'d Path(__file__).parent.parent.parent.parent data-dir constant. Pre-existing, campaign-wide CFE debt (_paths.py's own Story-5.5 docstring already documents ~30-35 affected live-tree scripts), not introduced by this compile.
+  location: .claude/skills/cfe-recipe-lifecycle/1.0.0/cfe-recipe-lifecycle/scripts/{_path_guard.py,_paths.py,gen_yml_reference.py,mapping_manager.py,vulnerability_scanner.py}
+  origin: spec-deferred ba53701027a8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-7-2: 17 CLI wrapper files named in the brief's scope.include were deliberately not copied into the compiled package (each is a subprocess shim hardcoded to the live CFE tree), a scope interpretation this story made rather than one the brief/spec settled explicitly.
+
+- source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
+  summary: 17 CLI wrapper files named in the brief's scope.include were deliberately not copied into the compiled package (each is a subprocess shim hardcoded to the live CFE tree), a scope interpretation this story made rather than one the brief/spec settled explicitly.
+  evidence: slice-map.md and the brief list .claude/scripts/conda-forge-expert/*.py wrapper files under scope.include; Slice 1's own compiled package (cfe-recipe-generation) set the precedent of omitting analogous non-copyable scope.include entries (its guide/reference .md docs), which this story's implementation cites as justification. Documented fully in SKILL.md's Design Notes and evidence-report.md.
+  location: .claude/skills/cfe-recipe-lifecycle/1.0.0/cfe-recipe-lifecycle/SKILL.md (Design Notes)
+  origin: spec-deferred 5536b0eb1d22 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-7-3: Two mason meta-tests (outside this story's own Code Map) were edited to exclude the CFE-rebuild campaign's own sanctioned equivalence-test file pattern from a generic "must not touch CFE" diff guard, to satisfy this story's own pyforge-mason-test verification bar.
+
+- source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
+  summary: Two mason meta-tests (outside this story's own Code Map) were edited to exclude the CFE-rebuild campaign's own sanctioned equivalence-test file pattern from a generic "must not touch CFE" diff guard, to satisfy this story's own pyforge-mason-test verification bar.
+  evidence: src/shared/packages/pyforge-mason/tests/meta/{test_persona_consults_cfe.py,test_portal_last_diagnose.py} both added a narrow regex exclusion (`.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py`). test_portal_last_diagnose.py's check post-dates Story 6.3's own landing of test_slice1_equivalence.py at this same path (confirmed via `git merge-base --is-ancestor`), so this is the first time the tension surfaced, not inherited red.
+  location: src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py
+  origin: spec-deferred 9e6df236f85b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-12-8-1: cfe_rebuild_guard_check.py's clause (d) enforces only campaign.re_scope_gate.pre_conditions, never re_scope_gate_2.pre_conditions, so a slice-3/4 brief_path write is not machine-blocked by this story's new gate.
+
+- source_spec: `planning-artifacts/specs/spec-12-8-the-slice-2-re-scope-checkpoint.md`
+  summary: cfe_rebuild_guard_check.py's clause (d) enforces only campaign.re_scope_gate.pre_conditions, never re_scope_gate_2.pre_conditions, so a slice-3/4 brief_path write is not machine-blocked by this story's new gate.
+  evidence: Independently confirmed by 3 of 4 review-pass layers (Blind Hunter, Verification Gap Reviewer, Edge Case Hunter) against the diff since baseline_revision 7e84b9174d740a7a488ba3f5d50d9fea6d0784a4. clause (d) reads only campaign.get("re_scope_gate") and its four hardcoded RE_SCOPE_GATE_PRE_CONDITION_KEYS (a_ci_enforcement/b_skf_setup/ c_cross_slice_rederivation/d_ownership_decision) -- all four already status: closed today, so clause (d) is vacuously satisfied for any order>=2 slice's brief_path regardless of re_scope_gate_2's two new pre-conditions (slice1_equivalence_closure/slice2_equivalence_closure, both still open). tests/scripts/test_cfe_rebuild_guard_check.py has no test referencing re_scope_gate_2 either. This story's own Never-boundary explicitly forbids touching cfe_rebuild_guard_check.py's clause logic (matching Story 6.4's own GATHERED GAPS #5 precedent of naming an enforcement gap rather than closing it), so closing this is out of scope here -- deferred for a follow-up story to extend clause (d) (or add a clause (e)) to also read re_scope_gate_2.pre_conditions.
+  location: scripts/cfe_rebuild_guard_check.py:304-341
+  origin: spec-deferred 07db3769f77b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
