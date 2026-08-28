@@ -2,9 +2,9 @@
 title: 'Story 20.5: Port the remaining nineteen Vizro pages (CAP-7)'
 type: 'feature'
 created: '2026-08-27'
-status: 'ready'
-updated: '2026-08-27'
-baseline_revision: 'cc8b3b2b1c09d6e56a5aebf752e25f507c846571'
+status: 'in-progress'
+updated: '2026-08-28'
+baseline_revision: '3d8bc8250af65370dad0a8fdfbb345fa6e0d44aa'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
