@@ -987,6 +987,13 @@ def classify(path: Path, target: Path) -> str:
         # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
         # the engine per run. Never hand-edited and never pin-gated.
         return "local:run-journal"
+    if re.fullmatch(r"implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*", rel):
+        # Marshal single-story dispatch run records (session.log,
+        # dispatch-supervisor.log, journal.jsonl) — Story 22.x's sibling to the
+        # bmad-loop `runs/` shape above, at a different directory name
+        # (`dispatch-runs/`) the existing rule doesn't match. Same Tier-3,
+        # gitignored, engine-written, never hand-edited, never pin-gated shape.
+        return "local:run-journal"
     if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
         return "local:sprint-feed"     # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
