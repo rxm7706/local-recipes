@@ -2,12 +2,12 @@
 title: CI enforcement for the guard and the equivalence net
 type: feature
 created: '2026-08-27'
-status: in-review
+status: done
 updated: '2026-08-27'
 baseline_revision: ecb931e5d15f7ed0ef7ec732c5c15cc5e51c47e2
 final_revision: fc776507251c3010b227b4bd5f0f571e567beac0
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md
@@ -17,6 +17,54 @@ warnings: ['ci-net-red-on-arrival']
 deferred:
   - 'DW-12-2-1: the new cfe-regression-net CI job is red on arrival — test_help_output_identical[github_updater.py] fails because the live github_updater.py (v8.84.0, --head) is ahead of the compiled slice-1 copy. This is the intended divergence signal, already owned: campaign-state slice-1 next_action requires the re-port/re-validate before slice 1 advances past compiled (Story 12.3 territory), not this story.'
   - 'DW-12-2-2: five PRE-EXISTING meta-test failures on main (test_bmad_artifacts_integrity, test_dashboard_script_runs_clean, test_no_redundant_or_below_floor_python_min_in_context, test_all_recipe_yaml_parse, test_spec_surface_check_green) also red the net — verified present at pristine baseline ecb931e5d1 via git stash. Fleet-wide drift (steward spec-surface baselines, recipe audits) that was invisible only because no CI ever ran this suite; needs owners outside mason 12.2.'
+  - summary: >-
+      DW-12-2-3: test_github_updater_gap_closed (test_slice1_equivalence.py) makes a live
+      GitHub API call but is marked only @pytest.mark.slow, not @pytest.mark.network, so the
+      new blocking test-ci gate's "-m 'not network'" selection does not actually exclude it.
+    evidence: |-
+      Verification-gap review confirmed the module-level skip guard does not trigger
+      (.claude/skills/cfe-recipe-generation/active resolves; github_updater.py etc. exist), and
+      the test's own docstring states it "does make a live network call on both sides now"
+      since Story 6.3 ported github_version_checker.py, making _CHECKER_AVAILABLE True on both
+      sides. A transient GitHub API failure or rate limit can red this blocking gate for reasons
+      unrelated to any real CFE regression, undermining the offline-safety guarantee this
+      story's own I/O matrix requires ("Avoids flaky CI from unreachable network calls").
+      Pre-existing since Story 6.3; only consequential now that this test runs inside a
+      blocking gate for the first time. Cannot be fixed inside this story: the test file is
+      under .claude/skills/conda-forge-expert/**, which the Never clause forbids mason from
+      editing (mason-cfe-surface-check gate). Needs an owner who can add @pytest.mark.network
+      to that test, or a suite-hygiene meta-check catching unmarked network calls.
+    location: >-
+      .claude/skills/conda-forge-expert/tests/integration/test_slice1_equivalence.py:149
+    severity: high
+  - summary: >-
+      DW-12-2-4: cfe_rebuild_guard_check.py's clause-(b) unmirrored-retro commit scan walks
+      every commit since a fixed baseline SHA with no rolling window or checkpoint, so its
+      cost grows unbounded as repo history grows, and it now runs twice per PR (once inside
+      the advisory repo-scope sweep, once more in the new dedicated blocking step).
+    evidence: |-
+      Edge-case review measured roughly 1097 commits / 16s locally for the existing scan;
+      blind review independently flagged the same unbounded-growth risk. Pre-existing design
+      predating this story (it already ran inside the advisory sweep before Story 12.2); this
+      story's dedicated blocking step doubles the per-PR cost inside the same job rather than
+      introducing the unbounded-growth property itself. The re-run itself is the sanctioned
+      branch-(a) approach recorded in this spec's Design Notes, not a defect to patch here.
+    location: >-
+      scripts/cfe_rebuild_guard_check.py
+    severity: medium
+  - summary: >-
+      DW-12-2-5: commands-cheatsheet.md (CLAUDE.md's "canonical full recipe-lifecycle
+      reference") documents test / test-all / test-coverage / test-recipes but was not
+      updated to add the new test-ci task, so the cheatsheet goes stale the moment this
+      story lands.
+    evidence: |-
+      Blind review confirmed the cheatsheet's Tests section lists only the pre-existing
+      tasks. Real doc drift, but the file is under .claude/skills/conda-forge-expert/**,
+      which the Never clause forbids mason from editing (mason-cfe-surface-check gate) --
+      needs an owner outside this story, e.g. the next conda-forge-expert skill retro.
+    location: >-
+      .claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md
+    severity: low
 ---
 
 <intent-contract>
@@ -149,6 +197,22 @@ separate decision rather than silently expanding this story's scope.
   9055/9065 tests selected by `-m 'not network'` (10 network-marked deselected; all 6
   slow-marked equivalence tests included), so divergence has a place to red.
 
+## Spec Change Log
+
+## Review Triage Log
+
+### 2026-08-27 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 0, medium 2, low 2)
+- defer: 3: (high 1, medium 1, low 1)
+- reject: 9: (high 0, medium 0, low 9)
+- addressed_findings:
+  - `[medium]` `[patch]` `.github/workflows/cfe-regression-net.yml`'s `.claude/skills/**` path filter matched all ~109 skill directories instead of the 2 relevant to CFE regression/equivalence (`conda-forge-expert/`, `cfe-recipe-generation/`), triggering the ~9.8 GB env + 90-minute job on unrelated skill edits. Narrowed both `pull_request` and `push` path filters to the two relevant directories.
+  - `[medium]` `[patch]` `.github/workflows/cfe-regression-net.yml`'s unconditional `cancel-in-progress: true` could silently cancel an in-flight run of this BLOCKING job on a rapid second push to `main` (a real scenario — CLAUDE.md documents fixing `main` directly for `pixi.toml` changes), losing the blocking guarantee for the cancelled commit with no compensating signal. Scoped to `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`.
+  - `[low]` `[patch]` `.github/workflows/cfe-regression-net.yml`'s header comment claimed `workflow_dispatch` "covers on-demand full runs," but it runs the identical network-excluded command as every other trigger with no path to a true full/network run. Reworded to remove the misleading "full runs" claim.
+  - `[low]` `[patch]` `pixi.toml`'s `test-ci` task description implied it specifically targets the slice-equivalence harness, but `-m 'not network'` selects every slow-marked test in the suite. Reworded to "all non-network tests, including the slow slice-equivalence harness."
+
 ## Design Notes
 
 **Why branch (a):** it genuinely closes GATHERED GAPS #2's guard half and makes SPEC.md's
@@ -200,9 +264,41 @@ slice-equivalence harness now run in CI for the first time
 new `test-ci` task = `-m 'not network'`). Re-scope pre-condition (a) is closed on the
 enforcement branch, not the acceptance branch; campaign-state.yaml deliberately untouched.
 
-Residual risk / operator attention: the new net job WILL be red until DW-12-2-1 (slice-1
-re-port, Story 12.3 territory) and DW-12-2-2 (five pre-existing main-branch meta failures,
-owners outside mason) are cleared — that red is the anti-atlas guard working, not a defect
-in this wiring. The guard-check blocking step is green today. No review loop ran on this
-dispatch (single-story implementation pass); the diff is wiring-only (2 workflow files +
-1 pixi task + this spec).
+**Files changed (review pass, on top of the dev-pass diff):**
+- `.github/workflows/cfe-regression-net.yml` — narrowed `.claude/skills/**` path filters to
+  the 2 relevant skill dirs; scoped `cancel-in-progress` to `pull_request` only; reworded the
+  `workflow_dispatch` header claim.
+- `pixi.toml` — reworded `test-ci`'s description for accuracy.
+
+**Review findings breakdown (2026-08-27 pass, 4 reviewers: blind hunter, edge-case hunter,
+verification-gap, intent-alignment):** intent_gap 0, bad_spec 0, patch 4 (2 medium, 2 low, all
+applied — see Review Triage Log), defer 3 (1 high, 1 medium, 1 low — DW-12-2-3/4/5, see
+frontmatter `deferred`), reject 9 (all low — sanctioned-by-design duplicate guard re-run,
+polish/nice-to-haves, and points already disclosed in this spec's own Design Notes).
+
+**Follow-up review recommendation:** `true` — score = 3×2 medium + 1×2 low = 8 (≥ 5); no high
+severity among this pass's patches, but the medium count alone crosses the threshold.
+
+**Verification performed (review pass, re-run after patches):**
+- `python3 scripts/cfe_rebuild_guard_check.py` — exit 0, clean, unchanged.
+- `python3 scripts/detectors.py --list` — exit 0, registry unaffected.
+- `pixi run -e local-recipes test-ci --collect-only -q` — still 9055/9065 collected, 10
+  network-marked deselected (patches touched only comments/description/trigger config, not
+  the `test-ci` `cmd`).
+- Both workflow files re-parse as YAML; `pixi.toml` re-parses as TOML and `test-ci` resolves
+  with its updated description.
+- `pixi project export conda-environment -e build` — still byte-identical to tracked
+  `environment.yaml`.
+
+**Residual risks:** the new net job WILL still be red until DW-12-2-1 (slice-1 re-port, Story
+12.3 territory) and DW-12-2-2 (five pre-existing main-branch meta failures, owners outside
+mason) are cleared — that red is the anti-atlas guard working, not a defect in this wiring.
+The guard-check blocking step is green today. Newly deferred by this review pass: DW-12-2-3
+(high — a live-network test inside the new gate is mismarked `slow`-only, not `network`, so
+the gate can flake red on transient GitHub API failures unrelated to any real regression;
+blocked from an in-story fix by the mason-cfe-surface-check Never clause), DW-12-2-4 (medium
+— the guard's unmirrored-retro commit scan has no rolling window and now runs twice per PR),
+and DW-12-2-5 (low — commands-cheatsheet.md wasn't updated for the new `test-ci` task, also
+blocked by the Never clause). DW-12-2-3 in particular deserves prompt attention from whoever
+owns the CFE surface, since it is the one gap that could make this story's own "offline-safe"
+guarantee false in practice.

@@ -1107,7 +1107,7 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests"
 # an offline runner). This is the exact "slow but not network" combination
 # neither existing task matches — used by .github/workflows/cfe-regression-net.yml.
 [feature.local-recipes.tasks.test-ci]
-description = "Run the conda-forge-expert regression suite + slice-equivalence harness for CI (incl. slow, excl. network)"
+description = "Run the conda-forge-expert test suite for CI: all non-network tests, including the slow slice-equivalence harness"
 cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network'"
 
 [feature.local-recipes.tasks.test-coverage]

@@ -25,10 +25,11 @@ name: CFE regression + equivalence net
 # PATH-FILTERED, deliberately: the local-recipes env is ~1102 packages
 # (~9.8 GB) — a poor trade on PRs that cannot change this suite's outcome
 # (cf. detectors.yml's "deliberately NOT pixi" note for its 10-second sweep).
-# Divergence can only be created by touching the live CFE tree, a compiled
-# replacement package (both under .claude/skills/), the wrapper/MCP layers,
-# or the env/task definitions — exactly the paths below. workflow_dispatch
-# covers on-demand full runs.
+# Divergence can only be created by touching the live CFE tree, the compiled
+# replacement package (.claude/skills/cfe-recipe-generation/), the wrapper/MCP
+# layers, or the env/task definitions — exactly the paths below (scoped to
+# those two skill dirs, not all ~109 dirs under .claude/skills/). This same
+# `pixi run --frozen -e local-recipes test-ci` also reruns on workflow_dispatch.
 #
 # This net is NEW GROUND on top of the existing offline pyforge-mason-test /
 # platform-ci.yml jobs (SPEC.md: "the test net is the safety rail") — it
@@ -37,7 +38,8 @@ name: CFE regression + equivalence net
 on:
   pull_request:
     paths:
-      - '.claude/skills/**'
+      - '.claude/skills/conda-forge-expert/**'
+      - '.claude/skills/cfe-recipe-generation/**'
       - '.claude/scripts/conda-forge-expert/**'
       - '.claude/tools/conda_forge_server.py'
       - 'pixi.toml'
@@ -46,7 +48,8 @@ on:
   push:
     branches: [main]
     paths:
-      - '.claude/skills/**'
+      - '.claude/skills/conda-forge-expert/**'
+      - '.claude/skills/cfe-recipe-generation/**'
       - '.claude/scripts/conda-forge-expert/**'
       - '.claude/tools/conda_forge_server.py'
       - 'pixi.toml'
@@ -59,7 +62,11 @@ permissions:
 
 concurrency:
   group: cfe-regression-net-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Scoped to pull_request only: unconditional cancel-in-progress would let a
+  # second rapid push to main cancel an in-flight run of this BLOCKING job,
+  # silently losing its signal for the cancelled commit (unlike detectors.yml,
+  # which is advisory-only and has no blocking guarantee to lose).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   cfe-regression-net:
