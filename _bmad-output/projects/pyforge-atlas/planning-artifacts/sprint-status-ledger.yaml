@@ -47,7 +47,7 @@ development_status:
   2-2-define-the-data-catalog-for-all-sources-outputs: done
   2-3-implement-incrementalparquetdataset-for-ttl-gating: done
   20-1-one-boot-script-raises-both-plane-faces: done
-  20-2-face-parity-is-part-of-done: backlog
+  20-2-face-parity-is-part-of-done: done
   20-3-named-pipeline-derivation-of-the-dashboard-stores: backlog
   20-4-the-cis-two-spine-specs-exist: backlog
   20-5-port-the-remaining-nineteen-vizro-pages: backlog
