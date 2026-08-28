@@ -918,3 +918,20 @@ query_plane_estate:
     compression: zstd
   metadata:
     layer: primary
+
+# =============================================================================
+# semantic_packages — composed dashboard-store derivation (Story 20.3, CAP-6;
+# `query-plane-catalog` ruling, 2026-08-26). DOWNSTREAM ONLY of the sealed `core` +
+# `vcs_health` pipelines' own catalog outputs — the opt-in optimization layer: the
+# sealed seven stay sealed (zero diff inside them) and a consumer may still read their
+# canonical datasets directly. `build_packages_model` (semantic/models.py) binds to
+# this Parquet; the 4 metrics.METRIC_PROVENANCE deferred-input columns
+# (latest_conda_upload / latest_upload_age_days / releases_30d / total_versions) are
+# declared NULL by the pipeline node, never fabricated. Closes DW-D2-2.
+# =============================================================================
+
+semantic_packages:
+  type: pandas.ParquetDataset
+  filepath: data/primary/semantic_packages/semantic_packages.parquet
+  metadata:
+    layer: primary

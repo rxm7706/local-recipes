@@ -2,9 +2,9 @@
 title: 'Story 20.3: Named-pipeline derivation of the dashboard stores (CAP-6)'
 type: 'feature'
 created: '2026-08-27'
-status: 'ready'
+status: 'in-progress'
 updated: '2026-08-27'
-baseline_revision: 'cc8b3b2b1c09d6e56a5aebf752e25f507c846571'
+baseline_revision: '440a9183981350421605dd17b61b8a4fc9d4312d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
