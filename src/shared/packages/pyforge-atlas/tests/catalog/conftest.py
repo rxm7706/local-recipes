@@ -78,6 +78,7 @@ PREFIX_TO_PIPELINE = {
     "org_audit": "upstream_discovery",
     "artifactory": "artifactory_downloads",
     "query_plane": "query_plane_cache",
+    "semantic": "semantic_packages",
 }
 
 # Final implemented counts (drafting target was ~77: 35 sources + ~42
@@ -95,8 +96,9 @@ EXPECTED_PIPELINE_COUNTS = {
     "upstream_discovery": 4,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67)
     "artifactory_downloads": 2,  # Story 15.3 (CAP-4, Epic 15): artifactory_downloads_raw + artifactory_downloads_joined
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
+    "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 94  # Story 34.2: 92 + query_plane_estate_source + query_plane_estate
+EXPECTED_TOTAL = 95  # Story 20.3: 94 + semantic_packages
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
