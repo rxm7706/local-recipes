@@ -8,6 +8,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from conftest import exclude_cfe_rebuild_equivalence_tests
+
 STATION = "mason"
 PERSONA = "bmad-agent-mason"
 CONTENT_SKILL = "conda-forge-expert"
@@ -17,21 +19,6 @@ FREELANCE_KINDS = frozenset({"filesystem", "fs", "http", "adhoc_http"})
 MCP_PATH = f"/stations/{STATION}/mcp"
 GOLDEN = "mason-doctor-e2e.json"
 SKF_REPLACEMENT = ".claude/skills/pyforge-mason"
-# The mason-owned CFE-rebuild campaign (SPEC-conda-forge-expert-rebuild, Epic 12) adds one
-# equivalence-validation test file per compiled slice under CFE's own tests/integration/
-# directory by design (Story 6.3 landed test_slice1_equivalence.py; Story 12.7 landed
-# test_slice2_equivalence.py; slices 3-5 will add their own). These prove the compiled
-# replacement matches the live original -- they do not edit SKILL.md, scripts/, reference/,
-# guides/, or config/, so they are not a "CFE surface replaced" violation of AD-15/FR-45 in
-# the sense this test guards against. Excluded here, narrowly, rather than widening the
-# `named`/`dirty` checks below to ignore all of tests/.
-_CFE_REBUILD_EQUIVALENCE_TEST_RE = re.compile(
-    r"^\.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py$"
-)
-
-
-def _exclude_cfe_rebuild_equivalence_tests(paths: list[str]) -> list[str]:
-    return [p for p in paths if not _CFE_REBUILD_EQUIVALENCE_TEST_RE.match(p)]
 WORK_CLASS_01_PERSONAS = (
     "bmad-agent-chrome-probe",
     "bmad-agent-infra-probe",
@@ -325,11 +312,11 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
             text = path.read_text(encoding="utf-8", errors="replace")
             assert "generated_by: create-skill" not in text
             assert '"generated_by": "create-skill"' not in text
-    named = _exclude_cfe_rebuild_equivalence_tests(
-        _git_diff_names(".claude/skills/conda-forge-expert")
+    named = exclude_cfe_rebuild_equivalence_tests(
+        root, _git_diff_names(".claude/skills/conda-forge-expert")
     )
-    dirty = _exclude_cfe_rebuild_equivalence_tests(
-        _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
+    dirty = exclude_cfe_rebuild_equivalence_tests(
+        root, _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
     )
     assert not named, f"this story must not edit conda-forge-expert: {named}"
     assert not dirty, f"untracked CFE/SKF replacement files: {dirty}"
