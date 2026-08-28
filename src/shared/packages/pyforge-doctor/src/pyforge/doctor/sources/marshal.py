@@ -52,6 +52,7 @@ from pathlib import Path
 
 from pyforge.core.landing_evidence import (
     StoryKeyRef,
+    classify_branch_name,
     classify_commit,
     parse_bmadloop_merge_subject,
     parse_github_pr_merge_subject,
@@ -85,6 +86,21 @@ NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
 _MERGE_SUBJECT_TEMPLATE = "Merge {key} into main"
 _FEED_KEY_RE = re.compile(r"^(\d+)-(\d+)([a-z])?-")
 
+# GitHub PR-merge subject shape retained only to extract the ``branch`` token
+# for ``land/<station>-<epic>-<seq>`` / ``bmad-loop/<run>/<key>`` recovery
+# landings whose merge commit subject does not carry a station-prefixed
+# branch segment -- ``pyforge.core.landing_evidence.parse_github_pr_merge_
+# subject`` handles the ordinary ``<station>/<key>-<desc>``/``dispatch/
+# <project_slug>/<key>`` case inside the shared grammar; this module cannot
+# import that private regex (module independence rule, see this file's own
+# docstring), so it is duplicated here exactly as ``pyforge.marshal.core.
+# promotion._classify_merge_subject`` already does for the identical reason
+# (verified live 2026-08-28: doctor's story-status Routes 2/3 were missing
+# this fallback entirely, producing a false-positive FAIL finding for every one of 25
+# genuinely-landed stories audited that session -- marshal's own port of
+# the same grammar already had it).
+_GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$")
+
 
 def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
     match = _FEED_KEY_RE.match(key)
@@ -95,6 +111,61 @@ def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
         seq=int(match.group(2)),
         suffix=match.group(3) or "",
     )
+
+
+def _loose_subject_key_match(
+    subjects: tuple[str, ...] | list[tuple[str, str]],
+    *,
+    station: str,
+    key_ref: StoryKeyRef,
+) -> bool:
+    """Best-effort, LAST-RESORT landing check: does any commit subject
+    mention this station AND this exact numeric key together, in any
+    phrasing at all?
+
+    The strict grammar (`_keys_from_merge_subjects`/`_keys_from_main_
+    commits`) requires an anchored shape; real hand-authored landing
+    commits vary far more than any fixed set of regexes can enumerate
+    (``"<station>: promote story <e>.<s> to done..."``,
+    ``"<station>: reconcile ... for Story <e>.<s>, ..."``,
+    ``"land <station> <e>.<s>+<e2>.<s2> (N stories): ..."``, etc. -- all
+    confirmed live 2026-08-28 as real landing commits for stories this
+    detector still flagged after the branch-name fallback above). This
+    route is deliberately loose (no anchor, no leading-token requirement)
+    but still requires BOTH the station name and the EXACT epic.seq pair
+    as their own tokens (never a digit substring of a longer number) --
+    scoped ONLY to this advisory detector (never wired into
+    ``pyforge.core.landing_evidence``, so it cannot loosen any
+    safety-critical marshal gating decision that shares the strict
+    grammar)."""
+    station_re = re.compile(rf"\b{re.escape(station)}\b", re.IGNORECASE)
+    epic, seq, suffix = key_ref.epic, key_ref.seq, key_ref.suffix
+    # A trailing-letter guard, not just the digit one: without it, a bare
+    # "11.1" in a commit subject would equally satisfy a search for the
+    # SUFFIXED sibling key "11-1a" (split-story convention, StoryKeyRef.
+    # suffix), and a search for plain "11-1" would equally accept a subject
+    # that actually names "11.1a" -- two genuinely different stories.
+    key_re = re.compile(
+        rf"(?<!\d){epic}[.\-]{seq}{re.escape(suffix)}(?![\da-zA-Z])"
+    )
+    for item in subjects:
+        subject = item[1] if isinstance(item, tuple) else item
+        if station_re.search(subject) and key_re.search(subject):
+            return True
+    return False
+
+
+def _branch_name_fallback_key(subject: str, project_slug: str) -> StoryKeyRef | None:
+    """A GitHub PR merge subject whose branch is ``land/<station>-<epic>-<seq>``
+    or a bare ``bmad-loop/<run>/<key>`` -- shapes ``parse_github_pr_merge_
+    subject`` does not recognize (it scopes on ``<station>/``/``dispatch/
+    <project_slug>/`` branch prefixes only). Mirrors ``pyforge.marshal.core.
+    promotion._classify_merge_subject``'s own fallback."""
+    match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
+    if match is None:
+        return None
+    branch_match = classify_branch_name(match.group("branch"), project_slug=project_slug)
+    return branch_match.key if branch_match is not None else None
 
 
 def _keys_from_merge_subjects(
@@ -110,6 +181,7 @@ def _keys_from_merge_subjects(
             lambda s: parse_github_pr_merge_subject(s, project_slug),
             lambda s: parse_bmadloop_merge_subject(s, project_slug),
             lambda s: parse_recovery_commit_subject(s, project_slug),
+            lambda s: _branch_name_fallback_key(s, project_slug),
         ):
             key = parser(subject)
             if key is not None:
@@ -133,6 +205,10 @@ def _keys_from_main_commits(
         )
         if match is not None:
             keys.add(match.key)
+            continue
+        fallback = _branch_name_fallback_key(subject, project_slug)
+        if fallback is not None:
+            keys.add(fallback)
     return frozenset(keys)
 
 
@@ -598,6 +674,21 @@ def gather_story_status(
                     main_commits, project_slug=project_slug
                 ):
                     continue  # hand-landed or recovery; grammar recognized
+
+                # Route 4: loose station+key co-occurrence, last resort (see
+                # `_loose_subject_key_match`'s own docstring for why the
+                # strict grammar above still misses real hand-authored
+                # landings). Checked against both subject pools already
+                # fetched above -- no new git call.
+                if (
+                    (all_ref_subjects is not None and _loose_subject_key_match(
+                        all_ref_subjects, station=slug, key_ref=key_ref,
+                    ))
+                    or (main_commits is not None and _loose_subject_key_match(
+                        main_commits, station=slug, key_ref=key_ref,
+                    ))
+                ):
+                    continue  # station+key co-occurrence found
 
             phase = task.get("phase", "")
             # `phase in NOT_LANDED` HASHES `phase`, so a JSON record giving it a
