@@ -34,16 +34,18 @@ PACKAGE_MAINTAINERS_PARQUET = (
     "intermediate/vcs_package_maintainers/vcs_package_maintainers.parquet"
 )
 
-# BSL-WIRED SHELL — the composed per-package "packages" table that
-# ``build_packages_model`` binds to (conda_name + latest_status + feedstock_archived +
-# latest_conda_upload + downloads_* + per-version fields) is NOT one migrated Parquet: it
-# is the join of core_packages_enumerated ⋈ core_latest_status ⋈ core_downloads ⋈ … that
-# the migrated store does not yet materialize as a single table, and ``latest_conda_upload``
-# / the per-version inputs are themselves ``deferred-input-not-in-migrated-store`` (D1
-# ``metrics.METRIC_PROVENANCE``). Until that composed store lands, the packages-backed
-# pages (staleness-report / query-atlas / detail-cf-atlas) are BSL-wired shells: the loader
-# queries ``build_packages_model`` when a composed frame is supplied (proven by the gate's
-# fixture), else returns an empty result. Recorded in DW-D2.
+# COMPOSED — the per-package "packages" table ``build_packages_model`` binds to
+# (conda_name + latest_status + feedstock_archived + latest_conda_upload +
+# downloads_* + per-version fields) is derived by the named, downstream-only
+# ``semantic_packages`` Kedro pipeline (Story 20.3, CAP-6 / ``query-plane-catalog``
+# ruling) from the sealed ``core`` + ``vcs_health`` pipelines' own catalog outputs —
+# run it (after ``core`` + ``vcs_health``) with ``kedro run --pipeline
+# semantic_packages`` to materialize this Parquet. ``latest_conda_upload`` / the
+# per-version inputs are themselves ``deferred-input-not-in-migrated-store`` (D1
+# ``metrics.METRIC_PROVENANCE``) — the pipeline node declares them NULL, never
+# fabricated. In a checkout where the pipeline has not yet run, the loader still
+# degrades honestly to an empty result via the same ``_bsl_query_or_empty`` seam
+# every page uses. Closes DW-D2-2.
 PACKAGES_PARQUET = "primary/semantic_packages/semantic_packages.parquet"
 ESTATE_CACHE_PARQUET = "primary/query_plane_estate/query_plane_estate.parquet"
 
@@ -124,7 +126,8 @@ def load_my_feedstocks(parquet: str | os.PathLike[str] | None = None) -> pd.Data
 
 
 # ---------------------------------------------------------------------------
-# BSL-wired SHELL pages (packages composed store not yet materialized — DW-D2)
+# BSL-wired data pages over the composed ``semantic_packages`` store (materialized
+# by the ``semantic_packages`` pipeline — Story 20.3 / CAP-6 — DW-D2-2 closed)
 # ---------------------------------------------------------------------------
 
 
