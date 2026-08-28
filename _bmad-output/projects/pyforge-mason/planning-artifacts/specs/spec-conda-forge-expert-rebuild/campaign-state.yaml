@@ -81,7 +81,7 @@ campaign:
   # slice-1-recipe-generation still carries its own unresolved next_action (a targeted
   # github_updater.py re-port) -- read that slice's own entry too; it is not blocking, but
   # it is not forgotten either.
-  next_story: "12.1-12.6 done (Story 12.6, 2026-08-28: slice 2 briefed); next is Story 12.7 (slice 2 compiled + equivalence-validated) — see slices[current_focus].next_action below"
+  next_story: "12.1-12.7 done (Story 12.7, 2026-08-28: slice 2 compiled, real skf-audit-skill CLEAN, equivalence: stale post-review -- a real path-depth divergence in recipe_editor.py + 4 sibling scripts, see slices[current_focus].next_action); next is Story 12.8's re-scope checkpoint, gated on closing that stale equivalence first"
   re_scope_gate:
     # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
     # records the measured cost and the go/adjust/stop decision for the remaining slices
@@ -443,31 +443,160 @@ slices:
   - id: "slice-2-recipe-lifecycle"
     order: 2
     name: "Recipe Lifecycle"
-    status: "briefed"   # Story 12.6 (2026-08-28): skf-brief-skill's real canonical writer
-                         # (skf-write-skill-brief.py) produced a schema-valid skill-brief.yaml
-                         # (skf-validate-brief-schema.py: valid=true, 0 errors, 0 warnings)
-                         # after re-deriving cross-slice dependencies against the live tree --
-                         # see pre_conditions.c_cross_slice_rederivation's note above for the
-                         # full findings (imports reconfirmed, CVE-DB/Slice-3 risk reconfirmed
-                         # clean, native-build.sh/build-locally.py decided permanently
-                         # out-of-scope, one new unclassified script flagged). Not "compiled" --
-                         # skf-create-skill (compilation) is Story 12.7's job, out of this
-                         # story's own boundary.
-    equivalence: null
+    status: "compiled"   # Story 12.7 (2026-08-28): skf-create-skill compiled the brief into
+                         # .claude/skills/cfe-recipe-lifecycle/1.0.0/ (+ active symlink) --
+                         # 25 scripts (22 canonical + 3 sanctioned Slice-5 shared-infra deps),
+                         # sha256-verified byte-identical to source. Still "compiled", not
+                         # "parallel"/"audited" -- no caller has flipped (verified: grep of
+                         # cfe.py's _CFE_SCRIPTS and pixi tasks/MCP tools finds zero references
+                         # to cfe-recipe-lifecycle), matching slice 1's own precedent that a
+                         # clean audit alone does not advance status past "compiled".
+    equivalence: "stale"  # Story 12.7, PATCHED post-review (was "green" -- FALSE, caught by
+                         # adversarial review, not by this pass): a REAL, REPRODUCED
+                         # behavioral divergence exists between the live original and the
+                         # compiled package, so "green" was not honest. Confirmed live:
+                         # `recipe_editor.py` invoked with a RELATIVE `recipes/`-path
+                         # succeeds against the live original and FAILS against the compiled
+                         # copy ("Recipe directory does not exist:
+                         # .../.claude/skills/recipes/..."), because `_path_guard.py`'s
+                         # REPO_ROOT (`Path(__file__).resolve().parents[4]`) resolves one
+                         # directory level short of the real repo root at this package's
+                         # deeper nesting. Five of the 25 tracked scripts share this exact
+                         # root cause (`_path_guard.py`, `_paths.py`, `gen_yml_reference.py`,
+                         # `mapping_manager.py`, `vulnerability_scanner.py`). This is
+                         # PRE-EXISTING, campaign-wide CFE debt (`_paths.py`'s own docstring,
+                         # Story 5.5's Rule-2 retro, already documents ~30-35 live-tree
+                         # scripts sharing this pattern) -- not introduced by this compile --
+                         # and deliberately NOT patched here (this story's scope is compile +
+                         # validate, not remediate upstream debt; every tracked script stays
+                         # sha256-identical to source; `local_builder.py`'s own
+                         # `_repo_root_candidate()` already shows a working, depth-independent
+                         # fix pattern -- walk up looking for `pixi.toml`, fall back to the
+                         # hardcoded parent-hop only if that fails -- the natural template for
+                         # a future fix to the other 5 scripts, see SKILL.md Design Notes).
+                         # Per this story's own Block-If clause ("genuine drift/divergence
+                         # that cannot be resolved by porting a legitimate shared dependency
+                         # -- halt and report rather than fabricating a green result"), this
+                         # is exactly that class of finding, and per Story 12.3's own
+                         # precedent for slice 1 (flipped "green" -> "stale" the moment real
+                         # drift was confirmed, story still closed done), `equivalence` is
+                         # marked "stale" rather than "green" while the finding stays
+                         # unresolved. `status` is unaffected (stays "compiled" regardless --
+                         # see this file's own status_vocabulary note below).
+                         #
+                         # Everything else about the real audit/regression/harness results
+                         # below remains accurate and is NOT what this patch corrects -- only
+                         # the headline "green" label was wrong; the underlying facts already
+                         # recorded were true. Real skf-audit-skill verdict (via its own
+                         # deterministic helper scripts, same methodology as Story 12.3):
+                         # drift_score CLEAN, 0 findings at every severity -- but that
+                         # verdict is a STATIC file/export comparison and structurally cannot
+                         # see the behavioral divergence above (byte-identical files can still
+                         # behave differently at a different directory depth) --
+                         # skf-structural-diff.py reports
+                         # {added:0,removed:0,changed:0,moved:0,unchanged:237} (compile-time
+                         # provenance vs. a fresh re-extraction at audit time, same commit;
+                         # 237 not 265 -- CONFIRMED root cause, not conjecture: this is
+                         # skf-structural-diff.py's own pre-existing, already-documented
+                         # dedup-by-name bug (Story 12.3's deferred finding #1 for
+                         # cfe-recipe-generation's own audit: "exports sharing the same name
+                         # ... collapse to one entry"). "name" is the tool's sole match key
+                         # (its own module docstring, line 36: "Nameless entries are skipped");
+                         # it does not disambiguate by source_file. This slice's 265 entries
+                         # include 237 UNIQUE names and 28 collapsed duplicates -- dominated by
+                         # `main`, which appears once per CLI script (20 of the 25 tracked
+                         # scripts each export their own `main`, all identically named), plus
+                         # 8 more incidental same-name pairs across different files
+                         # (`update_recipe`, `_normalize_recipe_path`, `_load_recipe`,
+                         # `_host_of`, `_get_data_dir`, `_cache_path`, `_load_cache`,
+                         # `_store_cache`, `_find_recipe`, each duplicated exactly once).
+                         # Verified by direct count:
+                         # `Counter(e['export_name'] for e in entries)` on provenance-map.json
+                         # yields exactly 237 unique names and a duplicate-count sum of 28 --
+                         # matches skf-structural-diff.py's reported unchanged count exactly.
+                         # `metadata.json`'s `exports_total: 265` is the correct, undeduplicated
+                         # full export count (the true number of real exports this package
+                         # documents); `skf-structural-diff.py`'s 237 undercounts due to the
+                         # tool's own pre-existing bug, not because 28 real exports are
+                         # missing or divergent -- both numbers are individually accurate for
+                         # what they each measure, once the tool's own limitation is named.
+                         # Does not affect the CLEAN verdict: the decisive check
+                         # (skf-compare-file-hashes.py, below) is unaffected by this bug, since
+                         # it compares whole-file hashes, not per-export names. Full writeup:
+                         # drift-report-20260828-122448.md's Structural Drift section, patched
+                         # post-review to reconcile this explicitly. skf-compare-file-hashes.py
+                         # reports
+                         # {added:90,removed:0,changed:0,unchanged:28} (all 28 tracked files
+                         # -- 25 real scripts + 1 asset + 2 cross-slice test-fixture ports,
+                         # see below -- byte-identical; the 90 "added" are Slices 1/3/4/5's
+                         # own files, out of scope, not drift). Full report: forge-data/
+                         # cfe-recipe-lifecycle/1.0.0/drift-report-20260828-122448.md (+
+                         # audit-skill-result-latest.json). Regression pass: the 21 mapped
+                         # unit-test files run against the compiled package report 206
+                         # passed/3 deselected/1 xpassed -- IDENTICAL to the unmodified-
+                         # CFE_TEST_SCRIPTS_DIR baseline, zero test bodies edited on either
+                         # side (two real, previously-undocumented gaps were found and closed
+                         # first: local_builder.py's own scripts/cross-shims/install_name_tool
+                         # asset, missing from slice-map.md/the brief; and
+                         # test_recipe_updater_interpreter.py's cross-slice
+                         # interpreter-resolution drift guard, which needs Slice 1's
+                         # github_updater.py + recipe-generator.py available alongside Slice
+                         # 2's own scripts -- both closed by porting sanctioned dependencies,
+                         # same precedent as Slice 1's github_version_checker.py port; see
+                         # slice-map.md's Slice 2 notes and this package's own
+                         # evidence-report.md for full detail). Note: neither the regression
+                         # suite nor the CLEAN audit is what caught the divergence this patch
+                         # records -- it surfaced from `test_slice2_equivalence.py`'s own
+                         # deliberately-scoped-to-avoid-it deep check plus this story's
+                         # follow-on manual probe, documented (not hidden) in that test file's
+                         # module docstring from the start. Equivalence harness
+                         # (test_slice2_equivalence.py, new, modeled on
+                         # test_slice1_equivalence.py): 23/23 pass -- every check the harness
+                         # itself asserts is genuinely zero-divergence for the invocation
+                         # pattern it exercises (absolute paths + the sanctioned
+                         # CFE_RECIPES_ROOT override); it does not assert anything about the
+                         # relative-path pattern that is known to diverge, so its 23/23 does
+                         # not contradict this "stale" label -- a --help-identity check across
+                         # 19 of Slice 2's 20 CLI-invocable scripts (gen_yml_reference.py has
+                         # its own dedicated test proving and explaining one separate known
+                         # divergence -- see below), plus one deep check each for
+                         # write-oriented (recipe_editor.py, via the sanctioned
+                         # absolute-path/CFE_RECIPES_ROOT pattern), network-touching
+                         # (github_version_checker.py), and error-path (validate_recipe.py)
+                         # behavior, per the spec's own "proportional, not exhaustive" harness
+                         # scope. gen_yml_reference.py's own separate, also-documented
+                         # divergence (its --help text embeds a REPO_ROOT-derived default
+                         # path) shares the identical root cause as the finding above.
     brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
     brief_mirrored_through: "565ef7d194b1ccd740951250aa6535b65bdfc7b6"
-                         # Story 12.6: same newest qualifying CFE Rule-2 retro SHA as slice 1's
-                         # (no new one has landed since Story 12.1 mirrored it) -- this brief was
-                         # authored against the live CFE tree at that same commit range (v8.84.0,
-                         # gotchas through G110), so it is current as of the same retro boundary.
-                         # Verified clean via `pixi run -e local-recipes cfe-rebuild-guard-check`.
+                         # Story 12.7 (2026-08-28): re-checked via
+                         # `cfe-rebuild-guard-check --json` -- still 4 qualifying retros
+                         # scanned, zero findings; no new CFE Rule-2 retro has landed since
+                         # Story 12.1 mirrored 565ef7d194 into both slice briefs. Clause (b) is
+                         # already green for both slices -- no mirror action needed this story.
     coverage:
       scripts: 22
       wrappers: 17
       mcp_tools: 19
     mason_caller: true
     mason_caller_count: 8   # of 10 _CFE_SCRIPTS adapters
-    next_action: "Story 12.7's job: skf-create-skill compiles the brief into a replacement package under .claude/skills/cfe-recipe-lifecycle/, the slice's existing regression tests must pass UNMODIFIED against it, the equivalence harness must report zero divergence, and skf-audit-skill (the REAL tool, not a substitute -- re-run skf-setup in whichever worktree does this, per pre_conditions.b_skf_setup's per-worktree caveat) must report zero drift. Before compiling, resolve this brief's own flagged gap: failure_catalog_generator.py is a new, unclassified script (added 2026-08-22, after slice-map.md's derivation) that slice-map.md does not cover -- a slice-map.md correction (adding it, most plausibly to Slice 2 given its _paths.py import and recipe_optimizer.py cross-reference) should land before or alongside 12.7, since slice-map.md is this story's own read-only source and out of this story's writable surface. Story 12.7 closes with its own Rule-2 retro mirrored into both slice briefs (clause (b) green) and Story 12.8's re-scope checkpoint follows."
+    next_action: "Before Story 12.8's re-scope checkpoint: close THIS slice's own stale
+      equivalence first. Real, reproduced fix needed -- port a depth-independent repo-root
+      resolution into the 5 affected scripts (_path_guard.py, _paths.py,
+      gen_yml_reference.py, mapping_manager.py, vulnerability_scanner.py), modeled on
+      local_builder.py's own already-working _repo_root_candidate() pattern (walk up for
+      pixi.toml, hardcoded parent-hop only as a last-resort fallback) -- then re-run
+      test_slice2_equivalence.py's relative-path probe (currently manual, not yet a
+      committed test assertion) and flip equivalence back to green once confirmed. Both
+      slices 1 and 2 are now compiled, with slice 1 equivalence: stale (github_updater.py
+      re-port outstanding, Story 12.3) and slice 2 equivalence: stale (this story's own
+      path-depth divergence, patched post-review). Once both are genuinely green, before
+      slice 3's brief (atlas-owned per Story 12.5), re-run the measured-cost exercise Story
+      6.4 ran after slice 1 -- slice 3 is 12.3x slice 1's size, the largest remaining domain
+      slice. One more residual item, neither blocking, worth a dedicated future pass:
+      failure_catalog_generator.py remains an unclassified script needing a slice-map.md
+      correction (flagged by Story 12.6, still open -- most plausibly Slice 2, given its
+      _paths.py import and recipe_optimizer.py cross-reference)."
 
   - id: "slice-3-atlas-intelligence"
     order: 3

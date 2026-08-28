@@ -6,6 +6,8 @@ import ast
 import subprocess
 from pathlib import Path
 
+from conftest import exclude_cfe_rebuild_equivalence_tests
+
 STATION = "mason"
 PORTAL_PKG = "django-mason"
 PORTAL_MOD = "django_mason_portal"
@@ -133,7 +135,9 @@ def test_django_mason_has_no_raw_http_pyforge_or_minio():
 
 
 def test_cfe_not_replaced_and_claude_agents_untouched():
-    named_cfe = _git_diff_names(".claude/skills/conda-forge-expert")
+    named_cfe = exclude_cfe_rebuild_equivalence_tests(
+        _repo_root(), _git_diff_names(".claude/skills/conda-forge-expert")
+    )
     named_docs = _git_diff_names("CLAUDE.md", "AGENTS.md")
     assert not named_cfe, f"must not replace CFE: {named_cfe}"
     assert not named_docs, f"must not edit CLAUDE.md/AGENTS.md: {named_docs}"

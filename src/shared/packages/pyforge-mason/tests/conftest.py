@@ -4,13 +4,63 @@
 resolve/invoke against instead of a real conda-forge-expert install.
 
 `_restore_root_logging` (autouse) contains Story 1.10's `_configure_logging`
-side effects to the test that caused them."""
+side effects to the test that caused them.
+
+`exclude_cfe_rebuild_equivalence_tests` (Story 12.7, patched post-review) is a
+shared helper for the "this story must not touch the CFE surface" story-diff
+guards in tests/meta/{test_persona_consults_cfe,test_portal_last_diagnose}.py
+-- previously duplicated verbatim in both files."""
 from __future__ import annotations
 
 import logging
+import re
+import subprocess
 from pathlib import Path
 
 import pytest
+
+# The mason-owned CFE-rebuild campaign (SPEC-conda-forge-expert-rebuild, Epic 12) adds one
+# equivalence-validation test file per compiled slice under CFE's own tests/integration/
+# directory by design (Story 6.3 landed test_slice1_equivalence.py; Story 12.7 landed
+# test_slice2_equivalence.py; slices 3-5 will add their own). These prove the compiled
+# replacement matches the live original -- they do not edit SKILL.md, scripts/, reference/,
+# guides/, or config/, so a NEWLY ADDED one is not a "CFE surface replaced" violation of
+# AD-15/FR-45 in the sense the two guards below exist to catch.
+_CFE_REBUILD_EQUIVALENCE_TEST_RE = re.compile(
+    r"^\.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py$"
+)
+
+
+def _existed_at_origin_main(root: Path, path: str) -> bool:
+    """True if `path` was already present in `origin/main`'s tree -- i.e. this
+    diff MODIFIES an existing file rather than ADDING a new one."""
+    result = subprocess.run(
+        ["git", "cat-file", "-e", f"origin/main:{path}"],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def exclude_cfe_rebuild_equivalence_tests(root: Path, paths: list[str]) -> list[str]:
+    """Filter a `_git_diff_names`/`_git_dirty_under` path list, dropping only
+    paths that are BOTH (1) named per the sanctioned
+    `test_slice<N>_equivalence.py` pattern AND (2) newly added relative to
+    `origin/main` -- never an existing file being modified.
+
+    The second condition matters: without it, a future story could silently
+    weaken an assertion inside an already-merged `test_sliceN_equivalence.py`
+    (the very file this campaign relies on to back its equivalence claims)
+    and the "must not touch CFE" guards below would never catch it
+    (adversarial review finding, Story 12.7 patch P3).
+    """
+    kept = []
+    for p in paths:
+        if _CFE_REBUILD_EQUIVALENCE_TEST_RE.match(p) and not _existed_at_origin_main(root, p):
+            continue
+        kept.append(p)
+    return kept
 
 
 @pytest.fixture(autouse=True)

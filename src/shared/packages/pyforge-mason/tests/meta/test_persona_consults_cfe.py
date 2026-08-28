@@ -8,6 +8,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from conftest import exclude_cfe_rebuild_equivalence_tests
+
 STATION = "mason"
 PERSONA = "bmad-agent-mason"
 CONTENT_SKILL = "conda-forge-expert"
@@ -310,8 +312,12 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
             text = path.read_text(encoding="utf-8", errors="replace")
             assert "generated_by: create-skill" not in text
             assert '"generated_by": "create-skill"' not in text
-    named = _git_diff_names(".claude/skills/conda-forge-expert")
-    dirty = _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
+    named = exclude_cfe_rebuild_equivalence_tests(
+        root, _git_diff_names(".claude/skills/conda-forge-expert")
+    )
+    dirty = exclude_cfe_rebuild_equivalence_tests(
+        root, _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
+    )
     assert not named, f"this story must not edit conda-forge-expert: {named}"
     assert not dirty, f"untracked CFE/SKF replacement files: {dirty}"
     assert not (root / SKF_REPLACEMENT).exists()

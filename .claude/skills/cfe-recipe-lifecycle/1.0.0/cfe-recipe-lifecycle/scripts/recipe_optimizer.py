@@ -1,0 +1,1123 @@
+#!/usr/bin/env python3
+"""
+Recipe Optimization Linter for conda-forge recipes.
+
+Goes beyond basic validation and checks for common anti-patterns, suggesting
+improvements for dependency placement, redundant selectors, security, and
+conda-forge best practices.
+
+Check codes (17 total):
+  SCHEMA-001  v1 recipe.yaml missing the `# yaml-language-server: $schema=...` header.
+              Editors lose live schema validation against prefix-dev/recipe-format
+              and `schema_version: 1` may be implicit-only. Always include both.
+  DEP-001  Dev dependency in run requirements
+  DEP-002  noarch:python Python upper bound in run (should be run_constrained)
+  PIN-001  Exact version pin in run requirements
+  ABT-001  Missing license_file in about section
+  ABT-002  v0/meta.yaml about-field names used in v1 recipe.yaml (silently ignored)
+  LIC-001  Pattern-(3) secondary-source LICENSE detected; canonical placement is
+           pattern (2) — ship LICENSE in the recipe directory and flatten source.
+  FMT-001  YAML list items under a mapping key indented at the SAME depth as the
+           parent key (non-canonical; should be 2 spaces deeper).
+  SCRIPT-001  sudo used in build.sh
+  SCRIPT-002  pip install --upgrade in build.sh
+  SEL-001  Redundant platform skip conditions
+  SEL-002  Incomplete CFEP-25 python_min triad for noarch:python
+  SEL-003  Bare `py < N` selector in v1 recipe.yaml build.skip (use match(python, ...))
+  STD-001  compiler() used without stdlib() — CRITICAL, causes CI rejection
+  STD-002  Both meta.yaml and recipe.yaml present — format mixing is rejected
+  SEC-001  Source URL without sha256 checksum
+  TEST-001  Missing tests section
+  TEST-002  noarch:python tests target only python_min (or a single version) instead of
+            the [python_min, "*"] list — misses Python-version-specific breakage at the
+            top of the build matrix. Convention established by ocefpaf on
+            staged-recipes#32857 (https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932).
+  TEST-003  noarch:python recipe substitutes package_contents.site_packages for
+            python.imports without an inline `# CFEP-25-justified:` comment.
+            conda-forge web-service review fires the canonical CFEP-25 hint.
+  MAINT-001  Missing recipe-maintainers in extra section
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Dict, List, NamedTuple
+
+# Sibling helper — canonical path resolution shared across scripts/*.py.
+# Guarded: an unconditional insert appends a duplicate every time the module is
+# (re-)imported in a long-lived process, front-loading this directory ahead of
+# site-packages once per import. Same fix as dependency-checker.py's.
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from _paths import get_repo_root  # noqa: E402
+
+try:
+    from ruamel.yaml import YAML
+    RUAMEL_AVAILABLE = True
+except ImportError:
+    YAML = None  # type: ignore[assignment,misc]
+    RUAMEL_AVAILABLE = False
+
+class OptimizationSuggestion(NamedTuple):
+    """A single suggestion for improving a recipe."""
+    code: str
+    message: str
+    suggestion: str
+    confidence: float # A score from 0.0 to 1.0
+
+# A list of packages that are typically test or dev dependencies
+# and should not be in the 'run' requirements.
+DEV_DEPENDENCIES = {
+    "pytest", "pytest-cov", "pytest-mock", "black", "ruff", "mypy",
+    "flake8", "pre-commit", "tox", "nox", "twine", "wheel", "build"
+}
+
+# Virtual packages and special names that should never trigger PIN-001.
+_VIRTUAL_PACKAGES = {"__osx", "__glibc", "__linux", "__unix", "__cuda", "__archspec"}
+
+
+def _flatten_reqs(items: list | None) -> List[str]:
+    """Recursively flatten requirement lists that may contain if/then/else dicts."""
+    result: List[str] = []
+    for item in (items or []):
+        if isinstance(item, str):
+            result.append(item)
+        elif isinstance(item, dict):
+            for key in ("then", "else"):
+                val = item.get(key)
+                if isinstance(val, str):
+                    result.append(val)
+                elif isinstance(val, list):
+                    result.extend(_flatten_reqs(val))
+    return result
+
+
+def analyze_dependencies(data: Dict) -> List[OptimizationSuggestion]:
+    """Analyzes dependency sections for common issues."""
+    suggestions = []
+
+    run_reqs = data.get("requirements", {}).get("run", [])
+    if not run_reqs:
+        return suggestions
+
+    for req in _flatten_reqs(run_reqs):
+        pkg_name = req.split()[0]
+        if pkg_name in DEV_DEPENDENCIES:
+            suggestions.append(OptimizationSuggestion(
+                code="DEP-001",
+                message=f"'{pkg_name}' is a development dependency found in the 'run' requirements.",
+                suggestion=f"Consider moving '{pkg_name}' to the 'test' requirements section.",
+                confidence=0.95
+            ))
+
+    return suggestions
+
+
+def analyze_noarch_python_constraints(data: Dict) -> List[OptimizationSuggestion]:
+    """Check noarch:python recipes for Python constraint best practices (DEP-002)."""
+    suggestions = []
+    build = data.get("build", {}) or {}
+    if build.get("noarch") != "python":
+        return suggestions
+
+    reqs = data.get("requirements", {}) or {}
+    flat_run = _flatten_reqs(reqs.get("run", []))
+    flat_constrained = _flatten_reqs(reqs.get("run_constrained", []))
+
+    # Detect Python entry in run that carries an upper bound.
+    python_run_with_upper: str | None = None
+    for req in flat_run:
+        parts = req.strip().split()
+        if not parts or parts[0].lower() != "python":
+            continue
+        if len(parts) > 1 and "<" in " ".join(parts[1:]):
+            python_run_with_upper = req
+            break
+
+    # Check whether Python already appears in run_constrained.
+    python_in_constrained = any(
+        c.strip().split()[0].lower() == "python"
+        for c in flat_constrained
+        if c.strip()
+    )
+
+    if python_run_with_upper and not python_in_constrained:
+        suggestions.append(OptimizationSuggestion(
+            code="DEP-002",
+            message=f"noarch:python recipe pins Python upper bound in run: '{python_run_with_upper}'.",
+            suggestion=(
+                "Move the upper bound to run_constrained (e.g. 'python <X') and keep only "
+                "the lower bound in run. Hard upper bounds in run block installation with "
+                "newer Python; run_constrained is a softer constraint that warns without blocking."
+            ),
+            confidence=0.85,
+        ))
+
+    return suggestions
+
+
+def analyze_pinning(data: Dict) -> List[OptimizationSuggestion]:
+    """Detect over-pinned (exact ==) run dependencies (PIN-001)."""
+    suggestions = []
+
+    run_reqs = data.get("requirements", {}).get("run", [])
+
+    for req in _flatten_reqs(run_reqs):
+        req = req.strip()
+        # Skip template expressions — version is resolved at build time.
+        if not req or "${{" in req or "{{" in req:
+            continue
+        parts = req.split()
+        if len(parts) < 2:
+            continue
+        pkg = parts[0]
+        if pkg.lower() == "python" or pkg.lower() in _VIRTUAL_PACKAGES:
+            continue
+        constraint = " ".join(parts[1:])
+        # Flag == (exact match) pins; allow >= or ~= or *.
+        if re.search(r"(?<![<>!])={2}", constraint):
+            version_m = re.search(r"==\s*([^\s,]+)", constraint)
+            version = version_m.group(1) if version_m else "X.Y.Z"
+            suggestions.append(OptimizationSuggestion(
+                code="PIN-001",
+                message=f"Run dependency '{pkg}' is pinned to an exact version: '{req}'.",
+                suggestion=(
+                    f"Prefer '>={version}' or '>={version},<next_major'. "
+                    "Exact pins block security updates and make co-installation harder."
+                ),
+                confidence=0.9,
+            ))
+
+    return suggestions
+
+
+_V0_TO_V1_ABOUT_FIELDS = {
+    "home": "homepage",
+    "dev_url": "repository",
+    "doc_url": "documentation",
+    "doc_source_url": "documentation",
+    "license_family": None,  # removed in v1; not replaced
+}
+
+
+_PLACEHOLDER_SUMMARY_PATTERNS = (
+    "add your description here",
+    "add description here",
+    "todo",
+    "fixme",
+)
+_PLACEHOLDER_LICENSE_FILE_VALUES = (
+    "please_add_license_file",
+    "please_add_license",
+    "fixme",
+    "todo",
+)
+
+# v8.13.0 — SEL-004 floor reader. Mirrors `_read_conda_forge_python_floor` in
+# `.claude/tools/conda_forge_server.py`. The two would-be-duplicated readers
+# stay separate because the optimizer can run in fresh environments where the
+# pixi env's pinning file isn't materialised — both implement the same
+# graceful-fallback behaviour.
+_DEFAULT_CONDA_FORGE_PYTHON_FLOOR = "3.10"
+_PINNING_PYTHON_MIN_RE = re.compile(
+    r"^python_min:\s*\n(?:[ \t]*#[^\n]*\n)*[ \t]*-\s*['\"]?(?P<value>\d+\.\d+)['\"]?",
+    re.MULTILINE,
+)
+
+
+def _read_conda_forge_python_floor() -> str:
+    """Read conda-forge's current python_min floor dynamically.
+
+    v8.13.0 — supports SEL-004. Reads from
+    `.pixi/envs/local-recipes/conda_build_config.yaml`'s `python_min:` list
+    (the materialised conda-forge-pinning value). Falls back to the literal
+    default (`3.10`) when the file is missing or unparseable — never blocks
+    the optimizer path. The floor moves over time; the fallback is a
+    snapshot, not a contract.
+    """
+    repo_root = get_repo_root()
+    if repo_root is None:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    pinning = repo_root / ".pixi/envs/local-recipes/conda_build_config.yaml"
+    try:
+        text = pinning.read_text(encoding="utf-8")
+    except OSError:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    m = _PINNING_PYTHON_MIN_RE.search(text)
+    if m is None:
+        return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
+    return m.group("value")
+
+
+def analyze_about_section(data: Dict) -> List[OptimizationSuggestion]:
+    """Check about section for conda-forge required fields, v0/v1 field-name mismatches,
+    and grayskull placeholder literals.
+
+    ABT-001  Missing license_file
+    ABT-002  v0 (meta.yaml) about-field names used in v1 recipe.yaml — rattler-build
+             silently accepts unknown keys, so these become a data-loss bug rather than
+             a validation error. Verified against prefix-dev/recipe-format $defs.About.
+    ABT-003  Placeholder-shaped about-field — grayskull echoes upstream pyproject's
+             placeholder defaults (`summary: "Add your description here"`) directly,
+             plus its own `license_file: PLEASE_ADD_LICENSE_FILE` and empty `license:`
+             when PyPI metadata is sparse. Conda-forge reviewers reject the PR on the
+             first one alone. v8.13.0 — closes C3 from the S3 retro.
+    """
+    suggestions = []
+    about = data.get("about", {}) or {}
+
+    if "license_file" not in about:
+        suggestions.append(OptimizationSuggestion(
+            code="ABT-001",
+            message="Missing 'license_file' in about section.",
+            suggestion=(
+                "Add 'license_file: LICENSE' (adjust filename to match the repo: "
+                "LICENSE.md, LICENSE.txt, etc.). "
+                "conda-forge requires all packages to bundle the license file."
+            ),
+            confidence=0.95,
+        ))
+
+    # --- ABT-003: placeholder-shaped about-fields ---
+    summary = about.get("summary")
+    if isinstance(summary, str):
+        s = summary.strip().lower()
+        is_placeholder = (
+            any(p in s for p in _PLACEHOLDER_SUMMARY_PATTERNS)
+            or len(summary.strip()) < 8
+            or summary.strip() == ""
+        )
+        if is_placeholder:
+            suggestions.append(OptimizationSuggestion(
+                code="ABT-003",
+                message=f"'about.summary' is a placeholder/trivial value: {summary!r}",
+                suggestion=(
+                    "Replace with a meaningful one-line summary (~50-100 chars). "
+                    "Grayskull echoes upstream pyproject's placeholder defaults "
+                    "(`uv init` / `rye init` / `hatch init` emit "
+                    "'Add your description here'); the recipe should not ship them."
+                ),
+                confidence=1.0,
+            ))
+
+    if "license" in about:
+        lic = about.get("license")
+        if lic is None or (isinstance(lic, str) and not lic.strip()):
+            suggestions.append(OptimizationSuggestion(
+                code="ABT-003",
+                message="'about.license' is empty or null.",
+                suggestion=(
+                    "Set the SPDX identifier explicitly (MIT, Apache-2.0, BSD-3-Clause, "
+                    "GPL-3.0-only, ...). When PyPI metadata's 'license' field is None, "
+                    "infer from the OSI-approved classifier (e.g., 'License :: OSI Approved :: "
+                    "MIT License' → 'MIT') or read from the upstream LICENSE file."
+                ),
+                confidence=1.0,
+            ))
+
+    license_file = about.get("license_file")
+    if license_file is not None:
+        values_to_check = (
+            [license_file] if isinstance(license_file, str)
+            else list(license_file) if isinstance(license_file, list) else []
+        )
+        for v in values_to_check:
+            if isinstance(v, str) and v.strip().lower() in _PLACEHOLDER_LICENSE_FILE_VALUES:
+                suggestions.append(OptimizationSuggestion(
+                    code="ABT-003",
+                    message=f"'about.license_file' is a grayskull placeholder: {v!r}",
+                    suggestion=(
+                        "Replace with the real filename. If upstream sdist ships LICENSE, use "
+                        "`license_file: [LICENSE]`. If sdist has none, vendor the LICENSE "
+                        "into the recipe directory per SKILL.md Canonical License-File "
+                        "Placement pattern (2) and reference it the same way."
+                    ),
+                    confidence=1.0,
+                ))
+
+    # ABT-002 only applies to v1 recipes — v0 meta.yaml legitimately uses these names.
+    if data.get("schema_version") == 1:
+        for v0_name, v1_name in _V0_TO_V1_ABOUT_FIELDS.items():
+            if v0_name in about:
+                if v1_name is None:
+                    msg = (
+                        f"'about.{v0_name}' is a v0 (meta.yaml) field with no v1 equivalent — "
+                        "rattler-build silently ignores it."
+                    )
+                    sug = f"Remove 'about.{v0_name}'."
+                else:
+                    msg = (
+                        f"'about.{v0_name}' is the v0 (meta.yaml) field name; "
+                        f"v1 recipe.yaml expects '{v1_name}'. rattler-build silently ignores "
+                        "unknown keys, so the value is lost in the built package."
+                    )
+                    sug = f"Rename 'about.{v0_name}' → 'about.{v1_name}'."
+                suggestions.append(OptimizationSuggestion(
+                    code="ABT-002",
+                    message=msg,
+                    suggestion=sug,
+                    confidence=1.0,
+                ))
+
+    return suggestions
+
+def analyze_build_script(recipe_dir: Path) -> List[OptimizationSuggestion]:
+    """Analyzes build scripts (e.g., build.sh) for anti-patterns."""
+    suggestions = []
+    build_script_path = recipe_dir / "build.sh"
+    if not build_script_path.exists():
+        return suggestions
+        
+    content = build_script_path.read_text()
+    
+    if "sudo " in content:
+        suggestions.append(OptimizationSuggestion(
+            code="SCRIPT-001",
+            message="'sudo' found in build.sh. Builds must not require root privileges.",
+            suggestion="Remove 'sudo' and ensure all operations are performed with user permissions.",
+            confidence=1.0
+        ))
+        
+    if "pip install --upgrade" in content:
+        suggestions.append(OptimizationSuggestion(
+            code="SCRIPT-002",
+            message="'pip install --upgrade' found. This can lead to non-reproducible builds.",
+            suggestion="Remove the '--upgrade' flag. Pin dependencies in the recipe instead.",
+            confidence=0.9
+        ))
+
+    return suggestions
+
+_PY_SELECTOR_RE = re.compile(r"^\s*py\s*[<>=!]+\s*\d+\s*$")
+
+
+_TEST_003_JUSTIFICATION_PREFIX = "# CFEP-25-justified:"
+
+
+def analyze_selectors(data: Dict, recipe_path: Path | None = None) -> List[OptimizationSuggestion]:
+    """Analyzes platform selectors (SEL-001), CFEP-25 python_min compliance (SEL-002),
+    and v0-style `py < N` selectors in v1 recipes (SEL-003).
+    """
+    suggestions = []
+    # If recipe carries a CFEP-25-justified comment, the recipe is intentionally
+    # using package_contents instead of python.imports — so the "tests python
+    # block missing python_version" half of SEL-002 doesn't apply. TEST-003
+    # handles the substitution check; SEL-002 here only enforces context/host/run.
+    has_cfep25_justification = False
+    if recipe_path is not None:
+        try:
+            has_cfep25_justification = (
+                _TEST_003_JUSTIFICATION_PREFIX in recipe_path.read_text(encoding="utf-8")
+            )
+        except OSError:
+            pass
+
+    build_section = data.get("build", {}) or {}
+
+    # --- SEL-001: Redundant platform skip conditions ---
+    skip_value = build_section.get("skip", None)
+    if skip_value is not None:
+        sole_platform: str | None = None
+        if isinstance(skip_value, list):
+            not_conditions = [
+                str(s).strip() for s in skip_value
+                if re.match(r"^not\s+\w+$", str(s).strip())
+            ]
+            # Single "not X" → recipe only targets platform X
+            if len(not_conditions) == 1:
+                sole_platform = not_conditions[0].split()[-1]
+        if sole_platform:
+            suggestions.append(OptimizationSuggestion(
+                code="SEL-001",
+                message=f"Recipe is restricted to '{sole_platform}'. if/then conditions scoped to this platform may be redundant.",
+                suggestion=f"Review if/then conditionals already limited to '{sole_platform}' — they may be removable.",
+                confidence=0.7,
+            ))
+
+    # --- SEL-003: v0-style `py < N` selector in v1 recipe (silently ignored) ---
+    # Empirical: rattler-build v0.64 does not inject a `py` integer variable from the
+    # `python` variant string in staged-recipes-style builds, so `py < 311` evaluates
+    # against an undefined symbol and never fires. cocoindex PR #33231 case study.
+    # Use `match(python, "<3.11")` instead.
+    if data.get("schema_version") == 1 and isinstance(skip_value, list):
+        for entry in skip_value:
+            if isinstance(entry, str) and _PY_SELECTOR_RE.match(entry):
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-003",
+                    message=(
+                        f"v1 recipe.yaml uses bare '{entry.strip()}' selector — this is "
+                        "conda-build (meta.yaml v0) form and is silently ignored by rattler-build."
+                    ),
+                    suggestion=(
+                        f"Replace '{entry.strip()}' with the rattler-build form, e.g. "
+                        "'match(python, \"<3.11\")'. See reference/selectors-reference.md."
+                    ),
+                    confidence=1.0,
+                ))
+
+    # --- SEL-002: CFEP-25 python_min for noarch:python ---
+    # Checks all three required locations: context, host, run, and tests python block.
+    # Note: SEL-001 early-return was removed so this check runs even when skip is absent.
+    if build_section.get("noarch") == "python":
+        context = data.get("context", {}) or {}
+        reqs = data.get("requirements", {}) or {}
+        flat_run = _flatten_reqs(reqs.get("run", []))
+        flat_host = _flatten_reqs(reqs.get("host", []))
+
+        has_python_min_ctx = "python_min" in context
+        has_python_min_run = any("python_min" in r for r in flat_run if isinstance(r, str))
+        has_python_min_host = any("python_min" in r for r in flat_host if isinstance(r, str))
+
+        # v1 recipes: tests[n].python.python_version anchors CI to python_min
+        tests = data.get("tests", []) or []
+        has_python_version_test = any(
+            isinstance(t, dict)
+            and isinstance(t.get("python"), dict)
+            and "python_version" in t["python"]
+            for t in tests
+        )
+
+        if not has_python_min_ctx and not has_python_min_run:
+            suggestions.append(OptimizationSuggestion(
+                code="SEL-002",
+                message="noarch: python recipe does not use 'python_min' context variable (CFEP-25).",
+                suggestion=(
+                    "Add 'python_min: \"3.10\"' to context (current conda-forge floor), then use "
+                    "'python >=${{ python_min }}' in run requirements."
+                ),
+                confidence=0.9,
+            ))
+        else:
+            # python_min is in use — check for incomplete CFEP-25 triad coverage
+            missing: List[str] = []
+            if not has_python_min_host:
+                missing.append("host (python ${{ python_min }}.*)")
+            if not has_python_version_test and not has_cfep25_justification:
+                missing.append("tests python block (python_version: ${{ python_min }}.*)")
+            if missing:
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-002",
+                    message=(
+                        "Incomplete CFEP-25 python_min coverage: "
+                        f"missing from {', '.join(missing)}."
+                    ),
+                    suggestion=(
+                        "Full CFEP-25 triad: "
+                        "(1) context: python_min: '3.10', "
+                        "(2) host: python ${{ python_min }}.*, "
+                        "(3) run: python >=${{ python_min }}, "
+                        "(4) tests python block: python_version: ${{ python_min }}.*"
+                    ),
+                    confidence=0.75,
+                ))
+
+    # --- SEL-004: Redundant or below-floor python_min in context (v8.13.0) ---
+    # Closes the 2026-06-11 operator correction + reinforces C1 from S1+S3 retros.
+    # Conda-forge floor is read dynamically from the materialised pinning config.
+    # Per SKILL.md § Python Version Policy item 6, `context.python_min` should be
+    # OMITTED at the default floor — pinning supplies it.
+    context = data.get("context", {}) or {}
+    ctx_python_min = context.get("python_min")
+    if isinstance(ctx_python_min, str) and ctx_python_min.strip():
+        floor = _read_conda_forge_python_floor()
+        try:
+            value_tuple = tuple(int(p) for p in ctx_python_min.strip().split("."))
+            floor_tuple = tuple(int(p) for p in floor.split("."))
+        except ValueError:
+            value_tuple = floor_tuple = None
+        if value_tuple is not None and floor_tuple is not None:
+            if value_tuple == floor_tuple:
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-004",
+                    message=(
+                        f"Redundant 'context.python_min: \"{ctx_python_min}\"' — "
+                        f"matches the default conda-forge floor ({floor})."
+                    ),
+                    suggestion=(
+                        "Remove the 'python_min:' line from 'context:'. "
+                        "Conda-forge-pinning supplies the floor; `${{ python_min }}` "
+                        "references throughout the CFEP-25 triad continue to resolve "
+                        "correctly. Per SKILL.md § Python Version Policy item 6."
+                    ),
+                    confidence=1.0,
+                ))
+            elif value_tuple < floor_tuple:
+                suggestions.append(OptimizationSuggestion(
+                    code="SEL-004",
+                    message=(
+                        f"'context.python_min: \"{ctx_python_min}\"' is below the "
+                        f"conda-forge floor ({floor}) — invalid for staged-recipes."
+                    ),
+                    suggestion=(
+                        f"Remove the 'python_min:' line from 'context:'. "
+                        f"Conda-forge-pinning supplies the current floor ({floor}); "
+                        "below-floor values are never legitimate. Likely caused by "
+                        "the v8.12.x generator C1 gap echoing upstream's "
+                        "`requires-python` lower bound; v8.13.0 generator drops the "
+                        "line for new recipes."
+                    ),
+                    confidence=1.0,
+                ))
+
+    return suggestions
+
+def analyze_stdlib_compliance(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that recipes using compiler() also declare stdlib() (STD-001).
+
+    This is a CRITICAL check — omitting stdlib() causes automatic rejection by
+    conda-forge CI for all compiled packages (see SKILL.md Critical Constraints
+    and reference/recipe-yaml-reference.md § Requirements).
+    """
+    suggestions = []
+    build_reqs = _flatten_reqs(data.get("requirements", {}).get("build", []))
+
+    # go-nocgo (pure Go, no CGO) does not link against C stdlib — exclude it.
+    # go-cgo DOES link against C stdlib, so it must be paired with stdlib("c").
+    # Legacy compiler("go") is treated the same as go-nocgo (no stdlib needed).
+    _NO_STDLIB_COMPILERS = {
+        'compiler("go-nocgo")', "compiler('go-nocgo')",
+        'compiler("go")', "compiler('go')",
+    }
+
+    def _is_c_abi_compiler(r: str) -> bool:
+        if "compiler(" not in r and "${{ compiler" not in r and "{{ compiler" not in r:
+            return False
+        return not any(pat in r for pat in _NO_STDLIB_COMPILERS)
+
+    has_compiler = any(_is_c_abi_compiler(r) for r in build_reqs)
+    has_stdlib = any(
+        "stdlib(" in r or "${{ stdlib" in r or "{{ stdlib" in r
+        for r in build_reqs
+    )
+
+    if has_compiler and not has_stdlib:
+        suggestions.append(OptimizationSuggestion(
+            code="STD-001",
+            message="Recipe uses compiler() but is missing stdlib() in build requirements.",
+            suggestion=(
+                "Add '${{ stdlib(\"c\") }}' immediately after '${{ compiler(\"c\") }}' "
+                "in requirements.build. conda-forge CI enforces this for all compiled "
+                "packages — omitting stdlib() causes automatic rejection."
+            ),
+            confidence=1.0,
+        ))
+    return suggestions
+
+
+def analyze_format_mixing(recipe_path: Path) -> List[OptimizationSuggestion]:
+    """Check that both meta.yaml and recipe.yaml do not coexist (STD-002).
+
+    Mixed formats in the same directory are rejected by the tooling and can
+    cause silent double-builds. Remove meta.yaml only after a successful build
+    with the new recipe.yaml (deprecation-and-migration: Strangler pattern).
+    """
+    suggestions = []
+    recipe_dir = recipe_path.parent
+    has_meta = (recipe_dir / "meta.yaml").exists()
+    has_recipe = (recipe_dir / "recipe.yaml").exists()
+
+    if has_meta and has_recipe:
+        suggestions.append(OptimizationSuggestion(
+            code="STD-002",
+            message="Both meta.yaml and recipe.yaml exist in the same directory.",
+            suggestion=(
+                "Remove meta.yaml after verifying that recipe.yaml builds successfully. "
+                "Mixed formats in a single build run are rejected by the tooling."
+            ),
+            confidence=1.0,
+        ))
+    return suggestions
+
+
+def analyze_source_security(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that source entries with URLs have sha256 checksums (SEC-001).
+
+    Missing checksums allow supply-chain substitution attacks and fail
+    conda-forge CI validation (security-and-hardening: Always Do).
+    """
+    suggestions = []
+    sources = data.get("source")
+    if sources is None:
+        return suggestions
+
+    sources_list: list = [sources] if isinstance(sources, dict) else (
+        sources if isinstance(sources, list) else []
+    )
+
+    for i, src in enumerate(sources_list):
+        if not isinstance(src, dict):
+            continue
+        if not src.get("url"):
+            continue  # git or local path sources don't require sha256
+        sha256 = str(src.get("sha256", "")).strip()
+        if not sha256:
+            label = f"source[{i}]" if len(sources_list) > 1 else "source"
+            suggestions.append(OptimizationSuggestion(
+                code="SEC-001",
+                message=f"'{label}' has a URL but no sha256 checksum.",
+                suggestion=(
+                    "Add 'sha256: <hash>' to the source block. "
+                    "Use edit_recipe with action=calculate_hash to compute it automatically, "
+                    "or run: curl -sL <url> | sha256sum"
+                ),
+                confidence=0.95,
+            ))
+    return suggestions
+
+
+def analyze_tests_section(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that a tests section exists (TEST-001).
+
+    Recipes with no tests slip through validation but fail conda-forge review.
+    A minimal test (import + pip_check) takes five lines and prevents regression
+    (test-driven-development: tests are proof, not afterthoughts).
+    """
+    suggestions = []
+    has_tests_v1 = bool(data.get("tests"))
+    has_test_v0 = bool(data.get("test"))
+
+    if not has_tests_v1 and not has_test_v0:
+        suggestions.append(OptimizationSuggestion(
+            code="TEST-001",
+            message="Recipe has no tests section.",
+            suggestion=(
+                "Add at minimum an import test and pip_check. Example (recipe.yaml v1):\n"
+                "tests:\n"
+                "  - python:\n"
+                "      imports: [mypackage]\n"
+                "      pip_check: true\n"
+                "      python_version: ${{ python_min }}.*"
+            ),
+            confidence=0.85,
+        ))
+    return suggestions
+
+
+def analyze_noarch_python_test_matrix(data: Dict) -> List[OptimizationSuggestion]:
+    """TEST-002: noarch:python tests should run against both python_min and "*".
+
+    A noarch:python package builds once but is dispatched across the entire
+    Python build matrix (3.10 -> 3.14 today). A test that pins ``python_version``
+    to ``${{ python_min }}.*`` only exercises the floor — Python-version-specific
+    breakage at the top of the matrix (removed stdlib modules in 3.13/3.14, dict
+    ordering, pkg_resources deprecation, etc.) sails through review and surfaces
+    as a downstream user bug.
+
+    The conda-forge convention (established by ocefpaf in staged-recipes#32857
+    review comment r3039190932) is to express ``python_version`` as a list:
+
+        python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+    The ``"*"`` entry resolves to the latest Python in the build env so the test
+    suite runs against both the floor and the ceiling on every (re)build.
+
+    Reference: https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932
+    """
+    suggestions: List[OptimizationSuggestion] = []
+
+    build = data.get("build") or {}
+    if build.get("noarch") != "python":
+        return suggestions
+
+    tests = data.get("tests") or []
+    if not isinstance(tests, list):
+        return suggestions
+
+    for idx, test_entry in enumerate(tests):
+        if not isinstance(test_entry, dict):
+            continue
+        python_block = test_entry.get("python")
+        if not isinstance(python_block, dict):
+            continue
+        if "python_version" not in python_block:
+            continue
+
+        py_ver = python_block["python_version"]
+        if isinstance(py_ver, list):
+            has_star = any(str(v).strip() == "*" for v in py_ver)
+            if has_star:
+                continue
+            issue = "list form is missing the \"*\" entry"
+        elif isinstance(py_ver, str):
+            issue = f"single value '{py_ver}' tests only one Python version"
+        else:
+            continue
+
+        suggestions.append(OptimizationSuggestion(
+            code="TEST-002",
+            message=(
+                f"tests[{idx}].python.python_version: {issue}. "
+                "noarch:python recipes should test against both python_min and \"*\" "
+                "to catch Python-version-specific breakage."
+            ),
+            suggestion=(
+                "Use the list form (conda-forge convention per ocefpaf, "
+                "staged-recipes#32857 r3039190932):\n"
+                "tests:\n"
+                "  - python:\n"
+                "      imports: [<pkg>]\n"
+                "      pip_check: true\n"
+                "      python_version:\n"
+                "      - ${{ python_min }}.*\n"
+                "      - \"*\""
+            ),
+            confidence=0.85,
+        ))
+
+    return suggestions
+
+
+def analyze_noarch_python_test_type(
+    recipe_path: Path, data: Dict
+) -> List[OptimizationSuggestion]:
+    """TEST-003: noarch:python recipe substitutes ``package_contents`` for
+    ``python.imports`` without justification.
+
+    The canonical CFEP-25 test for a noarch:python library is:
+
+        tests:
+          - python:
+              imports: [<pkg>]
+              pip_check: true
+              python_version:
+                - ${{ python_min }}.*
+                - "*"
+
+    This is what conda-forge's web-service review (the post-merge linter) expects
+    and what every reviewer asks for. A ``package_contents.site_packages:`` test
+    in place of it is technically valid YAML, builds, and passes ``conda-smithy
+    lint`` locally — but the web-service review will fire the canonical CFEP-25
+    hint ("you should usually use the pin ``python_version: ${{ python_min }}.*``
+    or ``python ${{ python_min }}.*`` for the python_version or python entry").
+
+    Allowed escape hatch: recipes whose test environment cannot resolve the
+    runtime stack (Django web apps where ``import mymodule`` fails without
+    ``DJANGO_SETTINGS_MODULE``; ML benchmarks with deps not on conda-forge) may
+    keep ``package_contents`` by carrying an inline justification comment of the
+    form ``# CFEP-25-justified: <reason>`` directly above the ``tests:`` block.
+    The presence of that comment in the file (anywhere) suppresses TEST-003.
+
+    Reference: rxm7706/local-recipes Phase-6c retrospective; conda-forge
+    web-service review run #26723641060.
+    """
+    suggestions: List[OptimizationSuggestion] = []
+
+    build = data.get("build") or {}
+    if build.get("noarch") != "python":
+        return suggestions
+
+    tests = data.get("tests") or []
+    if not isinstance(tests, list) or not tests:
+        return suggestions
+
+    has_python_imports = False
+    has_package_contents_site = False
+    for entry in tests:
+        if not isinstance(entry, dict):
+            continue
+        if isinstance(entry.get("python"), dict) and entry["python"].get("imports"):
+            has_python_imports = True
+        pc = entry.get("package_contents")
+        if isinstance(pc, dict) and pc.get("site_packages"):
+            has_package_contents_site = True
+
+    if has_python_imports or not has_package_contents_site:
+        return suggestions
+
+    # Look for justification comment anywhere in the file
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        text = ""
+    if _TEST_003_JUSTIFICATION_PREFIX in text:
+        return suggestions
+
+    suggestions.append(OptimizationSuggestion(
+        code="TEST-003",
+        message=(
+            "noarch:python recipe uses package_contents.site_packages instead "
+            "of the canonical python.imports test. conda-forge's web-service "
+            "review (the post-merge linter) will fire the CFEP-25 hint."
+        ),
+        suggestion=(
+            "Restore the canonical CFEP-25 triad:\n"
+            "tests:\n"
+            "  - python:\n"
+            "      imports: [<pkg>]\n"
+            "      pip_check: true\n"
+            "      python_version:\n"
+            "      - ${{ python_min }}.*\n"
+            "      - \"*\"\n"
+            "\n"
+            "If the test env genuinely cannot resolve the runtime stack "
+            "(Django web app needing DJANGO_SETTINGS_MODULE; ML benchmark "
+            "with unresolvable deps), keep package_contents and add an "
+            "inline justification comment:\n"
+            "# CFEP-25-justified: <one-line reason>\n"
+            "tests:\n"
+            "  - package_contents:\n"
+            "      site_packages: [<module>]"
+        ),
+        confidence=0.85,
+    ))
+    return suggestions
+
+
+def analyze_maintainers(data: Dict) -> List[OptimizationSuggestion]:
+    """Check that recipe-maintainers is populated (MAINT-001).
+
+    conda-forge requires at least one maintainer per recipe. Recipes without
+    maintainers are rejected at staged-recipes review.
+    """
+    suggestions = []
+    extra = data.get("extra") or {}
+    maintainers = extra.get("recipe-maintainers") or extra.get("recipe_maintainers")
+
+    if not maintainers:
+        suggestions.append(OptimizationSuggestion(
+            code="MAINT-001",
+            message="Recipe has no maintainers listed in extra.recipe-maintainers.",
+            suggestion=(
+                "Add your GitHub username to extra.recipe-maintainers. "
+                "conda-forge requires at least one maintainer per recipe.\n"
+                "Example:\nextra:\n  recipe-maintainers:\n    - rxm7706"
+            ),
+            confidence=0.9,
+        ))
+    return suggestions
+
+
+_LICENSE_URL_RE = re.compile(r"/LICENSE(\.[A-Za-z]+)?$|/COPYING$", re.IGNORECASE)
+
+
+def analyze_license_placement(data: Dict) -> List[OptimizationSuggestion]:
+    """LIC-001 — Detect pattern-(3) secondary-source LICENSE and suggest pattern (2).
+
+    Canonical License-File Placement (SKILL.md):
+      (1) sdist ships LICENSE → license_file: LICENSE alone
+      (2) sdist omits LICENSE → ship LICENSE in recipes/<name>/ alongside recipe.yaml
+      (3) secondary source.url pulling LICENSE from GitHub → NON-CANONICAL
+
+    Pattern (3) works but adds brittle commit-pin maintenance and looks
+    unusual to reviewers. When detected, suggest converting to pattern (2).
+    """
+    suggestions: List[OptimizationSuggestion] = []
+    sources = data.get("source")
+    if not isinstance(sources, list):
+        return suggestions  # single-URL source can't be pattern (3) by definition
+
+    for i, src in enumerate(sources):
+        if not isinstance(src, dict):
+            continue
+        url = str(src.get("url", "")).strip()
+        file_name = str(src.get("file_name", "")).strip().lower()
+        is_license_url = bool(_LICENSE_URL_RE.search(url))
+        is_license_filename = file_name in {"license", "license.txt", "license.md", "copying"}
+        if is_license_url or is_license_filename:
+            suggestions.append(OptimizationSuggestion(
+                code="LIC-001",
+                message=(
+                    f"source[{i}] is a secondary source fetching LICENSE from {url or '<missing url>'} — "
+                    "non-canonical pattern (3) per SKILL.md § Canonical License-File Placement."
+                ),
+                suggestion=(
+                    "Convert to pattern (2): download the LICENSE once and ship it in the "
+                    "recipe directory next to recipe.yaml. Then flatten `source:` to a single "
+                    "URL block. rattler-build resolves `license_file: LICENSE` relative to the "
+                    "recipe directory when not found in the source archive. Eliminates the "
+                    "commit-pin maintenance burden on every version bump."
+                ),
+                confidence=0.9,
+            ))
+            break  # one LIC-001 per recipe is enough
+
+    return suggestions
+
+
+# FMT-001 — non-canonical list indent under mapping key.
+# Match: optional whitespace + key: + EOL + immediately next non-empty line
+# is a list item (`-`) at the SAME indent as the key.
+_FMT_LIST_INDENT_RE = re.compile(
+    r"^(?P<indent>[ ]*)(?P<key>[A-Za-z_][A-Za-z0-9_\-]*):[ \t]*\r?\n"
+    r"(?P<list_block>(?:(?P=indent)-[ \t][^\r\n]*\r?\n)+)",
+    re.MULTILINE,
+)
+
+
+def analyze_yaml_indent(recipe_path: Path) -> List[OptimizationSuggestion]:
+    """FMT-001 — list items under a mapping key indented at the same depth as
+    the parent key (non-canonical).
+
+    Canonical YAML for a list value under a mapping key indents the list items
+    deeper than the key (typically 2 spaces). The same-depth form is valid YAML
+    (the `-` counts as one level of indent) but reviewers consistently flag it
+    and several editors render it ambiguously.
+
+    Done as raw-text parsing because ruamel.yaml's load step normalizes indent
+    away; by the time the AST exists, the original formatting is gone.
+    """
+    suggestions: List[OptimizationSuggestion] = []
+    try:
+        text = recipe_path.read_text(encoding="utf-8")
+    except OSError:
+        return suggestions
+
+    seen_keys: set[str] = set()
+    for m in _FMT_LIST_INDENT_RE.finditer(text):
+        key = m.group("key")
+        # Avoid flagging top-level keys (no indent) — top-level lists are stylistic.
+        if not m.group("indent"):
+            continue
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        suggestions.append(OptimizationSuggestion(
+            code="FMT-001",
+            message=(
+                f"List items under `{key}:` are indented at the same depth as the parent key. "
+                "Canonical YAML indents list items 2 spaces deeper than the key."
+            ),
+            suggestion=(
+                f"Indent the `-` items 2 spaces further than `{key}:`. Example:\n"
+                f"    {key}:\n"
+                f"      - item1\n"
+                f"      - item2"
+            ),
+            confidence=0.85,
+        ))
+
+    return suggestions
+
+
+_SCHEMA_HEADER_PREFIX = "# yaml-language-server:"
+
+
+def analyze_schema_header(recipe_path: Path, data: Dict) -> List[OptimizationSuggestion]:
+    """SCHEMA-001 — v1 recipe.yaml must declare the prefix-dev/recipe-format schema.
+
+    Two lines together act as the v1 marker: the `# yaml-language-server: $schema=...`
+    comment (drives editor validation) and `schema_version: 1` (drives rattler-build's
+    v1 parser). The comment is technically optional for builds but conda-forge style
+    expects it on every v1 recipe.
+    """
+    suggestions: List[OptimizationSuggestion] = []
+    # Only applies to v1 recipes (or recipe.yaml files that should be v1).
+    is_v1_file = recipe_path.name == "recipe.yaml"
+    has_schema_version_1 = data.get("schema_version") == 1
+    if not (is_v1_file or has_schema_version_1):
+        return suggestions
+
+    try:
+        first_lines = recipe_path.read_text(encoding="utf-8").lstrip().splitlines()[:5]
+    except OSError:
+        return suggestions
+
+    has_header = any(line.startswith(_SCHEMA_HEADER_PREFIX) for line in first_lines)
+    if not has_header:
+        suggestions.append(OptimizationSuggestion(
+            code="SCHEMA-001",
+            message=(
+                "v1 recipe.yaml is missing the `# yaml-language-server: $schema=...` header. "
+                "Editors lose live validation against prefix-dev/recipe-format."
+            ),
+            suggestion=(
+                "Prepend the two canonical lines at the very top of recipe.yaml:\n"
+                "  # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json\n"
+                "  schema_version: 1"
+            ),
+            confidence=1.0,
+        ))
+
+    if is_v1_file and not has_schema_version_1:
+        suggestions.append(OptimizationSuggestion(
+            code="SCHEMA-001",
+            message="recipe.yaml is missing `schema_version: 1`.",
+            suggestion="Add `schema_version: 1` directly under the yaml-language-server header.",
+            confidence=1.0,
+        ))
+
+    return suggestions
+
+
+def optimize_recipe(recipe_path: Path) -> List[OptimizationSuggestion]:
+    """Runs all optimization checks on a given recipe file."""
+    if not RUAMEL_AVAILABLE:
+        return [OptimizationSuggestion("OPT-000", "ruamel.yaml not found.", "Install ruamel.yaml.", 1.0)]
+    assert YAML is not None
+
+    yaml = YAML()
+    try:
+        with open(recipe_path) as f:
+            data = yaml.load(f)
+    except Exception:
+        return [] # If we can't parse it, we can't optimize it.
+
+    all_suggestions = []
+    # Critical constraints first (confidence 1.0 — will block CI)
+    all_suggestions.extend(analyze_stdlib_compliance(data))
+    all_suggestions.extend(analyze_format_mixing(recipe_path))
+    all_suggestions.extend(analyze_schema_header(recipe_path, data))
+    # Security checks
+    all_suggestions.extend(analyze_source_security(data))
+    # Completeness checks
+    all_suggestions.extend(analyze_maintainers(data))
+    all_suggestions.extend(analyze_tests_section(data))
+    all_suggestions.extend(analyze_noarch_python_test_matrix(data))
+    all_suggestions.extend(analyze_noarch_python_test_type(recipe_path, data))
+    all_suggestions.extend(analyze_about_section(data))
+    all_suggestions.extend(analyze_license_placement(data))
+    # Formatting checks (raw-text)
+    all_suggestions.extend(analyze_yaml_indent(recipe_path))
+    # Quality and style checks
+    all_suggestions.extend(analyze_dependencies(data))
+    all_suggestions.extend(analyze_noarch_python_constraints(data))
+    all_suggestions.extend(analyze_pinning(data))
+    all_suggestions.extend(analyze_build_script(recipe_path.parent))
+    all_suggestions.extend(analyze_selectors(data, recipe_path))
+
+    return all_suggestions
+
+def main():
+    parser = argparse.ArgumentParser(description="Lint a conda recipe for optimizations and best practices.")
+    parser.add_argument("recipe_path", type=Path, help="Path to a recipe file (recipe.yaml/meta.yaml) or its directory.")
+
+    args = parser.parse_args()
+
+    recipe_path: Path = args.recipe_path
+    if not recipe_path.exists():
+        print(json.dumps({"success": False, "error": f"Path not found: {recipe_path}"}))
+        sys.exit(1)
+
+    # Accept a directory and resolve to recipe.yaml or meta.yaml inside it.
+    # Without this, callers passing a directory got a silent 0-suggestions
+    # response — the file_format detection in optimize_recipe() needs a real file.
+    if recipe_path.is_dir():
+        for candidate in ("recipe.yaml", "meta.yaml"):
+            if (recipe_path / candidate).exists():
+                recipe_path = recipe_path / candidate
+                break
+        else:
+            print(json.dumps({"success": False, "error": f"No recipe.yaml or meta.yaml in {recipe_path}"}))
+            sys.exit(1)
+
+    suggestions = optimize_recipe(recipe_path)
+    
+    output = {
+        "success": True,
+        "suggestions_found": len(suggestions),
+        "suggestions": [s._asdict() for s in suggestions]
+    }
+    
+    print(json.dumps(output, indent=2))
+    
+    # Exit with a non-zero code if suggestions are found, useful for CI
+    sys.exit(1 if suggestions else 0)
+
+if __name__ == "__main__":
+    main()

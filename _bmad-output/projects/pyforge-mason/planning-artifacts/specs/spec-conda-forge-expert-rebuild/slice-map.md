@@ -277,6 +277,28 @@ briefing story should confirm each on its own rather than trust this blanket sta
   `local_builder.py` (counted above, in this slice's 22 scripts) is a **separate** canonical
   script backing only the `build-local(-all|-check|-setup-sdk)` pixi tasks; it has no MCP tool
   of its own. Do not conflate the two when briefing this slice.
+- `local_builder.py` hardcodes `Path(__file__).resolve().parent / "cross-shims"` at
+  runtime (osx cross-compile shimming) — a genuine, previously-undocumented sibling
+  ASSET directory (`scripts/cross-shims/install_name_tool`), the same class of gap as
+  Slice 1's `templates/` hardcoded-path dependency. Found by Story 12.7's regression pass
+  (`test_local_builder.py`'s two `CROSS_SHIMS_DIR`-dependent tests failed against the
+  compiled package until the asset was ported); not a code-level cross-slice dependency
+  (it is Slice-2-internal), so it does not appear in the Cross-slice dependencies line
+  below, but is recorded here as a scope.include gap this slice's script inventory should
+  carry forward (`scripts/cross-shims/install_name_tool`, alongside `local_builder.py`).
+- `test_recipe_updater_interpreter.py::test_all_internal_recipe_editor_callers_agree_on_resolution_pattern`
+  loads `recipe_updater.py` + `npm_updater.py` (this slice) together with
+  `github_updater.py` + `recipe-generator.py` (Slice 1) from a single `SCRIPTS_DIR` as a
+  repo-wide interpreter-resolution drift guard — a TEST-HARNESS-level coupling across
+  slice boundaries (not a source-code import), found by Story 12.7's regression pass. No
+  single per-slice compiled package can satisfy this test alone; Story 12.7 resolved it by
+  porting Slice 1's two scripts into Slice 2's package as test-fixture-only copies (not
+  counted in Slice 2's own script inventory). Expected to recur for any future slice
+  whose regression-test files were originally authored against the live tree's single
+  shared `scripts/` directory; worth a campaign-level fix (e.g. a
+  `CFE_TEST_SCRIPTS_DIR_EXTRA` search-path convention) before slice 3 or 4's own
+  regression pass hits the same pattern — not resolved at the campaign-structure level by
+  this story.
 
 **Cross-slice dependencies:** imports `_cfy_template.py` (`submit_pr.py`), `_paths.py`
 (`recipe_optimizer.py`, `feedstock_lookup.py`, `feedstock_context.py`), `_http.py`
