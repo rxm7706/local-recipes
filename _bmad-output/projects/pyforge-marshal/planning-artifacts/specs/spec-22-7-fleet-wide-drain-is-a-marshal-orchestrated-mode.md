@@ -2,7 +2,7 @@
 title: 'Story 22.7: Fleet-wide drain is a marshal-orchestrated mode'
 type: feature
 created: '2026-08-27'
-status: in-progress
+status: in-review
 updated: '2026-08-27'
 baseline_revision: fecee52191fd42d6554e1cf012615d61e2ef3188
 review_loop_iteration: 0
