@@ -46,13 +46,18 @@ itself).
 This is a *pre-existing, campaign-wide* concern (any future slice with
 similarly-hardcoded scripts will hit the same pattern once compiled two
 levels deeper), not specific to Slice 2's own content -- fixing it is a
-Skill-Forge / campaign-structure decision (e.g. a relocation-aware shared
-`_paths.py` shim), not a single-slice patch this story's own scope covers
-(`campaign-state.yaml`'s slice-2 `next_action` records it for the campaign's
-attention). `local_builder.py`'s own `Path(__file__).resolve().parents[3]`
-occurrence is NOT part of this finding: it is only a *fallback* after a
-robust, depth-independent `pixi.toml` marker-walk, so it does not diverge in
-practice.
+Skill-Forge / campaign-structure decision, not a single-slice patch this
+story's own scope covers (`campaign-state.yaml`'s slice-2 `next_action`
+records it for the campaign's attention). `local_builder.py`'s own
+`Path(__file__).resolve().parents[3]` occurrence is NOT part of this
+finding: it is only a *fallback* after a robust, depth-independent
+`pixi.toml` marker-walk (`_repo_root_candidate()`, this same file's own
+sibling script), so it does not diverge in practice -- and it is not merely
+an absence of the problem, it is an already-proven FIX TEMPLATE: the same
+marker-walk-with-hardcoded-fallback shape is the natural pattern to port
+into the five affected scripts above in place of their own hardcoded
+`parents[N]`/`parent.parent.parent.parent` constants, rather than inventing
+a new relocation-aware mechanism from scratch.
 
 Every check below is written to legitimately assert zero divergence for the
 invocation pattern it exercises (using the module's own sanctioned

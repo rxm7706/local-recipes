@@ -15,7 +15,7 @@ description: >
 ## Overview
 
 Packages conda-forge/local-recipes' Slice 2 "Recipe Lifecycle" scripts -- 22 canonical
-scripts (10,124 lines) plus 3 sanctioned Slice-5 shared-infrastructure runtime
+scripts (9,326 lines) plus 3 sanctioned Slice-5 shared-infrastructure runtime
 dependencies (`_http.py`, `_paths.py`, `_cfy_template.py` -- 1,483 lines) -- as a
 standalone, source-cited skill. 25 scripts, 10,809 lines total. Source: local path
 `.claude/skills/conda-forge-expert/` (source_ref: `local`). Forge tier: **Quick**
@@ -154,16 +154,20 @@ one `references/*.md` file per functional group, listed above.
 
 ## Key Types
 
-The 8 top-level classes are all lightweight result records (`NamedTuple`/dataclass
-field containers with no behavior methods -- confirmed by AST extraction, not assumed):
+The 8 top-level classes are all lightweight result records with no behavior methods
+(confirmed by AST extraction, not assumed) -- 7 of the 8 are `NamedTuple`/`@dataclass`
+field containers; `ErrorPattern` is the one exception, a plain class using `__slots__`
+plus a hand-written `__init__` rather than `NamedTuple`/`@dataclass`, but it is still a
+field-only container with no other methods:
 `ValidationResult` [SRC:scripts/validate_recipe.py:L34] (`NamedTuple`),
 `OptimizationSuggestion` [SRC:scripts/recipe_optimizer.py:L65] (`NamedTuple`),
-`DependencyCheck` [SRC:scripts/dependency-checker.py:L149],
-`ErrorPattern` [SRC:scripts/failure_analyzer.py:L28],
-`MigrationResult` [SRC:scripts/feedstock-migrator.py:L29],
-`FeedstockLookupResult` [SRC:scripts/feedstock_lookup.py:L52],
-`IssueSummary` [SRC:scripts/feedstock_context.py:L49],
-`FeedstockContext` [SRC:scripts/feedstock_context.py:L62].
+`DependencyCheck` [SRC:scripts/dependency-checker.py:L149] (`@dataclass`),
+`ErrorPattern` [SRC:scripts/failure_analyzer.py:L28] (plain class, `__slots__` +
+hand-written `__init__` -- NOT `NamedTuple`/`@dataclass`),
+`MigrationResult` [SRC:scripts/feedstock-migrator.py:L29] (`@dataclass`),
+`FeedstockLookupResult` [SRC:scripts/feedstock_lookup.py:L52] (`@dataclass`),
+`IssueSummary` [SRC:scripts/feedstock_context.py:L49] (`@dataclass`),
+`FeedstockContext` [SRC:scripts/feedstock_context.py:L62] (`@dataclass`).
 
 ## Architecture at a Glance
 
@@ -200,6 +204,7 @@ field containers with no behavior methods -- confirmed by AST extraction, not as
 
 ```bash
 python scripts/validate_recipe.py <recipe-path>
+python scripts/recipe_editor.py <recipe-path> <actions-json>
 python scripts/recipe_optimizer.py <recipe-path>
 python scripts/recipe_updater.py <recipe-dir> [--dry-run]
 python scripts/npm_updater.py <recipe-dir> [--dry-run]
@@ -212,6 +217,7 @@ python scripts/failure_analyzer.py <build-log-path>
 python scripts/submit_pr.py <recipe-dir> [--prepare-only]
 python scripts/feedstock_lookup.py <package-name>
 python scripts/feedstock_context.py <package-name>
+python scripts/feedstock_enrich.py <recipe-path> [--dry-run]
 python scripts/gen_yml_reference.py
 python scripts/vulnerability_scanner.py <recipe-path>
 python scripts/pr_artifacts.py <pr-number>
@@ -331,11 +337,20 @@ also see Design Notes.
   scoped to avoid this specific landmine (absolute paths + the module's own sanctioned
   `CFE_RECIPES_ROOT` override, exactly as `tests/conftest.py`'s own `copy_recipe` fixture
   does) -- this finding is recorded here and in `campaign-state.yaml`'s `next_action`,
-  not hidden inside a passing or failing assertion. Not resolved at the
-  campaign-structure level by this story; a durable fix (e.g. a relocation-aware shared
-  path helper, or Skill-Forge itself compensating for its own directory-depth change)
-  is future campaign work, worth deciding before any future slice with similarly-hardcoded
-  scripts compiles.
+  not hidden inside a passing or failing assertion. **Not a fully open question: this same
+  compiled package already contains a working, depth-independent fix pattern for the exact
+  problem.** `local_builder.py`'s own `_repo_root_candidate()`
+  [SRC:scripts/local_builder.py:L146] walks up from the script's own location looking for
+  `pixi.toml` (the project's natural marker), and only falls back to a hardcoded
+  `Path(__file__).resolve().parents[3]` if that walk fails after 8 hops -- which is why
+  `local_builder.py` itself is NOT one of the five affected scripts above (its primary path
+  is depth-independent by construction; the hardcoded fallback is dead code in practice at
+  any depth up to 8 levels). This is the natural template for a future fix to the other
+  five scripts (port the same marker-walk pattern in place of each hardcoded
+  `parents[N]`/`parent.parent.parent.parent` constant), not an undesigned problem needing
+  invention from scratch. Not resolved at the campaign-structure level by this story --
+  still deliberately deferred (see above) -- but the fix shape is already proven, in this
+  same package, not merely hypothesized.
 <!-- [/MANUAL:additional-notes] -->
 
 ## Full API Reference
