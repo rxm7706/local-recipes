@@ -75,10 +75,13 @@ status_vocabulary:
 
 campaign:
   # The one slice actively being worked. A fresh session should start here.
-  current_focus: "slice-1-recipe-generation"
+  current_focus: "slice-2-recipe-lifecycle"
   # Not restated here -- see slices[current_focus].next_action, the single source of truth
   # for "what's next" (avoids two independently-editable descriptions of the same fact).
-  next_story: "6.2-6.4 done; next is gated on campaign.re_scope_gate's 4 pre-conditions — see slices[current_focus].next_action below"
+  # slice-1-recipe-generation still carries its own unresolved next_action (a targeted
+  # github_updater.py re-port) -- read that slice's own entry too; it is not blocking, but
+  # it is not forgotten either.
+  next_story: "12.1-12.6 done (Story 12.6, 2026-08-28: slice 2 briefed); next is Story 12.7 (slice 2 compiled + equivalence-validated) — see slices[current_focus].next_action below"
   re_scope_gate:
     # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
     # records the measured cost and the go/adjust/stop decision for the remaining slices
@@ -124,8 +127,8 @@ campaign:
         status: "closed"
         note: "Story 12.3 (2026-08-28): ran skf-setup + skf-audit-skill end-to-end against the compiled cfe-recipe-generation package, proving the real (non-substitute) audit tool works -- the brief-time concern this pre-condition exists to close (see `note`'s own 'Gated at brief-time... deliberately' reasoning). Caveat carried forward honestly, not a re-opening of this pre-condition: forge-tier.yaml is gitignored, per-worktree state (.gitignore:805) -- whichever worktree runs Story 12.7's real slice-2 audit will still need its own skf-setup run; that is expected operational work for 12.7, tracked in slice-1's own next_action below, not a gate on briefing."
       c_cross_slice_rederivation:
-        status: "open"
-        note: "Not yet done -- this is Story 12.6's own job (slice 2's brief must re-derive its full cross-slice-dependency list before compiling, not just reconfirm the CVE-DB/Slice-3 ordering risk slice-map.md already names). Closes when 12.6's brief actually does that, not before."
+        status: "closed"
+        note: "Story 12.6 (2026-08-28): re-derived slice 2's cross-slice dependencies against the live tree (CFE v8.84.0, not slice-map.md's v8.82.3 snapshot) rather than reciting slice-map.md. Confirmed still holding: the _cfy_template.py/_paths.py/_http.py import set slice-map.md names (verified via precise per-file import-line grep, not filename matching), and no NEW cross-slice sibling import among slice 2's own 22 scripts (slice 1's github_version_checker.py-class surprise does not recur). Re-confirmed the CVE-DB/Slice-3 ordering risk CLEAN, not a blocker: vulnerability_scanner.py has no Python import of cve_manager.py, only a DATA dependency (a database file cve_manager.py builds) -- under parallel-run nothing has cut over, so Slice 3 remaining unbriefed does not block slice 2. Decided native-build.sh/build-locally.py's cutover scope (previously undecided, per campaign.callers note below): both PERMANENTLY OUT OF campaign scope -- neither sits inside SPEC.md's declared `surface:` in a way that makes it a Skill-Forge rebuild target (build-locally.py is outside all three surface globs entirely; native-build.sh is a bash CLI wrapper with no extractable knowledge, and CAP-1's own script count already excludes .sh files). ALSO surfaced a new, previously-undocumented, unclassified script -- failure_catalog_generator.py (added 2026-08-22, mason Story 7.1, one commit after slice-map.md's derivation; live-tree totals are actually 69/58/46, not 68/57/46) -- flagged in the brief's own scope.notes for a follow-up slice-map.md correction, not silently absorbed into slice 2's compiled scope (slice-map.md is this story's read-only Code Map source). Full derivation: scope.notes in the brief at slices[1].brief_path below."
       d_ownership_decision:
         status: "closed"
         note: "Story 12.5 (2026-08-28): operator ruling recorded -- per-slice station ownership (mason owns the campaign through-line; atlas owns the Slice-3/atlas-intelligence tier's brief, stories, Rule-2 retro, and equivalence sign-off once slices 3-5 decompose after Story 12.8's checkpoint). Full ruling + rationale: campaign.ownership_decision below, mirrored verbatim into SPEC.md's Open Questions item 1. This pre-condition's own concern (an operator decision existing before slice 2's brief) is now proven -- the decision does not name slice 2 (order 2, mason's own Recipe Lifecycle tier) as moving, so it does not change who briefs slice 2."
@@ -261,13 +264,22 @@ campaign:
         untouched by this story) that once endgame_declared is true, no campaign.callers
         entry may still resolve to "legacy" -- it is a finding until every caller flips.
         Legacy retirement follows once all callers have flipped and clause (c) is clean.
-        Not yet accounted for in this plan: slice-map.md's Coverage Reconciliation notes
-        two CFE-root artifacts Mason also invokes -- `native-build.sh` and
-        `build-locally.py` (Slice 2, `build_native`/`build_docker`) -- that sit outside
-        all three counted surfaces (scripts/wrappers/MCP tools) and outside the 10-adapter
-        count above; whether they need their own `campaign.callers` entries or are
-        permanently out of cutover scope is undecided and should be resolved no later
-        than slice 2's own brief.
+        RESOLVED (Story 12.6, 2026-08-28 -- was "Not yet accounted for in this plan"):
+        slice-map.md's Coverage Reconciliation notes two CFE-root artifacts Mason also
+        invokes -- `native-build.sh` and `build-locally.py` (Slice 2, `build_native`/
+        `build_docker`) -- that sit outside all three counted surfaces (scripts/wrappers/
+        MCP tools) and outside the 10-adapter count above. Decided PERMANENTLY OUT OF
+        CUTOVER SCOPE: neither gets a `campaign.callers` entry. `build-locally.py` sits
+        outside all three of SPEC.md's own declared `surface:` globs entirely (not part of
+        the skill being rebuilt in the Spec's own contractual sense); `native-build.sh` is
+        a bash CLI-invocation wrapper (platform detection + `rattler-build build`
+        dispatch) with no extractable recipe-authoring knowledge for Skill Forge to
+        compile, and CAP-1's own script/wrapper counts already exclude `.sh` files for the
+        same reason. `build_native`/`build_docker` keep calling their fixed-location
+        scripts unconditionally at end cutover unless a separate, future decision revisits
+        them. Full reasoning:
+        `campaign.re_scope_gate.pre_conditions.c_cross_slice_rederivation`'s note
+        above, and the brief's own `scope.notes` at `slices[1].brief_path`.
       - Sub-questions this plan deliberately leaves open (acceptable at this stage per
         this story's own boundaries): the delete-vs-dated-stub deprecation posture
         (SPEC.md Open Question 4, explicitly "per-slice choice") and how Rule-2 retros
@@ -431,17 +443,31 @@ slices:
   - id: "slice-2-recipe-lifecycle"
     order: 2
     name: "Recipe Lifecycle"
-    status: "mapped"
+    status: "briefed"   # Story 12.6 (2026-08-28): skf-brief-skill's real canonical writer
+                         # (skf-write-skill-brief.py) produced a schema-valid skill-brief.yaml
+                         # (skf-validate-brief-schema.py: valid=true, 0 errors, 0 warnings)
+                         # after re-deriving cross-slice dependencies against the live tree --
+                         # see pre_conditions.c_cross_slice_rederivation's note above for the
+                         # full findings (imports reconfirmed, CVE-DB/Slice-3 risk reconfirmed
+                         # clean, native-build.sh/build-locally.py decided permanently
+                         # out-of-scope, one new unclassified script flagged). Not "compiled" --
+                         # skf-create-skill (compilation) is Story 12.7's job, out of this
+                         # story's own boundary.
     equivalence: null
-    brief_path: null
-    brief_mirrored_through: null
+    brief_path: "_bmad-output/projects/pyforge-mason/implementation-artifacts/forge-data/cfe-recipe-lifecycle/skill-brief.yaml"
+    brief_mirrored_through: "565ef7d194b1ccd740951250aa6535b65bdfc7b6"
+                         # Story 12.6: same newest qualifying CFE Rule-2 retro SHA as slice 1's
+                         # (no new one has landed since Story 12.1 mirrored it) -- this brief was
+                         # authored against the live CFE tree at that same commit range (v8.84.0,
+                         # gotchas through G110), so it is current as of the same retro boundary.
+                         # Verified clean via `pixi run -e local-recipes cfe-rebuild-guard-check`.
     coverage:
       scripts: 22
       wrappers: 17
       mcp_tools: 19
     mason_caller: true
     mason_caller_count: 8   # of 10 _CFE_SCRIPTS adapters
-    next_action: "Not yet scheduled. Slice 1's re-scope gate (campaign.re_scope_gate) recorded ADJUST on 2026-08-21, not an unconditional go -- see its note for the full reasoning and four concrete pre-conditions (CI enforcement, setup-forge, slice-2 cross-slice-dependency re-derivation, SPEC.md Open Question 1). Briefing starts once those pre-conditions are met (or explicitly waived by a human); `reached: true` alone is not a green light to brief."
+    next_action: "Story 12.7's job: skf-create-skill compiles the brief into a replacement package under .claude/skills/cfe-recipe-lifecycle/, the slice's existing regression tests must pass UNMODIFIED against it, the equivalence harness must report zero divergence, and skf-audit-skill (the REAL tool, not a substitute -- re-run skf-setup in whichever worktree does this, per pre_conditions.b_skf_setup's per-worktree caveat) must report zero drift. Before compiling, resolve this brief's own flagged gap: failure_catalog_generator.py is a new, unclassified script (added 2026-08-22, after slice-map.md's derivation) that slice-map.md does not cover -- a slice-map.md correction (adding it, most plausibly to Slice 2 given its _paths.py import and recipe_optimizer.py cross-reference) should land before or alongside 12.7, since slice-map.md is this story's own read-only source and out of this story's writable surface. Story 12.7 closes with its own Rule-2 retro mirrored into both slice briefs (clause (b) green) and Story 12.8's re-scope checkpoint follows."
 
   - id: "slice-3-atlas-intelligence"
     order: 3
