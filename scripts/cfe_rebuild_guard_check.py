@@ -8,7 +8,7 @@ stranded behind legacy code for months).
 Reads `campaign-state.yaml` (the real, tracked instance at
 `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/
 spec-conda-forge-expert-rebuild/campaign-state.yaml`) plus bounded git
-history and enforces three clauses:
+history and enforces four clauses:
 
     (a) stale-equivalence          any slice whose `status` is `parallel`,
                                     `audited`, or `cut-over` must have
@@ -55,7 +55,25 @@ history and enforces three clauses:
                                     caller-resolution population is future
                                     cutover work, not this story's.
 
-Never gates clause (b) on any commit-subject-line pattern. Never confuses
+    (d) gate-bypassed              a `brief_path` set on any slice whose
+                                    `order` is >= 2 while
+                                    `campaign.re_scope_gate.pre_conditions`
+                                    does not record all four named
+                                    pre-conditions "closed" or "waived" is a
+                                    finding. Machine enforcement for CAP-4's
+                                    re-scope gate (Story 6.4's GATHERED GAPS
+                                    #5: previously honored by session/human
+                                    discipline alone -- nothing read
+                                    `re_scope_gate`). Reads ONLY the
+                                    structured `pre_conditions` block, never
+                                    `re_scope_gate.note`'s free prose (the
+                                    same anti-pattern the `decision` field was
+                                    added to avoid). Slice 1 (order 1) is
+                                    exempt -- it is the measured pilot the
+                                    gate's own cost accounting is based on.
+
+Never gates clause (b) on any commit-subject-line pattern, or clause (d) on
+`re_scope_gate.note`'s free-text prose via substring matching. Never confuses
 its own clause-(b) scope with `mason_cfe_surface_check.py`'s narrower,
 self-scoped `retro:`-subject sanctioned-exception check (FR-45/Story 5.5) --
 that check stays untouched. Never implements real caller-introspection for
@@ -99,6 +117,26 @@ CFE_SURFACE_FILES = frozenset({".claude/tools/conda_forge_server.py"})
 
 # Clause (a): slice statuses that require equivalence: "green".
 EQUIVALENCE_GATED_STATUSES = frozenset({"parallel", "audited", "cut-over"})
+
+# Clause (d): slices at this order or higher are gated by the re-scope gate's
+# pre-conditions before their `brief_path` may be set (CAP-4's "second slice
+# onward" gate). Slice 1 (order 1) is exempt -- it is the measured pilot the
+# gate's own cost accounting is based on.
+RE_SCOPE_GATED_ORDER_FLOOR = 2
+
+# Clause (d): the four named pre-conditions (Story 6.4's re-scope gate note)
+# `campaign.re_scope_gate.pre_conditions` must record. Keys, not prose --
+# read structurally, never via substring-matching `re_scope_gate.note`.
+RE_SCOPE_GATE_PRE_CONDITION_KEYS = (
+    "a_ci_enforcement",
+    "b_skf_setup",
+    "c_cross_slice_rederivation",
+    "d_ownership_decision",
+)
+
+# Clause (d): a pre-condition entry's `status` value that counts as satisfied
+# (closed by real evidence, or explicitly waived by a human).
+RE_SCOPE_GATE_SATISFIED_STATUSES = frozenset({"closed", "waived"})
 
 
 def _run(root: pathlib.Path, *args: str) -> subprocess.CompletedProcess[str] | None:
@@ -263,6 +301,45 @@ def scan(state: dict, retros: list[str]) -> list[dict]:
                           "endgame is declared complete",
             })
 
+    # Clause (d): gate-bypassed. A `brief_path` set on any slice of order >= 2
+    # while campaign.re_scope_gate.pre_conditions does not record all four
+    # named pre-conditions "closed" or "waived" is a finding -- machine
+    # enforcement for CAP-4's re-scope gate (Story 6.4's GATHERED GAPS #5).
+    re_scope_gate = campaign.get("re_scope_gate")
+    re_scope_gate = re_scope_gate if isinstance(re_scope_gate, dict) else {}
+    pre_conditions = re_scope_gate.get("pre_conditions")
+    pre_conditions = pre_conditions if isinstance(pre_conditions, dict) else {}
+
+    for sl in slices:
+        if not isinstance(sl, dict):
+            continue
+        order = sl.get("order")
+        if not isinstance(order, int) or order < RE_SCOPE_GATED_ORDER_FLOOR:
+            continue
+        brief_path = sl.get("brief_path")
+        if not brief_path:
+            continue
+        slice_id = sl.get("id", "<unknown-slice>")
+        unmet = []
+        for key in RE_SCOPE_GATE_PRE_CONDITION_KEYS:
+            entry = pre_conditions.get(key)
+            status = entry.get("status") if isinstance(entry, dict) else None
+            if status not in RE_SCOPE_GATE_SATISFIED_STATUSES:
+                unmet.append(key)
+        if unmet:
+            findings.append({
+                "kind": "gate-bypassed",
+                "ref": slice_id,
+                "refs": [slice_id, *unmet],
+                "detail": f"slice '{slice_id}' (order={order}) has brief_path "
+                          f"set but campaign.re_scope_gate.pre_conditions has "
+                          f"unclosed pre-condition(s): {', '.join(unmet)}",
+                "remedy": "close or explicitly waive (by a human, with a "
+                          "dated reason) every campaign.re_scope_gate."
+                          "pre_conditions entry before writing this slice's "
+                          "brief",
+            })
+
     return findings
 
 
@@ -306,8 +383,9 @@ def main() -> int:
           f"in {args.since[:10]}..HEAD\n")
     if not findings:
         print("  clean — no slice has a stale equivalence result, no briefed "
-              "slice is behind a landed retro, and no legacy caller survives "
-              "a declared endgame.")
+              "slice is behind a landed retro, no legacy caller survives "
+              "a declared endgame, and no order>=2 slice's brief bypasses "
+              "the re-scope gate.")
         return 0
 
     for f in findings:

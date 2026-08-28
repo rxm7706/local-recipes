@@ -12,7 +12,7 @@
 # `next_action`. That is the whole resume protocol.
 
 schema_version: 1
-last_updated: "2026-08-27"
+last_updated: "2026-08-28"
 
 spec:
   path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
@@ -52,8 +52,12 @@ status_vocabulary:
 #                              status is parallel/audited/cut-over (clause a) -- written by the
 #                              equivalence harness (CAP-3/Story 6.3), never computed here from
 #                              timestamps.
+#   order                      the slice's position in the campaign sequence (1-5). Load-bearing
+#                              for clause (d) (Story 12.4): a slice is only in scope for that
+#                              clause when order >= 2 -- slice 1 (order 1) is exempt.
 #   brief_path                null until skf-brief-skill has produced this slice's brief. Once
-#                              set, the slice is checked by clause (b) below.
+#                              set, the slice is checked by clause (b) below -- and, for any
+#                              slice of order >= 2, by clause (d) (Story 12.4) too.
 #   brief_mirrored_through    null | a commit SHA. The newest landed CFE Rule-2 retro (a commit
 #                              touching both the CFE surface and CHANGELOG.md) that has been
 #                              mirrored into this slice's brief. Stale relative to the newest
@@ -63,6 +67,11 @@ status_vocabulary:
 #                              `campaign.callers` entry to have flipped off `resolves_to: "legacy"`.
 #   callers                    [] until the end-cutover effort populates real caller-resolution
 #                              entries (each an object with at least `resolves_to`).
+#   re_scope_gate.pre_conditions   (Story 12.4) structured, machine-checkable record of the
+#                              four named pre-conditions gating any order>=2 slice's brief_path
+#                              -- see the field's own inline comment below for the schema.
+#                              Clause (d) reads ONLY this block, never `re_scope_gate.note`'s
+#                              free prose.
 
 campaign:
   # The one slice actively being worked. A fresh session should start here.
@@ -90,6 +99,36 @@ campaign:
                          # dropped/reordered). Kept as "adjust" to match CAP-4's literal
                          # three-way vocabulary (go/adjust/stop) rather than inventing a
                          # fourth label; read the full `note` for the actual meaning.
+    pre_conditions:
+      # Story 12.4: structured, machine-checkable representation of the four named
+      # pre-conditions from `note`'s "Pre-conditions before slice 2's brief is written"
+      # list below -- closes GATHERED GAPS #5 (previously honored by session/human
+      # discipline alone; nothing read `re_scope_gate`). `scripts/cfe_rebuild_guard_
+      # check.py`'s clause (d) reads ONLY this block -- never `note`'s free prose (the
+      # exact anti-pattern the `decision` field above was added to avoid; see Story
+      # 6.4's own Review Triage Log). Each entry's `status` is one of:
+      #   "open"   -- not yet satisfied. A `brief_path` set on any slice of order >= 2
+      #               while ANY entry here is "open" is clause (d)'s finding.
+      #   "closed" -- the pre-condition's own specific concern (per its bullet in `note`
+      #               below) is proven, by real evidence cited in this entry's `note`.
+      #               That proof itself need not be re-run per worktree/session to stay
+      #               "closed" -- but a `note` may honestly flag that a DIFFERENT,
+      #               narrower operational step still recurs per worktree (see
+      #               `b_skf_setup` below) without that reopening this status.
+      #   "waived" -- a human explicitly decided to proceed without it; `note` records
+      #               who/when/why.
+      a_ci_enforcement:
+        status: "closed"
+        note: "Story 12.2 (2026-08-27): branch (a) chosen -- a dedicated blocking CI step re-runs cfe_rebuild_guard_check and lets its exit code stand (.github/workflows/detectors.yml); the CFE regression suite + slice-1 equivalence harness also now run in CI for the first time (.github/workflows/cfe-regression-net.yml). Durable: a tracked workflow-file change, not per-worktree state."
+      b_skf_setup:
+        status: "closed"
+        note: "Story 12.3 (2026-08-28): ran skf-setup + skf-audit-skill end-to-end against the compiled cfe-recipe-generation package, proving the real (non-substitute) audit tool works -- the brief-time concern this pre-condition exists to close (see `note`'s own 'Gated at brief-time... deliberately' reasoning). Caveat carried forward honestly, not a re-opening of this pre-condition: forge-tier.yaml is gitignored, per-worktree state (.gitignore:805) -- whichever worktree runs Story 12.7's real slice-2 audit will still need its own skf-setup run; that is expected operational work for 12.7, tracked in slice-1's own next_action below, not a gate on briefing."
+      c_cross_slice_rederivation:
+        status: "open"
+        note: "Not yet done -- this is Story 12.6's own job (slice 2's brief must re-derive its full cross-slice-dependency list before compiling, not just reconfirm the CVE-DB/Slice-3 ordering risk slice-map.md already names). Closes when 12.6's brief actually does that, not before."
+      d_ownership_decision:
+        status: "open"
+        note: "SPEC.md Open Question 1 unresolved. Story 12.5 (backlog, not yet run) will record the operator's decision here (populate this entry -- do not invent a second key) and in SPEC.md's own Open Questions section."
     note: |
       2026-08-21 (Story 6.4, CAP-4 re-scope gate). DECISION: ADJUST (closer to
       "conditional go" than to this file's own status_vocabulary sense of "adjust" --
@@ -234,6 +273,17 @@ campaign:
         (SPEC.md Open Question 4, explicitly "per-slice choice") and how Rule-2 retros
         land during the overlap window (SPEC.md Open Question 5) -- neither blocks slice
         2 briefing; both should be settled before the actual end cutover executes.
+
+      ADDENDUM (Story 12.4, dated 2026-08-28): GATHERED GAPS #5 above ("none of this
+      note's own four pre-conditions are machine-enforced") is now closed. `campaign.
+      re_scope_gate.pre_conditions` (above this `note`) is the structured,
+      machine-checkable record clause (d) reads; `scripts/cfe_rebuild_guard_check.py`
+      gains clause (d) ("gate-bypassed"): a `brief_path` set on any slice of order >= 2
+      while any `pre_conditions` entry is not "closed"/"waived" is a finding. As of this
+      addendum: (a) CI enforcement and (b) skf-setup are recorded "closed" (Stories
+      12.2/12.3); (c) cross-slice re-derivation and (d) the ownership decision remain
+      "open" (Stories 12.6/12.5, neither yet run) -- so slice 2's `brief_path` (still
+      null today) would correctly red this detector if set before those two close.
   # Story 6.2 guard hooks -- see the "Divergence-and-endgame guard hooks" comment above
   # status_vocabulary for the full field descriptions.
   endgame_declared: false
