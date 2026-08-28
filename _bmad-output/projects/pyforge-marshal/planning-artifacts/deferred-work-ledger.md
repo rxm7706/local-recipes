@@ -1832,3 +1832,14 @@ status: open
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FU-20-11: Route 4's station+key co-occurrence check has no adjacency/context requirement -- the station word and the numeric key only need to both appear somewhere in the same commit subject, independently, which could in principle pick up an unrelated small number (a version string, a count) alongside a station name.
+
+- source_spec: `planning-artifacts/specs/spec-20-11-doctors-own-adoption-gap-closes-the-branch-name-fallback-and-a-loose-last-resort.md`
+  summary: Route 4's station+key co-occurrence check has no adjacency/context requirement -- the station word and the numeric key only need to both appear somewhere in the same commit subject, independently, which could in principle pick up an unrelated small number (a version string, a count) alongside a station name.
+  evidence: Review-pass finding (Blind Hunter layer, 2026-08-28): searched this repo's actual commit history for such collisions and found none live. Risk is further bounded by (a) the digit-boundary guards correctly protecting timestamp/hash blobs in bmad-loop run IDs (verified: internal digits of a run id like 20260822-170016 never satisfy the negative lookaround on either side, since neighboring characters within the blob are themselves digits), and (b) this repo's commit conventions being structured/bot-generated rather than free text. Acknowledged as an inherent property of a deliberately-loose, advisory-only last resort (per its own docstring) rather than something to further tighten now.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py (_loose_subject_key_match)
+  origin: spec-deferred 98bba9cbe168 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
