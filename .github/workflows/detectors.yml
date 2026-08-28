@@ -24,9 +24,14 @@ name: Detectors
 # observation plane yet — see docs/dreams/fidelity-enforcement.md. Their absence
 # here is that gap, surfacing as a deployment constraint.
 #
-# ADVISORY, NOT BLOCKING — operator decision 2026-07-31. Findings surface as
-# GitHub warning annotations and a job summary; the job itself always succeeds,
-# so a detector finding never blocks a merge.
+# ADVISORY, NOT BLOCKING — operator decision 2026-07-31 — WITH ONE SCOPED
+# EXCEPTION (Story 12.2, pyforge-mason, 2026-08-27): `cfe_rebuild_guard_check`
+# alone is a real gate. The CFE-rebuild campaign's re-scope gate named CI
+# enforcement as pre-condition (a) for continuing to slice 2, and SPEC.md's
+# CAP-3 promises a detector that "fails CI" — so that ONE detector gets a
+# dedicated blocking step below whose exit code stands. Every other detector's
+# findings still surface as GitHub warning annotations and a job summary; the
+# advisory sweep itself always succeeds, so their findings never block a merge.
 #
 # State that plainly rather than letting the green tick imply more than it means:
 # this is FAST FEEDBACK, not a gate. docs/dreams/fidelity-enforcement.md holds
@@ -133,3 +138,14 @@ jobs:
             *) echo "::warning title=Detectors::Runner exited ${rc}." ;;
           esac
           exit 0
+
+      # Story 12.2 (pyforge-mason, spec-conda-forge-expert-rebuild CAP-3 /
+      # re-scope pre-condition (a)): cfe_rebuild_guard_check ALONE is blocking.
+      # This deliberately re-runs the one detector after the advisory sweep
+      # (which already surfaced its findings as annotations) and lets its exit
+      # code stand: 0 clean · 1 findings · 2 could-not-run — and 2 must never
+      # read as success, so ANY non-zero reds this job. Scoped on purpose: the
+      # 2026-07-31 advisory posture for every OTHER repo-scope detector is
+      # unchanged (see the header comment above).
+      - name: CFE rebuild guard (blocking — Story 12.2)
+        run: python scripts/cfe_rebuild_guard_check.py
