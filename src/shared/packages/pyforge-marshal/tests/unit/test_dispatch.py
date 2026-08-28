@@ -597,6 +597,92 @@ def test_git_facts_never_ask_about_a_branch_the_resolver_did_not_resolve(
     assert fresh.merge_checked == []
 
 
+class AlwaysMergedVcs(RecordingVcs):
+    """`is_branch_merged` always says yes -- mirrors `git merge-base
+    --is-ancestor branch into`'s trivially-true answer the instant a
+    dispatch branch is forked from `into`'s current tip, before any real
+    commit lands. `worktree_head_sha` is settable so a test can control
+    whether the branch has actually diverged from its launch baseline."""
+
+    def __init__(self, repo_root: Path, *, head_sha: str = "baseline0001") -> None:
+        super().__init__(repo_root)
+        self._head_sha = head_sha
+
+    def is_branch_merged(self, _repo_root: Path, branch: str, *, into: str) -> bool:
+        self.merge_checked.append(branch)
+        return True
+
+    def worktree_head_sha(self, _worktree: Path) -> str:
+        return self._head_sha
+
+
+def test_branch_merged_ignores_ancestry_when_the_branch_has_not_diverged(
+    tmp_path: Path,
+) -> None:
+    """A freshly-provisioned dispatch branch equals `into`'s own tip, so
+    `git merge-base --is-ancestor` trivially answers "yes, merged" before
+    the dispatched session has done any work -- confirmed live in
+    `journal.jsonl` for three real dispatches (2026-08-28), each recording
+    `branch_merged: true` ~2 seconds after launch with `changed_paths: []`
+    and `current_head_sha == baseline_head_sha`. `branch_merged` must not
+    trust that "yes" until the branch has actually diverged from its own
+    launch baseline -- otherwise `dispatch-resume`/`dispatch-attach` can
+    never recover a dispatch's supervision for its entire lifetime, since
+    `resolve_dispatch_session_verdict` trusts any journaled COMPLETED
+    verdict without re-deriving it."""
+    from pyforge.marshal.dispatch_supervisor.__main__ import gather_dispatch_git_facts
+
+    branch = dispatch_core.dispatch_worktree_branch(_ATLAS, _SHARED_FEED_KEY)
+    vcs = AlwaysMergedVcs(tmp_path, head_sha="baseline0001")
+    vcs.branches.add(branch)
+
+    facts = gather_dispatch_git_facts(
+        vcs,
+        repo_root=tmp_path,
+        worktree=dispatch_core.dispatch_worktree_path(
+            tmp_path, _ATLAS, _SHARED_FEED_KEY
+        ),
+        story_key=_SHARED_FEED_KEY,
+        project_slug=_ATLAS,
+        baseline_head_sha="baseline0001",
+        merge_subject_template="Story {key}",
+    )
+
+    # the ancestry question still gets asked (existing branch-derivation
+    # callers rely on the ask itself)...
+    assert vcs.merge_checked == [branch]
+    # ...but its "yes" is not trusted with zero real divergence.
+    assert facts.branch_merged is False
+
+
+def test_branch_merged_trusts_ancestry_once_the_branch_has_diverged(
+    tmp_path: Path,
+) -> None:
+    """Once the branch carries real commits past its launch baseline, a
+    genuine "merged" ancestry answer is trusted again -- this is not a
+    blanket distrust of `is_branch_merged`, only a guard against its
+    vacuously-true answer at zero divergence."""
+    from pyforge.marshal.dispatch_supervisor.__main__ import gather_dispatch_git_facts
+
+    branch = dispatch_core.dispatch_worktree_branch(_ATLAS, _SHARED_FEED_KEY)
+    vcs = AlwaysMergedVcs(tmp_path, head_sha="deadbeef0002")
+    vcs.branches.add(branch)
+
+    facts = gather_dispatch_git_facts(
+        vcs,
+        repo_root=tmp_path,
+        worktree=dispatch_core.dispatch_worktree_path(
+            tmp_path, _ATLAS, _SHARED_FEED_KEY
+        ),
+        story_key=_SHARED_FEED_KEY,
+        project_slug=_ATLAS,
+        baseline_head_sha="baseline0001",
+        merge_subject_template="Story {key}",
+    )
+
+    assert facts.branch_merged is True
+
+
 def test_branch_and_worktree_path_sanitize_the_key_identically(
     tmp_path: Path,
 ) -> None:

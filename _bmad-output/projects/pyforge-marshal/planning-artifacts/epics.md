@@ -3533,6 +3533,29 @@ collide on a shared story key, in-flight or preserved branches under the legacy
 of the branch name (worktree lookup, in-flight conflict guard, landing, status overlay)
 agrees on the one derivation.
 
+### Story 22.10: `branch_merged` requires real divergence, not just ancestry
+**Type:** bug • **Effort:** S • **Deps:** S-22.2 • **FR/AD:** FR-193 (spec-marshal-single-story-dispatch, CAP-9)
+**Surface:** `dispatch_supervisor/__main__.py::gather_dispatch_git_facts`, `tests/unit/test_dispatch.py`
+**Note:** found live 2026-08-28 during a three-story fleet-drain session: every one of three
+real dispatches (mason 12.7, atlas 20.5, mason 12.8) journaled `dispatch-completion`
+`verdict: "completed"` (`branch_merged: true`) within ~2 seconds of launch, before the
+dispatched session had done any work (`changed_paths: []`, `current_head_sha ==
+baseline_head_sha`). Root cause: `is_branch_merged` shells `git merge-base --is-ancestor
+branch into`, which is trivially true the instant a branch is forked from `into`'s own
+current tip — true of every fresh dispatch, not evidence of a merge.
+`resolve_dispatch_session_verdict` then trusts any journaled `COMPLETED`/`FAILED` verdict
+without re-deriving it (`if journal.completion_verdict in {COMPLETED, FAILED}: return
+that verdict`), so this false positive poisons the run's journal for its entire
+lifetime — `marshal factory dispatch-resume`/`dispatch-attach` refuse with
+`MRS-DISP-023` regardless of whether the dispatched session is genuinely still alive.
+Live-recovered by hand three times in the same session before this story landed the fix.
+**Given** a dispatch branch that has not diverged from its own launch `baseline_head_sha`
+**When** the completion supervisor gathers git facts **Then** `branch_merged` reads
+`false` regardless of what `is_branch_merged`'s ancestry check answers; **given** a branch
+that HAS diverged (real commits past baseline) **When** the same check runs **Then** a
+genuine "merged" ancestry answer is trusted exactly as before — this is a divergence
+guard on an existing fact, not a new completion signal or a rewrite of CAP-2.
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
 as Story 22.7 (2026-08-27, backlog), with the companion
