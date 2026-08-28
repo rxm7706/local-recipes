@@ -45,7 +45,7 @@ ATLAS_PKG = SRC_DIR / "pyforge" / "atlas"
 # Files exempt from the whole-package no-inline-IO scan (review-pass P3:
 # the scan is now ``ATLAS_PKG.rglob('*.py')`` minus THIS set — coverage is
 # complete by construction; a new module anywhere in the package is scanned
-# automatically). Paths are relative to ATLAS_PKG; only the four known
+# automatically). Paths are relative to ATLAS_PKG; only the five known
 # root-level framework files are exempt — subpackage __init__.py files ARE
 # scanned (they can carry imports).
 NO_INLINE_IO_EXEMPT = {
@@ -53,6 +53,12 @@ NO_INLINE_IO_EXEMPT = {
     "__main__.py",
     "settings.py",
     "pipeline_registry.py",
+    # Story 20.1 (CAP-5, query-plane-face ruling 2026-08-26): the ONE boot
+    # script that launches the Mosaic duckdb-server HTTP/Arrow face — it must
+    # spawn the server process (subprocess, on the denylist). Boot framework
+    # code, not a data-access node; its launch surface is gated explicitly by
+    # tests/singularity/test_one_duckdb_server_launch_site.py.
+    "query_plane_boot.py",
 }
 
 LAYERS = {"raw", "intermediate", "primary", "derived"}
