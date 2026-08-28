@@ -2027,6 +2027,10 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
 description = "Story 20.1 (CAP-5, `query-plane-face` ruling 2026-08-26): the ONE pixi-sourced boot script raising both plane faces — always opens the in-process library face on atlas.duckdb via duckdb_writer.connect_writer (AD-16 local-first; DuckDB stays a query face, never a fourth backing store), and raises the Mosaic duckdb-server HTTP/Arrow face from this SAME script ONLY when the platform stack is up (PYFORGE_PLATFORM_STACK_UP truthy: 1/true/yes/on); stack down degrades to library-face-only with a structured one-line JSON notice, never a crash. No second boot path exists (grep/AST-gated by tests/singularity/test_one_duckdb_server_launch_site.py). NFR-6 exit codes: 0 pass, 1 policy-fail (typed refusals, e.g. SecondWriterRefused / DuckDBServerNotProvisionedError), 2 error, 130 interrupted."
 cmd = "python -m pyforge.atlas.query_plane_boot"
 
+[feature.pyforge-atlas.tasks.query-plane-parity]
+description = "Story 20.2 (CAP-5, `query-plane-face` ruling 2026-08-26): the face-parity gate — runs an IDENTICAL fixture query set against the library face (duckdb_writer.connect_reader) and the HTTP/Arrow face raised by query_plane_boot.boot_query_plane, and asserts row-for-row agreement; a seeded-divergence negative test proves the gate is not vacuous, and the stack-down degrade path is explicitly marked not-applicable (never a silent pass). Distinct from `parity-diff` (legacy-cf_atlas.db-vs-migrated-pipeline-output, an unrelated concept). Offline, --frozen; the real-duckdb-server cases skip cleanly when the binary isn't provisioned."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/query_plane -q"
+
 [feature.pyforge-atlas.tasks.viz]
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
 cmd = "kedro viz run --no-browser"
