@@ -81,7 +81,7 @@ campaign:
   # slice-1-recipe-generation still carries its own unresolved next_action (a targeted
   # github_updater.py re-port) -- read that slice's own entry too; it is not blocking, but
   # it is not forgotten either.
-  next_story: "12.1-12.7 done (Story 12.7, 2026-08-28: slice 2 compiled, equivalence: green, real skf-audit-skill CLEAN); next is Story 12.8's re-scope checkpoint — see slices[current_focus].next_action below"
+  next_story: "12.1-12.7 done (Story 12.7, 2026-08-28: slice 2 compiled, real skf-audit-skill CLEAN, equivalence: stale post-review -- a real path-depth divergence in recipe_editor.py + 4 sibling scripts, see slices[current_focus].next_action); next is Story 12.8's re-scope checkpoint, gated on closing that stale equivalence first"
   re_scope_gate:
     # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
     # records the measured cost and the go/adjust/stop decision for the remaining slices

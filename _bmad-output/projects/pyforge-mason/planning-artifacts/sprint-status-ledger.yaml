@@ -33,7 +33,7 @@ development_status:
   12-4-the-re-scope-gate-is-machine-enforced: done
   12-5-the-ownership-decision-is-recorded: done
   12-6-slice-2-brief-cross-slice-dependencies-re-derived-first: done
-  12-7-slice-2-compiled-and-equivalence-validated: backlog
+  12-7-slice-2-compiled-and-equivalence-validated: done
   12-8-the-slice-2-re-scope-checkpoint: backlog
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done

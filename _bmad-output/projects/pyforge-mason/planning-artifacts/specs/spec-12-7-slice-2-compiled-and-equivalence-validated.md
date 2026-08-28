@@ -2,7 +2,7 @@
 title: Slice 2 compiled and equivalence-validated
 type: feature
 created: '2026-08-27'
-status: in-review
+status: done
 updated: '2026-08-28'
 baseline_revision: ffcdcce7163b05efb701bb0bb11c4e8bfd74dca5
 review_loop_iteration: 0
@@ -377,10 +377,60 @@ BLOCKED-then-retry precedent.
   write-oriented, one network-touching, one error-path) is enough to back a genuine
   zero-divergence claim without requiring 22 bespoke test functions.
 
+## Review Triage Log
+
+### 2026-08-28 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 9 (high 2, medium 1, low 6)
+- defer: 0
+- reject: 0
+- addressed_findings:
+  - `high` `patch` `campaign-state.yaml`'s slice-2 `equivalence: "green"` was not honest -- a
+    real, reproduced behavioral divergence exists (`recipe_editor.py` with a relative
+    `recipes/`-path succeeds against the live original, fails against the compiled copy; 5
+    scripts share the root cause). Flipped to `"stale"` with an honest inline note, mirroring
+    Story 12.3's own precedent for slice 1. `status` stays `"compiled"` (unaffected).
+  - `medium` `patch` reconciled the unexplained 237 vs 265 export-count gap in
+    `campaign-state.yaml` and `drift-report-20260828-122448.md`. Root cause confirmed by
+    direct count, not conjecture: `skf-structural-diff.py`'s own pre-existing dedup-by-name
+    bug (Story 12.3's already-documented deferred finding) collapses 28 same-named exports
+    (dominated by `main`, one per CLI script) into their unique-name count. `metadata.json`'s
+    `exports_total: 265` remains correct; the tool's 237 undercounts due to its own known
+    limitation. Does not affect the CLEAN verdict.
+  - `low` `patch` `SKILL.md` Overview's "22 canonical scripts (10,124 lines)" did not
+    reconcile with the Scripts & Assets table's own sum (9,326). Fixed.
+  - `low` `patch` `SKILL.md` Key Types claimed all 8 top-level classes are
+    `NamedTuple`/`dataclass`; `ErrorPattern` (`failure_analyzer.py`) is a plain class with
+    `__slots__` + hand-written `__init__`. Corrected.
+  - `low` `patch` `SKILL.md`'s CLI reference block omitted `recipe_editor.py` and
+    `feedstock_enrich.py` (both genuinely CLI-invocable). Added.
+  - `low` `patch` `SKILL.md` Design Notes and `test_slice2_equivalence.py`'s own docstring
+    presented the path-depth-bug fix as a fully open question; `local_builder.py`'s own
+    `_repo_root_candidate()` (pixi.toml marker-walk, hardcoded fallback only as last resort)
+    already proves a working, depth-independent fix pattern in this same package. Added as
+    the natural fix template for the other 5 affected scripts.
+  - `high` `patch` the CFE-rebuild-equivalence-test exemption in
+    `test_persona_consults_cfe.py` / `test_portal_last_diagnose.py` matched by file name only,
+    with no check for newly-added vs. an existing file being modified -- a future story could
+    weaken an assertion inside an already-merged `test_sliceN_equivalence.py` and the guard
+    would never catch it. Independently demonstrated pre-fix: appending a scratch comment to
+    the already-merged `test_slice1_equivalence.py` still passed both guards. Fixed by adding
+    an `origin/main` existence check (`git cat-file -e`) before exempting a path -- only a
+    genuinely NEW `test_sliceN_equivalence.py` is exempted now. Re-verified: the same
+    scratch-comment probe now correctly FAILS both guards (reverted after confirming).
+  - `low` `patch` moved the shared `_CFE_REBUILD_EQUIVALENCE_TEST_RE` regex + exemption-filter
+    logic (previously duplicated verbatim across both test files) into `tests/conftest.py` as
+    `exclude_cfe_rebuild_equivalence_tests(root, paths)`, imported from both -- so slices 3-5's
+    own future equivalence-test files don't need this re-duplicated again.
+  - `low` `patch` the PEP8 E305 violation (missing blank lines after the duplicated helper) is
+    moot -- the duplicated code no longer exists in either file after the move. `ruff check`
+    passes clean on all three touched files.
+
 ## Auto Run Result
 
-Status: done (implementation pass; no separate adversarial review has run yet in this
-dispatch -- see Residual risks below).
+Status: done (implementation pass + adversarial review pass; review found 9 issues -- 2 high,
+1 medium, 6 low -- all patched, none deferred or rejected; see Review Triage Log above).
 
 **Summary:** Compiled Slice 2's brief into `.claude/skills/cfe-recipe-lifecycle/1.0.0/` +
 `active` symlink (25 scripts: 22 canonical + 3 sanctioned Slice-5 shared-infra deps,
@@ -430,7 +480,8 @@ raising the odds of hitting this again).
 
 **Files changed (beyond the compiled package + forge-data workspace artifacts already
 covered in Tasks above):**
-- `.claude/skills/conda-forge-expert/tests/integration/test_slice2_equivalence.py` -- new.
+- `.claude/skills/conda-forge-expert/tests/integration/test_slice2_equivalence.py` -- new
+  (plus P9's docstring update documenting the path-depth fix template).
 - `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` and
   `.../test_portal_last_diagnose.py` -- both carry a generic "this story must not touch
   CFE" diff guard (`_git_diff_names`/`_git_dirty_under` against
@@ -441,13 +492,24 @@ covered in Tasks above):**
   --is-ancestor`), so this is the first time this specific tension has actually
   surfaced -- not a pre-existing red the story inherited. Narrowly excluded
   `.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py` from
-  both checks (a regex constant + a small filter helper, not a weakening of either check's
-  real intent: catching an actual CFE-surface edit). This is outside this story's own
-  Code Map and touches Mason's own test suite rather than the CFE-rebuild campaign's
-  artifacts -- flagged here explicitly as a judgment call made to satisfy this story's own
-  explicit verification bar ("`pyforge-mason-test` -- expected: unaffected, still green"),
-  not smuggled in silently. `pyforge-mason-test`: 1578 passed, 3 deselected (green) after
-  the fix; `scripts/mason_cfe_surface_check.py`: clean, unaffected.
+  both checks. This is outside this story's own Code Map and touches Mason's own test suite
+  rather than the CFE-rebuild campaign's artifacts -- flagged here explicitly as a judgment
+  call made to satisfy this story's own explicit verification bar
+  ("`pyforge-mason-test` -- expected: unaffected, still green"), not smuggled in silently.
+  The review pass (P3) hardened the exemption with an `origin/main` existence check so only
+  a genuinely new equivalence-test file is exempt, and (P7) moved the shared regex/filter
+  logic into `src/shared/packages/pyforge-mason/tests/conftest.py` (new touched file) as
+  `exclude_cfe_rebuild_equivalence_tests(root, paths)`, importable by slices 3-5's own future
+  equivalence tests. `pyforge-mason-test`: 1578 passed, 3 deselected (green), confirmed again
+  post-review; `scripts/mason_cfe_surface_check.py`: clean, unaffected.
+- `.claude/skills/cfe-recipe-lifecycle/1.0.0/cfe-recipe-lifecycle/SKILL.md` -- review patches
+  P4/P5/P6/P9 (line-count reconciliation, `ErrorPattern`'s real shape, two missing CLI
+  entries, the path-depth fix template).
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml`
+  -- P1 (equivalence `green` -> `stale`, honest note, `next_action` rewritten) and P2 (the
+  237-vs-265 export-count reconciliation note).
+- `forge-data/cfe-recipe-lifecycle/1.0.0/drift-report-20260828-122448.md` -- P2's
+  reconciliation note appended.
 
 **Verification performed:**
 - `uv run _bmad/skf/shared/scripts/skf-detect-tools.py` + `skf-forge-tier-rw.py` -- tier
@@ -474,18 +536,23 @@ covered in Tasks above):**
   staging).
 
 **Residual risks / left incomplete:**
-1. No separate adversarial review pass has run against this diff yet (unlike the sibling
-   stories in this campaign, whose specs show a distinct implementation-then-review cycle).
-   Recorded here rather than fabricating a Review Triage Log for a pass that did not happen.
-2. The path-depth finding (five scripts, hardcoded `Path(__file__)` parent-hop counts) is
-   real and load-bearing for any RELATIVE-path caller of the affected scripts, but is
-   deliberately left unpatched -- see above.
-3. The two Mason meta-test fixes touch a component (`pyforge-mason`'s own test suite)
-   outside this story's own Code Map; narrowly scoped and justified above, but worth a
-   second look given the boundary crossed.
-4. `failure_catalog_generator.py`'s slice-map.md classification gap (flagged by Story 12.6)
+1. The path-depth finding (five scripts, hardcoded `Path(__file__)` parent-hop counts) is
+   real, load-bearing for any RELATIVE-path caller of the affected scripts, and is WHY the
+   review flipped slice-2's equivalence verdict from a hopeful `green` to an honest `stale`
+   (P1) -- deliberately left unpatched in this story (out of scope; every tracked script
+   stays sha256-identical to source). P9 documented `local_builder.py`'s own already-working
+   `_repo_root_candidate()` pattern as the fix template. Tracked as slice-2's own
+   `next_action` in `campaign-state.yaml` for a future story to close before Story 12.8's
+   re-scope checkpoint.
+2. The two Mason meta-test fixes (`test_persona_consults_cfe.py`,
+   `test_portal_last_diagnose.py`) touch a component outside this story's own Code Map; the
+   review pass hardened the exemption further (P3: an `origin/main` existence check, so only
+   genuinely new equivalence-test files are exempt) and consolidated it (P7: moved into
+   `tests/conftest.py`, now a third touched file) -- still outside this story's Code Map, but
+   demonstrated correct via a live scratch-comment probe rather than left as an assertion.
+3. `failure_catalog_generator.py`'s slice-map.md classification gap (flagged by Story 12.6)
    remains open -- unchanged by this story, per its own explicit out-of-scope note.
-5. Landing (git commit beyond this session's staging, the ledger flip for key
+4. Landing (git commit beyond this session's staging, the ledger flip for key
    `12-7-slice-2-compiled-and-equivalence-validated`, and the `maintenance` PR label) is
    the dispatcher's, per this campaign's own established convention -- no `recipes/**` or
    `pixi.toml` change occurred, so no env-sync is needed.
