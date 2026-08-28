@@ -1074,3 +1074,307 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   close_when: steward S-32.1 and S-32.2 done; Warden Epic 9 done (sole PR-gate); no station CI job publishes a pass/fail that bypasses Warden
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+### DW-FU-12-3: build-pixi-mirror.py has no retry/backoff for a transient network failure during the mirror build; one flaky response anywhere in the ~428-package fan-out fails the whole job (a rerun is the workaround).
+
+- source_spec: `planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md`
+  summary: build-pixi-mirror.py has no retry/backoff for a transient network failure during the mirror build; one flaky response anywhere in the ~428-package fan-out fails the whole job (a rerun is the workaround).
+  evidence: Raised by Blind Hunter in this story's first review pass. Not fixed in this pass: standard `requests` retry via a Session+HTTPAdapter is straightforward but adds real complexity for a purely operational (not correctness) concern -- reruns are cheap and the mirror-build phase runs with normal network access, no adversarial condition.
+  origin: spec-deferred 499561004d87 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-12-3-2: build-pixi-mirror.py's channel/subdir/filename derivation assumes a plain 3-segment conda URL and would silently mis-derive the mirror path for a labeled-channel package (e.g. .../conda-forge/label/ broken/linux-64/pkg.conda).
+
+- source_spec: `planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md`
+  summary: build-pixi-mirror.py's channel/subdir/filename derivation assumes a plain 3-segment conda URL and would silently mis-derive the mirror path for a labeled-channel package (e.g. .../conda-forge/label/ broken/linux-64/pkg.conda).
+  evidence: Raised by Blind Hunter and Edge Case Hunter (corroborated). Verified live against the real pixi.lock: all 428 platform-dev/linux-64 packages conform to the plain 3-segment shape today, so this is a latent risk, not a live bug -- would surface as a loud mirror-fetch failure if it ever occurred, not a silent one.
+  origin: spec-deferred 0d4059b9a338 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-12-3-3: The .pixi/config.toml `[mirrors]` append in the CI job is a raw heredoc string append, not a TOML-aware merge -- would produce a duplicate `[mirrors]` table (invalid TOML) if one is ever added to the committed file later.
+
+- source_spec: `planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md`
+  summary: The .pixi/config.toml `[mirrors]` append in the CI job is a raw heredoc string append, not a TOML-aware merge -- would produce a duplicate `[mirrors]` table (invalid TOML) if one is ever added to the committed file later.
+  evidence: Raised by Blind Hunter. Verified live: the committed .pixi/config.toml currently carries only `run-post-link-scripts = "insecure"`, no `[mirrors]` table, so the append is safe today. A proper fix needs a TOML-aware merge (tomllib/tomli_w), real complexity for a scenario that does not exist yet.
+  origin: spec-deferred 67a8b2e6be1d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-12-3-4: The CDN-reference-scan step's allow-pattern only recognizes `127.0.0.1`, not `localhost`/`::1` -- a future rendering path that happened to emit a localhost-based absolute URL would be flagged as external and fail the job even though it is still local.
+
+- source_spec: `planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md`
+  summary: The CDN-reference-scan step's allow-pattern only recognizes `127.0.0.1`, not `localhost`/`::1` -- a future rendering path that happened to emit a localhost-based absolute URL would be flagged as external and fail the job even though it is still local.
+  evidence: Raised by Blind Hunter. Fails in the safe direction (false failure, not a missed real external reference) and nothing in the current codebase emits a `localhost`-based absolute URL, so this is a future-proofing note, not a live gap.
+  origin: spec-deferred 34f30ef75136 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-1: django-pyforge is not a pixi path dependency of platform-ci-test or the image pip layer; the host loads it via sys.path and a Containerfile COPY.
+
+- source_spec: `planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md`
+  summary: django-pyforge is not a pixi path dependency of platform-ci-test or the image pip layer; the host loads it via sys.path and a Containerfile COPY.
+  evidence: Hatchling pyproject exists. A pixi path dep would rewrite pixi.lock; the image pip layer cannot hatchling-build without extra tools.
+  location: pixi.toml / src/platform/Containerfile
+  origin: spec-deferred be704618450f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-1-2: Container secrets-scan still covers only src/platform and shell-hook, not the new django_pyforge COPY.
+
+- source_spec: `planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md`
+  summary: Container secrets-scan still covers only src/platform and shell-hook, not the new django_pyforge COPY.
+  evidence: Runtime copies src/shared/packages/django-pyforge into /app/django_pyforge.
+  location: src/platform/Containerfile
+  origin: spec-deferred 92809502c14c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-1-3: Uninstall AC is proven with an isolated template Engine, not by mutating INSTALLED_APPS (Client GET needs a live database under ATOMIC_REQUESTS).
+
+- source_spec: `planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md`
+  summary: Uninstall AC is proven with an isolated template Engine, not by mutating INSTALLED_APPS (Client GET needs a live database under ATOMIC_REQUESTS).
+  evidence: test_removing_chrome_breaks_both_portals_identically uses Engine(app_dirs=False).
+  location: src/platform/tests/test_django_pyforge_chrome.py
+  origin: spec-deferred 244459f73ad5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-2: Live IdP revoke on the next request (FR-31 / canopy AD-15 strong reading) still waits on a per-request token, not this session snapshot.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md`
+  summary: Live IdP revoke on the next request (FR-31 / canopy AD-15 strong reading) still waits on a per-request token, not this session snapshot.
+  evidence: OIDC login writes group-claim names into session idp_token_roles until the next successful pre_social_login. 18.3 JWT re-verify is out of scope. Epic 21 / FR-31 owns next-request revoke.
+  location: src/platform/config/authorization/adapters.py
+  origin: spec-deferred 47f46e0ea931 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-2-2: Local staff/reader personas do not include station_name roles, so a real login lists no stations until IdP groups contain those names.
+
+- source_spec: `planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md`
+  summary: Local staff/reader personas do not include station_name roles, so a real login lists no stations until IdP groups contain those names.
+  evidence: Adapter stores CLAIMS_CONTRACT group-claim values (e.g. platform-staff). Switcher matches portal.station_name (warden, chrome-probe).
+  location: src/platform/config/local_dev/personas.py
+  origin: spec-deferred 47aa29d7f6d6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-3: Host mint parses an IdP JWT payload without verifying signature, issuer, or expiry. Live Keycloak Token Exchange remains Deferred.
+
+- source_spec: `planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md`
+  summary: Host mint parses an IdP JWT payload without verifying signature, issuer, or expiry. Live Keycloak Token Exchange remains Deferred.
+  evidence: identity_from_idp_bearer base64-decodes the payload. Spec Block If / Never Keycloak Token Exchange. Tests use a three-segment fake JWT.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/identity.py
+  origin: spec-deferred 4d256353140c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-3-2: AssertionMiddleware is host-global; an ingress that always sets X-Forwarded-User will 401 browser routes that have no service assertion.
+
+- source_spec: `planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md`
+  summary: AssertionMiddleware is host-global; an ingress that always sets X-Forwarded-User will 401 browser routes that have no service assertion.
+  evidence: Identity-header AC is anti-spoof, not a full service gate. Ingress should not inject those headers on interactive chrome.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/middleware.py
+  origin: spec-deferred 58a3e9922342 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-3-3: PortalClient only signs; it does not perform the outbound HTTP call to a station service. AST bans portal-local HTTP clients instead.
+
+- source_spec: `planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md`
+  summary: PortalClient only signs; it does not perform the outbound HTTP call to a station service. AST bans portal-local HTTP clients instead.
+  evidence: Intent also admits an emitter-plus-scan reading; Epic 19.2 owns remaining portal shells calling through the client.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
+  origin: spec-deferred 7aaf2bf27bd4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-18-3-4: Production PYFORGE_ASSERTION_* keys default empty; no rotation, kid, or env documentation in this story.
+
+- source_spec: `planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md`
+  summary: Production PYFORGE_ASSERTION_* keys default empty; no rotation, kid, or env documentation in this story.
+  evidence: Sign/verify fail at call time if unset. Test settings inject golden PEMs.
+  location: src/platform/config/settings/base.py
+  origin: spec-deferred 920707a13049 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-1: WAGTAILADMIN_BASE_URL still defaults to http://localhost:8000; production origin belongs on the Helm/env overlay, not this story's app contract.
+
+- source_spec: `planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md`
+  summary: WAGTAILADMIN_BASE_URL still defaults to http://localhost:8000; production origin belongs on the Helm/env overlay, not this story's app contract.
+  evidence: Review noted no chart override. Lane 1 HTTP ACs do not require a live ingress host in this story; 20.2/deploy overlay can set the env var.
+  location: src/platform/config/settings/base.py
+  origin: spec-deferred 95be68ac9991 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-1-2: migrate does not seed a HomePage as Site.root_page; `/` is Wagtail's default welcome Page until an editor publishes.
+
+- source_spec: `planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md`
+  summary: migrate does not seed a HomePage as Site.root_page; `/` is Wagtail's default welcome Page until an editor publishes.
+  evidence: AC is publish-then-see, not empty-cluster first GET. Welcome remains DB-backed. Seeding is optional operator content.
+  location: src/platform/platformapp/front_door/migrations/0001_homepage.py
+  origin: spec-deferred 97edcb8d12c1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-20-1-3: wagtail.documents / wagtail.images serving URLconfs are not mounted.
+
+- source_spec: `planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md`
+  summary: wagtail.documents / wagtail.images serving URLconfs are not mounted.
+  evidence: Story 20.2 owns RWX media and renditions; 20.1 forbids starting that split.
+  location: src/platform/config/urls.py
+  origin: spec-deferred bf1f8541b7e9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-1: Timing, heartbeat, and ingest-at-completion columns for FR-41/FR-42 are not on RunState yet.
+
+- source_spec: `planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md`
+  summary: Timing, heartbeat, and ingest-at-completion columns for FR-41/FR-42 are not on RunState yet.
+  evidence: Story 21.1 lands the two public tables only; 21.5 owns front-door query and completed-run timing ingest.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/models.py
+  origin: spec-deferred 2967d8a34b8a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-1-2: expires_at has no secondary index; TTL sweep belongs to start/get.
+
+- source_spec: `planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md`
+  summary: expires_at has no secondary index; TTL sweep belongs to start/get.
+  evidence: AD-6 TTL is stored; 21.3 will look up and expire handles.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/models.py
+  origin: spec-deferred 4597073c339c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-1-3: sqlmigrate / Liquibase extraction is Epic 27, not this migration.
+
+- source_spec: `planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md`
+  summary: sqlmigrate / Liquibase extraction is Epic 27, not this migration.
+  evidence: Intent forbids 27-1; AD-9 production DDL comes later.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/migrations/0001_supervisor_tables.py
+  origin: spec-deferred caa1ed9a07d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-2: local-recipes keeps mcp>=1.24,<2.0 because FastMCP 3.x cannot solve with mcp 2.x. Platform-ci-test and pyforge-atlas take mcp 2.0.0.
+
+- source_spec: `planning-artifacts/specs/spec-21-2-atlas-mcp-on-the-host-dual-era.md`
+  summary: local-recipes keeps mcp>=1.24,<2.0 because FastMCP 3.x cannot solve with mcp 2.x. Platform-ci-test and pyforge-atlas take mcp 2.0.0.
+  evidence: pixi.toml comments on both pins; FastMCP 4 is not on conda-forge.
+  location: pixi.toml
+  origin: spec-deferred 5036530b2f1b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5: Last-ok age lives in Django cache; redis-cache IGNORE_EXCEPTIONS can swallow the write so a later outage shows never.
+
+- source_spec: `planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md`
+  summary: Last-ok age lives in Django cache; redis-cache IGNORE_EXCEPTIONS can swallow the write so a later outage shows never.
+  evidence: Review noted locmem tests cannot see a swallowed redis set.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
+  origin: spec-deferred 60a7c12c3dd9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-21-5-2: load_board_rows has no LIMIT; a large run_state table can miss the 500ms budget.
+
+- source_spec: `planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md`
+  summary: load_board_rows has no LIMIT; a large run_state table can miss the 500ms budget.
+  evidence: FR-42 budget vs unbounded SELECT; retention is not this story.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/supervisor.py
+  origin: spec-deferred 903873aaade3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-1: Full `pyforge-core-test` still reds on pre-existing marshal/steward sole-ownership scans unrelated to dispatch.
+
+- source_spec: `planning-artifacts/specs/spec-22-1-pyforge-dispatches-without-reimplementing.md`
+  summary: Full `pyforge-core-test` still reds on pre-existing marshal/steward sole-ownership scans unrelated to dispatch.
+  evidence: test_atomic_write_sole_ownership, test_exception_root_sole_ownership, and test_process_sole_ownership fail on sibling sources this story did not edit (same class as Story 32.1 deferred). CI for 22.1 runs unit + parity + leaf + plugin conformance only.
+  location: src/shared/packages/pyforge-core/tests/meta/
+  origin: spec-deferred 850cf195a039 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-1: Canopy AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
+  summary: Canopy AD-20 also names audit write and role-built navigation; this story's board is JSON filter-then-search only.
+  evidence: Story 23.1 ACs and FR-16 name same-URL row isolation via filter_by_role / AccessDeclaration. Audit and build_navigation are already in pyforge.steward.dashboard from Epic 9 and were not wired onto /stations/atlas/board/.
+  location: src/shared/packages/django-atlas/src/django_atlas_portal/board.py
+  origin: spec-deferred edb30b7864b7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-24-1: Applied-id keys on redis-broker have no TTL, so pyforge.events.applied:* grows on a noeviction instance.
+
+- source_spec: `planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md`
+  summary: Applied-id keys on redis-broker have no TTL, so pyforge.events.applied:* grows on a noeviction instance.
+  evidence: EventFabric._mark_applied uses SET NX with no EXPIRE. Canopy AD-10 binds redis-broker as noeviction. Story 24.1 ACs do not require a retention policy for idempotency keys.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/events/fabric.py
+  origin: spec-deferred a9be7ed463af — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-26-1: Production still has no live Keycloak userinfo/introspection HTTP client; revoke is proven via IDP_CLAIMS_SNAPSHOT and IDP_USERINFO hooks.
+
+- source_spec: `planning-artifacts/specs/spec-26-1-revoke-takes-effect-on-the-next-request.md`
+  summary: Production still has no live Keycloak userinfo/introspection HTTP client; revoke is proven via IDP_CLAIMS_SNAPSHOT and IDP_USERINFO hooks.
+  evidence: fetch_current_idp_claims prefers snapshot, then IDP_USERINFO, then the session claims document from login. Without a hook, login continuity still uses that document until the operator wires userinfo.
+  location: src/platform/config/authorization/current_claims.py
+  origin: spec-deferred fcef5bd36cde — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-32-1: pyforge-core-test reports 9 pre-existing sole-ownership failures in sibling marshal/steward/herald trees, unrelated to hooks.py.
+
+- source_spec: `planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md`
+  summary: pyforge-core-test reports 9 pre-existing sole-ownership failures in sibling marshal/steward/herald trees, unrelated to hooks.py.
+  evidence: Failures are in test_atomic_write_sole_ownership, test_exception_root_sole_ownership, and test_process_sole_ownership against marshal/steward/herald sources that this story did not edit.
+  location: src/shared/packages/pyforge-core/tests/meta/
+  origin: spec-deferred 3b15334ee506 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-33-2: django-pyforge chrome base.html does not vendor htmx.min.js, so hx-* on the steward inventory section is markup-only until chrome loads HTMX.
+
+- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-list.md`
+  summary: django-pyforge chrome base.html does not vendor htmx.min.js, so hx-* on the steward inventory section is markup-only until chrome loads HTMX.
+  evidence: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html has theme.css and the switcher, not an HTMX script. Pre-existing; this story server-renders inventory on GET /stations/steward/.
+  location: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html
+  origin: spec-deferred a433e6cbb345 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
