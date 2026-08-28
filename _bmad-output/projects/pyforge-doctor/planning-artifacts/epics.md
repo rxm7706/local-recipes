@@ -965,6 +965,28 @@ running it for real today would abort on every one of the 8 real projects until 
 follow-on redesign lands. That first real run, and `DW-FU-8-4`'s redesign, are both explicitly
 out of this epic's own scope -- future work, not carried forward silently.
 
+### Story 8.5: The detector recognizes content that already reached the ledger by another path
+**Type:** bug • **Effort:** S • **Deps:** S-8.1 • **FR/AD:** FR-15 (spec-deferred-work-visibility, CAP-11)
+**Surface:** `pyforge-doctor` `sources/chain.py` (`_check_project_deferred_work` and two new
+helpers), `tests/unit/test_sources_chain_deferred_work.py`
+**Note:** found live 2026-08-28 during a fleet-wide hygiene sweep: `deferred-work-check` FAILed
+117 `tier3-only-deferral`/`tier3-entry-unidentified` findings across doctor/marshal/mason/
+scribe/steward/atlas. Investigating pyforge-atlas's own findings confirmed a real ID-vs-content
+mismatch class DW-FU-8-4's own write-side collision guard (Story 8.3) already defends against on
+the write side, but the read-side detector had no analogue: Tier-3 line 7's `summary:` text is
+byte-identical to its own tracked `DW-A1-6`, and `DW-10` (no `summary:` field) carries an
+`origin: spec-deferred 8b4c28559f93` marker already present in the tracked ledger via the
+CAP-8 spec-frontmatter bridge — both under completely different, independently-minted ids.
+**Given** a Tier-3 entry the id/position-based checks are about to flag **When** its normalized
+summary or its harvest-damping fingerprint already appears in the tracked ledger **Then** it is
+not flagged — mirroring `deferred_work_promote.py`'s own `_validate_batch` guard (summary) and
+CAP-8's own `frontmatter_deferral_in_tracked` (fingerprint) exactly, no new mechanism invented.
+**Explicitly bounded:** closes 6 of the 117 live findings (all pyforge-atlas), confirmed via
+`git stash` A/B testing; the remaining ~111 are NOT claimed resolved — Epic 8's own "bounded and
+shrinking, not an ongoing leak" framing already covers them as known, deliberately-deferred
+backlog (the first real fleet-wide `--fix` run, blocked on `DW-FU-8-4`'s own redesign), not a new
+gap this story leaves open.
+
 ## Epic 9: The hygiene sweep generalizes, and staleness surfaces itself
 
 > **QUEUED, NOT CLEARED TO DISPATCH, 2026-08-15 (operator, in-session).** Decomposes
