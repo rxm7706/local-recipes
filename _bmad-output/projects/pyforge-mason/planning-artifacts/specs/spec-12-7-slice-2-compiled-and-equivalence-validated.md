@@ -2,7 +2,7 @@
 title: Slice 2 compiled and equivalence-validated
 type: feature
 created: '2026-08-27'
-status: in-progress
+status: in-review
 updated: '2026-08-28'
 baseline_revision: ffcdcce7163b05efb701bb0bb11c4e8bfd74dca5
 review_loop_iteration: 0
