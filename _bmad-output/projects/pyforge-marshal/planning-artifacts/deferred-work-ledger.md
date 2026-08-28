@@ -1627,3 +1627,208 @@ status: open
   close_when: steward S-32.1 done; marshal S-26.1 done (loop/runner hook spec; today's runner is default plugin); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+
+### DW-FU-22-10: A dispatch branch silently rebased onto main's advancing tip with zero real new commits would trivially re-trigger `branch_merged: true` post-divergence-check (ancestry would say yes, and `current_head_sha` would differ from the ORIGINAL `baseline_head_sha` purely from the rebase, not from real work).
+
+- source_spec: `planning-artifacts/specs/spec-22-10-branch-merged-requires-real-divergence-not-just-ancestry.md`
+  summary: A dispatch branch silently rebased onto main's advancing tip with zero real new commits would trivially re-trigger `branch_merged: true` post-divergence-check (ancestry would say yes, and `current_head_sha` would differ from the ORIGINAL `baseline_head_sha` purely from the rebase, not from real work).
+  evidence: Review-pass finding (Blind Hunter layer): confirmed no code path in `pyforge-marshal/src/` auto-rebases a dispatch worktree branch onto main outside of an actual landing operation (grepped for `rebase` repo-wide) -- not reachable in practice today, a defensive concern rather than a live bug.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  origin: spec-deferred bc8db91de0d7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-10-2: The fix prevents FUTURE false positives; it does not repair the dispatch runs whose journal already carries the poisoned `completed` verdict from before this fix landed.
+
+- source_spec: `planning-artifacts/specs/spec-22-10-branch-merged-requires-real-divergence-not-just-ancestry.md`
+  summary: The fix prevents FUTURE false positives; it does not repair the dispatch runs whose journal already carries the poisoned `completed` verdict from before this fix landed.
+  evidence: Review-pass finding (Verification Gap layer): independently grepped all 26 `journal.jsonl` files under `dispatch-runs/` and found 20 already carrying `branch_merged: true` at zero divergence, timestamped 0.3-1.4s after their `dispatch-supervisor-attach` entry -- confirms the bug was near-universal across observed runs, not an edge case, but those journals stay poisoned. Not a gap against this story's own Acceptance Criteria (nothing here claims retroactive repair) -- any already-affected, still-relevant run needs the same manual "own-agent continuation" recovery used three times live this session, not something this fix can retroactively correct.
+  location: _bmad-output/projects/*/implementation-artifacts/dispatch-runs/*/journal.jsonl
+  origin: spec-deferred 2778e3b76b4f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-9: A legacy branch that exists only on origin (pushed, local ref and worktree gone) is invisible to the refusal, so a re-dispatch mints the new name and the remote work is orphaned with no signal.
+
+- source_spec: `planning-artifacts/specs/spec-22-9-a-dispatch-branch-names-its-station.md`
+  summary: A legacy branch that exists only on origin (pushed, local ref and worktree gone) is invisible to the refusal, so a re-dispatch mints the new name and the remote work is orphaned with no signal.
+  evidence: resolve_dispatch_branch asks VcsPort.branch_exists, and GitVcs.branch_exists verifies refs/heads/<branch> only -- a remote-tracking ref under refs/remotes/origin/ never matches. Live: origin carries refs/heads/marshal/12.2 (05538789c674). Pre-existing in shape rather than caused by Story 22.9: before the change the same state re-created a fresh marshal/<key> from main with the same orphaning, so this story neither introduced nor widened it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
+  origin: spec-deferred 901646ff57c3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-9-2: Two concurrent dispatches of the SAME station and story key still share one branch and one worktree; station-scoping only makes CROSS-station collision impossible.
+
+- source_spec: `planning-artifacts/specs/spec-22-9-a-dispatch-branch-names-its-station.md`
+  summary: Two concurrent dispatches of the SAME station and story key still share one branch and one worktree; station-scoping only makes CROSS-station collision impossible.
+  evidence: resolve_dispatch_branch returns early on branch_exists(branch) without checking that the station-scoped branch is checked out at THIS run's worktree, so attribution is asymmetric -- legacy names must prove attribution, station-scoped names are trusted on mere existence. This is the failure already on record as the 2026-08-27 atlas 20.1 duplicate dispatch (two identical runs in one worktree), which is same-station and therefore untouched by this story's fix.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py
+  origin: spec-deferred 95fafe504daf — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-9-3: Branch resolution now costs 1-2 extra git subprocesses on a hot path -- every supervisor tick, and once per historical run dir on every dispatch.
+
+- source_spec: `planning-artifacts/specs/spec-22-9-a-dispatch-branch-names-its-station.md`
+  summary: Branch resolution now costs 1-2 extra git subprocesses on a hot path -- every supervisor tick, and once per historical run dir on every dispatch.
+  evidence: gather_dispatch_git_facts was a pure derivation before Story 22.9 and now calls resolve_dispatch_branch, which shells branch_exists / worktree_path_for_branch. The supervisor calls it every _TICK_SECONDS for the life of a run and the CAP-5 in-flight guard reaches it per run dir. The answer is stable for a run, so it could be resolved once at attach time and threaded.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:212
+  origin: spec-deferred c42ba591932e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-22-9-4: No integration-tier test creates the three-segment ref dispatch/<slug>/<key> with real git; every 22.9 test uses hand-written FakeVcs doubles.
+
+- source_spec: `planning-artifacts/specs/spec-22-9-a-dispatch-branch-names-its-station.md`
+  summary: No integration-tier test creates the three-segment ref dispatch/<slug>/<key> with real git; every 22.9 test uses hand-written FakeVcs doubles.
+  evidence: The package has an established real-git tier for exactly this kind of provisioning work (tests/integration/test_init_worktree.py, real GitVcs, @pytest.mark.slow) and Story 22.9 added nothing there, so the new ref shape's interaction with git worktree add / merge-base is asserted only against fakes.
+  location: src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py
+  origin: spec-deferred 808ab7e5a871 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-1-3: timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says they are different classes.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
+  summary: timing.total / epicMin sum journal minutes and wall-clock ceiling minutes into one numeric rollup while metric text says they are different classes.
+  evidence: CAP-1 places both on timing.perStory honestly named; full visual/series separation is Story 23.2 (CAP-2). Surfaced by blind-hunter; not a fabricate risk.
+  location: pyforge.doctor.sources.fleet_scan:scan_timing
+  origin: spec-deferred 9dc98a4fd954 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-1-4: Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.
+
+- source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
+  summary: Journal story_key lacking a leading N-M pattern may not block wall-clock for the matching board sid.
+  evidence: Pre-existing journal key convention; loop homes emit N-M-slug keys. Edge-case hunter only; not introduced by CAP-1 derivation logic beyond shared _sid_from_journal_key.
+  location: pyforge.doctor.sources.fleet_scan:_sid_from_journal_key
+  origin: spec-deferred aa2cf0e24d5f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-23-2-3: Velocity panel `sub` still lumps unmeasured stories under "predate loop instrumentation"; full absence-class partitioning is Story 23.3 (CAP-3).
+
+- source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
+  summary: Velocity panel `sub` still lumps unmeasured stories under "predate loop instrumentation"; full absence-class partitioning is Story 23.3 (CAP-3).
+  evidence: CAP-2 only requires wall-clock vs active-compute class labels. Intent explicitly defers 23.3. Surfaced by blind-hunter + intent-alignment.
+  location: pyforge.doctor.sources.fleet_scan:scan_timing velocity.sub
+  origin: spec-deferred 18566159a138 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-1: The memory half of CAP-1 (3 auto-memory entries + MEMORY.md index) is partially swept and permanently outside the guard's scan scope.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-retired-skill-ids-are-purged-and-guarded.md`
+  summary: The memory half of CAP-1 (3 auto-memory entries + MEMORY.md index) is partially swept and permanently outside the guard's scan scope.
+  evidence: Dispatch explicitly assigns ~/.claude memory files to the parent session ("parent handles those"), so this story did not touch them. Review verified live: the four inventory-named entries were glossed out-of-band at 2026-08-22 04:33 (top-of-file gloss only) but bodies retain bare retired IDs; feedback_skill_disambiguation.md lines 17/18/25/40 still carry bare LIVE routing instructions (bmad-review-adversarial-general, bmad-review-edge-case-hunter, bmad-create-prd/-architecture, bmad-document-project); MEMORY.md index lines ~78-80 carry bare bmad-dev-auto and were not touched at all. The repo guard cannot reach per-user memory by construction; its docstring now states the exclusion.
+  location: ~/.claude/projects/-home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/memory/
+  origin: spec-deferred 87b6a06a5825 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-4: The repo_defaults layer is inert: compose() accepts the parameter but never folds it, and nothing reads _bmad-output/policy-defaults.toml.
+
+- source_spec: `planning-artifacts/specs/spec-25-4-the-0-10-0-11-policy-knobs-are-governable.md`
+  summary: The repo_defaults layer is inert: compose() accepts the parameter but never folds it, and nothing reads _bmad-output/policy-defaults.toml.
+  evidence: core/policy.py compose() signature carries repo_defaults (added Story 1.10) but the body never references it; _merge_field folds default -> project -> flags only; run_config never passes it. A repo-wide value set in policy-defaults.toml for ANY of the 28 keys (the five new knobs included) is silently ignored; the file's existing max_followup_reviews=2 only works because it is hand-duplicated in DEFAULT_POLICY. Pre-existing, confirmed independently by two review layers this pass.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py:1389
+  origin: spec-deferred 73cc8a5f248d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-4-2: Stale bmad_loop 0.9.0 citations for the max_parallel clamp premise survive in untouched prose (policy.json description, policy.py docstrings, _max_parallel_clamp_finding message).
+
+- source_spec: `planning-artifacts/specs/spec-25-4-the-0-10-0-11-policy-knobs-are-governable.md`
+  summary: Stale bmad_loop 0.9.0 citations for the max_parallel clamp premise survive in untouched prose (policy.json description, policy.py docstrings, _max_parallel_clamp_finding message).
+  evidence: The premise itself re-verified true on 0.11.0 (upstream issue #229 open, every scm.max_parallel > 1 still clamps to 1 per alignment-inventory 2026-08-22), so only the version citations are stale. Re-check at the next bmad-loop bump.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/policy.json
+  origin: spec-deferred 7c1fc647ff7e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-4-3: No meta-test pins _STATIC_KEYS membership/count the way test_seed_view_returns_all_sixteen_seed_fields pins the seed side.
+
+- source_spec: `planning-artifacts/specs/spec-25-4-the-0-10-0-11-policy-knobs-are-governable.md`
+  summary: No meta-test pins _STATIC_KEYS membership/count the way test_seed_view_returns_all_sixteen_seed_fields pins the seed side.
+  evidence: The diff corrected three mutually inconsistent stale static-count prose claims, evidence the counts rot repeatedly with no derive-don't-declare guard on the static side. Pre-existing gap; this story added only SEED keys.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_policy.py
+  origin: spec-deferred 7da2e8066c78 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-4-4: spec-bmad-611-era-alignment SPEC.md frontmatter still reads status ready while its chain is mid-flight (25.1-25.4 done).
+
+- source_spec: `planning-artifacts/specs/spec-25-4-the-0-10-0-11-policy-knobs-are-governable.md`
+  summary: spec-bmad-611-era-alignment SPEC.md frontmatter still reads status ready while its chain is mid-flight (25.1-25.4 done).
+  evidence: CLAUDE.md requires spec status kept current (draft -> ready -> in-progress -> shipped); none of stories 25.1-25.3 flipped it either. Flip to in-progress, or to shipped at Epic 25 closeout.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-611-era-alignment/SPEC.md
+  origin: spec-deferred 79ec1e7f38fb — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-7: `_bmad-output/PROJECTS.md` still maps the historical multi-project layout; architecture now points readers there for the 8-station vs archived map but PROJECTS.md itself was not refreshed in 25-7.
+
+- source_spec: `planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md`
+  summary: `_bmad-output/PROJECTS.md` still maps the historical multi-project layout; architecture now points readers there for the 8-station vs archived map but PROJECTS.md itself was not refreshed in 25-7.
+  evidence: Blind Hunter finding; intent surfaces were living docs + SYNC-RUNBOOK + parent SPEC open question — not PROJECTS.md.
+  location: _bmad-output/PROJECTS.md
+  origin: spec-deferred b716d26940a5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-7-2: SYNC-RUNBOOK Step 3 `--write-baseline` was not run after this living-doc re-ground; detector baseline may still predate the 6.11 prose refresh.
+
+- source_spec: `planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md`
+  summary: SYNC-RUNBOOK Step 3 `--write-baseline` was not run after this living-doc re-ground; detector baseline may still predate the 6.11 prose refresh.
+  evidence: Reconciler runbook treats baseline stamp as a post-reconcile mutation; CAP-7 ACs required owner+cadence + re-grounded pins, not baseline write.
+  origin: spec-deferred 8adb2f0e776a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-7-3: Station status lines publish opaque done/backlog totals that include epic keys without a grammar note agents can rely on.
+
+- source_spec: `planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md`
+  summary: Station status lines publish opaque done/backlog totals that include epic keys without a grammar note agents can rely on.
+  evidence: Thin stub re-ground used ledger Counter totals; Design Notes already accept thin depth — clarify grammar in a later marshal cadence pass.
+  origin: spec-deferred d5654e5002a9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-7-4: Deeper architecture sections (Guildhall / surface-checker narrative) may still lag portfolio dissolution beyond the At-a-Glance + Installed Skills re-ground.
+
+- source_spec: `planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md`
+  summary: Deeper architecture sections (Guildhall / surface-checker narrative) may still lag portfolio dissolution beyond the At-a-Glance + Installed Skills re-ground.
+  evidence: Implementer residual risk; not required to satisfy CAP-7 success clauses.
+  origin: spec-deferred afeda97f972f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FU-25-7-5: Parent SPEC body has no dated CAP-7 decision prose beyond cleared open_questions frontmatter + memlog append.
+
+- source_spec: `planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md`
+  summary: Parent SPEC body has no dated CAP-7 decision prose beyond cleared open_questions frontmatter + memlog append.
+  evidence: AC requires frontmatter/memlog close; body prose is optional polish.
+  origin: spec-deferred 96ee93e8cca0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
