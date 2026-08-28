@@ -2,7 +2,7 @@
 title: CI enforcement for the guard and the equivalence net
 type: feature
 created: '2026-08-27'
-status: done
+status: in-review
 updated: '2026-08-27'
 baseline_revision: ecb931e5d15f7ed0ef7ec732c5c15cc5e51c47e2
 final_revision: fc776507251c3010b227b4bd5f0f571e567beac0
