@@ -20,6 +20,7 @@ from pyforge.core.landing_evidence import (
     merged_story_keys,
     parse_github_pr_merge_subject,
     parse_recovery_commit_sha,
+    parse_station_branch_name,
 )
 
 _TEMPLATE = "Merge {key} into main"
@@ -94,3 +95,65 @@ def test_recovery_convention_document_is_non_empty() -> None:
     assert "land/<station>" in RECOVERY_LANDING_CONVENTION
     assert "recover <station>" in RECOVERY_LANDING_CONVENTION
     assert "PRE_CONVENTION_RECOVERY_COMMITS" in RECOVERY_LANDING_CONVENTION
+
+
+# --------------------------------------------------------------------------
+# marshal Story 22.9: the station-scoped dispatch branch `dispatch/<slug>/<key>`
+# --------------------------------------------------------------------------
+
+
+def test_dispatch_branch_merge_subject_classifies_for_its_own_station() -> None:
+    subject = "Merge pull request #900 from rxm7706/dispatch/pyforge-marshal/22.9"
+    assert parse_github_pr_merge_subject(subject, "pyforge-marshal") == StoryKeyRef(22, 9)
+    match = classify_merge_subject(
+        subject, template=_TEMPLATE, project_slug="pyforge-marshal"
+    )
+    assert match is not None
+    assert match.key == StoryKeyRef(22, 9)
+    assert match.shape is LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT
+
+
+def test_dispatch_branch_merge_subject_never_classifies_cross_station() -> None:
+    """The FULL slug in the branch is what makes a shared story key safe:
+    two stations dispatching `22.9` must never classify as each other."""
+    subject = "Merge pull request #901 from rxm7706/dispatch/pyforge-mason/22.9"
+    assert parse_github_pr_merge_subject(subject, "pyforge-marshal") is None
+    assert parse_github_pr_merge_subject(subject, "pyforge-mason") == StoryKeyRef(22, 9)
+
+
+def test_dispatch_branch_name_classifies_for_its_own_station() -> None:
+    assert parse_station_branch_name(
+        "dispatch/pyforge-marshal/22.9", "pyforge-marshal"
+    ) == StoryKeyRef(22, 9)
+    match = classify_branch_name(
+        "dispatch/pyforge-marshal/22.9", project_slug="pyforge-marshal"
+    )
+    assert match is not None
+    assert match.key == StoryKeyRef(22, 9)
+    assert match.shape is LandingEvidenceShape.STATION_BRANCH_NAME
+
+
+def test_dispatch_branch_name_never_classifies_cross_station() -> None:
+    assert parse_station_branch_name(
+        "dispatch/pyforge-mason/22.9", "pyforge-marshal"
+    ) is None
+    assert classify_branch_name(
+        "dispatch/pyforge-mason/22.9", project_slug="pyforge-marshal"
+    ) is None
+
+
+def test_legacy_station_branch_shapes_still_classify() -> None:
+    """The pre-22.9 names must keep working -- in-flight and already-landed
+    dispatches carry them."""
+    assert parse_station_branch_name("marshal/22.9", "pyforge-marshal") == StoryKeyRef(22, 9)
+    assert parse_github_pr_merge_subject(
+        "Merge pull request #887 from rxm7706/marshal/22.7", "pyforge-marshal"
+    ) == StoryKeyRef(22, 7)
+    assert parse_station_branch_name("marshal/22.9", "pyforge-mason") is None
+
+
+def test_dispatch_prefix_alone_is_not_a_project_branch() -> None:
+    """`dispatch/<key>` without a slug segment, and a same-named foreign
+    prefix, must not classify."""
+    assert parse_station_branch_name("dispatch/22.9", "pyforge-marshal") is None
+    assert parse_station_branch_name("dispatch/pyforge-marshalx/22.9", "pyforge-marshal") is None

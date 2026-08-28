@@ -2,7 +2,7 @@
 title: A dispatch branch names its station
 type: bug
 created: '2026-08-27'
-status: in-progress
+status: in-review
 updated: '2026-08-27'
 baseline_revision: 8519bd3a835fad95a455b4b9e7eb198910693bb0
 review_loop_iteration: 0
@@ -82,17 +82,56 @@ dispatch/landing, naming the branch and the land-first remedy; `MRS-DISP-031` (W
 run IS on an attributable legacy branch and proceeds from it, so the migration is visible
 rather than silent.
 
-**Verification.** `pixi run -e pyforge-marshal pyforge-marshal-test`: 6503 passed / 1
-failed, the failure being the pre-existing `test_skf_domain_skill::
-test_context_files_not_hand_edited` red that predates this story (it asserts on
-`CLAUDE.md`/`AGENTS.md`, untouched here) and was already recorded on Story 22.7. Import-linter
-`lint-imports`: 5 contracts kept, 0 broken (AD-4 core purity holds — `resolve_dispatch_branch`
-takes a `VcsPort`, which is not a forbidden module). The single-derivation-site guard was
-verified to genuinely fire by temporarily planting a second site. Live read-only run of
-`resolve_dispatch_branch` against the real repo: the three in-flight legacy runs
-(`marshal/22.9`, `marshal/12.2`, `marshal/20.2`) all resolve to their legacy branch, and a
-different station on a live key (`pyforge-doctor 12.2`) is refused naming
-`.worktrees/dispatch-pyforge-mason-12.2` — the exact silent-reuse defect, now loud.
+**Cross-package: the landing grammar had to learn the new name.**
+`pyforge.core.landing_evidence`'s `parse_github_pr_merge_subject` / `parse_station_branch_name`
+gated on `branch.startswith(f"{station}/")`, which `dispatch/pyforge-marshal/22.9` fails — so
+without this, `merged_story_keys` → `story_merged_on_main` would stop recognizing marshal's own
+dispatch landings, breaking the supervisor's re-landing guard and the CAP-2 zombie check. Both
+parsers now accept `dispatch/<project_slug>/<key>` too, via one shared
+`_branch_belongs_to_project` predicate, keeping the existing `STATION_BRANCH_NAME` /
+`GITHUB_PR_MERGE_SUBJECT` shapes rather than minting a second enum member. The FULL slug in the
+branch is what makes it project-scoped: `dispatch/pyforge-mason/22.9` never classifies for
+`pyforge-marshal`. The literal `"dispatch"` lives ONCE, as
+`pyforge.core.landing_evidence.DISPATCH_BRANCH_PREFIX`, which marshal's `core/dispatch.py`
+imports — marshal mints these branches, pyforge-core recognizes them, and neither re-spells the
+prefix.
+
+**Never ask git about a branch the resolver did not resolve.** `effective_branch` falls back to
+the station-scoped name, which by construction does NOT exist whenever `resolved is None`;
+`is_branch_merged` shells `git merge-base --is-ancestor`, which exits 128 on a missing ref, and
+the supervisor loop swallows the resulting `VcsCommandError` and `continue`s inside `while
+True` — a run that spins forever, never judged complete, never landed. `gather_dispatch_git_facts`
+now keeps the whole resolution and reports `branch_merged=False` without asking, which is the
+factually correct answer for a branch that does not exist (and also closes the same latent raise
+for a branch retired after landing).
+
+**One sanitization rule for both derivations.** `_safe_ref_segment` is the single rule the branch
+name and the worktree path both apply to their segments — they must agree because attribution
+compares a branch-derived expectation against a path-derived location. It collapses dot runs and
+strips edge dots/dashes (`git check-ref-format` rejects `..` anywhere and a component that starts
+or ends with `.`), so no slug or key can traverse or split the ref into extra components.
+`22.9` / `20.2` / `12.1` render unchanged.
+
+**Verification** (after the review-pass patches):
+`pixi run -e pyforge-marshal pyforge-marshal-test` → **6508 passed / 1 failed**, the failure
+being the pre-existing `test_skf_domain_skill::test_context_files_not_hand_edited` red that
+predates this story (it asserts on `CLAUDE.md`/`AGENTS.md`, untouched here) and was already
+recorded on Story 22.7. `pixi run -e pyforge-core pyforge-core-test` → **1573 passed / 13
+failed**, byte-identical to the same 13 failures measured on the baseline tree
+(`8519bd3a83`, 1565 passed) — all subprocess/atomic-write/exception-root sole-ownership meta
+tests across seven packages, none touched here. `lint-imports` → **5 contracts kept, 0
+broken** (AD-4 core purity holds: `resolve_dispatch_branch` takes a `VcsPort` and the shared
+prefix comes from `pyforge.core`, neither of which is a forbidden module; the `..` collapse
+in `_safe_ref_segment` is done by hand precisely because AD-4 forbids `os` in
+`pyforge.marshal.core`). The single-derivation-site guard was verified to genuinely fire by
+temporarily planting a second site. Live read-only run of `resolve_dispatch_branch` against
+the real repo: the three in-flight legacy runs (`marshal/22.9`, `marshal/12.2`,
+`marshal/20.2`) all resolve to their legacy branch, and a different station on a live key
+(`pyforge-doctor 12.2`) is refused naming `.worktrees/dispatch-pyforge-mason-12.2` — the exact
+silent-reuse defect, now loud. Live end-to-end classification check through
+`promotion.merged_story_keys`: a `dispatch/pyforge-marshal/22.9` PR-merge subject classifies
+for marshal and not for mason, `dispatch/pyforge-mason/12.2` the reverse, and the legacy
+`marshal/22.7` subject still classifies.
 
 **Correction to the Block If premise.** The three named preserved branches are not where the
 spec says: `marshal/20.1`, `marshal/12.1` and `marshal/22.7` are absent from `origin`

@@ -254,15 +254,19 @@ def _ensure_dispatch_worktree(
     the land-first remedy rather than attaching to a tree it cannot
     attribute.
     """
+    # Derive the attribution path ONCE and hand it to the resolver, rather
+    # than letting the resolver compute its own default and recomputing the
+    # same thing here -- the other two callers already pass `worktree=`
+    # explicitly, and a single basis cannot drift from itself.
+    worktree = dispatch_core.dispatch_worktree_path(repo_root, slug, story_key)
     resolution = dispatch_core.resolve_dispatch_branch(
-        vcs, repo_root, slug=slug, story_key=story_key
+        vcs, repo_root, slug=slug, story_key=story_key, worktree=worktree
     )
     if resolution.refusal is not None:
         return DispatchWorktreeResolution(
             branch=resolution.branch, refusal=resolution.refusal
         )
     branch = resolution.effective_branch
-    worktree = dispatch_core.dispatch_worktree_path(repo_root, slug, story_key)
     existing = vcs.worktree_path_for_branch(repo_root, branch)
     if existing is not None:
         return DispatchWorktreeResolution(
@@ -901,9 +905,12 @@ def dispatch_once(
                 severity=Severity.WARN,
                 message=(
                     f"story {render_feed_key(story_key)!r} is still on the "
-                    f"pre-22.9 branch name {provisioned.branch!r}; it lands "
-                    "from there and future dispatches of this story use "
-                    f"{dispatch_core.dispatch_worktree_branch(slug, render_feed_key(story_key))!r}"
+                    f"pre-22.9 branch name {provisioned.branch!r} and lands "
+                    "from there; it migrates to "
+                    f"{dispatch_core.dispatch_worktree_branch(slug, render_feed_key(story_key))!r} "
+                    "once that legacy branch is landed AND deleted — while "
+                    "it survives, a later dispatch of this story is refused "
+                    "(MRS-DISP-030) rather than migrated"
                 ),
             )
         )

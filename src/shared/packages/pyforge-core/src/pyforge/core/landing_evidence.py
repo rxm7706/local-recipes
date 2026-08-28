@@ -21,7 +21,8 @@ Shapes recognized (merge subjects, branch names, recovery convention):
   era; project-scoped by ``project_slug`` when the station prefix is absent).
 * **Branch grammars**: ``land/<station>-<epic>-<seq>…``,
   ``bmad-loop/<run>/<key>-<desc>``, ``<station>/<key>-<desc>`` (GitHub PR
-  branch convention).
+  branch convention), and ``dispatch/<project_slug>/<key>`` (marshal Story
+  22.9's station-scoped dispatch branch).
 * **Pre-convention recovery allowlist**: three live recovery commits that
   fail every predicate above when judged in isolation -- recognized by SHA
   prefix, never by history rewrite.
@@ -37,6 +38,16 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 _KEY_PLACEHOLDER = "{key}"
+
+#: The ONE spelling of marshal's station-scoped dispatch branch prefix
+#: (Story 22.9). It lives here rather than in ``pyforge.marshal`` because
+#: BOTH sides need it and the literal must exist exactly once across the two
+#: packages: marshal MINTS ``dispatch/<project_slug>/<key>`` branches, and
+#: this grammar has to RECOGNIZE them so a dispatch landing still classifies
+#: (``merged_story_keys`` -> ``story_merged_on_main`` -> the supervisor's
+#: re-landing guard and the CAP-2 zombie check). ``pyforge.marshal.core.
+#: dispatch`` imports this name; nothing here imports marshal.
+DISPATCH_BRANCH_PREFIX = "dispatch"
 
 # Leading ``<epic>[.-]<seq><suffix>?`` token -- mirrors marshal
 # ``core.identity``'s ``_KEY_RE`` without importing that package.
@@ -147,6 +158,23 @@ def _station_from_project_slug(project_slug: str) -> str:
     return project_slug.removeprefix("pyforge-")
 
 
+def _branch_belongs_to_project(branch: str, project_slug: str) -> bool:
+    """Does ``branch`` name a branch of ``project_slug``'s station?
+
+    Two sanctioned shapes, both project-scoped so a cross-station key
+    collision can never classify: the legacy/loop ``<station>/…`` prefix,
+    and marshal Story 22.9's ``dispatch/<project_slug>/…`` -- the latter
+    carrying the FULL slug, which is exactly what makes
+    ``dispatch/pyforge-mason/22.9`` unrecognizable to ``pyforge-marshal``.
+    """
+    if not isinstance(branch, str) or not project_slug:
+        return False
+    if branch.startswith(f"{DISPATCH_BRANCH_PREFIX}/{project_slug}/"):
+        return True
+    station = _station_from_project_slug(project_slug)
+    return bool(station) and branch.startswith(f"{station}/")
+
+
 def _parse_key_token(raw: str) -> StoryKeyRef | None:
     if not isinstance(raw, str):
         return None
@@ -184,13 +212,19 @@ def parse_templated_merge_subject(subject: str, template: str) -> StoryKeyRef | 
 
 
 def parse_github_pr_merge_subject(subject: str, project_slug: str) -> StoryKeyRef | None:
-    """GitHub PR merge subject; branch final segment must LEAD with story key."""
+    """GitHub PR merge subject; branch final segment must LEAD with story key.
+
+    Accepts both project-scoped branch shapes (``<station>/…`` and Story
+    22.9's ``dispatch/<project_slug>/…``). This is the primary real-world
+    detection path: the repo's standing convention is ``gh pr merge
+    --merge``, which produces GitHub's default
+    ``Merge pull request #N from <owner>/<branch>`` subject.
+    """
     match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if match is None:
         return None
     branch = match.group("branch")
-    station = _station_from_project_slug(project_slug)
-    if not station or not branch.startswith(f"{station}/"):
+    if not _branch_belongs_to_project(branch, project_slug):
         return None
     segment = branch.rsplit("/", 1)[-1]
     return _parse_key_token(segment)
@@ -266,9 +300,13 @@ def parse_bmadloop_branch_name(branch: str) -> StoryKeyRef | None:
 
 
 def parse_station_branch_name(branch: str, project_slug: str) -> StoryKeyRef | None:
-    """``<station>/<key>-<desc>`` GitHub PR branch convention."""
-    station = _station_from_project_slug(project_slug)
-    if not station or not branch.startswith(f"{station}/"):
+    """``<station>/<key>-<desc>`` GitHub PR branch convention.
+
+    Also accepts Story 22.9's ``dispatch/<project_slug>/<key>``; both are
+    project-scoped branch names whose final segment leads with the key, so
+    they share one shape rather than minting a second enum member.
+    """
+    if not _branch_belongs_to_project(branch, project_slug):
         return None
     segment = branch.rsplit("/", 1)[-1]
     return _parse_key_token(segment)
@@ -450,6 +488,25 @@ def conformance_fixtures() -> tuple[dict[str, object], ...]:
             "branch": "marshal/2-3-frozen-surface-scope-check",
             "expected_key": StoryKeyRef(2, 3),
             "expected_shape": LandingEvidenceShape.STATION_BRANCH_NAME,
+        },
+        {
+            # Story 22.9: marshal's station-scoped dispatch branch.
+            "label": "dispatch_branch",
+            "project_slug": "pyforge-marshal",
+            "template": template,
+            "branch": "dispatch/pyforge-marshal/22.9",
+            "expected_key": StoryKeyRef(22, 9),
+            "expected_shape": LandingEvidenceShape.STATION_BRANCH_NAME,
+        },
+        {
+            # The path that actually fires in this repo: `gh pr merge
+            # --merge` renders GitHub's default subject around the branch.
+            "label": "github_pr_merge_subject_dispatch_branch",
+            "project_slug": "pyforge-marshal",
+            "template": template,
+            "subject": "Merge pull request #900 from rxm7706/dispatch/pyforge-marshal/22.9",
+            "expected_key": StoryKeyRef(22, 9),
+            "expected_shape": LandingEvidenceShape.GITHUB_PR_MERGE_SUBJECT,
         },
         {
             "label": "allowlist_accc097e6a",

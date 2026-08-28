@@ -209,14 +209,28 @@ def gather_dispatch_git_facts(
     # pre-22.9 `marshal/<key>` name still resolved for runs that were
     # already in flight (this run's own `worktree` is the attribution
     # fact, so a legacy branch checked out elsewhere is never adopted).
-    branch = dispatch_core.resolve_dispatch_branch(
+    #
+    # NEVER ask git about a branch the resolver did not resolve.
+    # `resolved is None` means no branch of this story's exists in the repo
+    # -- a refusal (an unattributable legacy branch), a not-yet-provisioned
+    # run, or a branch already retired after landing. `is_branch_merged`
+    # shells `git merge-base --is-ancestor`, which exits 128 on a missing
+    # ref and so raises `VcsCommandError`; the supervisor loop swallows that
+    # and `continue`s inside `while True`, spinning forever without ever
+    # judging the run complete. A branch that does not exist is not merged,
+    # and that is a fact, not a default.
+    resolution = dispatch_core.resolve_dispatch_branch(
         vcs,
         repo_root,
         slug=project_slug,
         story_key=story_key,
         worktree=worktree,
-    ).effective_branch
-    branch_merged = vcs.is_branch_merged(repo_root, branch, into=_MERGE_INTO)
+    )
+    branch_merged = (
+        vcs.is_branch_merged(repo_root, resolution.resolved, into=_MERGE_INTO)
+        if resolution.resolved is not None
+        else False
+    )
     subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
     merged_keys = promotion_core.merged_story_keys(
         subjects, merge_subject_template, project_slug
