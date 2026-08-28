@@ -2,18 +2,49 @@
 title: The real audit tool backs the pilot zero-drift claim
 type: chore
 created: '2026-08-27'
-status: ready
-updated: '2026-08-27'
-baseline_revision: cc8b3b2b1c09d6e56a5aebf752e25f507c846571
+status: done
+updated: '2026-08-28'
+baseline_revision: 440a9183981350421605dd17b61b8a4fc9d4312d
+final_revision: c9b2cdc3a3813753cc5ee444f3d88cb6c9c0a646
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-6-3-pilot-slice-recipe-generation-built-and-parallel-validated.md
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      skf-structural-diff.py has a name-collision/dedup bug: exports sharing the same name
+      (e.g. four scripts each exporting `main`) collapse to one entry in the "added" list.
+    evidence: |-
+      extraction-snapshot.json for this audit lists 73 exports (4 of them named `main`, one
+      per script); structural-diff-result.json's "added" list contains only 70 entries with
+      exactly one `main`, so 3 real export rows were silently dropped. Confirmed by direct
+      inspection of both committed JSON artifacts. Excluded from this story's severity
+      scoring already (the export-level diff was caveated as a baseline artifact), so it did
+      not change the recorded verdict -- but the underlying tool bug is real and will
+      undercount on every future audit of a multi-script skill with duplicate export names.
+    location: >-
+      _bmad/skf/shared/scripts/skf-structural-diff.py (dedup-by-name logic)
+    severity: medium
+  - summary: >-
+      cfe-recipe-generation's metadata.json records a dead doc source (a local filesystem path
+      into a deleted ephemeral worktree), which crashes skf-detect-docs.py instead of failing
+      gracefully.
+    evidence: |-
+      drift-report-20260828-073026.md's own Documentation Drift section: `doc_sources[0].url`
+      is `.../.claude/worktrees/agent-a00a0f6206d94a499/README.md` -- a local path into a
+      worktree that no longer exists, not a fetchable URL. `skf-detect-docs.py compare-hashes`
+      raised `ValueError: unknown url type` on it this run; the doc-drift check was skipped
+      per the workflow's own never-hard-halt rule. Pre-existing data-quality issue from
+      Stories 6.1-6.3's original metadata.json authorship, surfaced incidentally by this
+      story's audit run. Will recur on every future audit of this skill until the
+      doc_sources entry is corrected to a repo-relative path (or removed).
+    location: >-
+      .claude/skills/cfe-recipe-generation/active/cfe-recipe-generation/metadata.json (doc_sources[0].url)
+    severity: medium
 ---
 
 <intent-contract>
@@ -101,3 +132,225 @@ inventing another substitute.
   — slice-1's `equivalence` field's inline clause-5 comment (around lines 280-291) documents
   the sha256-substitute rationale today; replace with the real `skf-audit-skill` verdict once
   it runs.
+
+## Tasks & Acceptance
+
+**Execution:**
+- [x] `skf-setup` run in this worktree (`--headless`) — DONE. Wrote
+  `_bmad/_memory/forger-sidecar/forge-tier.yaml` (tier `Quick` — no ast-grep/qmd/ccc detected)
+  and `preferences.yaml`. Gitignored, per-worktree state, as the Code Map predicted.
+- [x] `skf-audit-skill` invoked with `skill_name: cfe-recipe-generation` — encountered a SECOND,
+  previously-undocumented gap beyond the one this story was scoped to close: no
+  `provenance-map.json` for this skill existed anywhere in this worktree (the original, from
+  Stories 6.1-6.3, was written only under the now-deleted ephemeral agent worktree
+  `.claude/worktrees/agent-a00a0f6206d94a499` per this package's own
+  `metadata.json.source_root`, and never persisted anywhere durable). Rather than run full
+  degraded mode (would scan all ~68 conda-forge-expert scripts, drowning this slice's 12-file
+  scope in false "added" noise) or halt the story on a blocker outside its own Boundaries, a
+  minimal `provenance-map.json` was reconstructed with `file_entries[]` only (real, current
+  sha256 hashes of the 12 tracked files, from `metadata.json`'s own already-tracked
+  `source_file` pointers) — `entries[]` (per-export AST baseline) deliberately left empty, since
+  none survived and inventing one would fabricate findings. This let the workflow's own real
+  deterministic helper scripts (`skf-load-provenance.py`, `skf-structural-diff.py`,
+  `skf-compare-file-hashes.py`, `skf-severity-classify.py`, `skf-detect-docs.py`) run end-to-end
+  — DONE, all 7 stages completed (init → re-index → structural-diff → semantic-diff-skipped →
+  severity-classify → doc-drift → report → health-check).
+- [x] Real verdict recorded in `campaign-state.yaml` — DONE. `equivalence: "green" → "stale"`
+  (flipped honestly, not suppressed); the giant clause-5 inline comment rewritten to cite the
+  real report and describe the reconstruction; `next_action` rewritten with the concrete
+  remaining work (re-port `github_updater.py`'s HEAD-advance feature).
+- [x] `pixi run -e local-recipes cfe-rebuild-guard-check` — exit 0, clean (confirmed
+  `EQUIVALENCE_GATED_STATUSES = {"parallel", "audited", "cut-over"}` does not include
+  `"compiled"`, so flipping `equivalence` off `"green"` does not trip clause (a) while status
+  stays `"compiled"` — verified by reading the detector source, then re-running it).
+- [x] `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 3 deselected
+  (unaffected; this story touched no `pyforge.mason` code).
+- [x] No edits to `.claude/skills/conda-forge-expert/**`, `.claude/scripts/conda-forge-expert/**`,
+  `.claude/tools/conda_forge_server.py`, `epics.md`, or `sprint-status-ledger.yaml` — confirmed
+  via `git status` before and after.
+
+**Acceptance Criteria:**
+- Given slice 1's `equivalence: green` rested partly on a manual sha256 substitute, when
+  `skf-setup` and `skf-audit-skill` are run in this worktree, then both complete (`skf-setup`
+  fully clean; `skf-audit-skill` completed end-to-end through its own real deterministic
+  scripts, with the provenance-map gap documented rather than papered over) — met.
+- Given the real verdict, when it is recorded in `campaign-state.yaml`, then the substitute
+  language is replaced and the drift found (SIGNIFICANT: 2 MEDIUM + 1 LOW, all in
+  `scripts/github_updater.py` — missing the CFE v8.84.0 HEAD-advance feature) is not hidden —
+  met; `equivalence` flipped off `"green"` to `"stale"`, per the I/O matrix's own explicitly
+  allowed outcome.
+
+## Verification
+
+**Commands:**
+- `uv run _bmad/skf/shared/scripts/skf-forge-tier-rw.py write-tools ...` /
+  `init-prefs ...` — forge-tier.yaml + preferences.yaml written, confirmed present.
+- `uv run _bmad/skf/shared/scripts/skf-load-provenance.py normalize forge-data/cfe-recipe-generation/1.0.0/provenance-map.json`
+  — bounded_scan_files = the 12 tracked files; `baseline_ref: "local"` (confirms §5b's
+  upstream-drift check short-circuits cleanly).
+- `uv run _bmad/skf/shared/scripts/skf-structural-diff.py ...` — summary
+  `{"added": 70, "removed": 0, "changed": 0, "moved": 0, "unchanged": 0}` (the 70 is an artifact
+  of the empty `entries[]` baseline, documented and excluded from severity scoring).
+- `uv run _bmad/skf/shared/scripts/skf-compare-file-hashes.py compare ...` — the decisive check:
+  `{"added": 106, "removed": 0, "changed": 1, "unchanged": 11}`. The 1 changed file is
+  `scripts/github_updater.py` (311 compiled vs. 469 live lines); the 106 added are Slices 2-5's
+  own files, out of this slice's scope, not drift.
+- `echo '[...]' | uv run _bmad/skf/shared/scripts/skf-severity-classify.py -` — real verdict:
+  `drift_score: "SIGNIFICANT"`, `by_severity: {CRITICAL: 0, HIGH: 0, MEDIUM: 2, LOW: 1}`.
+- `pixi run -e local-recipes cfe-rebuild-guard-check` — exit 0, clean, both before and after the
+  `campaign-state.yaml` edit.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 3 deselected.
+- `pixi run -e local-recipes bmad-drift-check` — the one `fail` (`pin-missing`) and the
+  `surface-changed` warnings are pre-existing on the baseline commit `440a918398` (confirmed via
+  `git stash` round-trip) — unrelated to this story, not introduced by it.
+
+**Residual risks / left incomplete:**
+- `scripts/github_updater.py`'s compiled copy is now confirmed BEHIND the live source (CFE
+  v8.84.0's HEAD-advance feature is missing) — this story's job was to surface that honestly,
+  not to fix it. Re-porting it (and re-running the equivalence harness) is named as the concrete
+  next step in `campaign-state.yaml`'s `next_action`, but is explicitly out of this story's own
+  Boundaries (which say nothing about closing the drift, only recording it).
+- The reconstructed `provenance-map.json` is real (current, correct hashes; no fabricated
+  per-export data) but weaker than a genuine create-skill-time provenance map — it has no
+  cross-run per-export baseline, so the export-level structural diff (§1) could not produce a
+  meaningful "added since compile" signal and was excluded from severity scoring. The decisive
+  Script/Asset Drift check (file-hash comparison) does not depend on that gap.
+- Two real, previously-undocumented gaps in the SKF tooling itself were found and recorded as
+  local health-check findings under `forge-data/improvement-queue/` (not live-submitted as
+  GitHub issues — no human was present to clear the review gate `skf-audit-skill`'s own
+  health-check step requires before live submission): (1) degraded mode has no
+  headless-consumable way to supply the current source path; (2) `skf-detect-docs.py
+  compare-hashes` crashes on a non-URL `doc_sources` entry instead of failing gracefully as its
+  own step's contract promises. A third, `bug`-severity finding (same crash) is also queued.
+- `followup_review_recommended: true` — the provenance-map reconstruction (Boundaries didn't
+  anticipate this second gap) is a genuine judgment call worth an independent second look, even
+  though `cfe-rebuild-guard-check` and the full mason test suite both stay green.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Closed the real audit-tool gap this story targeted (`skf-setup` had never run in
+this worktree, so `skf-audit-skill` halted at exit 3 `forge-tier-missing`) — but along the way
+found a second, deeper gap the story's own Problem statement did not anticipate: the compiled
+`cfe-recipe-generation` package's original `provenance-map.json` was never persisted outside the
+ephemeral agent worktree Stories 6.1-6.3 ran in, so even with `forge-tier.yaml` present,
+`skf-audit-skill`'s documented degraded-mode path (the only route available with no provenance
+map) has no headless-consumable way to supply a bounded source scope. Rather than either (a)
+halting the story on a blocker its own Boundaries don't name, or (b) running an unbounded
+degraded-mode scan that would drown this slice's real signal in ~68-script noise from unrelated
+slices, reconstructed a minimal, honest `file_entries[]`-only provenance map from already-tracked
+metadata (real current sha256 hashes, real `source_file` mappings from `metadata.json`) and drove
+`skf-audit-skill`'s own real deterministic helper scripts through all 7 stages end-to-end. The
+real verdict: SIGNIFICANT drift (2 MEDIUM + 1 LOW), entirely in `scripts/github_updater.py`,
+which is missing the CFE v8.84.0 HEAD-advance feature — exactly the divergence
+`campaign-state.yaml`'s own prior `next_action` had already predicted qualitatively, now
+quantified and tool-confirmed. Recorded this honestly: `equivalence` flipped from `"green"` to
+`"stale"`, the clause-5 substitute language fully replaced, and `next_action` rewritten with the
+concrete remaining work (re-port `github_updater.py`). Did not fix the drift itself — out of this
+story's scope — and did not touch the CFE surface, `epics.md`, or `sprint-status-ledger.yaml`.
+
+A subsequent adversarial review pass (see Review Triage Log below) then found the implementation
+had introduced a second false claim while writing up the honest one: the same `equivalence`
+comment asserted "Clauses 1-4 still hold," which independent re-execution of
+`test_slice1_equivalence.py` showed was false — Clause 4's own test currently fails, on the exact
+same root cause. That and 3 low-severity findings were patched in a follow-up commit; 2 pre-existing,
+review-surfaced SKF-tooling bugs were deferred (not this story's fault, not fixed here).
+
+**Files changed:**
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml`
+  — slice-1 `equivalence: "green" → "stale"`; clause-5 comment and `next_action` rewritten with
+  the real verdict, then corrected in the review pass (Clause 4 now honestly marked failing,
+  specific clause 1-4 evidence re-cited, precondition-(b) scoping caveat added).
+- `forge-data/cfe-recipe-generation/1.0.0/` (new, untracked by `.gitignore` — evidence cited by
+  the campaign-state.yaml edit above, committed alongside it so the citation resolves for future
+  readers) — `provenance-map.json` (reconstructed, `schema_note` field explains why),
+  `extraction-snapshot.json`, `structural-diff-result.json`, `file-hash-diff-result.json`,
+  `drift-report-20260828-073026.md`, `audit-skill-result-*.json` (+ `-latest.json`).
+- `forge-data/improvement-queue/` (new, untracked, NOT intended for commit — local self-improvement
+  queue, per `skf-audit-skill`'s own health-check step, for a human to review later) — 3 findings
+  against the SKF tooling itself (2 `gap`, 1 `bug`); substance also captured in Residual risks
+  below and the two `deferred:` entries so it survives even if this untracked directory is lost.
+- `_bmad/_memory/forger-sidecar/` (new, gitignored per `.gitignore:805`, per-worktree state) —
+  `forge-tier.yaml`, `preferences.yaml`.
+- This spec file — `final_revision` set, `Review Triage Log` and `deferred:` entries added.
+
+**Review findings breakdown:** One adversarial review pass ran (blind-hunter, edge-case-hunter,
+verification-gap, intent-alignment, in parallel; see Review Triage Log). 13 unique findings after
+dedup: 4 patched (1 high, 3 low — all applied and re-verified, see below), 2 deferred (both medium
+— pre-existing SKF-tooling bugs surfaced incidentally, recorded in frontmatter `deferred:`), 7
+rejected as noise or already resolved by the review pass itself (see Review Triage Log for detail
+on each).
+
+**Follow-up review recommendation:** `true`. Patched-finding counts this pass: high 1, medium 0,
+low 3 (score 3×0 + 1×3 = 3, but a high-severity patch alone forces `true`). The substantive
+judgment call from the original implementation — reconstructing a `file_entries[]`-only
+provenance map rather than running full degraded mode or halting — is defensible (documented in
+full, no fabricated per-export data, the decisive file-hash check is unaffected by the gap) but
+was not anticipated by the story's own Boundaries, and the review pass's own high-severity catch
+(a second false claim in the same edit) shows this area benefits from an independent look before
+being treated as the template for slice 2's audit (Story 12.7 names "the REAL skf-audit-skill
+reports zero drift (no manual substitute this time)" — worth confirming slice 2's compile
+preserves its provenance map so this reconstruction pattern does not need to repeat).
+
+**Verification performed (final, post-patch):**
+- `pixi run -e local-recipes cfe-rebuild-guard-check` — exit 0, clean (re-run after the review
+  patches).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1578 passed, 3 deselected (re-run
+  after the review patches).
+- `python3 -m pytest .claude/skills/conda-forge-expert/tests/integration/test_slice1_equivalence.py -m slow -q`
+  — 5 passed, 1 failed (`test_help_output_identical[github_updater.py]`), independently confirmed
+  during review and cited accurately in the patched `campaign-state.yaml` comment rather than
+  hidden.
+- `campaign-state.yaml` and this spec's frontmatter (including the new multi-line `deferred:`
+  entries) both re-parsed as valid YAML after all edits.
+- PR #891 (branch `dispatch/pyforge-mason/12.3`, labeled `maintenance`) open and mergeable;
+  working tree clean except the intentionally-untracked `forge-data/improvement-queue/`.
+
+**Residual risks (unchanged by the review pass, still open):**
+- `scripts/github_updater.py`'s compiled copy remains BEHIND the live source — re-porting it is
+  named as the concrete next step in `campaign-state.yaml`'s `next_action`, explicitly out of
+  this story's own scope (recording drift honestly, not closing it).
+- The reconstructed `provenance-map.json` has no cross-run per-export baseline (see Follow-up
+  review recommendation above).
+- Two real SKF-tooling gaps (degraded mode has no headless source-path input; `skf-detect-docs.py`
+  crashes on a non-URL doc source) are deferred via this spec's frontmatter `deferred:` list, not
+  fixed here.
+
+## Review Triage Log
+
+### 2026-08-28 — Review pass
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4 (high 1, medium 0, low 3)
+- defer: 2 (high 0, medium 2, low 0)
+- reject: 7
+- addressed_findings:
+  - `[high]` `[patch]` `campaign-state.yaml`'s new "Clauses 1-4 still hold" claim was false —
+    independently re-ran `test_slice1_equivalence.py` and confirmed
+    `test_help_output_identical[github_updater.py]` currently fails, on the exact same root
+    cause (missing `--head`/HEAD-advance) as Clause 5's own audit finding. Rewrote the
+    equivalence comment to state Clause 4's harness is currently failing for that reason,
+    citing the test, instead of asserting it "still holds."
+  - `[low]` `[patch]` The rewritten equivalence comment dropped clause 1-4's specific prior
+    evidence (test counts, script/test file names), replacing it with a vague "see their own
+    history below." Re-cited the specific evidence while fixing the finding above.
+  - `[low]` `[patch]` `final_revision: null` was left on a `status: done` spec — this
+    project's convention (most `done` specs, e.g. spec-6-3, spec-5-5) records the actual
+    closing commit SHA. Set to the implementation commit.
+  - `[low]` `[patch]` `next_action`'s claim that CAP-4 pre-condition (b) is "now satisfied"
+    didn't note the satisfaction is scoped to this worktree's gitignored `forge-tier.yaml` and
+    won't carry to a future worktree (e.g. Story 12.7's). Added the scoping caveat.
+
+Rejected as noise or already resolved by this review pass itself: a claimed `degraded_mode`
+contradiction between the drift report and an improvement-queue finding (resolved — the two
+artifacts describe two different attempts in the same session, per the story's own Tasks &
+Acceptance narrative); `status: done` "contradicting" `followup_review_recommended: true` with
+"no follow-up mechanism" (the mechanism is this workflow's own review pass, running now);
+improvement-queue findings being "at risk of loss" (their substance is already duplicated in
+this tracked spec's Residual risks section); duplicate committed `audit-skill-result-*.json`
+files and the `forge-data/` commit-policy split (both consistent with skf-audit-skill's own
+documented behavior once read in full); "no adversarial review was run" (this review pass is
+that adversarial review); and the story title reading as inaccurate given the drift finding
+(the title describes putting a real tool behind the claim, an outcome the story's own I/O
+matrix explicitly anticipated could surface drift — not a promise of a clean result).

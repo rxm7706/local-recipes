@@ -29,7 +29,7 @@ development_status:
   11-2-first-portal-slice-recipe-diagnose: done
   12-1-landed-retros-are-mirrored-into-the-pilot-brief: done
   12-2-ci-enforcement-for-the-guard-and-the-equivalence-net: done
-  12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim: backlog
+  12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim: done
   12-4-the-re-scope-gate-is-machine-enforced: backlog
   12-5-the-ownership-decision-is-recorded: backlog
   12-6-slice-2-brief-cross-slice-dependencies-re-derived-first: backlog
