@@ -61,3 +61,45 @@ branches; never a second derivation site.
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:~156` — `_ensure_dispatch_worktree` passes the slug; `worktree_path_for_branch` lookup keeps legacy-name fallback for the three preserved branches.
 - Grep for every other `dispatch_worktree_branch` / literal `marshal/` branch-string consumer (landing, status overlay `core/status.py`, conflict guard) and route through the one function.
 - Tests: `tests/unit/test_dispatch.py` — collision case (two stations, same key), legacy-fallback case, single-derivation-site guard.
+
+## Implementation record — 2026-08-27
+
+**Shape as built.** `core/dispatch.py` owns two derivations and one resolver:
+`dispatch_worktree_branch(slug, story_key)` → `dispatch/<slug>/<key>` (slug is a required
+positional, so an unmigrated consumer raises `TypeError` rather than rendering a
+station-less name), `legacy_dispatch_worktree_branch(story_key)` → `marshal/<key>` (read,
+never minted), and `resolve_dispatch_branch(vcs, repo_root, slug=…, story_key=…,
+worktree=…)` — the single site where the legacy name is reconciled. Attribution of a legacy
+branch is a git fact, not a guess: it is this station's only when git has it checked out AT
+this station's dispatch worktree. Every branch-name consumer routes through the resolver —
+`cli/dispatch.py::_ensure_dispatch_worktree`, `dispatch_supervisor::gather_dispatch_git_facts`
+(which is also what the CAP-2 zombie refusal and the CAP-5 in-flight guard read), and
+`dispatch_land::execute_dispatch_land`. `core/status.py`'s dispatch overlay derives no
+branch name, so it needed no change.
+
+**New finding codes:** `MRS-DISP-030` (ERROR) — an unattributable legacy branch refuses the
+dispatch/landing, naming the branch and the land-first remedy; `MRS-DISP-031` (WARN) — this
+run IS on an attributable legacy branch and proceeds from it, so the migration is visible
+rather than silent.
+
+**Verification.** `pixi run -e pyforge-marshal pyforge-marshal-test`: 6503 passed / 1
+failed, the failure being the pre-existing `test_skf_domain_skill::
+test_context_files_not_hand_edited` red that predates this story (it asserts on
+`CLAUDE.md`/`AGENTS.md`, untouched here) and was already recorded on Story 22.7. Import-linter
+`lint-imports`: 5 contracts kept, 0 broken (AD-4 core purity holds — `resolve_dispatch_branch`
+takes a `VcsPort`, which is not a forbidden module). The single-derivation-site guard was
+verified to genuinely fire by temporarily planting a second site. Live read-only run of
+`resolve_dispatch_branch` against the real repo: the three in-flight legacy runs
+(`marshal/22.9`, `marshal/12.2`, `marshal/20.2`) all resolve to their legacy branch, and a
+different station on a live key (`pyforge-doctor 12.2`) is refused naming
+`.worktrees/dispatch-pyforge-mason-12.2` — the exact silent-reuse defect, now loud.
+
+**Correction to the Block If premise.** The three named preserved branches are not where the
+spec says: `marshal/20.1`, `marshal/12.1` and `marshal/22.7` are absent from `origin`
+(`git ls-remote --heads origin` carries no dotted `<prefix>/<n>.<n>` head at all) and absent
+from `refs/heads/` here; `marshal/20.1` and `marshal/22.7` survive only as stale
+remote-tracking refs into the station loop homes, their stories having landed via PRs #886
+and #887, and `marshal/12.1` does not exist in any form. The legacy branches that DO exist
+are the three in-flight dispatch-worktree branches above, and all three resolve — nothing is
+stranded, and the `MRS-DISP-030` refusal is the documented resolution path for any that
+reappear.
