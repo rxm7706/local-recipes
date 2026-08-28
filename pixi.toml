@@ -1101,6 +1101,15 @@ cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not sl
 description = "Run the full conda-forge-expert test suite incl. live network/slow tests"
 cmd = "pytest .claude/skills/conda-forge-expert/tests"
 
+# Story 12.2 (pyforge-mason, spec-conda-forge-expert-rebuild re-scope
+# pre-condition (a)): the CI marker selection. `test` excludes slow (so the
+# slice-equivalence harness never runs); `test-all` includes network (flaky on
+# an offline runner). This is the exact "slow but not network" combination
+# neither existing task matches — used by .github/workflows/cfe-regression-net.yml.
+[feature.local-recipes.tasks.test-ci]
+description = "Run the conda-forge-expert regression suite + slice-equivalence harness for CI (incl. slow, excl. network)"
+cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network'"
+
 [feature.local-recipes.tasks.test-coverage]
 description = "Run the conda-forge-expert test suite with coverage report"
 cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not slow' --cov=.claude/skills/conda-forge-expert/scripts --cov-report=term-missing"
