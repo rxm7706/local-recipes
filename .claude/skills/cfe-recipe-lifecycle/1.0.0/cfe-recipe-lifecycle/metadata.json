@@ -1,0 +1,209 @@
+{
+  "name": "cfe-recipe-lifecycle",
+  "version": "1.0.0",
+  "skill_type": "single",
+  "scope_type": "specific-modules",
+  "source_authority": "internal",
+  "source_repo": ".",
+  "source_root": ".claude/skills/conda-forge-expert",
+  "source_commit": "ffcdcce7163b05efb701bb0bb11c4e8bfd74dca5",
+  "source_ref": "local",
+  "confidence_tier": "Quick",
+  "spec_version": "1.3",
+  "generation_date": "2026-08-28T00:00:00Z",
+  "description": "Everything a conda-forge recipe goes through after it exists: validate, optimize, security-scan, diagnose a failed build, autotick/update against upstream (GitHub/npm/PyPI), migrate v0-to-v1, and submit to staged-recipes -- plus the feedstock-context and pre-submission checks that gate a safe push. Use when a recipe.yaml already exists and needs to progress through review, CI, or a version bump; recipe creation from an upstream source is cfe-recipe-generation's job, not this skill's.",
+  "language": "python",
+  "exports": [],
+  "tool_versions": {
+    "ast_grep": "unknown",
+    "qmd": "unknown",
+    "skf": "2.0.1"
+  },
+  "confidence_distribution": {
+    "t1": 0,
+    "t1_low": 265,
+    "t2": 0,
+    "t3": 0
+  },
+  "stats": {
+    "exports_documented": 265,
+    "exports_public_api": 177,
+    "exports_internal": 88,
+    "exports_total": 265,
+    "public_api_coverage": 1.4972,
+    "total_coverage": 1.0,
+    "scripts_count": 25,
+    "assets_count": 1
+  },
+  "scripts": [
+    {
+      "file": "scripts/validate_recipe.py",
+      "purpose": "Validate a recipe.yaml/meta.yaml against conda-forge policy",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/validate_recipe.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/recipe_editor.py",
+      "purpose": "Programmatic recipe.yaml field edits (strip/patch helpers used by submit/update flows)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/recipe_editor.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/recipe_optimizer.py",
+      "purpose": "Quality/style check codes for a recipe (optimize_recipe, lint findings)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/recipe_optimizer.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/recipe_updater.py",
+      "purpose": "Version/source update for a recipe from PyPI/generic sources",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/recipe_updater.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/npm_updater.py",
+      "purpose": "Autotick-style version update for npm-sourced recipes",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/npm_updater.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/dependency-checker.py",
+      "purpose": "Cross-check recipe run/host deps against conda-forge availability",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/dependency-checker.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/license-checker.py",
+      "purpose": "Verify/derive LICENSE metadata for a recipe",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/license-checker.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/mapping_manager.py",
+      "purpose": "PyPI-to-conda-forge name mapping cache management",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/mapping_manager.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/feedstock-migrator.py",
+      "purpose": "v0 meta.yaml -> v1 recipe.yaml feedstock migration (remote feedstock only)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/feedstock-migrator.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/local_builder.py",
+      "purpose": "Native/local rattler-build orchestration and build-log capture",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/local_builder.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/failure_analyzer.py",
+      "purpose": "Diagnose a failed build log into a named cause + suggested fix",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/failure_analyzer.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/submit_pr.py",
+      "purpose": "Two-phase staged-recipes PR submission (prepare branch, then open PR)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/submit_pr.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/feedstock_lookup.py",
+      "purpose": "Look up whether a package already exists as a conda-forge feedstock",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/feedstock_lookup.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/feedstock_context.py",
+      "purpose": "Pre-submission feedstock context/health checks",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/feedstock_context.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/feedstock_enrich.py",
+      "purpose": "Enrich a recipe draft from live feedstock context",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/feedstock_enrich.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/_path_guard.py",
+      "purpose": "Path confinement guard restricting file operations to <cfe-root>/recipes/",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/_path_guard.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/gen_yml_reference.py",
+      "purpose": "Regenerate the recipe/conda-forge.yml *-reference-full.md docs",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/gen_yml_reference.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/test-skill.py",
+      "purpose": "Ad-hoc package-metadata smoke script (not the real test harness)",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/test-skill.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/vulnerability_scanner.py",
+      "purpose": "Scan a recipe/package closure against the local CVE database",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/vulnerability_scanner.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/pr_artifacts.py",
+      "purpose": "Download CI artifacts from a staged-recipes pull request",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/pr_artifacts.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/github_version_checker.py",
+      "purpose": "GitHub release/tag version + HEAD lookup for autotick updates",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/github_version_checker.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/health_check.py",
+      "purpose": "System health check for the conda-forge-expert environment",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/health_check.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/_http.py",
+      "purpose": "Shared HTTP client (truststore + JFrog/GitHub/.netrc auth chain) -- Slice 5",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/_http.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/_paths.py",
+      "purpose": "Shared repo-root/CFE-root path resolution helpers -- Slice 5",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/_paths.py",
+      "confidence": "T1-low"
+    },
+    {
+      "file": "scripts/_cfy_template.py",
+      "purpose": "Shared conda-forge.yml template rendering -- Slice 5",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/_cfy_template.py",
+      "confidence": "T1-low"
+    }
+  ],
+  "doc_sources": [
+    {
+      "url": "README.md",
+      "detected_via": "readme_always",
+      "content_hash": "sha256:66cfe3cf35eb7f2a808843aa695cf8770ecb7773ec6ab6d8a36c40560df10f5d",
+      "recorded_at": "2026-08-28T00:00:00Z"
+    }
+  ],
+  "generated_by": "create-skill",
+  "dependencies": [],
+  "compatibility": "N/A -- internal packaging-factory tooling, not a published library",
+  "assets": [
+    {
+      "file": "scripts/cross-shims/install_name_tool",
+      "purpose": "Cross-shim dispatching install_name_tool to the target-triple-prefixed cctools_osx-* variant -- local_builder.py hardcodes this path at runtime for osx cross-compile builds. Genuine Slice-2 functional asset found via test_local_builder.py's own regression run, previously undocumented in slice-map.md/the brief (same class of gap as Slice 1's templates/ hardcoded-path dependency).",
+      "source_file": ".claude/skills/conda-forge-expert/scripts/cross-shims/install_name_tool",
+      "confidence": "T1-low"
+    }
+  ]
+}

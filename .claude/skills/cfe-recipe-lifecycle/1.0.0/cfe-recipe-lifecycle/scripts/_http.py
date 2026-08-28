@@ -1,0 +1,1321 @@
+#!/usr/bin/env python3
+"""
+Enterprise-safe HTTP helpers for conda-forge-expert scripts.
+
+Designed for air-gapped / enterprise environments running JFrog Artifactory
+where Python's SSL trust store may be stricter than the OS/curl trust store.
+
+SSL trust priority chain (applied once at process start via inject_ssl_truststore):
+  1. REQUESTS_CA_BUNDLE / SSL_CERT_FILE env vars  — explicit enterprise CA bundle
+  2. truststore package injection                  — system OS trust anchors (macOS/Windows/Linux)
+  3. Python default (certifi bundle)               — bundled Mozilla CA store
+
+Authentication priority chain (per-request via make_request / netrc_credentials):
+  1. JFROG_API_KEY env var      → X-JFrog-Art-Api header
+  2. JFROG_USERNAME + PASSWORD  → Basic auth header
+  3. ~/.netrc (or $NETRC)       → Basic auth from netrc entry for the host
+  4. GITHUB_TOKEN / GH_TOKEN    → Bearer auth (for github.com)
+  5. Unauthenticated
+
+Usage in scripts (lazy, safe to call multiple times):
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent))
+    from _http import inject_ssl_truststore, make_request, open_url
+
+    inject_ssl_truststore()   # call once near script top-level
+
+    req = make_request(url)   # builds urllib.request.Request with auth headers
+    with open_url(req, timeout=30) as resp:
+        data = resp.read()
+"""
+from __future__ import annotations
+
+import contextlib as _contextlib
+import netrc as _netrc_mod
+import os
+import sys
+import urllib.request
+from base64 import b64encode
+from pathlib import Path
+from typing import Any
+from urllib.parse import quote as _url_quote, urlparse
+
+# ── SSL / truststore injection ───────────────────────────────────────────────
+
+_TRUSTSTORE_INJECTED = False
+
+
+def inject_ssl_truststore() -> bool:
+    """
+    Inject the system OS trust store into Python's ssl module.
+
+    Priority:
+      1. REQUESTS_CA_BUNDLE / SSL_CERT_FILE — already handled by urllib automatically
+         if set, so only need to notify.
+      2. truststore.inject_into_ssl() — hooks system trust into ssl.create_default_context()
+      3. No-op if truststore is not installed.
+
+    Returns True if truststore injection was performed, False if skipped.
+    Safe to call multiple times (idempotent).
+    """
+    global _TRUSTSTORE_INJECTED
+    if _TRUSTSTORE_INJECTED:
+        return True
+
+    # Explicit CA bundle env vars — urllib/ssl picks these up automatically;
+    # just log so users know it's active.
+    for var in ("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
+        if os.environ.get(var):
+            _log(f"_http: using CA bundle from ${var}={os.environ[var]}")
+
+    try:
+        import truststore  # type: ignore[import-not-found]
+        truststore.inject_into_ssl()
+        _TRUSTSTORE_INJECTED = True
+        _log("_http: truststore injected system SSL trust anchors")
+        return True
+    except ImportError:
+        _log(
+            "_http: truststore not available — using default certifi bundle "
+            "(set REQUESTS_CA_BUNDLE for enterprise CA, or: pip install truststore)"
+        )
+        return False
+    except Exception as exc:
+        _log(f"_http: truststore injection failed ({exc}) — continuing without it")
+        return False
+
+
+# ── Atomic file writes ──────────────────────────────────────────────────────
+
+@_contextlib.contextmanager
+def atomic_writer(path: str | Path, mode: str = "w", **kwargs: Any):
+    """Context manager for crash-safe file writes.
+
+    Writes to a `.tmp` sibling of `path`, fsyncs, then atomically renames into
+    place via `os.replace`. An interrupt (SIGINT, OOM, power loss) during the
+    write leaves the prior contents of `path` intact rather than truncating
+    it — a problem we'd hit when `json.dump` was writing directly to the
+    final path and a partial JSON file would then fail to load on next run.
+
+    On exception inside the `with` block, the `.tmp` file is unlinked and
+    `path` is untouched.
+
+    Usage:
+        with atomic_writer(cache_path) as f:
+            json.dump(obj, f)
+
+        with atomic_writer(cache_path, "wb") as f:
+            f.write(payload_bytes)
+
+    The parent directory is created if missing.
+    """
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    # Use a sibling .tmp file so os.replace is on the same filesystem (atomic).
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    f = open(tmp, mode, **kwargs)
+    try:
+        yield f
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except OSError:
+            # fsync isn't supported on every backing FS (e.g. some tmpfs
+            # / network mounts); the rename still happens, just without
+            # the durability guarantee.
+            pass
+        f.close()
+        os.replace(tmp, p)
+    except Exception:
+        try:
+            f.close()
+        except Exception:
+            pass
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def atomic_write_bytes(path: str | Path, data: bytes) -> None:
+    """Atomic equivalent of `Path(path).write_bytes(data)`."""
+    with atomic_writer(path, "wb") as f:
+        f.write(data)
+
+
+def atomic_write_text(path: str | Path, text: str, *, encoding: str = "utf-8") -> None:
+    """Atomic equivalent of `Path(path).write_text(text)`."""
+    with atomic_writer(path, "w", encoding=encoding) as f:
+        f.write(text)
+
+
+# ── .netrc credential lookup ─────────────────────────────────────────────────
+
+def netrc_credentials(url: str) -> tuple[str, str] | None:
+    """
+    Look up (username, password) for the given URL's hostname in ~/.netrc.
+
+    Respects the $NETRC environment variable for non-default netrc file path.
+    Returns None if no entry is found or netrc cannot be read.
+
+    Uses `_host_of` for the same reason the allowlist does: the old
+    `netloc.split(":")[0]` returned the USERNAME for a userinfo-bearing URL
+    (`https://svc:tok@artifactory.corp/...` -> `svc`), which matches no
+    `machine` line, so `netrc.authenticators` fell through to any `default`
+    entry — silently sending an unrelated credential to the mirror the
+    operator had a correct entry for.
+
+    `_host_of` also LOWERCASES (it is `urlparse().hostname`), and
+    `netrc.authenticators` is an exact dict lookup over the `machine` tokens
+    as spelled in the file — it does no case folding of its own. So a
+    perfectly legal `machine ARTIFACTORY.CORP.COM` stopped matching when this
+    function moved to `_host_of`, falling through to `default` and
+    reintroducing, by a different route, the exact wrong-credential-to-the-
+    mirror failure the move was made to fix.
+
+    So the `machine` tokens are matched case-insensitively here, against
+    `nrc.hosts` directly rather than via `nrc.authenticators`: that method
+    returns the `default` entry as soon as its exact lookup misses, which
+    would consume the miss before any second spelling could be tried. An
+    explicit `machine` line therefore wins over `default` whatever its case,
+    and `default` still applies when no machine line matches at all — the
+    documented netrc semantics, unchanged. Only the netrc lookup needs this;
+    the allowlist compares hosts that went through `_host_of` on both sides,
+    so it is already consistently folded.
+    """
+    host = _host_of(url)
+    if not host:
+        return None
+
+    try:
+        netrc_path = os.environ.get("NETRC") or Path.home() / ".netrc"
+    except RuntimeError as exc:
+        # `Path.home()` raises RuntimeError when neither HOME nor a passwd
+        # entry resolves (rootless / arbitrary-UID containers). Before the
+        # JFrog host gate this branch was unreachable whenever a JFrog
+        # credential was set (step 1 matched unconditionally); gating step 1
+        # handed its traffic here, putting this raise on EVERY request to an
+        # unconfigured host. Same shape, same reason, as the guard on
+        # `read_pixi_config` in `_pixi_configured_hosts`.
+        _log(f"_http: cannot locate .netrc ({exc}) — skipping credential lookup")
+        return None
+    try:
+        nrc = _netrc_mod.netrc(str(netrc_path))
+        entry = None
+        for machine, creds in nrc.hosts.items():
+            if machine.lower() == host:
+                entry = creds
+                break
+        if entry is None:
+            # No explicit machine line — fall through to `default` if the file
+            # declares one, which is what `authenticators` does.
+            entry = nrc.hosts.get("default")
+        if entry:
+            login, _, password = entry
+            if login and password:
+                return (login, password)
+    except FileNotFoundError:
+        pass  # no .netrc file — normal in many environments
+    except _netrc_mod.NetrcParseError as exc:
+        _log(f"_http: .netrc parse error ({exc}) — skipping credential lookup")
+    except OSError as exc:
+        _log(f"_http: .netrc read error ({exc}) — skipping credential lookup")
+    return None
+
+
+# ── Request builder with enterprise auth ─────────────────────────────────────
+
+def _host_of(url: str) -> str:
+    """Lowercased hostname — userinfo AND port both stripped.
+
+    `urlparse().hostname`, never `netloc.split(":")[0]`: the latter is wrong
+    on two shapes this allowlist actually sees. For
+    `https://svc:tok@artifactory.corp/api/conda/cf` — a routine Artifactory
+    form — it yields the *username* (`svc`), so the real mirror never enters
+    the allowlist and its credential is silently withheld. For an IPv6
+    literal it yields `[2001` for every address sharing that prefix, so an
+    unrelated host matches the allowlist and RECEIVES the credential. Port
+    stripping (the reason this helper exists) is preserved: `.hostname`
+    drops it too, so a `*_BASE_URL` set without an explicit port still
+    matches a request URL that carries one, or vice versa.
+    """
+    return (urlparse(url).hostname or "").lower()
+
+
+# Public package hosts this module REQUESTS but never declares in a
+# `_DEFAULT_*` global, so the derivation below cannot see them. Derivation is
+# still the primary source — this is a floor under it, not a replacement.
+#
+# The derivation covers a resolver only if that resolver declares its public
+# fallback in a `_DEFAULT_*` global. Three classes escape it, all verified
+# present in this module today:
+#   * hosts reached from a URL built inline (`resolve_anaconda_channel_urls`
+#     f-strings `https://anaconda.org/...`; `dev.azure.com` in the
+#     `pr_artifacts` flow),
+#   * hosts reached only as a redirect/CDN target of a declared one
+#     (`files.pythonhosted.org` behind pypi.org),
+#   * a vendor's second public domain (`repo.anaconda.com` beside
+#     `conda.anaconda.org`).
+# Each was reproduced receiving `JFROG_API_KEY` under a `*_BASE_URL` naming
+# it, which is the leak `_public_default_hosts` exists to close. When you add
+# a resolver, declare its fallback in a `_DEFAULT_*` global and it needs no
+# entry here.
+_PUBLIC_HOST_FLOOR: frozenset[str] = frozenset({
+    "anaconda.org",
+    "repo.anaconda.com",
+    "files.pythonhosted.org",
+    "dev.azure.com",
+})
+
+
+def _public_default_hosts() -> frozenset[str]:
+    """Hosts of every public fallback this module ships — derived from its own
+    `_DEFAULT_*` globals wherever it can be, unioned with `_PUBLIC_HOST_FLOOR`
+    for the public hosts this module requests without declaring.
+
+    These can never enter the enterprise allowlist. A JFrog credential is
+    never legitimately needed against pypi.org / conda.anaconda.org /
+    registry.npmjs.org / ..., and without this exclusion a merely redundant
+    `PYPI_BASE_URL=https://pypi.org/simple` would mark the public host
+    "configured" and re-open exactly the cross-resolver leak the allowlist
+    exists to close. `_pixi_configured_hosts` already excluded them by
+    construction; the env-var half did not, which is the asymmetry this
+    closes.
+
+    The result is cached, but an EMPTY result is never cached: this set is
+    subtracted from the allowlist, so caching an empty one would silently
+    re-open the gate for the life of the process. Empty can only mean the
+    `_DEFAULT_*` globals were not in place when the first call ran (they are
+    declared below this function), which is a load-order bug, not a real
+    answer — so recompute instead of freezing it.
+    """
+    global _PUBLIC_DEFAULT_HOSTS
+    if not _PUBLIC_DEFAULT_HOSTS:
+        urls: list[str] = []
+        for name, value in list(globals().items()):
+            if not name.startswith("_DEFAULT_"):
+                continue
+            if isinstance(value, str):
+                urls.append(value)
+            elif isinstance(value, (tuple, list)):
+                urls.extend(v for v in value if isinstance(v, str))
+        hosts: set[str] = set(_PUBLIC_HOST_FLOOR)
+        for u in urls:
+            try:
+                host = _host_of(u)
+            except ValueError:
+                continue
+            if host:
+                hosts.add(host)
+        _PUBLIC_DEFAULT_HOSTS = frozenset(hosts)
+    return _PUBLIC_DEFAULT_HOSTS
+
+
+_PUBLIC_DEFAULT_HOSTS: frozenset[str] | None = None
+
+# Mirror-pointing env vars that do NOT end in `_BASE_URL`. Kept explicit (and
+# short) because they are npm's own spelling, not this module's convention —
+# `resolve_npm_urls` reads both, so an operator who routes npm at Artifactory
+# the npm-native way must still clear the JFrog host gate.
+_EXTRA_MIRROR_ENV_VARS: tuple[str, ...] = (
+    "npm_config_registry",
+    "NPM_CONFIG_REGISTRY",
+)
+
+
+def _pixi_configured_hosts(config: dict | None = None) -> set[str]:
+    """Hosts named in the operator's pixi config (`mirrors`, `default-channels`,
+    `pypi-config.index-url`/`extra-index-urls`) — the SAME sources
+    `resolve_conda_forge_urls`/`resolve_pypi_simple_urls`/`resolve_pypi_json_urls`
+    read, since `docs/reference/pixi-config-jfrog.example.toml` documents
+    project-local `.pixi/config.toml` (no env vars at all) as the recommended
+    enterprise setup for this repo — an env-var-only allowlist would silently
+    stop attaching JFrog credentials for that documented path. Deliberately
+    excludes those resolvers' own public-default fallbacks (repo.prefix.dev,
+    pypi.org, ...) — mixing those in would always mark the public host
+    "configured" and defeat the allowlist entirely.
+    """
+    if config is None:
+        try:
+            cfg = read_pixi_config()
+        except Exception as exc:  # noqa: BLE001 — best-effort, never fatal
+            # `read_pixi_config` builds its candidate list with `Path.home()`,
+            # which raises RuntimeError when neither HOME nor a passwd entry
+            # resolves (rootless / arbitrary-UID containers). That used to be
+            # confined to the resolver paths; this gate put it on EVERY
+            # outbound request, so an unguarded raise would take down all HTTP.
+            _log(f"_http: skipping pixi-config host derivation ({exc})")
+            cfg = {}
+    else:
+        cfg = config
+    urls: list[str] = []
+
+    mirrors = cfg.get("mirrors") if isinstance(cfg, dict) else None
+    if isinstance(mirrors, dict):
+        for targets in mirrors.values():
+            if isinstance(targets, list):
+                urls.extend(t for t in targets if isinstance(t, str))
+
+    chans = cfg.get("default-channels") if isinstance(cfg, dict) else None
+    if isinstance(chans, list):
+        urls.extend(c for c in chans if isinstance(c, str))
+
+    pcfg = cfg.get("pypi-config") if isinstance(cfg, dict) else None
+    if isinstance(pcfg, dict):
+        idx = pcfg.get("index-url")
+        if isinstance(idx, str):
+            urls.append(idx)
+        extras = pcfg.get("extra-index-urls")
+        if isinstance(extras, list):
+            urls.extend(e for e in extras if isinstance(e, str))
+
+    hosts: set[str] = set()
+    for u in urls:
+        try:
+            host = _host_of(u)
+        except ValueError:
+            continue
+        if host:
+            hosts.add(host)
+    return hosts - _public_default_hosts()
+
+
+def _configured_enterprise_hosts() -> set[str]:
+    """Hosts the operator has explicitly pointed an enterprise mirror at —
+    via env var or pixi config.
+
+    Env-var half: derived (never hardcoded) from every `*_BASE_URL` env var
+    that is currently set — the resolver chain already defines ~24 of these
+    (`CONDA_FORGE_BASE_URL`, `PYPI_BASE_URL`, `GITHUB_RAW_BASE_URL`, ...) and
+    enumerating them by name here would silently miss the next one added. A
+    malformed URL value contributes no host rather than raising. The only
+    non-`_BASE_URL` vars read are npm's own (`_EXTRA_MIRROR_ENV_VARS`), which
+    `resolve_npm_urls` honours. Pixi-config half: see `_pixi_configured_hosts`.
+
+    Public default hosts are subtracted from BOTH halves — see
+    `_public_default_hosts`.
+    """
+    hosts: set[str] = set()
+    values = [v for k, v in os.environ.items() if k.endswith("_BASE_URL") and v]
+    values += [v for v in (os.environ.get(k) for k in _EXTRA_MIRROR_ENV_VARS) if v]
+    for value in values:
+        try:
+            host = _host_of(value)
+        except ValueError:
+            # e.g. an unclosed IPv6-bracket literal — malformed input,
+            # not a host to allowlist.
+            continue
+        if host:
+            hosts.add(host)
+    hosts -= _public_default_hosts()
+    hosts |= _pixi_configured_hosts()
+    return hosts
+
+
+def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
+    """Build the enterprise auth headers for `url`.
+
+    Auth priority (first match wins):
+      1. JFROG_API_KEY       → X-JFrog-Art-Api header (host-gated, below)
+      2. JFROG_USERNAME+PWD  → Basic auth header (host-gated, below)
+      3. GITHUB_TOKEN/GH_TOKEN (github.com) → Bearer header
+      4. ~/.netrc lookup     → Basic auth header
+      5. Unauthenticated     → empty dict
+
+    Pure function — no User-Agent, no extra headers, no urllib coupling.
+    Use this for `requests`-based callers; `make_request` wraps it for the
+    urllib path. Both paths share the same auth-resolution semantics.
+
+    `skip_auth=True` returns an empty dict without consulting any env var
+    or netrc entry. Use this for known-public endpoints where leaking
+    JFROG_API_KEY / GITHUB_TOKEN cross-host would be a misconfiguration
+    (e.g. dev.azure.com's public conda-forge feedstock-builds project).
+
+    JFrog credentials (steps 1-2) are host-gated against
+    `_configured_enterprise_hosts()` — the set of hosts named by any
+    currently-set `*_BASE_URL` env var (plus npm's own registry vars) or the
+    operator's pixi config, MINUS this module's own public fallback hosts,
+    which can never qualify (see `_public_default_hosts`). The gate is
+    skipped entirely when no JFrog credential is set — there is nothing to
+    gate, and the derivation is not free. It is host-level, not repo-scoped
+    (Artifactory's own permission model handles per-repo authorization once
+    the request lands), and it does not distinguish which resolver a host
+    came from — a JFrog instance fronting several ecosystems under one
+    credential is expected to receive that credential for all of them. What
+    it does close is the former UNCONDITIONAL cross-resolver leak: a public
+    fallback host the operator never configured anything for previously
+    received the header whenever the key was merely set. Closing that
+    without an SSRF-style denylist matters because a denylist would wrongly
+    block the very enterprise mirrors this routing exists to reach (see
+    AUD-CFE-004). github.com/api.github.com are ALWAYS excluded from the
+    JFrog gate (never merely "unconfigured"), so a `*_BASE_URL` that happens
+    to resolve to one of those two hosts can never shadow GITHUB_TOKEN with
+    a JFrog header — GitHub's own dedicated branch (step 3) always wins
+    there.
+
+    `.netrc` auth (step 4) is unchanged in itself but is newly REACHABLE
+    while a JFrog credential is set: before the gate, step 1 matched
+    unconditionally, so step 4 never ran in that state. An operator with both
+    a JFrog key and a `default` entry in `.netrc` therefore now sends those
+    Basic credentials to unconfigured hosts where they previously sent the
+    JFrog header. That is `default`'s documented netrc semantics ("use these
+    for any machine not named above") and so is the operator's own declared
+    intent, not a leak this function invents — but it IS a behaviour change,
+    and a `default` entry is the wrong tool for anyone who meant the
+    credential for one host. Name the machine explicitly.
+
+    Host gating is deliberately NOT applied to self-hosted forges: a GHES /
+    self-hosted GitLab host named by `GITHUB_API_BASE_URL` /
+    `GITLAB_API_BASE_URL` enters the allowlist and takes the JFrog branch,
+    so `GITHUB_TOKEN` is not attached to it. That predates this gate (step 1
+    matched unconditionally before) and is tracked separately rather than
+    changed here, because the fix needs `resolve_github_api_urls`'s real call
+    sites checked first.
+    """
+    if skip_auth:
+        return {}
+    headers: dict[str, str] = {}
+    host = _host_of(url)
+    # Substring match (not equality) is deliberate and pre-existing — matches
+    # any caller-supplied github.com subdomain (e.g. a future
+    # codeload.github.com/gist.github.com call site), same as before this fix.
+    # `api.github.com` needs no separate clause: it contains `github.com`.
+    is_github_host = "github.com" in host
+
+    # Short-circuit: the allowlist only ever gates a JFrog credential, so when
+    # none is set there is nothing to gate and the scan is pure cost. It is not
+    # free — it walks os.environ and (via `_pixi_configured_hosts`) stats and
+    # TOML-parses the pixi config chain, on a path every make_request() takes.
+    has_jfrog_cred = bool(
+        os.environ.get("JFROG_API_KEY")
+        or (os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"))
+    )
+    is_configured_host = (
+        has_jfrog_cred
+        and not is_github_host
+        and host in _configured_enterprise_hosts()
+    )
+
+    # JFrog Artifactory auth (env vars take precedence over .netrc), gated to
+    # hosts the operator actually configured a mirror for. A configured host
+    # with no JFrog credential set falls through to the generic .netrc branch
+    # below, same as it always has. github.com/api.github.com never qualify
+    # here (is_configured_host is forced False for them above) — they always
+    # get GitHub's own dedicated branch instead, never a shadowed JFrog one.
+    if is_configured_host and os.environ.get("JFROG_API_KEY"):
+        headers["X-JFrog-Art-Api"] = os.environ["JFROG_API_KEY"]
+    elif (
+        is_configured_host
+        and os.environ.get("JFROG_USERNAME")
+        and os.environ.get("JFROG_PASSWORD")
+    ):
+        creds = f"{os.environ['JFROG_USERNAME']}:{os.environ['JFROG_PASSWORD']}"
+        headers["Authorization"] = "Basic " + b64encode(creds.encode()).decode()
+    # GitHub API auth
+    elif is_github_host:
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        elif (creds_tuple := netrc_credentials(url)):
+            login, password = creds_tuple
+            creds_str = f"{login}:{password}"
+            headers["Authorization"] = "Basic " + b64encode(creds_str.encode()).decode()
+    # Generic .netrc fallback (covers Artifactory, Nexus, GitLab, etc.)
+    else:
+        if (creds_tuple := netrc_credentials(url)):
+            login, password = creds_tuple
+            creds_str = f"{login}:{password}"
+            headers["Authorization"] = "Basic " + b64encode(creds_str.encode()).decode()
+
+    return headers
+
+
+def make_request(
+    url: str,
+    extra_headers: dict[str, str] | None = None,
+    user_agent: str = "conda-forge-expert/1.0",
+    skip_auth: bool = False,
+) -> urllib.request.Request:
+    """
+    Build a urllib.request.Request with enterprise authentication headers.
+
+    Auth chain delegated to `auth_headers_for(url, skip_auth=...)` so the
+    urllib and `requests` paths share the same semantics. Pass
+    `skip_auth=True` for known-public endpoints (e.g. dev.azure.com's
+    public conda-forge feedstock-builds project) — prevents JFROG_API_KEY
+    or GITHUB_TOKEN from leaking cross-host.
+    """
+    headers: dict[str, str] = {"User-Agent": user_agent}
+    if extra_headers:
+        headers.update(extra_headers)
+    # Caller-supplied Authorization wins over the auto-resolved one.
+    auto = auth_headers_for(url, skip_auth=skip_auth)
+    for k, v in auto.items():
+        headers.setdefault(k, v)
+    return urllib.request.Request(url, headers=headers)
+
+
+def open_url(request: urllib.request.Request, timeout: int = 30) -> Any:
+    """
+    Wrapper around urllib.request.urlopen that injects truststore automatically.
+
+    Always calls inject_ssl_truststore() before opening — safe to call repeatedly
+    (idempotent). Returns the http.client.HTTPResponse context manager.
+    """
+    inject_ssl_truststore()
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
+# ── URL resolvers — JFrog/mirror discovery from env + pixi config ──────────
+#
+# Design: produce an ordered list of candidate base URLs for each upstream
+# (conda-forge channel, PyPI Simple, PyPI JSON, GitHub archive, GitHub raw).
+# Air-gapped enterprise users (JFrog) get their mirror first; external
+# clones fall through to the public default.
+
+import json as _json
+import re as _re
+import time as _time
+import urllib.error
+from typing import Iterable
+
+# Public fallback base URLs. The order is fixed: prefix.dev (CDN-backed
+# mirror) before anaconda.org (often blocked in air-gapped enterprise
+# networks). Note: bare prefix.dev/conda-forge does NOT serve
+# current_repodata.json — only repo.prefix.dev/conda-forge does.
+_DEFAULT_CONDA_FORGE_FALLBACKS: tuple[str, ...] = (
+    "https://repo.prefix.dev/conda-forge",
+    "https://conda.anaconda.org/conda-forge",
+)
+
+_DEFAULT_PYPI_SIMPLE_FALLBACKS: tuple[str, ...] = (
+    "https://pypi.org/simple",
+)
+
+_DEFAULT_PYPI_JSON_FALLBACKS: tuple[str, ...] = (
+    "https://pypi.org",  # /pypi/<pkg>/json appended by caller
+)
+
+_DEFAULT_GITHUB_FALLBACKS: tuple[str, ...] = (
+    "https://github.com",
+)
+
+_DEFAULT_GITHUB_RAW_FALLBACKS: tuple[str, ...] = (
+    "https://raw.githubusercontent.com",
+)
+
+_DEFAULT_NPM_FALLBACKS: tuple[str, ...] = (
+    "https://registry.npmjs.org",
+)
+
+_DEFAULT_CRAN_FALLBACKS: tuple[str, ...] = (
+    "https://crandb.r-pkg.org",
+)
+
+_DEFAULT_CPAN_FALLBACKS: tuple[str, ...] = (
+    "https://fastapi.metacpan.org",
+)
+
+_DEFAULT_LUAROCKS_FALLBACKS: tuple[str, ...] = (
+    "https://luarocks.org",
+)
+
+_DEFAULT_CRATES_FALLBACKS: tuple[str, ...] = (
+    "https://crates.io",
+)
+
+_DEFAULT_RUBYGEMS_FALLBACKS: tuple[str, ...] = (
+    "https://rubygems.org",
+)
+
+_DEFAULT_MAVEN_FALLBACKS: tuple[str, ...] = (
+    "https://search.maven.org",
+)
+
+_DEFAULT_NUGET_FALLBACKS: tuple[str, ...] = (
+    "https://api.nuget.org",
+)
+
+_DEFAULT_ENDOFLIFE_FALLBACKS: tuple[str, ...] = (
+    "https://endoflife.date",
+)
+
+_DEFAULT_GITHUB_API_FALLBACKS: tuple[str, ...] = (
+    "https://api.github.com",
+)
+
+_DEFAULT_GITLAB_API_FALLBACKS: tuple[str, ...] = (
+    "https://gitlab.com/api/v4",
+)
+
+_DEFAULT_CODEBERG_API_FALLBACKS: tuple[str, ...] = (
+    "https://codeberg.org/api/v1",
+)
+
+_DEFAULT_S3_PARQUET_BASE: str = "https://anaconda-package-data.s3.amazonaws.com"
+_S3_PARQUET_PREFIX: str = "conda/monthly"
+_S3_PARQUET_KEY_RE = _re.compile(
+    r"^" + _re.escape(_S3_PARQUET_PREFIX) + r"/(\d{4})/(\d{4}-\d{2})\.parquet$"
+)
+_S3_MONTH_RE = _re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+def read_pixi_config() -> dict:
+    """Read pixi config — first existing file in pixi's own priority order wins.
+
+    Pixi resolves config in this order: project-local → user → system. We
+    follow the same chain so this helper honors whatever the developer set.
+    Silent-on-error: a malformed config doesn't break callers; we return {}
+    and let the public-default fallback paths handle routing.
+    """
+    try:
+        import tomllib
+    except ImportError:
+        return {}
+    candidates = [
+        Path(".pixi") / "config.toml",
+        Path.home() / ".pixi" / "config.toml",
+        Path("/etc/pixi/config.toml"),
+    ]
+    for p in candidates:
+        try:
+            if p.is_file():
+                with open(p, "rb") as f:
+                    return tomllib.load(f)
+        except Exception as e:
+            _log(f"_http: skipping malformed pixi config at {p}: {e}")
+            continue
+    return {}
+
+
+def _dedup_strip(urls: Iterable[str | None]) -> list[str]:
+    """De-dup + strip trailing slashes; preserves first-seen order."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for u in urls:
+        if not u:
+            continue
+        u = u.rstrip("/")
+        if u and u not in seen:
+            seen.add(u)
+            out.append(u)
+    return out
+
+
+def resolve_conda_forge_urls(config: dict | None = None) -> list[str]:
+    """Ordered chain for the conda-forge channel.
+
+    Priority:
+      1. CONDA_FORGE_BASE_URL env var
+      2. Pixi `mirrors["https://conda.anaconda.org/conda-forge"][*]`
+      3. Pixi `default-channels` entries containing "conda-forge"
+      4. https://repo.prefix.dev/conda-forge      (public CDN mirror)
+      5. https://conda.anaconda.org/conda-forge   (last resort)
+
+    `config` lets callers inject a pre-loaded pixi config (test/mock-friendly);
+    if None, calls `read_pixi_config()`.
+    """
+    cfg = read_pixi_config() if config is None else config
+    candidates: list[str | None] = [os.environ.get("CONDA_FORGE_BASE_URL")]
+
+    mirrors = cfg.get("mirrors") if isinstance(cfg, dict) else None
+    if isinstance(mirrors, dict):
+        for src, targets in mirrors.items():
+            if not isinstance(src, str) or not isinstance(targets, list):
+                continue
+            if src.rstrip("/").endswith("conda.anaconda.org/conda-forge"):
+                for t in targets:
+                    if isinstance(t, str):
+                        candidates.append(t)
+
+    chans = cfg.get("default-channels") if isinstance(cfg, dict) else None
+    if isinstance(chans, list):
+        for c in chans:
+            if isinstance(c, str) and "conda-forge" in c:
+                candidates.append(c)
+
+    candidates.extend(_DEFAULT_CONDA_FORGE_FALLBACKS)
+    return _dedup_strip(candidates)
+
+
+def resolve_pypi_simple_urls(config: dict | None = None) -> list[str]:
+    """Ordered chain for PyPI Simple v1 index.
+
+    Priority:
+      1. PYPI_BASE_URL env var (treated as a Simple-index base, e.g.
+         `https://artifactory.example.com/artifactory/api/pypi/pypi/simple`)
+      2. Pixi `pypi-config.index-url`
+      3. https://pypi.org/simple
+    """
+    cfg = read_pixi_config() if config is None else config
+    candidates: list[str | None] = [os.environ.get("PYPI_BASE_URL")]
+
+    pcfg = cfg.get("pypi-config") if isinstance(cfg, dict) else None
+    if isinstance(pcfg, dict):
+        idx = pcfg.get("index-url")
+        if isinstance(idx, str):
+            candidates.append(idx)
+        extras = pcfg.get("extra-index-urls")
+        if isinstance(extras, list):
+            for e in extras:
+                if isinstance(e, str):
+                    candidates.append(e)
+
+    candidates.extend(_DEFAULT_PYPI_SIMPLE_FALLBACKS)
+    return _dedup_strip(candidates)
+
+
+def resolve_pypi_json_urls(
+    package_name: str,
+    version: str | None = None,
+    config: dict | None = None,
+) -> list[str]:
+    """Ordered chain of fully-qualified URLs for PyPI JSON metadata.
+
+    Priority for the *base*:
+      1. PYPI_JSON_BASE_URL env var (used as `<base>/<pkg>/json`)
+      2. Pixi `pypi-config.index-url` with `/simple` stripped — works for
+         JFrog setups whose PyPI Remote Repo also serves the JSON metadata
+         API at the same parent path.
+      3. https://pypi.org
+
+    The path appended is `pypi/<pkg>/json` or `pypi/<pkg>/<version>/json`.
+    Returns full URLs ready to fetch.
+    """
+    cfg = read_pixi_config() if config is None else config
+    bases: list[str | None] = [os.environ.get("PYPI_JSON_BASE_URL")]
+
+    pcfg = cfg.get("pypi-config") if isinstance(cfg, dict) else None
+    if isinstance(pcfg, dict):
+        idx = pcfg.get("index-url")
+        if isinstance(idx, str):
+            # Strip trailing /simple or /simple/ to derive the API root.
+            bases.append(_re.sub(r"/simple/?$", "", idx))
+
+    bases.extend(_DEFAULT_PYPI_JSON_FALLBACKS)
+    base_list = _dedup_strip(bases)
+
+    suffix = f"pypi/{package_name}/{version}/json" if version else f"pypi/{package_name}/json"
+    return [f"{b}/{suffix}" for b in base_list]
+
+
+def resolve_github_urls(repo: str, path: str = "") -> list[str]:
+    """Ordered chain for github.com archive/tarball/zip URLs.
+
+    repo: 'conda-forge/feedstock-outputs'
+    path: '/archive/refs/heads/main.zip' or similar.
+
+    Priority:
+      1. GITHUB_BASE_URL env var (e.g., a JFrog Generic Remote pointed at
+         github.com)
+      2. https://github.com
+    """
+    bases: list[str | None] = [os.environ.get("GITHUB_BASE_URL")]
+    bases.extend(_DEFAULT_GITHUB_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{repo}{path}" for b in base_list]
+
+
+def resolve_github_raw_urls(repo: str, ref: str, path: str) -> list[str]:
+    """Ordered chain for raw.githubusercontent.com files.
+
+    repo: 'regro/cf-graph-countyfair'
+    ref: 'master', 'main', or commit SHA
+    path: 'mappings/pypi/name_mapping.yaml'
+
+    Priority:
+      1. GITHUB_RAW_BASE_URL env var (JFrog Generic Remote → raw.githubusercontent.com)
+      2. https://raw.githubusercontent.com
+    """
+    bases: list[str | None] = [os.environ.get("GITHUB_RAW_BASE_URL")]
+    bases.extend(_DEFAULT_GITHUB_RAW_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{repo}/{ref}/{path}" for b in base_list]
+
+
+def resolve_npm_urls(package_name: str) -> list[str]:
+    """Ordered chain of fully-qualified URLs for npm registry metadata.
+
+    Priority:
+      1. NPM_BASE_URL env var (project convention; matches GITHUB_BASE_URL /
+         PYPI_BASE_URL style — e.g. a JFrog Artifactory npm Remote Repo:
+         `https://artifactory.example.com/artifactory/api/npm/npm/`)
+      2. npm_config_registry / NPM_CONFIG_REGISTRY env var — the standard
+         npm CLI override (set by `npm config set registry <url>` or exported
+         by enterprise dotfiles)
+      3. https://registry.npmjs.org (public fallback)
+
+    `package_name` is appended verbatim (caller pre-encodes scoped names as
+    needed — e.g. `@scope%2Fname`). Returns full URLs ready to fetch.
+    """
+    bases: list[str | None] = [
+        os.environ.get("NPM_BASE_URL"),
+        os.environ.get("npm_config_registry"),
+        os.environ.get("NPM_CONFIG_REGISTRY"),
+    ]
+    bases.extend(_DEFAULT_NPM_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{package_name}" for b in base_list]
+
+
+def resolve_cran_urls(name: str) -> list[str]:
+    """CRAN package metadata via crandb.r-pkg.org (JSON facade).
+
+    Priority: CRAN_BASE_URL env → public crandb. Returns `<base>/<name>`.
+    """
+    bases: list[str | None] = [os.environ.get("CRAN_BASE_URL")]
+    bases.extend(_DEFAULT_CRAN_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{name}" for b in base_list]
+
+
+def resolve_cpan_urls(dist: str) -> list[str]:
+    """CPAN release metadata via fastapi.metacpan.org.
+
+    Priority: CPAN_BASE_URL env → public fastapi.metacpan.org.
+    Returns `<base>/v1/release/<dist>`.
+    """
+    bases: list[str | None] = [os.environ.get("CPAN_BASE_URL")]
+    bases.extend(_DEFAULT_CPAN_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/v1/release/{dist}" for b in base_list]
+
+
+def resolve_luarocks_urls(name: str) -> list[str]:
+    """LuaRocks module page (HTML, not JSON).
+
+    Priority: LUAROCKS_BASE_URL env → public luarocks.org.
+    Returns `<base>/m/<name>`.
+    """
+    bases: list[str | None] = [os.environ.get("LUAROCKS_BASE_URL")]
+    bases.extend(_DEFAULT_LUAROCKS_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/m/{name}" for b in base_list]
+
+
+def resolve_crates_urls(name: str) -> list[str]:
+    """crates.io crate metadata.
+
+    Priority: CRATES_BASE_URL env → public crates.io.
+    Returns `<base>/api/v1/crates/<name>`. crates.io documents a 1 req/sec
+    rate limit — phase callers should keep concurrency at 1.
+    """
+    bases: list[str | None] = [os.environ.get("CRATES_BASE_URL")]
+    bases.extend(_DEFAULT_CRATES_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/api/v1/crates/{name}" for b in base_list]
+
+
+def resolve_rubygems_urls(name: str) -> list[str]:
+    """RubyGems gem metadata.
+
+    Priority: RUBYGEMS_BASE_URL env → public rubygems.org.
+    Returns `<base>/api/v1/gems/<name>.json`. RubyGems documents a
+    ~1 req/sec rate limit — phase callers should keep concurrency at 1.
+    """
+    bases: list[str | None] = [os.environ.get("RUBYGEMS_BASE_URL")]
+    bases.extend(_DEFAULT_RUBYGEMS_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/api/v1/gems/{name}.json" for b in base_list]
+
+
+def resolve_maven_urls(query_path: str) -> list[str]:
+    """Maven Central search (Solr).
+
+    Priority: MAVEN_BASE_URL env → public search.maven.org. `query_path`
+    is everything after the base (e.g. `solrsearch/select?q=...&wt=json`)
+    so callers retain control of query string composition.
+    """
+    bases: list[str | None] = [os.environ.get("MAVEN_BASE_URL")]
+    bases.extend(_DEFAULT_MAVEN_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{query_path}" for b in base_list]
+
+
+def resolve_nuget_urls(package_name: str) -> list[str]:
+    """NuGet flat-container index (CDN-backed; lowercase package id).
+
+    Priority: NUGET_BASE_URL env → public api.nuget.org.
+    Returns `<base>/v3-flatcontainer/<name-lowercase>/index.json`.
+    """
+    bases: list[str | None] = [os.environ.get("NUGET_BASE_URL")]
+    bases.extend(_DEFAULT_NUGET_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    suffix = f"v3-flatcontainer/{package_name.lower()}/index.json"
+    return [f"{b}/{suffix}" for b in base_list]
+
+
+def resolve_endoflife_urls(product: str) -> list[str]:
+    """endoflife.date product release-cycle JSON (public API v1).
+
+    Priority: ENDOFLIFE_BASE_URL env → public endoflife.date.
+    Returns `<base>/api/<product>.json`. Free, no auth — call sites pass
+    `skip_auth=True` to make_request so JFrog/GitHub tokens never leak to
+    this host. Used by library-futures (S7) for authoritative LTS/EOL dates.
+    """
+    bases: list[str | None] = [os.environ.get("ENDOFLIFE_BASE_URL")]
+    bases.extend(_DEFAULT_ENDOFLIFE_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/api/{product}.json" for b in base_list]
+
+
+def resolve_github_api_urls(path_suffix: str = "") -> list[str]:
+    """GitHub API host (`api.github.com`) — both REST and GraphQL.
+
+    Priority: GITHUB_API_BASE_URL env → public api.github.com. For
+    GitHub Enterprise Server, set the env to ``https://<ghes>/api`` (the
+    `/graphql` endpoint lands under the same root). `path_suffix` is
+    appended verbatim — pass `"graphql"` for GraphQL or
+    `"repos/<o>/<r>/releases/latest"` for REST.
+
+    Note: `resolve_github_urls` (existing) covers archive/tarball URLs
+    on github.com proper — distinct concern from this API host resolver.
+    """
+    bases: list[str | None] = [os.environ.get("GITHUB_API_BASE_URL")]
+    bases.extend(_DEFAULT_GITHUB_API_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    if not path_suffix:
+        return base_list
+    return [f"{b}/{path_suffix.lstrip('/')}" for b in base_list]
+
+
+def resolve_gitlab_api_urls(path_suffix: str = "") -> list[str]:
+    """GitLab API (REST v4).
+
+    Priority: GITLAB_API_BASE_URL env → public `gitlab.com/api/v4`. For
+    self-hosted GitLab CE/EE set the env to
+    ``https://<your-gitlab>/api/v4`` — the path layout is identical.
+    `path_suffix` is appended verbatim (e.g. ``projects/<urlencoded>/releases?per_page=1``).
+    """
+    bases: list[str | None] = [os.environ.get("GITLAB_API_BASE_URL")]
+    bases.extend(_DEFAULT_GITLAB_API_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    if not path_suffix:
+        return base_list
+    return [f"{b}/{path_suffix.lstrip('/')}" for b in base_list]
+
+
+def resolve_codeberg_api_urls(path_suffix: str = "") -> list[str]:
+    """Codeberg API (Gitea-compatible v1).
+
+    Priority: CODEBERG_API_BASE_URL env → public `codeberg.org/api/v1`.
+    Other Gitea-compatible instances (Forgejo, self-hosted Gitea) use
+    the same `/api/v1/repos/...` path layout; set the env to point at
+    them. `path_suffix` is appended verbatim.
+    """
+    bases: list[str | None] = [os.environ.get("CODEBERG_API_BASE_URL")]
+    bases.extend(_DEFAULT_CODEBERG_API_FALLBACKS)
+    base_list = _dedup_strip(bases)
+    if not path_suffix:
+        return base_list
+    return [f"{b}/{path_suffix.lstrip('/')}" for b in base_list]
+
+
+def resolve_anaconda_channel_urls(
+    channel: str,
+    subdir: str = "noarch",
+    filename: str = "current_repodata.json",
+) -> list[str]:
+    """Ordered chain for a non-conda-forge anaconda.org channel.
+
+    Used by Phase Q (cross-channel presence) for bioconda / pytorch /
+    nvidia / robostack-staging / etc. Returns one or more URLs pointing
+    at `<channel>/<subdir>/<filename>`.
+
+    Priority:
+      1. <CHANNEL>_BASE_URL env var (uppercase + s/-/_/g; e.g.
+         BIOCONDA_BASE_URL, PYTORCH_BASE_URL,
+         ROBOSTACK_STAGING_BASE_URL)
+      2. https://repo.prefix.dev/<channel>     (public CDN mirror)
+      3. https://conda.anaconda.org/<channel>  (last resort)
+
+    JFrog auth headers attach automatically via `make_request` when the
+    resolved host matches an env-var-configured mirror.
+    """
+    env_key = f"{channel.upper().replace('-', '_')}_BASE_URL"
+    bases: list[str | None] = [os.environ.get(env_key)]
+    bases.append(f"https://repo.prefix.dev/{channel}")
+    bases.append(f"https://conda.anaconda.org/{channel}")
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{subdir}/{filename}" for b in base_list]
+
+
+def resolve_s3_parquet_urls(month: str) -> list[str]:
+    """Ordered chain for `anaconda-package-data` S3 monthly parquet files.
+
+    month: 'YYYY-MM' (e.g. '2026-04'). The parquet layout is
+    `conda/monthly/<YYYY>/<YYYY-MM>.parquet`.
+
+    Priority:
+      1. S3_PARQUET_BASE_URL env var (e.g. a JFrog Generic Remote mirroring the bucket)
+      2. https://anaconda-package-data.s3.amazonaws.com  (public S3 HTTPS)
+
+    JFrog auth headers attach automatically via `make_request` when the
+    resolved host matches an env-var-configured mirror; no per-resolver
+    auth wiring is required.
+    """
+    if not _S3_MONTH_RE.match(month):
+        raise ValueError(f"resolve_s3_parquet_urls: invalid month {month!r} (expected 'YYYY-MM')")
+    year = month.split("-", 1)[0]
+    bases: list[str | None] = [os.environ.get("S3_PARQUET_BASE_URL")]
+    bases.append(_DEFAULT_S3_PARQUET_BASE)
+    base_list = _dedup_strip(bases)
+    return [f"{b}/{_S3_PARQUET_PREFIX}/{year}/{month}.parquet" for b in base_list]
+
+
+def _parse_s3_list_objects_v2(xml_bytes: bytes) -> tuple[list[str] | None, str | None]:
+    """Parse one ListObjectsV2 page.
+
+    Returns `(months, next_token)`:
+      - `(None, None)`     — malformed XML; caller should fall through to next base.
+      - `([], None)`       — legitimate empty / end-of-listing for this base.
+      - `([...], None)`    — single-page result.
+      - `([...], "tok")`   — more pages available; resume with `continuation-token=tok`.
+    """
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError as exc:
+        _log(f"_http: S3 list-objects parse error ({exc})")
+        return (None, None)
+    months: set[str] = set()
+    next_token: str | None = None
+    is_truncated = False
+    for elem in root.iter():
+        tag = elem.tag.rsplit("}", 1)[-1]
+        if tag == "Key" and elem.text:
+            m = _S3_PARQUET_KEY_RE.match(elem.text.strip())
+            if m:
+                months.add(m.group(2))
+        elif tag == "IsTruncated" and elem.text and elem.text.strip().lower() == "true":
+            is_truncated = True
+        elif tag == "NextContinuationToken" and elem.text:
+            next_token = elem.text.strip()
+    return (sorted(months), next_token if is_truncated else None)
+
+
+def list_s3_parquet_months() -> list[str]:
+    """List available `YYYY-MM` parquet months from the S3 bucket.
+
+    Issues paginated ListObjectsV2 GETs against the first base in
+    `resolve_s3_parquet_urls`'s priority chain. Follows `NextContinuationToken`
+    until `IsTruncated=false`. Returns sorted unique months; raises
+    `RuntimeError` if every base fails. An empty-but-parseable response is
+    a legitimate `[]`, not a fallthrough trigger.
+    """
+    bases: list[str | None] = [os.environ.get("S3_PARQUET_BASE_URL")]
+    bases.append(_DEFAULT_S3_PARQUET_BASE)
+    base_list = _dedup_strip(bases)
+
+    last_err: Exception | None = None
+    for base in base_list:
+        try:
+            collected: set[str] = set()
+            token: str | None = None
+            for _page in range(50):  # hard cap: ~50k keys; bucket has ~110 today
+                url = f"{base}/?list-type=2&prefix={_S3_PARQUET_PREFIX}/"
+                if token:
+                    url += f"&continuation-token={_url_quote(token, safe='')}"
+                req = make_request(url)
+                with open_url(req, timeout=30) as resp:
+                    body = resp.read()
+                page_months, next_token = _parse_s3_list_objects_v2(body)
+                if page_months is None:
+                    raise RuntimeError(f"malformed list-objects body from {base}")
+                collected.update(page_months)
+                if not next_token:
+                    break
+                token = next_token
+            else:
+                _log(f"_http: {base} listing exceeded 50-page cap; results may be incomplete")
+            return sorted(collected)
+        except Exception as exc:  # noqa: BLE001
+            last_err = exc
+            _log(f"_http: list-objects {base} → {exc}; trying next source")
+            continue
+    raise RuntimeError(
+        f"All {len(base_list)} S3 list-objects source(s) failed; last error: {last_err}"
+    )
+
+
+# ── Generic fetch with fallback chain + retry ──────────────────────────────
+
+def fetch_with_fallback(
+    urls: list[str] | str,
+    *,
+    extra_headers: dict[str, str] | None = None,
+    user_agent: str = "conda-forge-expert/1.0",
+    timeout: int = 60,
+    retries: int = 2,
+    return_json: bool = False,
+) -> Any:
+    """Fetch a URL with fallback chain + retry.
+
+    Iterates through `urls` (a list, or a single string):
+      - 4xx (except 408/429): falls through to next URL immediately. The URL
+        is wrong, not transiently flaky.
+      - 5xx, network errors, timeouts: retries `retries` times with
+        exponential backoff, then falls through.
+
+    Returns raw bytes (or parsed JSON if return_json=True). Raises
+    RuntimeError if all URLs are exhausted with the last error attached.
+
+    Per-URL chain composition is the caller's job — pair this with
+    `resolve_*_urls()` helpers.
+    """
+    if isinstance(urls, str):
+        urls = [urls]
+    if not urls:
+        raise ValueError("fetch_with_fallback requires at least one URL")
+
+    last_err: Exception | None = None
+    for url in urls:
+        for attempt in range(retries):
+            try:
+                req = make_request(url, extra_headers=extra_headers, user_agent=user_agent)
+                with open_url(req, timeout=timeout) as resp:
+                    data = resp.read()
+                    return _json.loads(data) if return_json else data
+            except urllib.error.HTTPError as e:
+                last_err = e
+                if 400 <= e.code < 500 and e.code not in (408, 429):
+                    _log(f"_http: {url} → HTTP {e.code}; trying next source")
+                    break
+                _log(f"_http: {url} attempt {attempt + 1} → {e}; retrying")
+                _time.sleep(2 ** attempt)
+            except Exception as e:
+                last_err = e
+                _log(f"_http: {url} attempt {attempt + 1} → {e}; retrying")
+                _time.sleep(2 ** attempt)
+
+    raise RuntimeError(
+        f"All {len(urls)} source(s) failed; last error: {last_err}"
+    )
+
+
+# ── Resumable streaming downloads ──────────────────────────────────────────
+
+def fetch_to_file_resumable(
+    target: str | Path,
+    urls: list[str] | str,
+    *,
+    chunk_size: int = 1024 * 1024,  # 1 MB
+    timeout: int = 600,
+    user_agent: str = "conda-forge-expert/1.0",
+    extra_headers: dict[str, str] | None = None,
+    max_retries: int = 3,
+    skip_auth: bool = False,
+) -> Path:
+    """Stream-download to a file with Range/resume + atomic rename.
+
+    Writes to a `.part` sibling of `target`. If a `.part` already exists
+    from a previous interrupted run, sets ``Range: bytes=<existing-size>-``
+    so the server can resume from where we left off. On 206 Partial
+    Content we append; on 200 OK (server ignored Range) we restart; on
+    416 Range Not Satisfiable (our `.part` is already ≥ server size) we
+    discard and restart from 0. On success: `os.replace(.part, target)`
+    so consumers never see a half-written final file.
+
+    Designed for large artifacts where re-downloading from byte 0 is
+    expensive — primary case is `cve_manager.py` (4 GB OSV `all.zip`).
+    For smaller artifacts that fit in RAM, `fetch_with_fallback` is
+    simpler.
+
+    Returns the final `target` Path on success. Raises `RuntimeError`
+    if every URL in the chain is exhausted.
+    """
+    if isinstance(urls, str):
+        urls = [urls]
+    if not urls:
+        raise ValueError("fetch_to_file_resumable requires at least one URL")
+
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    part = target.with_suffix(target.suffix + ".part")
+
+    last_err: Exception | None = None
+    for url in urls:
+        for attempt in range(max_retries):
+            existing = part.stat().st_size if part.exists() else 0
+            headers = dict(extra_headers or {})
+            if existing > 0:
+                headers["Range"] = f"bytes={existing}-"
+
+            try:
+                req = make_request(
+                    url,
+                    extra_headers=headers,
+                    user_agent=user_agent,
+                    skip_auth=skip_auth,
+                )
+                with open_url(req, timeout=timeout) as resp:
+                    # Python 3.10+ exposes .status on HTTPResponse; fall back
+                    # to .getcode() for older runtimes.
+                    status = getattr(resp, "status", None) or resp.getcode()
+                    if existing > 0 and status == 200:
+                        # Server ignored our Range header — restart from 0.
+                        _log(f"_http: {url} returned 200 to Range request; restarting download")
+                        part.unlink(missing_ok=True)
+                        existing = 0
+                        mode = "wb"
+                    elif status == 206:
+                        _log(f"_http: {url} resuming from byte {existing}")
+                        mode = "ab"
+                    elif status == 200:
+                        mode = "wb"
+                    else:
+                        # 2xx but not 200/206 — treat as full body.
+                        mode = "wb"
+                        existing = 0
+
+                    with open(part, mode) as f:
+                        while True:
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                        f.flush()
+                        try:
+                            os.fsync(f.fileno())
+                        except OSError:
+                            pass
+
+                # Atomic finalize.
+                os.replace(part, target)
+                return target
+
+            except urllib.error.HTTPError as e:
+                last_err = e
+                if e.code == 416:
+                    # Range Not Satisfiable: our .part is ≥ server size.
+                    # Most likely we already finished a previous run, or
+                    # the part file is corrupt. Discard and retry from 0
+                    # so the next attempt does a clean full download.
+                    _log(f"_http: {url} returned 416; discarding stale .part and restarting")
+                    part.unlink(missing_ok=True)
+                    continue
+                if 400 <= e.code < 500 and e.code not in (408, 429):
+                    # Hard 4xx — no point retrying this URL, try the next.
+                    _log(f"_http: {url} → HTTP {e.code}; moving to next source")
+                    break
+                _log(f"_http: {url} attempt {attempt + 1} → HTTP {e.code}; backing off")
+                _time.sleep(2 ** attempt)
+            except Exception as e:
+                last_err = e
+                _log(f"_http: {url} attempt {attempt + 1} → {e}; backing off")
+                _time.sleep(2 ** attempt)
+
+    raise RuntimeError(
+        f"fetch_to_file_resumable: all {len(urls)} source(s) exhausted; last error: {last_err}"
+    )
+
+
+# ── Logging (stderr, non-intrusive) ─────────────────────────────────────────
+
+def _log(msg: str) -> None:
+    """Write a diagnostic message to stderr. Only emitted in verbose/debug mode."""
+    if os.environ.get("CFE_DEBUG") or os.environ.get("CONDA_FORGE_EXPERT_DEBUG"):
+        print(msg, file=sys.stderr)
+

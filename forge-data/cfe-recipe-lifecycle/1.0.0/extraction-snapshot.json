@@ -1,0 +1,3757 @@
+{
+  "exports": [
+    {
+      "export_name": "ValidationResult",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 34,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "normalize_path",
+      "export_type": "function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 43,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_external_lint",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "tuple[list[str], list[str], bool]",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 57,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "validate_recipe_yaml",
+      "export_type": "function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "ValidationResult",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 108,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "validate_meta_yaml",
+      "export_type": "function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "ValidationResult",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 297,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "validate_recipe",
+      "export_type": "function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "ValidationResult",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 354,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "print_result",
+      "export_type": "function",
+      "params": [
+        "result: ValidationResult",
+        "use_json: bool = ..."
+      ],
+      "return_type": "None",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 371,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "int",
+      "source_file": "scripts/validate_recipe.py",
+      "source_line": 411,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_nested_item",
+      "export_type": "function",
+      "params": [
+        "data: Dict",
+        "path: str"
+      ],
+      "return_type": null,
+      "source_file": "scripts/recipe_editor.py",
+      "source_line": 34,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "set_nested_item",
+      "export_type": "function",
+      "params": [
+        "data: Dict",
+        "path: str",
+        "value: Any"
+      ],
+      "return_type": null,
+      "source_file": "scripts/recipe_editor.py",
+      "source_line": 49,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "calculate_sha256_from_url",
+      "export_type": "function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/recipe_editor.py",
+      "source_line": 60,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "execute_actions",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "actions: List[Dict[str, Any]]"
+      ],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/recipe_editor.py",
+      "source_line": 80,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/recipe_editor.py",
+      "source_line": 159,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "OptimizationSuggestion",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 65,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_flatten_reqs",
+      "export_type": "internal-function",
+      "params": [
+        "items: list | None"
+      ],
+      "return_type": "List[str]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 83,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_dependencies",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 99,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_noarch_python_constraints",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 120,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_pinning",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 163,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_read_conda_forge_python_floor",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "str",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 232,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_about_section",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 256,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_build_script",
+      "export_type": "function",
+      "params": [
+        "recipe_dir: Path"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 368,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_selectors",
+      "export_type": "function",
+      "params": [
+        "data: Dict",
+        "recipe_path: Path | None = ..."
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 401,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_stdlib_compliance",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 568,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_format_mixing",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 611,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_source_security",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 636,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_tests_section",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 672,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_noarch_python_test_matrix",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 700,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_noarch_python_test_type",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 776,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_maintainers",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 872,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_license_placement",
+      "export_type": "function",
+      "params": [
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 899,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_yaml_indent",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 953,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_schema_header",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "data: Dict"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 1001,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "optimize_recipe",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "List[OptimizationSuggestion]",
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 1048,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/recipe_optimizer.py",
+      "source_line": 1086,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_latest_pypi_version",
+      "export_type": "function",
+      "params": [
+        "package_name: str"
+      ],
+      "return_type": "str | None",
+      "source_file": "scripts/recipe_updater.py",
+      "source_line": 45,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_current_recipe_info",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/recipe_updater.py",
+      "source_line": 77,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "update_recipe",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "dry_run: bool = ..."
+      ],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/recipe_updater.py",
+      "source_line": 95,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/recipe_updater.py",
+      "source_line": 158,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_normalize_recipe_path",
+      "export_type": "internal-function",
+      "params": [
+        "p: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 89,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_load_recipe",
+      "export_type": "internal-function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 100,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_extract_npm_name",
+      "export_type": "internal-function",
+      "params": [
+        "recipe: dict[str, Any]"
+      ],
+      "return_type": "str | None",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 109,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_detect_source_path",
+      "export_type": "internal-function",
+      "params": [
+        "recipe: dict[str, Any]"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 139,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_newer",
+      "export_type": "internal-function",
+      "params": [
+        "latest: str",
+        "current: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 146,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_prerelease",
+      "export_type": "internal-function",
+      "params": [
+        "version: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 156,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_choose_npm_version",
+      "export_type": "internal-function",
+      "params": [
+        "data: dict[str, Any]",
+        "latest_tag: str",
+        "allow_prerelease: bool"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 165,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_latest_npm_version",
+      "export_type": "function",
+      "params": [
+        "package_name: str",
+        "allow_prerelease: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 197,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "update_recipe",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "npm_package: str | None = ...",
+        "dry_run: bool = ...",
+        "allow_prerelease: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 245,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "update_all_recipes",
+      "export_type": "function",
+      "params": [
+        "root: Path",
+        "dry_run: bool = ...",
+        "allow_prerelease: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 379,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/npm_updater.py",
+      "source_line": 444,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_host_of",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 135,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "DependencyCheck",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 149,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "normalize_package_name",
+      "export_type": "function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 162,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_skill_config",
+      "export_type": "function",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 166,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_configured_channels",
+      "export_type": "function",
+      "params": [
+        "override: Optional[str] = ..."
+      ],
+      "return_type": "List[str]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 183,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_configured_enterprise_host",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 257,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_public_default_host",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 307,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_anaconda_channel_host",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 344,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_auth_headers",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "Dict[str, str]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 349,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_ssl_verify",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "bool | str",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 405,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_cache_dir",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "Optional[Path]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 414,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_cache_ttl",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "int",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 419,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_disk_get",
+      "export_type": "internal-function",
+      "params": [
+        "cache_dir: Path",
+        "url: str"
+      ],
+      "return_type": "Optional[Dict[str, List[str]]]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 426,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_disk_set",
+      "export_type": "internal-function",
+      "params": [
+        "cache_dir: Path",
+        "url: str",
+        "data: Dict[str, List[str]]"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 447,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_fetch_timeout",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "int",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 461,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_fetch_bytes",
+      "export_type": "internal-function",
+      "params": [
+        "url: str",
+        "headers: Dict[str, str]",
+        "verify: bool | str"
+      ],
+      "return_type": "bytes",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 468,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_decompress",
+      "export_type": "internal-function",
+      "params": [
+        "data: bytes",
+        "url: str"
+      ],
+      "return_type": "bytes",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 498,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_fetch_repodata",
+      "export_type": "internal-function",
+      "params": [
+        "channel_url: str",
+        "subdir: str",
+        "headers: Dict[str, str]",
+        "verify: bool | str"
+      ],
+      "return_type": "Dict[str, List[str]]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 515,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "build_package_index",
+      "export_type": "function",
+      "params": [
+        "channels: List[str]",
+        "subdirs: List[str]"
+      ],
+      "return_type": "PackageIndex",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 572,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_channel_label",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 592,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "batch_check_deps",
+      "export_type": "function",
+      "params": [
+        "deps: List[str]",
+        "index: PackageIndex",
+        "suggest: bool"
+      ],
+      "return_type": "Tuple[List[DependencyCheck], List[DependencyCheck]]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 604,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_package_name",
+      "export_type": "function",
+      "params": [
+        "dep_string: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 639,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_dependencies_v1",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "List[str]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 645,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_dependencies_legacy",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "List[str]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 678,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_dependencies_basic",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "List[str]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 703,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_recipe",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "verbose: bool = ...",
+        "suggest: bool = ...",
+        "channel: Optional[str] = ...",
+        "subdirs: Optional[List[str]] = ..."
+      ],
+      "return_type": "Tuple[List[DependencyCheck], List[DependencyCheck]]",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 722,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/dependency-checker.py",
+      "source_line": 775,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "is_valid_spdx",
+      "export_type": "function",
+      "params": [
+        "license_id: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/license-checker.py",
+      "source_line": 142,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "suggest_spdx",
+      "export_type": "function",
+      "params": [
+        "license_str: str"
+      ],
+      "return_type": "Optional[str]",
+      "source_file": "scripts/license-checker.py",
+      "source_line": 153,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_license_info",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "tuple[Optional[str], Optional[str]]",
+      "source_file": "scripts/license-checker.py",
+      "source_line": 169,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_license_file_exists",
+      "export_type": "function",
+      "params": [
+        "source_dir: Path",
+        "license_file: str"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/license-checker.py",
+      "source_line": 212,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "find_license_files",
+      "export_type": "function",
+      "params": [
+        "source_dir: Path"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/license-checker.py",
+      "source_line": 231,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/license-checker.py",
+      "source_line": 252,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_get_data_dir",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "Path",
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 61,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_process_mapping_entries",
+      "export_type": "internal-function",
+      "params": [
+        "entries: list[dict]"
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 79,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_looks_like_ssl_trust_failure",
+      "export_type": "internal-function",
+      "params": [
+        "error: Exception"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 90,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_mapping_via_curl",
+      "export_type": "function",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 105,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_conda_forge_metadata_mapping",
+      "export_type": "function",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 157,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "load_local_cache",
+      "export_type": "function",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 184,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "save_to_local_cache",
+      "export_type": "function",
+      "params": [
+        "mapping: dict"
+      ],
+      "return_type": null,
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 191,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "update_mapping_cache",
+      "export_type": "function",
+      "params": [
+        "force: bool = ..."
+      ],
+      "return_type": null,
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 203,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/mapping_manager.py",
+      "source_line": 234,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "MigrationResult",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 29,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "convert_jinja_syntax",
+      "export_type": "function",
+      "params": [
+        "content: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 38,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "convert_selectors",
+      "export_type": "function",
+      "params": [
+        "content: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 45,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "convert_set_statements",
+      "export_type": "function",
+      "params": [
+        "content: str"
+      ],
+      "return_type": "tuple[dict, str]",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 87,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "convert_test_section",
+      "export_type": "function",
+      "params": [
+        "content: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 112,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "convert_about_fields",
+      "export_type": "function",
+      "params": [
+        "content: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 119,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "convert_pin_syntax",
+      "export_type": "function",
+      "params": [
+        "content: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 133,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "migrate_recipe",
+      "export_type": "function",
+      "params": [
+        "input_path: Path",
+        "output_path: Optional[Path] = ...",
+        "dry_run: bool = ...",
+        "backup: bool = ..."
+      ],
+      "return_type": "MigrationResult",
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 149,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/feedstock-migrator.py",
+      "source_line": 252,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "detect_native_platform",
+      "export_type": "function",
+      "params": [],
+      "return_type": "str",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 81,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_normalize_recipe_path",
+      "export_type": "internal-function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 89,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_noarch",
+      "export_type": "internal-function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 101,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_repo_root_candidate",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "Path",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 146,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "find_osx_sdk",
+      "export_type": "function",
+      "params": [
+        "sdk_version: str = ...",
+        "repo_root: Path | None = ..."
+      ],
+      "return_type": "Path | None",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 163,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "setup_osx_sdk",
+      "export_type": "function",
+      "params": [
+        "target_dir: Path",
+        "sdk_version: str = ...",
+        "accept_license: bool = ...",
+        "download_url: str | None = ...",
+        "timeout: int = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 204,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_variant_has_channel_sources",
+      "export_type": "internal-function",
+      "params": [
+        "variant_path: Path"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 276,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_resolve_variant_config",
+      "export_type": "internal-function",
+      "params": [
+        "target_platform: str",
+        "repo_root: Path | None = ..."
+      ],
+      "return_type": "Path | None",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 288,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_build_command",
+      "export_type": "internal-function",
+      "params": [
+        "recipe_path: Path",
+        "target_platform: str",
+        "is_native: bool",
+        "channels: tuple[str, ...] = ...",
+        "output_dir: Path | None = ...",
+        "variant_config: Path | None = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 305,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "build_one_platform",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "target_platform: str",
+        "channels: tuple[str, ...] = ...",
+        "output_dir: Path | None = ...",
+        "dry_run: bool = ...",
+        "timeout: int = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 367,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "build_all_platforms",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "platforms: tuple[str, ...] = ...",
+        "channels: tuple[str, ...] = ...",
+        "output_dir: Path | None = ...",
+        "dry_run: bool = ...",
+        "timeout: int = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 472,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "diagnose_environment",
+      "export_type": "function",
+      "params": [
+        "sdk_version: str = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 519,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/local_builder.py",
+      "source_line": 573,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "ErrorPattern",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/failure_analyzer.py",
+      "source_line": 28,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_enrich_suggestion",
+      "export_type": "internal-function",
+      "params": [
+        "pattern: ErrorPattern",
+        "match: re.Match[str]"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/failure_analyzer.py",
+      "source_line": 873,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "analyze_log",
+      "export_type": "function",
+      "params": [
+        "error_log: str"
+      ],
+      "return_type": "list[dict[str, Any]]",
+      "source_file": "scripts/failure_analyzer.py",
+      "source_line": 926,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/failure_analyzer.py",
+      "source_line": 959,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_run",
+      "export_type": "internal-function",
+      "params": [
+        "cmd: list[str]",
+        "cwd: Path | None = ...",
+        "check: bool = ..."
+      ],
+      "return_type": "tuple[int, str, str]",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 47,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_gh_auth_user",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "str",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 59,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_ensure_fork",
+      "export_type": "internal-function",
+      "params": [
+        "github_user: str"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 69,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_sync_fork",
+      "export_type": "internal-function",
+      "params": [
+        "fork_path: Path"
+      ],
+      "return_type": "int",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 77,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_remote_branch_head",
+      "export_type": "internal-function",
+      "params": [
+        "fork_path: Path",
+        "branch: str"
+      ],
+      "return_type": "str | None",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 114,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_tree_sha",
+      "export_type": "internal-function",
+      "params": [
+        "fork_path: Path",
+        "ref: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 123,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "prepare_branch",
+      "export_type": "function",
+      "params": [
+        "recipe_name: str",
+        "branch: str | None = ...",
+        "force: bool = ...",
+        "dry_run: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 128,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "open_pr",
+      "export_type": "function",
+      "params": [
+        "recipe_name: str",
+        "branch: str | None = ...",
+        "pr_title: str | None = ...",
+        "pr_body: str | None = ...",
+        "dry_run: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 292,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "submit_pr",
+      "export_type": "function",
+      "params": [
+        "recipe_name: str",
+        "dry_run: bool = ...",
+        "pr_title: str | None = ...",
+        "pr_body: str | None = ...",
+        "branch: str | None = ...",
+        "force: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 359,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/submit_pr.py",
+      "source_line": 394,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "FeedstockLookupResult",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 52,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_cache_path",
+      "export_type": "internal-function",
+      "params": [
+        "pkg_name: str"
+      ],
+      "return_type": "Optional[Path]",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 66,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_load_cache",
+      "export_type": "internal-function",
+      "params": [
+        "pkg_name: str"
+      ],
+      "return_type": "Optional[dict]",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 74,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_store_cache",
+      "export_type": "internal-function",
+      "params": [
+        "pkg_name: str",
+        "data: dict"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 87,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_gh_api",
+      "export_type": "internal-function",
+      "params": [
+        "path: str"
+      ],
+      "return_type": "Optional[dict]",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 99,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_decode_contents_response",
+      "export_type": "internal-function",
+      "params": [
+        "api_json: dict"
+      ],
+      "return_type": "Optional[str]",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 126,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_parse_yaml",
+      "export_type": "internal-function",
+      "params": [
+        "text: str"
+      ],
+      "return_type": "Optional[dict]",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 140,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "feedstock_lookup",
+      "export_type": "function",
+      "params": [
+        "pkg_name: str",
+        "use_cache: bool = ..."
+      ],
+      "return_type": "FeedstockLookupResult",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 170,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "int",
+      "source_file": "scripts/feedstock_lookup.py",
+      "source_line": 233,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "IssueSummary",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 49,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "FeedstockContext",
+      "export_type": "class",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 62,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "ClassDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_cache_path",
+      "export_type": "internal-function",
+      "params": [
+        "pkg_name: str"
+      ],
+      "return_type": "Optional[Path]",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 72,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_load_cache",
+      "export_type": "internal-function",
+      "params": [
+        "pkg_name: str"
+      ],
+      "return_type": "Optional[dict]",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 80,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_store_cache",
+      "export_type": "internal-function",
+      "params": [
+        "pkg_name: str",
+        "data: dict"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 92,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_gh_issue_list",
+      "export_type": "internal-function",
+      "params": [
+        "repo: str",
+        "state: str",
+        "limit: int"
+      ],
+      "return_type": "List[dict]",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 103,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_to_summary",
+      "export_type": "internal-function",
+      "params": [
+        "api_issue: dict"
+      ],
+      "return_type": "IssueSummary",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 124,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_feedstock_context",
+      "export_type": "function",
+      "params": [
+        "pkg_name: str",
+        "max_open: int = ...",
+        "max_closed: int = ...",
+        "use_cache: bool = ..."
+      ],
+      "return_type": "FeedstockContext",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 149,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_serialize",
+      "export_type": "internal-function",
+      "params": [
+        "ctx: FeedstockContext"
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 201,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "int",
+      "source_file": "scripts/feedstock_context.py",
+      "source_line": 216,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_normalize_about",
+      "export_type": "internal-function",
+      "params": [
+        "about: dict"
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 59,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_load_recipe",
+      "export_type": "internal-function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "Any",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 75,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_save_recipe",
+      "export_type": "internal-function",
+      "params": [
+        "path: Path",
+        "data: Any"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 85,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_merge_maintainers",
+      "export_type": "internal-function",
+      "params": [
+        "generated: list",
+        "feedstock: list"
+      ],
+      "return_type": "tuple[list, list]",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 98,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_empty",
+      "export_type": "internal-function",
+      "params": [
+        "value: Any"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 116,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_enrich_about",
+      "export_type": "internal-function",
+      "params": [
+        "generated_about: dict",
+        "feedstock_about: dict"
+      ],
+      "return_type": "tuple[dict, list[str], Optional[str]]",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 120,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "enrich_recipe",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "dry_run: bool = ..."
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 161,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "int",
+      "source_file": "scripts/feedstock_enrich.py",
+      "source_line": 248,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "recipes_root",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Path",
+      "source_file": "scripts/_path_guard.py",
+      "source_line": 42,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "validate_recipe_name",
+      "export_type": "function",
+      "params": [
+        "recipe_name: str"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/_path_guard.py",
+      "source_line": 50,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_under_recipes",
+      "export_type": "function",
+      "params": [
+        "path: Path | str"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/_path_guard.py",
+      "source_line": 67,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "validate_recipe_file_path",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path | str"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/_path_guard.py",
+      "source_line": 80,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_schema",
+      "export_type": "function",
+      "params": [
+        "url: str",
+        "timeout: int = ..."
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 51,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "load_schema",
+      "export_type": "function",
+      "params": [
+        "target: str",
+        "schema_file: Path | None"
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 57,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_ref",
+      "export_type": "function",
+      "params": [
+        "ref: str",
+        "root: dict"
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 63,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_chain",
+      "export_type": "function",
+      "params": [
+        "body: dict",
+        "root: dict",
+        "depth: int = ..."
+      ],
+      "return_type": "dict",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 75,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "repr_default",
+      "export_type": "function",
+      "params": [
+        "v: Any"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 83,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "slugify",
+      "export_type": "function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 90,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "describe_type",
+      "export_type": "function",
+      "params": [
+        "schema: dict",
+        "root: dict",
+        "depth: int = ..."
+      ],
+      "return_type": "str",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 94,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "collect_top_level_keys",
+      "export_type": "function",
+      "params": [
+        "schema: dict"
+      ],
+      "return_type": "list[tuple[str, dict]]",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 136,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "collect_defs",
+      "export_type": "function",
+      "params": [
+        "schema: dict"
+      ],
+      "return_type": "dict[str, dict]",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 140,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "collect_nested_properties",
+      "export_type": "function",
+      "params": [
+        "body: dict",
+        "root: dict",
+        "depth: int = ..."
+      ],
+      "return_type": "dict[str, dict]",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 144,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "clean_desc",
+      "export_type": "function",
+      "params": [
+        "text: str | None"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 159,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "format_nested_row",
+      "export_type": "function",
+      "params": [
+        "name: str",
+        "body: dict",
+        "root: dict"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 165,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "render_key_section",
+      "export_type": "function",
+      "params": [
+        "name: str",
+        "body: dict",
+        "root: dict"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 180,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "render_doc",
+      "export_type": "function",
+      "params": [
+        "target: str",
+        "schema: dict"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 208,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "parse_schema_file_args",
+      "export_type": "function",
+      "params": [
+        "raw: list[str]"
+      ],
+      "return_type": "dict[str, Path]",
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 280,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/gen_yml_reference.py",
+      "source_line": 292,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "test_api",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/test-skill.py",
+      "source_line": 3,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_osv_api_base",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "str",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 57,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_osv_querybatch_url",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "str",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 62,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_get_data_dir",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "Path",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 75,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_normalize",
+      "export_type": "internal-function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 87,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_parse_dep_line",
+      "export_type": "internal-function",
+      "params": [
+        "line: str"
+      ],
+      "return_type": "tuple[str, str] | None",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 92,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_dependencies",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path"
+      ],
+      "return_type": "list[tuple[str, str]]",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 125,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_format_vuln",
+      "export_type": "internal-function",
+      "params": [
+        "vuln: dict[str, Any]"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 201,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "scan_via_api",
+      "export_type": "function",
+      "params": [
+        "packages: list[tuple[str, str]]"
+      ],
+      "return_type": "list[dict[str, Any]]",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 235,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_version_tuple",
+      "export_type": "internal-function",
+      "params": [
+        "v: str"
+      ],
+      "return_type": "tuple[int, ...]",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 279,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_is_affected",
+      "export_type": "internal-function",
+      "params": [
+        "version: str",
+        "events: list[dict[str, Any]]"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 287,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "scan_via_local_db",
+      "export_type": "function",
+      "params": [
+        "packages: list[tuple[str, str]]"
+      ],
+      "return_type": "list[dict[str, Any]]",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 307,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_find_recipe",
+      "export_type": "internal-function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 342,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_scan",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path",
+        "offline: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 352,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/vulnerability_scanner.py",
+      "source_line": 418,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "parse_pr_ref",
+      "export_type": "function",
+      "params": [
+        "ref: str",
+        "default_repo: str = ..."
+      ],
+      "return_type": "tuple[str, int]",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 49,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_gh_pr_checks",
+      "export_type": "internal-function",
+      "params": [
+        "pr: int",
+        "repo: str",
+        "timeout: int = ..."
+      ],
+      "return_type": "list[dict[str, Any]]",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 71,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_check_name_matches",
+      "export_type": "internal-function",
+      "params": [
+        "row_name: str",
+        "repo: str",
+        "override: str | None"
+      ],
+      "return_type": "bool",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 113,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_build_ids",
+      "export_type": "function",
+      "params": [
+        "pr: int",
+        "repo: str = ...",
+        "check_name: str | None = ...",
+        "all_runs: bool = ..."
+      ],
+      "return_type": "list[int]",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 138,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_azure_artifacts",
+      "export_type": "function",
+      "params": [
+        "build_id: int",
+        "include_all: bool = ...",
+        "timeout: int = ..."
+      ],
+      "return_type": "list[dict[str, Any]]",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 168,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_coerce_size",
+      "export_type": "internal-function",
+      "params": [
+        "raw: Any"
+      ],
+      "return_type": "int | None",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 221,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "download_artifact",
+      "export_type": "function",
+      "params": [
+        "artifact: dict[str, Any]",
+        "target_dir: str | Path",
+        "timeout: int = ..."
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 231,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_zip",
+      "export_type": "function",
+      "params": [
+        "zip_path: str | Path",
+        "dest: str | Path",
+        "platform: str | None = ...",
+        "platforms: list[str] | None = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 287,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_now_utc_iso",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "str",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 376,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_manifest_path",
+      "export_type": "internal-function",
+      "params": [
+        "build_dir: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 380,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_read_cached_manifest",
+      "export_type": "internal-function",
+      "params": [
+        "build_dir: Path"
+      ],
+      "return_type": "dict[str, Any] | None",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 387,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_write_noarch_stub",
+      "export_type": "internal-function",
+      "params": [
+        "extracted_dir: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 410,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_write_manifest_atomic",
+      "export_type": "internal-function",
+      "params": [
+        "build_dir: Path",
+        "manifest: dict[str, Any]"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 442,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_one_build",
+      "export_type": "function",
+      "params": [
+        "pr_ref: str",
+        "repo: str",
+        "build_id: int",
+        "output_root: Path",
+        "extract: bool = ...",
+        "keep_zips: bool = ...",
+        "platforms: list[str] | None = ...",
+        "include_all: bool = ...",
+        "force: bool = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 459,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_build_parser",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "argparse.ArgumentParser",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 556,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_print_human",
+      "export_type": "internal-function",
+      "params": [
+        "result: dict[str, Any]"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 629,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [
+        "argv: list[str] | None = ..."
+      ],
+      "return_type": "int",
+      "source_file": "scripts/pr_artifacts.py",
+      "source_line": 656,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_api_get",
+      "export_type": "internal-function",
+      "params": [
+        "path: str"
+      ],
+      "return_type": "Any",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 52,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_strip_prefix",
+      "export_type": "internal-function",
+      "params": [
+        "tag: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 79,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_latest_github_release",
+      "export_type": "function",
+      "params": [
+        "owner: str",
+        "repo: str"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 84,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_find_recipe",
+      "export_type": "internal-function",
+      "params": [
+        "path: Path"
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 127,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_parse_recipe",
+      "export_type": "internal-function",
+      "params": [
+        "recipe_file: Path"
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 137,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "extract_github_repo",
+      "export_type": "function",
+      "params": [
+        "recipe_file: Path"
+      ],
+      "return_type": "tuple[str, str] | None",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 152,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_current_version",
+      "export_type": "function",
+      "params": [
+        "recipe_file: Path"
+      ],
+      "return_type": "str | None",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 179,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_version",
+      "export_type": "function",
+      "params": [
+        "recipe_path: Path | None = ...",
+        "github_repo: str | None = ..."
+      ],
+      "return_type": "dict[str, Any]",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 191,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": "None",
+      "source_file": "scripts/github_version_checker.py",
+      "source_line": 256,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "health_check",
+      "export_type": "function",
+      "params": [
+        "func"
+      ],
+      "return_type": null,
+      "source_file": "scripts/health_check.py",
+      "source_line": 35,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_git_upstream_remote",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/health_check.py",
+      "source_line": 41,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_github_cli_auth",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/health_check.py",
+      "source_line": 62,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_docker_daemon",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/health_check.py",
+      "source_line": 84,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_mcp_scripts",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/health_check.py",
+      "source_line": 108,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "check_api_connectivity",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Dict[str, Any]",
+      "source_file": "scripts/health_check.py",
+      "source_line": 128,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "run_all_checks",
+      "export_type": "function",
+      "params": [],
+      "return_type": "List[Dict[str, Any]]",
+      "source_file": "scripts/health_check.py",
+      "source_line": 161,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "print_results",
+      "export_type": "function",
+      "params": [
+        "results: List[Dict[str, Any]]",
+        "use_json: bool"
+      ],
+      "return_type": "int",
+      "source_file": "scripts/health_check.py",
+      "source_line": 171,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "params": [],
+      "return_type": null,
+      "source_file": "scripts/health_check.py",
+      "source_line": 211,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "inject_ssl_truststore",
+      "export_type": "function",
+      "params": [],
+      "return_type": "bool",
+      "source_file": "scripts/_http.py",
+      "source_line": 49,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "atomic_writer",
+      "export_type": "function",
+      "params": [
+        "path: str | Path",
+        "mode: str = ...",
+        "**kwargs: Any"
+      ],
+      "return_type": null,
+      "source_file": "scripts/_http.py",
+      "source_line": 92,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "atomic_write_bytes",
+      "export_type": "function",
+      "params": [
+        "path: str | Path",
+        "data: bytes"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/_http.py",
+      "source_line": 142,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "atomic_write_text",
+      "export_type": "function",
+      "params": [
+        "path: str | Path",
+        "text: str",
+        "encoding: str = ..."
+      ],
+      "return_type": "None",
+      "source_file": "scripts/_http.py",
+      "source_line": 148,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "netrc_credentials",
+      "export_type": "function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "tuple[str, str] | None",
+      "source_file": "scripts/_http.py",
+      "source_line": 156,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_host_of",
+      "export_type": "internal-function",
+      "params": [
+        "url: str"
+      ],
+      "return_type": "str",
+      "source_file": "scripts/_http.py",
+      "source_line": 230,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_public_default_hosts",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "frozenset[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 273,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_pixi_configured_hosts",
+      "export_type": "internal-function",
+      "params": [
+        "config: dict | None = ..."
+      ],
+      "return_type": "set[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 328,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_configured_enterprise_hosts",
+      "export_type": "internal-function",
+      "params": [],
+      "return_type": "set[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 385,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "auth_headers_for",
+      "export_type": "function",
+      "params": [
+        "url: str",
+        "skip_auth: bool = ..."
+      ],
+      "return_type": "dict[str, str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 417,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "make_request",
+      "export_type": "function",
+      "params": [
+        "url: str",
+        "extra_headers: dict[str, str] | None = ...",
+        "user_agent: str = ...",
+        "skip_auth: bool = ..."
+      ],
+      "return_type": "urllib.request.Request",
+      "source_file": "scripts/_http.py",
+      "source_line": 535,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "open_url",
+      "export_type": "function",
+      "params": [
+        "request: urllib.request.Request",
+        "timeout: int = ..."
+      ],
+      "return_type": "Any",
+      "source_file": "scripts/_http.py",
+      "source_line": 560,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "read_pixi_config",
+      "export_type": "function",
+      "params": [],
+      "return_type": "dict",
+      "source_file": "scripts/_http.py",
+      "source_line": 665,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_dedup_strip",
+      "export_type": "internal-function",
+      "params": [
+        "urls: Iterable[str | None]"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 693,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_conda_forge_urls",
+      "export_type": "function",
+      "params": [
+        "config: dict | None = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 707,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_pypi_simple_urls",
+      "export_type": "function",
+      "params": [
+        "config: dict | None = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 743,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_pypi_json_urls",
+      "export_type": "function",
+      "params": [
+        "package_name: str",
+        "version: str | None = ...",
+        "config: dict | None = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 770,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_github_urls",
+      "export_type": "function",
+      "params": [
+        "repo: str",
+        "path: str = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 804,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_github_raw_urls",
+      "export_type": "function",
+      "params": [
+        "repo: str",
+        "ref: str",
+        "path: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 821,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_npm_urls",
+      "export_type": "function",
+      "params": [
+        "package_name: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 838,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_cran_urls",
+      "export_type": "function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 863,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_cpan_urls",
+      "export_type": "function",
+      "params": [
+        "dist: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 874,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_luarocks_urls",
+      "export_type": "function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 886,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_crates_urls",
+      "export_type": "function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 898,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_rubygems_urls",
+      "export_type": "function",
+      "params": [
+        "name: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 911,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_maven_urls",
+      "export_type": "function",
+      "params": [
+        "query_path: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 924,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_nuget_urls",
+      "export_type": "function",
+      "params": [
+        "package_name: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 937,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_endoflife_urls",
+      "export_type": "function",
+      "params": [
+        "product: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 950,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_github_api_urls",
+      "export_type": "function",
+      "params": [
+        "path_suffix: str = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 964,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_gitlab_api_urls",
+      "export_type": "function",
+      "params": [
+        "path_suffix: str = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 984,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_codeberg_api_urls",
+      "export_type": "function",
+      "params": [
+        "path_suffix: str = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 1000,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_anaconda_channel_urls",
+      "export_type": "function",
+      "params": [
+        "channel: str",
+        "subdir: str = ...",
+        "filename: str = ..."
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 1016,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "resolve_s3_parquet_urls",
+      "export_type": "function",
+      "params": [
+        "month: str"
+      ],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 1045,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_parse_s3_list_objects_v2",
+      "export_type": "internal-function",
+      "params": [
+        "xml_bytes: bytes"
+      ],
+      "return_type": "tuple[list[str] | None, str | None]",
+      "source_file": "scripts/_http.py",
+      "source_line": 1068,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "list_s3_parquet_months",
+      "export_type": "function",
+      "params": [],
+      "return_type": "list[str]",
+      "source_file": "scripts/_http.py",
+      "source_line": 1099,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_with_fallback",
+      "export_type": "function",
+      "params": [
+        "urls: list[str] | str",
+        "extra_headers: dict[str, str] | None = ...",
+        "user_agent: str = ...",
+        "timeout: int = ...",
+        "retries: int = ...",
+        "return_json: bool = ..."
+      ],
+      "return_type": "Any",
+      "source_file": "scripts/_http.py",
+      "source_line": 1145,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "fetch_to_file_resumable",
+      "export_type": "function",
+      "params": [
+        "target: str | Path",
+        "urls: list[str] | str",
+        "chunk_size: int = ...",
+        "timeout: int = ...",
+        "user_agent: str = ...",
+        "extra_headers: dict[str, str] | None = ...",
+        "max_retries: int = ...",
+        "skip_auth: bool = ..."
+      ],
+      "return_type": "Path",
+      "source_file": "scripts/_http.py",
+      "source_line": 1200,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "_log",
+      "export_type": "internal-function",
+      "params": [
+        "msg: str"
+      ],
+      "return_type": "None",
+      "source_file": "scripts/_http.py",
+      "source_line": 1317,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_repo_root",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Path | None",
+      "source_file": "scripts/_paths.py",
+      "source_line": 28,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "get_data_dir",
+      "export_type": "function",
+      "params": [],
+      "return_type": "Path | None",
+      "source_file": "scripts/_paths.py",
+      "source_line": 54,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "render_conda_forge_yml",
+      "export_type": "function",
+      "params": [
+        "compiled: bool",
+        "noarch_python: bool",
+        "python_wheel: bool",
+        "feedstock: bool = ..."
+      ],
+      "return_type": "str",
+      "source_file": "scripts/_cfy_template.py",
+      "source_line": 24,
+      "confidence": "T1-low",
+      "extraction_method": "python-ast-quick-tier",
+      "ast_node_type": "FunctionDef",
+      "signature_source": "T1-low"
+    }
+  ]
+}

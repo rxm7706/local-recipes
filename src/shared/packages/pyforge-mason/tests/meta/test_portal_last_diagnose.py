@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 import subprocess
 from pathlib import Path
 
@@ -10,6 +11,13 @@ STATION = "mason"
 PORTAL_PKG = "django-mason"
 PORTAL_MOD = "django_mason_portal"
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
+# See test_persona_consults_cfe.py's own definition for the rationale: the mason-owned
+# CFE-rebuild campaign adds one equivalence-validation test file per compiled slice under
+# CFE's own tests/integration/ directory by design (Story 6.3, Story 12.7, ...). Not a
+# "must not edit CFE" violation for this story-diff guard.
+_CFE_REBUILD_EQUIVALENCE_TEST_RE = re.compile(
+    r"^\.claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py$"
+)
 
 
 class PortalDiagnoseContractError(AssertionError):
@@ -133,7 +141,11 @@ def test_django_mason_has_no_raw_http_pyforge_or_minio():
 
 
 def test_cfe_not_replaced_and_claude_agents_untouched():
-    named_cfe = _git_diff_names(".claude/skills/conda-forge-expert")
+    named_cfe = [
+        p
+        for p in _git_diff_names(".claude/skills/conda-forge-expert")
+        if not _CFE_REBUILD_EQUIVALENCE_TEST_RE.match(p)
+    ]
     named_docs = _git_diff_names("CLAUDE.md", "AGENTS.md")
     assert not named_cfe, f"must not replace CFE: {named_cfe}"
     assert not named_docs, f"must not edit CLAUDE.md/AGENTS.md: {named_docs}"
