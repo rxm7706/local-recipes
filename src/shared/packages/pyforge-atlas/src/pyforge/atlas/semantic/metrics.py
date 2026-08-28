@@ -185,6 +185,99 @@ def has_open_issues(t: Any) -> Any:
 
 
 # ---------------------------------------------------------------------------
+# release trend  (legacy: release_cadence.py::_classify — verbatim ported)
+# ---------------------------------------------------------------------------
+
+
+def release_trend_label(t: Any) -> Any:
+    """Release-cadence trend classifier — faithful port of
+    ``release_cadence.py::_classify(r30, r90, r365)``.
+
+    Legacy branch order (preserved EXACTLY)::
+
+        if r365 == 0: return "silent"
+        older_60 = max(0, r90 - r30)
+        if r30 == 0 and older_60 == 0:
+            if r365 == 1: return "one-version"
+            return "decelerating"
+        if older_60 == 0: return "accelerating"
+        ratio = r30 / older_60
+        if ratio >= 1.5: return "accelerating"
+        if ratio <= 0.7: return "decelerating"
+        return "stable"
+
+    Declared over ``releases_30d`` / ``releases_90d`` / ``releases_365d`` (each
+    ``fill_null(0)``-coalesced — the legacy call site always passes int counts,
+    never NULL). Integer division would truncate the ratio, so ``r30`` /
+    ``older_60`` are cast to float64 before dividing (a 0/0 division degrades to
+    NaN, never raises, and the CASE branch order never selects that value).
+    """
+    r30 = t.releases_30d.fill_null(0)
+    r90 = t.releases_90d.fill_null(0)
+    r365 = t.releases_365d.fill_null(0)
+    older_60 = ibis.greatest(0, r90 - r30)
+    ratio = r30.cast("float64") / older_60.cast("float64")
+    return ibis.cases(
+        (r365 == 0, "silent"),
+        ((r30 == 0) & (older_60 == 0) & (r365 == 1), "one-version"),
+        ((r30 == 0) & (older_60 == 0), "decelerating"),
+        (older_60 == 0, "accelerating"),
+        (ratio >= 1.5, "accelerating"),
+        (ratio <= 0.7, "decelerating"),
+        else_="stable",
+    )
+
+
+# ---------------------------------------------------------------------------
+# python_min bump-safety  (legacy: pyver_breakdown.py::policy_check_status)
+# ---------------------------------------------------------------------------
+
+
+def _python_minor(col: Any) -> Any:
+    """Extract the minor-version integer out of a ``3.X`` string column.
+
+    A regex MISS (a malformed value like ``"garbage"`` or ``"3.9.1"``) extracts
+    to an EMPTY STRING on the DuckDB backend, not NULL — casting ``''`` straight
+    to int64 raises ``duckdb.ConversionException`` (NOT a ``TypeError``, so
+    ``_bsl_query_or_empty``'s ``except TypeError`` degrade path would not catch
+    it, crashing the whole query instead of degrading honestly). ``.nullif("")``
+    folds that miss to NULL BEFORE the cast, so the empty-string case round-trips
+    to NULL exactly like a genuinely missing value.
+    """
+    return col.re_extract(r"^3\.(\d+)$", 1).nullif("").cast("int64")
+
+
+def python_min_bump_status(t: Any) -> Any:
+    """Declared-vs-empirical python_min classifier — faithful port of
+    ``pyver_breakdown.py::policy_check_status(declared, empirical)``.
+
+    Legacy (minor-version tuple comparison, py2/py4 out of scope — every input
+    is assumed ``3.X``)::
+
+        if declared is None or empirical is None: return "unknown"
+        if empirical > declared: return "bump-safe"
+        if empirical < declared: return "aggressive"
+        return "aligned"
+
+    Declared over ``declared_python_min`` / ``empirical_floor`` (both ``3.X``
+    strings). NULL passes through ``_python_minor`` as NULL; a malformed,
+    non-NULL value that doesn't match ``3\\.(\\d+)`` (e.g. ``"garbage"`` or
+    ``"3.9.1"``) extracts to an empty string on DuckDB, which ``_python_minor``'s
+    ``.nullif("")`` folds to NULL too — so the ``isnull()`` guard below covers
+    both the missing-value and malformed-value cases the same way the legacy
+    ``is None`` check does, and neither case ever raises.
+    """
+    d = _python_minor(t.declared_python_min)
+    e = _python_minor(t.empirical_floor)
+    return ibis.cases(
+        (d.isnull() | e.isnull(), "unknown"),
+        (e > d, "bump-safe"),
+        (e < d, "aggressive"),
+        else_="aligned",
+    )
+
+
+# ---------------------------------------------------------------------------
 # Provenance registry (DW-B1-1 honesty — every declared metric is classified)
 # ---------------------------------------------------------------------------
 
@@ -266,6 +359,24 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "data_wiring": "migrated-column",
         "note": "First-class dimension over vcs_package_maintainers ⋈ vcs_maintainers; "
         "the raw-SQL maintainer JOINs become declared BSL join queries (AD-8).",
+    },
+    "release_trend_label": {
+        "kind": "dimension",
+        "legacy_source": "release_cadence.py::_classify",
+        "provenance": "legacy-formula",
+        "data_wiring": "deferred-input-not-in-migrated-store",
+        "note": "releases_30d/90d/365d are not yet a migrated Parquet column (Story 20.5 "
+        "ports the release-cadence CLI page); D1/D2-style split holds: the formula lands "
+        "now, the live column lands when the release_cadence dataset materializes.",
+    },
+    "python_min_bump_status": {
+        "kind": "dimension",
+        "legacy_source": "pyver_breakdown.py::policy_check_status",
+        "provenance": "legacy-formula",
+        "data_wiring": "deferred-input-not-in-migrated-store",
+        "note": "declared_python_min/empirical_floor are not yet migrated columns (Story "
+        "20.5 ports the distribution-breakdown page's python-version --policy-check "
+        "facet); formula ported verbatim, live columns land with the dataset.",
     },
 }
 

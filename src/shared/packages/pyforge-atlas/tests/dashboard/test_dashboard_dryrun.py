@@ -18,6 +18,7 @@ Asserts:
 
 from __future__ import annotations
 
+import ibis
 import pandas as pd
 import pytest
 import vizro.models as vm
@@ -89,6 +90,24 @@ def test_every_page_has_title_and_nonempty_components(dashboard):
         assert page.id, "page missing id"
         assert page.title, f"page {page.id} missing title"
         assert page.components, f"page {page.id} has no components"
+
+
+# `PageDef.kind` is a bare `str` documented in app.py only as a comment (6 values as of
+# Story 20.5) -- this is the structural guard that a stray/misspelled kind never ships
+# silently (Reviewer-LOW).
+_ALLOWED_PAGE_KINDS = {
+    "grounded-data",
+    "bsl-shell",
+    "no-bsl-shell",
+    "factory",
+    "report-artifact",
+    "live-scan-artifact",
+}
+
+
+def test_every_page_kind_is_one_of_the_documented_values():
+    got = {p.kind for p in app.PAGE_INVENTORY}
+    assert got <= _ALLOWED_PAGE_KINDS, f"undocumented PageDef.kind value(s): {got - _ALLOWED_PAGE_KINDS}"
 
 
 # --------------------------------------------------------------------------- #
@@ -380,17 +399,19 @@ def test_grounded_page_carries_file_mtime_not_render_time(tmp_path):
 
 def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
     """Under the default, file-absent ``data_root`` every non-grounded,
-    non-factory page (the 3 bsl-shell + 2 no-bsl-shell pages) honestly states
-    its OWN data as "unavailable" + `AD-17` — never a fabricated stamp, never
-    the dashboard's render time standing in for it."""
-    shell_ids = {
-        "staleness-report",
-        "query-atlas",
-        "detail-cf-atlas",
-        "behind-upstream",
-        "whodepends",
-    }
+    non-factory page (the bsl-shell / report-artifact / live-scan-artifact pages
+    plus the 2 no-bsl-shell pages) honestly states its OWN data as "unavailable" +
+    `AD-17` — never a fabricated stamp, never the dashboard's render time standing
+    in for it. Story 20.5 (CAP-7) extends this from the original 3 packages-backed
+    shells to all 19 new pages — every one of them routes through the SAME
+    `_bsl_query_or_empty` + `resolve_for_file` seam, so the same honest-empty
+    contract must hold identically."""
     no_bsl_ids = {"behind-upstream", "whodepends"}
+    shell_ids = no_bsl_ids | {
+        p.id
+        for p in app.PAGE_INVENTORY
+        if p.kind in {"bsl-shell", "report-artifact", "live-scan-artifact"}
+    }
     seen = set()
     for page in dashboard.pages:
         if page.id not in shell_ids:
@@ -407,3 +428,274 @@ def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
         else:
             assert "backing file not found" in card.text
     assert seen == shell_ids
+
+
+# --------------------------------------------------------------------------- #
+# Story 20.5 (CAP-7) — the 19 remaining pages
+# --------------------------------------------------------------------------- #
+
+_NEW_PAGE_LOADERS_NO_ARGS: dict[str, tuple] = {
+    "cve-watcher": (dash_data.load_cve_watcher, ["conda_name", "severity", "since_days", "vuln_kev_affecting_current", "then_count", "now_count", "delta"]),
+    "version-downloads": (dash_data.load_version_downloads, ["conda_name", "version", "upload_date", "downloads"]),
+    "release-cadence": (dash_data.load_release_cadence, ["conda_name", "trend_label", "release_count_30d", "release_count_90d", "release_count_365d"]),
+    "find-alternative": (dash_data.load_find_alternative, ["archived_name", "candidate_name", "adoption_stage", "similarity_score", "downloads_total"]),
+    "scan-project": (dash_data.load_scan_project, ["conda_name", "severity", "license_spdx", "fix_available", "scan_status", "finding_count"]),
+    "env-inspect": (dash_data.load_env_inspect, ["conda_name", "license_spdx", "non_permissive_flag", "vuln_critical", "vuln_high"]),
+    "distribution-breakdown": (dash_data.load_distribution_breakdown, ["conda_name", "facet", "bucket", "python_min_bump_status", "downloads_90d"]),
+    "export-purls": (dash_data.load_export_purls, ["artifact_name", "regenerated_at", "row_count"]),
+    "mapping-gap": (dash_data.load_mapping_gap, ["conda_name", "classification", "match_source", "match_confidence", "gap_count"]),
+    "universe-sbom": (dash_data.load_universe_sbom, ["component_purl", "slice", "with_vulns_count"]),
+    "inventory-match": (dash_data.load_inventory_match, ["conda_name", "bucket", "freshness_percentile", "match_confidence", "row_count"]),
+    "add-handoff": (dash_data.load_add_handoff, ["conda_name", "readiness", "license_blocker", "row_count"]),
+    "library-futures": (dash_data.load_library_futures, ["package_name", "futures_tier", "py314_readiness", "futures_score"]),
+    "recommend-2027": (dash_data.load_recommend_2027, ["package_name", "futures_tier", "lts_status", "eol_date", "futures_score"]),
+    "lts-registry-gap": (dash_data.load_lts_registry_gap, ["product_name", "tier", "matched_conda_name", "candidate_count"]),
+    "cwe-seed-gap": (dash_data.load_cwe_seed_gap, ["cwe_id", "tier", "suggested_category", "package_impact_count"]),
+    "spdx-schema-gap": (dash_data.load_spdx_schema_gap, ["license_id", "tier", "package_usage_count"]),
+    "license-map-gap": (dash_data.load_license_map_gap, ["license_raw", "tier", "suggested_spdx", "package_count"]),
+}
+
+
+# Reviewer-MEDIUM: the (dimensions, measures) each new loader REQUESTS, paired with the
+# `build_*_model` it queries against — proven, below, to be a SUBSET of what that model
+# actually DECLARES (via `SemanticModel.dimensions`/`.measures`), never just cross-checked
+# against a second hand-written list in this test file. A naming drift (typo, rename) in
+# either data.py or models.py would otherwise ship green today and only surface as an
+# uncaught `boring_semantic_layer.UnknownFieldError` at real-data time.
+_NEW_MODEL_SCHEMAS: dict[str, tuple] = {
+    "cve-watcher": (
+        models.build_vuln_history_model,
+        ["conda_name", "severity", "since_days", "vuln_kev_affecting_current"],
+        ["then_count", "now_count", "delta"],
+    ),
+    "version-downloads": (
+        models.build_version_downloads_model,
+        ["conda_name", "version", "upload_date"],
+        ["downloads"],
+    ),
+    "release-cadence": (
+        models.build_release_cadence_model,
+        ["conda_name", "trend_label"],
+        ["release_count_30d", "release_count_90d", "release_count_365d"],
+    ),
+    "find-alternative": (
+        models.build_alternative_candidates_model,
+        ["archived_name", "candidate_name", "adoption_stage"],
+        ["similarity_score", "downloads_total"],
+    ),
+    "scan-project": (
+        models.build_scan_result_model,
+        ["conda_name", "severity", "license_spdx", "fix_available", "scan_status"],
+        ["finding_count"],
+    ),
+    "env-inspect": (
+        models.build_env_inspect_model,
+        ["conda_name", "license_spdx", "non_permissive_flag"],
+        ["vuln_critical", "vuln_high"],
+    ),
+    "distribution-breakdown": (
+        models.build_distribution_breakdown_model,
+        ["conda_name", "facet", "bucket", "python_min_bump_status"],
+        ["downloads_90d"],
+    ),
+    "export-purls": (
+        models.build_purl_export_model,
+        ["artifact_name", "regenerated_at"],
+        ["row_count"],
+    ),
+    "mapping-gap": (
+        models.build_mapping_gap_model,
+        ["conda_name", "classification", "match_source", "match_confidence"],
+        ["gap_count"],
+    ),
+    "universe-sbom": (
+        models.build_universe_sbom_summary_model,
+        ["component_purl", "slice"],
+        ["with_vulns_count"],
+    ),
+    "inventory-match": (
+        models.build_inventory_match_report_model,
+        ["conda_name", "bucket", "freshness_percentile", "match_confidence"],
+        ["row_count"],
+    ),
+    "add-handoff": (
+        models.build_add_handoff_report_model,
+        ["conda_name", "readiness", "license_blocker"],
+        ["row_count"],
+    ),
+    "library-futures": (
+        models.build_library_futures_report_model,
+        ["package_name", "futures_tier", "py314_readiness"],
+        ["futures_score"],
+    ),
+    "recommend-2027": (
+        models.build_recommend_2027_model,
+        ["package_name", "futures_tier", "lts_status", "eol_date"],
+        ["futures_score"],
+    ),
+    "lts-registry-gap": (
+        models.build_lts_registry_gap_model,
+        ["product_name", "tier", "matched_conda_name"],
+        ["candidate_count"],
+    ),
+    "cwe-seed-gap": (
+        models.build_cwe_seed_gap_model,
+        ["cwe_id", "tier", "suggested_category"],
+        ["package_impact_count"],
+    ),
+    "spdx-schema-gap": (
+        models.build_spdx_schema_gap_model,
+        ["license_id", "tier"],
+        ["package_usage_count"],
+    ),
+    "license-map-gap": (
+        models.build_license_map_gap_model,
+        ["license_raw", "tier", "suggested_spdx"],
+        ["package_count"],
+    ),
+}
+
+
+def test_new_page_loaders_request_only_dimensions_measures_the_model_declares():
+    """Reviewer-MEDIUM regression: introspect each new `build_*_model`'s OWN declared
+    schema (`SemanticModel.dimensions`/`.measures` — construction is lazy, so this needs
+    no real Parquet fixture, just a placeholder Ibis table) and assert the loader's
+    requested dimension/measure names are a SUBSET of it. Catches a naming drift between
+    data.py's loader and models.py's model declaration that the offline-empty-frame test
+    below cannot (it only compares against a second hand-written column list)."""
+    placeholder = ibis.table({"_unused": "string"}, name="placeholder")
+    for page_id, (build_model, dimensions, measures) in _NEW_MODEL_SCHEMAS.items():
+        model = build_model(placeholder)
+        declared_dims = set(model.dimensions)
+        declared_measures = set(model.measures)
+        missing_dims = set(dimensions) - declared_dims
+        missing_measures = set(measures) - declared_measures
+        assert not missing_dims, f"{page_id}: loader requests undeclared dimension(s) {missing_dims}"
+        assert not missing_measures, f"{page_id}: loader requests undeclared measure(s) {missing_measures}"
+
+
+def test_new_pages_offline_return_empty_typed_frames_not_fabricated():
+    """Story 20.5 (CAP-7): every one of the 19 new pages' loaders (except
+    adoption-stage, exercised by ``test_adoption_stage_reuses_packages_model``
+    below) degrades to an empty frame with exactly its declared columns when the
+    backing Parquet is absent — NO fabricated rows, mirroring
+    ``test_data_loaders_offline_return_empty_typed_frames_not_fabricated`` above."""
+    for page_id, (loader, columns) in _NEW_PAGE_LOADERS_NO_ARGS.items():
+        got = loader("/nope.parquet")
+        assert got.empty, page_id
+        assert list(got.columns) == columns, page_id
+
+
+def test_adoption_stage_reuses_packages_model(packages_parquet):
+    """`adoption-stage` re-uses build_packages_model (AC-2-style reuse, no new
+    model) — its loader's output equals an independent query, and it degrades
+    honestly like the other packages-backed shells."""
+    empty = dash_data.load_adoption_stage("/nope.parquet", now=NOW)
+    assert empty.empty and list(empty.columns) == ["conda_name", "adoption_stage", "package_count"]
+
+    got = dash_data.load_adoption_stage(packages_parquet, now=NOW)
+    table = models.duckdb_table_from_parquet(packages_parquet)
+    expected = (
+        models.build_packages_model(table, now_unix=NOW)
+        .query(dimensions=["conda_name", "adoption_stage"], measures=["package_count"])
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("conda_name").reset_index(drop=True),
+        expected.sort_values("conda_name").reset_index(drop=True),
+    )
+
+
+def test_release_cadence_trend_label_is_bsl_driven(write_parquet):
+    """`release-cadence`'s loader output equals an independent
+    build_release_cadence_model query — proving genuine BSL routing (AD-8) for the
+    metrics.release_trend_label classifier (release_cadence.py::_classify, ported)."""
+    path = write_parquet(
+        pd.DataFrame(
+            {
+                "conda_name": ["a", "b", "c", "d"],
+                "releases_30d": pd.array([5, 0, 0, 0], dtype="Int64"),
+                "releases_90d": pd.array([6, 0, 0, 2], dtype="Int64"),
+                "releases_365d": pd.array([10, 0, 1, 2], dtype="Int64"),
+            }
+        ),
+        "release_cadence",
+    )
+    got = dash_data.load_release_cadence(path)
+    table = models.duckdb_table_from_parquet(path)
+    expected = (
+        models.build_release_cadence_model(table)
+        .query(
+            dimensions=["conda_name", "trend_label"],
+            measures=["release_count_30d", "release_count_90d", "release_count_365d"],
+        )
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("conda_name").reset_index(drop=True),
+        expected.sort_values("conda_name").reset_index(drop=True),
+    )
+    label = dict(zip(got["conda_name"], got["trend_label"]))
+    assert label == {"a": "accelerating", "b": "silent", "c": "one-version", "d": "decelerating"}
+
+
+def test_distribution_breakdown_bump_status_is_bsl_driven(write_parquet):
+    """`distribution-breakdown`'s python-version facet bump-safety classifier
+    (metrics.python_min_bump_status, ported from pyver_breakdown.py::policy_check_status)
+    is genuinely BSL-driven, proven against an independent model query."""
+    path = write_parquet(
+        pd.DataFrame(
+            {
+                "conda_name": ["a", "b", "c", "d"],
+                "facet": ["python-version"] * 4,
+                "bucket": ["3.9", "3.10", "3.11", "3.9"],
+                "declared_python_min": ["3.9", "3.9", "3.11", None],
+                "empirical_floor": ["3.11", "3.9", "3.9", "3.9"],
+                "downloads_90d": pd.array([100, 200, 300, 400], dtype="Int64"),
+            }
+        ),
+        "distribution_breakdown",
+    )
+    got = dash_data.load_distribution_breakdown(path)
+    table = models.duckdb_table_from_parquet(path)
+    expected = (
+        models.build_distribution_breakdown_model(table)
+        .query(
+            dimensions=["conda_name", "facet", "bucket", "python_min_bump_status"],
+            measures=["downloads_90d"],
+        )
+        .execute()
+    )
+    pd.testing.assert_frame_equal(
+        got.sort_values("conda_name").reset_index(drop=True),
+        expected.sort_values("conda_name").reset_index(drop=True),
+    )
+    status = dict(zip(got["conda_name"], got["python_min_bump_status"]))
+    assert status == {"a": "bump-safe", "b": "aligned", "c": "aggressive", "d": "unknown"}
+
+
+def test_distribution_breakdown_bump_status_degrades_on_malformed_non_null_value(write_parquet):
+    """Reviewer-HIGH regression: a MALFORMED but non-NULL declared_python_min/
+    empirical_floor (e.g. "garbage" or "3.9.1" — doesn't match ``3\\.(\\d+)``)
+    must degrade to "unknown", not raise. On the DuckDB backend a regex MISS
+    extracts to an empty string, not NULL, and CAST('' AS INT64) raises
+    duckdb.ConversionException — a different exception than the TypeError
+    _bsl_query_or_empty degrades on, so this must be handled INSIDE
+    metrics._python_minor (the .nullif("") fix), never rely on the outer seam."""
+    path = write_parquet(
+        pd.DataFrame(
+            {
+                "conda_name": ["a", "b", "c"],
+                "facet": ["python-version"] * 3,
+                "bucket": ["3.9", "3.9", "3.9"],
+                "declared_python_min": ["garbage", "3.9.1", "3.9"],
+                "empirical_floor": ["3.9", "3.9", "py39"],
+                "downloads_90d": pd.array([10, 20, 30], dtype="Int64"),
+            }
+        ),
+        "distribution_breakdown",
+    )
+    got = dash_data.load_distribution_breakdown(path)
+    assert not got.empty
+    status = dict(zip(got["conda_name"], got["python_min_bump_status"]))
+    assert status == {"a": "unknown", "b": "unknown", "c": "unknown"}
