@@ -354,9 +354,28 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   summary: D2 shipped the buildable core — the BSL-driven Vizro app framework, the AC's live-confirmed-first pages (behind-upstream / query-atlas / whodepends / feedstock-health / my-feedstocks / detail-cf-atlas / staleness-report), and the fully-specified factory-status page — all routed through the D1 semantic models (AD-8). The FULL 28-page inventory + each page's detailed design is blocked on the **CIS two-spine specs** (`DESIGN.md` + `EXPERIENCE.md`, § 84) which are NOT yet produced (Spine-Deferred). Producing them (the CIS Carson/Maya planning pass) is the precondition; the remaining pages port against them. Do NOT expand the page set past the live-confirmed core without the CIS spine.
   evidence: D2 AC "Given the D1 BSL models AND the CIS two-spine design specs"; verify-gate note "D2 page inventory detail resolves in the CIS specs (Spine Deferred)". The dashboard-dryrun gate asserts the shipped pages build offline + are BSL-driven; it does not assert 28-page completeness.
 
-  status: open
-
   verified: 2026-07-30 — CONFIRMED STILL OPEN — the precondition never arrived. The CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) were not produced, so the full 28-page inventory stays blocked and the page set correctly was not expanded past the live-confirmed core.
+
+  resolution: **CLOSED 2026-08-28 by Story 20.4** (`spec-20-4-the-cis-two-spine-specs-exist.md`,
+    CAP-7). Ran `bmad-cis-install` (the `bmad-creative-intelligence-suite` v0.3.1 conda package,
+    already resolved in the `local-recipes` env) to copy the Carson (`bmad-cis-agent-brainstorming-coach`)
+    and Maya (`bmad-cis-agent-design-thinking-coach`) skills plus the `bmad-cis-design-thinking`
+    workflow into `.claude/skills/`, then ran the design-thinking pass — divergent EMPATHIZE/IDEATE
+    over the full 28-CLI read surface (Carson), convergent DEFINE/PROTOTYPE into a 19-page
+    information architecture (Maya) — against the 21 CLI questions still unaddressed by any
+    shipped page (28 total minus the 7 of `PAGE_INVENTORY`'s 9 entries that are genuine CLI ports;
+    `estate-cache` is CAP-19/Lane-3 and `factory-status` is an observability page, neither a CLI
+    port). The two spine files land at
+    `_bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md` (technical/visual — per-page
+    BSL model, source dataset, Vizro layout) and `.../EXPERIENCE.md` (behavioral — per-page
+    persona, user journey, interaction pattern, success metric), covering all 19 remaining pages
+    (one documented consolidation: `platform-breakdown`/`pyver-breakdown`/`channel-split` merge
+    into one `distribution-breakdown` page behind a dimension selector, bringing the 21-question
+    backlog to exactly 19 pages with zero questions dropped — see `DESIGN.md` § 0 and § 6 for the
+    full reconciliation). The full 28-page inventory + each page's detailed design is no longer
+    blocked; Story 20.5 ports against these two spines.
+
+  status: closed
 ## DW-D2-2 — shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas; behind-upstream / whodepends stay open under DW-D2-1)
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
