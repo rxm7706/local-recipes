@@ -81,7 +81,7 @@ campaign:
   # slice-1-recipe-generation still carries its own unresolved next_action (a targeted
   # github_updater.py re-port) -- read that slice's own entry too; it is not blocking, but
   # it is not forgotten either.
-  next_story: "12.1-12.7 done (Story 12.7, 2026-08-28: slice 2 compiled, real skf-audit-skill CLEAN, equivalence: stale post-review -- a real path-depth divergence in recipe_editor.py + 4 sibling scripts, see slices[current_focus].next_action); next is Story 12.8's re-scope checkpoint, gated on closing that stale equivalence first"
+  next_story: "12.1-12.8 done (Story 12.8, 2026-08-28: second dated re-scope checkpoint recorded -- campaign.re_scope_gate_2, decision 'adjust' -- slice-3/4 briefing is gated on closing BOTH compiled slices' stale equivalence findings first, see campaign.re_scope_gate_2.note). Epic 12 ends at 12.8 (epics.md's own 'Uncovered remainder' framing) -- no slice-3/4 story is minted yet, and this checkpoint deliberately does not mint one (decompose-no-further discipline). Next real work: close campaign.re_scope_gate_2.pre_conditions.slice1_equivalence_closure and .slice2_equivalence_closure (see slices[0]/slices[1].next_action for the remaining-work detail), then brief whichever of slice 3 (atlas-owned, Story 12.5) or slice 4 (mason-owned) comes next"
   re_scope_gate:
     # CAP-4: "after the first slice completes, a dated re-scope note in the campaign state
     # records the measured cost and the go/adjust/stop decision for the remaining slices
@@ -296,6 +296,190 @@ campaign:
       12.2/12.3); (c) cross-slice re-derivation and (d) the ownership decision remain
       "open" (Stories 12.6/12.5, neither yet run) -- so slice 2's `brief_path` (still
       null today) would correctly red this detector if set before those two close.
+  re_scope_gate_2:
+    # Story 12.8 (2026-08-28) -- the SECOND dated re-scope checkpoint, per Story 6.4's
+    # own recommendation ("a repeat of this same measured-cost exercise before slice
+    # 3's brief... since slice 3 is even larger (12.3x) than slice 2"). Same shape as
+    # `re_scope_gate` above (sibling block, not a replacement); reached after slice 2
+    # completed (Story 12.7, done).
+    reached: true
+    decision: "adjust"  # same three-way vocabulary as re_scope_gate.decision above --
+                         # continue toward slices 3-4, but not an unconditional go; two
+                         # concrete pre-conditions (below) gate whichever brief is
+                         # written next. Structured field kept alongside dated prose,
+                         # same reasoning as re_scope_gate.decision's own comment (Story
+                         # 6.4's own review-caught pitfall: recording the verdict only
+                         # in `note` risks a future naive grep misreading a negated
+                         # phrase like "not an unconditional go" as a green light).
+    pre_conditions:
+      # Story 12.8: two named pre-conditions gating any slice-3/4 `brief_path` write.
+      # NOT machine-enforced: `cfe_rebuild_guard_check.py` clause (d) reads ONLY
+      # `campaign.re_scope_gate.pre_conditions` (the FIRST gate), never this block --
+      # this story's own boundary forbids touching that detector's clause logic,
+      # matching Story 6.4's own precedent (GATHERED GAPS #5) of naming an enforcement
+      # gap rather than closing it. Honored by session/human discipline reading this
+      # block until a follow-up story extends clause (d) (or adds a clause (e)).
+      slice1_equivalence_closure:
+        status: "open"
+        note: "Slice 1's equivalence: stale (Story 12.3, 2026-08-28): scripts/github_updater.py's compiled copy is missing CFE v8.84.0's HEAD-advance feature (update_recipe_head/_fetch_default_branch_head/--head CLI flag; SIGNIFICANT drift, 2 MEDIUM + 1 LOW). Fix: port the ~158 lines from the live source, sha256-verify, re-run test_slice1_equivalence.py + test_github_updater.py + a fresh skf-audit-skill pass, flip equivalence back to green. Full remaining-work description: slices[0] (slice-1-recipe-generation).next_action, unchanged by this story."
+      slice2_equivalence_closure:
+        status: "open"
+        note: "Slice 2's equivalence: stale (Story 12.7, 2026-08-28, patched post-review): a real, reproduced path-depth divergence -- _path_guard.py/_paths.py/gen_yml_reference.py/mapping_manager.py/vulnerability_scanner.py resolve REPO_ROOT one directory level short of the real repo root at this package's deeper nesting, confirmed live for recipe_editor.py against a relative-path invocation. Pre-existing, campaign-wide CFE debt (not introduced by this compile). Fix: port a depth-independent repo-root resolution into the 5 affected scripts, modeled on local_builder.py's own already-working _repo_root_candidate() pattern (walk up for pixi.toml, hardcoded parent-hop only as a last-resort fallback), re-run test_slice2_equivalence.py's relative-path probe, flip equivalence back to green. Full remaining-work description: slices[1] (slice-2-recipe-lifecycle).next_action, unchanged by this story."
+    note: |
+      2026-08-28 (Story 12.8, CAP-4 second re-scope gate). DECISION: ADJUST -- continue
+      toward slices 3-4, but gated on two concrete pre-conditions (above), not an
+      unconditional go. No slice-3/4 brief was written by this story.
+
+      MEASURED COST (Stories 12.6-12.7, PRs #895/#897, both merged 2026-08-28): Story
+      12.6 (slice 2's brief): 1 substantive commit, 97f25016c7, 223 changed lines (203
+      insertions + 20 deletions) -- no BLOCKED-then-retry cycle (unlike slice 1's
+      brief, Story 6.1). Story 12.7 (slice 2 compiled + equivalence-validated): 3
+      substantive commits -- c46ac684af (the compile itself, 24705 changed lines:
+      24670 insertions + 35 deletions, dominated by the compiled package's own copied
+      scripts/templates/tests, not hand-authored), 8c35423d58 (290 changed lines: 207
+      insertions + 83 deletions, adversarial-review patches P1/P2/P4/P5/P6/P9),
+      f5dbabb85a (95 changed lines: 62 insertions + 33 deletions, adversarial-review
+      patches P3/P7/P8) -- plus one trivial 2-line wip-state-preservation commit
+      (6c35e1022d, a mid-run orchestrator interruption/resume, not rework). Review
+      found 9 issues (2 high, 1 medium, 6 low), ALL patched, none deferred/rejected --
+      one of the two HIGH findings (P1) flipped the story's own initially-recorded
+      `equivalence: green` to the honest `stale` this note's own pre-condition above
+      tracks (the OTHER high finding, the CFE-rebuild-equivalence-test exemption
+      matching by filename alone with no new-vs-modified check, is a test-guard
+      robustness fix unrelated to equivalence -- re-verified via the story's own Review
+      Triage Log, not conflated with P1 here). ~25,313 total changed lines across the
+      two stories' 4 substantive commits, zero BLOCKED-and-retry cycles this time (an
+      improvement on slice 1's 2-of-4-commits-BLOCKED precedent) -- but one
+      review-corrected false-green claim, a pattern slice 1's own re-scope gate did not
+      exhibit (slice 1's Story 6.3 caught its cross-slice gap during implementation,
+      before self-reporting, not via a later review pass; slice 1's own later "green"
+      -> "stale" flip, Story 12.3, was a fresh CFE-upstream-drift finding, not a
+      self-report correction).
+
+      GATHERED GAPS (new/updated since re_scope_gate):
+      1. Both compiled slices now carry `equivalence: stale`, not green -- slice 1
+         (Story 12.3: github_updater.py missing CFE v8.84.0's HEAD-advance feature) and
+         slice 2 (Story 12.7: 5-script path-depth divergence, pre-existing campaign-wide
+         CFE debt). Neither is a fresh defect this campaign introduced; both are
+         honestly recorded rather than glossed over (Story 12.3's precedent: flip the
+         label, don't suppress the finding, keep the story done). Two-for-two compiled
+         slices have now surfaced real drift -- a 100% hit rate on a small sample,
+         named plainly rather than treated as noise.
+      2. Cross-slice test-harness coupling (new, not seen at slice 1): Story 12.7's
+         regression pass found `test_recipe_updater_interpreter.py`'s
+         `test_all_internal_recipe_editor_callers_agree_on_resolution_pattern` loads
+         Slice 1's `github_updater.py`/`recipe-generator.py` alongside Slice 2's own
+         scripts from a single `SCRIPTS_DIR` -- a TEST-HARNESS-level coupling across
+         slice boundaries, not a source-code import. Resolved for slice 2 by porting
+         Slice 1's two scripts as test-fixture-only copies, but slice-map.md itself
+         flags this as "worth a campaign-level fix... before slice 3 or 4's own
+         regression pass hits the same pattern" -- still open for whoever briefs slice
+         3 or 4 next.
+      3. `failure_catalog_generator.py` (flagged unclassified by Story 12.6, still open)
+         -- a slice-map.md correction is owed, most plausibly Slice 2 per Story 12.6's
+         own reasoning (its _paths.py import and recipe_optimizer.py cross-reference);
+         neither gates this decision nor slice 3/4 briefing, named here so it isn't
+         silently dropped a second time.
+      4. CI enforcement (`re_scope_gate.pre_conditions.a_ci_enforcement`) and skf-setup
+         (`...b_skf_setup`) both remain closed/durable as Story 6.4's original gate
+         recorded them -- re-confirmed still holding by Stories 12.2/12.3/12.6/12.7 all
+         running cfe-rebuild-guard-check clean. Not re-litigated here.
+
+      DECISION FOR SLICES 3-4: ADJUST, not GO or STOP. Evidence does not support an
+      unconditional go: two-for-two compiled slices have now surfaced real, reproduced
+      equivalence drift (gap #1 above), and slice 3 specifically is 12.3x slice 1's
+      size (the exact scenario Story 6.4's own note flagged this repeat checkpoint
+      for) -- briefing a slice that large before closing the drift already found on the
+      two SMALLER completed slices would compound the same class of risk at a scale
+      slice 1 never tested. Evidence does not support stop either: both slices
+      genuinely reached `compiled` with clean real skf-audit-skill verdicts (not
+      substitutes), the parallel-run/detector structure continues to hold (CI
+      enforcement still closed per gap #4), Mason has production-shape callers into
+      both compiled slices (2/10 adapters into slice 1, 8/10 into slice 2 --
+      unchanged, re-confirmed against `cfe.py`'s live `_CFE_SCRIPTS` table; 2 of
+      slice 2's 8 -- `build_native`/`build_docker`, resolving to `native-build.sh`/
+      `build-locally.py` -- are permanently out of cutover scope per Story 12.6's
+      ruling above, so 6 are genuinely cutover-relevant; still substantial
+      production dependency), and neither drift finding is architectural -- both
+      are bounded, well-understood,
+      single-pattern fixes with a named template (`local_builder.py`'s
+      `_repo_root_candidate()`) already in hand. Pre-conditions before slice 3 OR
+      slice 4's brief is written (either order; whichever briefs first is gated
+      identically -- see `pre_conditions` above for the structured record):
+        (a) Close slice 1's stale equivalence -- port github_updater.py's HEAD-advance
+            feature (~158 lines), sha256-verify, re-run test_slice1_equivalence.py +
+            test_github_updater.py + skf-audit-skill, flip equivalence back to green.
+        (b) Close slice 2's stale equivalence -- port a depth-independent repo-root fix
+            into the 5 affected scripts, modeled on local_builder.py's own
+            _repo_root_candidate() pattern, re-run test_slice2_equivalence.py's
+            relative-path probe, flip equivalence back to green.
+      Neither pre-condition names a story number -- Epic 12 ends at Story 12.8 per its
+      own "Uncovered remainder" framing (`epics.md`'s reconciliation note); closing
+      these two findings, then briefing whichever of slice 3 (atlas-owned, Story 12.5's
+      ruling) or slice 4 (mason-owned) comes next, is future work this checkpoint
+      deliberately does not decompose into stories (the same decompose-no-further
+      discipline Epic 6 and Epic 12 both held) -- see `slices[2]`/`slices[3]`
+      `next_action` for the pointer, not a duplicate description.
+
+      SLICE 5 (SHARED INFRASTRUCTURE) OPPORTUNISTIC-PORTING STATUS: on track, no
+      explicit action needed yet. 3 of its 4 modules have now been touched, each
+      exactly where a compiled slice genuinely needed it (not force-ported
+      speculatively): `_cfy_template.py` is ported into BOTH slice 1's and slice 2's
+      compiled packages (confirmed genuinely shared, per slice-map.md's own
+      prediction); `_paths.py` and `_http.py` are ported into slice 2's compiled
+      package (both real, non-optional imports there). One minor, non-blocking
+      observation carried forward from this story's own evidence-gathering: slice 1's
+      compiled `recipe-generator.py` optionally imports `_http` behind an
+      `ImportError`-tolerant fallback (per the script's own inline comments), but
+      slice 1's compiled package does not include `_http.py` -- a designed-optional
+      dependency, not a functional gap, so no action is taken. `_sbom.py` (the 4th
+      module) remains fully unported -- expected and correct, since only slices 3/4
+      (not yet compiled) import it.
+
+      OPEN QUESTIONS 4 AND 5 (SPEC.md) -- restated open, not resolved by 12.6/12.7:
+      OQ4 (deprecation posture: delete-on-cutover vs. dated stub) is untouched by either
+      story -- grepped both for "deprecat", zero hits. OQ5 (Rule-2 retro landing surface
+      during the overlap window) is a narrower miss: Story 12.7's spec DOES discuss
+      "Rule-2" extensively (mirroring landed retros into slice briefs is literally part
+      of clause (b) work, and its own Design Notes explicitly poses OQ5's question --
+      "does a mid-campaign Rule-2 retro edit the legacy SKILL.md, the successor slice's
+      skill, or both" -- without answering it), so "no hits" would overstate the miss;
+      the accurate claim is narrower: no NEW CFE Rule-2 retro actually LANDED during
+      12.6/12.7 to exercise a precedent either way -- `brief_mirrored_through` stayed at
+      the same SHA (`565ef7d194`) throughout both stories, confirmed via
+      `cfe-rebuild-guard-check --json`'s own clause-(b) scan, so clause (b) was already
+      green the whole time and OQ5 genuinely never got a real case to answer it with.
+      SPEC.md is not edited by this story (per this story's own Code Map read-only
+      note: update only if 12.6/12.7 resolved either in practice -- neither did). Both
+      should be settled before slice 3/4's brief is written.
+
+      END-CUTOVER PLAN UPDATE (re-confirming `re_scope_gate.note`'s own END-CUTOVER
+      PLAN section, with what changed since slice 1):
+      - Trigger unchanged: every slice reaches a terminal parallel-run status
+        (audited, with equivalence: green) and campaign.endgame_declared is set true.
+        Currently FURTHER from met than at slice 1's own re-scope gate: both compiled
+        slices now carry equivalence: stale (not green), so even the two easiest
+        slices are not yet at the trigger's own bar.
+      - campaign.callers population plan: unchanged and still not started (`[]`) --
+        still slice-map.md's 10 `_CFE_SCRIPTS` adapters (2 into slice 1, 8 into slice
+        2, 0 into slices 3/4 -- re-confirmed against `cfe.py`'s live table, still
+        exactly 10 entries), once every caller's target slice reaches equivalence:
+        green. `native-build.sh`/`build-locally.py` remain PERMANENTLY OUT OF CUTOVER
+        SCOPE (Story 12.6's ruling, unchanged).
+      - Ownership (Story 12.5, since slice 1's plan): slice 3's brief, stories, Rule-2
+        retro, and equivalence sign-off are atlas-owned once briefed; mason retains
+        the campaign through-line (this file, the guard detector, both re-scope
+        gates, and the endgame/cutover itself) regardless of which station authors
+        which slice.
+      - Deprecation posture (OQ4) and Rule-2 landing-surface precedent (OQ5): both
+        remain open (see above) -- unresolved since slice 1's plan, restated here
+        rather than silently carried forward unmentioned.
+
+      Per Story 6.4's own discipline, adopted here identically: neither pre-condition
+      requires re-opening slice 1's or slice 2's own recorded facts -- both stale-
+      equivalence findings are already honestly recorded (not newly discovered by this
+      story), and closing them is additive work, not a correction to what Stories
+      12.3/12.7 already wrote.
   # Story 12.5 (2026-08-28): mirrors SPEC.md Open Questions item 1's dated resolution.
   # Closes re_scope_gate.pre_conditions.d_ownership_decision above -- read that field for
   # the pre-condition's own closed/open status; read this field for what the decision
@@ -610,7 +794,7 @@ slices:
       wrappers: 35
       mcp_tools: 22
     mason_caller: false
-    next_action: "Not yet scheduled. Largest remaining domain slice; briefing not started."
+    next_action: "Gated by campaign.re_scope_gate_2 (Story 12.8, 2026-08-28): decision 'adjust' -- briefing stays blocked until BOTH campaign.re_scope_gate_2.pre_conditions.slice1_equivalence_closure and .slice2_equivalence_closure read 'closed' (currently both 'open' -- see campaign.re_scope_gate_2.note for the full evidence and fix templates). Atlas owns this slice's brief/stories/Rule-2 retro/equivalence sign-off once briefed (campaign.ownership_decision, Story 12.5) -- mason retains the campaign through-line. Largest remaining domain slice (37/35/22, ~12.3x slice 1's size); not yet scheduled beyond this gate."
 
   - id: "slice-4-project-scanning-security"
     order: 4
@@ -624,7 +808,7 @@ slices:
       wrappers: 2
       mcp_tools: 2
     mason_caller: false
-    next_action: "Not yet scheduled. Smallest remaining domain slice; briefing not started."
+    next_action: "Gated by campaign.re_scope_gate_2 (Story 12.8, 2026-08-28): decision 'adjust' -- briefing stays blocked until BOTH campaign.re_scope_gate_2.pre_conditions.slice1_equivalence_closure and .slice2_equivalence_closure read 'closed' (currently both 'open' -- see campaign.re_scope_gate_2.note for the full evidence and fix templates). Mason-owned (no station-ownership move for this slice per Story 12.5's ruling). Smallest remaining domain slice (2/2/2); not yet scheduled beyond this gate."
 
   - id: "slice-5-shared-infrastructure"
     order: 5
