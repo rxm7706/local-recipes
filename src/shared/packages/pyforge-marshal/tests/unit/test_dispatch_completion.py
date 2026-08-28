@@ -177,6 +177,9 @@ class FakeVcs:
     def repo_common_root(self, _cwd: Path) -> Path:
         return self.repo_root
 
+    def branch_exists(self, _repo_root: Path, _branch: str) -> bool:
+        return False
+
     def worktree_path_for_branch(self, _repo_root: Path, _branch: str) -> Path | None:
         return None
 

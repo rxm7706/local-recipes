@@ -2,9 +2,9 @@
 title: A dispatch branch names its station
 type: bug
 created: '2026-08-27'
-status: ready
+status: in-progress
 updated: '2026-08-27'
-baseline_revision: d3a221ee3e3ada8bc64466f6566efa72fba97b3c
+baseline_revision: 8519bd3a835fad95a455b4b9e7eb198910693bb0
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -2,6 +2,17 @@
 
 Story 22.5 (FR-193 CAP-5) adds declared-surface overlap detection for
 cross-station concurrent dispatch advisories.
+
+Story 22.9 (FR-193 CAP-2/CAP-5) makes the dispatch BRANCH name carry its
+station and puts the derivation here, once: ``dispatch_worktree_branch`` is
+the sole site that renders a dispatch branch string, and
+``resolve_dispatch_branch`` is the sole site that decides which branch a
+station's work actually lives on. Everything else in the package -- worktree
+provisioning, the in-flight conflict guard's git facts, and landing --
+imports one of the two. The one function that is NOT pure is
+``resolve_dispatch_branch``: it must ask git which branches exist, so it
+takes a ``VcsPort`` (the same read-only port the CLI already holds) and
+performs no writes.
 """
 
 from __future__ import annotations
@@ -12,9 +23,13 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from ..ports.vcs import VcsPort
 
 KIND_DISPATCH_LAUNCH = "dispatch-launch"
 KIND_DISPATCH_SUPERVISOR_ATTACH = "dispatch-supervisor-attach"
@@ -29,6 +44,19 @@ KIND_DISPATCH_PRESERVE = "dispatch-preserve"
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"
 _DISPATCH_WORKTREE_PREFIX = "dispatch-"
+
+#: Story 22.9. A dispatch branch is ``dispatch/<slug>/<story_key>`` -- the
+#: station segment is what makes two stations sharing a story key
+#: (``pyforge-atlas 20.1`` and ``pyforge-doctor 20.1``) structurally unable
+#: to collide, back when ``_ensure_dispatch_worktree`` resolved an existing
+#: worktree BY BRANCH NAME and would have handed one station the other's
+#: tree.
+_DISPATCH_BRANCH_PREFIX = "dispatch"
+
+#: The pre-22.9 station-less name (``marshal/<story_key>``). Still rendered
+#: -- never minted -- so in-flight and preserved branches under the old
+#: shape stay resolvable instead of being silently stranded.
+_LEGACY_DISPATCH_BRANCH_PREFIX = "marshal"
 
 
 @dataclass(frozen=True)
@@ -157,8 +185,132 @@ def build_budget_env(policy: EffectivePolicy) -> dict[str, str]:
     return env
 
 
-def dispatch_worktree_branch(story_key: str) -> str:
-    return f"marshal/{story_key}"
+def dispatch_worktree_branch(slug: str, story_key: str) -> str:
+    """The ONE dispatch-branch derivation (Story 22.9).
+
+    ``slug`` is a required positional, deliberately: the pre-22.9 signature
+    was ``dispatch_worktree_branch(story_key)``, so any consumer that was
+    not updated fails loudly with a ``TypeError`` instead of quietly
+    rendering a station-less name that could resolve another station's
+    worktree.
+    """
+    return f"{_DISPATCH_BRANCH_PREFIX}/{slug}/{story_key}"
+
+
+def legacy_dispatch_worktree_branch(story_key: str) -> str:
+    """The pre-22.9 station-less branch name -- read, never minted."""
+    return f"{_LEGACY_DISPATCH_BRANCH_PREFIX}/{story_key}"
+
+
+@dataclass(frozen=True)
+class DispatchBranchResolution:
+    """Which branch a station's dispatch work actually lives on (22.9).
+
+    ``branch`` is always the station-scoped name. ``resolved`` is the branch
+    that EXISTS and demonstrably belongs to this station (either
+    ``branch`` itself, or -- for work started before 22.9 -- the legacy
+    ``marshal/<key>`` name, in which case ``legacy`` is ``True``); it is
+    ``None`` when no branch exists yet and the caller may mint ``branch``.
+    ``refusal`` is set (and ``resolved`` is ``None``) when a legacy branch
+    exists that cannot be attributed to this station: the loud land-first
+    message, never a silent reuse of another station's tree.
+    """
+
+    branch: str
+    resolved: str | None = None
+    legacy: bool = False
+    refusal: str | None = None
+
+    @property
+    def effective_branch(self) -> str:
+        """The branch to act on: the resolved one, else the name to mint."""
+        return self.branch if self.resolved is None else self.resolved
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    try:
+        return left.resolve() == right.resolve()
+    except OSError:
+        return left == right
+
+
+def format_legacy_branch_refusal(
+    *,
+    legacy_branch: str,
+    branch: str,
+    checked_out_at: Path | None,
+) -> str:
+    """The land-first refusal for an unattributable legacy branch (22.9)."""
+    where = (
+        f"is checked out at {str(checked_out_at)!r}, which is not this "
+        "station's dispatch worktree"
+        if checked_out_at is not None
+        else "still exists with work that predates station-scoped branch "
+        "names and cannot be attributed to a station"
+    )
+    return (
+        f"legacy dispatch branch {legacy_branch!r} {where} — refusing to "
+        f"reuse it for {branch!r}. Land that branch first (merge its PR onto "
+        "main), then delete it; re-dispatch afterwards and the work lands on "
+        f"{branch!r}."
+    )
+
+
+def resolve_dispatch_branch(
+    vcs: VcsPort,
+    repo_root: Path,
+    *,
+    slug: str,
+    story_key: str,
+    worktree: Path | None = None,
+) -> DispatchBranchResolution:
+    """Resolve the branch holding ``slug``'s ``story_key`` dispatch (22.9).
+
+    The single place the legacy ``marshal/<key>`` name is reconciled, shared
+    by worktree provisioning, the completion supervisor's git facts, and
+    landing so all three agree. Attribution of a legacy branch is a git
+    fact, never a guess: the branch is this station's only when the worktree
+    git has it checked out IS this station's dispatch worktree
+    (``worktree``, defaulting to ``dispatch_worktree_path``). A legacy
+    branch with no worktree cannot be attributed at all, so it refuses.
+
+    Read-only. Raises whatever ``vcs`` raises (``VcsCommandError``); every
+    caller already handles it.
+    """
+    branch = dispatch_worktree_branch(slug, story_key)
+    if vcs.branch_exists(repo_root, branch):
+        return DispatchBranchResolution(branch=branch, resolved=branch)
+
+    legacy_branch = legacy_dispatch_worktree_branch(story_key)
+    expected = (
+        worktree
+        if worktree is not None
+        else dispatch_worktree_path(repo_root, slug, story_key)
+    )
+    legacy_worktree = vcs.worktree_path_for_branch(repo_root, legacy_branch)
+    if legacy_worktree is not None:
+        if _same_path(legacy_worktree, expected):
+            return DispatchBranchResolution(
+                branch=branch, resolved=legacy_branch, legacy=True
+            )
+        return DispatchBranchResolution(
+            branch=branch,
+            refusal=format_legacy_branch_refusal(
+                legacy_branch=legacy_branch,
+                branch=branch,
+                checked_out_at=legacy_worktree,
+            ),
+        )
+    if vcs.branch_exists(repo_root, legacy_branch):
+        return DispatchBranchResolution(
+            branch=branch,
+            refusal=format_legacy_branch_refusal(
+                legacy_branch=legacy_branch,
+                branch=branch,
+                checked_out_at=None,
+            ),
+        )
+    return DispatchBranchResolution(branch=branch)
 
 
 def dispatch_worktree_path(repo_root: Path, slug: str, story_key: str) -> Path:

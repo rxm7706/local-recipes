@@ -54,9 +54,19 @@ def test_merge_subject_is_marshal_native_with_policy_template() -> None:
 
 
 class FakeVcs:
-    def __init__(self, *, merged: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        merged: bool = False,
+        branches: set[str] | None = None,
+        worktrees: dict[str, Path] | None = None,
+    ) -> None:
         self._merged = merged
         self.pushed: list[str] = []
+        # Story 22.9: branch resolution reads which branches exist and where
+        # git has each checked out.
+        self.branches: set[str] = set(branches or ())
+        self.worktrees: dict[str, Path] = dict(worktrees or {})
 
     def commit_subjects(self, repo_root: Path, ref: str):
         if self._merged:
@@ -69,6 +79,12 @@ class FakeVcs:
             )
             return (subject,)
         return ()
+
+    def branch_exists(self, _repo_root: Path, branch: str) -> bool:
+        return branch in self.branches
+
+    def worktree_path_for_branch(self, _repo_root: Path, branch: str) -> Path | None:
+        return self.worktrees.get(branch)
 
     def push(self, repo_root: Path, branch: str) -> None:
         self.pushed.append(branch)
@@ -152,7 +168,7 @@ def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> No
         forge=FakeForge(),
         process=FakeProcess(),
     )
-    assert vcs.pushed == ["marshal/22.4"]
+    assert vcs.pushed == ["dispatch/pyforge-marshal/22.4"]
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert result.marshal_native is True
     assert result.pr_number == 42
@@ -173,3 +189,81 @@ def test_unverified_never_lands(tmp_path: Path) -> None:
     )
     assert result.verdict != DispatchLandingVerdict.LANDED
     assert result.pr_number is None
+
+
+# --------------------------------------------------------------------------
+# Story 22.9: landing resolves the station-scoped branch, and still finds an
+# in-flight run left on the pre-22.9 `marshal/<key>` name.
+# --------------------------------------------------------------------------
+
+
+def test_execute_dispatch_land_lands_an_in_flight_legacy_branch(tmp_path: Path) -> None:
+    """A run that started before 22.9 lands from `marshal/<key>` -- git has
+    that branch checked out at THIS run's worktree, so it is attributable."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = FakeVcs(merged=False, worktrees={"marshal/22.4": worktree})
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert vcs.pushed == ["marshal/22.4"]
+    assert envelope.data["branch"] == "marshal/22.4"
+    assert result.verdict == DispatchLandingVerdict.LANDED
+
+
+def test_execute_dispatch_land_refuses_another_stations_legacy_branch(
+    tmp_path: Path,
+) -> None:
+    """A legacy branch checked out somewhere that is NOT this run's worktree
+    is never pushed and merged under this station's story key."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    theirs = tmp_path / "someone-elses-tree"
+    theirs.mkdir()
+    vcs = FakeVcs(merged=False, worktrees={"marshal/22.4": theirs})
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert vcs.pushed == []
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    refusals = [f for f in envelope.findings if f.code == "MRS-DISP-030"]
+    assert len(refusals) == 1
+    assert "marshal/22.4" in refusals[0].message
+    assert "Land that branch first" in refusals[0].message
+
+
+def test_execute_dispatch_land_refuses_an_unattributable_preserved_branch(
+    tmp_path: Path,
+) -> None:
+    """A preserved legacy branch with no worktree cannot be attributed, so
+    landing refuses rather than pushing a branch it did not verify."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = FakeVcs(merged=False, branches={"marshal/22.4"})
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert vcs.pushed == []
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert any(f.code == "MRS-DISP-030" for f in envelope.findings)

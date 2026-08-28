@@ -205,7 +205,17 @@ def gather_dispatch_git_facts(
 ) -> DispatchGitFacts:
     current_head_sha = vcs.worktree_head_sha(worktree)
     changed_paths = vcs.changed_files(repo_root, worktree, base=_BASE_REF)
-    branch = dispatch_core.dispatch_worktree_branch(story_key)
+    # Story 22.9: the ONE branch derivation, station-scoped, with the
+    # pre-22.9 `marshal/<key>` name still resolved for runs that were
+    # already in flight (this run's own `worktree` is the attribution
+    # fact, so a legacy branch checked out elsewhere is never adopted).
+    branch = dispatch_core.resolve_dispatch_branch(
+        vcs,
+        repo_root,
+        slug=project_slug,
+        story_key=story_key,
+        worktree=worktree,
+    ).effective_branch
     branch_merged = vcs.is_branch_merged(repo_root, branch, into=_MERGE_INTO)
     subjects = vcs.commit_subjects(repo_root, _MERGE_INTO)
     merged_keys = promotion_core.merged_story_keys(

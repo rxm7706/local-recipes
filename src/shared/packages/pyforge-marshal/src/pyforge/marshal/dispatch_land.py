@@ -130,13 +130,58 @@ def execute_dispatch_land(
         return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
 
     feed_story = render_feed_key(key)
-    head_branch = dispatch_core.dispatch_worktree_branch(feed_story)
     template = effective.merge_subject_template.value
     merge_strategy = effective.landing_merge_strategy.value
     delete_branch = effective.landing_branch_retirement.value
-    data["branch"] = head_branch
 
     git_repo_root = dispatch_core.canonical_repo_root(repo_root)
+    # Story 22.9: the branch carries the station. A run that started under
+    # the pre-22.9 `marshal/<key>` name still lands from it -- but only when
+    # git has THAT branch checked out at THIS run's worktree; a legacy
+    # branch belonging to some other station is refused with the land-first
+    # remedy, never pushed and merged under this station's story key.
+    try:
+        branch_resolution = dispatch_core.resolve_dispatch_branch(
+            vcs,
+            git_repo_root,
+            slug=project_slug,
+            story_key=feed_story,
+            worktree=worktree,
+        )
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-017",
+                severity=Severity.ERROR,
+                message=f"cannot resolve the dispatch branch for {feed_story!r}: {exc}",
+            )
+        )
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+
+    head_branch = branch_resolution.effective_branch
+    data["branch"] = head_branch
+    if branch_resolution.refusal is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-030",
+                severity=Severity.ERROR,
+                message=branch_resolution.refusal,
+            )
+        )
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+
     try:
         main_subjects = vcs.commit_subjects(git_repo_root, _MERGE_BASE)
     except VcsCommandError as exc:
