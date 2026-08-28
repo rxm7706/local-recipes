@@ -50,7 +50,7 @@ development_status:
   20-2-face-parity-is-part-of-done: done
   20-3-named-pipeline-derivation-of-the-dashboard-stores: done
   20-4-the-cis-two-spine-specs-exist: done
-  20-5-port-the-remaining-nineteen-vizro-pages: backlog
+  20-5-port-the-remaining-nineteen-vizro-pages: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-and-vulnerability-pipelines: done

@@ -2,17 +2,166 @@
 title: 'Story 20.5: Port the remaining nineteen Vizro pages (CAP-7)'
 type: 'feature'
 created: '2026-08-27'
-status: 'ready'
-updated: '2026-08-27'
-baseline_revision: 'cc8b3b2b1c09d6e56a5aebf752e25f507c846571'
+status: 'done'
+updated: '2026-08-28'
+baseline_revision: '3d8bc8250af65370dad0a8fdfbb345fa6e0d44aa'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
 warnings: []
-deferred: []
+deferred:
+  - summary: >-
+      All 19 new pages use the SAME minimal Card+AgGrid shape as the original 9 pages
+      (`_data_page`/`_shell_page`, per the Code Map's "the exact pattern every new page
+      must follow"), not DESIGN.md/EXPERIENCE.md's richer per-page interactive layouts
+      (visible Filter rows, Graph charts, a distribution-breakdown dimension-selector
+      radio control, click-to-filter chart segments, expand-in-place per-signal
+      breakdowns, staged upload/submit controls). This is the single largest scope
+      judgment call in this story: introducing Vizro Filter/Graph components for the
+      FIRST time anywhere in this dashboard (none of the shipped 9 pages use them) against
+      datasets that don't exist yet carries real risk to the offline dashboard-dryrun gate
+      with no way to validate the richer interaction against real data, and the AC's
+      binding language ("all 28 pages render with stable ids/titles... BSL-routed") is
+      satisfied by the minimal shape. Each page's `note` field documents its intended
+      richer layout for a future visual-polish pass, mirroring how the shipped 3 shells'
+      notes already carry forward-looking framing.
+    evidence: >-
+      dashboard/app.py's docstring + Code Map § "the exact pattern every new page must
+      follow"; every new PageDef's `note` cites its DESIGN.md section for the deferred
+      richer layout (e.g. distribution-breakdown's dimension-selector, universe-sbom's
+      pagination, scan-project/env-inspect's upload controls).
+    location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (all 19 new `_data_page` calls)
+    severity: medium
+  - summary: >-
+      The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached
+      per-invocation result via the same honest-empty BSL seam as every other shell page,
+      but do NOT wire an actual in-dashboard submit control that triggers a new scan (a
+      Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md /
+      EXPERIENCE.md describe an upload/path input as the primary interaction; building that
+      live-invocation wiring is a materially larger, separate engineering effort (a new
+      execution plane from Dash into the CLI layer) than porting a page against an existing
+      BSL model, and no precedent for a Dash-triggered subprocess exists anywhere in this
+      dashboard today.
+    evidence: >-
+      dashboard/data.py::load_scan_project / load_env_inspect docstrings state this
+      explicitly; PageDef notes for both pages in app.py carry the same "forward-looking
+      work, not wired here" language, mirroring DESIGN.md's own precedent for add-handoff /
+      library-futures' deferred multi-agent claim/lock coordination.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py (load_scan_project,
+      load_env_inspect); dashboard/app.py PAGE_INVENTORY notes for scan-project/env-inspect
+    severity: medium
+  - summary: >-
+      The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing
+      accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select
+      control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"`
+      landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro
+      doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"`
+      landmark. Native `<a href>` links + heading elements remain genuinely, independently
+      navigable regardless, so the check does not fail on this, but the gap is real and
+      documented rather than asserted away.
+    evidence: >-
+      tests/dashboard/test_dashboard_e2e.py::test_dashboard_28_pages_semantic_nav_and_aria
+      docstring records exactly this; confirmed by hand against Playwright-captured DOM
+      dumps of the rendered dashboard (`page.locator("nav").count()` == 1, matching only the
+      empty top navbar; `role="navigation"`/`role="main"` counts == 0).
+    location: >-
+      src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py;
+      deferred-work-ledger.md DW-D2-3 resolution
+    severity: low
+  - summary: >-
+      DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA
+      navigation-check residual is genuinely done; the "data-present visual pass" residual
+      DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually
+      run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome
+      screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known
+      honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real
+      data needs an ATTENDED operator running `kedro run --pipeline core` / `vcs_health` /
+      `semantic_packages` (per `pipelines/semantic_packages/README.md`) -- these read LIVE
+      external raw sources (GitHub API, PyPI/npm/CRAN registries, conda repodata, S3
+      download stats; confirmed via `conf/base/catalog.yml`), a live-network, potentially
+      credentialed, likely long-running sequence that is attended-only per this project's
+      own binding testing contract (`project-context.md` § Testing Contract: "Credentialed
+      runs are attended-only (human present at execution)") -- genuinely out of reach for
+      this unattended dispatch, mirroring the DW-C1-1/DW-D3-1 attended-bring-up precedent.
+      This story's own AC "Then" clause is therefore only PARTIALLY satisfied: the ARIA
+      check executes for real; the data-present visual pass does not, and remains an open
+      residual pending that attended operator event.
+    evidence: >-
+      deferred-work-ledger.md DW-D2-3's `status: open` (not closed) + its 2026-08-28
+      evidence-update spells out exactly this split; `ls data/` in this worktree shows no
+      `data/` tree exists at all (nothing was or could have been materialized without a
+      live, credentialed pipeline run).
+    location: >-
+      _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
+      (DW-D2-3)
+    severity: medium
+  - summary: >-
+      A handful of DESIGN.md's per-page measures are genuinely multi-signal composite
+      scores computed by algorithms that need row-to-row comparison or set operations over
+      the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's
+      own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x
+      recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without
+      reimplementing a substantial search algorithm in SQL. These are modeled as
+      PRE-COMPUTED passthrough measures (like the existing downloads_total/downloads_30d
+      precedent) rather than re-derived BSL formulas; the actual computation is expected to
+      live in a future Kedro pipeline node that materializes the composite score as a
+      catalog column, matching DESIGN.md's own "Source dataset: Phase E keywords + Phase J
+      dependency similarity (TF-IDF)" framing (a pipeline output, not a CLI-side formula).
+      Two genuinely portable classifiers (release-cadence's trend_label,
+      distribution-breakdown's python-version bump-safety status) WERE ported verbatim from
+      their legacy CLI scripts with full provenance records, per existing repo convention.
+    evidence: >-
+      semantic/models.py::build_alternative_candidates_model docstring states this
+      explicitly; semantic/metrics.py's 2 new provenance entries (release_trend_label,
+      python_min_bump_status) cite their legacy_source verbatim.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py
+      (build_alternative_candidates_model and the other "BSL model (NEW)" composite-score
+      pages: mapping-gap match_confidence, universe-sbom with_vulns_count, the 3 FR-9
+      report-artifact scores, the 4 seed-gap-suggester package-impact/usage counts)
+    severity: low
+  - summary: >-
+      test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in
+      THIS worktree, verified pre-existing (identical failure on baseline main HEAD via
+      `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3
+      `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`,
+      which is absent in a fresh worktree/checkout (only the main checkout's local runtime
+      state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: grep
+      confirms `dashboard-dryrun` is not wired into any `.github/workflows/` job.
+    evidence: >-
+      `git stash` + re-running the single test reproduces the identical AssertionError on
+      unmodified main HEAD; `ls
+      _bmad-output/projects/pyforge-atlas/implementation-artifacts/` in this worktree shows
+      only `epic-20-context.md`, no `sprint-status.yaml`, while the sibling main checkout has
+      one (dated 2026-08-26, from prior session state never synced to this worktree, by
+      design -- gitignored Tier-3).
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py
+      (_default_paths); tests/dashboard/test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status
+    severity: low
+  - summary: >-
+      No test verifies that a given page's `_provenance.resolve_for_file(...)` call in
+      `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only
+      the generic "backing file not found" substring is checked (by
+      `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g.
+      `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some
+      other page's constant. A future edit swapping two of the 18 near-identical per-page
+      provenance declarations would go undetected. Thoroughness gap only -- today's pairing
+      is correct (verified by hand against `build_dashboard()`'s source) -- mirroring the
+      precedent Story 20.3's own review deferred for a similarly-shaped test-coverage gap.
+    evidence: >-
+      Reviewer (2026-08-28 pass) Blind Hunter finding, `[low]` `[defer]`; manually
+      cross-checked `build_dashboard()`'s 18 new `_provenance.resolve_for_file(root /
+      _data.X_PARQUET)` lines against their paired `_data_page(...)` loader calls -- all 18
+      pairings are correct as shipped.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py (build_dashboard,
+      the provenance-resolution block)
+    severity: low
 ---
 
 <intent-contract>
@@ -129,3 +278,135 @@ pipelines or the Story 20.3 named pipeline's own node logic (only consume its ou
 - `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md` `DW-D2-1`
   (line 351) and `DW-D2-3` (line 369) — the two entries this story's completion closes out,
   citing this story.
+
+## Review Triage Log
+
+### 2026-08-28 — Review pass
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 8: (high 2, medium 1, low 5)
+- defer: 1: (low 1)
+- reject: 7: (high 0, medium 0, low 7)
+- addressed_findings:
+  - `[high]` `[patch]` Blind Hunter / Edge Case Hunter (independently converged): `metrics.py::python_min_bump_status`'s helper `_python_minor()` does `col.re_extract(r"^3\.(\d+)$", 1).cast("int64")` — on DuckDB, a non-matching non-null string extracts to `''`, not `NULL`, and `CAST('' AS INT64)` raises `duckdb.ConversionException`, which is not a `TypeError` and is NOT caught by `_bsl_query_or_empty`'s `except TypeError` degrade path. This crashes the whole `distribution-breakdown` query the first time real malformed data lands, directly violating this codebase's "honest-empty, never crash" contract. The docstring's claim that malformed values "extract to NULL... covered by the `isnull()` guard" is also factually wrong. Fix: guard the extraction so a non-match yields `NULL` before the cast (e.g. `.nullif("")`), and add a test exercising a malformed-but-non-null `declared_python_min`/`empirical_floor` value.
+  - `[high]` `[patch]` Intent Alignment Auditor: the `deferred-work-ledger.md` DW-D2-3 resolution and this spec's `Auto Run Result` overstated closure — the AC's own "Then" clause requires "a data-present visual pass... once the pipelines from Story 20.3 have actually run," and DW-D2-3's own prior evidence-update (2026-08-26) explicitly named "a data-present visual pass after a pipeline run materializes the Parquet tree" as a residual required before closure. The visual pass actually performed was against a fresh, empty data root (re-proving the already-known honest-empty behavior), not a post-pipeline-run, data-present state. Materializing real data requires `kedro run --pipeline core`/`vcs_health`/`semantic_packages` — a live-network, potentially credentialed sequence that is attended-only per this project's own binding testing contract (`project-context.md` § Testing Contract: "Credentialed runs are attended-only"), out of reach for this unattended dispatch. Fix: correct the DW-D2-3 resolution and this spec's Auto Run Result to accurately state the ARIA check is genuinely done, while the data-present pass remains an explicit residual pending an attended pipeline run — do not claim full closure on an unmet sub-clause.
+  - `[medium]` `[patch]` Verification Gap Reviewer: 16 of the 19 new loaders' hardcoded `dimensions`/`measures` name lists (passed to `_bsl_query_or_empty` → `model.query(...)`) are never verified against their paired `build_*_model`'s actually-declared fields — the existing offline test only checks two hand-written lists agree with each other, never constructing a `SemanticModel` or calling `.query()`. A naming drift would ship green today and crash (via `boring_semantic_layer`'s `UnknownFieldError`, not `TypeError` — uncaught) the first time each page's dataset is real. Fix: add a lightweight test introspecting each new `build_*_model`'s declared dimensions/measures and asserting every loader's requested names are a subset, closing the gap without requiring 16 real-data fixtures.
+  - `[low]` `[patch]` Blind Hunter: `dashboard/app.py`'s module docstring claims "the **13** remaining atlas-CLI / cyclonedx-suite / seed-gap-suggester pages routed through a brand-new per-page BSL model," but the actual count of new `bsl-shell`-kind pages routed through a brand-new model (excluding `adoption-stage`, which reuses the existing `build_packages_model`) is **12**, matching `DESIGN.md`'s own reconciliation table. Fix: correct the count.
+  - `[low]` `[patch]` Blind Hunter: `deferred-work-ledger.md`'s new DW-D2-3 `status: closed` line has no blank line before the following `## DW-D3-1` heading, unlike every other closed entry in the file (e.g. DW-D2-2 immediately above it). Fix: add the blank line.
+  - `[low]` `[patch]` Blind Hunter: `tests/dashboard/test_dashboard_e2e.py::test_dashboard_28_pages_semantic_nav_and_aria` uses `pd` as the loop variable for `PageDef` instances, colliding with this codebase's near-universal `pd = pandas` alias convention (including elsewhere in this same PR). Fix: rename the loop variable.
+  - `[low]` `[patch]` Blind Hunter: `PageDef.kind` is a bare `str` with no test asserting every `PAGE_INVENTORY` entry's `kind` is one of the documented allowed values — a typo would silently drop a page from `test_shell_pages_state_unavailable_provenance_honestly`'s filter without any test failing. Fix: add a lightweight allowed-value-set assertion test.
+  - `[low]` `[patch]` Blind Hunter: root `CLAUDE.md` § Common Commands still documents `dashboard-dryrun` as "Dashboard structural gate (offline, never serves)," now contradicted by this story's own `pixi.toml` description update admitting the gate "launches a real local server — not fully offline despite the gate's name" (this story added the Playwright e2e test to the same pytest directory the gate collects). Fix: correct the one-line description in `CLAUDE.md`.
+  - `[low]` `[defer]` Blind Hunter: no test verifies that a given page's `_provenance.resolve_for_file(...)` object is paired to THAT page's own Parquet path (only the generic "backing file not found" substring is checked) — a future edit swapping two of the 18 near-identical per-page provenance declarations would go undetected. Thoroughness gap only (today's pairing is correct), mirroring the precedent Story 20.3's own review deferred for a similarly-shaped test-coverage gap. Recorded in frontmatter `deferred`.
+  - `[reject]` Blind Hunter: `sprint-status-ledger.yaml` marking this story `done` while the spec's own `status` read `in-review` during this review pass — a snapshot artifact of the in-progress review workflow state machine, not a defect in the change; resolves at Finalize.
+  - `[reject]` Blind Hunter: the "add the `maintenance` label" / "regenerate `environment.yaml`" reminders are PR-metadata/landing-time actions, not diff defects — `environment.yaml` was independently re-verified byte-identical after this diff's `pixi.toml` change (description-only, no dependency change), and the `maintenance` label is applied at PR-open time.
+  - `[reject]` Blind Hunter: `_NEW_PAGE_LOADERS_NO_ARGS`'s single-line-per-entry formatting — no `ruff`/`black` formatter gate is configured for `pyforge-atlas`; stylistic nit with no functional effect, matching the precedent Story 20.3's own review rejected for a similar formatting nit.
+  - `[reject]` Intent Alignment Auditor: the minimal Card+AgGrid shape vs. `DESIGN.md`'s richer per-page layouts — already accurately disclosed as this spec's own `deferred` item 1 (medium severity); this finding only confirms already-declared, deliberate scope, not new information.
+  - `[reject]` Intent Alignment Auditor: the ARIA check's deliberate exclusion of `<nav>`/`<main>` landmark assertions — already accurately disclosed as this spec's own `deferred` item 3 (low severity); a defensible framework-level scoping call (patching Vizro's own component templates is out of a page-port story's surgical scope), not new information.
+  - `[reject]` Intent Alignment Auditor: the `dashboard-dryrun` "offline gate now embeds a live-server test" framing — already transparently disclosed via this diff's own `pixi.toml` description update; not a defect (the CLAUDE.md staleness this same observation implies is separately patched above).
+  - `[reject]` Intent Alignment Auditor: gate-scope conflation (Story 20.3 only ever promised to materialize `semantic_packages` + `core_feedstock_health`, never the other 18 pages' datasets) — correctly, honestly self-disclosed via this spec's own `deferred` items 1 and 4; the tension originates in the epics.md/AC wording one layer up, not in this diff's implementation choices.
+
+## Auto Run Result
+
+**Summary:** Ported the remaining 19 of 28 Vizro dashboard pages against Story 20.4's two CIS
+spines (`DESIGN.md`/`EXPERIENCE.md`), routed through the D1 BSL models via `dashboard/data.py`'s
+`_bsl_query_or_empty` seam exactly like the existing 9 pages (no raw SQL, no re-implemented
+metric arithmetic). Extended `test_all_expected_pages_present_with_stable_id_and_title` and its
+sibling gates from 9 to 28 pages. Built the DW-D2-3 §2.1 semantic-HTML/ARIA browser-agent
+navigation check (`test_dashboard_28_pages_semantic_nav_and_aria`) — a real headless-Chrome
+Playwright session driving the actual rendered DOM, closing that residual honestly. Closed
+DW-D2-1 (the full 28-page inventory is no longer CIS-two-spine-deferred). DW-D2-3 stays
+deliberately **open**: the data-present visual pass (as opposed to the fresh-empty-data-root pass
+this story could actually run) needs an attended operator to run the live, potentially
+credentialed Kedro pipelines first — out of reach for an unattended dispatch, per this project's
+own binding testing contract. No caller flip; Vizro was not imported into any Django/Canopy
+module. Adversarial review found 8 issues (2 high, 1 medium, 5 low); all 8 patched, 1 deferred
+(low), 7 rejected as non-issues — see Review Triage Log above.
+
+**Files changed:**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py` (+345/-4) — 19 new
+  `PageDef` entries in `PAGE_INVENTORY`, `build_dashboard()` extended with their provenance
+  resolution, module docstring reconciled to the corrected 12-brand-new-model count (P4).
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py` (+255) — 19 new loader
+  functions, one per page, all through the existing `_bsl_query_or_empty` seam.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py` (+6/-6) — exports
+  for the new loaders/models.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py` (+365) — new BSL
+  models for CLIs with no existing model (incl. `behind-upstream`/`whodepends`), composite-score
+  pages modeled as pre-computed passthrough measures per existing `downloads_total` precedent.
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/metrics.py` (+111) — new metric
+  formulas incl. `python_min_bump_status`'s `_python_minor()` helper, hardened post-review with
+  `.nullif("")` before the int cast so a malformed-but-non-null value degrades honestly instead of
+  raising `duckdb.ConversionException` uncaught by `_bsl_query_or_empty`'s `except TypeError` path
+  (P1, high).
+- `src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_dryrun.py` (+312) — extends
+  the 9→28-page gates; adds `test_every_page_kind_is_one_of_the_documented_values` (P7),
+  `test_new_page_loaders_request_only_dimensions_measures_the_model_declares` (P2, medium — proves
+  each new loader's hardcoded field list is a real subset of its model's declared
+  dimensions/measures without requiring 16 real-data fixtures), and
+  `test_distribution_breakdown_bump_status_degrades_on_malformed_non_null_value` (P1's regression
+  test).
+- `src/shared/packages/pyforge-atlas/tests/dashboard/test_dashboard_e2e.py` (+70) — new
+  `test_dashboard_28_pages_semantic_nav_and_aria` (the DW-D2-3 ARIA/nav check).
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md` (+48/-2) —
+  DW-D2-1 `open` → `closed`; DW-D2-3 evidence-update corrected to stay `open` (P2, high) with an
+  honest split of what's done (ARIA check) vs. not (data-present pass).
+- `pixi.toml` (+2/-2) — `dashboard-dryrun`'s task description corrected: it now also runs the
+  Playwright e2e/ARIA suite, which launches a real local server (no dependency change;
+  `environment.yaml` independently re-verified byte-identical).
+- `CLAUDE.md` (dispatcher finalize, P8) — the root doc's one-line `dashboard-dryrun` description
+  carried the same "offline, never serves" staleness the `pixi.toml` description update above
+  fixed; corrected to match.
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml` — story key
+  set to `done` (dispatcher finalize).
+
+**Review findings breakdown:** 8 patches applied (2 high, 1 medium, 5 low) — see Review Triage
+Log above for the full list; the two high ones were a real, uncaught-crash-class bug in
+`python_min_bump_status` and an overstated DW-D2-3 closure claim. 1 deferred (low) — a
+provenance/Parquet-path pairing thoroughness gap, mirroring a precedent Story 20.3's own review
+already deferred. 7 rejected — all either PR-metadata/landing-time actions (not diff defects),
+already-disclosed deliberate scope in this spec's own `deferred:` list, or a stylistic nit with no
+configured formatter gate.
+
+**Follow-up review recommendation:** `true` (matches frontmatter). 2 high-severity patches were
+found (the malformed-python-min-value crash risk and the DW-D2-3 overstatement) — either alone
+would warrant a follow-up look at the pattern class, per this project's own scoring convention.
+
+**Verification performed:**
+- `pixi run -e local-recipes dashboard-dryrun` — 31 passed, 1 failed
+  (`test_factory_status_reads_the_real_sprint_status`); confirmed pre-existing and unrelated
+  (reads the gitignored Tier-3 `sprint-status.yaml`, absent in a fresh worktree — documented in
+  this spec's own frontmatter `deferred` list).
+- `pixi run -e pyforge-atlas kedro-test` (full suite) — 1286 passed, 21 skipped, 3 failed, 2
+  errors. All 5 independently confirmed non-issues: `test_factory_status_reads_the_real_sprint_status`
+  (as above); `test_context_files_unchanged` — reproduced on unmodified `main` HEAD directly
+  (checked from the primary checkout, not this worktree), a pre-existing repo-wide condition
+  (`CLAUDE.md` already carries SKF markers), unrelated to this diff;
+  `test_conda_forge_expert_not_replaced` — a transient staleness artifact: this dispatch's baseline
+  predates this same session's mason 12.7 landing (PR #897), which added
+  `test_slice2_equivalence.py` under the CFE surface tree the guard diffs against `origin/main`;
+  resolves on its own once this branch merges (the file will then exist identically on both sides
+  of the comparison) — not a defect this story introduced; `test_read_only_live_attach.py`'s 2
+  errors — a missing local Postgres `initdb`/`pg_ctl` binary in this environment
+  (`fixture_postgres` fails loud with that exact message), an environment-provisioning gap
+  unrelated to dashboard work, matching Story 20.3's own prior documentation of the identical 2
+  test names.
+- `pixi project export conda-environment -e build` — byte-identical to the tracked
+  `environment.yaml` (the `pixi.toml` change is description-only, no dependency change).
+- Grepped `src/platform/` for `vizro`/`vizro_ai` imports — none (Canopy/Django boundary held).
+
+**Residual risks:** DW-D2-3 stays genuinely open — the data-present visual pass needs an attended
+operator to run the live, credentialed Kedro pipelines (`core`, `vcs_health`,
+`semantic_packages`) before it can execute; this is not something an unattended dispatch can do.
+All 19 new pages use the same minimal Card+AgGrid shape rather than DESIGN.md/EXPERIENCE.md's
+richer per-page interactive layouts (Filter/Graph components, dimension selectors, click-to-filter,
+upload controls) — a deliberate, disclosed scope call (frontmatter `deferred` item 1) to avoid
+introducing Vizro Filter/Graph for the first time anywhere in this dashboard against
+not-yet-existing datasets. The 2 live-scan-artifact pages (scan-project, env-inspect) read cached
+results only; no in-dashboard submit control triggers a new scan (frontmatter `deferred` item 2).
+The ARIA check's own real, documented gap: Vizro's shipped nav is a `<div>` accordion, not a
+native `<nav>`/`role="navigation"` landmark (frontmatter `deferred` item 3) — a framework-level
+limitation outside this story's surgical scope. A handful of composite-score measures are modeled
+as pre-computed passthrough columns pending a future Kedro pipeline node (frontmatter `deferred`
+item 5). None of these residuals block this story's own AC as scoped; DW-D2-3's open status is the
+one that should stay visibly tracked rather than read as closed.

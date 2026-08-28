@@ -42,7 +42,7 @@ Everything runs through pixi (`pixi.toml` is the task registry; `pixi task list 
 **Tests:**
 - CFE skill suite: `pixi run -e local-recipes test-skill` — scope with `--unit` / `--integration` / `--meta`, single test via `--keyword <expr>`; network tests are opt-in (`-m network`).
 - A PyForge station: `pixi run -e pyforge-<station> pyforge-<station>-test` (e.g. `pixi run -e pyforge-warden pyforge-warden-test`).
-- Dashboard structural gate (offline, never serves): `pixi run -e local-recipes dashboard-dryrun`.
+- Dashboard structural gate: `pixi run -e local-recipes dashboard-dryrun` — builds the Dashboard object offline, but also runs the Playwright e2e/ARIA suite, which launches a real local server (not fully offline despite the gate's name).
 
 **Health / status:**
 - All detectors: `pixi run -e local-recipes detectors` (CI subset: `detectors-ci`); exit 0 = pass, 1 = findings, 2 = could-not-run (never a false green).
