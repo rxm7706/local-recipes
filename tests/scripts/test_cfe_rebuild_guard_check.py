@@ -93,6 +93,18 @@ def _state(slices: list[dict], **campaign_overrides: object) -> dict:
     return {"campaign": campaign, "slices": slices}
 
 
+def _pre_conditions(**overrides: str) -> dict:
+    """All four clause-(d) pre-conditions at `status: "closed"` by default,
+    one entry per `m.RE_SCOPE_GATE_PRE_CONDITION_KEYS` -- override individual
+    keys' status (e.g. `a_ci_enforcement="open"`) to fabricate a partial
+    close."""
+    result = {key: {"status": "closed", "note": "test"}
+              for key in m.RE_SCOPE_GATE_PRE_CONDITION_KEYS}
+    for key, status in overrides.items():
+        result[key] = {"status": status, "note": "test"}
+    return result
+
+
 # --- I/O & Edge-Case Matrix --------------------------------------------------
 
 
@@ -333,6 +345,156 @@ def test_endgame_with_replacement_only_callers_is_clean(tmp_path: Path) -> None:
     assert findings == []
 
 
+def test_gate_bypassed_order2_brief_with_open_precondition_red(tmp_path: Path) -> None:
+    """A `brief_path`-set order-2 slice with even one open pre-condition is a
+    `gate-bypassed` finding naming the slice and the unmet key(s)."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-2", order=2, status="briefed",
+                brief_path="briefs/slice-2.md")],
+        re_scope_gate={"pre_conditions": _pre_conditions(d_ownership_decision="open")},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+
+    assert len(findings) == 1
+    f = findings[0]
+    assert f["kind"] == "gate-bypassed"
+    assert f["ref"] == "slice-2"
+    assert "d_ownership_decision" in f["refs"]
+    assert "d_ownership_decision" in f["detail"]
+
+
+def test_gate_bypassed_order2_brief_with_all_preconditions_closed_is_clean(
+        tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-2", order=2, status="briefed",
+                brief_path="briefs/slice-2.md")],
+        re_scope_gate={"pre_conditions": _pre_conditions()},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+    assert findings == []
+
+
+def test_gate_bypassed_waived_precondition_counts_as_satisfied(tmp_path: Path) -> None:
+    """"waived" (a human explicitly decided to proceed without it) satisfies
+    a pre-condition exactly like "closed" -- not only the literal "closed"
+    string named in the Intent."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-2", order=2, status="briefed",
+                brief_path="briefs/slice-2.md")],
+        re_scope_gate={"pre_conditions": _pre_conditions(d_ownership_decision="waived")},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+    assert findings == []
+
+
+def test_gate_bypassed_order1_slice_never_checked(tmp_path: Path) -> None:
+    """Slice 1 (order 1) having `brief_path` set is never a finding, even
+    with every pre-condition open -- clause (d) only applies to order >= 2."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-1", order=1, status="compiled",
+                brief_path="briefs/slice-1.md")],
+        re_scope_gate={"pre_conditions": _pre_conditions(
+            a_ci_enforcement="open", b_skf_setup="open",
+            c_cross_slice_rederivation="open", d_ownership_decision="open")},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+    assert findings == []
+
+
+def test_gate_not_checked_when_order2_brief_path_still_null(tmp_path: Path) -> None:
+    """Today's real state: no slice of order >= 2 has `brief_path` set --
+    clause (d) stays clean regardless of the pre-conditions' status."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-2", order=2, status="mapped", brief_path=None)],
+        re_scope_gate={"pre_conditions": _pre_conditions(
+            a_ci_enforcement="open", b_skf_setup="open",
+            c_cross_slice_rederivation="open", d_ownership_decision="open")},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+    assert findings == []
+
+
+def test_gate_bypassed_lists_only_the_unmet_keys(tmp_path: Path) -> None:
+    """Only the actually-unmet pre-condition keys appear in `refs`/`detail` --
+    not the ones already closed."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-2", order=2, status="briefed",
+                brief_path="briefs/slice-2.md")],
+        re_scope_gate={"pre_conditions": _pre_conditions(
+            c_cross_slice_rederivation="open", d_ownership_decision="open")},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+
+    assert len(findings) == 1
+    f = findings[0]
+    assert set(f["refs"]) == {"slice-2", "c_cross_slice_rederivation", "d_ownership_decision"}
+    assert "a_ci_enforcement" not in f["detail"]
+    assert "b_skf_setup" not in f["detail"]
+
+
+def test_gate_bypassed_missing_re_scope_gate_treated_as_all_open(tmp_path: Path) -> None:
+    """No `campaign.re_scope_gate` at all (malformed/absent) must not crash
+    clause (d) -- it is treated as every pre-condition unmet, same tolerance
+    every other malformed-shape case in this file gets."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state([_slice(id="slice-2", order=2, status="briefed",
+                            brief_path="briefs/slice-2.md")])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "gate-bypassed"
+    assert set(m.RE_SCOPE_GATE_PRE_CONDITION_KEYS) <= set(findings[0]["refs"])
+
+
+def test_gate_bypassed_non_int_order_not_crashed_and_not_gated(tmp_path: Path) -> None:
+    """A malformed (non-int) `order` value must not crash clause (d) -- the
+    slice is simply not gated, same tolerance every other malformed-shape
+    case in this file gets."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state([_slice(id="slice-x", order="two", status="briefed",
+                            brief_path="briefs/slice-x.md")])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros)
+    assert findings == []
+
+
 def test_scan_tolerates_non_dict_slice_entries() -> None:
     """A malformed campaign-state.yaml (e.g. `slices: [1, 2, 3]`, or a slice
     entry that is a scalar rather than a mapping) must not crash scan() with
@@ -346,6 +508,21 @@ def test_scan_tolerates_non_dict_campaign() -> None:
     """`campaign` present but not a mapping (e.g. a string) must not crash
     clause (c)'s lookup."""
     assert m.scan({"campaign": "not-a-dict", "slices": []}, []) == []
+
+
+def test_scan_tolerates_non_dict_re_scope_gate_and_pre_conditions() -> None:
+    """`campaign.re_scope_gate` or its `pre_conditions` present but not a
+    mapping must not crash clause (d)'s lookup -- treated as every
+    pre-condition unmet, same as it being absent entirely."""
+    order2_brief = [_slice(id="slice-2", order=2, brief_path="briefs/slice-2.md")]
+    findings_a = m.scan(
+        {"campaign": {"re_scope_gate": "not-a-dict"}, "slices": order2_brief}, [])
+    assert len(findings_a) == 1 and findings_a[0]["kind"] == "gate-bypassed"
+
+    findings_b = m.scan(
+        {"campaign": {"re_scope_gate": {"pre_conditions": "not-a-dict"}},
+         "slices": order2_brief}, [])
+    assert len(findings_b) == 1 and findings_b[0]["kind"] == "gate-bypassed"
 
 
 def test_unmirrored_retro_empty_string_brief_path_treated_as_null(tmp_path: Path) -> None:
@@ -476,6 +653,47 @@ def test_main_exit_1_findings_json(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     payload = json.loads(out)
     assert len(payload["findings"]) == 1
     assert payload["findings"][0]["kind"] == "legacy-caller-at-endgame"
+
+
+def test_main_exit_1_gate_bypassed_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                         capsys: pytest.CaptureFixture[str]) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state_path = tmp_path / "campaign-state.yaml"
+    state_path.write_text(
+        "campaign:\n"
+        "  endgame_declared: false\n"
+        "  callers: []\n"
+        "  re_scope_gate:\n"
+        "    pre_conditions:\n"
+        "      a_ci_enforcement: {status: closed}\n"
+        "      b_skf_setup: {status: closed}\n"
+        "      c_cross_slice_rederivation: {status: open}\n"
+        "      d_ownership_decision: {status: open}\n"
+        "slices:\n"
+        "  - id: slice-2\n"
+        "    order: 2\n"
+        "    status: briefed\n"
+        "    equivalence: null\n"
+        "    brief_path: briefs/slice-2.md\n"
+        "    brief_mirrored_through: null\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
+    monkeypatch.setattr(sys, "argv",
+                         ["cfe_rebuild_guard_check.py", "--json", "--since", baseline])
+    rc = m.main()
+    out = capsys.readouterr().out
+
+    assert rc == 1
+    payload = json.loads(out)
+    assert len(payload["findings"]) == 1
+    assert payload["findings"][0]["kind"] == "gate-bypassed"
+    assert payload["findings"][0]["ref"] == "slice-2"
 
 
 def test_main_exit_2_missing_campaign_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
