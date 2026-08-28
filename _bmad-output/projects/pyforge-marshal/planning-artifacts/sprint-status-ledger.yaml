@@ -99,7 +99,7 @@ development_status:
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
   22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: done
   22-6-the-dispatched-run-survives-its-operator-and-its-journal-carries-the-timing-signal: done
-  22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode: backlog
+  22-7-fleet-wide-drain-is-a-marshal-orchestrated-mode: done
   22-8-the-session-harness-is-profile-driven-across-agent-clis: done
   22-9-a-dispatch-branch-names-its-station: backlog
   23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields: done

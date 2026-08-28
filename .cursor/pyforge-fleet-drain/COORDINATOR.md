@@ -1,5 +1,12 @@
 # Fleet drain auto-coordinator
 
+> **SUPERSEDED (2026-08-27, Story 22.7 / FR-193 CAP-7).** The marshal-native
+> mode shipped: `marshal factory drain --mode drain_to_zero|leave_one|skip_on_blocked`.
+> The marshal process itself now owns sequencing, so the singleton lock below
+> is structural rather than a convention an operator must remember to honor.
+> Kept as the historical record of the 2026-08-22/23 campaign — **do not
+> replay this hand ritual.**
+
 **Role:** Keep marshal + steward draining until `queues.yaml` shows both `drained: true`.
 
 **Playbook:** [PLAN.md](./PLAN.md) — merge-in-agent, one story per station, parallel across stations.

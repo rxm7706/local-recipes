@@ -2,9 +2,9 @@
 title: 'Story 22.7: Fleet-wide drain is a marshal-orchestrated mode'
 type: feature
 created: '2026-08-27'
-status: ready
+status: done
 updated: '2026-08-27'
-baseline_revision: cc8b3b2b1c09d6e56a5aebf752e25f507c846571
+baseline_revision: fecee52191fd42d6554e1cf012615d61e2ef3188
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -177,3 +177,12 @@ reimplement):**
 - Fleet-drain fixture(s) replaying the eight-station 2026-08-22/23 campaign's outcomes
   (skip/HALT/parallel/chain scenarios from the I/O & Edge-Case Matrix above) against the new
   mode, per `fleet-drain-playbook.md`'s acceptance-oracle role.
+
+## Dispatcher verification — 2026-08-27
+
+Session's review pass was interrupted by the account spend limit (twice); the dispatcher
+completed verification independently per Story 22.3: full `pyforge-marshal-test` in this
+worktree = 6491 passed / 1 failed, the failure being the pre-existing
+`test_skf_domain_skill::test_context_files_not_hand_edited` red on origin/main itself
+(outside this story's surface); scoped drain/dispatch subset 203/203. Landed by the
+dispatcher, marshal-native.
