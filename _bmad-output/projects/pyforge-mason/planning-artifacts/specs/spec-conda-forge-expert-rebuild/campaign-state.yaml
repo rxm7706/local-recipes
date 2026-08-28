@@ -127,8 +127,8 @@ campaign:
         status: "open"
         note: "Not yet done -- this is Story 12.6's own job (slice 2's brief must re-derive its full cross-slice-dependency list before compiling, not just reconfirm the CVE-DB/Slice-3 ordering risk slice-map.md already names). Closes when 12.6's brief actually does that, not before."
       d_ownership_decision:
-        status: "open"
-        note: "SPEC.md Open Question 1 unresolved. Story 12.5 (backlog, not yet run) will record the operator's decision here (populate this entry -- do not invent a second key) and in SPEC.md's own Open Questions section."
+        status: "closed"
+        note: "Story 12.5 (2026-08-28): operator ruling recorded -- per-slice station ownership (mason owns the campaign through-line; atlas owns the Slice-3/atlas-intelligence tier's brief, stories, Rule-2 retro, and equivalence sign-off once slices 3-5 decompose after Story 12.8's checkpoint). Full ruling + rationale: campaign.ownership_decision below, mirrored verbatim into SPEC.md's Open Questions item 1. This pre-condition's own concern (an operator decision existing before slice 2's brief) is now proven -- the decision does not name slice 2 (order 2, mason's own Recipe Lifecycle tier) as moving, so it does not change who briefs slice 2."
     note: |
       2026-08-21 (Story 6.4, CAP-4 re-scope gate). DECISION: ADJUST (closer to
       "conditional go" than to this file's own status_vocabulary sense of "adjust" --
@@ -284,6 +284,32 @@ campaign:
       12.2/12.3); (c) cross-slice re-derivation and (d) the ownership decision remain
       "open" (Stories 12.6/12.5, neither yet run) -- so slice 2's `brief_path` (still
       null today) would correctly red this detector if set before those two close.
+  # Story 12.5 (2026-08-28): mirrors SPEC.md Open Questions item 1's dated resolution.
+  # Closes re_scope_gate.pre_conditions.d_ownership_decision above -- read that field for
+  # the pre-condition's own closed/open status; read this field for what the decision
+  # actually says. Not itself machine-enforced by cfe_rebuild_guard_check.py (no clause
+  # reads this field); it is the human-readable decision record the closed pre-condition
+  # points at.
+  ownership_decision:
+    decided: "2026-08-28"
+    decision: "per-slice"  # mason owns the campaign through-line; atlas owns slice 3's tier
+    note: |
+      Operator ruling (Story 12.5, 2026-08-28; SPEC.md Open Question 1 answered).
+      Per-slice station ownership. Mason owns the campaign through-line --
+      campaign-state.yaml, the guard detector, the re-scope gates, and the
+      endgame/cutover. Atlas owns the Slice-3 (atlas-intelligence) tier: when slices 3-5
+      decompose after Story 12.8's checkpoint, Slice 3's brief is authored on and its
+      stories carried by the pyforge-atlas chain, with its Rule-2 retro and equivalence
+      sign-off owned by atlas. Rationale (operator, after full briefing): atlas is the
+      tier's station of competence -- it already rebuilt the cf_atlas orchestrator as the
+      live Kedro/DuckDB estate and owns the CAP-19 query plane this tier's data feeds --
+      so atlas ownership forces the legacy-vs-Kedro convergence question into the right
+      hands instead of risking a parallel rebuild of the legacy tier. Precedent: CAP-19's
+      "atlas owns the engine, steward owns the through-line" split, and Phase-T trending
+      landing as atlas Epic 13 despite its mason handoff. Slices 1, 2, 4, and 5 remain
+      mason-owned under this ruling -- only the Slice-3 tier moves; slice 2 (order 2,
+      Recipe Lifecycle) briefing ownership is therefore unaffected by this decision.
+      Mirrored verbatim into SPEC.md's Open Questions item 1.
   # Story 6.2 guard hooks -- see the "Divergence-and-endgame guard hooks" comment above
   # status_vocabulary for the full field descriptions.
   endgame_declared: false

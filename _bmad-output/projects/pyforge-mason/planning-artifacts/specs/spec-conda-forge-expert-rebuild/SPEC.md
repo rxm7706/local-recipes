@@ -2,7 +2,7 @@
 id: SPEC-conda-forge-expert-rebuild
 spec: conda-forge-expert-rebuild
 status: in-progress
-updated: "2026-08-27"
+updated: "2026-08-28"
 owner-dream: docs/dreams/conda-forge-expert-rebuild.md
 surface:
   - .claude/skills/conda-forge-expert/**      # the skill being rebuilt slice by slice (parallel-run target; flips at the end cutover)
@@ -167,6 +167,21 @@ tools noticed the transition except through the CHANGELOG.
    map assign per-slice station ownership (mason owns the campaign, atlas owns its tier's
    briefs), or does mason own the whole rebuild? Needs an operator decision before any
    slice beyond the first.
+
+   **Resolved — 2026-08-28 (Story 12.5).** **Per-slice station ownership.** Mason owns the
+   campaign through-line — `campaign-state.yaml`, the guard detector, the re-scope gates,
+   and the endgame/cutover. Atlas owns the Slice-3 (atlas-intelligence) tier: when slices
+   3–5 decompose after Story 12.8's checkpoint, Slice 3's brief is authored on and its
+   stories carried by the `pyforge-atlas` chain, with its Rule-2 retro and equivalence
+   sign-off owned by atlas. Rationale (operator, after full briefing): atlas is the tier's
+   station of competence — it already rebuilt the `cf_atlas` orchestrator as the live
+   Kedro/DuckDB estate and owns the CAP-19 query plane this tier's data feeds — so atlas
+   ownership forces the legacy-vs-Kedro convergence question into the right hands instead
+   of risking a parallel rebuild of the legacy tier. Precedent: CAP-19's "atlas owns the
+   engine, steward owns the through-line" split, and Phase-T trending landing as atlas
+   Epic 13 despite its mason handoff. Slices 1, 2, 4, and 5 remain mason-owned under this
+   ruling — only the Slice-3 tier moves. Mirrored into `campaign-state.yaml`
+   (`campaign.ownership_decision`; closes `re_scope_gate.pre_conditions.d_ownership_decision`).
 2. **Can `skf-create-skill` actually carry ~41K LOC of *implementation*?** Skill Forge
    compiles skills (knowledge + progressive capability); CFE is knowledge *plus* a large
    tested Python codebase. The first slice must establish whether "Skill-Forge-authored"
